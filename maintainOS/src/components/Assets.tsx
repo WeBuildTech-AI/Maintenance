@@ -338,7 +338,7 @@ export function Assets() {
 
       <div className="flex flex-1 min-h-0">
         {/* Left Panel - Assets List */}
-        <div className="w-96 border-r border-border bg-card flex flex-col min-h-0">
+        <div className="w-112 border-r border-border bg-card flex flex-col min-h-0">
           {/* Sort */}
           <div className="p-4 border-b border-border flex-shrink-0">
             <div className="flex items-center gap-2">

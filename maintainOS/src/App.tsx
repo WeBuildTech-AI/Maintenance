@@ -1,35 +1,41 @@
-import { useState } from "react";
+// src/App.tsx
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import type { RootState, AppDispatch } from "./store";
+import { login, logout } from "./store/userSlice";
 import { MainLayout } from "./components/MainLayout";
-import { Login } from "./components/Login";
-import { WorkOrders } from "./components/WorkOrders";
-import { PurchaseOrders } from "./components/purchase-orders/PurchaseOrders";
-import { Assets } from "./components/Assets";
-import { Inventory } from "./components/Inventory";
-import { Reporting } from "./components/Reporting";
-import { Messages } from "./components/Messages";
-import { Categories } from "./components/Categories";
-import { Library } from "./components/Library";
-import { Meters } from "./components/Meters";
-import { Automations } from "./components/Automations";
-import { Locations } from "./components/Locations";
-import { TeamUsers } from "./components/TeamUsers";
-import { Vendors } from "./components/vendors/Vendors";
 import { Toaster } from "./components/ui/sonner";
+import { lazyImport } from "./utils/lazyImport";
+import { Suspense } from "react";
+
+// ✅ Lazy imports
+const Login = lazyImport(() => import("./components/Login"), "Login");
+const WorkOrders = lazyImport(() => import("./components/WorkOrders"), "WorkOrders");
+const PurchaseOrders = lazyImport(() => import("./components/purchase-orders/PurchaseOrders"), "PurchaseOrders");
+const Assets = lazyImport(() => import("./components/Assets"), "Assets");
+const Inventory = lazyImport(() => import("./components/Inventory"), "Inventory");
+const Reporting = lazyImport(() => import("./components/Reporting"), "Reporting");
+const Messages = lazyImport(() => import("./components/Messages"), "Messages");
+const Categories = lazyImport(() => import("./components/Categories"), "Categories");
+const Library = lazyImport(() => import("./components/Library"), "Library");
+const Meters = lazyImport(() => import("./components/Meters"), "Meters");
+const Automations = lazyImport(() => import("./components/Automations"), "Automations");
+const Locations = lazyImport(() => import("./components/Locations"), "Locations");
+const TeamUsers = lazyImport(() => import("./components/TeamUsers"), "TeamUsers");
+const Vendors = lazyImport(() => import("./components/vendors/Vendors"), "Vendors");
 
 export default function App() {
-  const [currentModule, setCurrentModule] = useState("work-orders");
-  const [user, setUser] = useState<{ name: string; email: string; avatar?: string } | null>(null);
+  const user = useSelector((state: RootState) => state.user.user);
+  const dispatch = useDispatch<AppDispatch>();
 
   const handleLogin = (userData: { name: string; email: string; avatar?: string }) => {
-    setUser(userData);
+    dispatch(login(userData));
   };
 
   const handleLogout = () => {
-    setUser(null);
-    setCurrentModule("work-orders");
+    dispatch(logout());
   };
 
-  // Show login if user is not authenticated
   if (!user) {
     return (
       <>
@@ -39,48 +45,30 @@ export default function App() {
     );
   }
 
-  const renderCurrentModule = () => {
-    switch (currentModule) {
-      case "work-orders":
-        return <WorkOrders />;
-      case "purchase-orders":
-        return <PurchaseOrders />;
-      case "reporting":
-        return <Reporting />;
-      case "assets":
-        return <Assets />;
-      case "messages":
-        return <Messages />;
-      case "categories":
-        return <Categories />;
-      case "inventory":
-        return <Inventory />;
-      case "library":
-        return <Library />;
-      case "vendors":
-        return <Vendors />;
-      case "meters":
-        return <Meters />;
-      case "automations":
-        return <Automations />;
-      case "locations":
-        return <Locations />;
-      case "team-users":
-        return <TeamUsers />;
-      default:
-        return <WorkOrders />;
-    }
-  };
-
   return (
     <>
-      <MainLayout 
-        currentModule={currentModule} 
-        onModuleChange={setCurrentModule}
-        user={user}
-        onLogout={handleLogout}
-      >
-        {renderCurrentModule()}
+      <MainLayout user={user} onLogout={handleLogout}>
+        <Suspense fallback={<div className="p-4">Loading...</div>}>
+          <Routes>
+            {/* Redirect root to /work-orders */}
+            <Route path="/" element={<Navigate to="/work-orders" replace />} />
+
+            {/* Actual modules */}
+            <Route path="/work-orders" element={<WorkOrders />} />
+            <Route path="/purchase-orders" element={<PurchaseOrders />} />
+            <Route path="/reporting" element={<Reporting />} />
+            <Route path="/assets" element={<Assets />} />
+            <Route path="/messages" element={<Messages />} />
+            <Route path="/categories" element={<Categories />} />
+            <Route path="/inventory" element={<Inventory />} />
+            <Route path="/library" element={<Library />} />
+            <Route path="/vendors" element={<Vendors />} />
+            <Route path="/meters" element={<Meters />} />
+            <Route path="/automations" element={<Automations />} />
+            <Route path="/locations" element={<Locations />} />
+            <Route path="/team-users" element={<TeamUsers />} />
+          </Routes>
+        </Suspense>
       </MainLayout>
       <Toaster />
     </>

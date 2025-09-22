@@ -5,6 +5,7 @@ import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Input } from "../ui/input";
+import { AvatarCheckboxDemo } from "../ui/avatar-checkbox-demo";
 import {
   Select,
   SelectContent,
@@ -311,28 +312,24 @@ export function PurchaseOrders() {
 
 
       {viewMode === "table" ? (
-        <PurchaseOrdersTable orders={pagedOrders} columns={selectedColumns} pageSize={pageSize}/>
+        <div className="flex-1 min-h-0 overflow-auto p-6">
+          <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+            <AvatarCheckboxDemo />
+            <PurchaseOrdersTable
+              orders={pagedOrders}
+              columns={selectedColumns}
+              pageSize={pageSize}
+            />
+          </div>
+        </div>
       ) : (
       <div className="flex flex-1 min-h-0">
         {/* Left List */}
-        <div className="w-96 border-r border-border bg-card flex flex-col min-h-0">
-          {/* Sort */}
+        <div className="w-112 mr-3 border border-border bg-card flex flex-col min-h-0">
+          {/* List Aggregator + Select button*/}
           <div className="p-4 border-b border-border flex-shrink-0">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Sort By:</span>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="text-primary p-0 h-auto">
-                    Vendor
-                    <ChevronDown className="h-3 w-3 ml-1" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>Vendor</DropdownMenuItem>
-                  <DropdownMenuItem>Status</DropdownMenuItem>
-                  <DropdownMenuItem>Due Date</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <span className="text-sm text-muted-foreground">All Purchase Orders: {filteredPOs.length}</span>
             </div>
           </div>
 
@@ -680,7 +677,6 @@ function VendorPill({ vendorId }: { vendorId: string }) {
     </div>
   );
 }
-
 
 
 

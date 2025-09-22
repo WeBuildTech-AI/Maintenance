@@ -410,7 +410,7 @@ export function Inventory() {
 
       <div className="flex flex-1 min-h-0">
         {/* Left list */}
-        <div className="w-96 border-r bg-card flex flex-col min-h-0">
+        <div className="w-112 border-r bg-card flex flex-col min-h-0">
           <div className="p-4 border-b flex-shrink-0">
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Sort By:</span>

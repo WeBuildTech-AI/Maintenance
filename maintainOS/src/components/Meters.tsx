@@ -217,7 +217,7 @@ export function Meters() {
 
       <div className="flex flex-1">
         {/* Left Panel - Meters List */}
-        <div className="w-96 border-r border-border bg-card flex flex-col">
+        <div className="w-112 border-r border-border bg-card flex flex-col">
           {/* Sort */}
           <div className="p-4 border-b border-border">
             <div className="flex items-center gap-2">
