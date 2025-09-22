@@ -47,7 +47,7 @@ export function Sidebar({ onClose, user, onLogout }: SidebarProps) {
           <p className="text-sm text-sidebar-foreground/70">Control Center</p>
         </div>
         {onClose && (
-          <Button variant="ghost" size="sm" onClick={onClose} className="lg:hidden">
+          <Button variant="ghost" size="sm" onClick={onClose} >
             <X className="h-5 w-5" />
           </Button>
         )}

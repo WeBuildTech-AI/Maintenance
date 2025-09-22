@@ -90,7 +90,7 @@ export default function SettingsModal({
           </button>
           <button
             onClick={handleSave}
-            className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            className="px-4 py-2 text-sm bg-orange-600 text-white rounded-md hover:bg-orange-700"
           >
             Save
           </button>

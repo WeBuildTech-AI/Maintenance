@@ -33,7 +33,7 @@ export function ToDoView({
   const priorityStyles: Record<string, string> = {
     High: "bg-red-100 text-red-700 border-red-200",
     Medium: "bg-yellow-100 text-yellow-700 border-yellow-200",
-    Low: "bg-blue-100 text-blue-700 border-blue-200",
+    Low: "bg-orange-100 text-orange-700 border-orange-200",
     Daily: "bg-emerald-100 text-emerald-700 border-emerald-200",
   };
 
@@ -43,7 +43,7 @@ export function ToDoView({
       return <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">✓ Done</Badge>;
     }
     if (normalized === "in progress") {
-      return <Badge className="bg-blue-100 text-blue-700 border-blue-200">In Progress</Badge>;
+      return <Badge className="bg-orange-100 text-orange-700 border-orange-200">In Progress</Badge>;
     }
     return <Badge variant="outline">{status}</Badge>;
   };

@@ -53,6 +53,8 @@ import { addressToLine, cryptoId, formatMoney } from "./helpers";
 import PurchaseOrdersTable from "./POTableView";
 import SettingsModal from "./SettingsModal";
 import { NewPOFormDialog } from "./NewPOFormDialog";
+import { AvatarCheckbox } from "../ui/avatar-checkbox";
+import { Avatar, AvatarFallback } from "../ui/avatar";
 
 
 
@@ -235,10 +237,10 @@ export function PurchaseOrders() {
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* Header */}
-      <div className="p-6 border-b border-border bg-card flex-shrink-0">
+      <div className="ml-3 mt-6 mr-3 bg-card flex-shrink-0">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-medium">Purchase Orders</h1>
+            <h1 className="text-2xl font-medium">Purchase Orders</h1>
             <div className="flex items-center gap-2">
               <LayoutGrid className="h-4 w-4 shrink-0 text-muted-foreground" />
 
@@ -281,7 +283,7 @@ export function PurchaseOrders() {
               />
             </div>
             <Button
-              className="gap-2 bg-blue-600 hover:bg-blue-700"
+              className="gap-2 bg-orange-600 hover:bg-orange-700"
               onClick={() => { resetNewPO(); setCreatingPO(true); }}   // CHANGED
             >
               <Plus className="h-4 w-4" />
@@ -325,7 +327,7 @@ export function PurchaseOrders() {
       ) : (
       <div className="flex flex-1 min-h-0">
         {/* Left List */}
-        <div className="w-112 mr-3 border border-border bg-card flex flex-col min-h-0">
+        <div className="w-112 mr-3 ml-3 border border-border flex flex-col min-h-0">
           {/* List Aggregator + Select button*/}
           <div className="p-4 border-b border-border flex-shrink-0">
             <div className="flex items-center gap-2">
@@ -335,7 +337,7 @@ export function PurchaseOrders() {
 
           {/* PO List */}
           <div className="flex-1 overflow-y-auto min-h-0">
-            <div className="p-4 space-y-3">
+            {/* <div className="space-y-3"> */}
               {filteredPOs.map((po) => {
                 const vendor = mockVendors.find((v) => v.id === po.vendorId)?.name ?? "-";
                 return (
@@ -350,17 +352,30 @@ export function PurchaseOrders() {
                   >
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
-                        <div>
-                          <h4 className="font-medium">{po.number}</h4>
-                          <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                            <Building2 className="h-3 w-3" />
-                            <span>{vendor}</span>
+                        <div className="flex items-center gap-4">
+                          <Avatar className="h-8 w-8">
+                              <AvatarFallback>
+                              {po.vendor
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")}
+                              </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <span className="font-medium">{po.number}</span>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Building2 className="h-3 w-3" />
+                              <span>{vendor}</span>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              Total Cost: {formatMoney(totals[po.id] ?? 0)}
+                            </div>
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="text-sm text-muted-foreground">
+                          {/* <div className="text-sm text-muted-foreground">
                             Total Cost: {formatMoney(totals[po.id] ?? 0)}
-                          </div>
+                          </div> */}
                           <div className="mt-2">
                             <StatusBadge status={po.status} />
                           </div>
@@ -382,42 +397,27 @@ export function PurchaseOrders() {
                   </Button>
                 </div>
               )}
-            </div>
+            {/* </div> */}
           </div>
         </div>
 
         {/* Right Details */}
-        <div className="flex-1 bg-card min-h-0 flex flex-col">
-          {creatingPO ? (
-            <NewPOForm
-              newPO={newPO}
-              setNewPO={setNewPO}
-              newPOSubtotal={newPOSubtotal}
-              newPOTotal={newPOTotal}
-              addNewPOItemRow={addNewPOItemRow}
-              removePOItemRow={removePOItemRow}
-              updateItemField={updateItemField}
-              createPurchaseOrder={() => {
-                createPurchaseOrder();      // your existing creator
-                setCreatingPO(false);       // close form after create
-              }}
-              onCancel={() => setCreatingPO(false)}
-            />
-          ) : selectedPO ? (
+        <div className="flex-1 bg-card mr-3 ml-3 border border-border min-h-0 flex flex-col border-border">
+          {selectedPO ? (
             <div className="h-full flex flex-col min-h-0">
               {/* Header */}
-              <div className="p-6 border-b border-border flex-shrink-0">
+              <div className="p-3 border-b border-border flex-shrink-0">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-2">
                     <h1 className="text-xl font-medium">{selectedPO.number}</h1>
-                    <LinkIcon className="h-4 w-4 text-blue-600" />
+                    <LinkIcon className="h-4 w-4 text-orange-600" />
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" className="gap-2 text-blue-600 border-blue-200 hover:bg-blue-50">
+                    <Button variant="outline" className="gap-2 text-orange-600 border-orange-200 hover:bg-orange-50">
                       <Upload className="h-4 w-4" />
                       Send to Vendor
                     </Button>
-                    <Button variant="outline" className="gap-2 text-blue-600 border-blue-200 hover:bg-blue-50">
+                    <Button variant="outline" className="gap-2 text-orange-600 border-orange-200 hover:bg-orange-50">
                       <Edit className="h-4 w-4" />
                       Edit
                     </Button>
@@ -574,7 +574,7 @@ export function PurchaseOrders() {
 
               {/* Footer (fixed at bottom of right pane) */}
               <div className="p-6 border-t flex justify-end flex-none">
-                <Button className="gap-2 bg-blue-600 hover:bg-blue-700">
+                <Button className="gap-2 bg-orange-600 hover:bg-orange-700">
                   <Upload className="h-4 w-4" />
                   Fulfill
                 </Button>
@@ -638,7 +638,7 @@ function StatusBadge({ status }: { status: POStatus }) {
   const map: Record<POStatus, string> = {
     Draft: "bg-gray-50 text-gray-700 border-gray-200",
     Approved: "bg-green-50 text-green-700 border-green-200",
-    Sent: "bg-blue-50 text-blue-700 border-blue-200",
+    Sent: "bg-orange-50 text-orange-700 border-orange-200",
     Received: "bg-emerald-50 text-emerald-700 border-emerald-200",
     Cancelled: "bg-red-50 text-red-700 border-red-200",
   };

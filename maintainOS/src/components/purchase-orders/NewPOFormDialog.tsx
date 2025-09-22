@@ -47,7 +47,7 @@ export function NewPOFormDialog({
             Cancel
           </Button>
           <Button
-            className="gap-2 bg-blue-600 hover:bg-blue-700"
+            className="gap-2 bg-orange-600 hover:bg-orange-700"
             onClick={formProps.createPurchaseOrder}
             disabled={
               !formProps.newPO.vendorId ||

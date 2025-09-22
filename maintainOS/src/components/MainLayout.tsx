@@ -27,7 +27,7 @@ export function MainLayout({ user, onLogout, children }: MainLayoutProps) {
       <div
         className={`${
           showMobileSidebar ? "translate-x-0" : "-translate-x-full"
-        } fixed inset-y-0 left-0 z-50 w-64 transition-transform lg:translate-x-0 lg:static lg:inset-0`}
+        } fixed inset-y-0 left-0 z-50 w-48 transition-transform lg:translate-x-0 lg:static lg:inset-0`}
       >
         <Sidebar
           onClose={() => setShowMobileSidebar(false)}

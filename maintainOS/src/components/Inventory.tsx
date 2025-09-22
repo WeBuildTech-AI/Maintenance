@@ -374,7 +374,7 @@ export function Inventory() {
                 className="pl-9 w-72"
               />
             </div>
-            <Button className="gap-2 bg-blue-600 hover:bg-blue-700" onClick={startCreate}>
+            <Button className="gap-2 bg-orange-600 hover:bg-orange-700" onClick={startCreate}>
               <Plus className="h-4 w-4" />
               New Part
             </Button>
@@ -401,7 +401,7 @@ export function Inventory() {
               Add Filter
             </Button>
           </div>
-          <Button variant="ghost" size="sm" className="gap-2 text-blue-600">
+          <Button variant="ghost" size="sm" className="gap-2 text-orange-600">
             <Settings className="h-4 w-4" />
             My Filters
           </Button>
@@ -550,11 +550,11 @@ function PartDetails({
       <div className="p-6 border-b flex items-center justify-between">
         <h2 className="text-xl font-medium">{item.name}</h2>
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="gap-2 text-blue-600 border-blue-200 hover:bg-blue-50">
+          <Button variant="outline" className="gap-2 text-orange-600 border-orange-200 hover:bg-orange-50">
             <Upload className="h-4 w-4" />
             Restock
           </Button>
-          <Button variant="outline" className="gap-2 text-blue-600 border-blue-200 hover:bg-blue-50">
+          <Button variant="outline" className="gap-2 text-orange-600 border-orange-200 hover:bg-orange-50">
             <Edit className="h-4 w-4" />
             Edit
           </Button>
@@ -628,7 +628,7 @@ function PartDetails({
                 <tr>
                   <td className="p-3">
                     <div className="inline-flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-blue-600" />
+                      <MapPin className="h-4 w-4 text-orange-600" />
                       {mockLocations.find((l) => l.id === item.locationId)?.name ?? "-"}
                     </div>
                   </td>
@@ -720,7 +720,7 @@ function PartDetails({
         </div>
 
         <div className="flex justify-end">
-          <Button className="gap-2 bg-blue-600 hover:bg-blue-700">
+          <Button className="gap-2 bg-orange-600 hover:bg-orange-700">
             <Upload className="h-4 w-4" />
             Use in New Work Order
           </Button>
@@ -761,9 +761,9 @@ function NewPartForm({
             <div className="text-xl font-medium mb-4">{newItem.name || "New Part"}</div>
 
             <div className="mb-6">
-              <div className="w-full h-32 border-2 border-dashed border-blue-300 rounded-lg bg-blue-50 flex flex-col items-center justify-center cursor-pointer hover:bg-blue-100 transition-colors">
-                <Upload className="h-6 w-6 text-blue-600 mb-2" />
-                <span className="text-sm text-blue-600">Add or drag pictures</span>
+              <div className="w-full h-32 border-2 border-dashed border-orange-300 rounded-lg bg-orange-50 flex flex-col items-center justify-center cursor-pointer hover:bg-orange-100 transition-colors">
+                <Upload className="h-6 w-6 text-orange-600 mb-2" />
+                <span className="text-sm text-orange-600">Add or drag pictures</span>
               </div>
             </div>
 
@@ -951,7 +951,7 @@ function NewPartForm({
             Cancel
           </Button>
           <Button
-            className="gap-2 bg-blue-600 hover:bg-blue-700"
+            className="gap-2 bg-orange-600 hover:bg-orange-700"
             onClick={onCreate}
             disabled={!newItem.name}
           >

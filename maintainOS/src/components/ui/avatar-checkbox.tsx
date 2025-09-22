@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
 
 const DEFAULT_COLORS = [
   "bg-amber-400",
-  "bg-blue-500",
+  "bg-orange-500",
   "bg-emerald-500",
   "bg-violet-500",
   "bg-rose-500",
@@ -108,7 +108,7 @@ export const AvatarCheckbox = React.forwardRef<HTMLInputElement, AvatarCheckboxP
         <span
           className={cn(
             "pointer-events-none absolute inset-0 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 opacity-0 shadow-sm transition-all duration-200",
-            "peer-hover:opacity-100 peer-focus-visible:opacity-100 peer-checked:opacity-100 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-checked:text-white",
+            "peer-hover:opacity-100 peer-focus-visible:opacity-100 peer-checked:opacity-100 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white",
           )}
         >
           {isChecked ? (

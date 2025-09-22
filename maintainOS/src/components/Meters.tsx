@@ -175,7 +175,7 @@ export function Meters() {
               />
             </div>
             <Button 
-              className="gap-2 bg-blue-600 hover:bg-blue-700"
+              className="gap-2 bg-orange-600 hover:bg-orange-700"
               onClick={() => setShowNewMeterForm(true)}
             >
               <Plus className="h-4 w-4" />
@@ -428,7 +428,7 @@ export function Meters() {
                 <div className="flex items-center gap-3 pt-4">
                   <Button 
                     onClick={handleCreateMeter}
-                    className="bg-blue-600 hover:bg-blue-700"
+                    className="bg-orange-600 hover:bg-orange-700"
                     disabled={!newMeter.name || !newMeter.measurementUnit}
                   >
                     Create
@@ -450,11 +450,11 @@ export function Meters() {
                 <div className="flex items-center justify-between mb-4">
                   <h1 className="text-xl font-medium">{selectedMeter.name}</h1>
                   <div className="flex items-center gap-2">
-                    <Button className="gap-2 bg-blue-600 hover:bg-blue-700">
+                    <Button className="gap-2 bg-orange-600 hover:bg-orange-700">
                       <Plus className="h-4 w-4" />
                       Record Reading
                     </Button>
-                    <Button variant="ghost" size="sm" className="gap-2 text-blue-600">
+                    <Button variant="ghost" size="sm" className="gap-2 text-orange-600">
                       <Edit className="h-4 w-4" />
                       Edit
                     </Button>
@@ -490,7 +490,7 @@ export function Meters() {
                           variant={selectedTimePeriod === period ? "default" : "ghost"}
                           size="sm"
                           onClick={() => setSelectedTimePeriod(period)}
-                          className={selectedTimePeriod === period ? "bg-blue-600 hover:bg-blue-700" : ""}
+                          className={selectedTimePeriod === period ? "bg-orange-600 hover:bg-orange-700" : ""}
                         >
                           {period}
                         </Button>
@@ -532,7 +532,7 @@ export function Meters() {
 
                     {/* See All Readings Button */}
                     <div className="pt-4">
-                      <Button className="gap-2 bg-blue-600 hover:bg-blue-700">
+                      <Button className="gap-2 bg-orange-600 hover:bg-orange-700">
                         <Plus className="h-4 w-4" />
                         See All Readings
                       </Button>
@@ -596,7 +596,7 @@ export function Meters() {
                 <div>
                   <h2 className="text-lg font-medium mb-4">Automations (0)</h2>
                   <div className="border border-dashed border-border rounded-lg p-6">
-                    <Button className="gap-2 bg-blue-600 hover:bg-blue-700">
+                    <Button className="gap-2 bg-orange-600 hover:bg-orange-700">
                       <Plus className="h-4 w-4" />
                       Create Automation
                     </Button>
@@ -607,7 +607,7 @@ export function Meters() {
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-medium">Upcoming Reading Work Orders (1)</h2>
-                    <Button variant="ghost" className="gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-0 h-auto">
+                    <Button variant="ghost" className="gap-1 text-orange-600 hover:text-orange-700 hover:bg-orange-50 p-0 h-auto">
                       See all
                       <ChevronRight className="h-4 w-4" />
                     </Button>
@@ -622,7 +622,7 @@ export function Meters() {
                         <div>
                           <div className="flex items-center gap-2 mb-1">
                             <span className="font-medium">Check the voltage #5</span>
-                            <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center">
+                            <div className="w-4 h-4 bg-orange-600 rounded-full flex items-center justify-center">
                               <span className="text-white text-xs">⚡</span>
                             </div>
                           </div>

@@ -74,7 +74,7 @@ export default function PurchaseOrdersTable({ orders, columns, pageSize }: Purch
 
         case "Sent":
         return (
-            <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700">
+            <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-1 text-xs font-medium text-orange-700">
             <Send className="h-4 w-4" />
             Sent
             </span>
@@ -147,7 +147,7 @@ export default function PurchaseOrdersTable({ orders, columns, pageSize }: Purch
                                 );
                                 }
                             }}
-                            className="cursor-pointer accent-blue-600"
+                            className="cursor-pointer accent-orange-600"
                         />
                     </th>
                     {columns.map((col) => (
@@ -187,7 +187,7 @@ export default function PurchaseOrdersTable({ orders, columns, pageSize }: Purch
                                 type="checkbox"
                                 checked={selectedPOs.includes(order.id)}
                                 onChange={() => toggleSelection(order.id)}
-                                className="cursor-pointer accent-blue-600"
+                                className="cursor-pointer accent-orange-600"
                             />
                         </td>
                         {columns.map((col) => {

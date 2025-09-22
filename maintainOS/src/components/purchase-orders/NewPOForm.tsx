@@ -138,7 +138,7 @@ export function NewPOForm(props: NewPOFormProps) {
             {/* Taxes & total */}
             <div className="flex items-center justify-end gap-6 mt-3">
               <button
-                className="text-sm text-blue-600"
+                className="text-sm text-orange-600"
                 onClick={() => setNewPO((s) => ({ ...s, extraCosts: Number(s.extraCosts) || 0 }))}
               >
                 + Add Taxes &amp; Costs
