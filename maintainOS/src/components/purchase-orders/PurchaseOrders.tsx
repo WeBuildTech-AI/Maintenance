@@ -602,22 +602,22 @@ export function PurchaseOrders() {
       
 
       {/* New Purchase Order Modal (custom lightweight) */}
-      {creatingPO &&
-        <NewPOFormDialog
-          newPO={newPO}
-          setNewPO={setNewPO}
-          newPOSubtotal={newPOSubtotal}
-          newPOTotal={newPOTotal}
-          addNewPOItemRow={addNewPOItemRow}
-          removePOItemRow={removePOItemRow}
-          updateItemField={updateItemField}
-          createPurchaseOrder={() => {
-            createPurchaseOrder();      // your existing creator
-            setCreatingPO(false);       // close form after create
-          }}
-            onCancel={() => setCreatingPO(false)}
-        />
-      }
+      <NewPOFormDialog
+        open={creatingPO}
+        onOpenChange={setCreatingPO}
+        newPO={newPO}
+        setNewPO={setNewPO}
+        newPOSubtotal={newPOSubtotal}
+        newPOTotal={newPOTotal}
+        addNewPOItemRow={addNewPOItemRow}
+        removePOItemRow={removePOItemRow}
+        updateItemField={updateItemField}
+        createPurchaseOrder={() => {
+          createPurchaseOrder();
+          setCreatingPO(false); // close after create
+        }}
+        onCancel={() => setCreatingPO(false)}
+      />
 
       
 

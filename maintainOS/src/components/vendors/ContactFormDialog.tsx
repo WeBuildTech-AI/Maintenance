@@ -1,10 +1,10 @@
-import { FormEvent, useState } from "react";
+import { type FormEvent, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { DialogFooter } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Button } from "../ui/button";
-import { Vendor } from "./vendors.types";
+import { type Vendor } from "./vendors.types";
 
 export function ContactFormDialog({
   vendor,
