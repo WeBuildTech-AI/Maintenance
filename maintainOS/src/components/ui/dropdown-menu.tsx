@@ -37,7 +37,6 @@ function composeRefs<T>(
         ref(node);
       } else {
         try {
-          // @ts-expect-error: writable ref
           ref.current = node;
         } catch {
           /* noop */
@@ -173,7 +172,9 @@ const DropdownMenuTrigger = React.forwardRef<
         }
       }}
       {...props}
-    />
+    >
+      {props.children}
+    </Comp>
   );
 });
 

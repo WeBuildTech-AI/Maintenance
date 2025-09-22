@@ -147,7 +147,7 @@ const DialogOverlay = React.forwardRef<
       ref={ref}
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity",
+        "fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity",
         className,
       )}
       {...props}
@@ -168,6 +168,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
       children,
       closeOnOverlayClick = true,
       onClick,
+      style,
       ...props
     },
     ref,
@@ -216,29 +217,29 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
     return (
       <DialogPortal>
         <DialogOverlay />
-        <div
-          ref={mergedRef}
-          role="dialog"
-          aria-modal="true"
-          data-slot="dialog-content"
-          className={cn(
-            "bg-background fixed top-1/2 left-1/2 z-50 grid w-full max-w-xl -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border p-6 shadow-lg",
-            className,
-          )}
-          onClick={(event) => {
-            onClick?.(event);
-            event.stopPropagation();
-          }}
-          {...props}
-        >
-          {children}
-          <DialogClose className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:outline-hidden focus:ring-2 focus:ring-offset-2">
-            <XIcon className="size-4" />
-            <span className="sr-only">Close</span>
-          </DialogClose>
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4">
+          <div
+            ref={mergedRef}
+            role="dialog"
+            aria-modal="true"
+            data-slot="dialog-content"
+            className={cn(
+              "relative w-full max-w-xl rounded-lg border bg-background p-6 shadow-lg",
+              className,
+            )}
+            style={style}
+            onClick={(event) => {
+              onClick?.(event);
+              event.stopPropagation();
+            }}
+            {...props}
+          >
+            {children}
+          </div>
         </div>
       </DialogPortal>
     );
+
   },
 );
 
@@ -275,16 +276,23 @@ const DialogClose = React.forwardRef<HTMLButtonElement, DialogCloseProps>(
 
 DialogClose.displayName = "DialogClose";
 
-const DialogHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div
-      ref={ref}
-      data-slot="dialog-header"
-      className={cn("flex flex-col gap-2 text-center sm:text-left", className)}
-      {...props}
-    />
-  ),
-);
+const DialogHeader = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, children, ...props }, ref) => (
+  <div
+    ref={ref}
+    data-slot="dialog-header"
+    className={cn("flex items-center justify-between border-b pb-3 px-6", className)}
+    {...props}
+  >
+    {children}
+    <DialogClose className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring">
+      <XIcon className="h-5 w-5" />
+      {/* <span className="sr-only">Close</span> */}
+    </DialogClose>
+  </div>
+));
 
 DialogHeader.displayName = "DialogHeader";
 
