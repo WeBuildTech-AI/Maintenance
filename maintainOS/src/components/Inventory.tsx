@@ -74,8 +74,18 @@ type Item = {
 
 /* ----------------------------- Mock Data ---------------------------- */
 const mockVendors: Vendor[] = [
-  { id: "V-001", name: "Ramu", email: "ramu@vendor.com", phone: "+91 9876543210" },
-  { id: "V-002", name: "Acme Spares", email: "sales@acmespares.com", phone: "+91 9988776655" },
+  {
+    id: "V-001",
+    name: "Ramu",
+    email: "ramu@vendor.com",
+    phone: "+91 9876543210",
+  },
+  {
+    id: "V-002",
+    name: "Acme Spares",
+    email: "sales@acmespares.com",
+    phone: "+91 9988776655",
+  },
 ];
 
 const mockLocations: Location[] = [
@@ -108,7 +118,7 @@ const seedItems: Item[] = [
     name: "Air Filter 20×20×1 (MERV 8)",
     description: "Pleated HVAC filter; replace quarterly.",
     unitCost: 5.25,
-    unitsInStock: 12,         // below min => needs restock
+    unitsInStock: 12, // below min => needs restock
     minInStock: 20,
     locationId: "L-2",
     area: "Bay 3",
@@ -127,7 +137,7 @@ const seedItems: Item[] = [
   },
   {
     id: id(),
-    name: "Cable Ties (100 pc, 8\")",
+    name: 'Cable Ties (100 pc, 8")',
     description: "UV-resistant nylon cable ties.",
     unitCost: 1.08,
     unitsInStock: 200,
@@ -149,7 +159,7 @@ const seedItems: Item[] = [
     name: "6203-2RS Ball Bearing",
     description: "Sealed ball bearing for small motors.",
     unitCost: 4.6,
-    unitsInStock: 0,          // out of stock
+    unitsInStock: 0, // out of stock
     minInStock: 8,
     locationId: "L-1",
     area: "Ground Floor",
@@ -184,7 +194,7 @@ const seedItems: Item[] = [
   },
   {
     id: id(),
-    name: "Cable Ties (100 pc, 8\")",
+    name: 'Cable Ties (100 pc, 8")',
     description: "UV-resistant nylon cable ties.",
     unitCost: 1.08,
     unitsInStock: 200,
@@ -206,7 +216,7 @@ const seedItems: Item[] = [
     name: "6203-2RS Ball Bearing",
     description: "Sealed ball bearing for small motors.",
     unitCost: 4.6,
-    unitsInStock: 0,          // out of stock
+    unitsInStock: 0, // out of stock
     minInStock: 8,
     locationId: "L-1",
     area: "Ground Floor",
@@ -240,7 +250,6 @@ const seedItems: Item[] = [
     updatedAt: new Date().toISOString(),
   },
 ];
-
 
 /* ----------------------------- Utilities ---------------------------- */
 function id() {
@@ -290,7 +299,9 @@ const emptyNewItem: NewItem = {
 export function Inventory() {
   const [items, setItems] = useState<Item[]>(seedItems);
   const [query, setQuery] = useState("");
-  const [selectedId, setSelectedId] = useState<string | null>(items[0]?.id ?? null);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    items[0]?.id ?? null
+  );
   const [creating, setCreating] = useState(false);
   const [newItem, setNewItem] = useState<NewItem>(emptyNewItem);
 
@@ -298,7 +309,9 @@ export function Inventory() {
     const vendorNames = i.vendors
       .map((v) => mockVendors.find((mv) => mv.id === v.vendorId)?.name ?? "")
       .join(" ");
-    const text = `${i.name} ${vendorNames} ${i.description ?? ""}`.toLowerCase();
+    const text = `${i.name} ${vendorNames} ${
+      i.description ?? ""
+    }`.toLowerCase();
     return text.includes(query.toLowerCase());
   });
 
@@ -317,10 +330,16 @@ export function Inventory() {
   };
 
   const addVendorRow = () =>
-    setNewItem((s) => ({ ...s, vendors: [...s.vendors, { vendorId: "", orderingPartNumber: "" }] }));
+    setNewItem((s) => ({
+      ...s,
+      vendors: [...s.vendors, { vendorId: "", orderingPartNumber: "" }],
+    }));
 
   const removeVendorRow = (idx: number) =>
-    setNewItem((s) => ({ ...s, vendors: s.vendors.filter((_, i) => i !== idx) }));
+    setNewItem((s) => ({
+      ...s,
+      vendors: s.vendors.filter((_, i) => i !== idx),
+    }));
 
   const createItem = () => {
     if (!newItem.name) return;
@@ -338,7 +357,10 @@ export function Inventory() {
       assetNames: newItem.assetNames,
       vendors: newItem.vendors
         .filter((v) => v.vendorId)
-        .map((v) => ({ vendorId: v.vendorId, orderingPartNumber: v.orderingPartNumber || "" })),
+        .map((v) => ({
+          vendorId: v.vendorId,
+          orderingPartNumber: v.orderingPartNumber || "",
+        })),
       files: newItem.files,
       createdBy: "Ashwini Chauhan",
       createdAt: new Date().toISOString(),
@@ -374,7 +396,10 @@ export function Inventory() {
                 className="pl-9 w-72"
               />
             </div>
-            <Button className="gap-2 bg-blue-600 hover:bg-blue-700" onClick={startCreate}>
+            <Button
+              className="gap-2 bg-blue-600 hover:bg-blue-700"
+              onClick={startCreate}
+            >
               <Plus className="h-4 w-4" />
               New Part
             </Button>
@@ -416,7 +441,11 @@ export function Inventory() {
               <span className="text-sm text-muted-foreground">Sort By:</span>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="text-primary p-0 h-auto">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-primary p-0 h-auto"
+                  >
                     Name: Ascending Order
                     <ChevronDown className="h-3 w-3 ml-1" />
                   </Button>
@@ -436,7 +465,9 @@ export function Inventory() {
                 <Card
                   key={it.id}
                   className={`cursor-pointer transition-colors ${
-                    selectedId === it.id ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+                    selectedId === it.id
+                      ? "border-0 bg-primary/5"
+                      : "hover:bg-muted/50"
                   }`}
                   onClick={() => {
                     setSelectedId(it.id);
@@ -448,10 +479,13 @@ export function Inventory() {
                       <div>
                         <h4 className="font-medium">{it.name}</h4>
                         <div className="text-sm text-muted-foreground">
-                          {mockLocations.find((l) => l.id === it.locationId)?.name ?? "-"}
+                          {mockLocations.find((l) => l.id === it.locationId)
+                            ?.name ?? "-"}
                         </div>
                       </div>
-                      <div className="text-sm text-muted-foreground">{it.unitsInStock} units</div>
+                      <div className="text-sm text-muted-foreground">
+                        {it.unitsInStock} units
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -463,7 +497,11 @@ export function Inventory() {
                     <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed" />
                   </div>
                   <p className="text-muted-foreground mb-2">No parts found</p>
-                  <Button variant="link" className="text-primary p-0" onClick={startCreate}>
+                  <Button
+                    variant="link"
+                    className="text-primary p-0"
+                    onClick={startCreate}
+                  >
                     Create your first part
                   </Button>
                 </div>
@@ -491,8 +529,12 @@ export function Inventory() {
                 <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
                   <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed" />
                 </div>
-                <p className="text-muted-foreground mb-2">Select a part to view details</p>
-                <p className="text-sm text-muted-foreground">or create a new one to get started</p>
+                <p className="text-muted-foreground mb-2">
+                  Select a part to view details
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  or create a new one to get started
+                </p>
               </div>
             </div>
           )}
@@ -527,6 +569,8 @@ function PartDetails({
                 {ven.email}
               </span>
             )}
+          </div>
+          <div className="text-xs text-muted-foreground flex items-center gap-2">
             {ven.phone && (
               <span className="inline-flex items-center gap-1">
                 <Phone className="h-3 w-3" />
@@ -537,7 +581,8 @@ function PartDetails({
         </div>
         {v.orderingPartNumber && (
           <span className="ml-auto text-sm text-muted-foreground">
-            Ordering Part Number <span className="font-medium">{v.orderingPartNumber}</span>
+            Ordering Part Number{" "}
+            <span className="font-medium">{v.orderingPartNumber}</span>
           </span>
         )}
       </div>
@@ -550,11 +595,17 @@ function PartDetails({
       <div className="p-6 border-b flex items-center justify-between">
         <h2 className="text-xl font-medium">{item.name}</h2>
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="gap-2 text-blue-600 border-blue-200 hover:bg-blue-50">
+          <Button
+            variant="outline"
+            className="gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+          >
             <Upload className="h-4 w-4" />
             Restock
           </Button>
-          <Button variant="outline" className="gap-2 text-blue-600 border-blue-200 hover:bg-blue-50">
+          <Button
+            variant="outline"
+            className="gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+          >
             <Edit className="h-4 w-4" />
             Edit
           </Button>
@@ -574,156 +625,181 @@ function PartDetails({
       </div>
 
       {/* Tabs (static visuals) */}
-      <div className="border-b">
-        <div className="flex gap-6 px-6">
-          <div className="py-3 border-b-2 border-primary text-primary cursor-default">Details</div>
-          <div className="py-3 text-muted-foreground cursor-default">History</div>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-8">
-        <div className="text-muted-foreground">{item.unitsInStock} units in stock</div>
-
-        {/* Top stats */}
-        <div className="grid grid-cols-3 gap-6">
-          <Card className="p-4">
-            <div className="text-sm text-muted-foreground">Minimum in Stock</div>
-            <div className="mt-1">{item.minInStock} units</div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-sm text-muted-foreground">Unit Cost</div>
-            <div className="mt-1">{money(item.unitCost)}</div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-sm text-muted-foreground">Part Type</div>
-            <div className="mt-1">
-              {item.partTypes?.length ? (
-                item.partTypes.map((p) => (
-                  <Badge key={p} variant="outline" className="mr-1">
-                    {p}
-                  </Badge>
-                ))
-              ) : (
-                "-"
-              )}
+      <div className="overflow-y-auto">
+        <div className="">
+          <div className="flex gap-6 px-6">
+            <div className="py-3 border-b-2 border-primary text-primary cursor-default">
+              Details
             </div>
-          </Card>
-        </div>
-
-        {/* Location table */}
-        <div>
-          <h3 className="font-medium mb-3">Location</h3>
-          <div className="border rounded-lg overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50">
-                <tr className="text-left">
-                  <th className="p-3">Location</th>
-                  <th className="p-3">Area</th>
-                  <th className="p-3">Units in Stock</th>
-                  <th className="p-3">Minimum in Stock</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="p-3">
-                    <div className="inline-flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-blue-600" />
-                      {mockLocations.find((l) => l.id === item.locationId)?.name ?? "-"}
-                    </div>
-                  </td>
-                  <td className="p-3">{item.area ?? "-"}</td>
-                  <td className="p-3">{item.unitsInStock}</td>
-                  <td className="p-3">{item.minInStock}</td>
-                </tr>
-              </tbody>
-            </table>
+            <div className="py-3 text-muted-foreground cursor-default">
+              History
+            </div>
           </div>
         </div>
 
-        {/* Description + QR */}
-        <div className="grid grid-cols-2 gap-6">
-          <Card className="p-4">
-            <div className="text-sm text-muted-foreground mb-2">Description</div>
-            <div>{item.description || "-"}</div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-sm text-muted-foreground mb-2">QR Code/Barcode</div>
-            {item.qrCode ? (
-              <div className="text-sm">{item.qrCode}</div>
-            ) : (
-              <div className="text-sm text-muted-foreground">Barcode will be generated</div>
-            )}
-            <div className="mt-3 w-40 h-40 border rounded-md flex items-center justify-center bg-muted/30">
-              <QrCode className="h-20 w-20 text-muted-foreground" />
-            </div>
-          </Card>
-        </div>
+        {/* Content */}
+        <div className="flex-1  min-h-0 p-6 space-y-8">
+          <div className="text-muted-foreground">
+            {item.unitsInStock} units in stock
+          </div>
 
-        {/* Assets */}
-        {item.assetNames?.length ? (
+          {/* Top stats */}
+          <div className="grid grid-cols-3 gap-6">
+            <Card className="p-4">
+              <div className="text-sm text-muted-foreground">
+                Minimum in Stock
+              </div>
+              <div className="mt-1">{item.minInStock} units</div>
+            </Card>
+            <Card className="p-4">
+              <div className="text-sm text-muted-foreground">Unit Cost</div>
+              <div className="mt-1">{money(item.unitCost)}</div>
+            </Card>
+            <Card className="p-4">
+              <div className="text-sm text-muted-foreground">Part Type</div>
+              <div className="mt-1">
+                {item.partTypes?.length
+                  ? item.partTypes.map((p) => (
+                      <Badge key={p} variant="outline" className="mr-1">
+                        {p}
+                      </Badge>
+                    ))
+                  : "-"}
+              </div>
+            </Card>
+          </div>
+
+          {/* Location table */}
           <div>
-            <h3 className="font-medium mb-2">Assets ({item.assetNames.length})</h3>
-            <div className="flex flex-wrap gap-2">
-              {item.assetNames.map((a) => (
-                <Badge key={a} variant="outline">
-                  {a}
-                </Badge>
-              ))}
+            <h3 className="font-medium mb-3">Location</h3>
+            <div className="border rounded-lg overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50">
+                  <tr className="text-left">
+                    <th className="p-3">Location</th>
+                    <th className="p-3">Area</th>
+                    <th className="p-3">Units in Stock</th>
+                    <th className="p-3">Minimum in Stock</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="p-3">
+                      <div className="inline-flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-blue-600" />
+                        {mockLocations.find((l) => l.id === item.locationId)
+                          ?.name ?? "-"}
+                      </div>
+                    </td>
+                    <td className="p-3">{item.area ?? "-"}</td>
+                    <td className="p-3">{item.unitsInStock}</td>
+                    <td className="p-3">{item.minInStock}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
-        ) : null}
 
-        {/* Vendors */}
-        <div>
-          <h3 className="font-medium mb-3">Vendors</h3>
-          <div className="space-y-4">
-            {item.vendors.map((v, i) => (
-              <Card key={i} className="p-4">
-                {vendorBadge(v)}
-              </Card>
-            ))}
-          </div>
-        </div>
-
-        {/* Files */}
-        <div>
-          <h3 className="font-medium mb-3">Attached Files</h3>
-          {item.files?.length ? (
-            <div className="space-y-2">
-              {item.files.map((f, i) => (
-                <div key={i} className="inline-flex items-center gap-2 border rounded px-3 py-2">
-                  <Paperclip className="h-4 w-4" />
-                  <span className="text-sm">{f}</span>
+          {/* Description + QR */}
+          <div className="grid grid-cols-2 gap-6">
+            <Card className="p-4">
+              <div className="text-sm text-muted-foreground mb-2">
+                Description
+              </div>
+              <div>{item.description || "-"}</div>
+            </Card>
+            <Card className="p-4">
+              <div className="text-sm text-muted-foreground mb-2">
+                QR Code/Barcode
+              </div>
+              {item.qrCode ? (
+                <div className="text-sm">{item.qrCode}</div>
+              ) : (
+                <div className="text-sm text-muted-foreground">
+                  Barcode will be generated
                 </div>
+              )}
+              <div className="mt-3 w-40 h-40 border rounded-md flex items-center justify-center bg-muted/30">
+                <QrCode className="h-20 w-20 text-muted-foreground" />
+              </div>
+            </Card>
+          </div>
+
+          {/* Assets */}
+          {item.assetNames?.length ? (
+            <div>
+              <h3 className="font-medium mb-2">
+                Assets ({item.assetNames.length})
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {item.assetNames.map((a) => (
+                  <Badge key={a} variant="outline">
+                    {a}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {/* Vendors */}
+          <div>
+            <h3 className="font-medium mb-3">Vendors</h3>
+            <div className="space-y-4">
+              {item.vendors.map((v, i) => (
+                <Card key={i} className="p-4">
+                  {vendorBadge(v)}
+                </Card>
               ))}
             </div>
-          ) : (
-            <div className="text-sm text-muted-foreground">No files attached</div>
-          )}
-        </div>
+          </div>
 
-        {/* Created/Updated + CTA */}
-        <div className="grid grid-cols-2 gap-6">
-          <Card className="p-4">
-            <div className="text-sm">
-              Created By <span className="font-medium">{item.createdBy}</span>{" "}
-              on {new Date(item.createdAt).toLocaleString()}
-            </div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-sm">
-              Last updated By <span className="font-medium">{item.updatedBy ?? "-"}</span>{" "}
-              {item.updatedAt ? `on ${new Date(item.updatedAt).toLocaleString()}` : ""}
-            </div>
-          </Card>
-        </div>
+          {/* Files */}
+          <div>
+            <h3 className="font-medium mb-3">Attached Files</h3>
+            {item.files?.length ? (
+              <div className="space-y-2">
+                {item.files.map((f, i) => (
+                  <div
+                    key={i}
+                    className="inline-flex items-center gap-2 border rounded px-3 py-2"
+                  >
+                    <Paperclip className="h-4 w-4" />
+                    <span className="text-sm">{f}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground">
+                No files attached
+              </div>
+            )}
+          </div>
 
-        <div className="flex justify-end">
-          <Button className="gap-2 bg-blue-600 hover:bg-blue-700">
-            <Upload className="h-4 w-4" />
-            Use in New Work Order
-          </Button>
+          {/* Created/Updated + CTA */}
+          <div className="grid grid-cols-2 gap-6">
+            <Card className="p-4">
+              <div className="text-sm">
+                Created By <span className="font-medium">{item.createdBy}</span>{" "}
+                on {new Date(item.createdAt).toLocaleString()}
+              </div>
+            </Card>
+            <Card className="p-4">
+              <div className="text-sm">
+                Last updated By{" "}
+                <span className="font-medium">{item.updatedBy ?? "-"}</span>{" "}
+                {item.updatedAt
+                  ? `on ${new Date(item.updatedAt).toLocaleString()}`
+                  : ""}
+              </div>
+            </Card>
+          </div>
+
+          <div className="flex justify-end">
+            <Button className="gap-2 bg-blue-600 hover:bg-blue-700">
+              <Upload className="h-4 w-4" />
+              Use in New Work Order
+            </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -758,12 +834,16 @@ function NewPartForm({
         <div className="mx-auto w-full max-w-[820px] p-6 space-y-10">
           {/* Name + Pictures */}
           <section>
-            <div className="text-xl font-medium mb-4">{newItem.name || "New Part"}</div>
+            <div className="text-xl font-medium mb-4">
+              {newItem.name || "New Part"}
+            </div>
 
             <div className="mb-6">
               <div className="w-full h-32 border-2 border-dashed border-blue-300 rounded-lg bg-blue-50 flex flex-col items-center justify-center cursor-pointer hover:bg-blue-100 transition-colors">
                 <Upload className="h-6 w-6 text-blue-600 mb-2" />
-                <span className="text-sm text-blue-600">Add or drag pictures</span>
+                <span className="text-sm text-blue-600">
+                  Add or drag pictures
+                </span>
               </div>
             </div>
 
@@ -772,7 +852,9 @@ function NewPartForm({
                 className="h-9 text-sm"
                 placeholder="Part Name"
                 value={newItem.name}
-                onChange={(e) => setNewItem((s) => ({ ...s, name: e.target.value }))}
+                onChange={(e) =>
+                  setNewItem((s) => ({ ...s, name: e.target.value }))
+                }
               />
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <Input
@@ -780,7 +862,12 @@ function NewPartForm({
                   type="number"
                   placeholder="Unit Cost"
                   value={newItem.unitCost}
-                  onChange={(e) => setNewItem((s) => ({ ...s, unitCost: Number(e.target.value) || 0 }))}
+                  onChange={(e) =>
+                    setNewItem((s) => ({
+                      ...s,
+                      unitCost: Number(e.target.value) || 0,
+                    }))
+                  }
                 />
                 <Input
                   className="h-9 text-sm"
@@ -788,7 +875,10 @@ function NewPartForm({
                   placeholder="Units in Stock"
                   value={newItem.unitsInStock}
                   onChange={(e) =>
-                    setNewItem((s) => ({ ...s, unitsInStock: Number(e.target.value) || 0 }))
+                    setNewItem((s) => ({
+                      ...s,
+                      unitsInStock: Number(e.target.value) || 0,
+                    }))
                   }
                 />
                 <Input
@@ -797,7 +887,10 @@ function NewPartForm({
                   placeholder="Minimum in Stock"
                   value={newItem.minInStock}
                   onChange={(e) =>
-                    setNewItem((s) => ({ ...s, minInStock: Number(e.target.value) || 0 }))
+                    setNewItem((s) => ({
+                      ...s,
+                      minInStock: Number(e.target.value) || 0,
+                    }))
                   }
                 />
               </div>
@@ -806,7 +899,9 @@ function NewPartForm({
                 // asChild={false}
                 placeholder="Description"
                 value={newItem.description}
-                onChange={(e) => setNewItem((s) => ({ ...s, description: e.target.value }))}
+                onChange={(e) =>
+                  setNewItem((s) => ({ ...s, description: e.target.value }))
+                }
               />
             </div>
           </section>
@@ -818,7 +913,9 @@ function NewPartForm({
               className="h-9 text-sm mb-3"
               placeholder="Barcode will be generated (or input manually)"
               value={newItem.qrCode}
-              onChange={(e) => setNewItem((s) => ({ ...s, qrCode: e.target.value }))}
+              onChange={(e) =>
+                setNewItem((s) => ({ ...s, qrCode: e.target.value }))
+              }
             />
             <div className="mt-3 w-40 h-40 border rounded-md flex items-center justify-center bg-muted/30">
               <QrCode className="h-20 w-20 text-muted-foreground" />
@@ -836,7 +933,10 @@ function NewPartForm({
                   variant="outline"
                   size="sm"
                   onClick={() =>
-                    setNewItem((s) => ({ ...s, partTypes: [...s.partTypes, "Critical"] }))
+                    setNewItem((s) => ({
+                      ...s,
+                      partTypes: [...s.partTypes, "Critical"],
+                    }))
                   }
                 >
                   + Add
@@ -851,7 +951,9 @@ function NewPartForm({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <Select
                 value={newItem.locationId}
-                onValueChange={(v: string) => setNewItem((s) => ({ ...s, locationId: v }))}
+                onValueChange={(v: string) =>
+                  setNewItem((s) => ({ ...s, locationId: v }))
+                }
               >
                 <SelectTrigger className="h-9 text-sm">
                   <SelectValue placeholder="Select Location" />
@@ -865,7 +967,12 @@ function NewPartForm({
                 </SelectContent>
               </Select>
 
-              <Select value={newItem.area} onValueChange={(v: string) => setNewItem((s) => ({ ...s, area: v }))}>
+              <Select
+                value={newItem.area}
+                onValueChange={(v: string) =>
+                  setNewItem((s) => ({ ...s, area: v }))
+                }
+              >
                 <SelectTrigger className="h-9 text-sm">
                   <SelectValue placeholder="Area" />
                 </SelectTrigger>
@@ -882,7 +989,10 @@ function NewPartForm({
             <div className="text-base font-medium mb-4">Vendors</div>
             <div className="space-y-3">
               {newItem.vendors.map((v, idx) => (
-                <div key={idx} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+                <div
+                  key={idx}
+                  className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center"
+                >
                   <Select
                     value={v.vendorId}
                     onValueChange={(val: string) =>
@@ -911,14 +1021,21 @@ function NewPartForm({
                     onChange={(e) =>
                       setNewItem((s) => {
                         const nv = [...s.vendors];
-                        nv[idx] = { ...nv[idx], orderingPartNumber: e.target.value };
+                        nv[idx] = {
+                          ...nv[idx],
+                          orderingPartNumber: e.target.value,
+                        };
                         return { ...s, vendors: nv };
                       })
                     }
                   />
                   {newItem.vendors.length > 1 && (
                     <div className="md:col-span-3 -mt-2">
-                      <Button variant="ghost" size="sm" onClick={() => removeVendorRow(idx)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeVendorRow(idx)}
+                      >
                         Remove
                       </Button>
                     </div>

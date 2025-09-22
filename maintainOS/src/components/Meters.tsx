@@ -4,22 +4,22 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { 
-  Search, 
-  Plus, 
+import {
+  Search,
+  Plus,
   LayoutGrid,
   ChevronDown,
   AlertTriangle,
@@ -32,10 +32,18 @@ import {
   Clock,
   Calendar,
   Play,
-  ChevronRight
+  ChevronRight,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 // Mock data for meters
 const mockMeters = [
@@ -104,7 +112,7 @@ const mockReadingData = [
   { date: "16 Sep", value: 20 },
   { date: "17 Sep", value: 20 },
   { date: "18 Sep", value: 22 },
-  { date: "19 Sep", value: 50 }
+  { date: "19 Sep", value: 50 },
 ];
 
 export function Meters() {
@@ -114,7 +122,9 @@ export function Meters() {
   const [selectedAsset, setSelectedAsset] = useState("all");
   const [selectedLocation, setSelectedLocation] = useState("all");
   const [meterType, setMeterType] = useState("manual");
-  const [selectedMeter, setSelectedMeter] = useState<typeof mockMeters[0] | null>(null);
+  const [selectedMeter, setSelectedMeter] = useState<
+    (typeof mockMeters)[0] | null
+  >(null);
   const [selectedTimePeriod, setSelectedTimePeriod] = useState("1W");
 
   // New meter form state
@@ -123,18 +133,25 @@ export function Meters() {
     description: "",
     measurementUnit: "",
     asset: "",
-    location: ""
+    location: "",
   });
 
-  const filteredMeters = mockMeters.filter(meter => {
-    const matchesSearch = meter.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         meter.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         meter.location.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesType = selectedType === "all" || meter.type.toLowerCase() === selectedType.toLowerCase();
-    const matchesAsset = selectedAsset === "all" || meter.asset.toLowerCase() === selectedAsset.toLowerCase();
-    const matchesLocation = selectedLocation === "all" || meter.location.toLowerCase() === selectedLocation.toLowerCase();
-    
+  const filteredMeters = mockMeters.filter((meter) => {
+    const matchesSearch =
+      meter.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      meter.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      meter.location.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesType =
+      selectedType === "all" ||
+      meter.type.toLowerCase() === selectedType.toLowerCase();
+    const matchesAsset =
+      selectedAsset === "all" ||
+      meter.asset.toLowerCase() === selectedAsset.toLowerCase();
+    const matchesLocation =
+      selectedLocation === "all" ||
+      meter.location.toLowerCase() === selectedLocation.toLowerCase();
+
     return matchesSearch && matchesType && matchesAsset && matchesLocation;
   });
 
@@ -147,7 +164,7 @@ export function Meters() {
       description: "",
       measurementUnit: "",
       asset: "",
-      location: ""
+      location: "",
     });
   };
 
@@ -174,7 +191,7 @@ export function Meters() {
                 className="pl-9 w-64"
               />
             </div>
-            <Button 
+            <Button
               className="gap-2 bg-blue-600 hover:bg-blue-700"
               onClick={() => setShowNewMeterForm(true)}
             >
@@ -215,16 +232,20 @@ export function Meters() {
         </div>
       </div>
 
-      <div className="flex flex-1">
+      <div className="flex flex-1 overflow-auto">
         {/* Left Panel - Meters List */}
-        <div className="w-96 border-r border-border bg-card flex flex-col">
+        <div className="w-96 border-r border-border bg-card flex flex-col overflow-y-auto">
           {/* Sort */}
           <div className="p-4 border-b border-border">
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Sort By:</span>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="text-primary p-0 h-auto">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-primary p-0 h-auto"
+                  >
                     Name: Ascending Order
                     <ChevronDown className="h-3 w-3 ml-1" />
                   </Button>
@@ -242,11 +263,13 @@ export function Meters() {
           {/* Meters List */}
           <div className="flex-1 overflow-auto">
             <div className="p-4 space-y-3">
-              {filteredMeters.map(meter => (
-                <Card 
-                  key={meter.id} 
+              {filteredMeters.map((meter) => (
+                <Card
+                  key={meter.id}
                   className={`cursor-pointer transition-colors ${
-                    selectedMeter?.id === meter.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'
+                    selectedMeter?.id === meter.id
+                      ? "border-0 bg-primary/5"
+                      : "hover:bg-muted/50"
                   }`}
                   onClick={() => setSelectedMeter(meter)}
                 >
@@ -260,7 +283,7 @@ export function Meters() {
                         </Badge>
                       )}
                     </div>
-                    
+
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-4 bg-orange-100 rounded flex items-center justify-center">
@@ -268,22 +291,26 @@ export function Meters() {
                         </div>
                         <span className="text-sm">{meter.type}</span>
                       </div>
-                      
+
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-4 bg-muted rounded flex items-center justify-center">
                           <span className="text-xs">📍</span>
                         </div>
-                        <span className="text-sm text-muted-foreground">{meter.location}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {meter.location}
+                        </span>
                       </div>
-                      
+
                       <div className="mt-2">
-                        <span className="text-sm text-muted-foreground">Last Reading: {meter.lastReading}</span>
+                        <span className="text-sm text-muted-foreground">
+                          Last Reading: {meter.lastReading}
+                        </span>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               ))}
-              
+
               {filteredMeters.length === 0 && (
                 <div className="text-center py-8">
                   <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
@@ -300,11 +327,11 @@ export function Meters() {
         </div>
 
         {/* Right Panel - Content */}
-        <div className="flex-1 bg-card">
+        <div className="flex-1 bg-card overflow-y-auto">
           {showNewMeterForm ? (
             <div className="p-6">
               <h2 className="text-lg font-medium mb-6">New Meter</h2>
-              
+
               <div className="space-y-6 max-w-md">
                 {/* Meter Name */}
                 <div>
@@ -314,7 +341,9 @@ export function Meters() {
                   <Input
                     placeholder="Enter Meter Name (Required)"
                     value={newMeter.name}
-                    onChange={(e) => setNewMeter({ ...newMeter, name: e.target.value })}
+                    onChange={(e) =>
+                      setNewMeter({ ...newMeter, name: e.target.value })
+                    }
                     className="w-full"
                   />
                 </div>
@@ -334,7 +363,9 @@ export function Meters() {
                       👤 Manual
                     </Button>
                     <Button
-                      variant={meterType === "automated" ? "default" : "outline"}
+                      variant={
+                        meterType === "automated" ? "default" : "outline"
+                      }
                       size="sm"
                       onClick={() => setMeterType("automated")}
                       className="gap-2"
@@ -352,7 +383,9 @@ export function Meters() {
                   <Textarea
                     placeholder="Add a description"
                     value={newMeter.description}
-                    onChange={(e) => setNewMeter({ ...newMeter, description: e.target.value })}
+                    onChange={(e) =>
+                      setNewMeter({ ...newMeter, description: e.target.value })
+                    }
                     className="w-full min-h-[100px]"
                   />
                 </div>
@@ -364,7 +397,9 @@ export function Meters() {
                   </label>
                   <Select
                     value={newMeter.measurementUnit}
-                    onValueChange={(value: string) => setNewMeter({ ...newMeter, measurementUnit: value })}
+                    onValueChange={(value: string) =>
+                      setNewMeter({ ...newMeter, measurementUnit: value })
+                    }
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Start typing to search or customize" />
@@ -388,7 +423,9 @@ export function Meters() {
                     </label>
                     <Select
                       value={newMeter.asset}
-                      onValueChange={(value: string) => setNewMeter({ ...newMeter, asset: value })}
+                      onValueChange={(value: string) =>
+                        setNewMeter({ ...newMeter, asset: value })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Start typing..." />
@@ -401,14 +438,16 @@ export function Meters() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium mb-2">
                       Location
                     </label>
                     <Select
                       value={newMeter.location}
-                      onValueChange={(value: string) => setNewMeter({ ...newMeter, location: value })}
+                      onValueChange={(value: string) =>
+                        setNewMeter({ ...newMeter, location: value })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Start typing..." />
@@ -426,14 +465,14 @@ export function Meters() {
 
                 {/* Action Buttons */}
                 <div className="flex items-center gap-3 pt-4">
-                  <Button 
+                  <Button
                     onClick={handleCreateMeter}
                     className="bg-blue-600 hover:bg-blue-700"
                     disabled={!newMeter.name || !newMeter.measurementUnit}
                   >
                     Create
                   </Button>
-                  <Button 
+                  <Button
                     variant="outline"
                     onClick={() => setShowNewMeterForm(false)}
                   >
@@ -454,7 +493,11 @@ export function Meters() {
                       <Plus className="h-4 w-4" />
                       Record Reading
                     </Button>
-                    <Button variant="ghost" size="sm" className="gap-2 text-blue-600">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="gap-2 text-blue-600"
+                    >
                       <Edit className="h-4 w-4" />
                       Edit
                     </Button>
@@ -463,7 +506,7 @@ export function Meters() {
                     </Button>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-4 text-muted-foreground">
                   <div className="flex items-center gap-2">
                     <Building2 className="h-4 w-4" />
@@ -484,27 +527,45 @@ export function Meters() {
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-medium">Readings</h2>
                     <div className="flex items-center gap-1">
-                      {["1H", "1D", "1W", "1M", "3M", "6M", "1Y", "Custom"].map((period) => (
-                        <Button
-                          key={period}
-                          variant={selectedTimePeriod === period ? "default" : "ghost"}
-                          size="sm"
-                          onClick={() => setSelectedTimePeriod(period)}
-                          className={selectedTimePeriod === period ? "bg-blue-600 hover:bg-blue-700" : ""}
-                        >
-                          {period}
-                        </Button>
-                      ))}
+                      {["1H", "1D", "1W", "1M", "3M", "6M", "1Y", "Custom"].map(
+                        (period) => (
+                          <Button
+                            key={period}
+                            variant={
+                              selectedTimePeriod === period
+                                ? "default"
+                                : "ghost"
+                            }
+                            size="sm"
+                            onClick={() => setSelectedTimePeriod(period)}
+                            className={
+                              selectedTimePeriod === period
+                                ? "bg-blue-600 hover:bg-blue-700"
+                                : ""
+                            }
+                          >
+                            {period}
+                          </Button>
+                        )
+                      )}
                     </div>
                   </div>
 
                   {/* Chart */}
                   <div className="space-y-4">
-                    <div className="text-sm font-medium text-muted-foreground">{selectedMeter.unit}</div>
+                    <div className="text-sm font-medium text-muted-foreground">
+                      {selectedMeter.unit}
+                    </div>
                     <div className="h-80 w-full">
                       <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={mockReadingData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <LineChart
+                          data={mockReadingData}
+                          margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                        >
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="#f0f0f0"
+                          />
                           <XAxis
                             dataKey="date"
                             axisLine={false}
@@ -524,7 +585,11 @@ export function Meters() {
                             stroke="#3b82f6"
                             strokeWidth={2}
                             dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
-                            activeDot={{ r: 6, stroke: "#3b82f6", strokeWidth: 2 }}
+                            activeDot={{
+                              r: 6,
+                              stroke: "#3b82f6",
+                              strokeWidth: 2,
+                            }}
                           />
                         </LineChart>
                       </ResponsiveContainer>
@@ -540,14 +605,15 @@ export function Meters() {
                   </div>
                 </div>
 
-
                 {/* Meter Details Section */}
                 <div>
                   <h2 className="text-lg font-medium mb-6">Meter Details</h2>
                   <div className="grid grid-cols-2 gap-6">
                     {/* Measurement Unit */}
                     <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-2">Measurement Unit</h3>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                        Measurement Unit
+                      </h3>
                       <div className="flex items-center gap-2">
                         <Tag className="h-4 w-4 text-muted-foreground" />
                         <span className="text-base">{selectedMeter.unit}</span>
@@ -556,16 +622,22 @@ export function Meters() {
 
                     {/* Last Reading */}
                     <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-2">Last Reading</h3>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                        Last Reading
+                      </h3>
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-base">{selectedMeter.lastReading}</span>
+                        <span className="text-base">
+                          {selectedMeter.lastReading}
+                        </span>
                       </div>
                     </div>
 
                     {/* Last Reading On */}
                     <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-2">Last Reading On</h3>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                        Last Reading On
+                      </h3>
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <span className="text-base">19/09/2025, 13:28</span>
@@ -574,7 +646,9 @@ export function Meters() {
 
                     {/* Reading Frequency */}
                     <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-2">Reading Frequency</h3>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                        Reading Frequency
+                      </h3>
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-muted-foreground" />
                         <span className="text-base">Every 1 hour</span>
@@ -583,7 +657,9 @@ export function Meters() {
 
                     {/* Next Reading */}
                     <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-2">Next Reading</h3>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                        Next Reading
+                      </h3>
                       <div className="flex items-center gap-2">
                         <Play className="h-4 w-4 text-muted-foreground" />
                         <span className="text-base">Today by 14:28</span>
@@ -606,13 +682,18 @@ export function Meters() {
                 {/* Upcoming Reading Work Orders Section */}
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-medium">Upcoming Reading Work Orders (1)</h2>
-                    <Button variant="ghost" className="gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-0 h-auto">
+                    <h2 className="text-lg font-medium">
+                      Upcoming Reading Work Orders (1)
+                    </h2>
+                    <Button
+                      variant="ghost"
+                      className="gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-0 h-auto"
+                    >
                       See all
                       <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
-                  
+
                   <Card className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3">
@@ -621,7 +702,9 @@ export function Meters() {
                         </div>
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium">Check the voltage #5</span>
+                            <span className="font-medium">
+                              Check the voltage #5
+                            </span>
                             <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center">
                               <span className="text-white text-xs">⚡</span>
                             </div>
@@ -637,14 +720,16 @@ export function Meters() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm text-muted-foreground">Due Date:</div>
-                        <div className="text-sm font-medium">22/09/2025, 12:00</div>
+                        <div className="text-sm text-muted-foreground">
+                          Due Date:
+                        </div>
+                        <div className="text-sm font-medium">
+                          22/09/2025, 12:00
+                        </div>
                       </div>
                     </div>
                   </Card>
                 </div>
-
-                
               </div>
             </div>
           ) : (
@@ -653,8 +738,12 @@ export function Meters() {
                 <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
                   <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed"></div>
                 </div>
-                <p className="text-muted-foreground mb-2">Select a meter to view details</p>
-                <p className="text-sm text-muted-foreground">or create a new meter to get started</p>
+                <p className="text-muted-foreground mb-2">
+                  Select a meter to view details
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  or create a new meter to get started
+                </p>
               </div>
             </div>
           )}

@@ -17,7 +17,7 @@ export function NewPOForm(props: NewPOFormProps) {
   } = props;
 
   return (
-    <div className="h-full flex flex-col min-h-0">
+    <div className="h-full flex flex-col bg-red-100">
       {/* Header (fixed in right pane) */}
       <div className="p-6 border-b flex items-center justify-between flex-none">
         <h2 className="text-xl font-medium">New Purchase Order</h2>
@@ -35,7 +35,7 @@ export function NewPOForm(props: NewPOFormProps) {
                   value={newPO.vendorId}
                   onValueChange={(val: string) => setNewPO((s) => ({ ...s, vendorId: val }))}
                 >
-                  <SelectTrigger className="w-full h-9 text-sm">
+                  <SelectTrigger className="w-full h-auto text-sm">
                     <SelectValue placeholder="Select a Vendor" />
                   </SelectTrigger>
                   <SelectContent>

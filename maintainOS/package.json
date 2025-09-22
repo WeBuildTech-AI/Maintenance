@@ -3,6 +3,7 @@
       "version": "0.1.0",
       "private": true,
       "dependencies": {
+            "@tailwindcss/vite": "^4.1.13",
             "class-variance-authority": "^0.7.1",
             "clsx": "*",
             "embla-carousel-react": "^8.6.0",
@@ -16,13 +17,16 @@
             "react-resizable-panels": "^2.1.7",
             "recharts": "^2.15.2",
             "sonner": "^2.0.3",
-            "tailwind-merge": "*"
+            "tailwind-merge": "*",
+            "tailwindcss": "^4.1.13"
       },
       "devDependencies": {
+            "@tailwindcss/postcss": "^4.1.13",
             "@types/node": "^20.10.0",
             "@types/react": "^19.1.13",
             "@types/react-dom": "^19.1.9",
             "@vitejs/plugin-react-swc": "^3.10.2",
+            "autoprefixer": "^10.4.21",
             "vite": "6.3.5"
       },
       "scripts": {

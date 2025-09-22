@@ -6,7 +6,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 
 import { WorkOrder } from "./types";
 
@@ -20,7 +26,11 @@ type SortOption = "name-asc" | "utilization-desc" | "utilization-asc";
 
 const HOURS_PER_DAY = 8;
 
-export function WorkloadView({ workOrders, weekOffset, setWeekOffset }: WorkloadViewProps) {
+export function WorkloadView({
+  workOrders,
+  weekOffset,
+  setWeekOffset,
+}: WorkloadViewProps) {
   const { weekRangeLabel, weekMeta, assignees } = useMemo(() => {
     const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -60,21 +70,36 @@ export function WorkloadView({ workOrders, weekOffset, setWeekOffset }: Workload
     });
 
     const weekRangeLabel = (() => {
-      const startLabel = weekStart.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-      const endLabel = weekEnd.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      const startLabel = weekStart.toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+      });
+      const endLabel = weekEnd.toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+      });
       if (weekStart.getFullYear() === weekEnd.getFullYear()) {
         return `${startLabel} - ${endLabel}, ${weekEnd.getFullYear()}`;
       }
       return `${startLabel}, ${weekStart.getFullYear()} - ${endLabel}, ${weekEnd.getFullYear()}`;
     })();
 
-    const assignees = Array.from(new Set(workOrders.map((wo) => wo.assignedTo.name))).map((name) => {
-      const assigneeData = workOrders.find((wo) => wo.assignedTo.name === name)?.assignedTo;
-      const assigneeWorkOrders = workOrders.filter((wo) => wo.assignedTo.name === name);
+    const assignees = Array.from(
+      new Set(workOrders.map((wo) => wo.assignedTo.name))
+    ).map((name) => {
+      const assigneeData = workOrders.find(
+        (wo) => wo.assignedTo.name === name
+      )?.assignedTo;
+      const assigneeWorkOrders = workOrders.filter(
+        (wo) => wo.assignedTo.name === name
+      );
 
       const weeklySchedule = weekMeta.map((dayMeta) => {
         const scheduledHours = Math.floor(Math.random() * HOURS_PER_DAY) + 1;
-        const tasks = assigneeWorkOrders.slice(0, Math.min(2, assigneeWorkOrders.length));
+        const tasks = assigneeWorkOrders.slice(
+          0,
+          Math.min(2, assigneeWorkOrders.length)
+        );
         return {
           day: dayMeta.day,
           date: dayMeta.date,
@@ -84,7 +109,10 @@ export function WorkloadView({ workOrders, weekOffset, setWeekOffset }: Workload
         };
       });
 
-      const totalHours = weeklySchedule.reduce((sum, day) => sum + day.scheduledHours, 0);
+      const totalHours = weeklySchedule.reduce(
+        (sum, day) => sum + day.scheduledHours,
+        0
+      );
       const avgUtilization = (totalHours / (HOURS_PER_DAY * 7)) * 100;
 
       return {
@@ -108,13 +136,16 @@ export function WorkloadView({ workOrders, weekOffset, setWeekOffset }: Workload
   const [sortOption, setSortOption] = useState<SortOption>("name-asc");
 
   const availableTeams = useMemo(() => {
-    return Array.from(new Set(assignees.map((assignee) => assignee.team))).sort();
+    return Array.from(
+      new Set(assignees.map((assignee) => assignee.team))
+    ).sort();
   }, [assignees]);
 
   const filteredAssignees = useMemo(() => {
-    const matchesTeam = teamFilter === "all"
-      ? assignees
-      : assignees.filter((assignee) => assignee.team === teamFilter);
+    const matchesTeam =
+      teamFilter === "all"
+        ? assignees
+        : assignees.filter((assignee) => assignee.team === teamFilter);
 
     const sorted = [...matchesTeam];
     switch (sortOption) {
@@ -133,18 +164,21 @@ export function WorkloadView({ workOrders, weekOffset, setWeekOffset }: Workload
   }, [assignees, sortOption, teamFilter]);
 
   const totalScheduledHours = useMemo(
-    () => filteredAssignees.reduce((sum, assignee) => sum + assignee.totalHours, 0),
-    [filteredAssignees],
+    () =>
+      filteredAssignees.reduce((sum, assignee) => sum + assignee.totalHours, 0),
+    [filteredAssignees]
   );
 
   const dailyTotals = useMemo(() => {
     return weekMeta.map((dayMeta, index) => {
       const totalHours = filteredAssignees.reduce(
-        (sum, assignee) => sum + (assignee.weeklySchedule[index]?.scheduledHours ?? 0),
-        0,
+        (sum, assignee) =>
+          sum + (assignee.weeklySchedule[index]?.scheduledHours ?? 0),
+        0
       );
       const capacity = filteredAssignees.length * HOURS_PER_DAY;
-      const utilization = capacity > 0 ? Math.round((totalHours / capacity) * 100) : 0;
+      const utilization =
+        capacity > 0 ? Math.round((totalHours / capacity) * 100) : 0;
 
       return {
         key: dayMeta.key,
@@ -158,13 +192,17 @@ export function WorkloadView({ workOrders, weekOffset, setWeekOffset }: Workload
     });
   }, [filteredAssignees, weekMeta]);
 
-  const totalCapacity = filteredAssignees.length * HOURS_PER_DAY * weekMeta.length;
-  const averageUtilization = totalCapacity > 0 ? Math.round((totalScheduledHours / totalCapacity) * 100) : 0;
+  const totalCapacity =
+    filteredAssignees.length * HOURS_PER_DAY * weekMeta.length;
+  const averageUtilization =
+    totalCapacity > 0
+      ? Math.round((totalScheduledHours / totalCapacity) * 100)
+      : 0;
   const gridTemplateColumns = "minmax(240px, 1.6fr) repeat(7, minmax(0, 1fr))";
 
   return (
-    <div className="flex-1 overflow-auto">
-      <div className="p-6">
+    <div className="flex-1 overflow-y-auto h-full">
+      <div className="p-6 ">
         <div className="mb-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -230,194 +268,261 @@ export function WorkloadView({ workOrders, weekOffset, setWeekOffset }: Workload
               </SelectContent>
             </Select>
 
-            <Select value={sortOption} onValueChange={(value) => setSortOption(value as SortOption)}>
+            <Select
+              value={sortOption}
+              onValueChange={(value) => setSortOption(value as SortOption)}
+            >
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Sort" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="name-asc">Name (A–Z)</SelectItem>
-                <SelectItem value="utilization-desc">Utilization (High → Low)</SelectItem>
-                <SelectItem value="utilization-asc">Utilization (Low → High)</SelectItem>
+                <SelectItem value="utilization-desc">
+                  Utilization (High → Low)
+                </SelectItem>
+                <SelectItem value="utilization-asc">
+                  Utilization (Low → High)
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
 
-        <div className="mb-6 overflow-hidden rounded-lg border bg-card">
-          <div className="grid" style={{ gridTemplateColumns }}>
-            <div className="border-r border-border p-6">
-              <p className="text-sm font-semibold text-muted-foreground">Total Resource Capacity</p>
-              <div className="mt-3 flex flex-wrap items-baseline gap-2">
-                <span className="text-2xl font-semibold text-foreground">{totalScheduledHours}h</span>
-                <span className="text-sm text-muted-foreground">/ {totalCapacity || 0}h Capacity</span>
-              </div>
-              <div className="mt-4">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Weekly Utilization</span>
-                  <span>{averageUtilization}%</span>
+        <div className="">
+          <div className="mb-6  rounded-lg border bg-card">
+            <div className="grid" style={{ gridTemplateColumns }}>
+              <div className="border-r border-border p-6">
+                <p className="text-sm font-semibold text-muted-foreground">
+                  Total Resource Capacity
+                </p>
+                <div className="mt-3 flex flex-wrap items-baseline gap-2">
+                  <span className="text-2xl font-semibold text-foreground">
+                    {totalScheduledHours}h
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    / {totalCapacity || 0}h Capacity
+                  </span>
                 </div>
-                <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-primary/10">
-                  <div
-                    className="h-full rounded-full bg-primary/40"
-                    style={{ width: `${Math.min(averageUtilization, 100)}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {dailyTotals.map((day) => (
-              <div
-                key={day.key}
-                className={`border-l border-border p-4 ${day.isToday ? "bg-primary/5" : "bg-background"}`}
-              >
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span className={day.isToday ? "text-primary" : undefined}>{day.day}</span>
-                  <span className={day.isToday ? "text-primary" : undefined}>{day.label}</span>
-                </div>
-                <div className="mt-3 rounded-md border border-primary/10 bg-primary/5 p-3">
-                  <div className="flex items-center justify-between text-xs text-primary">
-                    <span>{day.totalHours}h</span>
-                    <span>{day.capacity || 0}h</span>
+                <div className="mt-4">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Weekly Utilization</span>
+                    <span>{averageUtilization}%</span>
                   </div>
-                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-primary/20">
+                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-primary/10">
                     <div
-                      className={`h-full rounded-full ${
-                        day.utilization >= 110
-                          ? "bg-red-400"
-                          : day.utilization >= 90
-                          ? "bg-yellow-400"
-                          : "bg-primary"
-                      }`}
-                      style={{ width: `${Math.min(day.utilization, 130)}%` }}
+                      className="h-full rounded-full bg-primary/40"
+                      style={{ width: `${Math.min(averageUtilization, 100)}%` }}
                     />
                   </div>
-                  <div className="mt-2 text-center text-xs text-muted-foreground">{day.utilization}%</div>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
 
-        <div className="overflow-hidden rounded-lg border bg-card">
-          <div className="grid border-b border-border" style={{ gridTemplateColumns }}>
-            <div className="p-4 text-sm font-medium uppercase tracking-wide text-muted-foreground">Team Member</div>
-            {weekMeta.map((dayMeta) => (
-              <div
-                key={dayMeta.key}
-                className={`border-l border-border p-4 text-center ${dayMeta.isToday ? "bg-primary/5" : ""}`}
-              >
-                <div className={`text-sm font-medium ${dayMeta.isToday ? "text-primary" : "text-foreground"}`}>
-                  {dayMeta.day}
-                </div>
-                <div className={`text-xs ${dayMeta.isToday ? "text-primary" : "text-muted-foreground"}`}>
-                  {dayMeta.label}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {filteredAssignees.length === 0 && (
-            <div className="p-10 text-center text-sm text-muted-foreground">
-              No team members match the selected filters.
-            </div>
-          )}
-
-          {filteredAssignees.map((assignee, userIndex) => (
-            <div
-              key={assignee.name}
-              className={`grid ${userIndex < filteredAssignees.length - 1 ? "border-b border-border" : ""}`}
-              style={{ gridTemplateColumns }}
-            >
-              <div className="bg-muted/30 p-4">
-                <div className="flex items-start gap-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={assignee.avatar} />
-                    <AvatarFallback>
-                      {assignee.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-sm font-medium leading-tight text-foreground">{assignee.name}</p>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">{assignee.team}</p>
-                    <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>{assignee.totalHours}h/week</span>
-                      <span>•</span>
-                      <span>{Math.round(assignee.avgUtilization)}% avg</span>
-                    </div>
+              {dailyTotals.map((day) => (
+                <div
+                  key={day.key}
+                  className={`border-l border-border p-4 ${
+                    day.isToday ? "bg-primary/5" : "bg-background"
+                  }`}
+                >
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span className={day.isToday ? "text-primary" : undefined}>
+                      {day.day}
+                    </span>
+                    <span className={day.isToday ? "text-primary" : undefined}>
+                      {day.label}
+                    </span>
                   </div>
-                </div>
-              </div>
-
-              {assignee.weeklySchedule.map((daySchedule) => (
-                <div key={daySchedule.day} className="border-l border-border p-3">
-                  <div className="flex flex-col items-center gap-2">
-                    <Badge
-                      variant="outline"
-                      className={`text-xs ${
-                        daySchedule.scheduledHours <= 6
-                          ? "border-green-200 bg-green-50 text-green-700"
-                          : daySchedule.scheduledHours <= 8
-                          ? "border-yellow-200 bg-yellow-50 text-yellow-700"
-                          : "border-red-200 bg-red-50 text-red-700"
-                      }`}
-                    >
-                      {daySchedule.scheduledHours}h
-                    </Badge>
-                    <div className="w-full space-y-1">
-                      {daySchedule.tasks.slice(0, 2).map((task) => (
-                        <div
-                          key={task.id}
-                          className="truncate rounded bg-primary/10 px-2 py-1 text-xs text-primary"
-                          title={task.title}
-                        >
-                          {task.title.length > 18 ? `${task.title.slice(0, 18)}…` : task.title}
-                        </div>
-                      ))}
-                      {daySchedule.tasks.length > 2 && (
-                        <div className="rounded bg-muted px-2 py-1 text-center text-xs text-muted-foreground">
-                          +{daySchedule.tasks.length - 2} more
-                        </div>
-                      )}
+                  <div className="mt-3 rounded-md border border-primary/10 bg-primary/5 p-3">
+                    <div className="flex items-center justify-between text-xs text-primary">
+                      <span>{day.totalHours}h</span>
+                      <span>{day.capacity || 0}h</span>
+                    </div>
+                    <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-primary/20">
+                      <div
+                        className={`h-full rounded-full ${
+                          day.utilization >= 110
+                            ? "bg-red-400"
+                            : day.utilization >= 90
+                            ? "bg-yellow-400"
+                            : "bg-primary"
+                        }`}
+                        style={{ width: `${Math.min(day.utilization, 130)}%` }}
+                      />
+                    </div>
+                    <div className="mt-2 text-center text-xs text-muted-foreground">
+                      {day.utilization}%
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-          ))}
-        </div>
+          </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-medium">{totalScheduledHours}</div>
-              <p className="text-sm text-muted-foreground">Total Hours Scheduled</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-medium">{averageUtilization}%</div>
-              <p className="text-sm text-muted-foreground">Average Utilization</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-medium">
-                {filteredAssignees.filter((assignee) => assignee.avgUtilization > 80).length}
+          <div className=" rounded-lg border bg-card">
+            <div
+              className="grid border-b border-border"
+              style={{ gridTemplateColumns }}
+            >
+              <div className="p-4 text-sm font-medium uppercase tracking-wide text-muted-foreground">
+                Team Member
               </div>
-              <p className="text-sm text-muted-foreground">Overallocated</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-medium">
-                {filteredAssignees.filter((assignee) => assignee.avgUtilization < 60).length}
+              {weekMeta.map((dayMeta) => (
+                <div
+                  key={dayMeta.key}
+                  className={`border-l border-border p-4 text-center ${
+                    dayMeta.isToday ? "bg-primary/5" : ""
+                  }`}
+                >
+                  <div
+                    className={`text-sm font-medium ${
+                      dayMeta.isToday ? "text-primary" : "text-foreground"
+                    }`}
+                  >
+                    {dayMeta.day}
+                  </div>
+                  <div
+                    className={`text-xs ${
+                      dayMeta.isToday ? "text-primary" : "text-muted-foreground"
+                    }`}
+                  >
+                    {dayMeta.label}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {filteredAssignees.length === 0 && (
+              <div className="p-10 text-center text-sm text-muted-foreground">
+                No team members match the selected filters.
               </div>
-              <p className="text-sm text-muted-foreground">Underutilized</p>
-            </CardContent>
-          </Card>
+            )}
+
+            {filteredAssignees.map((assignee, userIndex) => (
+              <div
+                key={assignee.name}
+                className={`grid ${
+                  userIndex < filteredAssignees.length - 1
+                    ? "border-b border-border"
+                    : ""
+                }`}
+                style={{ gridTemplateColumns }}
+              >
+                <div className="bg-muted/30 p-4">
+                  <div className="flex items-start gap-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={assignee.avatar} />
+                      <AvatarFallback>
+                        {assignee.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-sm font-medium leading-tight text-foreground">
+                        {assignee.name}
+                      </p>
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                        {assignee.team}
+                      </p>
+                      <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>{assignee.totalHours}h/week</span>
+                        <span>•</span>
+                        <span>{Math.round(assignee.avgUtilization)}% avg</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {assignee.weeklySchedule.map((daySchedule) => (
+                  <div
+                    key={daySchedule.day}
+                    className="border-l border-border p-3"
+                  >
+                    <div className="flex flex-col items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className={`text-xs ${
+                          daySchedule.scheduledHours <= 6
+                            ? "border-green-200 bg-green-50 text-green-700"
+                            : daySchedule.scheduledHours <= 8
+                            ? "border-yellow-200 bg-yellow-50 text-yellow-700"
+                            : "border-red-200 bg-red-50 text-red-700"
+                        }`}
+                      >
+                        {daySchedule.scheduledHours}h
+                      </Badge>
+                      <div className="w-full space-y-1">
+                        {daySchedule.tasks.slice(0, 2).map((task) => (
+                          <div
+                            key={task.id}
+                            className="truncate rounded bg-primary/10 px-2 py-1 text-xs text-primary"
+                            title={task.title}
+                          >
+                            {task.title.length > 18
+                              ? `${task.title.slice(0, 18)}…`
+                              : task.title}
+                          </div>
+                        ))}
+                        {daySchedule.tasks.length > 2 && (
+                          <div className="rounded bg-muted px-2 py-1 text-center text-xs text-muted-foreground">
+                            +{daySchedule.tasks.length - 2} more
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-medium">
+                  {totalScheduledHours}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Total Hours Scheduled
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-medium">
+                  {averageUtilization}%
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Average Utilization
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-medium">
+                  {
+                    filteredAssignees.filter(
+                      (assignee) => assignee.avgUtilization > 80
+                    ).length
+                  }
+                </div>
+                <p className="text-sm text-muted-foreground">Overallocated</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-medium">
+                  {
+                    filteredAssignees.filter(
+                      (assignee) => assignee.avgUtilization < 60
+                    ).length
+                  }
+                </div>
+                <p className="text-sm text-muted-foreground">Underutilized</p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

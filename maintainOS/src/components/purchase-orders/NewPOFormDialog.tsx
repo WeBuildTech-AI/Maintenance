@@ -40,9 +40,9 @@ export function NewPOFormDialog({
       )}
 
       <DialogContent className="sm:max-w-4xl w-[92vw] max-h-[85vh] p-0 overflow-hidden bg-card text-card-foreground">
-        <DialogHeader className="border-b p-6">
+        {/* <DialogHeader className="border-b p-6">
           <DialogTitle>New Purchase Order</DialogTitle>
-        </DialogHeader>
+        </DialogHeader> */}
 
         <div className="h-[70vh] overflow-y-auto">
           <NewPOForm {...formProps} />

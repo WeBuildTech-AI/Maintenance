@@ -1,30 +1,30 @@
-import { 
-  BarChart3, 
-  ShoppingCart, 
-  TrendingUp, 
-  Package, 
-  MessageSquare, 
-  Tag, 
-  Archive, 
-  BookOpen, 
-  Gauge, 
-  Zap, 
-  MapPin, 
+import {
+  BarChart3,
+  ShoppingCart,
+  TrendingUp,
+  Package,
+  MessageSquare,
+  Tag,
+  Archive,
+  BookOpen,
+  Gauge,
+  Zap,
+  MapPin,
   Users,
   Wrench,
   X,
   Settings,
-  Handshake
+  Handshake,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { ScrollArea } from "./ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator
+  DropdownMenuSeparator,
 } from "./ui/dropdown-menu";
 
 interface SidebarProps {
@@ -51,17 +51,30 @@ const menuItems = [
   { id: "team-users", label: "Team & Users", icon: Users },
 ];
 
-export function Sidebar({ currentModule, onModuleChange, onClose, user, onLogout }: SidebarProps) {
+export function Sidebar({
+  currentModule,
+  onModuleChange,
+  onClose,
+  user,
+  onLogout,
+}: SidebarProps) {
   return (
     <div className="h-full bg-sidebar border-r border-sidebar-border flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-sidebar-border flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-sidebar-foreground">MaintainOS</h1>
+          <h1 className="text-xl font-semibold text-sidebar-foreground">
+            MaintainOS
+          </h1>
           <p className="text-sm text-sidebar-foreground/70">Control Center</p>
         </div>
         {onClose && (
-          <Button variant="ghost" size="sm" onClick={onClose} className="lg:hidden">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="lg:hidden"
+          >
             <X className="h-5 w-5" />
           </Button>
         )}
@@ -73,14 +86,14 @@ export function Sidebar({ currentModule, onModuleChange, onClose, user, onLogout
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentModule === item.id;
-            
+
             return (
               <Button
                 key={item.id}
                 variant={isActive ? "secondary" : "ghost"}
-                className={`w-full justify-start text-left ${
-                  isActive 
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground" 
+                className={`w-full justify-start cursor-pointer text-left ${
+                  isActive
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
                     : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 }`}
                 onClick={() => {
@@ -98,25 +111,31 @@ export function Sidebar({ currentModule, onModuleChange, onClose, user, onLogout
 
       {/* User Section */}
       <div className="p-4 border-t border-sidebar-border">
-        <div className="flex items-start gap-3 mb-3">
+        <div className="flex items-center gap-3 mb-3">
           <Avatar className="h-8 w-8">
             <AvatarImage src={user?.avatar} alt={user?.name} />
             <AvatarFallback>
-              {user?.name?.split(' ').map(n => n[0]).join('') || 'U'}
+              {user?.name
+                ?.split(" ")
+                .map((n) => n[0])
+                .join("") || "U"}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-medium text-sidebar-foreground truncate mb-1">
-              {user?.name || 'User'}
+              {user?.name || "User"}
             </p>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-auto p-0 text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground">
-                  <Settings className="h-3 w-3 mr-1" />
+                <Button
+                  variant="ghost"
+                  className="h-auto p-1 text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground"
+                >
+                  <Settings className="h-3 w-3 mr-1 " />
                   Settings
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" side="right">
+              <DropdownMenuContent align="start" side="top">
                 <DropdownMenuItem>Profile</DropdownMenuItem>
                 <DropdownMenuItem>Account Settings</DropdownMenuItem>
                 <DropdownMenuSeparator />
