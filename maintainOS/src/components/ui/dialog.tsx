@@ -33,7 +33,6 @@ function composeRefs<T>(
         ref(node);
       } else {
         try {
-          // @ts-expect-error: ref is writable
           ref.current = node;
         } catch {
           /* noop */
@@ -112,7 +111,9 @@ const DialogTrigger = React.forwardRef<HTMLButtonElement, DialogTriggerProps>(
           }
         }}
         {...props}
-      />
+      >
+        {props.children}
+      </Comp>
     );
   },
 );
@@ -265,7 +266,9 @@ const DialogClose = React.forwardRef<HTMLButtonElement, DialogCloseProps>(
           }
         }}
         {...props}
-      />
+      >
+        {props.children}
+      </Comp>
     );
   },
 );
