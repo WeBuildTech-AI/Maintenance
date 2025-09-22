@@ -44,7 +44,7 @@ export function ContactFormDialog({
         + New Contact
       </Button>
       <DialogContent className="max-w-md">
-        <DialogHeader>
+        <DialogHeader className="border-b p-6">
           <DialogTitle>New Contact</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -64,7 +64,7 @@ export function ContactFormDialog({
             <Label>Phone</Label>
             <Input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
           </div>
-          <DialogFooter>
+          <DialogFooter className="border-t p-6 flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>

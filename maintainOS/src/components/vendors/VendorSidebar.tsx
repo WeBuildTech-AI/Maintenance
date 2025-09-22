@@ -1,6 +1,6 @@
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Badge } from "../ui/badge";
-import { Vendor } from "./vendors.types";
+import { type Vendor } from "./vendors.types";
 
 export function VendorSidebar({
   vendors,

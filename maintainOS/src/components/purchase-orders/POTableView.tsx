@@ -182,12 +182,12 @@ export default function PurchaseOrdersTable({ orders, columns, pageSize }: Purch
                         className="hover:bg-gray-50 transition border-b last:border-b-0"
                     >
                         {/* Vendor Avatar w/ hover checkbox */}
-                        <td key="rowCheckbox" className="px-4 py-3 w-10">
+                        <td key="rowCheckbox" className="px-4 py-4 w-10">
                             <input
                                 type="checkbox"
                                 checked={selectedPOs.includes(order.id)}
                                 onChange={() => toggleSelection(order.id)}
-                                className="cursor-pointer h-4 w-4 accent-blue-600 appearance-auto"
+                                className="cursor-pointer accent-blue-600"
                             />
                         </td>
                         {columns.map((col) => {

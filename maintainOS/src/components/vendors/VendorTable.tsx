@@ -1,6 +1,6 @@
 import { Card, CardContent } from "../ui/card";
 import { Avatar, AvatarFallback } from "../ui/avatar";
-import { Vendor } from "./vendors.types";
+import { type Vendor } from "./vendors.types";
 
 export function VendorTable({
   vendors,

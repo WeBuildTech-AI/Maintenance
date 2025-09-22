@@ -29,15 +29,6 @@ export function NewPOFormDialog({
 }: NewPOFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      {showTrigger && (
-        <Button
-          className="gap-2 bg-blue-600 hover:bg-blue-700"
-          onClick={() => onOpenChange(true)}
-        >
-          <Plus className="h-4 w-4" />
-          {triggerLabel}
-        </Button>
-      )}
 
       <DialogContent
         className="sm:max-w-4xl w-[92vw] max-h-[85vh] p-0 flex flex-col bg-card text-card-foreground"
