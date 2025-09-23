@@ -6,12 +6,12 @@ export declare class LocationsController {
     private readonly locationsService;
     constructor(locationsService: LocationsService);
     findAll(_pagination: PaginationQueryDto): Promise<{
-        name: string;
+        description: string | null;
         id: string;
-        organizationId: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        organizationId: string;
+        name: string;
         files: string[];
         teamsInCharge: string[];
         vendorIds: string[];
@@ -20,12 +20,12 @@ export declare class LocationsController {
         parentLocationId: string | null;
     }[]>;
     findOne(id: string): Promise<{
-        name: string;
+        description: string | null;
         id: string;
-        organizationId: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        organizationId: string;
+        name: string;
         files: string[];
         teamsInCharge: string[];
         vendorIds: string[];
@@ -34,12 +34,12 @@ export declare class LocationsController {
         parentLocationId: string | null;
     }>;
     create(body: CreateLocationDto): Promise<{
-        name: string;
+        description: string | null;
         id: string;
-        organizationId: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        organizationId: string;
+        name: string;
         files: string[];
         teamsInCharge: string[];
         vendorIds: string[];
@@ -48,12 +48,12 @@ export declare class LocationsController {
         parentLocationId: string | null;
     }>;
     update(id: string, body: UpdateLocationDto): Promise<{
-        name: string;
+        description: string | null;
         id: string;
-        organizationId: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        organizationId: string;
+        name: string;
         files: string[];
         teamsInCharge: string[];
         vendorIds: string[];
@@ -62,12 +62,12 @@ export declare class LocationsController {
         parentLocationId: string | null;
     }>;
     remove(id: string): Promise<{
-        name: string;
+        description: string | null;
         id: string;
-        organizationId: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        organizationId: string;
+        name: string;
         files: string[];
         teamsInCharge: string[];
         vendorIds: string[];

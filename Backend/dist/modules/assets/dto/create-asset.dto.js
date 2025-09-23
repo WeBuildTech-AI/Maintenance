@@ -24,24 +24,24 @@ class CreateAssetDto {
 exports.CreateAssetDto = CreateAssetDto;
 __decorate([
     (0, swagger_1.ApiProperty)({
-        description: 'Organization ID that owns this asset',
-        example: '123e4567-e89b-12d3-a456-426614174000'
+        description: "Organization ID that owns this asset",
+        example: "123e4567-e89b-12d3-a456-426614174000",
     }),
     (0, class_validator_1.IsUUID)(),
     __metadata("design:type", String)
 ], CreateAssetDto.prototype, "organizationId", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
-        description: 'Asset name',
-        example: 'HVAC Unit #1'
+        description: "Asset name",
+        example: "HVAC Unit #1",
     }),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateAssetDto.prototype, "name", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
-        description: 'Asset description',
-        example: 'Main HVAC unit for building A'
+        description: "Asset description",
+        example: "Main HVAC unit for building A",
     }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
@@ -110,7 +110,7 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsArray)(),
-    (0, class_validator_1.IsUUID)('4', { each: true }),
+    (0, class_validator_1.IsUUID)("4", { each: true }),
     __metadata("design:type", Array)
 ], CreateAssetDto.prototype, "teamsInCharge", void 0);
 __decorate([
@@ -131,7 +131,7 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsArray)(),
-    (0, class_validator_1.IsUUID)('4', { each: true }),
+    (0, class_validator_1.IsUUID)("4", { each: true }),
     __metadata("design:type", Array)
 ], CreateAssetDto.prototype, "partIds", void 0);
 __decorate([

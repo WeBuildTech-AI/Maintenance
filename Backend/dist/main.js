@@ -23,21 +23,21 @@ async function bootstrap() {
         transformOptions: { enableImplicitConversion: true },
     }));
     const config = new swagger_1.DocumentBuilder()
-        .setTitle('Maintenance Platform API')
-        .setDescription('API documentation for the Maintenance Management Platform')
-        .setVersion('1.0')
-        .addTag('maintenance', 'Maintenance management endpoints')
-        .addTag('assets', 'Asset management endpoints')
-        .addTag('work-orders', 'Work order management endpoints')
-        .addTag('auth', 'Authentication endpoints')
-        .addTag('users', 'User management endpoints')
-        .addTag('organizations', 'Organization management endpoints')
+        .setTitle("Maintenance Platform API")
+        .setDescription("API documentation for the Maintenance Management Platform")
+        .setVersion("1.0")
+        .addTag("maintenance", "Maintenance management endpoints")
+        .addTag("assets", "Asset management endpoints")
+        .addTag("work-orders", "Work order management endpoints")
+        .addTag("auth", "Authentication endpoints")
+        .addTag("users", "User management endpoints")
+        .addTag("organizations", "Organization management endpoints")
         .build();
     const document = swagger_1.SwaggerModule.createDocument(app, config);
-    swagger_1.SwaggerModule.setup('api/docs', app, document, {
-        customSiteTitle: 'Maintenance Platform API Docs',
-        customfavIcon: '/favicon.ico',
-        customCss: '.swagger-ui .topbar { display: none }',
+    swagger_1.SwaggerModule.setup("api/docs", app, document, {
+        customSiteTitle: "Maintenance Platform API Docs",
+        customfavIcon: "/favicon.ico",
+        customCss: ".swagger-ui .topbar { display: none }",
     });
     const port = configService.get("PORT", 3000);
     await app.listen(port);

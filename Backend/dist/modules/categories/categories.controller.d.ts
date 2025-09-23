@@ -6,48 +6,48 @@ export declare class CategoriesController {
     private readonly categoriesService;
     constructor(categoriesService: CategoriesService);
     findAll(_pagination: PaginationQueryDto): Promise<{
-        name: string;
+        description: string | null;
         id: string;
-        organizationId: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        organizationId: string;
+        name: string;
         categoryIcon: import(".prisma/client").$Enums.CategoryIcon | null;
     }[]>;
     findOne(id: string): Promise<{
-        name: string;
+        description: string | null;
         id: string;
-        organizationId: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        organizationId: string;
+        name: string;
         categoryIcon: import(".prisma/client").$Enums.CategoryIcon | null;
     }>;
     create(body: CreateCategoryDto): Promise<{
-        name: string;
+        description: string | null;
         id: string;
-        organizationId: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        organizationId: string;
+        name: string;
         categoryIcon: import(".prisma/client").$Enums.CategoryIcon | null;
     }>;
     update(id: string, body: UpdateCategoryDto): Promise<{
-        name: string;
+        description: string | null;
         id: string;
-        organizationId: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        organizationId: string;
+        name: string;
         categoryIcon: import(".prisma/client").$Enums.CategoryIcon | null;
     }>;
     remove(id: string): Promise<{
-        name: string;
+        description: string | null;
         id: string;
-        organizationId: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        organizationId: string;
+        name: string;
         categoryIcon: import(".prisma/client").$Enums.CategoryIcon | null;
     }>;
 }

@@ -5,8 +5,8 @@ export declare class AuditLogsController {
     constructor(auditLogsService: AuditLogsService);
     findAll(): Promise<{
         id: string;
-        organizationId: string;
         createdAt: Date;
+        organizationId: string;
         actorId: string | null;
         action: string;
         targetType: string;
@@ -15,8 +15,8 @@ export declare class AuditLogsController {
     }[]>;
     create(body: CreateAuditLogDto): Promise<{
         id: string;
-        organizationId: string;
         createdAt: Date;
+        organizationId: string;
         actorId: string | null;
         action: string;
         targetType: string;

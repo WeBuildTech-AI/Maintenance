@@ -6,12 +6,12 @@ export declare class VendorsController {
     private readonly vendorsService;
     constructor(vendorsService: VendorsService);
     findAll(_pagination: PaginationQueryDto): Promise<{
-        name: string;
+        description: string | null;
         id: string;
-        organizationId: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        organizationId: string;
+        name: string;
         color: string | null;
         files: string[];
         pictureUrl: string | null;
@@ -19,12 +19,12 @@ export declare class VendorsController {
         vendorType: string | null;
     }[]>;
     findOne(id: string): Promise<{
-        name: string;
+        description: string | null;
         id: string;
-        organizationId: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        organizationId: string;
+        name: string;
         color: string | null;
         files: string[];
         pictureUrl: string | null;
@@ -32,12 +32,12 @@ export declare class VendorsController {
         vendorType: string | null;
     }>;
     create(body: CreateVendorDto): Promise<{
-        name: string;
+        description: string | null;
         id: string;
-        organizationId: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        organizationId: string;
+        name: string;
         color: string | null;
         files: string[];
         pictureUrl: string | null;
@@ -45,12 +45,12 @@ export declare class VendorsController {
         vendorType: string | null;
     }>;
     update(id: string, body: UpdateVendorDto): Promise<{
-        name: string;
+        description: string | null;
         id: string;
-        organizationId: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        organizationId: string;
+        name: string;
         color: string | null;
         files: string[];
         pictureUrl: string | null;

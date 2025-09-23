@@ -27,18 +27,18 @@ let AppController = class AppController {
 exports.AppController = AppController;
 __decorate([
     (0, common_1.Get)(),
-    (0, swagger_1.ApiOperation)({ summary: 'Get server status' }),
+    (0, swagger_1.ApiOperation)({ summary: "Get server status" }),
     (0, swagger_1.ApiResponse)({
         status: 200,
-        description: 'Server is running successfully',
+        description: "Server is running successfully",
         schema: {
-            type: 'object',
+            type: "object",
             properties: {
-                message: { type: 'string', example: 'Server running' },
-                status: { type: 'string', example: 'active' },
-                timestamp: { type: 'string', format: 'date-time' }
-            }
-        }
+                message: { type: "string", example: "Server running" },
+                status: { type: "string", example: "active" },
+                timestamp: { type: "string", format: "date-time" },
+            },
+        },
     }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
@@ -47,25 +47,25 @@ __decorate([
 __decorate([
     (0, common_1.Get)("health"),
     (0, common_1.Version)("1"),
-    (0, swagger_1.ApiOperation)({ summary: 'Health check endpoint' }),
+    (0, swagger_1.ApiOperation)({ summary: "Health check endpoint" }),
     (0, swagger_1.ApiResponse)({
         status: 200,
-        description: 'Health check successful',
+        description: "Health check successful",
         schema: {
-            type: 'object',
+            type: "object",
             properties: {
-                status: { type: 'string', example: 'ok' },
-                service: { type: 'string', example: 'maintenance-backend' },
-                timestamp: { type: 'string', format: 'date-time' }
-            }
-        }
+                status: { type: "string", example: "ok" },
+                service: { type: "string", example: "maintenance-backend" },
+                timestamp: { type: "string", format: "date-time" },
+            },
+        },
     }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], AppController.prototype, "checkHealth", null);
 exports.AppController = AppController = __decorate([
-    (0, swagger_1.ApiTags)('app'),
+    (0, swagger_1.ApiTags)("app"),
     (0, common_1.Controller)(),
     __metadata("design:paramtypes", [app_service_1.AppService])
 ], AppController);

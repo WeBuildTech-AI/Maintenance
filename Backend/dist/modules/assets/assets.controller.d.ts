@@ -1,15 +1,17 @@
-import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
-import { AssetsService } from './assets.service';
-import { CreateAssetDto } from './dto/create-asset.dto';
-import { UpdateAssetDto } from './dto/update-asset.dto';
+import { PaginationQueryDto } from "../../common/dto/pagination-query.dto";
+import { AssetsService } from "./assets.service";
+import { CreateAssetDto } from "./dto/create-asset.dto";
+import { UpdateAssetDto } from "./dto/update-asset.dto";
 export declare class AssetsController {
     private readonly assetsService;
     constructor(assetsService: AssetsService);
     findAll(_pagination: PaginationQueryDto): Promise<{
-        name: string;
-        id: string;
-        organizationId: string;
         description: string | null;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        organizationId: string;
+        name: string;
         pictures: string[];
         files: string[];
         locationId: string | null;
@@ -27,14 +29,14 @@ export declare class AssetsController {
         vendorId: string | null;
         partIds: string[];
         parentAssetId: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }[]>;
     findOne(id: string): Promise<{
-        name: string;
-        id: string;
-        organizationId: string;
         description: string | null;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        organizationId: string;
+        name: string;
         pictures: string[];
         files: string[];
         locationId: string | null;
@@ -52,14 +54,14 @@ export declare class AssetsController {
         vendorId: string | null;
         partIds: string[];
         parentAssetId: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     create(body: CreateAssetDto): Promise<{
-        name: string;
-        id: string;
-        organizationId: string;
         description: string | null;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        organizationId: string;
+        name: string;
         pictures: string[];
         files: string[];
         locationId: string | null;
@@ -77,14 +79,14 @@ export declare class AssetsController {
         vendorId: string | null;
         partIds: string[];
         parentAssetId: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     update(id: string, body: UpdateAssetDto): Promise<{
-        name: string;
-        id: string;
-        organizationId: string;
         description: string | null;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        organizationId: string;
+        name: string;
         pictures: string[];
         files: string[];
         locationId: string | null;
@@ -102,14 +104,14 @@ export declare class AssetsController {
         vendorId: string | null;
         partIds: string[];
         parentAssetId: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     remove(id: string): Promise<{
-        name: string;
-        id: string;
-        organizationId: string;
         description: string | null;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        organizationId: string;
+        name: string;
         pictures: string[];
         files: string[];
         locationId: string | null;
@@ -127,7 +129,5 @@ export declare class AssetsController {
         vendorId: string | null;
         partIds: string[];
         parentAssetId: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
 }

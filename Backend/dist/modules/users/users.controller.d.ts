@@ -7,53 +7,53 @@ export declare class UsersController {
     constructor(usersService: UsersService);
     findAll(_pagination: PaginationQueryDto): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         organizationId: string;
         fullName: string;
         email: string;
         phoneNumber: string | null;
         role: import(".prisma/client").$Enums.UserRole;
-        createdAt: Date;
-        updatedAt: Date;
     }[]>;
     findOne(id: string): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         organizationId: string;
         fullName: string;
         email: string;
         phoneNumber: string | null;
         role: import(".prisma/client").$Enums.UserRole;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     create(body: CreateUserDto): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         organizationId: string;
         fullName: string;
         email: string;
         phoneNumber: string | null;
         role: import(".prisma/client").$Enums.UserRole;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     update(id: string, body: UpdateUserDto): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         organizationId: string;
         fullName: string;
         email: string;
         phoneNumber: string | null;
         role: import(".prisma/client").$Enums.UserRole;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     remove(id: string): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         organizationId: string;
         fullName: string;
         email: string;
         phoneNumber: string | null;
         role: import(".prisma/client").$Enums.UserRole;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     private sanitize;
 }

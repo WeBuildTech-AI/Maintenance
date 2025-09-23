@@ -7,9 +7,9 @@ export declare class InventoryController {
     constructor(inventoryService: InventoryService);
     findAll(_pagination: PaginationQueryDto): Promise<{
         id: string;
-        organizationId: string;
         createdAt: Date;
         updatedAt: Date;
+        organizationId: string;
         locationId: string | null;
         notes: string | null;
         partId: string;
@@ -17,9 +17,9 @@ export declare class InventoryController {
     }[]>;
     findOne(id: string): Promise<{
         id: string;
-        organizationId: string;
         createdAt: Date;
         updatedAt: Date;
+        organizationId: string;
         locationId: string | null;
         notes: string | null;
         partId: string;
@@ -27,9 +27,9 @@ export declare class InventoryController {
     }>;
     create(body: CreateInventoryDto): Promise<{
         id: string;
-        organizationId: string;
         createdAt: Date;
         updatedAt: Date;
+        organizationId: string;
         locationId: string | null;
         notes: string | null;
         partId: string;
@@ -37,9 +37,9 @@ export declare class InventoryController {
     }>;
     update(id: string, body: UpdateInventoryDto): Promise<{
         id: string;
-        organizationId: string;
         createdAt: Date;
         updatedAt: Date;
+        organizationId: string;
         locationId: string | null;
         notes: string | null;
         partId: string;

@@ -6,15 +6,15 @@ export declare class PurchaseOrdersController {
     private readonly purchaseOrdersService;
     constructor(purchaseOrdersService: PurchaseOrdersService);
     findAll(_pagination: PaginationQueryDto): Promise<{
+        items: import("@prisma/client/runtime/library").JsonValue;
+        status: import(".prisma/client").$Enums.PurchaseOrderStatus | null;
         id: string;
-        organizationId: string;
         createdAt: Date;
         updatedAt: Date;
+        organizationId: string;
         files: string[];
         vendorId: string;
-        status: import(".prisma/client").$Enums.PurchaseOrderStatus | null;
         dueDate: Date | null;
-        items: import("@prisma/client/runtime/library").JsonValue;
         taxesAndCosts: import("@prisma/client/runtime/library").JsonValue | null;
         shippingAddress: string | null;
         billingAddress: string | null;
@@ -22,15 +22,15 @@ export declare class PurchaseOrdersController {
         notes: string | null;
     }[]>;
     findOne(id: string): Promise<{
+        items: import("@prisma/client/runtime/library").JsonValue;
+        status: import(".prisma/client").$Enums.PurchaseOrderStatus | null;
         id: string;
-        organizationId: string;
         createdAt: Date;
         updatedAt: Date;
+        organizationId: string;
         files: string[];
         vendorId: string;
-        status: import(".prisma/client").$Enums.PurchaseOrderStatus | null;
         dueDate: Date | null;
-        items: import("@prisma/client/runtime/library").JsonValue;
         taxesAndCosts: import("@prisma/client/runtime/library").JsonValue | null;
         shippingAddress: string | null;
         billingAddress: string | null;
@@ -38,15 +38,15 @@ export declare class PurchaseOrdersController {
         notes: string | null;
     }>;
     create(body: CreatePurchaseOrderDto): Promise<{
+        items: import("@prisma/client/runtime/library").JsonValue;
+        status: import(".prisma/client").$Enums.PurchaseOrderStatus | null;
         id: string;
-        organizationId: string;
         createdAt: Date;
         updatedAt: Date;
+        organizationId: string;
         files: string[];
         vendorId: string;
-        status: import(".prisma/client").$Enums.PurchaseOrderStatus | null;
         dueDate: Date | null;
-        items: import("@prisma/client/runtime/library").JsonValue;
         taxesAndCosts: import("@prisma/client/runtime/library").JsonValue | null;
         shippingAddress: string | null;
         billingAddress: string | null;
@@ -54,15 +54,15 @@ export declare class PurchaseOrdersController {
         notes: string | null;
     }>;
     update(id: string, body: UpdatePurchaseOrderDto): Promise<{
+        items: import("@prisma/client/runtime/library").JsonValue;
+        status: import(".prisma/client").$Enums.PurchaseOrderStatus | null;
         id: string;
-        organizationId: string;
         createdAt: Date;
         updatedAt: Date;
+        organizationId: string;
         files: string[];
         vendorId: string;
-        status: import(".prisma/client").$Enums.PurchaseOrderStatus | null;
         dueDate: Date | null;
-        items: import("@prisma/client/runtime/library").JsonValue;
         taxesAndCosts: import("@prisma/client/runtime/library").JsonValue | null;
         shippingAddress: string | null;
         billingAddress: string | null;

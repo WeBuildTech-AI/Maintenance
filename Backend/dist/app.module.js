@@ -20,6 +20,7 @@ const auth_module_1 = require("./modules/auth/auth.module");
 const users_module_1 = require("./modules/users/users.module");
 const organizations_module_1 = require("./modules/organizations/organizations.module");
 const teams_module_1 = require("./modules/teams/teams.module");
+const team_members_module_1 = require("./modules/team-members/team-members.module");
 const assets_module_1 = require("./modules/assets/assets.module");
 const work_orders_module_1 = require("./modules/work-orders/work-orders.module");
 const vendors_module_1 = require("./modules/vendors/vendors.module");
@@ -49,6 +50,7 @@ exports.AppModule = AppModule = __decorate([
             users_module_1.UsersModule,
             organizations_module_1.OrganizationsModule,
             teams_module_1.TeamsModule,
+            team_members_module_1.TeamMembersModule,
             assets_module_1.AssetsModule,
             work_orders_module_1.WorkOrdersModule,
             vendors_module_1.VendorsModule,

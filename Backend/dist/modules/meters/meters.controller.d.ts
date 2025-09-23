@@ -6,12 +6,12 @@ export declare class MetersController {
     private readonly metersService;
     constructor(metersService: MetersService);
     findAll(_pagination: PaginationQueryDto): Promise<{
-        name: string;
+        description: string | null;
         id: string;
-        organizationId: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        organizationId: string;
+        name: string;
         locationId: string | null;
         photos: string[];
         meterType: import(".prisma/client").$Enums.MeterType | null;
@@ -20,12 +20,12 @@ export declare class MetersController {
         readingFrequency: import("@prisma/client/runtime/library").JsonValue | null;
     }[]>;
     findOne(id: string): Promise<{
-        name: string;
+        description: string | null;
         id: string;
-        organizationId: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        organizationId: string;
+        name: string;
         locationId: string | null;
         photos: string[];
         meterType: import(".prisma/client").$Enums.MeterType | null;
@@ -34,12 +34,12 @@ export declare class MetersController {
         readingFrequency: import("@prisma/client/runtime/library").JsonValue | null;
     }>;
     create(body: CreateMeterDto): Promise<{
-        name: string;
+        description: string | null;
         id: string;
-        organizationId: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        organizationId: string;
+        name: string;
         locationId: string | null;
         photos: string[];
         meterType: import(".prisma/client").$Enums.MeterType | null;
@@ -48,12 +48,12 @@ export declare class MetersController {
         readingFrequency: import("@prisma/client/runtime/library").JsonValue | null;
     }>;
     update(id: string, body: UpdateMeterDto): Promise<{
-        name: string;
+        description: string | null;
         id: string;
-        organizationId: string;
         createdAt: Date;
         updatedAt: Date;
-        description: string | null;
+        organizationId: string;
+        name: string;
         locationId: string | null;
         photos: string[];
         meterType: import(".prisma/client").$Enums.MeterType | null;
