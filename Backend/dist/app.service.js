@@ -9,10 +9,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppService = void 0;
 const common_1 = require("@nestjs/common");
 let AppService = class AppService {
+    getServerStatus() {
+        return {
+            message: "Server running",
+            status: "active",
+            timestamp: new Date().toISOString(),
+        };
+    }
     healthCheck() {
         return {
-            status: 'ok',
-            service: 'maintenance-backend',
+            status: "ok",
+            service: "maintenance-backend",
             timestamp: new Date().toISOString(),
         };
     }

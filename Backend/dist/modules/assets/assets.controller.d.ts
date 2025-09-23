@@ -9,8 +9,6 @@ export declare class AssetsController {
         name: string;
         id: string;
         organizationId: string;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
         pictures: string[];
         files: string[];
@@ -29,13 +27,13 @@ export declare class AssetsController {
         vendorId: string | null;
         partIds: string[];
         parentAssetId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
     findOne(id: string): Promise<{
         name: string;
         id: string;
         organizationId: string;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
         pictures: string[];
         files: string[];
@@ -54,13 +52,13 @@ export declare class AssetsController {
         vendorId: string | null;
         partIds: string[];
         parentAssetId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     create(body: CreateAssetDto): Promise<{
         name: string;
         id: string;
         organizationId: string;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
         pictures: string[];
         files: string[];
@@ -79,13 +77,13 @@ export declare class AssetsController {
         vendorId: string | null;
         partIds: string[];
         parentAssetId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     update(id: string, body: UpdateAssetDto): Promise<{
         name: string;
         id: string;
         organizationId: string;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
         pictures: string[];
         files: string[];
@@ -104,13 +102,13 @@ export declare class AssetsController {
         vendorId: string | null;
         partIds: string[];
         parentAssetId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     remove(id: string): Promise<{
         name: string;
         id: string;
         organizationId: string;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
         pictures: string[];
         files: string[];
@@ -129,5 +127,7 @@ export declare class AssetsController {
         vendorId: string | null;
         partIds: string[];
         parentAssetId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
 }

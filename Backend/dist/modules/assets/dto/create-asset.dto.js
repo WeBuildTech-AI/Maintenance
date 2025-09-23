@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateAssetDto = exports.AssetCriticality = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
+const swagger_1 = require("@nestjs/swagger");
 var AssetCriticality;
 (function (AssetCriticality) {
     AssetCriticality["HIGH"] = "high";
@@ -22,14 +23,26 @@ class CreateAssetDto {
 }
 exports.CreateAssetDto = CreateAssetDto;
 __decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Organization ID that owns this asset',
+        example: '123e4567-e89b-12d3-a456-426614174000'
+    }),
     (0, class_validator_1.IsUUID)(),
     __metadata("design:type", String)
 ], CreateAssetDto.prototype, "organizationId", void 0);
 __decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Asset name',
+        example: 'HVAC Unit #1'
+    }),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateAssetDto.prototype, "name", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Asset description',
+        example: 'Main HVAC unit for building A'
+    }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
