@@ -326,7 +326,7 @@ export function PurchaseOrders() {
       ) : (
       <div className="flex flex-1 min-h-0">
         {/* Left List */}
-        <div className="w-112 mr-3 ml-3 border border-border flex flex-col min-h-0">
+        <div className="w-112 mr-2 ml-3 border border-border flex flex-col min-h-0">
           {/* List Aggregator + Select button*/}
           <div className="p-4 border-b border-border flex-shrink-0">
             <div className="flex items-center gap-2">
@@ -401,7 +401,7 @@ export function PurchaseOrders() {
         </div>
 
         {/* Right Details */}
-        <div className="flex-1 bg-card mr-3 ml-3 border border-border min-h-0 flex flex-col border-border">
+        <div className="flex-1 bg-card mr-2 ml-3 border border-border min-h-0 flex flex-col border-border">
           {selectedPO ? (
             <div className="h-full flex flex-col min-h-0">
               {/* Header */}
