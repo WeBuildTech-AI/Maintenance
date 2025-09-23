@@ -1,10 +1,8 @@
 import { IsArray, IsEnum, IsObject, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export enum MeterType {
-  ELECTRICITY = 'electricity',
-  WATER = 'water',
-  GAS = 'gas',
-  RUNTIME = 'runtime',
+  MANUAL = 'manual',
+  AUTOMATED = 'automated'
 }
 
 export class CreateMeterDto {

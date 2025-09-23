@@ -27,18 +27,6 @@ export class AssetsController {
 
   @Get()
   @ApiOperation({ summary: "Get all assets" })
-  @ApiQuery({
-    name: "page",
-    required: false,
-    type: Number,
-    description: "Page number",
-  })
-  @ApiQuery({
-    name: "limit",
-    required: false,
-    type: Number,
-    description: "Items per page",
-  })
   @ApiResponse({ status: 200, description: "Assets retrieved successfully" })
   findAll(@Query() _pagination: PaginationQueryDto) {
     return this.assetsService.findAllAssets();
@@ -71,6 +59,10 @@ export class AssetsController {
   }
 
   @Delete(":id")
+  @ApiOperation({ summary: "Delete an asset" })
+  @ApiParam({ name: "id", description: "Asset ID" })
+  @ApiResponse({ status: 200, description: "Asset deleted successfully" })
+  @ApiResponse({ status: 404, description: "Asset not found" })
   remove(@Param("id") id: string) {
     return this.assetsService.removeAsset(id);
   }

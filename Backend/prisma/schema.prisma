@@ -35,11 +35,17 @@ enum AssetCriticality {
   @@map("asset_criticality")
 }
 
+enum AssetStatus {
+  online
+  offline
+  doNotTrack
+
+  @@map("asset_status")
+}
+
 enum MeterType {
-  electricity
-  water
-  gas
-  runtime
+  manual
+  automated
 
   @@map("meter_type")
 }
@@ -92,6 +98,13 @@ enum CategoryIcon {
   hvac
 
   @@map("category_icon")
+}
+
+enum VendorType {
+  manufacturer
+  distributor
+
+  @@map("vendor_type")
 }
 
 model Organization {
@@ -170,17 +183,20 @@ model TeamMember {
 }
 
 model Vendor {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organizationId String   @map("organization_id") @db.Uuid
-  name           String   @db.VarChar(255)
-  pictureUrl     String?  @map("picture_url")
-  color          String?  @db.VarChar(7)
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String      @map("organization_id") @db.Uuid
+  name           String      @db.VarChar(255)
+  pictureUrl     String?     @map("picture_url")
+  color          String?     @db.VarChar(7)
   description    String?
   contacts       Json?
-  files          String[] @default([]) @db.Text
-  vendorType     String?  @map("vendor_type") @db.VarChar(100)
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+  files          String[]    @default([]) @db.Text
+  locations      String[]    @default([]) @map("locations") @db.Uuid
+  assetIds       String[]    @default([]) @map("asset_ids") @db.Uuid
+  partIds        String[]    @default([]) @map("part_ids") @db.Uuid
+  vendorType     VendorType? @map("vendor_type")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @default(now()) @updatedAt @map("updated_at")
 
   organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   purchaseOrders PurchaseOrder[]
@@ -242,6 +258,7 @@ model Asset {
   organizationId  String            @map("organization_id") @db.Uuid
   name            String            @db.VarChar(255)
   description     String?
+  status          AssetStatus?
   pictures        String[]          @default([]) @db.Text
   files           String[]          @default([]) @db.Text
   locationId      String?           @map("location_id") @db.Uuid

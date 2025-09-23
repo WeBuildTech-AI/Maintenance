@@ -18,6 +18,12 @@ export enum AssetCriticality {
   LOW = "low",
 }
 
+export enum AssetStatus {
+  ONLINE = "online",
+  OFFLINE = "offline",
+  DO_NOT_TRACK = "doNotTrack"
+}
+
 export class CreateAssetDto {
   @ApiProperty({
     description: "Organization ID that owns this asset",
@@ -58,6 +64,10 @@ export class CreateAssetDto {
   @IsOptional()
   @IsEnum(AssetCriticality)
   criticality?: AssetCriticality;
+
+  @IsOptional()
+  @IsEnum(AssetStatus)
+  status?: AssetStatus;
 
   @IsOptional()
   @Type(() => Number)

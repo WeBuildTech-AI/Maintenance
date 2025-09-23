@@ -40,7 +40,6 @@ import { AutomationsModule } from "./modules/automations/automations.module";
     WorkOrdersModule,
     VendorsModule,
     PurchaseOrdersModule,
-    InventoryModule,
     AttachmentsModule,
     AuditLogsModule,
     LocationsModule,
