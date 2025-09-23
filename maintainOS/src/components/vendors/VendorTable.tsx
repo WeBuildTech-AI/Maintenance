@@ -18,7 +18,7 @@ export function VendorTable({
       .toUpperCase();
 
   return (
-    <div className="flex-1 overflow-auto p-6">
+    <div className="flex-1 overflow-auto p-4">
       <Card className="overflow-hidden shadow-sm">
         <CardContent className="p-0">
           <table className="w-full table-fixed text-sm">

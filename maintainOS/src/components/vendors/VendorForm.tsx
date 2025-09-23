@@ -64,7 +64,7 @@ export function VendorForm({
   const colorOptions = ["#2563eb", "#10b981", "#f97316", "#ec4899", "#6366f1"];
 
   return (
-    <Card className="shadow-sm">
+    <Card className="shadow-sm p-2">
       <CardHeader>
         <CardTitle>New Vendor</CardTitle>
         <CardDescription>

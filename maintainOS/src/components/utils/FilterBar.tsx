@@ -50,7 +50,7 @@ export default function FilterBar({ allFilters, defaultKeys = [] }: FilterBarPro
           className="flex items-center gap-2 border rounded-md px-3 py-1 text-sm hover:bg-accent transition"
           onClick={() => setShowMenu(p => !p)}
         >
-          <Plus size={16} className="text-orange-500" /> Add Filter
+          <Plus size={16} className="text-orange-600" /> Add Filter
         </button>
 
         {showMenu && (

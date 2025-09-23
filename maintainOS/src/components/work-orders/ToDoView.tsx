@@ -78,7 +78,7 @@ export function ToDoView({
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-primary p-0">
+                <Button variant="ghost" size="sm" className="text-primary p-2">
                   Sort: Last Updated
                 </Button>
               </DropdownMenuTrigger>

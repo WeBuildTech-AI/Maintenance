@@ -35,17 +35,8 @@ import {
   Calendar,
   CheckCircle,
 } from "lucide-react";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "./ui/avatar";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "./ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import {
   LineChart,
   Line,
@@ -70,7 +61,7 @@ const mockAssets = [
     model: "dpr123",
   },
   {
-    id: "AST-002", 
+    id: "AST-002",
     name: "Boiler #1",
     location: "Basement - Mechanical Room",
     status: "Online",
@@ -83,7 +74,7 @@ const mockAssets = [
   {
     id: "AST-003",
     name: "Emergency Generator",
-    location: "Building B - Generator Room", 
+    location: "Building B - Generator Room",
     status: "Offline",
     isOnline: false,
     icon: "⚡",
@@ -106,7 +97,7 @@ const mockAssets = [
     id: "AST-005",
     name: "Air Compressor",
     location: "Warehouse - Equipment Bay",
-    status: "Online", 
+    status: "Online",
     isOnline: true,
     icon: "🌀",
     criticality: "Medium",
@@ -222,13 +213,12 @@ const mockAssets = [
     criticality: "Critical",
     manufacturer: "ABB",
     model: "ONAN-1500",
-  }
+  },
 ];
 
 export function Assets() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [showNewAssetForm, setShowNewAssetForm] =
-    useState(false);
+  const [showNewAssetForm, setShowNewAssetForm] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<
     (typeof mockAssets)[0] | null
   >(null);
@@ -241,12 +231,8 @@ export function Assets() {
 
   const filteredAssets = mockAssets.filter((asset) => {
     const matchesSearch =
-      asset.name
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      asset.location
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
+      asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      asset.location.toLowerCase().includes(searchQuery.toLowerCase());
 
     return matchesSearch;
   });
@@ -273,15 +259,13 @@ export function Assets() {
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* Header */}
-      <div className="p-6 border-b border-border bg-card flex-shrink-0">
+      <div className="p-6  border-border bg-card flex-shrink-0">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-medium">Assets</h1>
             <div className="flex items-center gap-2">
               <LayoutGrid className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">
-                Panel View
-              </span>
+              <span className="text-sm text-muted-foreground">Panel View</span>
               <ChevronDown className="h-3 w-3 text-muted-foreground" />
             </div>
           </div>
@@ -308,28 +292,16 @@ export function Assets() {
         {/* Filter Section */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2"
-            >
+            <Button variant="outline" size="sm" className="gap-2">
               <AlertTriangle className="h-4 w-4" />
               Criticality
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2"
-            >
+            <Button variant="outline" size="sm" className="gap-2">
               <Plus className="h-4 w-4" />
               Add Filter
             </Button>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-2 text-orange-600"
-          >
+          <Button variant="ghost" size="sm" className="gap-2 text-orange-600">
             <Settings className="h-4 w-4" />
             My Filters
           </Button>
@@ -338,13 +310,11 @@ export function Assets() {
 
       <div className="flex flex-1 min-h-0">
         {/* Left Panel - Assets List */}
-        <div className="w-112 border-r border-border bg-card flex flex-col min-h-0">
+        <div className="w-96 mr-2 ml-3 border-r border-l border-border bg-card flex flex-col min-h-0">
           {/* Sort */}
-          <div className="p-4 border-b border-border flex-shrink-0">
+          <div className="p-4 border border-border flex-shrink-0">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                Sort By:
-              </span>
+              <span className="text-sm text-muted-foreground">Sort By:</span>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -357,12 +327,8 @@ export function Assets() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem>
-                    Name: Ascending Order
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    Name: Descending Order
-                  </DropdownMenuItem>
+                  <DropdownMenuItem>Name: Ascending Order</DropdownMenuItem>
+                  <DropdownMenuItem>Name: Descending Order</DropdownMenuItem>
                   <DropdownMenuItem>Status</DropdownMenuItem>
                   <DropdownMenuItem>Location</DropdownMenuItem>
                 </DropdownMenuContent>
@@ -371,8 +337,8 @@ export function Assets() {
           </div>
 
           {/* Assets List */}
-          <div className="flex-1 overflow-y-auto min-h-0">
-            <div className="p-4 space-y-3">
+          <div className="flex-1 overflow-y-auto min-h-0 ">
+            <div className="">
               {filteredAssets.map((asset) => (
                 <Card
                   key={asset.id}
@@ -384,15 +350,13 @@ export function Assets() {
                   onClick={() => setSelectedAsset(asset)}
                 >
                   <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
+                    <div className="flex items-start justify-between mb-1">
+                      <div className="flex items-center gap-4">
+                        <div className="w-8 h-8 bg-muted rounded-lg flex items-center justify-center">
                           <span className="text-lg">{asset.icon}</span>
                         </div>
                         <div>
-                          <h4 className="font-medium">
-                            {asset.name}
-                          </h4>
+                          <h4 className="font-medium">{asset.name}</h4>
                           <div className="flex items-center gap-1 mt-1">
                             <MapPin className="h-3 w-3 text-muted-foreground" />
                             <span className="text-sm text-muted-foreground">
@@ -450,13 +414,8 @@ export function Assets() {
                   <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
                     <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed"></div>
                   </div>
-                  <p className="text-muted-foreground mb-2">
-                    No assets found
-                  </p>
-                  <Button
-                    variant="link"
-                    className="text-primary p-0"
-                  >
+                  <p className="text-muted-foreground mb-2">No assets found</p>
+                  <Button variant="link" className="text-primary p-0">
                     Create the first asset
                   </Button>
                 </div>
@@ -469,9 +428,7 @@ export function Assets() {
         <div className="flex-1 bg-card min-h-0 flex flex-col">
           {showNewAssetForm ? (
             <div className="p-6 overflow-y-auto flex-1">
-              <h2 className="text-lg font-medium mb-6">
-                New Asset
-              </h2>
+              <h2 className="text-lg font-medium mb-6">New Asset</h2>
 
               <div className="space-y-6 max-w-md">
                 {/* Asset Name */}
@@ -541,22 +498,12 @@ export function Assets() {
                       <SelectValue placeholder="Select location" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="general">
-                        General
-                      </SelectItem>
-                      <SelectItem value="building-a">
-                        Building A
-                      </SelectItem>
-                      <SelectItem value="building-b">
-                        Building B
-                      </SelectItem>
-                      <SelectItem value="basement">
-                        Basement
-                      </SelectItem>
+                      <SelectItem value="general">General</SelectItem>
+                      <SelectItem value="building-a">Building A</SelectItem>
+                      <SelectItem value="building-b">Building B</SelectItem>
+                      <SelectItem value="basement">Basement</SelectItem>
                       <SelectItem value="roof">Roof</SelectItem>
-                      <SelectItem value="warehouse">
-                        Warehouse
-                      </SelectItem>
+                      <SelectItem value="warehouse">Warehouse</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -574,7 +521,7 @@ export function Assets() {
               </div>
             </div>
           ) : selectedAsset ? (
-            <div className="h-full flex flex-col min-h-0">
+            <div className="flex-1 bg-card mr-3 ml-2 border border-border min-h-0 flex flex-col border-border">
               {/* Asset Header */}
               <div className="p-6 border-b border-border flex-shrink-0">
                 <div className="flex items-center justify-between mb-6">
@@ -585,10 +532,7 @@ export function Assets() {
                     <Link className="h-4 w-4 text-orange-600" />
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      className="gap-2 text-orange-600 border-orange-200 hover:bg-orange-50"
-                    >
+                    <Button className="gap-2 border cursor-pointer border-orange-600 bg-white text-orange-600 hover:bg-orange-50">
                       <Edit className="h-4 w-4" />
                       Edit
                     </Button>
@@ -599,15 +543,9 @@ export function Assets() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          Duplicate
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          Archive
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          Delete
-                        </DropdownMenuItem>
+                        <DropdownMenuItem>Duplicate</DropdownMenuItem>
+                        <DropdownMenuItem>Archive</DropdownMenuItem>
+                        <DropdownMenuItem>Delete</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -616,12 +554,8 @@ export function Assets() {
                 {/* Tabs */}
                 <Tabs defaultValue="details" className="w-full">
                   <TabsList className="grid w-full grid-cols-2 max-w-[200px]">
-                    <TabsTrigger value="details">
-                      Details
-                    </TabsTrigger>
-                    <TabsTrigger value="history">
-                      History
-                    </TabsTrigger>
+                    <TabsTrigger value="details">Details</TabsTrigger>
+                    <TabsTrigger value="history">History</TabsTrigger>
                   </TabsList>
                 </Tabs>
               </div>
@@ -670,30 +604,22 @@ export function Assets() {
                     {/* Last Updated */}
                     <p className="text-sm text-muted-foreground">
                       Last updated:{" "}
-                      <span className="font-medium">
-                        MaintainX
-                      </span>
-                      , Today at 11:41
+                      <span className="font-medium">MaintainX</span>, Today at
+                      11:41
                     </p>
 
                     {/* Meter Reading Card */}
                     <Card className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                          <span className="font-medium">
-                            Electrical
-                          </span>
-                          <span className="text-muted-foreground">
-                            50 Feet
-                          </span>
+                          <span className="font-medium">Electrical</span>
+                          <span className="text-muted-foreground">50 Feet</span>
                         </div>
                         <div className="flex items-center gap-3">
                           <div className="flex items-center gap-2">
-                            <Avatar className="w-5 h-5">
+                            <Avatar className="w-7 h-7">
                               <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face" />
-                              <AvatarFallback>
-                                AC
-                              </AvatarFallback>
+                              <AvatarFallback>AC</AvatarFallback>
                             </Avatar>
                             <span className="text-sm text-muted-foreground">
                               Ashwini Chauhan, Today at 13:28
@@ -717,9 +643,7 @@ export function Assets() {
 
                 {/* Criticality */}
                 <div>
-                  <h3 className="font-medium mb-3">
-                    Criticality
-                  </h3>
+                  <h3 className="font-medium mb-3">Criticality</h3>
                   <Badge
                     variant="outline"
                     className={`inline-flex w-fit ${
@@ -738,9 +662,7 @@ export function Assets() {
 
                 {/* Manufacturer */}
                 <div>
-                  <h3 className="font-medium mb-3">
-                    Manufacturer
-                  </h3>
+                  <h3 className="font-medium mb-3">Manufacturer</h3>
                   <p>{selectedAsset.manufacturer}</p>
                 </div>
 
@@ -763,9 +685,7 @@ export function Assets() {
 
                 {/* Sub-Assets */}
                 <div className="border-t border-border pt-8">
-                  <h3 className="font-medium mb-3">
-                    Sub-Assets (0)
-                  </h3>
+                  <h3 className="font-medium mb-3">Sub-Assets (0)</h3>
                   <p className="text-muted-foreground mb-4">
                     Add sub elements inside this Asset
                   </p>
@@ -779,9 +699,7 @@ export function Assets() {
 
                 {/* Automations */}
                 <div className="border-t border-border pt-8">
-                  <h3 className="font-medium mb-4">
-                    Automations (0)
-                  </h3>
+                  <h3 className="font-medium mb-4">Automations (0)</h3>
                   <div className="border border-dashed border-border rounded-lg p-6">
                     <Button
                       variant="ghost"
@@ -797,36 +715,30 @@ export function Assets() {
                 <div className="border-t border-border pt-8">
                   <div className="flex items-center gap-3">
                     <span>Created By</span>
-                    <Avatar className="w-5 h-5">
+                    <Avatar className="w-7 h-7">
                       <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face" />
                       <AvatarFallback>AC</AvatarFallback>
                     </Avatar>
-                    <span>
-                      Ashwini Chauhan on 19/09/2025, 11:41
-                    </span>
+                    <span>Ashwini Chauhan on 19/09/2025, 11:41</span>
                   </div>
                 </div>
 
                 {/* Last Updated By */}
-                <div className="pt-4">
+                <div className="pt-2">
                   <div className="flex items-center gap-3">
                     <span>Last updated By</span>
-                    <Avatar className="w-5 h-5">
+                    <Avatar className="w-7 h-7">
                       <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face" />
                       <AvatarFallback>AC</AvatarFallback>
                     </Avatar>
-                    <span>
-                      Ashwini Chauhan on 19/09/2025, 15:35
-                    </span>
+                    <span>Ashwini Chauhan on 19/09/2025, 15:35</span>
                   </div>
                 </div>
 
                 {/* Work Order History */}
                 <div className="border-t border-border pt-8">
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="font-medium">
-                      Work Order History
-                    </h3>
+                    <h3 className="font-medium">Work Order History</h3>
                     <div className="flex items-center gap-4">
                       <span className="text-sm text-muted-foreground">
                         Aug 1 - Sep 19
@@ -852,10 +764,7 @@ export function Assets() {
 
                   {/* Chart */}
                   <div className="h-64 mb-6">
-                    <ResponsiveContainer
-                      width="100%"
-                      height="100%"
-                    >
+                    <ResponsiveContainer width="100%" height="100%">
                       <LineChart
                         data={[
                           { date: "29/07/2025", value: 0 },
@@ -874,10 +783,7 @@ export function Assets() {
                           bottom: 60,
                         }}
                       >
-                        <CartesianGrid
-                          strokeDasharray="3 3"
-                          stroke="#f0f0f0"
-                        />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                         <XAxis
                           dataKey="date"
                           axisLine={false}
@@ -905,14 +811,14 @@ export function Assets() {
                         <Line
                           type="monotone"
                           dataKey="value"
-                          stroke="#3b82f6"
+                          stroke="orange"
                           strokeWidth={2}
                           dot={{
-                            fill: "#3b82f6",
+                            fill: "orange",
                             strokeWidth: 2,
                             r: 4,
                           }}
-                          activeDot={{ r: 6, fill: "#3b82f6" }}
+                          activeDot={{ r: 6, fill: "orange" }}
                         />
                       </LineChart>
                     </ResponsiveContainer>
@@ -924,21 +830,15 @@ export function Assets() {
                     <div className="flex items-start justify-between p-4 border rounded-lg">
                       <div className="flex items-start gap-3">
                         <div className="w-8 h-8 bg-orange-100 rounded flex items-center justify-center">
-                          <span className="text-orange-600 text-sm">
-                            📋
-                          </span>
+                          <span className="text-orange-600 text-sm">📋</span>
                         </div>
                         <div>
-                          <h4 className="font-medium mb-1">
-                            Daily inspection
-                          </h4>
+                          <h4 className="font-medium mb-1">Daily inspection</h4>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <span>Requested by</span>
                             <Avatar className="w-4 h-4">
                               <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face" />
-                              <AvatarFallback>
-                                AC
-                              </AvatarFallback>
+                              <AvatarFallback>AC</AvatarFallback>
                             </Avatar>
                             <span>Ashwini Chauhan</span>
                           </div>
@@ -958,9 +858,7 @@ export function Assets() {
                         >
                           Electrical
                         </Badge>
-                        <div className="text-sm text-muted-foreground">
-                          #6
-                        </div>
+                        <div className="text-sm text-muted-foreground">#6</div>
                         <div className="flex items-center gap-1 mt-1">
                           <div className="w-2 h-2 bg-red-500 rounded-full" />
                           <span className="text-xs text-muted-foreground">
@@ -974,21 +872,15 @@ export function Assets() {
                     <div className="flex items-start justify-between p-4 border rounded-lg">
                       <div className="flex items-start gap-3">
                         <div className="w-8 h-8 bg-orange-100 rounded flex items-center justify-center">
-                          <span className="text-orange-600 text-sm">
-                            📋
-                          </span>
+                          <span className="text-orange-600 text-sm">📋</span>
                         </div>
                         <div>
-                          <h4 className="font-medium mb-1">
-                            Daily inspection
-                          </h4>
+                          <h4 className="font-medium mb-1">Daily inspection</h4>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <span>Completed by</span>
                             <Avatar className="w-4 h-4">
                               <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face" />
-                              <AvatarFallback>
-                                AC
-                              </AvatarFallback>
+                              <AvatarFallback>AC</AvatarFallback>
                             </Avatar>
                             <span>Ashwini Chauhan</span>
                           </div>
@@ -1008,9 +900,7 @@ export function Assets() {
                         >
                           Electrical
                         </Badge>
-                        <div className="text-sm text-muted-foreground">
-                          #2
-                        </div>
+                        <div className="text-sm text-muted-foreground">#2</div>
                         <div className="flex items-center gap-1 mt-1">
                           <div className="w-2 h-2 bg-red-500 rounded-full" />
                           <span className="text-xs text-muted-foreground">
@@ -1024,9 +914,7 @@ export function Assets() {
                     <div className="flex items-start justify-between p-4 border rounded-lg">
                       <div className="flex items-start gap-3">
                         <div className="w-8 h-8 bg-orange-100 rounded flex items-center justify-center">
-                          <span className="text-orange-600 text-sm">
-                            📋
-                          </span>
+                          <span className="text-orange-600 text-sm">📋</span>
                         </div>
                         <div>
                           <h4 className="font-medium mb-1">
@@ -1036,9 +924,7 @@ export function Assets() {
                             <span>Completed by</span>
                             <Avatar className="w-4 h-4">
                               <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face" />
-                              <AvatarFallback>
-                                AC
-                              </AvatarFallback>
+                              <AvatarFallback>AC</AvatarFallback>
                             </Avatar>
                             <span>Ashwini Chauhan</span>
                           </div>
@@ -1058,9 +944,7 @@ export function Assets() {
                         >
                           Electrical
                         </Badge>
-                        <div className="text-sm text-muted-foreground">
-                          #3
-                        </div>
+                        <div className="text-sm text-muted-foreground">#3</div>
                         <div className="flex items-center gap-1 mt-1">
                           <div className="w-2 h-2 bg-red-500 rounded-full" />
                           <span className="text-xs text-muted-foreground">
@@ -1074,9 +958,7 @@ export function Assets() {
                     <div className="flex items-start justify-between p-4 border rounded-lg">
                       <div className="flex items-start gap-3">
                         <div className="w-8 h-8 bg-orange-100 rounded flex items-center justify-center">
-                          <span className="text-orange-600 text-sm">
-                            📋
-                          </span>
+                          <span className="text-orange-600 text-sm">📋</span>
                         </div>
                         <div>
                           <h4 className="font-medium mb-1">
@@ -1086,9 +968,7 @@ export function Assets() {
                             <span>Completed by</span>
                             <Avatar className="w-4 h-4">
                               <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face" />
-                              <AvatarFallback>
-                                AC
-                              </AvatarFallback>
+                              <AvatarFallback>AC</AvatarFallback>
                             </Avatar>
                             <span>Ashwini Chauhan</span>
                           </div>
@@ -1108,9 +988,7 @@ export function Assets() {
                         >
                           Electrical
                         </Badge>
-                        <div className="text-sm text-muted-foreground">
-                          #4
-                        </div>
+                        <div className="text-sm text-muted-foreground">#4</div>
                         <div className="flex items-center gap-1 mt-1">
                           <div className="w-2 h-2 bg-red-500 rounded-full" />
                           <span className="text-xs text-muted-foreground">
@@ -1137,9 +1015,7 @@ export function Assets() {
                     <div className="flex items-start justify-between p-4 border rounded-lg">
                       <div className="flex items-start gap-3">
                         <div className="w-8 h-8 bg-orange-100 rounded flex items-center justify-center">
-                          <span className="text-orange-600 text-sm">
-                            📋
-                          </span>
+                          <span className="text-orange-600 text-sm">📋</span>
                         </div>
                         <div>
                           <h4 className="font-medium mb-1">
@@ -1149,18 +1025,14 @@ export function Assets() {
                             <span>Requested by</span>
                             <Avatar className="w-4 h-4">
                               <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face" />
-                              <AvatarFallback>
-                                AC
-                              </AvatarFallback>
+                              <AvatarFallback>AC</AvatarFallback>
                             </Avatar>
                             <span>Ashwini Chauhan</span>
                           </div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm text-muted-foreground">
-                          #5
-                        </div>
+                        <div className="text-sm text-muted-foreground">#5</div>
                       </div>
                     </div>
                   </div>

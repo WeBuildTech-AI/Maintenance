@@ -1,8 +1,23 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { Users, Link2, Plus, ExternalLink, MoreHorizontal, MapPin, Phone, Mail } from "lucide-react";
-import { Vendor } from "./vendors.types";
+import {
+  Users,
+  Link2,
+  Plus,
+  ExternalLink,
+  MoreHorizontal,
+  MapPin,
+  Phone,
+  Mail,
+} from "lucide-react";
+import { type Vendor } from "./vendors.types";
 import { ContactFormDialog } from "./ContactFormDialog";
 
 export function VendorDetails({
@@ -29,7 +44,7 @@ export function VendorDetails({
       .toUpperCase();
 
   return (
-    <section className="flex-1 overflow-auto p-6">
+    <section className="flex-1 overflow-auto">
       <Card className="shadow-sm">
         <CardHeader className="flex flex-wrap items-center justify-between gap-3 border-b border-border">
           <div>
@@ -39,13 +54,22 @@ export function VendorDetails({
             </CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button
+              size="sm"
+              className="gap-2 border cursor-pointer border-orange-600 bg-white text-orange-600 hover:bg-orange-50"
+            >
               <Link2 className="h-4 w-4" /> Link Asset
             </Button>
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button
+              size="sm"
+              className="gap-2 border cursor-pointer border-orange-600 bg-white text-orange-600 hover:bg-orange-50"
+            >
               <Plus className="h-4 w-4" /> New Purchase Order
             </Button>
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button
+              size="sm"
+              className="gap-2 border cursor-pointer border-orange-600 bg-white text-orange-600 hover:bg-orange-50"
+            >
               <ExternalLink className="h-4 w-4" /> Edit
             </Button>
             <Button variant="ghost" size="icon">
@@ -57,7 +81,9 @@ export function VendorDetails({
         <CardContent className="space-y-6 p-6">
           {/* Contacts */}
           <div>
-            <h3 className="text-sm font-semibold text-foreground">Contact List</h3>
+            <h3 className="text-sm font-semibold text-foreground">
+              Contact List
+            </h3>
             <div className="mt-3 space-y-3">
               {vendor.contacts.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
@@ -78,7 +104,9 @@ export function VendorDetails({
                       </div>
                       <div>
                         <p className="text-sm font-medium">{c.name}</p>
-                        <p className="text-xs text-muted-foreground">{c.role || "Contact"}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {c.role || "Contact"}
+                        </p>
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
@@ -118,7 +146,9 @@ export function VendorDetails({
                   <div>
                     <p className="text-sm font-medium">{loc.name}</p>
                     {loc.parent && (
-                      <p className="text-xs text-muted-foreground">Parent: {loc.parent}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Parent: {loc.parent}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -140,7 +170,11 @@ export function VendorDetails({
           {/* Services */}
           <div className="flex flex-wrap gap-2">
             {vendor.services.map((s) => (
-              <Badge key={s} variant="outline" className="bg-primary/5 text-primary">
+              <Badge
+                key={s}
+                variant="outline"
+                className="bg-primary/5 text-primary"
+              >
                 {s}
               </Badge>
             ))}

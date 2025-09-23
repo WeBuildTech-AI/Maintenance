@@ -287,7 +287,7 @@ const DialogHeader = React.forwardRef<
     {...props}
   >
     {children}
-    <DialogClose className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring">
+    <DialogClose className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground p-1 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring">
       <XIcon className="h-5 w-5" />
       {/* <span className="sr-only">Close</span> */}
     </DialogClose>
