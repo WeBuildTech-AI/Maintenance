@@ -1,7 +1,20 @@
 // src/components/Sidebar.tsx
 import {
-  ShoppingCart, TrendingUp, Package, MessageSquare, Tag, Archive, 
-  BookOpen, Gauge, Zap, MapPin, Users, Wrench, X, Settings, Handshake
+  ShoppingCart,
+  TrendingUp,
+  Package,
+  MessageSquare,
+  Tag,
+  Archive,
+  BookOpen,
+  Gauge,
+  Zap,
+  MapPin,
+  Users,
+  Wrench,
+  X,
+  Settings,
+  Handshake,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { ScrollArea } from "./ui/scroll-area";
@@ -11,7 +24,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator
+  DropdownMenuSeparator,
 } from "./ui/dropdown-menu";
 import { NavLink } from "react-router-dom";
 
@@ -43,11 +56,13 @@ export function Sidebar({ onClose, user, onLogout }: SidebarProps) {
       {/* Header */}
       <div className="p-4 border-b border-sidebar-border flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-sidebar-foreground">MaintainOS</h1>
+          <h1 className="text-xl font-semibold text-sidebar-foreground">
+            MaintainOS
+          </h1>
           <p className="text-sm text-sidebar-foreground/70">Control Center</p>
         </div>
         {onClose && (
-          <Button variant="ghost" size="sm" onClick={onClose} >
+          <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
         )}
@@ -81,11 +96,14 @@ export function Sidebar({ onClose, user, onLogout }: SidebarProps) {
 
       {/* User Section */}
       <div className="p-4 border-t border-sidebar-border">
-        <div className="flex items-start gap-3 mb-3">
+        <div className="flex items-center gap-3 mb-3">
           <Avatar className="h-8 w-8">
             <AvatarImage src={user?.avatar} alt={user?.name} />
             <AvatarFallback>
-              {user?.name?.split(" ").map((n) => n[0]).join("") || "U"}
+              {user?.name
+                ?.split(" ")
+                .map((n) => n[0])
+                .join("") || "U"}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
@@ -96,13 +114,13 @@ export function Sidebar({ onClose, user, onLogout }: SidebarProps) {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="h-auto p-0 text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground"
+                  className="h-auto p-2 text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground"
                 >
-                  <Settings className="h-3 w-3 mr-1" />
+                  <Settings className="h-3 w-3 mr-1 " />
                   Settings
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" side="right">
+              <DropdownMenuContent align="start" side="top">
                 <DropdownMenuItem>Profile</DropdownMenuItem>
                 <DropdownMenuItem>Account Settings</DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -111,7 +129,9 @@ export function Sidebar({ onClose, user, onLogout }: SidebarProps) {
             </DropdownMenu>
           </div>
         </div>
-        <div className="text-xs text-sidebar-foreground/60">v1.0.0 | Support</div>
+        <div className="text-xs text-sidebar-foreground/60">
+          v1.0.0 | Support
+        </div>
       </div>
     </div>
   );

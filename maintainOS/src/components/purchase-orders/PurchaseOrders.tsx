@@ -704,7 +704,7 @@ export function PurchaseOrders() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-2 gap-6 mt-4">
                       <Card className="p-4">
                         <div className="text-sm text-muted-foreground mb-2">
                           Shipping Info
@@ -728,65 +728,27 @@ export function PurchaseOrders() {
 
                   {/* Comments box (visual only) */}
                   <div ref={commentsRef}>
-                    <Comment />
-                  </div>
-
-                  {/* <div className="fixed bottom-6 right-6 z-50 sm:bottom-8 sm:right-8 z-50 flex flex-col items-end">
-                    <div
-                      className={`
-          transition-all duration-300 ease-in-out
-          ${
-            showCommentBox
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-4 pointer-events-none"
-          }
-        `}
-                    >
-                      <div className="bg-white w-80 sm:w-96 rounded-xl shadow-2xl border border-slate-200 mb-4">
-                        <div className="p-4">
-                          <h3 className="font-bold text-lg text-slate-800 mb-3">
-                            Leave a comment
-                          </h3>
-                          <textarea
-                            value={comment}
-                            onChange={(e) => setComment(e.target.value)}
-                            placeholder="Share your thoughts..."
-                            className="w-full h-28 p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-slate-700"
-                          />
-                          <div className="flex justify-end mt-3">
-                            <button
-                              onClick={handleSend}
-                              className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors disabled:opacity-50"
-                              disabled={!comment.trim()}
-                            >
-                              <PaperAirplaneIcon />
-                              <span>Send</span>
-                            </button>
-                          </div>
+                    <div>
+                      <h3 className="font-medium mb-3">
+                        Comments &amp; History
+                      </h3>
+                      <div className="border rounded-lg p-4">
+                        {/* <div className="text-sm text-muted-foreground mb-2">
+                          Write a comment…
                         </div>
+                        <div className="border rounded-md h-24 bg-muted/30" /> */}
                       </div>
                     </div>
-                    <button
-                      onClick={() => setShowCommentBox(!showCommentBox)}
-                      className="bg-indigo-600 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transform transition-transform duration-200 hover:scale-110"
-                      aria-label={
-                        showCommentBox
-                          ? "Close comment box"
-                          : "Open comment box"
-                      }
-                    >
-                     <div
-                        className="transition-transform duration-300 ease-in-out"
-                        style={{
-                          transform: showCommentBox
-                            ? "rotate(90deg)"
-                            : "rotate(0deg)",
-                        }}
-                      >
-                        {showCommentBox ? <XMarkIcon /> : <ChatIcon />}
-                      </div>
-                    </button>
-                  </div> */}
+                  </div>
+                  <div>
+                    <Comment
+                      showCommentBox={showCommentBox}
+                      comment={comment}
+                      handleSend={handleSend}
+                      setShowCommentBox={setShowCommentBox}
+                      setComment={setComment}
+                    />
+                  </div>
                 </div>
 
                 {/* Footer (fixed at bottom of right pane) */}
