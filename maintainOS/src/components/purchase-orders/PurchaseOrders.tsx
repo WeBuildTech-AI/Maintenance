@@ -401,7 +401,7 @@ export function PurchaseOrders() {
         </div>
 
         {/* Right Details */}
-        <div className="flex-1 bg-card mr-2 ml-3 border border-border min-h-0 flex flex-col border-border">
+        <div className="flex-1 bg-card mr-3 ml-2 border border-border min-h-0 flex flex-col border-border">
           {selectedPO ? (
             <div className="h-full flex flex-col min-h-0">
               {/* Header */}
