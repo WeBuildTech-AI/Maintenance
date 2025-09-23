@@ -1,21 +1,12 @@
-import { BaseInMemoryService, StoredEntity } from '../../common/base-in-memory.service';
-import { CreateMeterDto, MeterType } from './dto/create-meter.dto';
+import { Meter } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
+import { CreateMeterDto } from './dto/create-meter.dto';
 import { UpdateMeterDto } from './dto/update-meter.dto';
-export interface MeterDetails {
-    organizationId: string;
-    name: string;
-    meterType?: MeterType;
-    description?: string;
-    unit?: string;
-    assetId?: string;
-    locationId?: string;
-    readingFrequency?: Record<string, any>;
-    photos?: string[];
-}
-export type MeterEntity = StoredEntity<MeterDetails>;
-export declare class MetersService extends BaseInMemoryService<MeterDetails> {
-    createMeter(payload: CreateMeterDto): MeterEntity;
-    updateMeter(id: string, payload: UpdateMeterDto): MeterEntity;
-    findAllMeters(): MeterEntity[];
-    findMeterById(id: string): MeterEntity;
+export declare class MetersService {
+    private readonly prisma;
+    constructor(prisma: PrismaService);
+    createMeter(payload: CreateMeterDto): Promise<Meter>;
+    updateMeter(id: string, payload: UpdateMeterDto): Promise<Meter>;
+    findAllMeters(): Promise<Meter[]>;
+    findMeterById(id: string): Promise<Meter>;
 }

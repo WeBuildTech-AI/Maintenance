@@ -1,38 +1,30 @@
 import { Injectable } from '@nestjs/common';
-import { BaseInMemoryService, StoredEntity } from '../../common/base-in-memory.service';
+import { Team } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
 
-export interface TeamDetails {
-  organizationId: string;
-  name: string;
-  description?: string;
-  color?: string;
-  isEscalationTeam?: boolean;
-  criticalParts?: boolean;
-}
-
-export type TeamEntity = StoredEntity<TeamDetails>;
-
 @Injectable()
-export class TeamsService extends BaseInMemoryService<TeamDetails> {
-  createTeam(payload: CreateTeamDto): TeamEntity {
-    return super.create(payload);
+export class TeamsService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  createTeam(payload: CreateTeamDto): Promise<Team> {
+    return this.prisma.team.create({ data: payload });
   }
 
-  updateTeam(id: string, payload: UpdateTeamDto): TeamEntity {
-    return super.update(id, payload);
+  updateTeam(id: string, payload: UpdateTeamDto): Promise<Team> {
+    return this.prisma.team.update({ where: { id }, data: payload });
   }
 
-  removeTeam(id: string): TeamEntity {
-    return super.remove(id);
+  removeTeam(id: string): Promise<Team> {
+    return this.prisma.team.delete({ where: { id } });
   }
 
-  findAllTeams(): TeamEntity[] {
-    return super.findAll();
+  findAllTeams(): Promise<Team[]> {
+    return this.prisma.team.findMany();
   }
 
-  findTeamById(id: string): TeamEntity {
-    return super.findOne(id);
+  findTeamById(id: string): Promise<Team> {
+    return this.prisma.team.findUniqueOrThrow({ where: { id } });
   }
 }

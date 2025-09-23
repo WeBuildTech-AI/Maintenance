@@ -1,17 +1,13 @@
-import { BaseInMemoryService, StoredEntity } from '../../common/base-in-memory.service';
-import { CreateCategoryDto, CategoryIcon } from './dto/create-category.dto';
+import { Category } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
+import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-export interface CategoryDetails {
-    organizationId: string;
-    name: string;
-    categoryIcon?: CategoryIcon;
-    description?: string;
-}
-export type CategoryEntity = StoredEntity<CategoryDetails>;
-export declare class CategoriesService extends BaseInMemoryService<CategoryDetails> {
-    createCategory(payload: CreateCategoryDto): CategoryEntity;
-    updateCategory(id: string, payload: UpdateCategoryDto): CategoryEntity;
-    removeCategory(id: string): CategoryEntity;
-    findAllCategories(): CategoryEntity[];
-    findCategoryById(id: string): CategoryEntity;
+export declare class CategoriesService {
+    private readonly prisma;
+    constructor(prisma: PrismaService);
+    createCategory(payload: CreateCategoryDto): Promise<Category>;
+    updateCategory(id: string, payload: UpdateCategoryDto): Promise<Category>;
+    removeCategory(id: string): Promise<Category>;
+    findAllCategories(): Promise<Category[]>;
+    findCategoryById(id: string): Promise<Category>;
 }

@@ -1,31 +1,32 @@
 import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { createHash, randomUUID } from 'crypto';
-import { UserEntity, UsersService } from '../users/users.service';
+import { User } from '@prisma/client';
+import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
 export interface AuthPayload {
   accessToken: string;
-  user: Omit<UserEntity, 'passwordHash'>;
+  user: Omit<User, 'passwordHash'>;
 }
 
 @Injectable()
 export class AuthService {
   constructor(private readonly usersService: UsersService) {}
 
-  register(payload: RegisterDto): AuthPayload {
-    const existingUser = this.usersService.findByEmail(payload.email);
+  async register(payload: RegisterDto): Promise<AuthPayload> {
+    const existingUser = await this.usersService.findByEmail(payload.email);
     if (existingUser) {
       throw new ConflictException('Email is already registered.');
     }
 
     const passwordHash = this.hashPassword(payload.password);
-    const user = this.usersService.createUser(payload, passwordHash);
+    const user = await this.usersService.createUser(payload, passwordHash);
     return this.buildAuthPayload(user);
   }
 
-  login(payload: LoginDto): AuthPayload {
-    const user = this.usersService.findByEmail(payload.email);
+  async login(payload: LoginDto): Promise<AuthPayload> {
+    const user = await this.usersService.findByEmail(payload.email);
     if (!user) {
       throw new UnauthorizedException('Invalid credentials.');
     }
@@ -38,7 +39,7 @@ export class AuthService {
     return this.buildAuthPayload(user);
   }
 
-  private buildAuthPayload(user: UserEntity): AuthPayload {
+  private buildAuthPayload(user: User): AuthPayload {
     const { passwordHash, ...safeUser } = user;
     return {
       accessToken: this.generateToken(user.id),

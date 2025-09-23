@@ -5,28 +5,35 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CategoriesService = void 0;
 const common_1 = require("@nestjs/common");
-const base_in_memory_service_1 = require("../../common/base-in-memory.service");
-let CategoriesService = class CategoriesService extends base_in_memory_service_1.BaseInMemoryService {
+const prisma_service_1 = require("../../database/prisma.service");
+let CategoriesService = class CategoriesService {
+    constructor(prisma) {
+        this.prisma = prisma;
+    }
     createCategory(payload) {
-        return super.create(payload);
+        return this.prisma.category.create({ data: payload });
     }
     updateCategory(id, payload) {
-        return super.update(id, payload);
+        return this.prisma.category.update({ where: { id }, data: payload });
     }
     removeCategory(id) {
-        return super.remove(id);
+        return this.prisma.category.delete({ where: { id } });
     }
     findAllCategories() {
-        return super.findAll();
+        return this.prisma.category.findMany();
     }
     findCategoryById(id) {
-        return super.findOne(id);
+        return this.prisma.category.findUniqueOrThrow({ where: { id } });
     }
 };
 exports.CategoriesService = CategoriesService;
 exports.CategoriesService = CategoriesService = __decorate([
-    (0, common_1.Injectable)()
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
 ], CategoriesService);

@@ -1,20 +1,13 @@
-import { BaseInMemoryService, StoredEntity } from '../../common/base-in-memory.service';
-import { CreateProcedureDto, ProcedureFrequency, ProcedureType } from './dto/create-procedure.dto';
+import { Procedure } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
+import { CreateProcedureDto } from './dto/create-procedure.dto';
 import { UpdateProcedureDto } from './dto/update-procedure.dto';
-export interface ProcedureDetails {
-    organizationId: string;
-    title: string;
-    assetIds?: string[];
-    type?: ProcedureType;
-    frequency?: ProcedureFrequency;
-    description?: string;
-    files?: string[];
-}
-export type ProcedureEntity = StoredEntity<ProcedureDetails>;
-export declare class ProceduresService extends BaseInMemoryService<ProcedureDetails> {
-    createProcedure(payload: CreateProcedureDto): ProcedureEntity;
-    updateProcedure(id: string, payload: UpdateProcedureDto): ProcedureEntity;
-    findAllProcedures(): ProcedureEntity[];
-    findProcedureById(id: string): ProcedureEntity;
-    removeProcedure(id: string): ProcedureEntity;
+export declare class ProceduresService {
+    private readonly prisma;
+    constructor(prisma: PrismaService);
+    createProcedure(payload: CreateProcedureDto): Promise<Procedure>;
+    updateProcedure(id: string, payload: UpdateProcedureDto): Promise<Procedure>;
+    findAllProcedures(): Promise<Procedure[]>;
+    findProcedureById(id: string): Promise<Procedure>;
+    removeProcedure(id: string): Promise<Procedure>;
 }

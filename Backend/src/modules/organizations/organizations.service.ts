@@ -1,35 +1,30 @@
 import { Injectable } from '@nestjs/common';
-import { BaseInMemoryService, StoredEntity } from '../../common/base-in-memory.service';
-import { CreateOrganizationDto, IndustryType } from './dto/create-organization.dto';
+import { Organization } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
+import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
 
-export interface OrganizationDetails {
-  name: string;
-  industry?: IndustryType;
-  size?: number;
-}
-
-export type OrganizationEntity = StoredEntity<OrganizationDetails>;
-
 @Injectable()
-export class OrganizationsService extends BaseInMemoryService<OrganizationDetails> {
-  createOrganization(payload: CreateOrganizationDto): OrganizationEntity {
-    return super.create(payload);
+export class OrganizationsService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  createOrganization(payload: CreateOrganizationDto): Promise<Organization> {
+    return this.prisma.organization.create({ data: payload });
   }
 
-  updateOrganization(id: string, payload: UpdateOrganizationDto): OrganizationEntity {
-    return super.update(id, payload);
+  updateOrganization(id: string, payload: UpdateOrganizationDto): Promise<Organization> {
+    return this.prisma.organization.update({ where: { id }, data: payload });
   }
 
-  removeOrganization(id: string): OrganizationEntity {
-    return super.remove(id);
+  removeOrganization(id: string): Promise<Organization> {
+    return this.prisma.organization.delete({ where: { id } });
   }
 
-  findAllOrganizations(): OrganizationEntity[] {
-    return super.findAll();
+  findAllOrganizations(): Promise<Organization[]> {
+    return this.prisma.organization.findMany();
   }
 
-  findOrganizationById(id: string): OrganizationEntity {
-    return super.findOne(id);
+  findOrganizationById(id: string): Promise<Organization> {
+    return this.prisma.organization.findUniqueOrThrow({ where: { id } });
   }
 }

@@ -1,43 +1,30 @@
 import { Injectable } from '@nestjs/common';
-import { BaseInMemoryService, StoredEntity } from '../../common/base-in-memory.service';
-import {
-  CreateProcedureDto,
-  ProcedureFrequency,
-  ProcedureType,
-} from './dto/create-procedure.dto';
+import { Procedure } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
+import { CreateProcedureDto } from './dto/create-procedure.dto';
 import { UpdateProcedureDto } from './dto/update-procedure.dto';
 
-export interface ProcedureDetails {
-  organizationId: string;
-  title: string;
-  assetIds?: string[];
-  type?: ProcedureType;
-  frequency?: ProcedureFrequency;
-  description?: string;
-  files?: string[];
-}
-
-export type ProcedureEntity = StoredEntity<ProcedureDetails>;
-
 @Injectable()
-export class ProceduresService extends BaseInMemoryService<ProcedureDetails> {
-  createProcedure(payload: CreateProcedureDto): ProcedureEntity {
-    return super.create(payload);
+export class ProceduresService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  createProcedure(payload: CreateProcedureDto): Promise<Procedure> {
+    return this.prisma.procedure.create({ data: payload });
   }
 
-  updateProcedure(id: string, payload: UpdateProcedureDto): ProcedureEntity {
-    return super.update(id, payload);
+  updateProcedure(id: string, payload: UpdateProcedureDto): Promise<Procedure> {
+    return this.prisma.procedure.update({ where: { id }, data: payload });
   }
 
-  findAllProcedures(): ProcedureEntity[] {
-    return super.findAll();
+  findAllProcedures(): Promise<Procedure[]> {
+    return this.prisma.procedure.findMany();
   }
 
-  findProcedureById(id: string): ProcedureEntity {
-    return super.findOne(id);
+  findProcedureById(id: string): Promise<Procedure> {
+    return this.prisma.procedure.findUniqueOrThrow({ where: { id } });
   }
 
-  removeProcedure(id: string): ProcedureEntity {
-    return super.remove(id);
+  removeProcedure(id: string): Promise<Procedure> {
+    return this.prisma.procedure.delete({ where: { id } });
   }
 }

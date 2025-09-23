@@ -7,11 +7,11 @@ import { WorkOrdersService } from './work-orders.service';
 export declare class WorkOrdersController {
     private readonly workOrdersService;
     constructor(workOrdersService: WorkOrdersService);
-    findAll(_pagination: PaginationQueryDto): import("./view-models/work-order.view").WorkOrderEntity[];
-    findOne(id: string): import("./view-models/work-order.view").WorkOrderEntity;
-    create(body: CreateWorkOrderDto): import("./view-models/work-order.view").WorkOrderEntity;
-    update(id: string, body: UpdateWorkOrderDto): import("./view-models/work-order.view").WorkOrderEntity;
-    remove(id: string): import("./view-models/work-order.view").WorkOrderEntity;
-    assign(id: string, body: AssignWorkOrderDto): import("./view-models/work-order.view").WorkOrderEntity;
-    comment(id: string, body: CreateWorkOrderCommentDto): import("./view-models/work-order.view").WorkOrderEntity;
+    findAll(_pagination: PaginationQueryDto): Promise<import("./view-models/work-order.view").WorkOrderEntity[]>;
+    findOne(id: string): Promise<import("./view-models/work-order.view").WorkOrderEntity>;
+    create(body: CreateWorkOrderDto): Promise<import("./view-models/work-order.view").WorkOrderEntity>;
+    update(id: string, body: UpdateWorkOrderDto): Promise<import("./view-models/work-order.view").WorkOrderEntity>;
+    remove(id: string): Promise<import("./view-models/work-order.view").WorkOrderEntity>;
+    assign(id: string, body: AssignWorkOrderDto): Promise<import("./view-models/work-order.view").WorkOrderEntity>;
+    comment(id: string, body: CreateWorkOrderCommentDto): Promise<import("./view-models/work-order.view").WorkOrderEntity>;
 }

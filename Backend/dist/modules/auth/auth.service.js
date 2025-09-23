@@ -17,17 +17,17 @@ let AuthService = class AuthService {
     constructor(usersService) {
         this.usersService = usersService;
     }
-    register(payload) {
-        const existingUser = this.usersService.findByEmail(payload.email);
+    async register(payload) {
+        const existingUser = await this.usersService.findByEmail(payload.email);
         if (existingUser) {
             throw new common_1.ConflictException('Email is already registered.');
         }
         const passwordHash = this.hashPassword(payload.password);
-        const user = this.usersService.createUser(payload, passwordHash);
+        const user = await this.usersService.createUser(payload, passwordHash);
         return this.buildAuthPayload(user);
     }
-    login(payload) {
-        const user = this.usersService.findByEmail(payload.email);
+    async login(payload) {
+        const user = await this.usersService.findByEmail(payload.email);
         if (!user) {
             throw new common_1.UnauthorizedException('Invalid credentials.');
         }

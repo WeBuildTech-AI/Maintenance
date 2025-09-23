@@ -1,33 +1,26 @@
 import { Injectable } from '@nestjs/common';
-import { BaseInMemoryService, StoredEntity } from '../../common/base-in-memory.service';
+import { InventoryLevel } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
 import { CreateInventoryDto } from './dto/create-inventory.dto';
 import { UpdateInventoryDto } from './dto/update-inventory.dto';
 
-export interface InventoryDetails {
-  organizationId: string;
-  partId: string;
-  quantity: number;
-  locationId?: string;
-  notes?: string;
-}
-
-export type InventoryEntity = StoredEntity<InventoryDetails>;
-
 @Injectable()
-export class InventoryService extends BaseInMemoryService<InventoryDetails> {
-  createInventory(payload: CreateInventoryDto): InventoryEntity {
-    return super.create(payload);
+export class InventoryService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  createInventory(payload: CreateInventoryDto): Promise<InventoryLevel> {
+    return this.prisma.inventoryLevel.create({ data: payload });
   }
 
-  updateInventory(id: string, payload: UpdateInventoryDto): InventoryEntity {
-    return super.update(id, payload);
+  updateInventory(id: string, payload: UpdateInventoryDto): Promise<InventoryLevel> {
+    return this.prisma.inventoryLevel.update({ where: { id }, data: payload });
   }
 
-  findAllInventory(): InventoryEntity[] {
-    return super.findAll();
+  findAllInventory(): Promise<InventoryLevel[]> {
+    return this.prisma.inventoryLevel.findMany();
   }
 
-  findInventoryById(id: string): InventoryEntity {
-    return super.findOne(id);
+  findInventoryById(id: string): Promise<InventoryLevel> {
+    return this.prisma.inventoryLevel.findUniqueOrThrow({ where: { id } });
   }
 }

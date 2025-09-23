@@ -5,8 +5,60 @@ import { MetersService } from './meters.service';
 export declare class MetersController {
     private readonly metersService;
     constructor(metersService: MetersService);
-    findAll(_pagination: PaginationQueryDto): import("./meters.service").MeterEntity[];
-    findOne(id: string): import("./meters.service").MeterEntity;
-    create(body: CreateMeterDto): import("./meters.service").MeterEntity;
-    update(id: string, body: UpdateMeterDto): import("./meters.service").MeterEntity;
+    findAll(_pagination: PaginationQueryDto): Promise<{
+        name: string;
+        id: string;
+        organizationId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        description: string | null;
+        locationId: string | null;
+        photos: string[];
+        meterType: import(".prisma/client").$Enums.MeterType | null;
+        unit: string | null;
+        assetId: string | null;
+        readingFrequency: import("@prisma/client/runtime/library").JsonValue | null;
+    }[]>;
+    findOne(id: string): Promise<{
+        name: string;
+        id: string;
+        organizationId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        description: string | null;
+        locationId: string | null;
+        photos: string[];
+        meterType: import(".prisma/client").$Enums.MeterType | null;
+        unit: string | null;
+        assetId: string | null;
+        readingFrequency: import("@prisma/client/runtime/library").JsonValue | null;
+    }>;
+    create(body: CreateMeterDto): Promise<{
+        name: string;
+        id: string;
+        organizationId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        description: string | null;
+        locationId: string | null;
+        photos: string[];
+        meterType: import(".prisma/client").$Enums.MeterType | null;
+        unit: string | null;
+        assetId: string | null;
+        readingFrequency: import("@prisma/client/runtime/library").JsonValue | null;
+    }>;
+    update(id: string, body: UpdateMeterDto): Promise<{
+        name: string;
+        id: string;
+        organizationId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        description: string | null;
+        locationId: string | null;
+        photos: string[];
+        meterType: import(".prisma/client").$Enums.MeterType | null;
+        unit: string | null;
+        assetId: string | null;
+        readingFrequency: import("@prisma/client/runtime/library").JsonValue | null;
+    }>;
 }

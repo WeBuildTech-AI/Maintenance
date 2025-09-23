@@ -1,36 +1,30 @@
 import { Injectable } from '@nestjs/common';
-import { BaseInMemoryService, StoredEntity } from '../../common/base-in-memory.service';
-import { CreateCategoryDto, CategoryIcon } from './dto/create-category.dto';
+import { Category } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
+import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
-export interface CategoryDetails {
-  organizationId: string;
-  name: string;
-  categoryIcon?: CategoryIcon;
-  description?: string;
-}
-
-export type CategoryEntity = StoredEntity<CategoryDetails>;
-
 @Injectable()
-export class CategoriesService extends BaseInMemoryService<CategoryDetails> {
-  createCategory(payload: CreateCategoryDto): CategoryEntity {
-    return super.create(payload);
+export class CategoriesService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  createCategory(payload: CreateCategoryDto): Promise<Category> {
+    return this.prisma.category.create({ data: payload });
   }
 
-  updateCategory(id: string, payload: UpdateCategoryDto): CategoryEntity {
-    return super.update(id, payload);
+  updateCategory(id: string, payload: UpdateCategoryDto): Promise<Category> {
+    return this.prisma.category.update({ where: { id }, data: payload });
   }
 
-  removeCategory(id: string): CategoryEntity {
-    return super.remove(id);
+  removeCategory(id: string): Promise<Category> {
+    return this.prisma.category.delete({ where: { id } });
   }
 
-  findAllCategories(): CategoryEntity[] {
-    return super.findAll();
+  findAllCategories(): Promise<Category[]> {
+    return this.prisma.category.findMany();
   }
 
-  findCategoryById(id: string): CategoryEntity {
-    return super.findOne(id);
+  findCategoryById(id: string): Promise<Category> {
+    return this.prisma.category.findUniqueOrThrow({ where: { id } });
   }
 }

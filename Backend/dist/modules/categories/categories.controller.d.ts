@@ -5,9 +5,49 @@ import { CategoriesService } from './categories.service';
 export declare class CategoriesController {
     private readonly categoriesService;
     constructor(categoriesService: CategoriesService);
-    findAll(_pagination: PaginationQueryDto): import("./categories.service").CategoryEntity[];
-    findOne(id: string): import("./categories.service").CategoryEntity;
-    create(body: CreateCategoryDto): import("./categories.service").CategoryEntity;
-    update(id: string, body: UpdateCategoryDto): import("./categories.service").CategoryEntity;
-    remove(id: string): import("./categories.service").CategoryEntity;
+    findAll(_pagination: PaginationQueryDto): Promise<{
+        name: string;
+        id: string;
+        organizationId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        description: string | null;
+        categoryIcon: import(".prisma/client").$Enums.CategoryIcon | null;
+    }[]>;
+    findOne(id: string): Promise<{
+        name: string;
+        id: string;
+        organizationId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        description: string | null;
+        categoryIcon: import(".prisma/client").$Enums.CategoryIcon | null;
+    }>;
+    create(body: CreateCategoryDto): Promise<{
+        name: string;
+        id: string;
+        organizationId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        description: string | null;
+        categoryIcon: import(".prisma/client").$Enums.CategoryIcon | null;
+    }>;
+    update(id: string, body: UpdateCategoryDto): Promise<{
+        name: string;
+        id: string;
+        organizationId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        description: string | null;
+        categoryIcon: import(".prisma/client").$Enums.CategoryIcon | null;
+    }>;
+    remove(id: string): Promise<{
+        name: string;
+        id: string;
+        organizationId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        description: string | null;
+        categoryIcon: import(".prisma/client").$Enums.CategoryIcon | null;
+    }>;
 }

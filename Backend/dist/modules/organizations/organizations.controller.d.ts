@@ -5,9 +5,44 @@ import { OrganizationsService } from './organizations.service';
 export declare class OrganizationsController {
     private readonly organizationsService;
     constructor(organizationsService: OrganizationsService);
-    findAll(_pagination: PaginationQueryDto): import("./organizations.service").OrganizationEntity[];
-    findOne(id: string): import("./organizations.service").OrganizationEntity;
-    create(body: CreateOrganizationDto): import("./organizations.service").OrganizationEntity;
-    update(id: string, body: UpdateOrganizationDto): import("./organizations.service").OrganizationEntity;
-    remove(id: string): import("./organizations.service").OrganizationEntity;
+    findAll(_pagination: PaginationQueryDto): Promise<{
+        name: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        industry: import(".prisma/client").$Enums.IndustryType | null;
+        size: number | null;
+    }[]>;
+    findOne(id: string): Promise<{
+        name: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        industry: import(".prisma/client").$Enums.IndustryType | null;
+        size: number | null;
+    }>;
+    create(body: CreateOrganizationDto): Promise<{
+        name: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        industry: import(".prisma/client").$Enums.IndustryType | null;
+        size: number | null;
+    }>;
+    update(id: string, body: UpdateOrganizationDto): Promise<{
+        name: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        industry: import(".prisma/client").$Enums.IndustryType | null;
+        size: number | null;
+    }>;
+    remove(id: string): Promise<{
+        name: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        industry: import(".prisma/client").$Enums.IndustryType | null;
+        size: number | null;
+    }>;
 }

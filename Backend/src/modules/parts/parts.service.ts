@@ -1,44 +1,30 @@
 import { Injectable } from '@nestjs/common';
-import { BaseInMemoryService, StoredEntity } from '../../common/base-in-memory.service';
+import { Part } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
 import { CreatePartDto } from './dto/create-part.dto';
 import { UpdatePartDto } from './dto/update-part.dto';
 
-export interface PartDetails {
-  organizationId: string;
-  name: string;
-  photos?: string[];
-  unitCost?: number;
-  description?: string;
-  qrCode?: string;
-  partsType?: string[];
-  location?: Record<string, any>;
-  assetIds?: string[];
-  teamsInCharge?: string[];
-  vendorIds?: string[];
-  files?: string[];
-}
-
-export type PartEntity = StoredEntity<PartDetails>;
-
 @Injectable()
-export class PartsService extends BaseInMemoryService<PartDetails> {
-  createPart(payload: CreatePartDto): PartEntity {
-    return super.create(payload);
+export class PartsService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  createPart(payload: CreatePartDto): Promise<Part> {
+    return this.prisma.part.create({ data: payload });
   }
 
-  updatePart(id: string, payload: UpdatePartDto): PartEntity {
-    return super.update(id, payload);
+  updatePart(id: string, payload: UpdatePartDto): Promise<Part> {
+    return this.prisma.part.update({ where: { id }, data: payload });
   }
 
-  removePart(id: string): PartEntity {
-    return super.remove(id);
+  removePart(id: string): Promise<Part> {
+    return this.prisma.part.delete({ where: { id } });
   }
 
-  findAllParts(): PartEntity[] {
-    return super.findAll();
+  findAllParts(): Promise<Part[]> {
+    return this.prisma.part.findMany();
   }
 
-  findPartById(id: string): PartEntity {
-    return super.findOne(id);
+  findPartById(id: string): Promise<Part> {
+    return this.prisma.part.findUniqueOrThrow({ where: { id } });
   }
 }

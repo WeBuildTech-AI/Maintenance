@@ -1,41 +1,30 @@
 import { Injectable } from '@nestjs/common';
-import { BaseInMemoryService, StoredEntity } from '../../common/base-in-memory.service';
+import { Location } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
 
-export interface LocationDetails {
-  organizationId: string;
-  name: string;
-  photoUrls?: string[];
-  address?: string;
-  description?: string;
-  teamsInCharge?: string[];
-  files?: string[];
-  vendorIds?: string[];
-  parentLocationId?: string;
-}
-
-export type LocationEntity = StoredEntity<LocationDetails>;
-
 @Injectable()
-export class LocationsService extends BaseInMemoryService<LocationDetails> {
-  createLocation(payload: CreateLocationDto): LocationEntity {
-    return super.create(payload);
+export class LocationsService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  createLocation(payload: CreateLocationDto): Promise<Location> {
+    return this.prisma.location.create({ data: payload });
   }
 
-  updateLocation(id: string, payload: UpdateLocationDto): LocationEntity {
-    return super.update(id, payload);
+  updateLocation(id: string, payload: UpdateLocationDto): Promise<Location> {
+    return this.prisma.location.update({ where: { id }, data: payload });
   }
 
-  findAllLocations(): LocationEntity[] {
-    return super.findAll();
+  findAllLocations(): Promise<Location[]> {
+    return this.prisma.location.findMany();
   }
 
-  findLocationById(id: string): LocationEntity {
-    return super.findOne(id);
+  findLocationById(id: string): Promise<Location> {
+    return this.prisma.location.findUniqueOrThrow({ where: { id } });
   }
 
-  removeLocation(id: string): LocationEntity {
-    return super.remove(id);
+  removeLocation(id: string): Promise<Location> {
+    return this.prisma.location.delete({ where: { id } });
   }
 }

@@ -1,19 +1,13 @@
-import { BaseInMemoryService, StoredEntity } from '../../common/base-in-memory.service';
+import { Team } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
-export interface TeamDetails {
-    organizationId: string;
-    name: string;
-    description?: string;
-    color?: string;
-    isEscalationTeam?: boolean;
-    criticalParts?: boolean;
-}
-export type TeamEntity = StoredEntity<TeamDetails>;
-export declare class TeamsService extends BaseInMemoryService<TeamDetails> {
-    createTeam(payload: CreateTeamDto): TeamEntity;
-    updateTeam(id: string, payload: UpdateTeamDto): TeamEntity;
-    removeTeam(id: string): TeamEntity;
-    findAllTeams(): TeamEntity[];
-    findTeamById(id: string): TeamEntity;
+export declare class TeamsService {
+    private readonly prisma;
+    constructor(prisma: PrismaService);
+    createTeam(payload: CreateTeamDto): Promise<Team>;
+    updateTeam(id: string, payload: UpdateTeamDto): Promise<Team>;
+    removeTeam(id: string): Promise<Team>;
+    findAllTeams(): Promise<Team[]>;
+    findTeamById(id: string): Promise<Team>;
 }

@@ -1,14 +1,10 @@
-import { BaseInMemoryService, StoredEntity } from '../../common/base-in-memory.service';
+import { Attachment } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
 import { CreateAttachmentDto } from './dto/create-attachment.dto';
-export interface AttachmentDetails {
-    fileName: string;
-    url: string;
-    uploadedBy?: string;
-    category?: string;
-}
-export type AttachmentEntity = StoredEntity<AttachmentDetails>;
-export declare class AttachmentsService extends BaseInMemoryService<AttachmentDetails> {
-    createAttachment(payload: CreateAttachmentDto): AttachmentEntity;
-    findAllAttachments(): AttachmentEntity[];
-    findAttachmentById(id: string): AttachmentEntity;
+export declare class AttachmentsService {
+    private readonly prisma;
+    constructor(prisma: PrismaService);
+    createAttachment(payload: CreateAttachmentDto): Promise<Attachment>;
+    findAllAttachments(): Promise<Attachment[]>;
+    findAttachmentById(id: string): Promise<Attachment>;
 }

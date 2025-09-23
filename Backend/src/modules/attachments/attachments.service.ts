@@ -1,27 +1,28 @@
 import { Injectable } from '@nestjs/common';
-import { BaseInMemoryService, StoredEntity } from '../../common/base-in-memory.service';
+import { Attachment } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
 import { CreateAttachmentDto } from './dto/create-attachment.dto';
 
-export interface AttachmentDetails {
-  fileName: string;
-  url: string;
-  uploadedBy?: string;
-  category?: string;
-}
-
-export type AttachmentEntity = StoredEntity<AttachmentDetails>;
-
 @Injectable()
-export class AttachmentsService extends BaseInMemoryService<AttachmentDetails> {
-  createAttachment(payload: CreateAttachmentDto): AttachmentEntity {
-    return super.create(payload);
+export class AttachmentsService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  createAttachment(payload: CreateAttachmentDto): Promise<Attachment> {
+    return this.prisma.attachment.create({
+      data: {
+        fileName: payload.fileName,
+        fileUrl: payload.url,
+        uploadedBy: payload.uploadedBy,
+        category: payload.category,
+      },
+    });
   }
 
-  findAllAttachments(): AttachmentEntity[] {
-    return super.findAll();
+  findAllAttachments(): Promise<Attachment[]> {
+    return this.prisma.attachment.findMany();
   }
 
-  findAttachmentById(id: string): AttachmentEntity {
-    return super.findOne(id);
+  findAttachmentById(id: string): Promise<Attachment> {
+    return this.prisma.attachment.findUniqueOrThrow({ where: { id } });
   }
 }

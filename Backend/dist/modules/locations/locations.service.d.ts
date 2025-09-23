@@ -1,22 +1,13 @@
-import { BaseInMemoryService, StoredEntity } from '../../common/base-in-memory.service';
+import { Location } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
-export interface LocationDetails {
-    organizationId: string;
-    name: string;
-    photoUrls?: string[];
-    address?: string;
-    description?: string;
-    teamsInCharge?: string[];
-    files?: string[];
-    vendorIds?: string[];
-    parentLocationId?: string;
-}
-export type LocationEntity = StoredEntity<LocationDetails>;
-export declare class LocationsService extends BaseInMemoryService<LocationDetails> {
-    createLocation(payload: CreateLocationDto): LocationEntity;
-    updateLocation(id: string, payload: UpdateLocationDto): LocationEntity;
-    findAllLocations(): LocationEntity[];
-    findLocationById(id: string): LocationEntity;
-    removeLocation(id: string): LocationEntity;
+export declare class LocationsService {
+    private readonly prisma;
+    constructor(prisma: PrismaService);
+    createLocation(payload: CreateLocationDto): Promise<Location>;
+    updateLocation(id: string, payload: UpdateLocationDto): Promise<Location>;
+    findAllLocations(): Promise<Location[]>;
+    findLocationById(id: string): Promise<Location>;
+    removeLocation(id: string): Promise<Location>;
 }

@@ -22,20 +22,25 @@ let UsersController = class UsersController {
     constructor(usersService) {
         this.usersService = usersService;
     }
-    findAll(_pagination) {
-        return this.usersService.findAllUsers().map((user) => this.sanitize(user));
+    async findAll(_pagination) {
+        const users = await this.usersService.findAllUsers();
+        return users.map((user) => this.sanitize(user));
     }
-    findOne(id) {
-        return this.sanitize(this.usersService.findUserById(id));
+    async findOne(id) {
+        const user = await this.usersService.findUserById(id);
+        return this.sanitize(user);
     }
-    create(body) {
-        return this.sanitize(this.usersService.createUser(body));
+    async create(body) {
+        const user = await this.usersService.createUser(body);
+        return this.sanitize(user);
     }
-    update(id, body) {
-        return this.sanitize(this.usersService.updateUser(id, body));
+    async update(id, body) {
+        const user = await this.usersService.updateUser(id, body);
+        return this.sanitize(user);
     }
-    remove(id) {
-        return this.sanitize(this.usersService.removeUser(id));
+    async remove(id) {
+        const user = await this.usersService.removeUser(id);
+        return this.sanitize(user);
     }
     sanitize(user) {
         const { passwordHash, ...safeUser } = user;
@@ -48,21 +53,21 @@ __decorate([
     __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [pagination_query_dto_1.PaginationQueryDto]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], UsersController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], UsersController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_user_dto_1.CreateUserDto]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], UsersController.prototype, "create", null);
 __decorate([
     (0, common_1.Patch)(':id'),
@@ -70,14 +75,14 @@ __decorate([
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, update_user_dto_1.UpdateUserDto]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], UsersController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], UsersController.prototype, "remove", null);
 exports.UsersController = UsersController = __decorate([
     (0, common_1.Controller)({ path: 'users', version: '1' }),

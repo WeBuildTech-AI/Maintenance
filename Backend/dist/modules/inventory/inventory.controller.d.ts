@@ -5,8 +5,44 @@ import { InventoryService } from './inventory.service';
 export declare class InventoryController {
     private readonly inventoryService;
     constructor(inventoryService: InventoryService);
-    findAll(_pagination: PaginationQueryDto): import("./inventory.service").InventoryEntity[];
-    findOne(id: string): import("./inventory.service").InventoryEntity;
-    create(body: CreateInventoryDto): import("./inventory.service").InventoryEntity;
-    update(id: string, body: UpdateInventoryDto): import("./inventory.service").InventoryEntity;
+    findAll(_pagination: PaginationQueryDto): Promise<{
+        id: string;
+        organizationId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        locationId: string | null;
+        notes: string | null;
+        partId: string;
+        quantity: number;
+    }[]>;
+    findOne(id: string): Promise<{
+        id: string;
+        organizationId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        locationId: string | null;
+        notes: string | null;
+        partId: string;
+        quantity: number;
+    }>;
+    create(body: CreateInventoryDto): Promise<{
+        id: string;
+        organizationId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        locationId: string | null;
+        notes: string | null;
+        partId: string;
+        quantity: number;
+    }>;
+    update(id: string, body: UpdateInventoryDto): Promise<{
+        id: string;
+        organizationId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        locationId: string | null;
+        notes: string | null;
+        partId: string;
+        quantity: number;
+    }>;
 }

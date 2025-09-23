@@ -1,46 +1,52 @@
 import { Injectable } from '@nestjs/common';
-import { BaseInMemoryService, StoredEntity } from '../../common/base-in-memory.service';
+import { Prisma, User } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
-export interface UserDetails {
-  organizationId: string;
-  fullName: string;
-  email: string;
-  phoneNumber?: string;
-  role: string;
-  passwordHash?: string;
-}
-
-export type UserEntity = StoredEntity<UserDetails>;
-
 @Injectable()
-export class UsersService extends BaseInMemoryService<UserDetails> {
-  createUser(payload: CreateUserDto, passwordHash?: string): UserEntity {
+export class UsersService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async createUser(payload: CreateUserDto, passwordHash?: string): Promise<User> {
     const { password, ...rest } = payload;
-    return super.create({
-      ...rest,
-      passwordHash: passwordHash ?? password,
+    return this.prisma.user.create({
+      data: {
+        ...rest,
+        passwordHash: passwordHash ?? password ?? null,
+      },
     });
   }
 
-  updateUser(id: string, payload: UpdateUserDto): UserEntity {
-    return super.update(id, payload);
+  async updateUser(id: string, payload: UpdateUserDto): Promise<User> {
+    const { password, ...rest } = payload;
+    const data: Prisma.UserUpdateInput = {
+      ...rest,
+    };
+
+    if (password) {
+      data.passwordHash = password;
+    }
+
+    return this.prisma.user.update({
+      where: { id },
+      data,
+    });
   }
 
-  removeUser(id: string): UserEntity {
-    return super.remove(id);
+  async removeUser(id: string): Promise<User> {
+    return this.prisma.user.delete({ where: { id } });
   }
 
-  findAllUsers(): UserEntity[] {
-    return super.findAll();
+  async findAllUsers(): Promise<User[]> {
+    return this.prisma.user.findMany();
   }
 
-  findUserById(id: string): UserEntity {
-    return super.findOne(id);
+  async findUserById(id: string): Promise<User> {
+    return this.prisma.user.findUniqueOrThrow({ where: { id } });
   }
 
-  findByEmail(email: string): UserEntity | undefined {
-    return this.findAllUsers().find((user) => user.email === email);
+  async findByEmail(email: string): Promise<User | null> {
+    return this.prisma.user.findUnique({ where: { email } });
   }
 }

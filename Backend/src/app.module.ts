@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import configuration from './config/configuration';
+import { PrismaModule } from './database/prisma.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
@@ -28,6 +29,7 @@ import { AutomationsModule } from './modules/automations/automations.module';
       load: [configuration],
       expandVariables: true,
     }),
+    PrismaModule,
     AuthModule,
     UsersModule,
     OrganizationsModule,

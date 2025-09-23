@@ -1,25 +1,19 @@
 import { Injectable } from '@nestjs/common';
-import { BaseInMemoryService, StoredEntity } from '../../common/base-in-memory.service';
+import { AuditLog } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
 import { CreateAuditLogDto } from './dto/create-audit-log.dto';
 
-export interface AuditLogDetails {
-  organizationId: string;
-  actorId: string;
-  action: string;
-  targetType: string;
-  targetId?: string;
-  metadata?: Record<string, any>;
-}
-
-export type AuditLogEntity = StoredEntity<AuditLogDetails>;
-
 @Injectable()
-export class AuditLogsService extends BaseInMemoryService<AuditLogDetails> {
-  createAuditLog(payload: CreateAuditLogDto): AuditLogEntity {
-    return super.create(payload);
+export class AuditLogsService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  createAuditLog(payload: CreateAuditLogDto): Promise<AuditLog> {
+    return this.prisma.auditLog.create({ data: payload });
   }
 
-  findAllAuditLogs(): AuditLogEntity[] {
-    return super.findAll();
+  findAllAuditLogs(): Promise<AuditLog[]> {
+    return this.prisma.auditLog.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
   }
 }

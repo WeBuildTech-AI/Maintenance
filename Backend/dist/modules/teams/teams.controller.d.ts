@@ -5,9 +5,59 @@ import { TeamsService } from './teams.service';
 export declare class TeamsController {
     private readonly teamsService;
     constructor(teamsService: TeamsService);
-    findAll(_pagination: PaginationQueryDto): import("./teams.service").TeamEntity[];
-    findOne(id: string): import("./teams.service").TeamEntity;
-    create(body: CreateTeamDto): import("./teams.service").TeamEntity;
-    update(id: string, body: UpdateTeamDto): import("./teams.service").TeamEntity;
-    remove(id: string): import("./teams.service").TeamEntity;
+    findAll(_pagination: PaginationQueryDto): Promise<{
+        name: string;
+        id: string;
+        organizationId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        description: string | null;
+        color: string | null;
+        isEscalationTeam: boolean;
+        criticalParts: boolean;
+    }[]>;
+    findOne(id: string): Promise<{
+        name: string;
+        id: string;
+        organizationId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        description: string | null;
+        color: string | null;
+        isEscalationTeam: boolean;
+        criticalParts: boolean;
+    }>;
+    create(body: CreateTeamDto): Promise<{
+        name: string;
+        id: string;
+        organizationId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        description: string | null;
+        color: string | null;
+        isEscalationTeam: boolean;
+        criticalParts: boolean;
+    }>;
+    update(id: string, body: UpdateTeamDto): Promise<{
+        name: string;
+        id: string;
+        organizationId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        description: string | null;
+        color: string | null;
+        isEscalationTeam: boolean;
+        criticalParts: boolean;
+    }>;
+    remove(id: string): Promise<{
+        name: string;
+        id: string;
+        organizationId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        description: string | null;
+        color: string | null;
+        isEscalationTeam: boolean;
+        criticalParts: boolean;
+    }>;
 }
