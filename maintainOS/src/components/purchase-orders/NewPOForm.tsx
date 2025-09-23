@@ -17,14 +17,14 @@ export function NewPOForm(props: NewPOFormProps) {
   } = props;
 
   return (
-    <div className="h-full flex flex-col min-h-0">
+    <div className="flex-1 min-h-0 overflow-y-auto">
       {/* Header (fixed in right pane) */}
-      <div className="p-6 border-b flex items-center justify-between flex-none">
+      {/* <div className="p-6 border-b flex items-center justify-between flex-none">
         <h2 className="text-xl font-medium">New Purchase Order</h2>
-      </div>
+      </div> */}
 
       {/* Body (single scroll area) */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div>
         <div className="mx-auto w-full max-w-[820px] p-6 space-y-10">
           {/* Vendor */}
           <section>
@@ -138,7 +138,7 @@ export function NewPOForm(props: NewPOFormProps) {
             {/* Taxes & total */}
             <div className="flex items-center justify-end gap-6 mt-3">
               <button
-                className="text-sm text-blue-600"
+                className="text-sm text-orange-600"
                 onClick={() => setNewPO((s) => ({ ...s, extraCosts: Number(s.extraCosts) || 0 }))}
               >
                 + Add Taxes &amp; Costs
@@ -327,31 +327,6 @@ export function NewPOForm(props: NewPOFormProps) {
               </Button>
             </div>
           </section>
-        </div>
-      </div>
-
-      {/* Footer (fixed in right pane) */}
-      <div className="p-6 border-t flex justify-end">
-        <div className="flex items-center gap-3 justify-end">
-          <Button variant="ghost" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button
-              className="gap-2 bg-blue-600 hover:bg-blue-700"
-              onClick={createPurchaseOrder}
-              disabled={!newPO.vendorId || newPO.items.every((i) => !i.itemName)}
-            >
-              <Plus className="h-4 w-4" />
-              Create Purchase Order
-            </Button>
-          {/* <Button
-            className="gap-2 bg-blue-600 hover:bg-blue-700"
-            onClick={createPurchaseOrder}
-            disabled={!newPO.vendorId || newPO.items.every((i) => !i.itemName)}
-          >
-            <Plus className="h-4 w-4" />
-            Create Purchase Order
-          </Button> */}
         </div>
       </div>
     </div>

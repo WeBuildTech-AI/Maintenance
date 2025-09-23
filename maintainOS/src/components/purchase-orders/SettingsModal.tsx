@@ -1,7 +1,17 @@
+"use client";
+
 import { useState } from "react";
 import { X } from "lucide-react";
 import type { SettingsModalProps, ColumnConfig } from "./po.types";
-
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogClose,
+} from "../ui/dialog"; // <-- import your custom Dialog components
 
 export default function SettingsModal({
   allColumns,
@@ -27,15 +37,12 @@ export default function SettingsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-green-600">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-md">
+    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="w-full max-w-md">
         {/* Header */}
-        <div className="flex justify-between items-center p-4 border-b">
-          <h2 className="text-lg font-semibold">Table Settings</h2>
-          <button onClick={onClose}>
-            <X className="h-5 w-5 text-gray-600" />
-          </button>
-        </div>
+        <DialogHeader className="border-b p-6">
+          <DialogTitle>Table Settings</DialogTitle>
+        </DialogHeader>
 
         {/* Content */}
         <div className="p-4 space-y-6">
@@ -74,7 +81,7 @@ export default function SettingsModal({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-2 p-4 border-t">
+        <DialogFooter className="border-t p-6">
           <button
             onClick={onClose}
             className="px-4 py-2 text-sm border rounded-md hover:bg-gray-100"
@@ -83,12 +90,12 @@ export default function SettingsModal({
           </button>
           <button
             onClick={handleSave}
-            className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            className="px-4 py-2 text-sm bg-orange-600 text-white rounded-md hover:bg-orange-700"
           >
             Save
           </button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

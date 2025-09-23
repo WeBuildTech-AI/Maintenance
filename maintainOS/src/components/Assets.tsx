@@ -296,7 +296,7 @@ export function Assets() {
               />
             </div>
             <Button
-              className="gap-2 bg-blue-600 hover:bg-blue-700"
+              className="gap-2 bg-orange-600 hover:bg-orange-700"
               onClick={() => setShowNewAssetForm(true)}
             >
               <Plus className="h-4 w-4" />
@@ -328,7 +328,7 @@ export function Assets() {
           <Button
             variant="ghost"
             size="sm"
-            className="gap-2 text-blue-600"
+            className="gap-2 text-orange-600"
           >
             <Settings className="h-4 w-4" />
             My Filters
@@ -338,7 +338,7 @@ export function Assets() {
 
       <div className="flex flex-1 min-h-0">
         {/* Left Panel - Assets List */}
-        <div className="w-96 border-r border-border bg-card flex flex-col min-h-0">
+        <div className="w-112 border-r border-border bg-card flex flex-col min-h-0">
           {/* Sort */}
           <div className="p-4 border-b border-border flex-shrink-0">
             <div className="flex items-center gap-2">
@@ -495,12 +495,12 @@ export function Assets() {
                     Pictures
                   </label>
                   <div
-                    className="w-full h-32 border-2 border-dashed border-blue-300 rounded-lg bg-blue-50 flex flex-col items-center justify-center cursor-pointer hover:bg-blue-100 transition-colors"
+                    className="w-full h-32 border-2 border-dashed border-orange-300 rounded-lg bg-orange-50 flex flex-col items-center justify-center cursor-pointer hover:bg-orange-100 transition-colors"
                     onDragOver={handleDragOver}
                     onDrop={handleDrop}
                   >
-                    <ImageIcon className="h-6 w-6 text-blue-600 mb-2" />
-                    <span className="text-sm text-blue-600">
+                    <ImageIcon className="h-6 w-6 text-orange-600 mb-2" />
+                    <span className="text-sm text-orange-600">
                       Add or drag pictures
                     </span>
                   </div>
@@ -512,12 +512,12 @@ export function Assets() {
                     Files
                   </label>
                   <div
-                    className="w-full h-32 border-2 border-dashed border-blue-300 rounded-lg bg-blue-50 flex flex-col items-center justify-center cursor-pointer hover:bg-blue-100 transition-colors"
+                    className="w-full h-32 border-2 border-dashed border-orange-300 rounded-lg bg-orange-50 flex flex-col items-center justify-center cursor-pointer hover:bg-orange-100 transition-colors"
                     onDragOver={handleDragOver}
                     onDrop={handleDrop}
                   >
-                    <File className="h-6 w-6 text-blue-600 mb-2" />
-                    <span className="text-sm text-blue-600">
+                    <File className="h-6 w-6 text-orange-600 mb-2" />
+                    <span className="text-sm text-orange-600">
                       Add or drag files
                     </span>
                   </div>
@@ -565,7 +565,7 @@ export function Assets() {
                 <div className="pt-4">
                   <Button
                     onClick={handleCreateAsset}
-                    className="bg-blue-600 hover:bg-blue-700"
+                    className="bg-orange-600 hover:bg-orange-700"
                     disabled={!newAsset.name}
                   >
                     Create
@@ -582,12 +582,12 @@ export function Assets() {
                     <h1 className="text-xl font-medium">
                       {selectedAsset.name}
                     </h1>
-                    <Link className="h-4 w-4 text-blue-600" />
+                    <Link className="h-4 w-4 text-orange-600" />
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
-                      className="gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+                      className="gap-2 text-orange-600 border-orange-200 hover:bg-orange-50"
                     >
                       <Edit className="h-4 w-4" />
                       Edit
@@ -636,7 +636,7 @@ export function Assets() {
                     </h2>
                     <Button
                       variant="ghost"
-                      className="gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-0 h-auto"
+                      className="gap-1 text-orange-600 hover:text-orange-700 hover:bg-orange-50 p-0 h-auto"
                     >
                       See More
                       <ChevronRight className="h-4 w-4" />
@@ -710,7 +710,7 @@ export function Assets() {
                 <div>
                   <h3 className="font-medium mb-3">Location</h3>
                   <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-blue-500" />
+                    <MapPin className="h-4 w-4 text-orange-500" />
                     <span>{selectedAsset.location}</span>
                   </div>
                 </div>
@@ -748,7 +748,7 @@ export function Assets() {
                 <div className="pt-4">
                   <Button
                     variant="outline"
-                    className="gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+                    className="gap-2 text-orange-600 border-orange-200 hover:bg-orange-50"
                   >
                     <Calendar className="h-4 w-4" />
                     Use in New Work Order
@@ -771,7 +771,7 @@ export function Assets() {
                   </p>
                   <Button
                     variant="link"
-                    className="text-blue-600 hover:text-blue-700 p-0 h-auto"
+                    className="text-orange-600 hover:text-orange-700 p-0 h-auto"
                   >
                     Create Sub-Asset
                   </Button>
@@ -785,7 +785,7 @@ export function Assets() {
                   <div className="border border-dashed border-border rounded-lg p-6">
                     <Button
                       variant="ghost"
-                      className="gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      className="gap-2 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
                     >
                       <Plus className="h-4 w-4" />
                       Create Automation
@@ -923,8 +923,8 @@ export function Assets() {
                     {/* Daily inspection - Open */}
                     <div className="flex items-start justify-between p-4 border rounded-lg">
                       <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-                          <span className="text-blue-600 text-sm">
+                        <div className="w-8 h-8 bg-orange-100 rounded flex items-center justify-center">
+                          <span className="text-orange-600 text-sm">
                             📋
                           </span>
                         </div>
@@ -944,9 +944,9 @@ export function Assets() {
                           </div>
                           <Badge
                             variant="outline"
-                            className="mt-2 bg-blue-50 text-blue-700 border-blue-200"
+                            className="mt-2 bg-orange-50 text-orange-700 border-orange-200"
                           >
-                            <div className="w-2 h-2 bg-blue-500 rounded-full mr-1" />
+                            <div className="w-2 h-2 bg-orange-500 rounded-full mr-1" />
                             Open
                           </Badge>
                         </div>
@@ -954,7 +954,7 @@ export function Assets() {
                       <div className="text-right">
                         <Badge
                           variant="outline"
-                          className="bg-blue-50 text-blue-700 border-blue-200 mb-2"
+                          className="bg-orange-50 text-orange-700 border-orange-200 mb-2"
                         >
                           Electrical
                         </Badge>
@@ -973,8 +973,8 @@ export function Assets() {
                     {/* Daily inspection - Done */}
                     <div className="flex items-start justify-between p-4 border rounded-lg">
                       <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-                          <span className="text-blue-600 text-sm">
+                        <div className="w-8 h-8 bg-orange-100 rounded flex items-center justify-center">
+                          <span className="text-orange-600 text-sm">
                             📋
                           </span>
                         </div>
@@ -1004,7 +1004,7 @@ export function Assets() {
                       <div className="text-right">
                         <Badge
                           variant="outline"
-                          className="bg-blue-50 text-blue-700 border-blue-200 mb-2"
+                          className="bg-orange-50 text-orange-700 border-orange-200 mb-2"
                         >
                           Electrical
                         </Badge>
@@ -1023,8 +1023,8 @@ export function Assets() {
                     {/* Check the voltage - Done #1 */}
                     <div className="flex items-start justify-between p-4 border rounded-lg">
                       <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-                          <span className="text-blue-600 text-sm">
+                        <div className="w-8 h-8 bg-orange-100 rounded flex items-center justify-center">
+                          <span className="text-orange-600 text-sm">
                             📋
                           </span>
                         </div>
@@ -1054,7 +1054,7 @@ export function Assets() {
                       <div className="text-right">
                         <Badge
                           variant="outline"
-                          className="bg-blue-50 text-blue-700 border-blue-200 mb-2"
+                          className="bg-orange-50 text-orange-700 border-orange-200 mb-2"
                         >
                           Electrical
                         </Badge>
@@ -1073,8 +1073,8 @@ export function Assets() {
                     {/* Check the voltage - Done #2 */}
                     <div className="flex items-start justify-between p-4 border rounded-lg">
                       <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-                          <span className="text-blue-600 text-sm">
+                        <div className="w-8 h-8 bg-orange-100 rounded flex items-center justify-center">
+                          <span className="text-orange-600 text-sm">
                             📋
                           </span>
                         </div>
@@ -1104,7 +1104,7 @@ export function Assets() {
                       <div className="text-right">
                         <Badge
                           variant="outline"
-                          className="bg-blue-50 text-blue-700 border-blue-200 mb-2"
+                          className="bg-orange-50 text-orange-700 border-orange-200 mb-2"
                         >
                           Electrical
                         </Badge>
@@ -1125,7 +1125,7 @@ export function Assets() {
                   <div className="flex justify-center mt-8">
                     <Button
                       variant="outline"
-                      className="gap-2 text-blue-600 border-blue-200 hover:bg-blue-50 rounded-full px-6"
+                      className="gap-2 text-orange-600 border-orange-200 hover:bg-orange-50 rounded-full px-6"
                     >
                       <Calendar className="h-4 w-4" />
                       Use in New Work Order
@@ -1136,8 +1136,8 @@ export function Assets() {
                   <div className="mt-8">
                     <div className="flex items-start justify-between p-4 border rounded-lg">
                       <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-                          <span className="text-blue-600 text-sm">
+                        <div className="w-8 h-8 bg-orange-100 rounded flex items-center justify-center">
+                          <span className="text-orange-600 text-sm">
                             📋
                           </span>
                         </div>

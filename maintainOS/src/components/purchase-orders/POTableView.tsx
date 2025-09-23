@@ -74,7 +74,7 @@ export default function PurchaseOrdersTable({ orders, columns, pageSize }: Purch
 
         case "Sent":
         return (
-            <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700">
+            <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-1 text-xs font-medium text-orange-700">
             <Send className="h-4 w-4" />
             Sent
             </span>
@@ -147,7 +147,7 @@ export default function PurchaseOrdersTable({ orders, columns, pageSize }: Purch
                                 );
                                 }
                             }}
-                            className="cursor-pointer accent-blue-600"
+                            className="cursor-pointer accent-orange-600"
                         />
                     </th>
                     {columns.map((col) => (
@@ -182,12 +182,12 @@ export default function PurchaseOrdersTable({ orders, columns, pageSize }: Purch
                         className="hover:bg-gray-50 transition border-b last:border-b-0"
                     >
                         {/* Vendor Avatar w/ hover checkbox */}
-                        <td key="rowCheckbox" className="px-4 py-3 w-10">
+                        <td key="rowCheckbox" className="px-4 py-4 w-10">
                             <input
                                 type="checkbox"
                                 checked={selectedPOs.includes(order.id)}
                                 onChange={() => toggleSelection(order.id)}
-                                className="cursor-pointer h-4 w-4 accent-blue-600 appearance-auto"
+                                className="cursor-pointer accent-orange-600"
                             />
                         </td>
                         {columns.map((col) => {

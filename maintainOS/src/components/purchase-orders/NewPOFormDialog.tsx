@@ -29,25 +29,34 @@ export function NewPOFormDialog({
 }: NewPOFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      {showTrigger && (
-        <Button
-          className="gap-2 bg-blue-600 hover:bg-blue-700"
-          onClick={() => onOpenChange(true)}
-        >
-          <Plus className="h-4 w-4" />
-          {triggerLabel}
-        </Button>
-      )}
 
-      <DialogContent className="sm:max-w-4xl w-[92vw] max-h-[85vh] p-0 overflow-hidden bg-card text-card-foreground">
+      <DialogContent
+        className="sm:max-w-4xl w-[92vw] max-h-[85vh] p-0 flex flex-col bg-card text-card-foreground"
+        style={{ width: "min(92vw, 56rem)", maxHeight: "85vh", padding: 0 }}
+      >
         <DialogHeader className="border-b p-6">
           <DialogTitle>New Purchase Order</DialogTitle>
         </DialogHeader>
 
-        <div className="h-[70vh] overflow-y-auto">
+        <div className="flex-1 overflow-y-auto p-6">
           <NewPOForm {...formProps} />
-          {/* If you still want to test quickly: */}
-              {/* <div className="p-6">Temporary Form</div> */}
+        </div>
+
+        <div className="flex justify-end gap-3 border-t p-6">
+          <Button variant="ghost" onClick={formProps.onCancel}>
+            Cancel
+          </Button>
+          <Button
+            className="gap-2 bg-orange-600 hover:bg-orange-700"
+            onClick={formProps.createPurchaseOrder}
+            disabled={
+              !formProps.newPO.vendorId ||
+              formProps.newPO.items.every((item) => !item.itemName)
+            }
+          >
+            <Plus className="h-4 w-4" />
+            Create Purchase Order
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
