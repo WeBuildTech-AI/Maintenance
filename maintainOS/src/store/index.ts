@@ -14,6 +14,8 @@ import teamMembersReducer from "./api/teamMembersSlice";
 import teamsReducer from "./api/teamsSlice";
 import vendorsReducer from "./api/vendorsSlice";
 import workOrdersReducer from "./api/workOrdersSlice";
+import attachmentsReducer from "./api/attachmentsSlice";
+import auditLogsReducer from "./api/auditLogsSlice";
 
 export const store = configureStore({
   reducer: {
@@ -32,6 +34,8 @@ export const store = configureStore({
     teams: teamsReducer,
     vendors: vendorsReducer,
     workOrders: workOrdersReducer,
+    attachments: attachmentsReducer,
+    auditLogs: auditLogsReducer,
   },
 });
 
