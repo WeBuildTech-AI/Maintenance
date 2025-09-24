@@ -50,7 +50,7 @@ async function bootstrap() {
     customCss: ".swagger-ui .topbar { display: none }",
   });
 
-  const port = configService.get<number>("PORT", 3000);
+  const port = configService.get<number>("PORT", 8000);
   await app.listen(port);
   Logger.log(
     `🚀 Application is running on: http://localhost:${port}/api/v1/health`,
