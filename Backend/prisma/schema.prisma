@@ -16,6 +16,21 @@ enum UserRole {
   @@map("user_role")
 }
 
+enum UserVisibility {
+  full
+  limited
+
+  @@map("user_visibility")
+}
+
+enum RateVisibility {
+  edit
+  view
+  hidden
+
+  @@map("rate_visibility")
+}
+
 enum IndustryType {
   manufacturing
   real_estate
@@ -141,6 +156,11 @@ model User {
   email          String   @unique @db.VarChar(255)
   phoneNumber    String?  @map("phone_number") @db.VarChar(50)
   role           UserRole
+  fullUserVisibility UserVisibility
+  hourlyRate     Float?   @map("hourly_rate") @db.DoublePrecision
+  rateVisibility RateVisibility
+  schedulableUser    Boolean  @default(false) @map("schedulable_user")
+  workingDays    String[] @default([]) @map("working_days")
   passwordHash   String?  @map("password_hash") @db.Text
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
