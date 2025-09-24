@@ -8,22 +8,41 @@ import {
   IsUUID,
   Max,
   Min,
-} from 'class-validator';
-import { Type } from 'class-transformer';
+} from "class-validator";
+import { Type } from "class-transformer";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export enum AssetCriticality {
-  HIGH = 'high',
-  MEDIUM = 'medium',
-  LOW = 'low',
+  HIGH = "high",
+  MEDIUM = "medium",
+  LOW = "low",
+}
+
+export enum AssetStatus {
+  ONLINE = "online",
+  OFFLINE = "offline",
+  DO_NOT_TRACK = "doNotTrack"
 }
 
 export class CreateAssetDto {
+  @ApiProperty({
+    description: "Organization ID that owns this asset",
+    example: "123e4567-e89b-12d3-a456-426614174000",
+  })
   @IsUUID()
   organizationId!: string;
 
+  @ApiProperty({
+    description: "Asset name",
+    example: "HVAC Unit #1",
+  })
   @IsString()
   name!: string;
 
+  @ApiPropertyOptional({
+    description: "Asset description",
+    example: "Main HVAC unit for building A",
+  })
   @IsOptional()
   @IsString()
   description?: string;
@@ -45,6 +64,10 @@ export class CreateAssetDto {
   @IsOptional()
   @IsEnum(AssetCriticality)
   criticality?: AssetCriticality;
+
+  @IsOptional()
+  @IsEnum(AssetStatus)
+  status?: AssetStatus;
 
   @IsOptional()
   @Type(() => Number)
@@ -79,7 +102,7 @@ export class CreateAssetDto {
 
   @IsOptional()
   @IsArray()
-  @IsUUID('4', { each: true })
+  @IsUUID("4", { each: true })
   teamsInCharge?: string[];
 
   @IsOptional()
@@ -96,7 +119,7 @@ export class CreateAssetDto {
 
   @IsOptional()
   @IsArray()
-  @IsUUID('4', { each: true })
+  @IsUUID("4", { each: true })
   partIds?: string[];
 
   @IsOptional()

@@ -1,20 +1,56 @@
-import { Injectable } from '@nestjs/common';
-import { Prisma, User } from '@prisma/client';
-import { PrismaService } from '../../database/prisma.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { Injectable } from "@nestjs/common";
+import { Prisma, User } from "@prisma/client";
+import { PrismaService } from "../../database/prisma.service";
+import { CreateUserDto } from "./dto/create-user.dto";
+import { UpdateUserDto } from "./dto/update-user.dto";
+import * as bcrypt from "bcrypt";
 
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createUser(payload: CreateUserDto, passwordHash?: string): Promise<User> {
+  async createUser(payload: CreateUserDto): Promise<User> {
     const { password, ...rest } = payload;
-    return this.prisma.user.create({
-      data: {
-        ...rest,
-        passwordHash: passwordHash ?? password ?? null,
+    const saltOrRounds = 10;
+
+    let hashedPassword: string | undefined = undefined;
+
+    // Hash the user's password if provided
+    if (password) {
+      hashedPassword = await bcrypt.hash(password, saltOrRounds);
+    }
+
+    // Fetch organization defaults
+    const organization = await this.prisma.organization.findUniqueOrThrow({
+      where: { id: payload.organizationId },
+      select: {
+        defaultWorkOrderVisibility: true,
+        defaultHourlyRate: true,
+        defaultRateVisibility: true,
+        defaultWorkingDays: true,
+        defaultHoursPerDay: true,
+        defaultSchedulableUser: true,
       },
+    });
+
+    // Apply organization defaults for fields that are not explicitly provided
+    const userData = {
+      ...rest,
+      passwordHash: hashedPassword,
+      fullUserVisibility:
+        rest.fullUserVisibility ?? organization.defaultWorkOrderVisibility,
+      hourlyRate: rest.hourlyRate ?? organization.defaultHourlyRate,
+      rateVisibility: rest.rateVisibility ?? organization.defaultRateVisibility,
+      workingDays: rest.workingDays?.length
+        ? rest.workingDays
+        : organization.defaultWorkingDays,
+      hoursPerDay: rest.hoursPerDay ?? organization.defaultHoursPerDay,
+      schedulableUser:
+        rest.schedulableUser ?? organization.defaultSchedulableUser,
+    };
+
+    return this.prisma.user.create({
+      data: userData,
     });
   }
 

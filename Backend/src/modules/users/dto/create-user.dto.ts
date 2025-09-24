@@ -1,11 +1,14 @@
-import { IsEmail, IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
-
-enum UserRole {
-  ADMIN = 'admin',
-  MANAGER = 'manager',
-  TECHNICIAN = 'technician',
-  VIEWER = 'viewer',
-}
+import {
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUUID,
+  IsArray,
+  IsNumber,
+  IsBoolean,
+} from "class-validator";
+import { $Enums } from "@prisma/client";
 
 export class CreateUserDto {
   @IsUUID()
@@ -20,13 +23,39 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   phoneNumber?: string;
+  
+  @IsOptional()
+  @IsEnum($Enums.UserRole)
+  role!: $Enums.UserRole;
 
-  @IsEnum(UserRole)
-  role!: UserRole;
+  @IsOptional()
+  @IsEnum($Enums.UserVisibility)
+  fullUserVisibility?: $Enums.UserVisibility;
+
+  @IsOptional()
+  @IsNumber()
+  hourlyRate?: number;
+
+  @IsOptional()
+  @IsEnum($Enums.RateVisibility)
+  rateVisibility?: $Enums.RateVisibility;
+
+  @IsOptional()
+  @IsBoolean()
+  schedulableUser?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  workingDays?: string[];
+
+  @IsOptional()
+  @IsNumber()
+  hoursPerDay?: number;
 
   @IsOptional()
   @IsString()
   password?: string;
 }
 
-export { UserRole };
+export { $Enums };
