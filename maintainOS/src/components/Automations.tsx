@@ -24,8 +24,16 @@ import {
   WandSparkles,
   Bell,
   GitBranch,
+  LayoutGrid,
+  ChevronDown,
+  Search,
+  AlertTriangle,
+  Settings,
+  PanelTop,
+  Table,
 } from "lucide-react";
 import { SearchWithDropdown } from "./Locations/SearchWithDropdown";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 
 // ---------------- Small Inline Modal ----------------
 function ConfirmDiscardModal({
@@ -141,12 +149,8 @@ function ConfirmDiscardModal({
               cursor: "pointer",
               transition: "all 0.2s",
             }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.background = "#2563EB")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.background = "#3B82F6")
-            }
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#2563EB")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "#3B82F6")}
           >
             Discard Changes
           </button>
@@ -239,9 +243,7 @@ function NewAutomationForm({ onBack }: { onBack: () => void }) {
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-4 mb-4">
               <div className="flex justify-between items-center">
-                <p className="font-medium text-blue-800">
-                  When: Meter Reading
-                </p>
+                <p className="font-medium text-blue-800">When: Meter Reading</p>
                 <button className="p-2 hover:bg-blue-100 rounded">
                   <Trash2 className="h-4 w-4 text-blue-600" />
                 </button>
@@ -312,11 +314,7 @@ function NewAutomationForm({ onBack }: { onBack: () => void }) {
                 text="Change Asset status"
                 isLocked
               />
-              <ActionItem
-                icon={<Bell />}
-                text="Send a notification"
-                isLocked
-              />
+              <ActionItem icon={<Bell />} text="Send a notification" isLocked />
             </div>
           </div>
         </div>
@@ -335,6 +333,8 @@ function NewAutomationForm({ onBack }: { onBack: () => void }) {
 // ---------------- Automations Main ----------------
 export function Automations() {
   const [isCreatingRule, setIsCreatingRule] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+    const [viewMode, setViewMode] = useState("panel");
 
   if (isCreatingRule) {
     return <NewAutomationForm onBack={() => setIsCreatingRule(false)} />;
@@ -343,7 +343,7 @@ export function Automations() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      {/* <div className="flex justify-between items-center">
         <div>
           <h1>Automations</h1>
           <p className="text-muted-foreground">
@@ -354,6 +354,84 @@ export function Automations() {
           <Plus className="h-4 w-4 mr-2" />
           Create Rule
         </Button>
+      </div> */}
+
+      <div className=" border-border bg-card flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div>
+              <h1 className="text-xl font-medium">Automations</h1>
+              {/* <p className="text-muted-foreground mt-2">
+                No-code rule builder for automated maintenance workflows
+              </p> */}
+            </div>
+            {/* <div className="flex items-center gap-2">
+              <LayoutGrid className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Panel View</span>
+              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+            </div> */}
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  {/* plain trigger, styled as a row (no button chrome) */}
+                  <button
+                    type="button"
+                    className="flex h-6 items-center gap-2 cursor-pointer select-none
+                              text-sm text-muted-foreground hover:text-foreground bg-transparent p-0"
+                  >
+                    <span className="leading-none font-medium ">
+                      {viewMode === "panel" ? "Panel View" : "Table View"}
+                    </span>
+                    <ChevronDown className="h-3 w-3 shrink-0" />
+                  </button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem onClick={() => setViewMode("panel")}>
+                    <PanelTop className="mr-2 h-4 w-4" /> Panel View
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setViewMode("table")}>
+                    <Table className="mr-2 h-4 w-4" /> Table View
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 w-64"
+              />
+            </div>
+            <Button
+              className="gap-2 bg-orange-600 hover:bg-orange-700"
+              onClick={() => setIsCreatingRule(true)}
+            >
+              <Plus className="h-4 w-4" />
+              New Automations
+            </Button>
+          </div>
+        </div>
+
+        {/* Filter Section */}
+        <div className="flex items-center justify-between mt-2">
+          <div className="flex items-center gap-4">
+            <Button variant="outline" size="sm" className="gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              Criticality
+            </Button>
+            <Button variant="outline" size="sm" className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Filter
+            </Button>
+          </div>
+          <Button variant="ghost" size="sm" className="gap-2 text-orange-600">
+            <Settings className="h-4 w-4" />
+            My Filters
+          </Button>
+        </div>
       </div>
 
       {/* Dashboard Cards */}
@@ -367,8 +445,8 @@ export function Automations() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 border rounded">
+            <div className="space-y-4 p-1">
+              <div className="flex items-center justify-between p-2 border rounded">
                 <div>
                   <p className="font-medium">Critical Asset Failure Alert</p>
                   <p className="text-sm text-muted-foreground">
@@ -376,7 +454,9 @@ export function Automations() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="default">Active</Badge>
+                  <Badge className="gap-2 bg-white cursor-pointer text-orange-600 border border-orange-600 hover:bg-orange-50">
+                    Active
+                  </Badge>
                   <Button size="sm" variant="outline">
                     <Pause className="h-4 w-4" />
                   </Button>
@@ -391,7 +471,9 @@ export function Automations() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="default">Active</Badge>
+                  <Badge className="gap-2 bg-white cursor-pointer text-orange-600 border border-orange-600 hover:bg-orange-50">
+                    Active
+                  </Badge>
                   <Button size="sm" variant="outline">
                     <Pause className="h-4 w-4" />
                   </Button>
@@ -411,7 +493,8 @@ export function Automations() {
           </CardHeader>
           <CardContent>
             <div className="text-center py-12 text-muted-foreground">
-              Visual rule builder interface with "When-Then" logic would be implemented here
+              Visual rule builder interface with "When-Then" logic would be
+              implemented here
             </div>
           </CardContent>
         </Card>
