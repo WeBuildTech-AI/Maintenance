@@ -10,7 +10,7 @@ import {
   type UpdateWorkOrderData,
   type AssignWorkOrderData,
   type AddWorkOrderCommentData,
-} from "../services/workOrderService";
+} from "../../services/workOrderService";
 
 interface WorkOrdersState {
   workOrders: WorkOrderResponse[];

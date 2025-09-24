@@ -8,7 +8,7 @@ import {
   type TeamResponse,
   type CreateTeamData,
   type UpdateTeamData,
-} from "../services/teamService";
+} from "../../services/teamService";
 
 interface TeamsState {
   teams: TeamResponse[];

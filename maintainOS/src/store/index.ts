@@ -9,11 +9,11 @@ import metersReducer from "./api/metersSlice";
 import partsReducer from "./api/partsSlice";
 import locationsReducer from "./api/locationsSlice";
 import proceduresReducer from "./api/proceduresSlice";
-import purchaseOrdersReducer from "./purchaseOrdersSlice";
-import teamMembersReducer from "./teamMembersSlice";
-import teamsReducer from "./teamsSlice";
-import vendorsReducer from "./vendorsSlice";
-import workOrdersReducer from "./workOrdersSlice";
+import purchaseOrdersReducer from "./api/purchaseOrdersSlice";
+import teamMembersReducer from "./api/teamMembersSlice";
+import teamsReducer from "./api/teamsSlice";
+import vendorsReducer from "./api/vendorsSlice";
+import workOrdersReducer from "./api/workOrdersSlice";
 
 export const store = configureStore({
   reducer: {

@@ -8,7 +8,7 @@ import {
   type VendorResponse,
   type CreateVendorData,
   type UpdateVendorData,
-} from "../services/vendorService";
+} from "../../services/vendorService";
 
 interface VendorsState {
   vendors: VendorResponse[];

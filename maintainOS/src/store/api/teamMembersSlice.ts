@@ -8,7 +8,7 @@ import {
   type TeamMemberResponse,
   type CreateTeamMemberData,
   type UpdateTeamMemberData,
-} from "../services/teamMemberService";
+} from "../../services/teamMemberService";
 
 interface TeamMembersState {
   teamMembers: TeamMemberResponse[];

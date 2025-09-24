@@ -8,7 +8,7 @@ import {
   type PurchaseOrderResponse,
   type CreatePurchaseOrderData,
   type UpdatePurchaseOrderData,
-} from "../services/purchaseOrderService";
+} from "../../services/purchaseOrderService";
 
 interface PurchaseOrdersState {
   purchaseOrders: PurchaseOrderResponse[];
