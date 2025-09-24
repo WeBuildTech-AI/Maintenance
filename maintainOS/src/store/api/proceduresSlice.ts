@@ -123,7 +123,6 @@ const proceduresSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // Fetch procedures cases
     builder
       .addCase(fetchProcedures.pending, (state) => {
         state.loading = true;
