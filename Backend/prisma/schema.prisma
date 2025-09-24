@@ -8,10 +8,9 @@ datasource db {
 }
 
 enum UserRole {
-  admin
-  manager
-  technician
-  viewer
+  administrator
+  fulluser
+  requester
 
   @@map("user_role")
 }
@@ -24,8 +23,8 @@ enum UserVisibility {
 }
 
 enum RateVisibility {
-  edit
-  view
+  view_only
+  view_and_edit
   hidden
 
   @@map("rate_visibility")
@@ -123,12 +122,19 @@ enum VendorType {
 }
 
 model Organization {
-  id        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name      String        @db.VarChar(255)
-  industry  IndustryType?
-  size      Int?
-  createdAt DateTime      @default(now()) @map("created_at")
-  updatedAt DateTime      @default(now()) @updatedAt @map("updated_at")
+  id                         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                       String         @db.VarChar(255)
+  industry                   IndustryType?
+  size                       Int?
+  // User default settings for the organization
+  defaultWorkOrderVisibility UserVisibility @default(full) @map("default_work_order_visibility")
+  defaultHourlyRate          Float?         @map("default_hourly_rate") @db.DoublePrecision
+  defaultRateVisibility      RateVisibility @default(view_only) @map("default_rate_visibility")
+  defaultWorkingDays         String[]       @default(["Mon", "Tue", "Wed", "Thu", "Fri"]) @map("default_working_days")
+  defaultHoursPerDay         Float          @default(8.0) @map("default_hours_per_day") @db.DoublePrecision
+  defaultSchedulableUser     Boolean        @default(false) @map("default_schedulable_user")
+  createdAt                  DateTime       @default(now()) @map("created_at")
+  updatedAt                  DateTime       @default(now()) @updatedAt @map("updated_at")
 
   users          User[]
   teams          Team[]
@@ -150,20 +156,21 @@ model Organization {
 }
 
 model User {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organizationId String   @map("organization_id") @db.Uuid
-  fullName       String   @map("full_name") @db.VarChar(255)
-  email          String   @unique @db.VarChar(255)
-  phoneNumber    String?  @map("phone_number") @db.VarChar(50)
-  role           UserRole
-  fullUserVisibility UserVisibility
-  hourlyRate     Float?   @map("hourly_rate") @db.DoublePrecision
-  rateVisibility RateVisibility
-  schedulableUser    Boolean  @default(false) @map("schedulable_user")
-  workingDays    String[] @default([]) @map("working_days")
-  passwordHash   String?  @map("password_hash") @db.Text
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+  id                 String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId     String          @map("organization_id") @db.Uuid
+  fullName           String          @map("full_name") @db.VarChar(255)
+  email              String          @unique @db.VarChar(255)
+  phoneNumber        String?         @map("phone_number") @db.VarChar(50)
+  role               UserRole         @default(fulluser) @map("user_role")
+  fullUserVisibility UserVisibility? @map("full_user_visibility")
+  hourlyRate         Float?          @map("hourly_rate") @db.DoublePrecision
+  rateVisibility     RateVisibility? @map("rate_visibility")
+  schedulableUser    Boolean?        @map("schedulable_user")
+  workingDays        String[]        @map("working_days")
+  hoursPerDay        Float?          @map("hours_per_day") @db.DoublePrecision
+  passwordHash       String?         @map("password_hash") @db.Text
+  createdAt          DateTime        @default(now()) @map("created_at")
+  updatedAt          DateTime        @default(now()) @updatedAt @map("updated_at")
 
   organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   attachments       Attachment[]       @relation("AttachmentUploadedBy")

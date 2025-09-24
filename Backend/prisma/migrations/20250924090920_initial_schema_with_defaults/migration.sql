@@ -1,8 +1,11 @@
--- CreateSchema
-CREATE SCHEMA IF NOT EXISTS "public";
+-- CreateEnum
+CREATE TYPE "public"."user_role" AS ENUM ('administrator', 'fulluser', 'requester');
 
 -- CreateEnum
-CREATE TYPE "public"."user_role" AS ENUM ('admin', 'manager', 'technician', 'viewer');
+CREATE TYPE "public"."user_visibility" AS ENUM ('full', 'limited');
+
+-- CreateEnum
+CREATE TYPE "public"."rate_visibility" AS ENUM ('view_only', 'view_and_edit', 'hidden');
 
 -- CreateEnum
 CREATE TYPE "public"."industry_type" AS ENUM ('manufacturing', 'real_estate', 'healthcare', 'hospitality', 'education', 'other');
@@ -11,7 +14,10 @@ CREATE TYPE "public"."industry_type" AS ENUM ('manufacturing', 'real_estate', 'h
 CREATE TYPE "public"."asset_criticality" AS ENUM ('high', 'medium', 'low');
 
 -- CreateEnum
-CREATE TYPE "public"."meter_type" AS ENUM ('electricity', 'water', 'gas', 'runtime');
+CREATE TYPE "public"."asset_status" AS ENUM ('online', 'offline', 'doNotTrack');
+
+-- CreateEnum
+CREATE TYPE "public"."meter_type" AS ENUM ('manual', 'automated');
 
 -- CreateEnum
 CREATE TYPE "public"."po_status" AS ENUM ('draft', 'pending_approval', 'approved', 'rejected', 'ordered', 'completed', 'cancelled');
@@ -27,6 +33,9 @@ CREATE TYPE "public"."work_order_priority" AS ENUM ('urgent', 'high', 'medium', 
 
 -- CreateEnum
 CREATE TYPE "public"."category_icon" AS ENUM ('wrench', 'bolt', 'gear', 'electric', 'plumbing', 'hvac');
+
+-- CreateEnum
+CREATE TYPE "public"."vendor_type" AS ENUM ('manufacturer', 'distributor');
 
 -- CreateTable
 CREATE TABLE "public"."organizations" (
@@ -48,6 +57,11 @@ CREATE TABLE "public"."users" (
     "email" VARCHAR(255) NOT NULL,
     "phone_number" VARCHAR(50),
     "role" "public"."user_role" NOT NULL,
+    "fullUserVisibility" "public"."user_visibility" NOT NULL DEFAULT 'full',
+    "hourly_rate" DOUBLE PRECISION,
+    "rateVisibility" "public"."rate_visibility" NOT NULL DEFAULT 'view_only',
+    "schedulable_user" BOOLEAN NOT NULL DEFAULT false,
+    "working_days" TEXT[] DEFAULT ARRAY['Mon', 'Tue', 'Wed', 'Thu', 'Fri']::TEXT[],
     "password_hash" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -71,6 +85,17 @@ CREATE TABLE "public"."teams" (
 );
 
 -- CreateTable
+CREATE TABLE "public"."team_members" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "team_id" UUID NOT NULL,
+    "users" UUID[],
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "team_members_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "public"."vendors" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "organization_id" UUID NOT NULL,
@@ -80,7 +105,10 @@ CREATE TABLE "public"."vendors" (
     "description" TEXT,
     "contacts" JSONB,
     "files" TEXT[] DEFAULT ARRAY[]::TEXT[],
-    "vendor_type" VARCHAR(100),
+    "locations" UUID[] DEFAULT ARRAY[]::UUID[],
+    "asset_ids" UUID[] DEFAULT ARRAY[]::UUID[],
+    "part_ids" UUID[] DEFAULT ARRAY[]::UUID[],
+    "vendor_type" "public"."vendor_type",
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -132,6 +160,7 @@ CREATE TABLE "public"."assets" (
     "organization_id" UUID NOT NULL,
     "name" VARCHAR(255) NOT NULL,
     "description" TEXT,
+    "status" "public"."asset_status",
     "pictures" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "files" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "location_id" UUID,
@@ -337,6 +366,9 @@ ALTER TABLE "public"."users" ADD CONSTRAINT "users_organization_id_fkey" FOREIGN
 ALTER TABLE "public"."teams" ADD CONSTRAINT "teams_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "public"."team_members" ADD CONSTRAINT "team_members_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "public"."vendors" ADD CONSTRAINT "vendors_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -416,4 +448,3 @@ ALTER TABLE "public"."audit_logs" ADD CONSTRAINT "audit_logs_organization_id_fke
 
 -- AddForeignKey
 ALTER TABLE "public"."audit_logs" ADD CONSTRAINT "audit_logs_actor_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
