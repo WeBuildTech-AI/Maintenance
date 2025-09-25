@@ -1,29 +1,83 @@
 "use client";
 
 import { useState } from "react";
-import { Upload } from "lucide-react";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "../ui/select";
-import {
-  
-    Lock,
-    RefreshCcw,
-    User,
-} from "lucide-react";
+import { Upload, Lock, RefreshCcw, User, Paperclip } from "lucide-react";
 import { SearchWithDropdown } from "../Locations/SearchWithDropdown";
 
 interface NewMeterFormProps {
-    onCreate: () => void;
-    onCancel?: () => void; // optional (UI shows only Create per screenshots)
+    onCreate: (data: any) => void;
+    onCancel?: () => void; // optional
 }
 
-export function NewMeterForm({ onCreate }: NewMeterFormProps) {
+export function NewMeterForm({ onCreate, onCancel }: NewMeterFormProps) {
     const [meterType, setMeterType] = useState<"manual" | "automated">("manual");
+    const [meterName, setMeterName] = useState("");
+    const [description, setDescription] = useState("");
+    const [measurementUnit, setMeasurementUnit] = useState("");
+    const [asset, setAsset] = useState("");
+    const [location, setLocation] = useState("");
+    const [readingFrequencyUnit, setReadingFrequencyUnit] = useState("");
+    const [files, setFiles] = useState<File[]>([]);
+    const [docs, setDocs] = useState<File[]>([]);
+    const [error, setError] = useState("");
+
+    // Split images/docs
+    const splitFiles = (selectedFiles: File[]) => {
+        const imageTypes = ["image/png", "image/jpeg", "image/jpg", "image/gif"];
+        const docTypes = [
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ];
+        const newImages = selectedFiles.filter((f) => imageTypes.includes(f.type));
+        const newDocs = selectedFiles.filter((f) => docTypes.includes(f.type));
+        if (newImages.length) setFiles((prev) => [...prev, ...newImages]);
+        if (newDocs.length) setDocs((prev) => [...prev, ...newDocs]);
+    };
+
+    // File handling
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        const droppedFiles = Array.from(e.dataTransfer.files);
+        splitFiles(droppedFiles);
+    };
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files) return;
+        const selectedFiles = Array.from(e.target.files);
+        splitFiles(selectedFiles);
+    };
+
+    const removeFile = (index: number) => {
+        setFiles((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const removeDoc = (index: number) => {
+        setDocs((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const handleCreate = () => {
+        if (!meterName.trim()) {
+            setError("You need to provide a Meter Name");
+            return;
+        }
+        if (!measurementUnit.trim()) {
+            setError("You need to select a Measurement Unit");
+            return;
+        }
+        setError("");
+        onCreate({
+            meterName,
+            meterType,
+            description,
+            measurementUnit,
+            asset,
+            location,
+            readingFrequencyUnit,
+            files,
+            docs,
+        });
+    };
 
     return (
         <div className="flex h-full flex-col overflow-hidden rounded-lg border">
@@ -45,8 +99,13 @@ export function NewMeterForm({ onCreate }: NewMeterFormProps) {
                             <input
                                 type="text"
                                 placeholder="Enter Meter Name (Required)"
+                                value={meterName}
+                                onChange={(e) => setMeterName(e.target.value)}
                                 className="w-full border-0 border-b-2 border-gray-200 bg-transparent px-0 py-2 text-lg placeholder-gray-400 outline-none focus:border-blue-500"
                             />
+                            {error && !meterName.trim() && (
+                                <p className="text-sm text-red-600">{error}</p>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -60,10 +119,11 @@ export function NewMeterForm({ onCreate }: NewMeterFormProps) {
                         <button
                             type="button"
                             onClick={() => setMeterType("manual")}
-                            className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${meterType === "manual"
-                                ? "border-blue-500 bg-blue-50 text-blue-600 ring-1 ring-blue-500/20"
-                                : "border-gray-300 text-gray-700 hover:bg-gray-50"
-                                }`}
+                            className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
+                                meterType === "manual"
+                                    ? "border-blue-500 bg-blue-50 text-blue-600 ring-1 ring-blue-500/20"
+                                    : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                            }`}
                         >
                             <User className="h-4 w-4" />
                             Manual
@@ -71,10 +131,11 @@ export function NewMeterForm({ onCreate }: NewMeterFormProps) {
                         <button
                             type="button"
                             onClick={() => setMeterType("automated")}
-                            className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${meterType === "automated"
-                                ? "border-blue-500 bg-blue-50 text-blue-600 ring-1 ring-blue-500/20"
-                                : "border-gray-300 text-gray-700 hover:bg-gray-50"
-                                }`}
+                            className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
+                                meterType === "automated"
+                                    ? "border-blue-500 bg-blue-50 text-blue-600 ring-1 ring-blue-500/20"
+                                    : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                            }`}
                         >
                             <Lock className="h-4 w-4" />
                             Automated
@@ -89,6 +150,8 @@ export function NewMeterForm({ onCreate }: NewMeterFormProps) {
                     </label>
                     <textarea
                         placeholder="Add a description"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
                         className="w-full min-h-[96px]  rounded-md border border-gray-300 px-3 py-2 text-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
                 </div>
@@ -96,16 +159,19 @@ export function NewMeterForm({ onCreate }: NewMeterFormProps) {
                 {/* Divider */}
                 <div className="mx-6 border-b" />
 
-                {/* Measurement Unit (Required) — width fixed via wrapper */}
+                {/* Measurement Unit (Required) */}
                 <div className="px-6 pt-6 pb-2">
-                    {/* Responsive width: full on mobile, clamp to ~480px on larger screens */}
                     <div className="w-full sm:max-w-md md:max-w-lg">
                         <SearchWithDropdown
                             title="Measurement Unit (Required)"
                             placeholder="Start typing..."
-                            dropdownOptions={["All Locations", "Buildings", "Floors", "Rooms", "Areas"]}
+                            dropdownOptions={["Liters", "Gallons", "Cubic Meters", "kWh"]}
+                            onDropdownSelect={(val) => setMeasurementUnit(val)}
                             className="mb-0 w-full"
                         />
+                        {error && !measurementUnit && (
+                            <p className="text-sm text-red-600">{error}</p>
+                        )}
                     </div>
                 </div>
 
@@ -119,7 +185,7 @@ export function NewMeterForm({ onCreate }: NewMeterFormProps) {
                                 marginBottom: "6px",
                                 fontSize: "14px",
                                 fontWeight: 500,
-                                color: "#111827", // gray-900
+                                color: "#111827",
                             }}
                         >
                             Asset
@@ -128,6 +194,7 @@ export function NewMeterForm({ onCreate }: NewMeterFormProps) {
                         <div style={{ position: "relative", width: "100%" }}>
                             <select
                                 defaultValue="none"
+                                onChange={(e) => setAsset(e.target.value)}
                                 style={{
                                     height: "40px",
                                     width: "100%",
@@ -180,7 +247,7 @@ export function NewMeterForm({ onCreate }: NewMeterFormProps) {
                                 marginBottom: "6px",
                                 fontSize: "14px",
                                 fontWeight: 500,
-                                color: "#111827", // gray-900
+                                color: "#111827",
                             }}
                         >
                             Location
@@ -189,6 +256,7 @@ export function NewMeterForm({ onCreate }: NewMeterFormProps) {
                         <div style={{ position: "relative", width: "100%" }}>
                             <select
                                 defaultValue="none"
+                                onChange={(e) => setLocation(e.target.value)}
                                 style={{
                                     height: "40px",
                                     width: "100%",
@@ -236,9 +304,6 @@ export function NewMeterForm({ onCreate }: NewMeterFormProps) {
                     </div>
                 </div>
 
-
-
-
                 {/* Divider */}
                 <div className="mx-6 border-b" />
 
@@ -256,10 +321,8 @@ export function NewMeterForm({ onCreate }: NewMeterFormProps) {
                     </h3>
 
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        {/* Label */}
                         <span style={{ fontSize: "14px", color: "#374151" }}>Every</span>
 
-                        {/* Number input */}
                         <input
                             type="number"
                             value="0"
@@ -277,10 +340,10 @@ export function NewMeterForm({ onCreate }: NewMeterFormProps) {
                             }}
                         />
 
-                        {/* Dropdown */}
                         <div style={{ position: "relative", width: "180px" }}>
                             <select
                                 defaultValue="none"
+                                onChange={(e) => setReadingFrequencyUnit(e.target.value)}
                                 style={{
                                     height: "40px",
                                     width: "100%",
@@ -325,46 +388,128 @@ export function NewMeterForm({ onCreate }: NewMeterFormProps) {
                                 <path d="M6 9l6 6 6-6" />
                             </svg>
                         </div>
-
                     </div>
                 </div>
 
-
                 {/* Divider */}
                 <div className="mx-6 border-b mb-20" />
-                {/* Additional Info (dropzone) */}
+
+                {/* Additional Info (dropzone updated) */}
                 <div className="px-6 pb-24 pt-6">
-                    {/* Heading */}
                     <h3 className="mb-3 text-lg font-semibold text-gray-900">
                         Additional Info
                     </h3>
 
-                    {/* Upload Box */}
-                    <div className="mb-20 border border-dashed rounded-md p-6 text-center bg-blue-50 text-blue-600 cursor-pointer">
-                        <Upload className="mx-auto mb-2 h-6 w-6" />
-                        <p>Add or drag pictures</p>
-                    </div>
-                </div>
+                    {/* Image uploader */}
+                    {files.length === 0 ? (
+                        <div
+                            onDrop={handleDrop}
+                            onDragOver={(e) => e.preventDefault()}
+                            className="mb-20 border border-dashed rounded-md p-6 text-center bg-blue-50 text-blue-600 cursor-pointer"
+                            onClick={() => document.getElementById("fileInputMeter")?.click()}
+                        >
+                            <Upload className="mx-auto mb-2 h-6 w-6" />
+                            <p>Add or drag pictures</p>
+                            <input
+                                id="fileInputMeter"
+                                type="file"
+                                multiple
+                                className="hidden"
+                                onChange={handleFileSelect}
+                            />
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-3 gap-4 mt-3">
+                            {/* Add More first */}
+                            <div
+                                onDrop={handleDrop}
+                                onDragOver={(e) => e.preventDefault()}
+                                className="border border-dashed rounded-md text-center bg-blue-50 text-blue-600 cursor-pointer flex flex-col items-center justify-center w-32 h-32"
+                                onClick={() => document.getElementById("fileInputMeter")?.click()}
+                            >
+                                <Upload className="h-6 w-6 mb-2" />
+                                <p className="text-xs">Add more</p>
+                                <input
+                                    id="fileInputMeter"
+                                    type="file"
+                                    multiple
+                                    className="hidden"
+                                    onChange={handleFileSelect}
+                                />
+                            </div>
+                            {files.map((file, i) => {
+                                const url = URL.createObjectURL(file);
+                                return (
+                                    <div
+                                        key={i}
+                                        className="relative w-32 h-32 rounded-md overflow-hidden flex items-center justify-center"
+                                    >
+                                        <img
+                                            src={url}
+                                            alt={file.name}
+                                            className="object-cover w-full h-full"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => removeFile(i)}
+                                            className="absolute top-1 right-1 bg-white text-blue-600 rounded-full p-1 shadow"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
 
+                    {/* Docs Preview */}
+                    {docs.length > 0 && (
+                        <div className="space-y-2 mt-3">
+                            {docs.map((file, i) => (
+                                <div
+                                    key={i}
+                                    className="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs rounded">
+                                            {file.name.split(".").pop()?.toUpperCase()}
+                                        </div>
+                                        <span className="text-sm text-gray-700 truncate max-w-xs">
+                                            {file.name}
+                                        </span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeDoc(i)}
+                                        className="text-gray-500 hover:text-red-600"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Footer (fixed) */}
-            {/* Added mt-6 for margin-top */}
-            {/* The container has margin-top for spacing */}
             <div className="sticky bottom-0 mt-6 flex items-center border-t bg-white px-6 py-4">
+                {onCancel && (
+                    <button
+                        onClick={onCancel}
+                        className="mr-2 h-10 rounded-md border border-gray-300 px-5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                        Cancel
+                    </button>
+                )}
                 <button
-                    onClick={onCreate}
-                    style={{
-                        marginLeft: 'auto',
-                        paddingLeft: '40px',
-                        paddingRight: '40px',
-                    }}
+                    onClick={handleCreate}
+                    style={{ marginLeft: "auto", paddingLeft: "40px", paddingRight: "40px" }}
                     className="h-10 rounded-md bg-blue-600 text-sm font-medium text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                     Create
                 </button>
             </div>
-
         </div>
     );
 }

@@ -42,7 +42,6 @@ import {
 } from "./ui/avatar";
 import {
   Tabs,
-  TabsContent,
   TabsList,
   TabsTrigger,
 } from "./ui/tabs";
@@ -55,6 +54,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { NewAssetForm } from "./Assets/NewAssetForm";
 
 // Mock data for assets
 const mockAssets = [
@@ -468,111 +468,7 @@ export function Assets() {
         {/* Right Panel - Content */}
         <div className="flex-1 bg-card min-h-0 flex flex-col">
           {showNewAssetForm ? (
-            <div className="p-6 overflow-y-auto flex-1">
-              <h2 className="text-lg font-medium mb-6">
-                New Asset
-              </h2>
-
-              <div className="space-y-6 max-w-md">
-                {/* Asset Name */}
-                <div>
-                  <Input
-                    placeholder="Enter Asset Name (Required)"
-                    value={newAsset.name}
-                    onChange={(e) =>
-                      setNewAsset({
-                        ...newAsset,
-                        name: e.target.value,
-                      })
-                    }
-                    className="w-full"
-                  />
-                </div>
-
-                {/* Pictures */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Pictures
-                  </label>
-                  <div
-                    className="w-full h-32 border-2 border-dashed border-orange-300 rounded-lg bg-orange-50 flex flex-col items-center justify-center cursor-pointer hover:bg-orange-100 transition-colors"
-                    onDragOver={handleDragOver}
-                    onDrop={handleDrop}
-                  >
-                    <ImageIcon className="h-6 w-6 text-orange-600 mb-2" />
-                    <span className="text-sm text-orange-600">
-                      Add or drag pictures
-                    </span>
-                  </div>
-                </div>
-
-                {/* Files */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Files
-                  </label>
-                  <div
-                    className="w-full h-32 border-2 border-dashed border-orange-300 rounded-lg bg-orange-50 flex flex-col items-center justify-center cursor-pointer hover:bg-orange-100 transition-colors"
-                    onDragOver={handleDragOver}
-                    onDrop={handleDrop}
-                  >
-                    <File className="h-6 w-6 text-orange-600 mb-2" />
-                    <span className="text-sm text-orange-600">
-                      Add or drag files
-                    </span>
-                  </div>
-                </div>
-
-                {/* Location */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Location
-                  </label>
-                  <Select
-                    value={newAsset.location}
-                    onValueChange={(value: string) =>
-                      setNewAsset({
-                        ...newAsset,
-                        location: value,
-                      })
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select location" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="general">
-                        General
-                      </SelectItem>
-                      <SelectItem value="building-a">
-                        Building A
-                      </SelectItem>
-                      <SelectItem value="building-b">
-                        Building B
-                      </SelectItem>
-                      <SelectItem value="basement">
-                        Basement
-                      </SelectItem>
-                      <SelectItem value="roof">Roof</SelectItem>
-                      <SelectItem value="warehouse">
-                        Warehouse
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Action Button */}
-                <div className="pt-4">
-                  <Button
-                    onClick={handleCreateAsset}
-                    className="bg-orange-600 hover:bg-orange-700"
-                    disabled={!newAsset.name}
-                  >
-                    Create
-                  </Button>
-                </div>
-              </div>
-            </div>
+            <NewAssetForm/>
           ) : selectedAsset ? (
             <div className="h-full flex flex-col min-h-0">
               {/* Asset Header */}

@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { Upload } from "lucide-react";
+import { Upload, Paperclip } from "lucide-react";
 import { Vendor } from "./vendors.types";
 
 export function VendorForm({
@@ -27,6 +27,44 @@ export function VendorForm({
     parts: [] as string[],
   });
 
+  const [files, setFiles] = useState<File[]>([]);
+  const [attachedDocs, setAttachedDocs] = useState<File[]>([]);
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    splitFiles(droppedFiles);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const selectedFiles = Array.from(e.target.files);
+    splitFiles(selectedFiles);
+  };
+
+  const splitFiles = (selectedFiles: File[]) => {
+    const imageTypes = ["image/png", "image/jpeg", "image/jpg", "image/gif"];
+    const docTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
+    const newImages = selectedFiles.filter((f) =>
+      imageTypes.includes(f.type)
+    );
+    const newDocs = selectedFiles.filter((f) => docTypes.includes(f.type));
+    if (newImages.length) setFiles((prev) => [...prev, ...newImages]);
+    if (newDocs.length) setAttachedDocs((prev) => [...prev, ...newDocs]);
+  };
+
+  const removeFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeDoc = (index: number) => {
+    setAttachedDocs((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) return;
@@ -39,7 +77,7 @@ export function VendorForm({
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean),
-      contacts: [], // could embed contact creation later
+      contacts: [],
       locations: form.locations.map((loc) => ({ name: loc })),
       createdBy: form.createdBy || "System",
       createdAt: new Date().toISOString(),
@@ -50,7 +88,7 @@ export function VendorForm({
 
     setVendors((prev) => [...prev, newVendor]);
     setSelectedVendorId(newVendor.id);
-    onCancel(); // close form after submit
+    onCancel();
   };
 
   const colorOptions = ["#2563eb", "#10b981", "#f97316", "#ec4899", "#6366f1"];
@@ -76,13 +114,71 @@ export function VendorForm({
           />
         </div>
 
-        {/* Upload Box */}
+        {/* Pictures */}
         <div className="px-6 pt-6">
           <h3 className="mb-3 text-lg font-semibold text-gray-900">Pictures</h3>
-          <div className="mb-6 border border-dashed rounded-md p-6 text-center bg-blue-50 text-blue-600 cursor-pointer">
-            <Upload className="mx-auto mb-2 h-6 w-6" />
-            <p>Add or drag pictures</p>
-          </div>
+
+          {files.length === 0 ? (
+            <div
+              onDrop={handleDrop}
+              onDragOver={(e) => e.preventDefault()}
+              className="border border-dashed rounded-md p-6 text-center bg-blue-50 text-blue-600 cursor-pointer flex flex-col items-center justify-center"
+              onClick={() => document.getElementById("fileInput")?.click()}
+            >
+              <Upload className="h-6 w-6 mb-2" />
+              <p className="text-sm">Add or drag pictures</p>
+              <input
+                id="fileInput"
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleFileSelect}
+              />
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-4">
+              <div
+                onDrop={handleDrop}
+                onDragOver={(e) => e.preventDefault()}
+                className="border border-dashed rounded-md p-6 text-center bg-blue-50 text-blue-600 cursor-pointer flex flex-col items-center justify-center w-32 h-32"
+                onClick={() => document.getElementById("fileInput")?.click()}
+              >
+                <Upload className="h-6 w-6 mb-2" />
+                <p className="text-xs">Add more</p>
+                <input
+                  id="fileInput"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
+              </div>
+              {files.map((file, i) => {
+                const url = URL.createObjectURL(file);
+                return (
+                  <div
+                    key={i}
+                    className="relative w-32 h-32 rounded-md overflow-hidden flex items-center justify-center"
+                  >
+                    <img
+                      src={url}
+                      alt={file.name}
+                      className="object-cover w-full h-full"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeFile(i)}
+                      className="absolute top-1 right-1 bg-white text-blue-600 rounded-full p-1 shadow"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Vendor Color */}
@@ -95,10 +191,11 @@ export function VendorForm({
               <button
                 key={color}
                 type="button"
-                className={`h-8 w-8 rounded-full border-2 transition-all duration-200 ${form.color === color
-                  ? "ring-2 ring-pink-500 ring-offset-2 border-white"
-                  : "border-gray-200 hover:scale-110"
-                  }`}
+                className={`h-8 w-8 rounded-full border-2 transition-all duration-200 ${
+                  form.color === color
+                    ? "ring-2 ring-pink-500 ring-offset-2 border-white"
+                    : "border-gray-200 hover:scale-110"
+                }`}
                 style={{ backgroundColor: color }}
                 onClick={() => setForm((f) => ({ ...f, color }))}
               />
@@ -120,17 +217,6 @@ export function VendorForm({
             rows={4}
             className="w-full px-3 py-3 text-gray-600 placeholder-gray-400 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
-          <div className="relative">
-            <div className="absolute bottom-1 right-1 w-3 h-3 opacity-30">
-              <svg
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="text-gray-400"
-              >
-                <path d="M22 22H20V20H22V22ZM22 18H20V16H22V18ZM18 22H16V20H18V22ZM18 18H16V16H18V18ZM14 22H12V20H14V22Z" />
-              </svg>
-            </div>
-          </div>
         </div>
 
         {/* Contact List */}
@@ -140,36 +226,64 @@ export function VendorForm({
           </label>
           <button
             type="button"
-            onClick={() => {
-              /* add contact logic */
-            }}
+            onClick={() => {}}
             className="mt-2 inline-flex items-center px-2 py-1 text-sm font-normal text-blue-600 bg-white border border-gray-300 rounded hover:bg-gray-50 hover:border-gray-400 transition-all duration-150 w-fit h-8"
           >
             + New Contact
           </button>
         </div>
 
-        {/* Files */}
+        {/* ✅ Files (DOC, PDF, etc.) */}
         <div className="px-6 pt-6">
-          <label className="block text-base font-medium text-gray-700">
+          <label className="block text-base font-medium text-gray-700 mb-2">
             Files
           </label>
-          <button
-            type="button"
-            onClick={() => {
-              /* attach files logic */
-            }}
-            className="mt-2 inline-flex items-center gap-2 px-3 py-2 text-sm font-normal text-blue-600 bg-white border border-blue-200 rounded hover:bg-blue-50 hover:border-blue-300 transition-all duration-150 w-fit"
-          >
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M8 4a3 3 0 00-3 3v4a5 5 0 0010 0V7a1 1 0 112 0v4a7 7 0 11-14 0V7a5 5 0 0110 0v4a3 3 0 11-6 0V7a1 1 0 012 0v4a1 1 0 102 0V7a3 3 0 00-3-3z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Attach files
-          </button>
+          <div className="space-y-2">
+            {attachedDocs.map((file, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2" // ⬅ no border
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs rounded">
+                    {file.name.split(".").pop()?.toUpperCase()}
+                  </div>
+                  <span className="text-sm text-gray-700 truncate max-w-xs">
+                    {file.name}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeDoc(i)}
+                  className="text-gray-500 hover:text-red-600"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Attach files button */}
+          <div className="mt-3">
+            <label
+              htmlFor="docInput"
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 rounded cursor-pointer hover:bg-blue-50" // ⬅ no border
+            >
+              <Paperclip className="h-4 w-4" />
+              Attach files
+            </label>
+            <input
+              id="docInput"
+              type="file"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files) {
+                  splitFiles(Array.from(e.target.files));
+                }
+              }}
+            />
+          </div>
         </div>
 
         {/* Location */}
@@ -295,19 +409,16 @@ export function VendorForm({
       {/* Footer */}
       <div className="sticky bottom-0 mt-6 flex items-center border-t bg-white px-6 py-4">
         <button
-
           style={{
-            marginLeft: 'auto',
-            paddingLeft: '40px',
-            paddingRight: '40px',
+            marginLeft: "auto",
+            paddingLeft: "40px",
+            paddingRight: "40px",
           }}
           className="h-10 rounded-md bg-blue-600 text-sm font-medium text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           Create
         </button>
       </div>
-
-
     </div>
   );
 }
