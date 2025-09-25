@@ -8,12 +8,26 @@ datasource db {
 }
 
 enum UserRole {
-  admin
-  manager
-  technician
-  viewer
+  administrator
+  fulluser
+  requester
 
   @@map("user_role")
+}
+
+enum UserVisibility {
+  full
+  limited
+
+  @@map("user_visibility")
+}
+
+enum RateVisibility {
+  view_only
+  view_and_edit
+  hidden
+
+  @@map("rate_visibility")
 }
 
 enum IndustryType {
@@ -35,11 +49,17 @@ enum AssetCriticality {
   @@map("asset_criticality")
 }
 
+enum AssetStatus {
+  online
+  offline
+  doNotTrack
+
+  @@map("asset_status")
+}
+
 enum MeterType {
-  electricity
-  water
-  gas
-  runtime
+  manual
+  automated
 
   @@map("meter_type")
 }
@@ -94,13 +114,27 @@ enum CategoryIcon {
   @@map("category_icon")
 }
 
+enum VendorType {
+  manufacturer
+  distributor
+
+  @@map("vendor_type")
+}
+
 model Organization {
-  id        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name      String        @db.VarChar(255)
-  industry  IndustryType?
-  size      Int?
-  createdAt DateTime      @default(now()) @map("created_at")
-  updatedAt DateTime      @default(now()) @updatedAt @map("updated_at")
+  id                         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                       String         @db.VarChar(255)
+  industry                   IndustryType?
+  size                       Int?
+  // User default settings for the organization
+  defaultWorkOrderVisibility UserVisibility @default(full) @map("default_work_order_visibility")
+  defaultHourlyRate          Float?         @map("default_hourly_rate") @db.DoublePrecision
+  defaultRateVisibility      RateVisibility @default(view_only) @map("default_rate_visibility")
+  defaultWorkingDays         String[]       @default(["Mon", "Tue", "Wed", "Thu", "Fri"]) @map("default_working_days")
+  defaultHoursPerDay         Float          @default(8.0) @map("default_hours_per_day") @db.DoublePrecision
+  defaultSchedulableUser     Boolean        @default(false) @map("default_schedulable_user")
+  createdAt                  DateTime       @default(now()) @map("created_at")
+  updatedAt                  DateTime       @default(now()) @updatedAt @map("updated_at")
 
   users          User[]
   teams          Team[]
@@ -122,77 +156,99 @@ model Organization {
 }
 
 model User {
-  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organizationId String      @map("organization_id") @db.Uuid
-  fullName       String      @map("full_name") @db.VarChar(255)
-  email          String      @unique @db.VarChar(255)
-  phoneNumber    String?     @map("phone_number") @db.VarChar(50)
-  role           UserRole
-  passwordHash   String?     @map("password_hash") @db.Text
-  createdAt      DateTime    @default(now()) @map("created_at")
-  updatedAt      DateTime    @default(now()) @updatedAt @map("updated_at")
+  id                 String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId     String          @map("organization_id") @db.Uuid
+  fullName           String          @map("full_name") @db.VarChar(255)
+  email              String          @unique @db.VarChar(255)
+  phoneNumber        String?         @map("phone_number") @db.VarChar(50)
+  role               UserRole         @default(fulluser) @map("user_role")
+  fullUserVisibility UserVisibility? @map("full_user_visibility")
+  hourlyRate         Float?          @map("hourly_rate") @db.DoublePrecision
+  rateVisibility     RateVisibility? @map("rate_visibility")
+  schedulableUser    Boolean?        @map("schedulable_user")
+  workingDays        String[]        @map("working_days")
+  hoursPerDay        Float?          @map("hours_per_day") @db.DoublePrecision
+  passwordHash       String?         @map("password_hash") @db.Text
+  createdAt          DateTime        @default(now()) @map("created_at")
+  updatedAt          DateTime        @default(now()) @updatedAt @map("updated_at")
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  attachments  Attachment[] @relation("AttachmentUploadedBy")
-  auditLogs    AuditLog[]   @relation("AuditLogActor")
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  attachments       Attachment[]       @relation("AttachmentUploadedBy")
+  auditLogs         AuditLog[]         @relation("AuditLogActor")
   workOrderComments WorkOrderComment[] @relation("WorkOrderCommentAuthor")
 
   @@map("users")
 }
 
 model Team {
-  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organizationId   String       @map("organization_id") @db.Uuid
-  name             String       @db.VarChar(255)
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId   String   @map("organization_id") @db.Uuid
+  name             String   @db.VarChar(255)
   description      String?
-  color            String?      @db.VarChar(7)
-  isEscalationTeam Boolean      @map("is_escalation_team") @default(false)
-  criticalParts    Boolean      @map("critical_parts") @default(false)
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @default(now()) @updatedAt @map("updated_at")
+  color            String?  @db.VarChar(7)
+  isEscalationTeam Boolean  @default(false) @map("is_escalation_team")
+  criticalParts    Boolean  @default(false) @map("critical_parts")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at")
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  teamMembers  TeamMember[] @relation("TeamMembers")
 
   @@map("teams")
 }
 
+model TeamMember {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  teamId    String   @map("team_id") @db.Uuid
+  users     String[] @map("users") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  team Team @relation("TeamMembers", fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@map("team_members")
+}
+
 model Vendor {
-  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organizationId String       @map("organization_id") @db.Uuid
-  name           String       @db.VarChar(255)
-  pictureUrl     String?      @map("picture_url")
-  color          String?      @db.VarChar(7)
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String      @map("organization_id") @db.Uuid
+  name           String      @db.VarChar(255)
+  pictureUrl     String?     @map("picture_url")
+  color          String?     @db.VarChar(7)
   description    String?
   contacts       Json?
-  files          String[]     @default([]) @db.Text
-  vendorType     String?      @map("vendor_type") @db.VarChar(100)
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @default(now()) @updatedAt @map("updated_at")
+  files          String[]    @default([]) @db.Text
+  locations      String[]    @default([]) @map("locations") @db.Uuid
+  assetIds       String[]    @default([]) @map("asset_ids") @db.Uuid
+  partIds        String[]    @default([]) @map("part_ids") @db.Uuid
+  vendorType     VendorType? @map("vendor_type")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @default(now()) @updatedAt @map("updated_at")
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   purchaseOrders PurchaseOrder[]
-  assets        Asset[]
+  assets         Asset[]
 
   @@map("vendors")
 }
 
 model Location {
-  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organizationId   String    @map("organization_id") @db.Uuid
-  name             String    @db.VarChar(255)
-  photoUrls        String[] @map("photo_urls") @default([]) @db.Text
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId   String   @map("organization_id") @db.Uuid
+  name             String   @db.VarChar(255)
+  photoUrls        String[] @default([]) @map("photo_urls") @db.Text
   address          String?
   description      String?
-  teamsInCharge    String[] @map("teams_in_charge") @default([]) @db.Uuid
+  teamsInCharge    String[] @default([]) @map("teams_in_charge") @db.Uuid
   files            String[] @default([]) @db.Text
-  vendorIds        String[] @map("vendor_ids") @default([]) @db.Uuid
-  parentLocationId String?   @map("parent_location_id") @db.Uuid
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at")
+  vendorIds        String[] @default([]) @map("vendor_ids") @db.Uuid
+  parentLocationId String?  @map("parent_location_id") @db.Uuid
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at")
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  parent       Location?    @relation("LocationToLocation", fields: [parentLocationId], references: [id])
-  children     Location[]   @relation("LocationToLocation")
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  parent       Location?        @relation("LocationToLocation", fields: [parentLocationId], references: [id])
+  children     Location[]       @relation("LocationToLocation")
   assets       Asset[]
   meters       Meter[]
   workOrders   WorkOrder[]
@@ -202,52 +258,53 @@ model Location {
 }
 
 model Part {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organizationId String    @map("organization_id") @db.Uuid
-  name           String    @db.VarChar(255)
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  name           String   @db.VarChar(255)
   photos         String[] @default([]) @db.Text
-  unitCost       Float?    @map("unit_cost") @db.DoublePrecision
+  unitCost       Float?   @map("unit_cost") @db.DoublePrecision
   description    String?
-  qrCode         String?   @map("qr_code") @unique @db.VarChar(255)
-  partsType      String[] @map("parts_type") @default([]) @db.Text
+  qrCode         String?  @unique @map("qr_code") @db.VarChar(255)
+  partsType      String[] @default([]) @map("parts_type") @db.Text
   location       Json?
-  assetIds       String[] @map("asset_ids") @default([]) @db.Uuid
-  teamsInCharge  String[] @map("teams_in_charge") @default([]) @db.Uuid
-  vendorIds      String[] @map("vendor_ids") @default([]) @db.Uuid
+  assetIds       String[] @default([]) @map("asset_ids") @db.Uuid
+  teamsInCharge  String[] @default([]) @map("teams_in_charge") @db.Uuid
+  vendorIds      String[] @default([]) @map("vendor_ids") @db.Uuid
   files          String[] @default([]) @db.Text
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   inventory    InventoryLevel[]
 
   @@map("parts")
 }
 
 model Asset {
-  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organizationId   String          @map("organization_id") @db.Uuid
-  name             String          @db.VarChar(255)
-  description      String?
-  pictures         String[]       @default([]) @db.Text
-  files            String[]       @default([]) @db.Text
-  locationId       String?         @map("location_id") @db.Uuid
-  criticality      AssetCriticality?
-  year             Int?
-  warrantyDate     DateTime?       @map("warranty_date") @db.Date
-  isUnderWarranty  Boolean?        @map("is_under_warranty")
-  isUnderAmc       Boolean?        @map("is_under_amc")
-  manufacturer     String?
-  model            String?
-  serialNumber     String?         @map("serial_number")
-  teamsInCharge    String[]       @map("teams_in_charge") @default([]) @db.Uuid
-  qrCode           String?         @map("qr_code") @unique
-  assetTypeId      String?         @map("asset_type_id")
-  vendorId         String?         @map("vendor_id") @db.Uuid
-  partIds          String[]       @map("part_ids") @default([]) @db.Uuid
-  parentAssetId    String?         @map("parent_asset_id") @db.Uuid
-  createdAt        DateTime        @default(now()) @map("created_at")
-  updatedAt        DateTime        @default(now()) @updatedAt @map("updated_at")
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId  String            @map("organization_id") @db.Uuid
+  name            String            @db.VarChar(255)
+  description     String?
+  status          AssetStatus?
+  pictures        String[]          @default([]) @db.Text
+  files           String[]          @default([]) @db.Text
+  locationId      String?           @map("location_id") @db.Uuid
+  criticality     AssetCriticality?
+  year            Int?
+  warrantyDate    DateTime?         @map("warranty_date") @db.Date
+  isUnderWarranty Boolean?          @map("is_under_warranty")
+  isUnderAmc      Boolean?          @map("is_under_amc")
+  manufacturer    String?
+  model           String?
+  serialNumber    String?           @map("serial_number")
+  teamsInCharge   String[]          @default([]) @map("teams_in_charge") @db.Uuid
+  qrCode          String?           @unique @map("qr_code")
+  assetTypeId     String?           @map("asset_type_id")
+  vendorId        String?           @map("vendor_id") @db.Uuid
+  partIds         String[]          @default([]) @map("part_ids") @db.Uuid
+  parentAssetId   String?           @map("parent_asset_id") @db.Uuid
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @default(now()) @updatedAt @map("updated_at")
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   location     Location?    @relation(fields: [locationId], references: [id], onDelete: SetNull)
@@ -269,7 +326,7 @@ model Meter {
   assetId          String?    @map("asset_id") @db.Uuid
   locationId       String?    @map("location_id") @db.Uuid
   readingFrequency Json?      @map("reading_frequency")
-  photos           String[]  @default([]) @db.Text
+  photos           String[]   @default([]) @db.Text
   createdAt        DateTime   @default(now()) @map("created_at")
   updatedAt        DateTime   @default(now()) @updatedAt @map("updated_at")
 
@@ -281,16 +338,16 @@ model Meter {
 }
 
 model Procedure {
-  id             String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organizationId String             @map("organization_id") @db.Uuid
-  title          String             @db.VarChar(255)
-  assetIds       String[]          @map("asset_ids") @default([]) @db.Uuid
+  id             String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String              @map("organization_id") @db.Uuid
+  title          String              @db.VarChar(255)
+  assetIds       String[]            @default([]) @map("asset_ids") @db.Uuid
   type           ProcedureType?
   frequency      ProcedureFrequency?
   description    String?
-  files          String[]          @default([]) @db.Text
-  createdAt      DateTime           @default(now()) @map("created_at")
-  updatedAt      DateTime           @default(now()) @updatedAt @map("updated_at")
+  files          String[]            @default([]) @db.Text
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @default(now()) @updatedAt @map("updated_at")
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
@@ -298,13 +355,13 @@ model Procedure {
 }
 
 model Category {
-  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organizationId String       @map("organization_id") @db.Uuid
-  name           String       @db.VarChar(255)
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String        @map("organization_id") @db.Uuid
+  name           String        @db.VarChar(255)
   categoryIcon   CategoryIcon? @map("category_icon")
   description    String?
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @default(now()) @updatedAt @map("updated_at")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @default(now()) @updatedAt @map("updated_at")
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
@@ -312,31 +369,31 @@ model Category {
 }
 
 model WorkOrder {
-  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organizationId     String            @map("organization_id") @db.Uuid
-  title              String            @db.VarChar(255)
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId     String             @map("organization_id") @db.Uuid
+  title              String             @db.VarChar(255)
   status             String?
-  pictures           String[]         @default([]) @db.Text
+  pictures           String[]           @default([]) @db.Text
   description        String?
-  locationId         String?           @map("location_id") @db.Uuid
-  assetIds           String[]         @map("asset_ids") @default([]) @db.Uuid
-  procedureIds       String[]         @map("procedure_ids") @default([]) @db.Uuid
-  assigneeIds        String[]         @map("assignee_ids") @default([]) @db.Uuid
-  estimatedTimeHours Float?            @map("estimated_time_hours") @db.DoublePrecision
-  dueDate            DateTime?         @map("due_date") @db.Date
-  startDate          DateTime?         @map("start_date") @db.Date
-  recurrenceRule     String?           @map("recurrence_rule")
-  workType           String?           @map("work_type") @db.VarChar(100)
+  locationId         String?            @map("location_id") @db.Uuid
+  assetIds           String[]           @default([]) @map("asset_ids") @db.Uuid
+  procedureIds       String[]           @default([]) @map("procedure_ids") @db.Uuid
+  assigneeIds        String[]           @default([]) @map("assignee_ids") @db.Uuid
+  estimatedTimeHours Float?             @map("estimated_time_hours") @db.DoublePrecision
+  dueDate            DateTime?          @map("due_date") @db.Date
+  startDate          DateTime?          @map("start_date") @db.Date
+  recurrenceRule     String?            @map("recurrence_rule")
+  workType           String?            @map("work_type") @db.VarChar(100)
   priority           WorkOrderPriority?
-  files              String[]         @default([]) @db.Text
-  partIds            String[]         @map("part_ids") @default([]) @db.Uuid
-  categoryIds        String[]         @map("category_ids") @default([]) @db.Uuid
-  vendorIds          String[]         @map("vendor_ids") @default([]) @db.Uuid
-  createdAt          DateTime          @default(now()) @map("created_at")
-  updatedAt          DateTime          @default(now()) @updatedAt @map("updated_at")
+  files              String[]           @default([]) @db.Text
+  partIds            String[]           @default([]) @map("part_ids") @db.Uuid
+  categoryIds        String[]           @default([]) @map("category_ids") @db.Uuid
+  vendorIds          String[]           @default([]) @map("vendor_ids") @db.Uuid
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @default(now()) @updatedAt @map("updated_at")
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  location     Location?    @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  location     Location?          @relation(fields: [locationId], references: [id], onDelete: SetNull)
   comments     WorkOrderComment[]
 
   @@map("work_orders")
@@ -350,26 +407,26 @@ model WorkOrderComment {
   createdAt   DateTime @default(now()) @map("created_at")
 
   workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
-  author   User?      @relation("WorkOrderCommentAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  author    User?     @relation("WorkOrderCommentAuthor", fields: [authorId], references: [id], onDelete: SetNull)
 
   @@map("work_order_comments")
 }
 
 model PurchaseOrder {
-  id              String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organizationId  String              @map("organization_id") @db.Uuid
-  vendorId        String              @map("vendor_id") @db.Uuid
+  id              String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId  String               @map("organization_id") @db.Uuid
+  vendorId        String               @map("vendor_id") @db.Uuid
   status          PurchaseOrderStatus?
   items           Json
-  taxesAndCosts   Json?               @map("taxes_and_costs")
-  shippingAddress String?             @map("shipping_address")
-  billingAddress  String?             @map("billing_address")
-  shippingContact Json?               @map("shipping_contact")
-  dueDate         DateTime?           @map("due_date") @db.Date
+  taxesAndCosts   Json?                @map("taxes_and_costs")
+  shippingAddress String?              @map("shipping_address")
+  billingAddress  String?              @map("billing_address")
+  shippingContact Json?                @map("shipping_contact")
+  dueDate         DateTime?            @map("due_date") @db.Date
   notes           String?
-  files           String[]           @default([]) @db.Text
-  createdAt       DateTime            @default(now()) @map("created_at")
-  updatedAt       DateTime            @default(now()) @updatedAt @map("updated_at")
+  files           String[]             @default([]) @db.Text
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @default(now()) @updatedAt @map("updated_at")
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   vendor       Vendor       @relation(fields: [vendorId], references: [id], onDelete: Restrict)
@@ -382,7 +439,7 @@ model Automation {
   organizationId String   @map("organization_id") @db.Uuid
   name           String   @db.VarChar(255)
   description    String?
-  isEnabled      Boolean  @map("is_enabled") @default(true)
+  isEnabled      Boolean  @default(true) @map("is_enabled")
   triggers       Json?
   conditions     Json?
   actions        Json?
@@ -395,18 +452,18 @@ model Automation {
 }
 
 model InventoryLevel {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organizationId String    @map("organization_id") @db.Uuid
-  partId         String    @map("part_id") @db.Uuid
-  locationId     String?   @map("location_id") @db.Uuid
-  quantity       Int       @default(0)
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  partId         String   @map("part_id") @db.Uuid
+  locationId     String?  @map("location_id") @db.Uuid
+  quantity       Int      @default(0)
   notes          String?
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  part         Part        @relation(fields: [partId], references: [id], onDelete: Cascade)
-  location     Location?   @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  part         Part         @relation(fields: [partId], references: [id], onDelete: Cascade)
+  location     Location?    @relation(fields: [locationId], references: [id], onDelete: SetNull)
 
   @@unique([organizationId, partId, locationId])
   @@map("inventory_levels")
