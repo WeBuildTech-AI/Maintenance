@@ -24,6 +24,7 @@ import {
   WandSparkles,
   Bell,
   GitBranch,
+<<<<<<< HEAD
   LayoutGrid,
   ChevronDown,
   Search,
@@ -31,6 +32,9 @@ import {
   Settings,
   PanelTop,
   Table,
+=======
+  Bookmark,
+>>>>>>> origin/frontend-dev
 } from "lucide-react";
 import { SearchWithDropdown } from "./Locations/SearchWithDropdown";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
@@ -52,7 +56,7 @@ function ConfirmDiscardModal({
       style={{
         position: "fixed",
         inset: 0,
-        backgroundColor: "rgba(0,0,0,0.5)",
+        backgroundColor: "rgba(0,0,0,0.4)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -61,59 +65,61 @@ function ConfirmDiscardModal({
     >
       <div
         style={{
-          background: "white",
-          borderRadius: "12px",
-          padding: "24px",
-          width: "480px",
-          maxWidth: "90%",
-          boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
+          background: "#fff",
+          borderRadius: "8px",
+          width: "500px",
+          minHeight: "200px",
+          maxWidth: "95%",
+          padding: "40px 28px 28px",
+          textAlign: "center",
+          position: "relative",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
         }}
       >
-        {/* Title */}
-        <h3
+        <button
+          onClick={onCancel}
           style={{
+            position: "absolute",
+            top: "16px",
+            right: "16px",
+            background: "transparent",
+            border: "none",
             fontSize: "20px",
-            fontWeight: "600",
-            marginBottom: "8px",
+            color: "#6B7280",
+            cursor: "pointer",
+          }}
+        >
+          ✕
+        </button>
+
+        <p
+          style={{
+            fontSize: "17px",
+            fontWeight: 500,
             color: "#111827",
-            margin: 0,
-            marginBottom: "8px",
+            marginBottom: "28px",
+            marginTop: "20px",
           }}
         >
           Discard unsaved changes?
-        </h3>
-
-        {/* Message */}
-        <p
-          style={{
-            fontSize: "14px",
-            color: "#6B7280",
-            marginBottom: "24px",
-            lineHeight: "1.5",
-            margin: 0,
-            marginBottom: "24px",
-          }}
-        >
-          If you leave now, you'll lose unsaved changes to this automation.
         </p>
 
-        {/* Divider Line */}
-        <div
+        <button
+          onClick={onConfirm}
           style={{
-            height: "1px",
-            backgroundColor: "#E5E7EB",
-            marginBottom: "16px",
-          }}
-        />
-
-        {/* Buttons */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: "12px",
+            width: "100%",
+            backgroundColor: "#60A5FA",
+            border: "none",
+            borderRadius: "6px",
+            padding: "12px",
+            fontSize: "15px",
+            fontWeight: 600,
+            color: "white",
+            cursor: "pointer",
+            marginBottom: "18px",
           }}
         >
+<<<<<<< HEAD
           <button
             onClick={onCancel}
             style={{
@@ -155,22 +161,149 @@ function ConfirmDiscardModal({
             Discard Changes
           </button>
         </div>
+=======
+          Confirm
+        </button>
+
+        <button
+          onClick={onCancel}
+          style={{
+            background: "transparent",
+            border: "none",
+            color: "#3B82F6",
+            fontSize: "14px",
+            fontWeight: 500,
+            cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+>>>>>>> origin/frontend-dev
       </div>
     </div>
   );
 }
+
+// ---------------- Delete Action Modal ----------------
+function ConfirmDeleteActionModal({
+  open,
+  onCancel,
+  onConfirm,
+}: {
+  open: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  if (!open) return null;
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        backgroundColor: "rgba(0,0,0,0.4)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+      }}
+    >
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: "8px",
+          width: "500px",
+          minHeight: "200px",
+          maxWidth: "95%",
+          padding: "40px 28px 28px",
+          textAlign: "center",
+          position: "relative",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+        }}
+      >
+        <button
+          onClick={onCancel}
+          style={{
+            position: "absolute",
+            top: "16px",
+            right: "16px",
+            background: "transparent",
+            border: "none",
+            fontSize: "20px",
+            color: "#6B7280",
+            cursor: "pointer",
+          }}
+        >
+          ✕
+        </button>
+
+        <p
+          style={{
+            fontSize: "17px",
+            fontWeight: 500,
+            color: "#111827",
+            marginBottom: "28px",
+            marginTop: "20px",
+          }}
+        >
+          Are you sure you want to remove this action?
+        </p>
+
+        <button
+          onClick={onConfirm}
+          style={{
+            width: "100%",
+            backgroundColor: "#60A5FA",
+            border: "none",
+            borderRadius: "6px",
+            padding: "12px",
+            fontSize: "15px",
+            fontWeight: 600,
+            color: "white",
+            cursor: "pointer",
+            marginBottom: "18px",
+          }}
+        >
+          Confirm
+        </button>
+
+        <button
+          onClick={onCancel}
+          style={{
+            background: "transparent",
+            border: "none",
+            color: "#3B82F6",
+            fontSize: "14px",
+            fontWeight: 500,
+            cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ---------------- Action Item ----------------
 function ActionItem({
   icon,
   text,
   isLocked = false,
+  onClick,
 }: {
   icon: React.ReactNode;
   text: string;
   isLocked?: boolean;
+  onClick?: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
+    <div
+      className={`flex items-center justify-between p-4 border rounded-lg ${
+        isLocked ? "cursor-not-allowed" : "cursor-pointer hover:bg-gray-50"
+      }`}
+      onClick={!isLocked ? onClick : undefined}
+    >
       <div className="flex items-center gap-4">
         {isLocked ? (
           <Lock className="h-5 w-5 text-gray-400" />
@@ -186,9 +319,85 @@ function ActionItem({
   );
 }
 
+// ---------------- Create Blank Work Order Form ----------------
+function CreateBlankWorkOrderForm({ onBack }: { onBack: () => void }) {
+  return (
+    <div className="border rounded-md shadow bg-white">
+      {/* Header */}
+      <div className="bg-blue-50 p-4 flex justify-between items-center rounded-t-md">
+        <div className="flex items-center gap-2">
+          <button onClick={onBack} className="text-gray-600 hover:text-gray-800">
+            ←
+          </button>
+          <h3 className="font-medium text-gray-900">Create from blank</h3>
+        </div>
+        <div className="flex gap-3">
+          <Settings2 className="h-5 w-5 text-gray-600 cursor-pointer" />
+          <Trash2 className="h-5 w-5 text-gray-600 cursor-pointer" />
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="p-6 space-y-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-900">
+            Work Order Title <span className="text-red-500">(Required)</span>
+          </label>
+          <input
+            type="text"
+            placeholder="What needs to be done?"
+            className="mt-1 w-full border rounded-md px-3 py-2 text-gray-900 placeholder-gray-400"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-900">
+            Description
+          </label>
+          <textarea
+            placeholder="Add a description"
+            rows={3}
+            className="mt-1 w-full border rounded-md px-3 py-2 text-gray-900 placeholder-gray-400"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-900">Asset</label>
+          <input
+            type="text"
+            placeholder="Start typing..."
+            className="mt-1 w-full border rounded-md px-3 py-2 text-gray-900 placeholder-gray-400"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-900">
+            Assign to
+          </label>
+          <input
+            type="text"
+            placeholder="Type name, email or phone number"
+            className="mt-1 w-full border rounded-md px-3 py-2 text-gray-900 placeholder-gray-400"
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input type="checkbox" id="createOnlyIfClosed" />
+          <label htmlFor="createOnlyIfClosed" className="text-sm text-gray-700">
+            Create only if previous Work Order generated from Automation is closed
+          </label>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ---------------- New Automation Form ----------------
 function NewAutomationForm({ onBack }: { onBack: () => void }) {
   const [showDiscardModal, setShowDiscardModal] = useState(false);
+  const [showWorkOrderCard, setShowWorkOrderCard] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showCreateBlankForm, setShowCreateBlankForm] = useState(false);
 
   return (
     <div className="p-6 space-y-6">
@@ -307,6 +516,7 @@ function NewAutomationForm({ onBack }: { onBack: () => void }) {
           </div>
           <div>
             <h3 className="font-semibold mb-4">Actions</h3>
+<<<<<<< HEAD
             <div className="space-y-3">
               <ActionItem icon={<FilePlus2 />} text="Create a Work Order" />
               <ActionItem
@@ -316,15 +526,106 @@ function NewAutomationForm({ onBack }: { onBack: () => void }) {
               />
               <ActionItem icon={<Bell />} text="Send a notification" isLocked />
             </div>
+=======
+            {showWorkOrderCard ? (
+              showCreateBlankForm ? (
+                <CreateBlankWorkOrderForm
+                  onBack={() => setShowCreateBlankForm(false)}
+                />
+              ) : (
+                <>
+                  <div className="border rounded-md shadow bg-white mb-6">
+                    <div className="bg-blue-50 p-4 flex justify-between items-center rounded-t-md">
+                      <h3 className="font-medium text-gray-900">
+                        Create a Work Order
+                      </h3>
+                      <div className="flex gap-3">
+                        <Settings2 className="h-5 w-5 text-gray-600 cursor-pointer" />
+                        <Trash2
+                          className="h-5 w-5 text-gray-600 cursor-pointer"
+                          onClick={() => setShowDeleteModal(true)}
+                        />
+                      </div>
+                    </div>
+                    <div className="divide-y">
+                      <div
+                        className="p-4 hover:bg-gray-50 flex justify-between items-center cursor-pointer"
+                        onClick={() => setShowCreateBlankForm(true)}
+                      >
+                        <span className="text-blue-600 font-medium flex items-center gap-2">
+                          <FilePlus2 className="h-5 w-5" />
+                          Create from blank
+                        </span>
+                        <ChevronRight className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div className="p-4 hover:bg-gray-50 flex justify-between items-center cursor-pointer">
+                        <span className="text-blue-600 font-medium flex items-center gap-2">
+                          <Bookmark className="h-5 w-5" />
+                          Use a Template
+                        </span>
+                        <ChevronRight className="h-4 w-4 text-blue-600" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors cursor-pointer"
+                    onClick={() => setShowWorkOrderCard(true)}
+                  >
+                    <div className="flex items-center justify-start gap-2 text-gray-600">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 4v16m8-8H4"
+                        />
+                      </svg>
+                      <span className="font-medium">Add Action</span>
+                    </div>
+                  </div>
+                </>
+              )
+            ) : (
+              <div className="space-y-3">
+                <ActionItem
+                  icon={<FilePlus2 />}
+                  text="Create a Work Order"
+                  onClick={() => setShowWorkOrderCard(true)}
+                />
+                <ActionItem
+                  icon={<WandSparkles />}
+                  text="Change Asset status"
+                  isLocked
+                />
+                <ActionItem icon={<Bell />} text="Send a notification" isLocked />
+              </div>
+            )}
+>>>>>>> origin/frontend-dev
           </div>
         </div>
       </div>
 
-      {/* Confirmation Modal */}
+      {/* Confirmation Modals */}
       <ConfirmDiscardModal
         open={showDiscardModal}
         onCancel={() => setShowDiscardModal(false)}
         onConfirm={onBack}
+      />
+
+      <ConfirmDeleteActionModal
+        open={showDeleteModal}
+        onCancel={() => setShowDeleteModal(false)}
+        onConfirm={() => {
+          setShowWorkOrderCard(false);
+          setShowDeleteModal(false);
+        }}
       />
     </div>
   );
