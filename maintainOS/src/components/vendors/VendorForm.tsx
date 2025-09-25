@@ -1,15 +1,7 @@
+"use client";
+
 import { FormEvent, useState } from "react";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "../ui/card";
-import { Input } from "../ui/input";
-import { Textarea } from "../ui/textarea";
-import { Label } from "../ui/label";
-import { Button } from "../ui/button";
+import { Upload, Paperclip } from "lucide-react";
 import { Vendor } from "./vendors.types";
 
 export function VendorForm({
@@ -35,6 +27,44 @@ export function VendorForm({
     parts: [] as string[],
   });
 
+  const [files, setFiles] = useState<File[]>([]);
+  const [attachedDocs, setAttachedDocs] = useState<File[]>([]);
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    splitFiles(droppedFiles);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const selectedFiles = Array.from(e.target.files);
+    splitFiles(selectedFiles);
+  };
+
+  const splitFiles = (selectedFiles: File[]) => {
+    const imageTypes = ["image/png", "image/jpeg", "image/jpg", "image/gif"];
+    const docTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
+    const newImages = selectedFiles.filter((f) =>
+      imageTypes.includes(f.type)
+    );
+    const newDocs = selectedFiles.filter((f) => docTypes.includes(f.type));
+    if (newImages.length) setFiles((prev) => [...prev, ...newImages]);
+    if (newDocs.length) setAttachedDocs((prev) => [...prev, ...newDocs]);
+  };
+
+  const removeFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeDoc = (index: number) => {
+    setAttachedDocs((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) return;
@@ -47,7 +77,7 @@ export function VendorForm({
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean),
-      contacts: [], // could embed contact creation later
+      contacts: [],
       locations: form.locations.map((loc) => ({ name: loc })),
       createdBy: form.createdBy || "System",
       createdAt: new Date().toISOString(),
@@ -58,194 +88,339 @@ export function VendorForm({
 
     setVendors((prev) => [...prev, newVendor]);
     setSelectedVendorId(newVendor.id);
-    onCancel(); // close form after submit
+    onCancel();
   };
 
   const colorOptions = ["#2563eb", "#10b981", "#f97316", "#ec4899", "#6366f1"];
 
   return (
-    <Card className="shadow-sm p-2">
-      <CardHeader>
-        <CardTitle>New Vendor</CardTitle>
-        <CardDescription>
-          Fill out the form below to create a new vendor.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Vendor Name */}
-          <div className="space-y-2">
-            <Label>Vendor Name</Label>
-            <Input
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              required
-            />
-          </div>
+    <div className="flex h-full flex-col overflow-hidden rounded-lg border">
+      {/* Header */}
+      <div className="flex-none border-b px-6 py-4">
+        <h2 className="text-xl font-semibold">New Vendor</h2>
+      </div>
 
-          {/* Images */}
-          <div className="space-y-2">
-            <Label>Images</Label>
-            <Input
-              type="file"
-              multiple
-              accept="image/*"
-              onChange={(e) =>
-                console.log("Selected images:", e.target.files)
-              }
-            />
-          </div>
+      {/* Scrollable content */}
+      <form onSubmit={handleSubmit} className="min-h-0 flex-1 overflow-y-auto">
+        {/* Vendor Name */}
+        <div className="px-6 pt-6">
+          <input
+            type="text"
+            value={form.name}
+            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            placeholder="Enter Vendor Name (Required)"
+            required
+            className="w-full border-0 border-b-2 border-gray-200 bg-transparent px-0 py-2 text-lg placeholder-gray-400 outline-none focus:border-blue-500"
+          />
+        </div>
 
-          {/* Vendor Color */}
+        {/* Pictures */}
+        <div className="px-6 pt-6">
+          <h3 className="mb-3 text-lg font-semibold text-gray-900">Pictures</h3>
+
+          {files.length === 0 ? (
+            <div
+              onDrop={handleDrop}
+              onDragOver={(e) => e.preventDefault()}
+              className="border border-dashed rounded-md p-6 text-center bg-blue-50 text-blue-600 cursor-pointer flex flex-col items-center justify-center"
+              onClick={() => document.getElementById("fileInput")?.click()}
+            >
+              <Upload className="h-6 w-6 mb-2" />
+              <p className="text-sm">Add or drag pictures</p>
+              <input
+                id="fileInput"
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleFileSelect}
+              />
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-4">
+              <div
+                onDrop={handleDrop}
+                onDragOver={(e) => e.preventDefault()}
+                className="border border-dashed rounded-md p-6 text-center bg-blue-50 text-blue-600 cursor-pointer flex flex-col items-center justify-center w-32 h-32"
+                onClick={() => document.getElementById("fileInput")?.click()}
+              >
+                <Upload className="h-6 w-6 mb-2" />
+                <p className="text-xs">Add more</p>
+                <input
+                  id="fileInput"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
+              </div>
+              {files.map((file, i) => {
+                const url = URL.createObjectURL(file);
+                return (
+                  <div
+                    key={i}
+                    className="relative w-32 h-32 rounded-md overflow-hidden flex items-center justify-center"
+                  >
+                    <img
+                      src={url}
+                      alt={file.name}
+                      className="object-cover w-full h-full"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeFile(i)}
+                      className="absolute top-1 right-1 bg-white text-blue-600 rounded-full p-1 shadow"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Vendor Color */}
+        <div className="px-6 pt-6">
+          <label className="block text-base font-medium text-gray-900 mb-4">
+            Vendor Color
+          </label>
+          <div className="flex gap-3">
+            {colorOptions.map((color) => (
+              <button
+                key={color}
+                type="button"
+                className={`h-8 w-8 rounded-full border-2 transition-all duration-200 ${
+                  form.color === color
+                    ? "ring-2 ring-pink-500 ring-offset-2 border-white"
+                    : "border-gray-200 hover:scale-110"
+                }`}
+                style={{ backgroundColor: color }}
+                onClick={() => setForm((f) => ({ ...f, color }))}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Description */}
+        <div className="px-6 pt-6">
+          <label className="block text-base font-medium text-gray-900 mb-3">
+            Description
+          </label>
+          <textarea
+            value={form.partsSummary}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, partsSummary: e.target.value }))
+            }
+            placeholder="Add a description"
+            rows={4}
+            className="w-full px-3 py-3 text-gray-600 placeholder-gray-400 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+
+        {/* Contact List */}
+        <div className="px-6 pt-6">
+          <label className="block text-base font-medium text-gray-700">
+            Contact List
+          </label>
+          <button
+            type="button"
+            onClick={() => {
+              /* add contact logic */
+            }}
+            className="mt-2 inline-flex items-center px-2 py-1 text-sm font-normal text-orange-600 bg-white border border-orange-600 rounded hover:bg-gray-50 hover:border-gray-400 transition-all duration-150 w-fit h-8"
+          >
+            + New Contact
+          </button>
+        </div>
+
+        {/* ✅ Files (DOC, PDF, etc.) */}
+        <div className="px-6 pt-6">
+          <label className="block text-base font-medium text-gray-700 mb-2">
+            Files
+          </label>
           <div className="space-y-2">
-            <Label>Vendor Color</Label>
-            <div className="flex gap-2">
-              {colorOptions.map((color) => (
+            {attachedDocs.map((file, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2" // ⬅ no border
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs rounded">
+                    {file.name.split(".").pop()?.toUpperCase()}
+                  </div>
+                  <span className="text-sm text-gray-700 truncate max-w-xs">
+                    {file.name}
+                  </span>
+                </div>
                 <button
-                  key={color}
                   type="button"
-                  className={`h-8 w-8 rounded-full border ${
-                    form.color === color
-                      ? "ring-2 ring-primary"
-                      : "border-muted"
-                  }`}
-                  style={{ backgroundColor: color }}
-                  onClick={() => setForm((f) => ({ ...f, color }))}
-                />
-              ))}
-            </div>
+                  onClick={() => removeDoc(i)}
+                  className="text-gray-500 hover:text-red-600"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
           </div>
 
-          {/* Description */}
-          <div className="space-y-2">
-            <Label>Description</Label>
-            <Textarea
-              value={form.partsSummary}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, partsSummary: e.target.value }))
-              }
-            />
-          </div>
-
-          {/* Contact List */}
-          <div className="space-y-2">
-            <Label>Contact List</Label>
-            <Button type="button" variant="outline" size="sm">
-              + Add Contact
-            </Button>
-          </div>
-
-          {/* Files */}
-          <div className="space-y-2">
-            <Label>Files</Label>
-            <Input
+          {/* Attach files button */}
+          <div className="mt-3">
+            <label
+              htmlFor="docInput"
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 rounded cursor-pointer hover:bg-blue-50" // ⬅ no border
+            >
+              <Paperclip className="h-4 w-4" />
+              Attach files
+            </label>
+            <input
+              id="docInput"
               type="file"
               multiple
-              onChange={(e) =>
-                console.log("Selected files:", e.target.files)
-              }
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files) {
+                  splitFiles(Array.from(e.target.files));
+                }
+              }}
             />
           </div>
+        </div>
 
-          {/* Locations */}
-          <div className="space-y-2">
-            <Label>Locations</Label>
+        {/* Location */}
+        <div className="px-6 pt-6">
+          <label className="block text-sm font-medium text-gray-900 mb-2">
+            Location
+          </label>
+          <div className="relative w-full">
             <select
-              multiple
-              className="w-full rounded-md border px-2 py-1"
-              onChange={(e) => {
-                const values = Array.from(
-                  e.target.selectedOptions,
-                  (opt) => opt.value
-                );
-                setForm((f) => ({ ...f, locations: values }));
-              }}
+              defaultValue="none"
+              className="h-10 w-full border border-gray-300 rounded-md px-3 pr-8 text-sm text-gray-700"
             >
-              <option value="Substation 1">Substation 1</option>
-              <option value="Utility Yard">Utility Yard</option>
-              <option value="Warehouse Dock 3">Warehouse Dock 3</option>
+              <option value="none">Start typing...</option>
+              <option value="all">All Locations</option>
+              <option value="buildings">Buildings</option>
+              <option value="floors">Floors</option>
+              <option value="rooms">Rooms</option>
+              <option value="areas">Areas</option>
             </select>
+            <svg
+              className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500 pointer-events-none"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M6 9l6 6 6-6" />
+            </svg>
           </div>
+        </div>
 
-          {/* Assets */}
-          <div className="space-y-2">
-            <Label>Assets</Label>
+        {/* Assets */}
+        <div className="px-6 pt-6">
+          <label className="block text-sm font-medium text-gray-900 mb-2">
+            Assets
+          </label>
+          <div className="relative w-full">
             <select
-              multiple
-              className="w-full rounded-md border px-2 py-1"
-              onChange={(e) => {
-                const values = Array.from(
-                  e.target.selectedOptions,
-                  (opt) => opt.value
-                );
-                setForm((f) => ({ ...f, assets: values }));
-              }}
+              defaultValue="none"
+              className="h-10 w-full border border-gray-300 rounded-md px-3 pr-8 text-sm text-gray-700"
             >
-              <option value="Chiller">Chiller</option>
-              <option value="Pump">Pump</option>
+              <option value="none" className="text-blue-600">
+                + Create New Asset
+              </option>
             </select>
+            <svg
+              className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500 pointer-events-none"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M6 9l6 6 6-6" />
+            </svg>
           </div>
+        </div>
 
-          {/* Parts */}
-          <div className="space-y-2">
-            <Label>Parts</Label>
+        {/* Parts */}
+        <div className="px-6 pt-6">
+          <label className="block text-sm font-medium text-gray-900 mb-2">
+            Parts
+          </label>
+          <div className="relative w-full">
             <select
-              multiple
-              className="w-full rounded-md border px-2 py-1"
-              onChange={(e) => {
-                const values = Array.from(
-                  e.target.selectedOptions,
-                  (opt) => opt.value
-                );
-                setForm((f) => ({ ...f, parts: values }));
-              }}
+              defaultValue="none"
+              className="h-10 w-full border border-gray-300 rounded-md px-3 pr-8 text-sm text-gray-700"
             >
-              <option value="Mechanical Seals">Mechanical Seals</option>
-              <option value="Impellers">Impellers</option>
-              <option value="Control Boards">Control Boards</option>
+              <option value="none" className="text-blue-600">
+                + Create New Asset
+              </option>
             </select>
+            <svg
+              className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500 pointer-events-none"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M6 9l6 6 6-6" />
+            </svg>
           </div>
+        </div>
 
-          {/* Vendor Types */}
-          <div className="space-y-2">
-            <Label>Vendor Type</Label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="vendorType"
-                  value="Manufacturer"
-                  checked={form.vendorType === "Manufacturer"}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, vendorType: e.target.value }))
-                  }
-                />
-                Manufacturer
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="vendorType"
-                  value="Distributor"
-                  checked={form.vendorType === "Distributor"}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, vendorType: e.target.value }))
-                  }
-                />
-                Distributor
-              </label>
-            </div>
+        {/* Vendor Types */}
+        <div className="px-6 pt-6 pb-20">
+          <label className="block text-sm font-medium text-gray-900 mb-2">
+            Vendor Type
+          </label>
+          <div className="relative w-full">
+            <select
+              defaultValue="none"
+              className="h-10 w-full border border-gray-300 rounded-md px-3 pr-8 text-sm text-gray-700"
+            >
+              <option value="none" className="text-blue-600">
+                + Create New Asset
+              </option>
+            </select>
+            <svg
+              className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500 pointer-events-none"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M6 9l6 6 6-6" />
+            </svg>
           </div>
+        </div>
+      </form>
 
-          {/* Actions */}
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
-            <Button type="submit">Create Vendor</Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+      {/* Footer */}
+      <div className="sticky bottom-0 mt-6 flex items-center border-t bg-white px-6 py-4">
+        <button
+          style={{
+            marginLeft: "auto",
+            paddingLeft: "40px",
+            paddingRight: "40px",
+          }}
+          className="h-10 rounded-md bg-orange-600 text-sm font-medium text-white shadow hover:bg-orange-600 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          Create
+        </button>
+      </div>
+    </div>
   );
 }
