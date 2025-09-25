@@ -44,7 +44,6 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { NewMeterForm } from "./Meters/NewMeterForm";
 
 // Mock data for meters
 const mockMeters = [
@@ -193,7 +192,7 @@ export function Meters() {
               />
             </div>
             <Button
-              className="gap-2 bg-orange-600 hover:bg-orange-700"
+              className="gap-2 bg-blue-600 hover:bg-blue-700"
               onClick={() => setShowNewMeterForm(true)}
             >
               <Plus className="h-4 w-4" />
@@ -330,8 +329,158 @@ export function Meters() {
         {/* Right Panel - Content */}
         <div className="flex-1 bg-card mr-3 ml-2 border border-border min-h-0 flex flex-col border-border overflow-y-auto">
           {showNewMeterForm ? (
-            <NewMeterForm />
-            
+            <div className="p-6">
+              <h2 className="text-lg font-medium mb-6">New Meter</h2>
+
+              <div className="space-y-6 max-w-md">
+                {/* Meter Name */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Enter Meter Name (Required)
+                  </label>
+                  <Input
+                    placeholder="Enter Meter Name (Required)"
+                    value={newMeter.name}
+                    onChange={(e) =>
+                      setNewMeter({ ...newMeter, name: e.target.value })
+                    }
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Meter Type */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Meter Type
+                  </label>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={meterType === "manual" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setMeterType("manual")}
+                      className="gap-2"
+                    >
+                      👤 Manual
+                    </Button>
+                    <Button
+                      variant={
+                        meterType === "automated" ? "default" : "outline"
+                      }
+                      size="sm"
+                      onClick={() => setMeterType("automated")}
+                      className="gap-2"
+                    >
+                      🔧 Automated
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Description
+                  </label>
+                  <Textarea
+                    placeholder="Add a description"
+                    value={newMeter.description}
+                    onChange={(e) =>
+                      setNewMeter({ ...newMeter, description: e.target.value })
+                    }
+                    className="w-full min-h-[100px]"
+                  />
+                </div>
+
+                {/* Measurement Unit */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Measurement Unit (Required)
+                  </label>
+                  <Select
+                    value={newMeter.measurementUnit}
+                    onValueChange={(value: string) =>
+                      setNewMeter({ ...newMeter, measurementUnit: value })
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Start typing to search or customize" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="feet">Feet</SelectItem>
+                      <SelectItem value="meters">Meters</SelectItem>
+                      <SelectItem value="liters">Liters</SelectItem>
+                      <SelectItem value="gallons">Gallons</SelectItem>
+                      <SelectItem value="kwh">kWh</SelectItem>
+                      <SelectItem value="cubic-meters">Cubic Meters</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Asset and Location */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Asset
+                    </label>
+                    <Select
+                      value={newMeter.asset}
+                      onValueChange={(value: string) =>
+                        setNewMeter({ ...newMeter, asset: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Start typing..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="hvac-1">HVAC Unit 1</SelectItem>
+                        <SelectItem value="hvac-2">HVAC Unit 2</SelectItem>
+                        <SelectItem value="boiler-1">Boiler 1</SelectItem>
+                        <SelectItem value="chiller-1">Chiller 1</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Location
+                    </label>
+                    <Select
+                      value={newMeter.location}
+                      onValueChange={(value: string) =>
+                        setNewMeter({ ...newMeter, location: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Start typing..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="general">General</SelectItem>
+                        <SelectItem value="building-a">Building A</SelectItem>
+                        <SelectItem value="building-b">Building B</SelectItem>
+                        <SelectItem value="basement">Basement</SelectItem>
+                        <SelectItem value="roof">Roof</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center gap-3 pt-4">
+                  <Button
+                    onClick={handleCreateMeter}
+                    className="bg-blue-600 hover:bg-blue-700"
+                    disabled={!newMeter.name || !newMeter.measurementUnit}
+                  >
+                    Create
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowNewMeterForm(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
           ) : selectedMeter ? (
             /* Meter Detail View */
             <div className="flex flex-col h-full">
@@ -372,7 +521,7 @@ export function Meters() {
               </div>
 
               {/* Content */}
-              <div className="flex-1 p-6 space-y-8 overflow-auto">
+              <div className="flex-1 p-6 space-y-8">
                 {/* Readings Section */}
                 <div>
                   <div className="flex items-center justify-between mb-4">

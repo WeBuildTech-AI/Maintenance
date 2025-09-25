@@ -25,7 +25,7 @@ export function Messages() {
           </TabsTrigger>
           <TabsTrigger value="mentions">
             <AtSign className="h-4 w-4 mr-2" />
-            Mentions
+            @Mentions
           </TabsTrigger>
           <TabsTrigger value="approvals">
             <CheckCircle className="h-4 w-4 mr-2" />

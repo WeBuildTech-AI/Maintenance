@@ -1,15 +1,8 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "./ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Plus, BookOpen, FileText, Copy } from "lucide-react";
-import { ChecklistBuilder } from "./ChecklistBuilder";
 
 export function Library() {
   return (
@@ -22,11 +15,11 @@ export function Library() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button className="gap-2 bg-white cursor-pointer text-orange-600 border border-orange-600 hover:bg-orange-50">
+          <Button variant="outline">
             <Copy className="h-4 w-4 mr-2" />
             Import Template
           </Button>
-          <Button className="gap-2 bg-orange-600 hover:bg-orange-700">
+          <Button>
             <Plus className="h-4 w-4 mr-2" />
             New Procedure
           </Button>
@@ -46,29 +39,24 @@ export function Library() {
         </TabsList>
 
         <TabsContent value="procedures">
-          {/* <Card>
+          <Card>
             <CardHeader>
               <CardTitle>Standard Operating Procedures</CardTitle>
-              <CardDescription>
-                Versioned procedures with steps, tools, and safety requirements
-              </CardDescription>
+              <CardDescription>Versioned procedures with steps, tools, and safety requirements</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-center py-12 text-muted-foreground">
-                Procedure library with versioning, approval workflow, and
-                step-by-step instructions would be implemented here
+                Procedure library with versioning, approval workflow, and step-by-step instructions would be implemented here
               </div>
             </CardContent>
-          </Card> */}
-          <ChecklistBuilder />
+          </Card>
         </TabsContent>
 
         <TabsContent value="templates">
           <Card>
             <CardContent className="pt-6">
               <div className="text-center py-12 text-muted-foreground">
-                Work order templates with pre-filled tasks, parts lists, and
-                time estimates would be shown here
+                Work order templates with pre-filled tasks, parts lists, and time estimates would be shown here
               </div>
             </CardContent>
           </Card>

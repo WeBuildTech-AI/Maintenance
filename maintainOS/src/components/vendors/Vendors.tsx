@@ -108,7 +108,7 @@ export function Vendors() {
               />
             </div>
             <Button
-              className="cursor-pointer gap-2 bg-orange-600 hover:bg-orange-700"
+              className="cursor-pointer"
               onClick={() => setIsCreatingVendor(true)}
             >
               <Plus className="mr-2 h-4 w-4" />

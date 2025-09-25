@@ -113,6 +113,62 @@ export function PurchaseOrders() {
     }
   };
 
+  const ChatIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className="w-8 h-8"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M7.5 8.25h9m-9 3H12m2.25 2.25H15M3.75 21.75c1.036 0 1.875-.84 1.875-1.875V15c0-1.036-.84-1.875-1.875-1.875H3.75c-1.036 0-1.875.84-1.875 1.875v4.875c0 1.035.84 1.875 1.875 1.875Z"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"
+      />
+    </svg>
+  );
+
+  const XMarkIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={2}
+      stroke="currentColor"
+      className="w-8 h-8"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M6 18 18 6M6 6l12 12"
+      />
+    </svg>
+  );
+
+  const PaperAirplaneIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className="w-5 h-5"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"
+      />
+    </svg>
+  );
+
   // const [showNewPOModal, setShowNewPOModal] = useState(false);
 
   // New PO Form state
@@ -696,7 +752,7 @@ export function PurchaseOrders() {
                 </div>
 
                 {/* Footer (fixed at bottom of right pane) */}
-                <div className="p-4 border-t flex justify-end flex-none">
+                <div className="p-6 border-t flex justify-end flex-none">
                   <Button className="gap-2 bg-orange-600 hover:bg-orange-700">
                     <Upload className="h-4 w-4" />
                     Fulfill

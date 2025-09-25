@@ -1,10 +1,4 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "./ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
@@ -20,8 +14,8 @@ export function Categories() {
             Manage taxonomy for problems, failures, assets, and parts
           </p>
         </div>
-        <Button className="gap-2 bg-orange-600 hover:bg-orange-700">
-          <Plus className="h-4 w-4" />
+        <Button>
+          <Plus className="h-4 w-4 mr-2" />
           Add Category
         </Button>
       </div>
@@ -50,14 +44,11 @@ export function Categories() {
           <Card>
             <CardHeader>
               <CardTitle>Problem Type Categories</CardTitle>
-              <CardDescription>
-                Hierarchical classification of maintenance problems
-              </CardDescription>
+              <CardDescription>Hierarchical classification of maintenance problems</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-center py-12 text-muted-foreground">
-                Problem type hierarchy and management interface would be
-                implemented here
+                Problem type hierarchy and management interface would be implemented here
               </div>
             </CardContent>
           </Card>
@@ -67,8 +58,7 @@ export function Categories() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-center py-12 text-muted-foreground">
-                Failure cause categories and root cause analysis taxonomy would
-                be shown here
+                Failure cause categories and root cause analysis taxonomy would be shown here
               </div>
             </CardContent>
           </Card>
@@ -78,8 +68,7 @@ export function Categories() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-center py-12 text-muted-foreground">
-                Asset classification system and hierarchy would be displayed
-                here
+                Asset classification system and hierarchy would be displayed here
               </div>
             </CardContent>
           </Card>
@@ -89,8 +78,7 @@ export function Categories() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-center py-12 text-muted-foreground">
-                Parts categorization and classification system would be
-                implemented here
+                Parts categorization and classification system would be implemented here
               </div>
             </CardContent>
           </Card>
