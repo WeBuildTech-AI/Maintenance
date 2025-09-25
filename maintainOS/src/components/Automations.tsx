@@ -24,7 +24,6 @@ import {
   WandSparkles,
   Bell,
   GitBranch,
-<<<<<<< HEAD
   LayoutGrid,
   ChevronDown,
   Search,
@@ -32,9 +31,7 @@ import {
   Settings,
   PanelTop,
   Table,
-=======
   Bookmark,
->>>>>>> origin/frontend-dev
 } from "lucide-react";
 import { SearchWithDropdown } from "./Locations/SearchWithDropdown";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
@@ -119,49 +116,6 @@ function ConfirmDiscardModal({
             marginBottom: "18px",
           }}
         >
-<<<<<<< HEAD
-          <button
-            onClick={onCancel}
-            style={{
-              background: "transparent",
-              color: "#3B82F6",
-              border: "none",
-              borderRadius: "6px",
-              padding: "8px 16px",
-              fontSize: "14px",
-              fontWeight: "500",
-              cursor: "pointer",
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "#F3F4F6")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "transparent")
-            }
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            style={{
-              background: "#3B82F6",
-              color: "white",
-              border: "none",
-              borderRadius: "6px",
-              padding: "8px 16px",
-              fontSize: "14px",
-              fontWeight: "500",
-              cursor: "pointer",
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#2563EB")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "#3B82F6")}
-          >
-            Discard Changes
-          </button>
-        </div>
-=======
           Confirm
         </button>
 
@@ -178,7 +132,6 @@ function ConfirmDiscardModal({
         >
           Cancel
         </button>
->>>>>>> origin/frontend-dev
       </div>
     </div>
   );
@@ -516,7 +469,6 @@ function NewAutomationForm({ onBack }: { onBack: () => void }) {
           </div>
           <div>
             <h3 className="font-semibold mb-4">Actions</h3>
-<<<<<<< HEAD
             <div className="space-y-3">
               <ActionItem icon={<FilePlus2 />} text="Create a Work Order" />
               <ActionItem
@@ -526,7 +478,6 @@ function NewAutomationForm({ onBack }: { onBack: () => void }) {
               />
               <ActionItem icon={<Bell />} text="Send a notification" isLocked />
             </div>
-=======
             {showWorkOrderCard ? (
               showCreateBlankForm ? (
                 <CreateBlankWorkOrderForm
@@ -607,7 +558,6 @@ function NewAutomationForm({ onBack }: { onBack: () => void }) {
                 <ActionItem icon={<Bell />} text="Send a notification" isLocked />
               </div>
             )}
->>>>>>> origin/frontend-dev
           </div>
         </div>
       </div>
