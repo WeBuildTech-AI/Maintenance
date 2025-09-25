@@ -66,7 +66,7 @@ export function ConfirmDiscardModal({
           onClick={onConfirm}
           style={{
             width: "100%",
-            backgroundColor: "#60A5FA",
+            backgroundColor: "oklch(.646 .222 41.116)",
             border: "none",
             borderRadius: "6px",
             padding: "12px",
@@ -85,7 +85,7 @@ export function ConfirmDiscardModal({
           style={{
             background: "transparent",
             border: "none",
-            color: "#3B82F6",
+            color: "oklch(.646 .222 41.116)",
             fontSize: "14px",
             fontWeight: 500,
             cursor: "pointer",

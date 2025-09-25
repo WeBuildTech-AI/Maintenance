@@ -497,7 +497,7 @@ export function NewMeterForm({ onCreate}: NewMeterFormProps) {
                 <button
                     onClick={handleCreate}
                     style={{ marginLeft: "auto", paddingLeft: "40px", paddingRight: "40px" }}
-                    className="h-10 rounded-md bg-blue-600 text-sm font-medium text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="h-10 rounded-md bg-orange-600 text-sm font-medium text-white shadow hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                     Create
                 </button>

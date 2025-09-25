@@ -7,19 +7,20 @@ export function AssetsList({
   assets,
   selectedAsset,
   setSelectedAsset,
+  setShowNewAssetForm
 }: {
   assets: any[];
   selectedAsset: any | null;
   setSelectedAsset: (a: any) => void;
 }) {
   return (
-    <div className="w-112 border-r border-border bg-card flex flex-col min-h-0">
-      <div className="p-4 border-b border-border flex-shrink-0">
+    <div className="w-112 border ml-2 mr-3 border-border bg-card flex flex-col min-h-0">
+      <div className="p-3 border-b border-border flex-shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Sort By:</span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="text-primary p-0 h-auto">
+              <Button variant="ghost" size="sm" className="text-primary p-2 h-auto">
                 Name: Ascending Order
                 <ChevronDown className="h-3 w-3 ml-1" />
               </Button>
@@ -35,13 +36,14 @@ export function AssetsList({
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-0">
-        <div className="p-4 space-y-3">
+        <div className="">
           {assets.map((asset) => (
             <AssetCard
               key={asset.id}
               asset={asset}
               selected={selectedAsset?.id === asset.id}
               onSelect={() => setSelectedAsset(asset)}
+              setShowNewAssetForm={setShowNewAssetForm}
             />
           ))}
 

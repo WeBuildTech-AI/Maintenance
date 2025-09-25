@@ -1,6 +1,22 @@
-import { Search, Plus, LayoutGrid, ChevronDown, Zap, Building2 } from "lucide-react";
+import {
+  Search,
+  Plus,
+  LayoutGrid,
+  ChevronDown,
+  Zap,
+  Building2,
+  PanelTop,
+  Table,
+} from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import { useState } from "react";
 
 export function MetersHeader({
   searchQuery,
@@ -12,16 +28,40 @@ export function MetersHeader({
   setSelectedAsset,
   selectedLocation,
   setSelectedLocation,
+  viewMode,
+  setViewMode,
 }: any) {
   return (
-    <div className="p-6 border-b border-border bg-card">
+    <div className="p-6 border-border bg-card">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-medium">Meters</h1>
-          <div className="flex items-center gap-2">
-            <LayoutGrid className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Panel View</span>
-            <ChevronDown className="h-3 w-3 text-muted-foreground" />
+          <div className=" flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  {viewMode === "panel" ? (
+                    <PanelTop className="h-4 w-4" />
+                  ) : (
+                    <Table className="h-4 w-4" />
+                  )}
+                  {viewMode === "panel" ? "Panel View" : "Table View"}
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem onClick={() => setViewMode("panel")}>
+                  <PanelTop className="mr-2 h-4 w-4" /> Panel View
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setViewMode("table")}>
+                  <Table className="mr-2 h-4 w-4" /> Table View
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -44,12 +84,12 @@ export function MetersHeader({
         </div>
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2">
         <Button
           variant={selectedType === "all" ? "default" : "ghost"}
           size="sm"
           onClick={() => setSelectedType("all")}
-          className="gap-2"
+          className="gap-2 text-orange-600 bg-white hover:bg-orange-50 cursor-pointer border border-orange-600"
         >
           <Zap className="h-4 w-4" />
           Type
@@ -58,7 +98,7 @@ export function MetersHeader({
           variant={selectedAsset === "all" ? "default" : "ghost"}
           size="sm"
           onClick={() => setSelectedAsset("all")}
-          className="gap-2"
+          className="gap-2 text-orange-600 bg-white hover:bg-orange-50 cursor-pointer border border-orange-600"
         >
           <Building2 className="h-4 w-4" />
           Asset
@@ -67,7 +107,7 @@ export function MetersHeader({
           variant={selectedLocation === "all" ? "default" : "ghost"}
           size="sm"
           onClick={() => setSelectedLocation("all")}
-          className="gap-2"
+          className="gap-2 text-orange-600  hover:bg-orange-50 cursor-pointer bg-white border border-orange-600"
         >
           📍 Location
         </Button>

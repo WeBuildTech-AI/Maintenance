@@ -12,7 +12,7 @@ export function AssetDetailHeader({ asset }: { asset: any }) {
           <Link className="h-4 w-4 text-orange-600" />
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="gap-2 text-orange-600 border-orange-200 hover:bg-orange-50">
+          <Button variant="outline" className="gap-2 text-orange-600 border-orange-600 hover:bg-orange-50">
             <Edit className="h-4 w-4" />
             Edit
           </Button>

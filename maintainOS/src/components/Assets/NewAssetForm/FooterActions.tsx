@@ -9,15 +9,19 @@ export function FooterActions({ onCreate, onCancel }: FooterActionsProps) {
       {onCancel && (
         <button
           onClick={onCancel}
-          className="h-10 rounded-md border px-5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          className="h-10 rounded-md border px-4 text-sm font-medium text-orange-600 hover:bg-gray-50"
         >
           Cancel
         </button>
       )}
       <button
         onClick={onCreate}
-        style={{ marginLeft: "auto", paddingLeft: "40px", paddingRight: "40px" }}
-        className="h-10 rounded-md bg-blue-600 text-sm font-medium text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        style={{
+          marginLeft: "auto",
+          paddingLeft: "40px",
+          paddingRight: "40px",
+        }}
+        className="h-10 rounded-md bg-orange-600 text-sm font-medium text-white shadow hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
         Create
       </button>

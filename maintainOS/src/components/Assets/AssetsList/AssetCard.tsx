@@ -6,15 +6,22 @@ export function AssetCard({
   asset,
   selected,
   onSelect,
+  setShowNewAssetForm,
 }: {
   asset: any;
   selected: boolean;
   onSelect: () => void;
+  setShowNewAssetForm;
 }) {
   return (
     <Card
-      className={`cursor-pointer transition-colors ${selected ? "border-primary bg-primary/5" : "hover:bg-muted/50"}`}
-      onClick={onSelect}
+      className={`cursor-pointer transition-colors ${
+        selected ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+      }`}
+      onClick={() => {
+        onSelect();
+        setShowNewAssetForm(false);
+      }}
     >
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-3">
@@ -26,7 +33,9 @@ export function AssetCard({
               <h4 className="font-medium">{asset.name}</h4>
               <div className="flex items-center gap-1 mt-1">
                 <MapPin className="h-3 w-3 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">{asset.location}</span>
+                <span className="text-sm text-muted-foreground">
+                  {asset.location}
+                </span>
               </div>
             </div>
           </div>
@@ -43,7 +52,11 @@ export function AssetCard({
             >
               <div
                 className={`w-2 h-2 rounded-full ${
-                  asset.status === "Online" ? "bg-green-500" : asset.status === "Offline" ? "bg-red-500" : "bg-yellow-500"
+                  asset.status === "Online"
+                    ? "bg-green-500"
+                    : asset.status === "Offline"
+                    ? "bg-red-500"
+                    : "bg-yellow-500"
                 }`}
               />
               {asset.status}

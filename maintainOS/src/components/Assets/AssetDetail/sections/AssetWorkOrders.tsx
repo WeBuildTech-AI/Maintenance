@@ -16,7 +16,7 @@ export function AssetWorkOrders() {
               <h4 className="font-medium mb-1">Daily inspection</h4>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span>Requested by</span>
-                <Avatar className="w-4 h-4">
+                <Avatar className="w-7 h-7">
                   <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face" />
                   <AvatarFallback>AC</AvatarFallback>
                 </Avatar>
@@ -50,7 +50,7 @@ export function AssetWorkOrders() {
               <h4 className="font-medium mb-1">Daily inspection</h4>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span>Completed by</span>
-                <Avatar className="w-4 h-4">
+                <Avatar className="w-7 h-7">
                   <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face" />
                   <AvatarFallback>AC</AvatarFallback>
                 </Avatar>
@@ -84,7 +84,7 @@ export function AssetWorkOrders() {
               <h4 className="font-medium mb-1">Check the voltage</h4>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span>Completed by</span>
-                <Avatar className="w-4 h-4">
+                <Avatar className="w-7 h-7">
                   <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face" />
                   <AvatarFallback>AC</AvatarFallback>
                 </Avatar>
@@ -118,7 +118,7 @@ export function AssetWorkOrders() {
               <h4 className="font-medium mb-1">Check the voltage</h4>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span>Completed by</span>
-                <Avatar className="w-4 h-4">
+                <Avatar className="w-7 h-7">
                   <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face" />
                   <AvatarFallback>AC</AvatarFallback>
                 </Avatar>
@@ -153,7 +153,7 @@ export function AssetWorkOrders() {
                 <h4 className="font-medium mb-1">Check the voltage</h4>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <span>Requested by</span>
-                  <Avatar className="w-4 h-4">
+                  <Avatar className="w-7 h-7">
                     <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face" />
                     <AvatarFallback>AC</AvatarFallback>
                   </Avatar>

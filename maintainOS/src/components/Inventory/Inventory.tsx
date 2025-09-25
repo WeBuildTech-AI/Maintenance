@@ -1,4 +1,3 @@
-
 import { useMemo, useState } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -19,6 +18,8 @@ import {
   Building2,
   MapPin,
   Tag,
+  PanelTop,
+  Table,
 } from "lucide-react";
 
 import { PartCard } from "./PartCard";
@@ -26,6 +27,7 @@ import { EmptyState } from "./EmptyState";
 import { PartDetails } from "./PartDetails";
 import { NewPartForm } from "./NewPartForm";
 import { id } from "./utils";
+import { PartTable } from "./PartTable";
 
 /* ------------------------------- Types ------------------------------- */
 export type Vendor = {
@@ -81,8 +83,18 @@ export type NewItem = {
 
 /* ----------------------------- Mock Data ---------------------------- */
 export const mockVendors: Vendor[] = [
-  { id: "V-001", name: "Ramu", email: "ramu@vendor.com", phone: "+91 9876543210" },
-  { id: "V-002", name: "Acme Spares", email: "sales@acmespares.com", phone: "+91 9988776655" },
+  {
+    id: "V-001",
+    name: "Ramu",
+    email: "ramu@vendor.com",
+    phone: "+91 9876543210",
+  },
+  {
+    id: "V-002",
+    name: "Acme Spares",
+    email: "sales@acmespares.com",
+    phone: "+91 9988776655",
+  },
 ];
 
 export const mockLocations: Location[] = [
@@ -134,7 +146,7 @@ const seedItems: Item[] = [
   },
   {
     id: id(),
-    name: "Cable Ties (100 pc, 8\")",
+    name: 'Cable Ties (100 pc, 8")',
     description: "UV-resistant nylon cable ties.",
     unitCost: 1.08,
     unitsInStock: 200,
@@ -192,7 +204,7 @@ const seedItems: Item[] = [
   // intentional duplicates from your original seed:
   {
     id: id(),
-    name: "Cable Ties (100 pc, 8\")",
+    name: 'Cable Ties (100 pc, 8")',
     description: "UV-resistant nylon cable ties.",
     unitCost: 1.08,
     unitsInStock: 200,
@@ -268,15 +280,19 @@ const emptyNewItem: NewItem = {
 export function Inventory() {
   const [items, setItems] = useState<Item[]>(seedItems);
   const [query, setQuery] = useState("");
-  const [selectedId, setSelectedId] = useState<string | null>(items[0]?.id ?? null);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    items[0]?.id ?? null
+  );
   const [creating, setCreating] = useState(false);
   const [newItem, setNewItem] = useState<NewItem>(emptyNewItem);
-
+  const [viewMode, setViewMode] = useState<ViewMode>("panel");
   const filtered = items.filter((i) => {
     const vendorNames = i.vendors
       .map((v) => mockVendors.find((mv) => mv.id === v.vendorId)?.name ?? "")
       .join(" ");
-    const text = `${i.name} ${vendorNames} ${i.description ?? ""}`.toLowerCase();
+    const text = `${i.name} ${vendorNames} ${
+      i.description ?? ""
+    }`.toLowerCase();
     return text.includes(query.toLowerCase());
   });
 
@@ -295,10 +311,16 @@ export function Inventory() {
   };
 
   const addVendorRow = () =>
-    setNewItem((s) => ({ ...s, vendors: [...s.vendors, { vendorId: "", orderingPartNumber: "" }] }));
+    setNewItem((s) => ({
+      ...s,
+      vendors: [...s.vendors, { vendorId: "", orderingPartNumber: "" }],
+    }));
 
   const removeVendorRow = (idx: number) =>
-    setNewItem((s) => ({ ...s, vendors: s.vendors.filter((_, i) => i !== idx) }));
+    setNewItem((s) => ({
+      ...s,
+      vendors: s.vendors.filter((_, i) => i !== idx),
+    }));
 
   const createItem = () => {
     if (!newItem.name) return;
@@ -316,7 +338,10 @@ export function Inventory() {
       assetNames: newItem.assetNames,
       vendors: newItem.vendors
         .filter((v) => v.vendorId)
-        .map((v) => ({ vendorId: v.vendorId, orderingPartNumber: v.orderingPartNumber || "" })),
+        .map((v) => ({
+          vendorId: v.vendorId,
+          orderingPartNumber: v.orderingPartNumber || "",
+        })),
       files: newItem.files,
       createdBy: "Ashwini Chauhan",
       createdAt: new Date().toISOString(),
@@ -332,14 +357,36 @@ export function Inventory() {
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* Header */}
-      <div className="p-6 border-b bg-card flex-shrink-0">
+      <div className="p-6 bg-card flex-shrink-0">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-medium">Parts</h1>
-            <div className="flex items-center gap-2">
-              <LayoutGrid className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Panel View</span>
-              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+            <div className=" flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    {viewMode === "panel" ? (
+                      <PanelTop className="h-4 w-4" />
+                    ) : (
+                      <Table className="h-4 w-4" />
+                    )}
+                    {viewMode === "panel" ? "Panel View" : "Table View"}
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem onClick={() => setViewMode("panel")}>
+                    <PanelTop className="mr-2 h-4 w-4" /> Panel View
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setViewMode("table")}>
+                    <Table className="mr-2 h-4 w-4" /> Table View
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -352,7 +399,10 @@ export function Inventory() {
                 className="pl-9 w-72"
               />
             </div>
-            <Button className="gap-2 bg-orange-600 hover:bg-orange-700" onClick={startCreate}>
+            <Button
+              className="gap-2 bg-orange-600 hover:bg-orange-700"
+              onClick={startCreate}
+            >
               <Plus className="h-4 w-4" />
               New Part
             </Button>
@@ -362,19 +412,31 @@ export function Inventory() {
         {/* Filters row (visual) */}
         <div className="flex items-center justify-between">
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button
+              size="sm"
+              className="gap-2 text-orange-600 bg-white hover:bg-orange-50 cursor-pointer border border-orange-600"
+            >
               <Tag className="h-4 w-4" />
               Part Types
             </Button>
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button
+              size="sm"
+              className="gap-2 text-orange-600 bg-white hover:bg-orange-50 cursor-pointer border border-orange-600"
+            >
               <MapPin className="h-4 w-4" />
               Location
             </Button>
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button
+              size="sm"
+              className="gap-2 text-orange-600 bg-white hover:bg-orange-50 cursor-pointer border border-orange-600"
+            >
               <Building2 className="h-4 w-4" />
               Vendor
             </Button>
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button
+              size="sm"
+              className="gap-2 text-orange-600 bg-white hover:bg-orange-50 cursor-pointer border border-orange-600"
+            >
               <Filter className="h-4 w-4" />
               Add Filter
             </Button>
@@ -386,70 +448,83 @@ export function Inventory() {
         </div>
       </div>
 
-      <div className="flex flex-1 min-h-0">
-        {/* Left list */}
-        <div className="w-112 border-r bg-card flex flex-col min-h-0">
-          <div className="p-4 border-b flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Sort By:</span>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="text-primary p-0 h-auto">
-                    Name: Ascending Order
-                    <ChevronDown className="h-3 w-3 ml-1" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>Name: Ascending Order</DropdownMenuItem>
-                  <DropdownMenuItem>Name: Descending Order</DropdownMenuItem>
-                  <DropdownMenuItem>Units in Stock</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+      {viewMode === "table" ? (
+        <>
+          <PartTable inventory={filtered} setSelectedId={setSelectedId} />
+        </>
+      ) : (
+        <>
+          <div className="flex flex-1 min-h-0">
+            {/* Left list */}
+            <div className="w-112 border-r bg-card flex flex-col min-h-0">
+              <div className="p-4 border-b flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    Sort By:
+                  </span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-primary p-0 h-auto"
+                      >
+                        Name: Ascending Order
+                        <ChevronDown className="h-3 w-3 ml-1" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem>Name: Ascending Order</DropdownMenuItem>
+                      <DropdownMenuItem>
+                        Name: Descending Order
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>Units in Stock</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto min-h-0">
+                <div className="p-4 space-y-3">
+                  {filtered.map((it) => (
+                    <PartCard
+                      key={it.id}
+                      item={it}
+                      selected={selectedId === it.id}
+                      onSelect={() => {
+                        setSelectedId(it.id);
+                        setCreating(false);
+                      }}
+                    />
+                  ))}
+
+                  {filtered.length === 0 && (
+                    <EmptyState variant="list" onCreate={startCreate} />
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div className="flex-1 overflow-y-auto min-h-0">
-            <div className="p-4 space-y-3">
-              {filtered.map((it) => (
-                <PartCard
-                  key={it.id}
-                  item={it}
-                  selected={selectedId === it.id}
-                  onSelect={() => {
-                    setSelectedId(it.id);
-                    setCreating(false);
-                  }}
+            {/* Right panel */}
+            <div className="flex-1 bg-card min-h-0 flex flex-col">
+              {creating ? (
+                <NewPartForm
+                  newItem={newItem}
+                  setNewItem={setNewItem}
+                  addVendorRow={addVendorRow}
+                  removeVendorRow={removeVendorRow}
+                  onCancel={() => setCreating(false)}
+                  onCreate={createItem}
                 />
-              ))}
-
-              {filtered.length === 0 && (
-                <EmptyState
-                  variant="list"
-                  onCreate={startCreate}
-                />
+              ) : selected ? (
+                <PartDetails item={selected} stockStatus={stockStatus} />
+              ) : (
+                <EmptyState variant="panel" />
               )}
             </div>
           </div>
-        </div>
-
-        {/* Right panel */}
-        <div className="flex-1 bg-card min-h-0 flex flex-col">
-          {creating ? (
-            <NewPartForm
-              newItem={newItem}
-              setNewItem={setNewItem}
-              addVendorRow={addVendorRow}
-              removeVendorRow={removeVendorRow}
-              onCancel={() => setCreating(false)}
-              onCreate={createItem}
-            />
-          ) : selected ? (
-            <PartDetails item={selected} stockStatus={stockStatus} />
-          ) : (
-            <EmptyState variant="panel" />
-          )}
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 }

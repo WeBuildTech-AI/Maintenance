@@ -203,7 +203,8 @@ export function WorkOrders() {
 
           {/* Create Work Order */}
           <Button
-            className="bg-primary hover:bg-primary/90 flex-shrink-0 ml-auto"
+            // className="bg-primary hover:bg-primary/90 flex-shrink-0 ml-auto"
+            className="gap-2 cursor-pointer bg-orange-600 hover:bg-orange-700"
             onClick={() => setCreatingWorkOrder(true)}
           >
             <Plus className="h-4 w-4 mr-2" />

@@ -5,13 +5,13 @@ import { MeterCard } from "./MeterCard";
 
 export function MetersList({ filteredMeters, selectedMeter, setSelectedMeter }: any) {
   return (
-    <div className="w-112 border-r border-border bg-card flex flex-col">
-      <div className="p-4 border-b border-border">
+    <div className="w-112 border ml-3 mr-2 border-border bg-card flex flex-col">
+      <div className="p-2 border-b border-border">
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Sort By:</span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="text-primary p-0 h-auto">
+              <Button variant="ghost" size="sm" className="text-primary p-2 h-auto">
                 Name: Ascending Order
                 <ChevronDown className="h-3 w-3 ml-1" />
               </Button>
@@ -27,7 +27,7 @@ export function MetersList({ filteredMeters, selectedMeter, setSelectedMeter }: 
       </div>
 
       <div className="flex-1 overflow-auto">
-        <div className="p-4 space-y-3">
+        <div className="">
           {filteredMeters.map((meter: any) => (
             <MeterCard key={meter.id} meter={meter} selectedMeter={selectedMeter} setSelectedMeter={setSelectedMeter} />
           ))}

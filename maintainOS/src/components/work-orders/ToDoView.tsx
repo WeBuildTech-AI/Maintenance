@@ -114,7 +114,7 @@ export function ToDoView({
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-primary p-0">
+                <Button variant="ghost" size="sm" className="text-primary p-2">
                   Sort: Last Updated
                 </Button>
               </DropdownMenuTrigger>
@@ -140,8 +140,9 @@ export function ToDoView({
                 </p>
               </div>
               <Button
-                variant="outline"
+                // variant="outline"
                 size="sm"
+                className="gap-2 cursor-pointer bg-orange-600 hover:bg-orange-700"
                 onClick={() => console.log("Create Work Order clicked")}
               >
                 Create Work Order

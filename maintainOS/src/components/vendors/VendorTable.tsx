@@ -18,7 +18,7 @@ export function VendorTable({
       .toUpperCase();
 
   return (
-    <div className="flex-1 overflow-auto p-6">
+    <div className="flex-1 overflow-auto p-2">
       <Card className="overflow-hidden shadow-sm">
         <CardContent className="p-0">
           <table className="w-full table-fixed text-sm">
@@ -43,12 +43,16 @@ export function VendorTable({
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
-                        <AvatarFallback>{renderInitials(vendor.name)}</AvatarFallback>
+                        <AvatarFallback>
+                          {renderInitials(vendor.name)}
+                        </AvatarFallback>
                       </Avatar>
                       <span className="font-medium">{vendor.name}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{vendor.id}</td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {vendor.id}
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {vendor.partsSummary ?? "—"}
                   </td>
@@ -65,7 +69,10 @@ export function VendorTable({
               ))}
               {vendors.length === 0 && (
                 <tr>
-                  <td className="px-4 py-6 text-center text-muted-foreground" colSpan={6}>
+                  <td
+                    className="px-4 py-6 text-center text-muted-foreground"
+                    colSpan={6}
+                  >
                     No vendors found.
                   </td>
                 </tr>

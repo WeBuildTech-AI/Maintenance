@@ -49,7 +49,7 @@ export function FilesUpload({ attachedDocs, setAttachedDocs }: FilesUploadProps)
       <div className="mt-3">
         <label
           htmlFor="docInput"
-          className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 rounded cursor-pointer hover:bg-blue-50"
+          className="inline-flex items-center  text-orange-600 gap-2 px-3 py-2 text-sm font-medium text-blue-600 rounded cursor-pointer hover:bg-blue-50"
         >
           <Paperclip className="h-4 w-4" />
           Attach files

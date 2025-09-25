@@ -936,7 +936,7 @@ function NewPartForm({
           {/* Files */}
           <section>
             <div className="text-base font-medium mb-2">Files</div>
-            <Button variant="outline" className="gap-2 h-9">
+            <Button  className="gap-2 h-9 text-orange-600">
               <Paperclip className="h-4 w-4" />
               Attach files
             </Button>

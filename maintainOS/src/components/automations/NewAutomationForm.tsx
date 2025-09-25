@@ -40,13 +40,18 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
           <ChevronLeft className="h-4 w-4 mr-2" />
           New Automation
         </Button>
-        <Button>Create</Button>
+        <Button className="gap-2 cursor-pointer bg-orange-600 hover:bg-orange-700">
+          Create
+        </Button>
       </div>
 
       <div className="max-w-3xl mx-auto space-y-8">
         {/* Automation Name */}
         <div className="space-y-2">
-          <label htmlFor="automation-name" className="text-sm font-medium text-black">
+          <label
+            htmlFor="automation-name"
+            className="text-sm font-medium text-black"
+          >
             Automation name (Required)
           </label>
           <Input
@@ -83,7 +88,9 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
               <TriggerCard
                 key={index}
                 title={trigger}
-                onDelete={() => setTriggers((prev) => prev.filter((_, i) => i !== index))}
+                onDelete={() =>
+                  setTriggers((prev) => prev.filter((_, i) => i !== index))
+                }
               />
             ))}
 
@@ -132,11 +139,15 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
             {showWorkOrderCard ? (
               <>
                 {showCreateBlankForm ? (
-                  <CreateBlankWorkOrderForm onBack={() => setShowCreateBlankForm(false)} />
+                  <CreateBlankWorkOrderForm
+                    onBack={() => setShowCreateBlankForm(false)}
+                  />
                 ) : (
                   <div className="border rounded-md shadow bg-white mb-6">
                     <div className="bg-blue-50 p-4 flex justify-between items-center rounded-t-md">
-                      <h3 className="font-medium text-gray-900">Create a Work Order</h3>
+                      <h3 className="font-medium text-gray-900">
+                        Create a Work Order
+                      </h3>
                       <div className="flex gap-3">
                         <Settings2 className="h-5 w-5 text-gray-600 cursor-pointer" />
                         <Trash2
@@ -179,9 +190,21 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
               </>
             ) : (
               <div className="space-y-3">
-                <ActionItem icon={<FilePlus2 />} text="Create a Work Order" onClick={() => setShowWorkOrderCard(true)} />
-                <ActionItem icon={<WandSparkles />} text="Change Asset status" isLocked />
-                <ActionItem icon={<Bell />} text="Send a notification" isLocked />
+                <ActionItem
+                  icon={<FilePlus2 />}
+                  text="Create a Work Order"
+                  onClick={() => setShowWorkOrderCard(true)}
+                />
+                <ActionItem
+                  icon={<WandSparkles />}
+                  text="Change Asset status"
+                  isLocked
+                />
+                <ActionItem
+                  icon={<Bell />}
+                  text="Send a notification"
+                  isLocked
+                />
               </div>
             )}
           </div>
@@ -189,7 +212,11 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
       </div>
 
       {/* Modals */}
-      <ConfirmDiscardModal open={showDiscardModal} onCancel={() => setShowDiscardModal(false)} onConfirm={onBack} />
+      <ConfirmDiscardModal
+        open={showDiscardModal}
+        onCancel={() => setShowDiscardModal(false)}
+        onConfirm={onBack}
+      />
       <ConfirmDeleteActionModal
         open={showDeleteModal}
         onCancel={() => setShowDeleteModal(false)}

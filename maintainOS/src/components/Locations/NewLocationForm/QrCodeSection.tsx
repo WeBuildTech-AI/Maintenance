@@ -11,7 +11,7 @@ export function QrCodeSection() {
       />
       <div className="flex items-center gap-1">
         <span className="text-sm text-gray-500">or</span>
-        <button className="text-sm text-blue-600 hover:text-blue-700 cursor-pointer underline">
+        <button className="text-sm text-orange-600 hover:text-orange-700 cursor-pointer underline">
           Generate Code
         </button>
       </div>

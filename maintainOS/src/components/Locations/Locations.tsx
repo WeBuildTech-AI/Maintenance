@@ -17,7 +17,7 @@ export function Locations() {
   const [showForm, setShowForm] = useState(false);
 
   return (
-    <div className="h-screen flex flex-col p-6 overflow-hidden">
+    <div className="h-screen flex flex-col p-2 overflow-hidden">
       {/* Page Header (Fixed) */}
       <div className="flex justify-between items-center flex-none">
         <div>
@@ -26,7 +26,7 @@ export function Locations() {
             Manage facility hierarchy and location structure
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="gap-2 cursor-pointer bg-orange-600 hover:bg-orange-700">
           <Button onClick={() => setShowForm(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Add Location
@@ -35,9 +35,9 @@ export function Locations() {
       </div>
 
       {/* Two Cards Layout using flex */}
-      <div className="flex gap-6 flex-1 overflow-hidden mt-6 min-h-0">
+      <div className="flex gap-2 flex-1 overflow-hidden mt-6 min-h-0">
         {/* Left Card (~40%) */}
-        <Card className="flex flex-col h-full overflow-hidden w-2/5">
+        <Card className="flex flex-col h-full overflow-hidden w-96">
           <CardHeader>
             <CardTitle>Location Hierarchy</CardTitle>
             <CardDescription>

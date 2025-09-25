@@ -45,7 +45,7 @@ export function AssetStatusReadings() {
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
-                <Avatar className="w-5 h-5">
+                <Avatar className="w-7 h-7">
                   <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face" />
                   <AvatarFallback>AC</AvatarFallback>
                 </Avatar>
@@ -117,10 +117,10 @@ export function AssetStatusReadings() {
               <Line
                 type="monotone"
                 dataKey="value"
-                stroke="#3b82f6"
+                stroke="oklch(.646 .222 41.116)"
                 strokeWidth={2}
-                dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6, fill: "#3b82f6" }}
+                dot={{ fill: "oklch(.646 .222 41.116)", strokeWidth: 2, r: 4 }}
+                activeDot={{ r: 6, fill: "oklch(.646 .222 41.116)" }}
               />
             </LineChart>
           </ResponsiveContainer>

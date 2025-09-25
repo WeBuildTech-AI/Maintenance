@@ -1,13 +1,26 @@
 import { useMemo, useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { Search, Plus, Settings, PanelTop, Table, ChevronDown } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import {
+  Search,
+  Plus,
+  Settings,
+  PanelTop,
+  Table,
+  ChevronDown,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 import { VendorSidebar } from "./VendorSidebar";
 import { VendorDetails } from "./VendorDetails";
 import { VendorTable } from "./VendorTable";
 import { VendorForm } from "./VendorForm";
 import { mockVendors, type Vendor } from "./vendors.types";
+import POFilterBar from "../purchase-orders/POFilterBar";
 
 type ViewMode = "panel" | "table";
 
@@ -15,7 +28,10 @@ export function Vendors() {
   const [vendors, setVendors] = useState<Vendor[]>(mockVendors);
   const [viewMode, setViewMode] = useState<ViewMode>("panel");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedVendorId, setSelectedVendorId] = useState(mockVendors[0]?.id ?? "");
+  const [showSettings, setShowSettings] = useState(false);
+  const [selectedVendorId, setSelectedVendorId] = useState(
+    mockVendors[0]?.id ?? ""
+  );
   const [isCreatingVendor, setIsCreatingVendor] = useState(false);
 
   const filteredVendors = useMemo(() => {
@@ -37,16 +53,46 @@ export function Vendors() {
   }, [filteredVendors, selectedVendorId]);
 
   const selectedVendor =
-    filteredVendors.find((v) => v.id === selectedVendorId) ?? filteredVendors[0];
+    filteredVendors.find((v) => v.id === selectedVendorId) ??
+    filteredVendors[0];
 
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <header className="border-b border-border bg-card px-6 py-4">
+      <header className=" border-border bg-card px-6 py-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold">Vendors</h1>
-            <p className="text-sm text-muted-foreground">
+            <div className="flex item-center gap-6">
+              <h1 className="text-2xl font-semibold">Vendors</h1>
+              <div className=" flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      {viewMode === "panel" ? (
+                        <PanelTop className="h-4 w-4" />
+                      ) : (
+                        <Table className="h-4 w-4" />
+                      )}
+                      {viewMode === "panel" ? "Panel View" : "Table View"}
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuItem onClick={() => setViewMode("panel")}>
+                      <PanelTop className="mr-2 h-4 w-4" /> Panel View
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setViewMode("table")}>
+                      <Table className="mr-2 h-4 w-4" /> Table View
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+            <p className="text-sm mt-2 text-muted-foreground">
               Manage vendor relationships, contacts, and service coverage
             </p>
           </div>
@@ -60,34 +106,34 @@ export function Vendors() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button onClick={() => setIsCreatingVendor(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                New Vendor
+            <Button
+              className="gap-2 cursor-pointer bg-orange-600 hover:bg-orange-700"
+              onClick={() => {
+                setIsCreatingVendor(true);
+                setViewMode("panel");
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              New Vendor
             </Button>
             <Button variant="ghost" size="icon">
               <Settings className="h-4 w-4" />
             </Button>
           </div>
         </div>
+        <div className="flex items-center mt-4 p-1 h-10 justify-between">
+          {/* Left: Filter bar */}
+          <POFilterBar />
 
-        <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
-                {viewMode === "panel" ? <PanelTop className="h-4 w-4" /> : <Table className="h-4 w-4" />}
-                {viewMode === "panel" ? "Panel View" : "Table View"}
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={() => setViewMode("panel")}>
-                <PanelTop className="mr-2 h-4 w-4" /> Panel View
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setViewMode("table")}>
-                <Table className="mr-2 h-4 w-4" /> Table View
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Right: Settings button (only for table view) */}
+          {viewMode === "table" && (
+            <button
+              onClick={() => setShowSettings(true)}
+              className="p-2 rounded-md border hover:bg-gray-100 transition"
+            >
+              <Settings className="h-5 w-5 text-orange-600" />
+            </button>
+          )}
         </div>
       </header>
 
@@ -100,27 +146,30 @@ export function Vendors() {
               selectedVendorId={selectedVendorId}
               setSelectedVendorId={setSelectedVendorId}
             />
-            <section className="flex-1 overflow-auto p-6">
-                {isCreatingVendor ? (
-                    <VendorForm
-                    setVendors={setVendors}
-                    setSelectedVendorId={setSelectedVendorId}
-                    onCancel={() => setIsCreatingVendor(false)}
-                    />
-                ) : selectedVendor ? (
-                    <VendorDetails
-                    vendor={selectedVendor}
-                    setVendors={setVendors}
-                    />
-                ) : (
-                    <div className="flex h-full items-center justify-center text-muted-foreground">
-                    Select a vendor to view details.
-                    </div>
-                )}
+            <section className="flex-1 overflow-auto">
+              {isCreatingVendor ? (
+                <VendorForm
+                  setVendors={setVendors}
+                  setSelectedVendorId={setSelectedVendorId}
+                  onCancel={() => setIsCreatingVendor(false)}
+                />
+              ) : selectedVendor ? (
+                <VendorDetails
+                  vendor={selectedVendor}
+                  setVendors={setVendors}
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center text-muted-foreground">
+                  Select a vendor to view details.
+                </div>
+              )}
             </section>
           </>
         ) : (
-          <VendorTable vendors={filteredVendors} selectedVendorId={selectedVendorId} />
+          <VendorTable
+            vendors={filteredVendors}
+            selectedVendorId={selectedVendorId}
+          />
         )}
       </div>
     </div>

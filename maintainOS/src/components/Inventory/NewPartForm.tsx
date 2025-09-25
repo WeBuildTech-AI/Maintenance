@@ -40,12 +40,16 @@ export function NewPartForm({
         <div className="mx-auto w-full max-w-[820px] p-6 space-y-10">
           {/* Name + Pictures */}
           <section>
-            <div className="text-xl font-medium mb-4">{newItem.name || "New Part"}</div>
+            <div className="text-xl font-medium mb-4">
+              {newItem.name || "New Part"}
+            </div>
 
             <div className="mb-6">
               <div className="w-full h-32 border-2 border-dashed border-orange-300 rounded-lg bg-orange-50 flex flex-col items-center justify-center cursor-pointer hover:bg-orange-100 transition-colors">
                 <Upload className="h-6 w-6 text-orange-600 mb-2" />
-                <span className="text-sm text-orange-600">Add or drag pictures</span>
+                <span className="text-sm text-orange-600">
+                  Add or drag pictures
+                </span>
               </div>
             </div>
 
@@ -54,7 +58,9 @@ export function NewPartForm({
                 className="h-9 text-sm"
                 placeholder="Part Name"
                 value={newItem.name}
-                onChange={(e) => setNewItem((s) => ({ ...s, name: e.target.value }))}
+                onChange={(e) =>
+                  setNewItem((s) => ({ ...s, name: e.target.value }))
+                }
               />
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <Input
@@ -62,7 +68,12 @@ export function NewPartForm({
                   type="number"
                   placeholder="Unit Cost"
                   value={newItem.unitCost}
-                  onChange={(e) => setNewItem((s) => ({ ...s, unitCost: Number(e.target.value) || 0 }))}
+                  onChange={(e) =>
+                    setNewItem((s) => ({
+                      ...s,
+                      unitCost: Number(e.target.value) || 0,
+                    }))
+                  }
                 />
                 <Input
                   className="h-9 text-sm"
@@ -70,7 +81,10 @@ export function NewPartForm({
                   placeholder="Units in Stock"
                   value={newItem.unitsInStock}
                   onChange={(e) =>
-                    setNewItem((s) => ({ ...s, unitsInStock: Number(e.target.value) || 0 }))
+                    setNewItem((s) => ({
+                      ...s,
+                      unitsInStock: Number(e.target.value) || 0,
+                    }))
                   }
                 />
                 <Input
@@ -79,7 +93,10 @@ export function NewPartForm({
                   placeholder="Minimum in Stock"
                   value={newItem.minInStock}
                   onChange={(e) =>
-                    setNewItem((s) => ({ ...s, minInStock: Number(e.target.value) || 0 }))
+                    setNewItem((s) => ({
+                      ...s,
+                      minInStock: Number(e.target.value) || 0,
+                    }))
                   }
                 />
               </div>
@@ -87,7 +104,9 @@ export function NewPartForm({
                 className="h-24 text-sm"
                 placeholder="Description"
                 value={newItem.description}
-                onChange={(e) => setNewItem((s) => ({ ...s, description: e.target.value }))}
+                onChange={(e) =>
+                  setNewItem((s) => ({ ...s, description: e.target.value }))
+                }
               />
             </div>
           </section>
@@ -99,7 +118,9 @@ export function NewPartForm({
               className="h-9 text-sm mb-3"
               placeholder="Barcode will be generated (or input manually)"
               value={newItem.qrCode}
-              onChange={(e) => setNewItem((s) => ({ ...s, qrCode: e.target.value }))}
+              onChange={(e) =>
+                setNewItem((s) => ({ ...s, qrCode: e.target.value }))
+              }
             />
             <div className="mt-3 w-40 h-40 border rounded-md flex items-center justify-center bg-muted/30">
               <QrCode className="h-20 w-20 text-muted-foreground" />
@@ -117,7 +138,10 @@ export function NewPartForm({
                   variant="outline"
                   size="sm"
                   onClick={() =>
-                    setNewItem((s) => ({ ...s, partTypes: [...s.partTypes, "Critical"] }))
+                    setNewItem((s) => ({
+                      ...s,
+                      partTypes: [...s.partTypes, "Critical"],
+                    }))
                   }
                 >
                   + Add
@@ -132,7 +156,9 @@ export function NewPartForm({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <Select
                 value={newItem.locationId}
-                onValueChange={(v: string) => setNewItem((s) => ({ ...s, locationId: v }))}
+                onValueChange={(v: string) =>
+                  setNewItem((s) => ({ ...s, locationId: v }))
+                }
               >
                 <SelectTrigger className="h-9 text-sm">
                   <SelectValue placeholder="Select Location" />
@@ -148,7 +174,9 @@ export function NewPartForm({
 
               <Select
                 value={newItem.area}
-                onValueChange={(v: string) => setNewItem((s) => ({ ...s, area: v }))}
+                onValueChange={(v: string) =>
+                  setNewItem((s) => ({ ...s, area: v }))
+                }
               >
                 <SelectTrigger className="h-9 text-sm">
                   <SelectValue placeholder="Area" />
@@ -166,7 +194,10 @@ export function NewPartForm({
             <div className="text-base font-medium mb-4">Vendors</div>
             <div className="space-y-3">
               {newItem.vendors.map((v, idx) => (
-                <div key={idx} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+                <div
+                  key={idx}
+                  className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center"
+                >
                   <Select
                     value={v.vendorId}
                     onValueChange={(val: string) =>
@@ -195,14 +226,21 @@ export function NewPartForm({
                     onChange={(e) =>
                       setNewItem((s) => {
                         const nv = [...s.vendors];
-                        nv[idx] = { ...nv[idx], orderingPartNumber: e.target.value };
+                        nv[idx] = {
+                          ...nv[idx],
+                          orderingPartNumber: e.target.value,
+                        };
                         return { ...s, vendors: nv };
                       })
                     }
                   />
                   {newItem.vendors.length > 1 && (
                     <div className="md:col-span-3 -mt-2">
-                      <Button variant="ghost" size="sm" onClick={() => removeVendorRow(idx)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeVendorRow(idx)}
+                      >
                         Remove
                       </Button>
                     </div>
@@ -210,7 +248,7 @@ export function NewPartForm({
                 </div>
               ))}
             </div>
-            <div className="mt-3">
+            <div className="mt-4">
               <Button variant="outline" onClick={addVendorRow}>
                 Add additional Vendor
               </Button>
@@ -220,7 +258,7 @@ export function NewPartForm({
           {/* Files */}
           <section>
             <div className="text-base font-medium mb-2">Files</div>
-            <Button variant="outline" className="gap-2 h-9">
+            <Button className="gap-2 h-9 bg-white hover:bg-white cursor-pointer text-orange-600">
               <Paperclip className="h-4 w-4" />
               Attach files
             </Button>

@@ -7,9 +7,9 @@ import { MeterWorkOrders } from "./MeterWorkOrders";
 
 export function MeterDetail({ selectedMeter }: any) {
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex border mr-2 flex-col h-full">
       {/* Header */}
-      <div className="p-6 border-b border-border">
+      <div className="p-6 border-border">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-medium">{selectedMeter.name}</h1>
           <div className="flex items-center gap-2">

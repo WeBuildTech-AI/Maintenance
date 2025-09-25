@@ -49,9 +49,7 @@ export function VendorForm({
       "application/msword",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     ];
-    const newImages = selectedFiles.filter((f) =>
-      imageTypes.includes(f.type)
-    );
+    const newImages = selectedFiles.filter((f) => imageTypes.includes(f.type));
     const newDocs = selectedFiles.filter((f) => docTypes.includes(f.type));
     if (newImages.length) setFiles((prev) => [...prev, ...newImages]);
     if (newDocs.length) setAttachedDocs((prev) => [...prev, ...newDocs]);
@@ -227,7 +225,7 @@ export function VendorForm({
           <button
             type="button"
             onClick={() => {}}
-            className="mt-2 inline-flex items-center px-2 py-1 text-sm font-normal text-blue-600 bg-white border border-gray-300 rounded hover:bg-gray-50 hover:border-gray-400 transition-all duration-150 w-fit h-8"
+            className="mt-2 inline-flex items-center px-2 py-1 text-sm font-normal text-orange-600 bg-white border border-gray-300 rounded hover:bg-gray-50 hover:border-gray-400 transition-all duration-150 w-fit h-8"
           >
             + New Contact
           </button>
@@ -267,7 +265,7 @@ export function VendorForm({
           <div className="mt-3">
             <label
               htmlFor="docInput"
-              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 rounded cursor-pointer hover:bg-blue-50" // ⬅ no border
+              className="inline-flex items-center text-orange-600 gap-2 px-3 py-2 text-sm font-medium text-blue-600 rounded cursor-pointer hover:bg-blue-50" // ⬅ no border
             >
               <Paperclip className="h-4 w-4" />
               Attach files
@@ -414,7 +412,7 @@ export function VendorForm({
             paddingLeft: "40px",
             paddingRight: "40px",
           }}
-          className="h-10 rounded-md bg-blue-600 text-sm font-medium text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="h-10 rounded-md bg-orange-600 text-sm font-medium text-white shadow hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           Create
         </button>
