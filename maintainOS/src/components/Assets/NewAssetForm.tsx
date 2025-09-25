@@ -32,14 +32,17 @@ export function NewAssetForm({ onCreate }: NewAssetFormProps) {
     const [selectedVendor, setSelectedVendor] = useState<{ name: string } | null>(null);
 
     const handlePictureSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files) return;
-        setPictures((prev) => [...prev, ...Array.from(e.target.files)]);
+        const files = e.target.files;
+        if (!files) return;
+        setPictures((prev) => [...prev, ...Array.from(files)]);
     };
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files) return;
-        setFiles((prev) => [...prev, ...Array.from(e.target.files)]);
+        const files = e.target.files;
+        if (!files) return;
+        setFiles((prev) => [...prev, ...Array.from(files)]);
     };
+
 
     const removePicture = (index: number) => {
         setPictures((prev) => prev.filter((_, i) => i !== index));
