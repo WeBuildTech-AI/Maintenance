@@ -1,14 +1,16 @@
-import { Dispatch, SetStateAction, useMemo, useState } from "react";
+import { type Dispatch, type SetStateAction, useMemo, useState } from "react";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { Card, CardContent } from "../ui/card";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
-import { WorkOrder } from "./types";
+import type { WorkOrder } from "./types";
+import { Input } from "../ui/input";
+
 
 interface WorkloadViewProps {
   workOrders: WorkOrder[];
@@ -21,8 +23,9 @@ type SortOption = "name-asc" | "utilization-desc" | "utilization-asc";
 const HOURS_PER_DAY = 8;
 
 export function WorkloadView({ workOrders, weekOffset, setWeekOffset }: WorkloadViewProps) {
-  const { weekRangeLabel, weekMeta, assignees } = useMemo(() => {
+    const { weekRangeLabel, weekMeta, assignees } = useMemo(() => {
     const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
 
     const normalizeDate = (date: Date) => {
       const normalized = new Date(date);
@@ -158,12 +161,15 @@ export function WorkloadView({ workOrders, weekOffset, setWeekOffset }: Workload
     });
   }, [filteredAssignees, weekMeta]);
 
+  const [searchQuery, setSearchQuery] = useState("");
   const totalCapacity = filteredAssignees.length * HOURS_PER_DAY * weekMeta.length;
   const averageUtilization = totalCapacity > 0 ? Math.round((totalScheduledHours / totalCapacity) * 100) : 0;
   const gridTemplateColumns = "minmax(240px, 1.6fr) repeat(7, minmax(0, 1fr))";
 
   return (
-    <div className="flex-1 overflow-auto">
+    <div className="flex h-full">
+      {/* Left Hand side */}
+      
       <div className="p-6">
         <div className="mb-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -171,6 +177,8 @@ export function WorkloadView({ workOrders, weekOffset, setWeekOffset }: Workload
               <h2 className="text-lg font-medium">Team Workload</h2>
               <p className="text-sm text-muted-foreground">{weekRangeLabel}</p>
             </div>
+
+            {/* Week setter */}
             <div className="flex flex-wrap items-center gap-6">
               <div className="flex items-center gap-2">
                 <Button
@@ -215,6 +223,10 @@ export function WorkloadView({ workOrders, weekOffset, setWeekOffset }: Workload
             </div>
           </div>
 
+          {/* Filters */}
+          {/* <div className="flex items-center mt-4 p-1 h-10 justify-between">
+            <POFilterBar />
+          </div> */}
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <Select value={teamFilter} onValueChange={setTeamFilter}>
               <SelectTrigger className="w-[160px]">
@@ -243,7 +255,7 @@ export function WorkloadView({ workOrders, weekOffset, setWeekOffset }: Workload
           </div>
         </div>
 
-        <div className="mb-6 overflow-hidden rounded-lg border bg-card">
+        <div className="mb-3 overflow-hidden rounded-lg border bg-card">
           <div className="grid" style={{ gridTemplateColumns }}>
             <div className="border-r border-border p-6">
               <p className="text-sm font-semibold text-muted-foreground">Total Resource Capacity</p>
@@ -251,7 +263,7 @@ export function WorkloadView({ workOrders, weekOffset, setWeekOffset }: Workload
                 <span className="text-2xl font-semibold text-foreground">{totalScheduledHours}h</span>
                 <span className="text-sm text-muted-foreground">/ {totalCapacity || 0}h Capacity</span>
               </div>
-              <div className="mt-4">
+              <div className="mt-2">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Weekly Utilization</span>
                   <span>{averageUtilization}%</span>
@@ -274,11 +286,12 @@ export function WorkloadView({ workOrders, weekOffset, setWeekOffset }: Workload
                   <span className={day.isToday ? "text-primary" : undefined}>{day.day}</span>
                   <span className={day.isToday ? "text-primary" : undefined}>{day.label}</span>
                 </div>
-                <div className="mt-3 rounded-md border border-primary/10 bg-primary/5 p-3">
-                  <div className="flex items-center justify-between text-xs text-primary">
+                
+                {/* <div className="mt-3 rounded-md border border-primary/10 bg-primary/5 p-3"> */}
+                  {/* <div className="flex items-center justify-between text-xs text-primary">
                     <span>{day.totalHours}h</span>
                     <span>{day.capacity || 0}h</span>
-                  </div>
+                  </div> */}
                   <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-primary/20">
                     <div
                       className={`h-full rounded-full ${
@@ -292,7 +305,7 @@ export function WorkloadView({ workOrders, weekOffset, setWeekOffset }: Workload
                     />
                   </div>
                   <div className="mt-2 text-center text-xs text-muted-foreground">{day.utilization}%</div>
-                </div>
+                {/* </div> */}
               </div>
             ))}
           </div>
@@ -389,7 +402,7 @@ export function WorkloadView({ workOrders, weekOffset, setWeekOffset }: Workload
           ))}
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-4">
+        {/* <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-4">
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-medium">{totalScheduledHours}</div>
@@ -418,7 +431,28 @@ export function WorkloadView({ workOrders, weekOffset, setWeekOffset }: Workload
               <p className="text-sm text-muted-foreground">Underutilized</p>
             </CardContent>
           </Card>
-        </div>
+        </div> */}
+      </div>
+
+      {/* Right Hand Side */}
+      <div className="w-112 border-r border-border p-6 bg-card m-6">
+
+
+         {/* Search Bar for the search bar for work orders */}
+         <div className="relative flex-1 mt-1 min-w-64 max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search work orders..."
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+
+
+        
+        <span></span>
       </div>
     </div>
   );

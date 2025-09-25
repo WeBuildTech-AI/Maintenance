@@ -84,8 +84,8 @@ export function PurchaseOrders() {
   const [showSettings, setShowSettings] = useState(false);
   const [showCommentBox, setShowCommentBox] = useState(false);
   const [comment, setComment] = useState("");
-  const commentsRef = useRef(null);
-  const topRef = useRef(null);
+  const topRef = useRef<HTMLDivElement | null>(null);
+  const commentsRef = useRef<HTMLDivElement | null>(null);
   const [activeTab, setActiveTab] = useState("details");
 
   const scrollToTop = () => {

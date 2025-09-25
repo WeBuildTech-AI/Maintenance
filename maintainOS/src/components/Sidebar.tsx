@@ -1,5 +1,4 @@
 // src/components/Sidebar.tsx
-import React, { useState } from "react";
 import {
   ShoppingCart,
   TrendingUp,
@@ -33,6 +32,9 @@ interface SidebarProps {
   onClose?: () => void;
   user?: { name: string; email: string; avatar?: string };
   onLogout?: () => void;
+  expanded: boolean;
+  setExpanded: (value: boolean) => void;
+
 }
 
 const menuItems = [
@@ -58,6 +60,8 @@ export function Sidebar({
   expanded,
   setExpanded,
 }: SidebarProps) {
+
+  
   return (
     <div
       className={`h-full bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300
@@ -67,10 +71,10 @@ export function Sidebar({
       <div className=" border-b border-sidebar-border flex items-center justify-between">
         {expanded ? (
           <div className="p-4">
-            <h1 className="text-xl font-semibold text-sidebar-foreground">
+            <h1 className="text-lg cursor-pointer font-bold text-sidebar-foreground">
               MaintainOS
             </h1>
-            <p className="text-sm text-sidebar-foreground/70">Control Center</p>
+            {/* <p className="text-sm text-sidebar-foreground/70">Control Center</p> */}
           </div>
         ) : (
           <div className="flex item-center">

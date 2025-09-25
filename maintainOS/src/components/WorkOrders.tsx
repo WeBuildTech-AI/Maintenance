@@ -22,7 +22,8 @@ import { CalendarView } from "./work-orders/CalendarView";
 import { ListView } from "./work-orders/ListView";
 import { ToDoView } from "./work-orders/ToDoView";
 import { WorkloadView } from "./work-orders/WorkloadView";
-import { WorkOrder } from "./work-orders/types";
+import type { WorkOrder } from "./work-orders/types";
+import { WorkloadViewNew } from "./work-orders/WorkloadViewNew";
 
 const mockWorkOrders: WorkOrder[] = [
   {
@@ -136,7 +137,8 @@ export function WorkOrders() {
   return (
     <div className="flex flex-col h-full bg-background">
       <div className="p-6 border-b border-border bg-card">
-        <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-4">
           <h1 className="text-2xl font-semibold flex-shrink-0">Work Orders</h1>
 
           {/* View Switch */}
@@ -189,7 +191,8 @@ export function WorkOrders() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
+          </div>
+          <div className="flex items-center gap-4">
           {/* Search */}
           <div className="relative flex-1 min-w-64 max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -210,6 +213,7 @@ export function WorkOrders() {
             <Plus className="h-4 w-4 mr-2" />
             Create Work Order
           </Button>
+          </div>
         </div>
       </div>
 

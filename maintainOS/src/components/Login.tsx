@@ -3,7 +3,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import exampleImage from 'figma:asset/0ca3ffeabef55ae25508b9f5a8eac74c29205067.png';
+
 
 interface LoginProps {
   onLogin: (user: { name: string; email: string; avatar?: string }) => void;

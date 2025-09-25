@@ -1,4 +1,4 @@
-import { WorkOrder } from "./types";
+import type { WorkOrder } from "./types";
 
 interface CalendarViewProps {
   workOrders: WorkOrder[];
