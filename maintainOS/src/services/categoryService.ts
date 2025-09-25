@@ -1,27 +1,35 @@
 import api from "./api";
-import type { Category } from "@prisma/client";
 
-// Re-export Prisma types for convenience
-export type { Category } from "@prisma/client";
+// Type definitions
 
+export type CategoryIcons = "wrench" | "bolt" | "gear" | "electric" | "plumbing" | "havoc";
+
+export interface Category {
+  id : string;
+  organizationId : string;
+  name : string;
+  categoryIcon?: CategoryIcons;
+  description?: string;
+  createdAt : Date;
+  updatedAt : Date;
+}
 // For API responses
 export type CategoryResponse = Category;
 
 // For creating new categories
 export interface CreateCategoryData {
-  organizationId: string;
-  name: string;
+  organizationId : string;
+  name : string;
+  categoryIcon?: CategoryIcons;
   description?: string;
-  color?: string;
-  parentCategoryId?: string;
 }
 
 // For updating existing categories
 export interface UpdateCategoryData {
-  name?: string;
+  organizationId : string;
+  name : string;
+  categoryIcon?: CategoryIcons;
   description?: string;
-  color?: string;
-  parentCategoryId?: string;
 }
 
 export const categoryService = {

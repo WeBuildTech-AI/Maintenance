@@ -1,36 +1,47 @@
 import api from "./api";
-import type { Location } from "@prisma/client";
 
-// Re-export Prisma types for convenience
-export type { Location } from "@prisma/client";
+// Type definitions 
+export interface Location {
+  id : string;
+  organizationId : string;
+  name: string;
+  photoUrls : string[];
+  address?: string;
+  description?: string;
+  teamsInCharge: string[];
+  files: string[];
+  vendorIds : string[];
+  parentLocationId?: string;
+  createdAt: Date;
+  updatedAt : Date;
+}
 
 // For API responses
 export type LocationResponse = Location;
 
 // For creating new locations
 export interface CreateLocationData {
-  organizationId: string;
-  name: string;
-  description?: string;
+  organizationId : string;
+  name : string;
+  photoUrls : string[];
   address?: string;
-  city?: string;
-  state?: string;
-  zipCode?: string;
-  country?: string;
-  coordinates?: any; // JSON object
+  description?: string;
+  teamsInCharge: string[];
+  files: string[];
+  vendorIds : string[];
   parentLocationId?: string;
 }
 
 // For updating existing locations
 export interface UpdateLocationData {
-  name?: string;
-  description?: string;
+  organizationId : string;
+  name : string;
+  photoUrls : string[];
   address?: string;
-  city?: string;
-  state?: string;
-  zipCode?: string;
-  country?: string;
-  coordinates?: any; // JSON object
+  description?: string;
+  teamsInCharge: string[];
+  files: string[];
+  vendorIds : string[];
   parentLocationId?: string;
 }
 

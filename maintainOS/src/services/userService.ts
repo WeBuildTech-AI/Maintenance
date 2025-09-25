@@ -1,50 +1,61 @@
 import api from "./api";
-import type {
-  User,
-  UserRole,
-  UserVisibility,
-  RateVisibility,
-} from "@prisma/client";
 
-// Re-export Prisma types for convenience
-export type {
-  User,
-  UserRole,
-  UserVisibility,
-  RateVisibility,
-} from "@prisma/client";
+// type defintions
+export type UserRole = "administrator" | "fulluser" | "requester";
 
-// For API responses - exclude sensitive fields like passwordHash
+export type UserVisibility = "full" | "limited";
+
+export type RateVisibility = "view_only" | "view_and_edit" | "hidden";
+
+export interface User {
+  id: string;
+  organizationId: string;
+  fullName: string;
+  email: string;
+  phoneNumber?: string;
+  role: UserRole;
+  fullUserVisibility?: UserVisibility;
+  hourlyRate?: number;
+  rateVisibility?: RateVisibility;
+  schedulableUser?: boolean;
+  workingDays: string[];
+  hoursPerDay?: number;
+  passwordHash?: string; 
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export type UserResponse = Omit<User, "passwordHash">;
 
-// For creating new users - similar to Prisma's UserCreateInput but simplified
 
 export interface CreateUserData {
   organizationId: string;
   fullName: string;
   email: string;
   phoneNumber?: string;
-  role?: UserRole;
+  role: UserRole;
   fullUserVisibility?: UserVisibility;
   hourlyRate?: number;
   rateVisibility?: RateVisibility;
   schedulableUser?: boolean;
-  workingDays?: string[];
+  workingDays: string[];
   hoursPerDay?: number;
-  passwordHash?: string; // Only for creation
+  passwordHash?: string; 
 }
 
 export interface UpdateUserData {
-  fullName?: string;
-  email?: string;
+  organizationId: string;
+  fullName: string;
+  email: string;
   phoneNumber?: string;
-  role?: UserRole;
+  role: UserRole;
   fullUserVisibility?: UserVisibility;
   hourlyRate?: number;
   rateVisibility?: RateVisibility;
   schedulableUser?: boolean;
-  workingDays?: string[];
+  workingDays: string[];
   hoursPerDay?: number;
+  passwordHash?: string; 
 }
 
 export const userService = {

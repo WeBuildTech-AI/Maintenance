@@ -1,23 +1,27 @@
 import api from "./api";
-import type { TeamMember } from "@prisma/client";
 
-// Re-export Prisma types for convenience
-export type { TeamMember } from "@prisma/client";
+// type definitions 
+export interface TeamMember {
+  id : string;
+  teamId : string;
+  users : string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 // For API responses
 export type TeamMemberResponse = TeamMember;
 
 // For creating new team members
 export interface CreateTeamMemberData {
-  teamId: string;
-  userId: string;
-  organizationId: string;
-  role?: string;
+  teamId : string;
+  users : string[];
 }
 
 // For updating existing team members
 export interface UpdateTeamMemberData {
-  role?: string;
+  teamId : string;
+  users : string[];
 }
 
 export const teamMemberService = {

@@ -1,8 +1,35 @@
 import api from "./api";
-import type { Asset, AssetStatus, AssetCriticality } from "@prisma/client";
 
-// Re-export Prisma types for convenience
-export type { Asset, AssetStatus, AssetCriticality } from "@prisma/client";
+export type AssetStatus = "online" | "offline" | "doNotTrack";
+
+export type AssetCriticality = "high" | "medium" | "low";
+
+export interface Asset {
+  id : string;
+  organizationId: string;
+  name : string;
+  description?: string; 
+  status?: AssetStatus;
+  pictures : String[];
+  files : String[]
+  locationId?: string;
+  criticality?: AssetCriticality;
+  year?: number;
+  warrantyDate? : Date;
+  isUnderWarranty?: Boolean;
+  isUnderAMC?: Boolean;
+  manufacturer?: string;
+  model?: string;
+  serialNumber?: number;
+  teamsInCharge ?: string[];
+  qrCode ?: string;
+  assetTypeId?: string;
+  vendorId?: string;
+  partIds?: string;
+  parentAssetId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 // For API responses
 export type AssetResponse = Asset;
@@ -10,42 +37,51 @@ export type AssetResponse = Asset;
 // For creating new assets
 export interface CreateAssetData {
   organizationId: string;
-  locationId?: string;
-  categoryId?: string;
-  name: string;
-  description?: string;
-  model?: string;
-  serialNumber?: string;
-  manufacturer?: string;
-  purchaseDate?: string;
-  purchasePrice?: number;
-  warrantyExpiration?: string;
+  name : string;
+  description?: string; 
   status?: AssetStatus;
+  pictures : String[];
+  files : String[]
+  locationId?: string;
   criticality?: AssetCriticality;
-  installationDate?: string;
-  expectedLifespan?: number;
-  currentValue?: number;
-  maintenanceNotes?: string;
+  year?: number;
+  warrantyDate? : Date;
+  isUnderWarranty?: Boolean;
+  isUnderAMC?: Boolean;
+  manufacturer?: string;
+  model?: string;
+  serialNumber?: number;
+  teamsInCharge ?: string[];
+  qrCode ?: string;
+  assetTypeId?: string;
+  vendorId?: string;
+  partIds?: string;
+  parentAssetId?: string;
 }
 
 // For updating existing assets
 export interface UpdateAssetData {
-  locationId?: string;
-  categoryId?: string;
-  name?: string;
-  description?: string;
-  model?: string;
-  serialNumber?: string;
-  manufacturer?: string;
-  purchaseDate?: string;
-  purchasePrice?: number;
-  warrantyExpiration?: string;
+  organizationId: string;
+  name : string;
+  description?: string; 
   status?: AssetStatus;
+  pictures : String[];
+  files : String[]
+  locationId?: string;
   criticality?: AssetCriticality;
-  installationDate?: string;
-  expectedLifespan?: number;
-  currentValue?: number;
-  maintenanceNotes?: string;
+  year?: number;
+  warrantyDate? : Date;
+  isUnderWarranty?: Boolean;
+  isUnderAMC?: Boolean;
+  manufacturer?: string;
+  model?: string;
+  serialNumber?: number;
+  teamsInCharge ?: string[];
+  qrCode ?: string;
+  assetTypeId?: string;
+  vendorId?: string;
+  partIds?: string;
+  parentAssetId?: string;
 }
 
 export const assetService = {

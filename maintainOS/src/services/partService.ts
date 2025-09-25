@@ -1,9 +1,22 @@
 import api from "./api";
-import type { Part } from "@prisma/client";
 
-// Re-export Prisma types for convenience
-export type { Part } from "@prisma/client";
-
+export interface Part {
+  id: string;
+  organizationId: string;
+  name: string;
+  photos: string[];
+  unitCost?: Float32Array;
+  description?: string;
+  qrCode?: string;
+  partsType: string[];
+  location?: any;
+  assetIds: string[];
+  teamsInCharge: string[];
+  vendorIds: string[];
+  files: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
 // For API responses
 export type PartResponse = Part;
 
@@ -11,29 +24,32 @@ export type PartResponse = Part;
 export interface CreatePartData {
   organizationId: string;
   name: string;
-  partNumber?: string;
+  photos: string[];
+  unitCost?: Float32Array;
   description?: string;
-  manufacturer?: string;
-  unitCost?: number;
-  category?: string;
-  minStockLevel?: number;
-  maxStockLevel?: number;
-  leadTime?: number;
-  specifications?: any; // JSON object
+  qrCode?: string;
+  partsType: string[];
+  location?: any;
+  assetIds: string[];
+  teamsInCharge: string[];
+  vendorIds: string[];
+  files: string[];
 }
 
 // For updating existing parts
 export interface UpdatePartData {
-  name?: string;
-  partNumber?: string;
+  organizationId: string;
+  name: string;
+  photos: string[];
+  unitCost?: Float32Array;
   description?: string;
-  manufacturer?: string;
-  unitCost?: number;
-  category?: string;
-  minStockLevel?: number;
-  maxStockLevel?: number;
-  leadTime?: number;
-  specifications?: any; // JSON object
+  qrCode?: string;
+  partsType: string[];
+  location?: any;
+  assetIds: string[];
+  teamsInCharge: string[];
+  vendorIds: string[];
+  files: string[];
 }
 
 export const partService = {

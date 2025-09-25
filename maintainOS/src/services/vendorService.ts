@@ -1,31 +1,55 @@
 import api from "./api";
-import type { Vendor } from "@prisma/client";
 
-// Re-export Prisma types for convenience
-export type { Vendor } from "@prisma/client";
+export type VendorType = "manufacturer" | "distributor";
+
+export interface Vendor {
+  id: string;
+  organizationId: string;
+  name: string;
+  pictureUrl?: string;
+  color?: string;
+  description?: string;
+  contacts?: any; 
+  files: string[];
+  locations: string[];
+  assetIds: string[];
+  partIds: string[];
+  vendorType?: VendorType;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 // For API responses
 export type VendorResponse = Vendor;
 
 // For creating new vendors
 export interface CreateVendorData {
-  name: string;
   organizationId: string;
-  contactEmail?: string;
-  contactPhone?: string;
-  address?: string;
-  website?: string;
-  notes?: string;
+  name: string;
+  pictureUrl?: string;
+  color?: string;
+  description?: string;
+  contacts?: any; 
+  files: string[];
+  locations: string[];
+  assetIds: string[];
+  partIds: string[];
+  vendorType?: VendorType;
 }
 
 // For updating existing vendors
 export interface UpdateVendorData {
-  name?: string;
-  contactEmail?: string;
-  contactPhone?: string;
-  address?: string;
-  website?: string;
-  notes?: string;
+  organizationId: string;
+  name: string;
+  pictureUrl?: string;
+  color?: string;
+  description?: string;
+  contacts?: any; 
+  files: string[];
+  locations: string[];
+  assetIds: string[];
+  partIds: string[];
+  vendorType?: VendorType;
 }
 
 export const vendorService = {

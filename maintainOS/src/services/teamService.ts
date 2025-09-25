@@ -1,25 +1,37 @@
 import api from "./api";
-import type { Team } from "@prisma/client";
 
-// Re-export Prisma types for convenience
-export type { Team } from "@prisma/client";
-
+export interface Team{
+  id : string;
+  organizationId : string;
+  name : string;
+  description?: string;
+  color?: string;
+  isEscalationTeam : boolean;
+  criticalParts : boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
 // For API responses
 export type TeamResponse = Team;
 
 // For creating new teams
 export interface CreateTeamData {
-  name: string;
-  organizationId: string;
+  organizationId : string;
+  name : string;
   description?: string;
-  managerUserId?: string;
+  color?: string;
+  isEscalationTeam : boolean;
+  criticalParts : boolean;
 }
 
 // For updating existing teams
 export interface UpdateTeamData {
-  name?: string;
+  organizationId : string;
+  name : string;
   description?: string;
-  managerUserId?: string;
+  color?: string;
+  isEscalationTeam : boolean;
+  criticalParts : boolean;
 }
 
 export const teamService = {

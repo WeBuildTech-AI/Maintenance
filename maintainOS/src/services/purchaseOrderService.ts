@@ -1,8 +1,25 @@
 import api from "./api";
-import type { PurchaseOrder, PurchaseOrderStatus } from "@prisma/client";
 
-// Re-export Prisma types for convenience
-export type { PurchaseOrder, PurchaseOrderStatus } from "@prisma/client";
+//  Type definitions 
+
+export type PurchaseOrderStatus = "draft" | "pending_approval" | "approval" | "rejected" | "ordered" | "completed" | "cancelled";
+
+export interface PurchaseOrder {
+  id: string;
+  organizationId: string;
+  vendorId: string;
+  status?: PurchaseOrderStatus;
+  items: any; 
+  taxesAndCosts?: any; 
+  shippingAddress?: string;
+  billingAddress?: string;
+  shippingContact?: any; 
+  dueDate?: Date;
+  notes?: string;
+  files: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 // For API responses
 export type PurchaseOrderResponse = PurchaseOrder;
@@ -11,26 +28,30 @@ export type PurchaseOrderResponse = PurchaseOrder;
 export interface CreatePurchaseOrderData {
   organizationId: string;
   vendorId: string;
-  requestedById: string;
-  orderNumber?: string;
-  description?: string;
-  totalAmount?: number;
-  expectedDeliveryDate?: string;
   status?: PurchaseOrderStatus;
+  items: any; 
+  taxesAndCosts?: any; 
+  shippingAddress?: string;
+  billingAddress?: string;
+  shippingContact?: any; 
+  dueDate?: Date;
   notes?: string;
+  files: string[];
 }
 
 // For updating existing purchase orders
 export interface UpdatePurchaseOrderData {
-  vendorId?: string;
-  requestedById?: string;
-  orderNumber?: string;
-  description?: string;
-  totalAmount?: number;
-  expectedDeliveryDate?: string;
-  actualDeliveryDate?: string;
+  organizationId: string;
+  vendorId: string;
   status?: PurchaseOrderStatus;
+  items: any; 
+  taxesAndCosts?: any; 
+  shippingAddress?: string;
+  billingAddress?: string;
+  shippingContact?: any; 
+  dueDate?: Date;
   notes?: string;
+  files: string[];
 }
 
 export const purchaseOrderService = {

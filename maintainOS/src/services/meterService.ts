@@ -1,37 +1,50 @@
 import api from "./api";
-import type { Meter, MeterType } from "@prisma/client";
 
-// Re-export Prisma types for convenience
-export type { Meter, MeterType } from "@prisma/client";
+export type MeterType = "manual" | "automated";
+
+// Type definitions 
+export interface Meter {
+  id : string;
+  organizationId : string;
+  name : string;
+  meterType?: MeterType;
+  description?: string;
+  unit?: string;
+  assetId?: string;
+  locationId?: string;
+  readingFrequency ?: any;
+  photos : string[];
+  createdAt: Date;
+  updatedAt : Date;
+}
 
 // For API responses
 export type MeterResponse = Meter;
 
 // For creating new meters
 export interface CreateMeterData {
-  organizationId: string;
-  assetId: string;
-  name: string;
-  type: MeterType;
-  unit?: string;
+  organizationId : string;
+  name : string;
+  meterType?: MeterType;
   description?: string;
-  currentReading?: number;
-  lastReadingDate?: string;
-  targetReading?: number;
-  isActive?: boolean;
+  unit?: string;
+  assetId?: string;
+  locationId?: string;
+  readingFrequency ?: any;
+  photos : string[];
 }
 
 // For updating existing meters
 export interface UpdateMeterData {
-  assetId?: string;
-  name?: string;
-  type?: MeterType;
-  unit?: string;
+  organizationId : string;
+  name : string;
+  meterType?: MeterType;
   description?: string;
-  currentReading?: number;
-  lastReadingDate?: string;
-  targetReading?: number;
-  isActive?: boolean;
+  unit?: string;
+  assetId?: string;
+  locationId?: string;
+  readingFrequency ?: any;
+  photos : string[];
 }
 
 export const meterService = {

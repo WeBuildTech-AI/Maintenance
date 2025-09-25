@@ -1,39 +1,80 @@
 import api from "./api";
-import type { WorkOrder, WorkOrderPriority } from "@prisma/client";
 
-// Re-export Prisma types for convenience
-export type { WorkOrder, WorkOrderPriority } from "@prisma/client";
+export type WorkOrderPriority = "urgent" | "high" | "medium" | "low";
+
+export interface WorkOrder {
+  id: string;
+  organizationId: string;
+  title: string;
+  status?: string;
+  pictures: string[];
+  description?: string;
+  locationId?: string;
+  assetIds: string[];
+  procedureIds: string[];
+  assigneeIds: string[];
+  estimatedTimeHours?: number;
+  dueDate?: Date;
+  startDate?: Date;
+  recurrenceRule?: string;
+  workType?: string;
+  priority?: WorkOrderPriority;
+  files: string[];
+  partIds: string[];
+  categoryIds: string[];
+  vendorIds: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 
 // For API responses
 export type WorkOrderResponse = WorkOrder;
 
 // For creating new work orders
 export interface CreateWorkOrderData {
-  title: string;
-  description?: string;
   organizationId: string;
-  assetId?: string;
-  assignedToUserId?: string;
-  requestedByUserId?: string;
+  title: string;
+  status?: string;
+  pictures: string[];
+  description?: string;
+  locationId?: string;
+  assetIds: string[];
+  procedureIds: string[];
+  assigneeIds: string[];
+  estimatedTimeHours?: number;
+  dueDate?: Date;
+  startDate?: Date;
+  recurrenceRule?: string;
+  workType?: string;
   priority?: WorkOrderPriority;
-  scheduledDate?: string;
-  estimatedHours?: number;
-  instructions?: string;
+  files: string[];
+  partIds: string[];
+  categoryIds: string[];
+  vendorIds: string[];
 }
 
 // For updating existing work orders
 export interface UpdateWorkOrderData {
-  title?: string;
+  organizationId: string;
+  title: string;
+  status?: string;
+  pictures: string[];
   description?: string;
-  assetId?: string;
-  assignedToUserId?: string;
-  requestedByUserId?: string;
+  locationId?: string;
+  assetIds: string[];
+  procedureIds: string[];
+  assigneeIds: string[];
+  estimatedTimeHours?: number;
+  dueDate?: Date;
+  startDate?: Date;
+  recurrenceRule?: string;
+  workType?: string;
   priority?: WorkOrderPriority;
-  scheduledDate?: string;
-  completedDate?: string;
-  estimatedHours?: number;
-  actualHours?: number;
-  instructions?: string;
+  files: string[];
+  partIds: string[];
+  categoryIds: string[];
+  vendorIds: string[];
 }
 
 // For assigning work orders

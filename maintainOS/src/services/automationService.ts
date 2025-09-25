@@ -1,33 +1,41 @@
 import api from "./api";
-import type { Automation } from "@prisma/client";
 
-// Re-export Prisma types for convenience
-export type { Automation } from "@prisma/client";
+export interface Automation {
+  id : string;
+  organizationId : string;
+  name : string;
+  description?: string;
+  isEnabled : boolean;
+  triggers : any;
+  conditons : any;
+  actions : any;
+  createdAt : Date;
+  updatedAt : Date;
+}
 
 // For API responses
 export type AutomationResponse = Automation;
 
 // For creating new automations
 export interface CreateAutomationData {
-  organizationId: string;
-  name: string;
+  organizationId : string;
+  name : string;
   description?: string;
-  triggerType: string;
-  triggerConditions: any; // JSON object
-  actionType: string;
-  actionParameters: any; // JSON object
-  isActive?: boolean;
+  isEnabled : boolean;
+  triggers : any;
+  conditons : any;
+  actions : any;
 }
 
 // For updating existing automations
 export interface UpdateAutomationData {
-  name?: string;
+  organizationId : string;
+  name : string;
   description?: string;
-  triggerType?: string;
-  triggerConditions?: any; // JSON object
-  actionType?: string;
-  actionParameters?: any; // JSON object
-  isActive?: boolean;
+  isEnabled : boolean;
+  triggers : any;
+  conditons : any;
+  actions : any;
 }
 
 export const automationService = {

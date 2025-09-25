@@ -1,16 +1,21 @@
 import api from "./api";
-import type {
-  Procedure,
-  ProcedureType,
-  ProcedureFrequency,
-} from "@prisma/client";
 
-// Re-export Prisma types for convenience
-export type {
-  Procedure,
-  ProcedureType,
-  ProcedureFrequency,
-} from "@prisma/client";
+export type ProcedureType = "maintenance" | "inspection" | "safety_check";
+
+export type ProcedureFrequency = "daily" | "weekly" | "monthly" | "quarterly" | "yearly";
+
+export interface Procedure {
+  id: string;
+  organizationId: string;
+  title: string;
+  assetIds: string[];
+  type?: ProcedureType; 
+  frequency?: ProcedureFrequency; 
+  description?: string; 
+  files: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 // For API responses
 export type ProcedureResponse = Procedure;
@@ -18,26 +23,23 @@ export type ProcedureResponse = Procedure;
 // For creating new procedures
 export interface CreateProcedureData {
   organizationId: string;
-  name: string;
-  description?: string;
-  type: ProcedureType;
-  frequency: ProcedureFrequency;
-  estimatedDuration?: number;
-  instructions?: string;
-  safetyNotes?: string;
-  isActive?: boolean;
+  title: string;
+  assetIds: string[];
+  type?: ProcedureType; 
+  frequency?: ProcedureFrequency; 
+  description?: string; 
+  files: string[];
 }
 
 // For updating existing procedures
 export interface UpdateProcedureData {
-  name?: string;
-  description?: string;
-  type?: ProcedureType;
-  frequency?: ProcedureFrequency;
-  estimatedDuration?: number;
-  instructions?: string;
-  safetyNotes?: string;
-  isActive?: boolean;
+  organizationId: string;
+  title: string;
+  assetIds: string[];
+  type?: ProcedureType; 
+  frequency?: ProcedureFrequency; 
+  description?: string; 
+  files: string[];
 }
 
 export const procedureService = {

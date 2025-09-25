@@ -1,46 +1,58 @@
-import api from "./api"
+import api from "./api";
 
-import type {
-    Organization,
-    UserVisibility,
-    RateVisibility,
-    IndustryType,
-} from "@prisma/client"
+// Type definitions
+export type UserVisibility = "full" | "limited";
 
-export type {
-    Organization,
-    UserVisibility,
-    RateVisibility,
-    IndustryType,
-} from "@prisma/client"
+export type RateVisibility = "view_only" | "view_and_edit" | "hidden";
 
+export type IndustryType =
+  | "manufacturing"
+  | "real_estate"
+  | "healthcare"
+  | "hospitality"
+  | "education"
+  | "other";
+
+export interface Organization {
+  id: string;
+  name: string;
+  industry?: IndustryType;
+  size?: number;
+  defaultWorkOrderVisibility: UserVisibility;
+  defaultHourlyRate?: number;
+  defaultRateVisibility?: RateVisibility;
+  defaultWorkingDays?: string[];
+  defaultHoursPerDay?: number;
+  defaultSchedulableUser?: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export type OrganizationResponse = Organization;
 
 export interface CreateOrganizationData {
-    name: string,
-    industry?: IndustryType,
-    size?: number,
-    defaultWorkOrderVisibility : UserVisibility,
-    defaultHourlyRate? : number,
-    defaultRateVisibility?: RateVisibility;
-    defaultWorkingDays?: string[];
-    defaultHoursPerDay?: number;
-    defaultSchedulableUser?: boolean;
+  name: string;
+  industry?: IndustryType;
+  size?: number;
+  defaultWorkOrderVisibility: UserVisibility;
+  defaultHourlyRate?: number;
+  defaultRateVisibility?: RateVisibility;
+  defaultWorkingDays?: string[];
+  defaultHoursPerDay?: number;
+  defaultSchedulableUser?: boolean;
 }
 
 export interface UpdateOrganizationData {
-    name: string,
-    industry?: IndustryType,
-    size?: number,
-    defaultWorkOrderVisibility : UserVisibility,
-    defaultHourlyRate? : number,
-    defaultRateVisibility?: RateVisibility;
-    defaultWorkingDays?: string[];
-    defaultHoursPerDay?: number;
-    defaultSchedulableUser?: boolean;
+  name: string;
+  industry?: IndustryType;
+  size?: number;
+  defaultWorkOrderVisibility: UserVisibility;
+  defaultHourlyRate?: number;
+  defaultRateVisibility?: RateVisibility;
+  defaultWorkingDays?: string[];
+  defaultHoursPerDay?: number;
+  defaultSchedulableUser?: boolean;
 }
-
 
 export const organizationService = {
   fetchOrganizations: async (): Promise<OrganizationResponse[]> => {
@@ -53,8 +65,10 @@ export const organizationService = {
     return response.data;
   },
 
-  createOrganization: async (organizationData: CreateOrganizationData): Promise<OrganizationResponse> => {
-    const response = await api.post("/users", organizationData);
+  createOrganization: async (
+    organizationData: CreateOrganizationData
+  ): Promise<OrganizationResponse> => {
+    const response = await api.post("/organizations", organizationData);
     return response.data;
   },
 
@@ -62,7 +76,7 @@ export const organizationService = {
     id: string,
     organizationData: UpdateOrganizationData
   ): Promise<OrganizationResponse> => {
-    const response = await api.patch(`/users/${id}`, organizationData);
+    const response = await api.patch(`/organizations/${id}`, organizationData);
     return response.data;
   },
 
@@ -70,4 +84,3 @@ export const organizationService = {
     await api.delete(`/organizations/${id}`);
   },
 };
-
