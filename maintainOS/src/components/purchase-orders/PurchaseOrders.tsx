@@ -354,24 +354,23 @@ export function PurchaseOrders() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <h1 className="text-2xl font-medium">Purchase Orders</h1>
-            <div className="flex items-center gap-2">
-              <LayoutGrid className="h-4 w-4 shrink-0 text-muted-foreground" />
-
+            <div className=" flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  {/* plain trigger, styled as a row (no button chrome) */}
-                  <button
-                    type="button"
-                    className="flex h-6 items-center gap-2 cursor-pointer select-none
-                              text-sm text-muted-foreground hover:text-foreground bg-transparent p-0"
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
                   >
-                    <span className="leading-none font-medium ">
-                      {viewMode === "panel" ? "Panel View" : "Table View"}
-                    </span>
-                    <ChevronDown className="h-3 w-3 shrink-0" />
-                  </button>
+                    {viewMode === "panel" ? (
+                      <PanelTop className="h-4 w-4" />
+                    ) : (
+                      <Table className="h-4 w-4" />
+                    )}
+                    {viewMode === "panel" ? "Panel View" : "Table View"}
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
                 </DropdownMenuTrigger>
-
                 <DropdownMenuContent align="start">
                   <DropdownMenuItem onClick={() => setViewMode("panel")}>
                     <PanelTop className="mr-2 h-4 w-4" /> Panel View
@@ -394,7 +393,7 @@ export function PurchaseOrders() {
               />
             </div>
             <Button
-              className="gap-2 bg-orange-600 hover:bg-orange-700"
+              className="gap-2 cursor-pointer bg-orange-600 hover:bg-orange-700"
               onClick={() => {
                 resetNewPO();
                 setCreatingPO(true);
@@ -424,7 +423,7 @@ export function PurchaseOrders() {
       </div>
 
       {viewMode === "table" ? (
-        <div className="flex-1 min-h-0 overflow-auto p-6">
+        <div className="flex-1 min-h-0 overflow-auto p-2">
           <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
             <PurchaseOrdersTable
               orders={pagedOrders}
@@ -733,10 +732,12 @@ export function PurchaseOrders() {
                         Comments &amp; History
                       </h3>
                       <div className="border rounded-lg p-4">
-                        {/* <div className="text-sm text-muted-foreground mb-2">
-                          Write a comment…
+                        <div className="text-sm text-muted-foreground mb-2">
+                         {
+                          comment.length === 0 ? "No Comments Found" : ""
+                         }
                         </div>
-                        <div className="border rounded-md h-24 bg-muted/30" /> */}
+                        {/* <div className="border rounded-md h-24 bg-muted/30" /> */}
                       </div>
                     </div>
                   </div>

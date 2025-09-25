@@ -34,7 +34,10 @@ import {
   MapPin,
   Tag,
   QrCode,
+  PanelTop,
+  Table,
 } from "lucide-react";
+import { PartTable } from "./PartInventory/PartTable";
 
 /* ------------------------------- Types ------------------------------- */
 type Vendor = {
@@ -304,6 +307,7 @@ export function Inventory() {
   );
   const [creating, setCreating] = useState(false);
   const [newItem, setNewItem] = useState<NewItem>(emptyNewItem);
+  const [viewMode, setViewMode] = useState<ViewMode>("panel");
 
   const filtered = items.filter((i) => {
     const vendorNames = i.vendors
@@ -380,10 +384,32 @@ export function Inventory() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-medium">Parts</h1>
-            <div className="flex items-center gap-2">
-              <LayoutGrid className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Panel View</span>
-              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+            <div className=" flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    {viewMode === "panel" ? (
+                      <PanelTop className="h-4 w-4" />
+                    ) : (
+                      <Table className="h-4 w-4" />
+                    )}
+                    {viewMode === "panel" ? "Panel View" : "Table View"}
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem onClick={() => setViewMode("panel")}>
+                    <PanelTop className="mr-2 h-4 w-4" /> Panel View
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setViewMode("table")}>
+                    <Table className="mr-2 h-4 w-4" /> Table View
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -409,137 +435,158 @@ export function Inventory() {
         {/* Filters row (visual) */}
         <div className="flex items-center justify-between">
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button
+              size="sm"
+              className="gap-2 text-orange-600 bg-white hover:bg-orange-50 cursor-pointer border border-orange-600"
+            >
               <Tag className="h-4 w-4" />
               Part Types
             </Button>
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button
+              size="sm"
+              className="gap-2 text-orange-600 bg-white hover:bg-orange-50 cursor-pointer border border-orange-600"
+            >
               <MapPin className="h-4 w-4" />
               Location
             </Button>
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button
+              size="sm"
+              className="gap-2 text-orange-600 bg-white hover:bg-orange-50 cursor-pointer border border-orange-600"
+            >
               <Building2 className="h-4 w-4" />
               Vendor
             </Button>
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button  size="sm" className="gap-2 text-orange-600 bg-white hover:bg-orange-50 cursor-pointer border border-orange-600">
               <Filter className="h-4 w-4" />
               Add Filter
             </Button>
           </div>
-          <Button variant="ghost" size="sm" className="gap-2 text-orange-600">
+          <Button variant="ghost" size="sm" className="gap-2 text-orange-600 bg-white hover:bg-orange-50 cursor-pointer border border-orange-600">
             <Settings className="h-4 w-4" />
             My Filters
           </Button>
         </div>
       </div>
 
-      <div className="flex flex-1 min-h-0">
-        {/* Left list */}
-        <div className="w-96  mr-3 ml-2 border-r bg-card flex flex-col min-h-0">
-          <div className="p-4 border flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Sort By:</span>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-primary p-0 h-auto"
+      {viewMode === "table" ? (
+        <>
+          <PartTable inventory={filtered} selectedId={selectedId} />
+        </>
+      ) : (
+        <>
+          <div className="flex flex-1 min-h-0">
+            {/* Left list */}
+            <div className="w-96  mr-3 ml-2 border-r bg-card flex flex-col min-h-0">
+              <div className="p-4 border flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    Sort By:
+                  </span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-primary p-0 h-auto"
+                      >
+                        Name: Ascending Order
+                        <ChevronDown className="h-3 w-3 ml-1" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem>Name: Ascending Order</DropdownMenuItem>
+                      <DropdownMenuItem>
+                        Name: Descending Order
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>Units in Stock</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto min-h-0">
+                {/* <div className=" space-y-3"> */}
+                {filtered.map((it) => (
+                  <Card
+                    key={it.id}
+                    className={`cursor-pointer transition-colors ${
+                      selectedId === it.id
+                        ? "border-primary bg-primary/5"
+                        : "hover:bg-muted/50"
+                    }`}
+                    onClick={() => {
+                      setSelectedId(it.id);
+                      setCreating(false);
+                    }}
                   >
-                    Name: Ascending Order
-                    <ChevronDown className="h-3 w-3 ml-1" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>Name: Ascending Order</DropdownMenuItem>
-                  <DropdownMenuItem>Name: Descending Order</DropdownMenuItem>
-                  <DropdownMenuItem>Units in Stock</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto min-h-0">
-            {/* <div className=" space-y-3"> */}
-            {filtered.map((it) => (
-              <Card
-                key={it.id}
-                className={`cursor-pointer transition-colors ${
-                  selectedId === it.id
-                    ? "border-primary bg-primary/5"
-                    : "hover:bg-muted/50"
-                }`}
-                onClick={() => {
-                  setSelectedId(it.id);
-                  setCreating(false);
-                }}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium">{it.name}</h4>
-                      <div className="text-sm text-muted-foreground">
-                        {mockLocations.find((l) => l.id === it.locationId)
-                          ?.name ?? "-"}
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium">{it.name}</h4>
+                          <div className="text-sm text-muted-foreground">
+                            {mockLocations.find((l) => l.id === it.locationId)
+                              ?.name ?? "-"}
+                          </div>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {it.unitsInStock} units
+                        </div>
                       </div>
+                    </CardContent>
+                  </Card>
+                ))}
+
+                {filtered.length === 0 && (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
+                      <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed" />
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      {it.unitsInStock} units
-                    </div>
+                    <p className="text-muted-foreground mb-2">No parts found</p>
+                    <Button
+                      variant="link"
+                      className="text-primary p-0"
+                      onClick={startCreate}
+                    >
+                      Create your first part
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-
-            {filtered.length === 0 && (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
-                  <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed" />
-                </div>
-                <p className="text-muted-foreground mb-2">No parts found</p>
-                <Button
-                  variant="link"
-                  className="text-primary p-0"
-                  onClick={startCreate}
-                >
-                  Create your first part
-                </Button>
-              </div>
-            )}
-            {/* </div> */}
-          </div>
-        </div>
-
-        {/* Right panel */}
-        <div className="flex-1 bg-card  mr-3 ml-2 border border-border min-h-0 flex flex-col border-border">
-          {creating ? (
-            <NewPartForm
-              newItem={newItem}
-              setNewItem={setNewItem}
-              addVendorRow={addVendorRow}
-              removeVendorRow={removeVendorRow}
-              onCancel={() => setCreating(false)}
-              onCreate={createItem}
-            />
-          ) : selected ? (
-            <PartDetails item={selected} stockStatus={stockStatus} />
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
-                  <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed" />
-                </div>
-                <p className="text-muted-foreground mb-2">
-                  Select a part to view details
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  or create a new one to get started
-                </p>
+                )}
+                {/* </div> */}
               </div>
             </div>
-          )}
-        </div>
-      </div>
+
+            {/* Right panel */}
+            <div className="flex-1 bg-card  mr-3 ml-2 border border-border min-h-0 flex flex-col border-border">
+              {creating ? (
+                <NewPartForm
+                  newItem={newItem}
+                  setNewItem={setNewItem}
+                  addVendorRow={addVendorRow}
+                  removeVendorRow={removeVendorRow}
+                  onCancel={() => setCreating(false)}
+                  onCreate={createItem}
+                />
+              ) : selected ? (
+                <PartDetails item={selected} stockStatus={stockStatus} />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
+                      <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed" />
+                    </div>
+                    <p className="text-muted-foreground mb-2">
+                      Select a part to view details
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      or create a new one to get started
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -826,9 +873,7 @@ function NewPartForm({
         <div className="mx-auto w-full max-w-[820px] p-6 space-y-10">
           {/* Name + Pictures */}
           <section>
-            <div className="text-xl font-medium mb-4">
-              {newItem.name || "New Part"}
-            </div>
+            <div className="text-xl font-medium mb-4">{newItem.name || ""}</div>
 
             <div className="mb-6">
               <div className="w-full h-32 border-2 border-dashed border-orange-300 rounded-lg bg-orange-50 flex flex-col items-center justify-center cursor-pointer hover:bg-orange-100 transition-colors">
@@ -909,7 +954,7 @@ function NewPartForm({
                 setNewItem((s) => ({ ...s, qrCode: e.target.value }))
               }
             />
-            <div className="mt-3 w-40 h-40 border rounded-md flex items-center justify-center bg-muted/30">
+            <div className="mt-3 p-3 w-40 h-40 border rounded-md flex items-center justify-center bg-muted/30">
               <QrCode className="h-20 w-20 text-muted-foreground" />
             </div>
 
@@ -1035,7 +1080,7 @@ function NewPartForm({
                 </div>
               ))}
             </div>
-            <div className="mt-3">
+            <div className="mt-4">
               <Button variant="outline" onClick={addVendorRow}>
                 Add additional Vendor
               </Button>

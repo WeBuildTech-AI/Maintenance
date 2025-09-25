@@ -33,6 +33,8 @@ import {
   Calendar,
   Play,
   ChevronRight,
+  PanelTop,
+  Table,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import {
@@ -44,6 +46,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { NewMeterForm } from "./Meters/NewMeterForm";
+import { MeterTable } from "./Meters/MeterTable";
 
 // Mock data for meters
 const mockMeters = [
@@ -122,6 +126,7 @@ export function Meters() {
   const [selectedAsset, setSelectedAsset] = useState("all");
   const [selectedLocation, setSelectedLocation] = useState("all");
   const [meterType, setMeterType] = useState("manual");
+  const [viewMode, setViewMode] = useState<ViewMode>("panel");
   const [selectedMeter, setSelectedMeter] = useState<
     (typeof mockMeters)[0] | null
   >(null);
@@ -175,10 +180,32 @@ export function Meters() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-medium">Meters</h1>
-            <div className="flex items-center gap-2">
-              <LayoutGrid className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Panel View</span>
-              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+            <div className=" flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    {viewMode === "panel" ? (
+                      <PanelTop className="h-4 w-4" />
+                    ) : (
+                      <Table className="h-4 w-4" />
+                    )}
+                    {viewMode === "panel" ? "Panel View" : "Table View"}
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem onClick={() => setViewMode("panel")}>
+                    <PanelTop className="mr-2 h-4 w-4" /> Panel View
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setViewMode("table")}>
+                    <Table className="mr-2 h-4 w-4" /> Table View
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -192,8 +219,11 @@ export function Meters() {
               />
             </div>
             <Button
-              className="gap-2 bg-blue-600 hover:bg-blue-700"
-              onClick={() => setShowNewMeterForm(true)}
+              className="gap-2 bg-orange-600 hover:bg-orange-700"
+              onClick={() => {
+                setShowNewMeterForm(true);
+                setViewMode("panel");
+              }}
             >
               <Plus className="h-4 w-4" />
               New Meter
@@ -202,12 +232,12 @@ export function Meters() {
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <Button
             variant={selectedType === "all" ? "default" : "ghost"}
             size="sm"
             onClick={() => setSelectedType("all")}
-            className="gap-2"
+            className="gap-2 text-orange-600 bg-white hover:bg-orange-50 cursor-pointer border border-orange-600"
           >
             <Zap className="h-4 w-4" />
             Type
@@ -216,7 +246,7 @@ export function Meters() {
             variant={selectedAsset === "all" ? "default" : "ghost"}
             size="sm"
             onClick={() => setSelectedAsset("all")}
-            className="gap-2"
+            className="gap-2 text-orange-600 bg-white hover:bg-orange-50 cursor-pointer border border-orange-600"
           >
             <Building2 className="h-4 w-4" />
             Asset
@@ -225,530 +255,413 @@ export function Meters() {
             variant={selectedLocation === "all" ? "default" : "ghost"}
             size="sm"
             onClick={() => setSelectedLocation("all")}
-            className="gap-2"
+            className="gap-2 text-orange-600  hover:bg-orange-50 cursor-pointer bg-white border border-orange-600"
           >
             📍 Location
           </Button>
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-auto">
-        {/* Left Panel - Meters List */}
-        <div className="w-96 mr-2 ml-3 border border-border flex flex-col min-h-0">
-          {/* Sort */}
-          <div className="p-4 border-b border-border">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Sort By:</span>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-primary p-0 h-auto"
-                  >
-                    Name: Ascending Order
-                    <ChevronDown className="h-3 w-3 ml-1" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem>Name: Ascending Order</DropdownMenuItem>
-                  <DropdownMenuItem>Name: Descending Order</DropdownMenuItem>
-                  <DropdownMenuItem>Status</DropdownMenuItem>
-                  <DropdownMenuItem>Last Reading</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+      {viewMode === "table" ? (
+        <>
+          <MeterTable meter={filteredMeters} selectedMeter={selectedMeter} />
+        </>
+      ) : (
+        <>
+          <div className="flex flex-1 overflow-auto">
+            {/* Left Panel - Meters List */}
+            <div className="w-96 mr-2 ml-3 border border-border flex flex-col min-h-0">
+              {/* Sort */}
+              <div className="p-2 border-b border-border">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    Sort By:
+                  </span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-primary p-2 h-auto"
+                      >
+                        Name: Ascending Order
+                        <ChevronDown className="h-3 w-3 ml-1" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem>Name: Ascending Order</DropdownMenuItem>
+                      <DropdownMenuItem>
+                        Name: Descending Order
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>Status</DropdownMenuItem>
+                      <DropdownMenuItem>Last Reading</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+
+              {/* Meters List */}
+              <div className="flex-1 overflow-auto">
+                <div className="">
+                  {filteredMeters.map((meter) => (
+                    <Card
+                      key={meter.id}
+                      className={`cursor-pointer transition-colors ${
+                        selectedMeter?.id === meter.id
+                          ? "border-0 bg-primary/5"
+                          : "hover:bg-muted/50"
+                      }`}
+                      onClick={() => setSelectedMeter(meter)}
+                    >
+                      <CardContent className="p-3">
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="font-medium">{meter.name}</h4>
+                          {meter.isOverdue && (
+                            <Badge variant="destructive" className="gap-1 mt-1">
+                              <AlertTriangle className="h-3 w-3" />
+                              Overdue
+                            </Badge>
+                          )}
+                        </div>
+
+                        <div className="">
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-orange-100 rounded flex items-center justify-center">
+                              <Building2 className="h-2 w-2 text-orange-600" />
+                            </div>
+                            <span className="text-sm">{meter.type}</span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-muted rounded flex items-center justify-center">
+                              <span className="text-xs">📍</span>
+                            </div>
+                            <span className="text-sm text-muted-foreground">
+                              {meter.location}
+                            </span>
+                          </div>
+
+                          <div className="mt-2">
+                            <span className="text-sm text-muted-foreground">
+                              Last Reading: {meter.lastReading}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+
+                  {filteredMeters.length === 0 && (
+                    <div className="text-center py-8">
+                      <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
+                        <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed"></div>
+                      </div>
+                      <p className="text-muted-foreground mb-2">
+                        No meters found
+                      </p>
+                      <Button variant="link" className="text-primary p-0">
+                        Create the first meter
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
 
-          {/* Meters List */}
-          <div className="flex-1 overflow-auto">
-            <div className="">
-              {filteredMeters.map((meter) => (
-                <Card
-                  key={meter.id}
-                  className={`cursor-pointer transition-colors ${
-                    selectedMeter?.id === meter.id
-                      ? "border-0 bg-primary/5"
-                      : "hover:bg-muted/50"
-                  }`}
-                  onClick={() => setSelectedMeter(meter)}
-                >
-                  <CardContent className="p-3">
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-medium">{meter.name}</h4>
-                      {meter.isOverdue && (
-                        <Badge variant="destructive" className="gap-1 mt-1">
-                          <AlertTriangle className="h-3 w-3" />
-                          Overdue
-                        </Badge>
-                      )}
+            {/* Right Panel - Content */}
+            <div className="flex-1 bg-card mr-3 ml-2 border border-border min-h-0 flex flex-col border-border overflow-y-auto">
+              {showNewMeterForm ? (
+                <NewMeterForm />
+              ) : selectedMeter ? (
+                /* Meter Detail View */
+                <div className="flex flex-col h-full">
+                  {/* Header */}
+                  <div className="p-6 border-b border-border">
+                    <div className="flex items-center justify-between mb-4">
+                      <h1 className="text-xl font-medium">
+                        {selectedMeter.name}
+                      </h1>
+                      <div className="flex items-center gap-2">
+                        <Button className="gap-2 border cursor-pointer border-orange-600 bg-white text-orange-600 hover:bg-orange-50">
+                          <Plus className="h-4 w-4" />
+                          Record Reading
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-2 border cursor-pointer border-orange-600 bg-white text-orange-600 hover:bg-orange-50"
+                        >
+                          <Edit className="h-4 w-4" />
+                          Edit
+                        </Button>
+                        <Button variant="ghost" size="sm">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
 
-                    <div className="">
+                    <div className="flex items-center gap-4 text-muted-foreground">
                       <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-orange-100 rounded flex items-center justify-center">
-                          <Building2 className="h-2 w-2 text-orange-600" />
-                        </div>
-                        <span className="text-sm">{meter.type}</span>
+                        <Building2 className="h-4 w-4" />
+                        <span>{selectedMeter.asset}</span>
+                        <span>-</span>
                       </div>
-
                       <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-muted rounded flex items-center justify-center">
-                          <span className="text-xs">📍</span>
-                        </div>
-                        <span className="text-sm text-muted-foreground">
-                          {meter.location}
-                        </span>
-                      </div>
-
-                      <div className="mt-2">
-                        <span className="text-sm text-muted-foreground">
-                          Last Reading: {meter.lastReading}
-                        </span>
+                        <MapPin className="h-4 w-4" />
+                        <span>{selectedMeter.location}</span>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-
-              {filteredMeters.length === 0 && (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
-                    <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed"></div>
                   </div>
-                  <p className="text-muted-foreground mb-2">No meters found</p>
-                  <Button variant="link" className="text-primary p-0">
-                    Create the first meter
-                  </Button>
+
+                  {/* Content */}
+                  <div className="flex-1 p-6 space-y-8 overflow-auto">
+                    {/* Readings Section */}
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-medium">Readings</h2>
+                        <div className="flex items-center gap-1">
+                          {[
+                            "1H",
+                            "1D",
+                            "1W",
+                            "1M",
+                            "3M",
+                            "6M",
+                            "1Y",
+                            "Custom",
+                          ].map((period) => (
+                            <Button
+                              key={period}
+                              variant={
+                                selectedTimePeriod === period
+                                  ? "default"
+                                  : "ghost"
+                              }
+                              size="sm"
+                              onClick={() => setSelectedTimePeriod(period)}
+                              className={
+                                selectedTimePeriod === period
+                                  ? "bg-orange-600 hover:bg-blue-700"
+                                  : ""
+                              }
+                            >
+                              {period}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Chart */}
+                      <div className="space-y-4">
+                        <div className="text-sm font-medium text-muted-foreground">
+                          {selectedMeter.unit}
+                        </div>
+                        <div className="h-80 w-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart
+                              data={mockReadingData}
+                              margin={{
+                                top: 10,
+                                right: 30,
+                                left: 0,
+                                bottom: 0,
+                              }}
+                            >
+                              <CartesianGrid
+                                strokeDasharray="3 3"
+                                stroke="#f0f0f0"
+                              />
+                              <XAxis
+                                dataKey="date"
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fontSize: 12, fill: "#666" }}
+                              />
+                              <YAxis
+                                domain={[15, 55]}
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fontSize: 12, fill: "#666" }}
+                              />
+                              <Tooltip />
+                              <Line
+                                type="monotone"
+                                dataKey="value"
+                                stroke="orange"
+                                strokeWidth={2}
+                                dot={{ fill: "orange", strokeWidth: 2, r: 4 }}
+                                activeDot={{
+                                  r: 6,
+                                  stroke: "orange",
+                                  strokeWidth: 2,
+                                }}
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+
+                        {/* See All Readings Button */}
+                        <div className="pt-4">
+                          <Button className="gap-2 border cursor-pointer border-orange-600 bg-white text-orange-600 hover:bg-orange-50">
+                            <Plus className="h-4 w-4" />
+                            See All Readings
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Meter Details Section */}
+                    <div>
+                      <h2 className="text-lg font-medium mb-6">
+                        Meter Details
+                      </h2>
+                      <div className="grid grid-cols-2 gap-6">
+                        {/* Measurement Unit */}
+                        <div>
+                          <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                            Measurement Unit
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <Tag className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-base">
+                              {selectedMeter.unit}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Last Reading */}
+                        <div>
+                          <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                            Last Reading
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-base">
+                              {selectedMeter.lastReading}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Last Reading On */}
+                        <div>
+                          <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                            Last Reading On
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-base">19/09/2025, 13:28</span>
+                          </div>
+                        </div>
+
+                        {/* Reading Frequency */}
+                        <div>
+                          <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                            Reading Frequency
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-base">Every 1 hour</span>
+                          </div>
+                        </div>
+
+                        {/* Next Reading */}
+                        <div>
+                          <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                            Next Reading
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <Play className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-base">Today by 14:28</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Automations Section */}
+                    <div>
+                      <h2 className="text-lg font-medium mb-4">
+                        Automations (0)
+                      </h2>
+                      <div className="border border-dashed border-border rounded-lg p-6">
+                        <Button className="gap-2 border cursor-pointer border-orange-600 bg-white text-orange-600 hover:bg-orange-50">
+                          <Plus className="h-4 w-4" />
+                          Create Automation
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Upcoming Reading Work Orders Section */}
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-medium">
+                          Upcoming Reading Work Orders (1)
+                        </h2>
+                        <Button
+                          variant="ghost"
+                          className="gap-1 text-orange-600 hover:text-orange-700 hover:bg-orange-50 p-1 h-auto"
+                        >
+                          See all
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      <Card className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+                              <span className="text-sm">📧</span>
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium">
+                                  Check the voltage #5
+                                </span>
+                                <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center">
+                                  <span className="text-white text-xs">⚡</span>
+                                </div>
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                Created by{" "}
+                                <Avatar className="inline-flex w-4 h-4 mx-1 align-text-bottom">
+                                  <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face" />
+                                  <AvatarFallback>AC</AvatarFallback>
+                                </Avatar>
+                                Ashwini Chauhan on 19/09/2025, 11:56
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm text-muted-foreground">
+                              Due Date:
+                            </div>
+                            <div className="text-sm font-medium">
+                              22/09/2025, 12:00
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
+                      <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed"></div>
+                    </div>
+                    <p className="text-muted-foreground mb-2">
+                      Select a meter to view details
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      or create a new meter to get started
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
           </div>
-        </div>
-
-        {/* Right Panel - Content */}
-        <div className="flex-1 bg-card mr-3 ml-2 border border-border min-h-0 flex flex-col border-border overflow-y-auto">
-          {showNewMeterForm ? (
-            <div className="p-6">
-              <h2 className="text-lg font-medium mb-6">New Meter</h2>
-
-              <div className="space-y-6 max-w-md">
-                {/* Meter Name */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Enter Meter Name (Required)
-                  </label>
-                  <Input
-                    placeholder="Enter Meter Name (Required)"
-                    value={newMeter.name}
-                    onChange={(e) =>
-                      setNewMeter({ ...newMeter, name: e.target.value })
-                    }
-                    className="w-full"
-                  />
-                </div>
-
-                {/* Meter Type */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Meter Type
-                  </label>
-                  <div className="flex gap-2">
-                    <Button
-                      variant={meterType === "manual" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setMeterType("manual")}
-                      className="gap-2"
-                    >
-                      👤 Manual
-                    </Button>
-                    <Button
-                      variant={
-                        meterType === "automated" ? "default" : "outline"
-                      }
-                      size="sm"
-                      onClick={() => setMeterType("automated")}
-                      className="gap-2"
-                    >
-                      🔧 Automated
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Description */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Description
-                  </label>
-                  <Textarea
-                    placeholder="Add a description"
-                    value={newMeter.description}
-                    onChange={(e) =>
-                      setNewMeter({ ...newMeter, description: e.target.value })
-                    }
-                    className="w-full min-h-[100px]"
-                  />
-                </div>
-
-                {/* Measurement Unit */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Measurement Unit (Required)
-                  </label>
-                  <Select
-                    value={newMeter.measurementUnit}
-                    onValueChange={(value: string) =>
-                      setNewMeter({ ...newMeter, measurementUnit: value })
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Start typing to search or customize" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="feet">Feet</SelectItem>
-                      <SelectItem value="meters">Meters</SelectItem>
-                      <SelectItem value="liters">Liters</SelectItem>
-                      <SelectItem value="gallons">Gallons</SelectItem>
-                      <SelectItem value="kwh">kWh</SelectItem>
-                      <SelectItem value="cubic-meters">Cubic Meters</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Asset and Location */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Asset
-                    </label>
-                    <Select
-                      value={newMeter.asset}
-                      onValueChange={(value: string) =>
-                        setNewMeter({ ...newMeter, asset: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Start typing..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="hvac-1">HVAC Unit 1</SelectItem>
-                        <SelectItem value="hvac-2">HVAC Unit 2</SelectItem>
-                        <SelectItem value="boiler-1">Boiler 1</SelectItem>
-                        <SelectItem value="chiller-1">Chiller 1</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Location
-                    </label>
-                    <Select
-                      value={newMeter.location}
-                      onValueChange={(value: string) =>
-                        setNewMeter({ ...newMeter, location: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Start typing..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="general">General</SelectItem>
-                        <SelectItem value="building-a">Building A</SelectItem>
-                        <SelectItem value="building-b">Building B</SelectItem>
-                        <SelectItem value="basement">Basement</SelectItem>
-                        <SelectItem value="roof">Roof</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex items-center gap-3 pt-4">
-                  <Button
-                    onClick={handleCreateMeter}
-                    className="bg-blue-600 hover:bg-blue-700"
-                    disabled={!newMeter.name || !newMeter.measurementUnit}
-                  >
-                    Create
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowNewMeterForm(false)}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ) : selectedMeter ? (
-            /* Meter Detail View */
-            <div className="flex flex-col h-full">
-              {/* Header */}
-              <div className="p-6 border-b border-border">
-                <div className="flex items-center justify-between mb-4">
-                  <h1 className="text-xl font-medium">{selectedMeter.name}</h1>
-                  <div className="flex items-center gap-2">
-                    <Button className="gap-2 border cursor-pointer border-orange-600 bg-white text-orange-600 hover:bg-orange-50">
-                      <Plus className="h-4 w-4" />
-                      Record Reading
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="gap-2 border cursor-pointer border-orange-600 bg-white text-orange-600 hover:bg-orange-50"
-                    >
-                      <Edit className="h-4 w-4" />
-                      Edit
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4 text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4" />
-                    <span>{selectedMeter.asset}</span>
-                    <span>-</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    <span>{selectedMeter.location}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="flex-1 p-6 space-y-8">
-                {/* Readings Section */}
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-medium">Readings</h2>
-                    <div className="flex items-center gap-1">
-                      {["1H", "1D", "1W", "1M", "3M", "6M", "1Y", "Custom"].map(
-                        (period) => (
-                          <Button
-                            key={period}
-                            variant={
-                              selectedTimePeriod === period
-                                ? "default"
-                                : "ghost"
-                            }
-                            size="sm"
-                            onClick={() => setSelectedTimePeriod(period)}
-                            className={
-                              selectedTimePeriod === period
-                                ? "bg-orange-600 hover:bg-blue-700"
-                                : ""
-                            }
-                          >
-                            {period}
-                          </Button>
-                        )
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Chart */}
-                  <div className="space-y-4">
-                    <div className="text-sm font-medium text-muted-foreground">
-                      {selectedMeter.unit}
-                    </div>
-                    <div className="h-80 w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart
-                          data={mockReadingData}
-                          margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                        >
-                          <CartesianGrid
-                            strokeDasharray="3 3"
-                            stroke="#f0f0f0"
-                          />
-                          <XAxis
-                            dataKey="date"
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fontSize: 12, fill: "#666" }}
-                          />
-                          <YAxis
-                            domain={[15, 55]}
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fontSize: 12, fill: "#666" }}
-                          />
-                          <Tooltip />
-                          <Line
-                            type="monotone"
-                            dataKey="value"
-                            stroke="orange"
-                            strokeWidth={2}
-                            dot={{ fill: "orange", strokeWidth: 2, r: 4 }}
-                            activeDot={{
-                              r: 6,
-                              stroke: "orange",
-                              strokeWidth: 2,
-                            }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-
-                    {/* See All Readings Button */}
-                    <div className="pt-4">
-                      <Button className="gap-2 border cursor-pointer border-orange-600 bg-white text-orange-600 hover:bg-orange-50">
-                        <Plus className="h-4 w-4" />
-                        See All Readings
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Meter Details Section */}
-                <div>
-                  <h2 className="text-lg font-medium mb-6">Meter Details</h2>
-                  <div className="grid grid-cols-2 gap-6">
-                    {/* Measurement Unit */}
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                        Measurement Unit
-                      </h3>
-                      <div className="flex items-center gap-2">
-                        <Tag className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-base">{selectedMeter.unit}</span>
-                      </div>
-                    </div>
-
-                    {/* Last Reading */}
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                        Last Reading
-                      </h3>
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-base">
-                          {selectedMeter.lastReading}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Last Reading On */}
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                        Last Reading On
-                      </h3>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-base">19/09/2025, 13:28</span>
-                      </div>
-                    </div>
-
-                    {/* Reading Frequency */}
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                        Reading Frequency
-                      </h3>
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-base">Every 1 hour</span>
-                      </div>
-                    </div>
-
-                    {/* Next Reading */}
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                        Next Reading
-                      </h3>
-                      <div className="flex items-center gap-2">
-                        <Play className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-base">Today by 14:28</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Automations Section */}
-                <div>
-                  <h2 className="text-lg font-medium mb-4">Automations (0)</h2>
-                  <div className="border border-dashed border-border rounded-lg p-6">
-                    <Button className="gap-2 border cursor-pointer border-orange-600 bg-white text-orange-600 hover:bg-orange-50">
-                      <Plus className="h-4 w-4" />
-                      Create Automation
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Upcoming Reading Work Orders Section */}
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-medium">
-                      Upcoming Reading Work Orders (1)
-                    </h2>
-                    <Button
-                      variant="ghost"
-                      className="gap-1 text-orange-600 hover:text-orange-700 hover:bg-orange-50 p-1 h-auto"
-                    >
-                      See all
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  <Card className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
-                          <span className="text-sm">📧</span>
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium">
-                              Check the voltage #5
-                            </span>
-                            <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center">
-                              <span className="text-white text-xs">⚡</span>
-                            </div>
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            Created by{" "}
-                            <Avatar className="inline-flex w-4 h-4 mx-1 align-text-bottom">
-                              <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face" />
-                              <AvatarFallback>AC</AvatarFallback>
-                            </Avatar>
-                            Ashwini Chauhan on 19/09/2025, 11:56
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm text-muted-foreground">
-                          Due Date:
-                        </div>
-                        <div className="text-sm font-medium">
-                          22/09/2025, 12:00
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
-                  <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed"></div>
-                </div>
-                <p className="text-muted-foreground mb-2">
-                  Select a meter to view details
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  or create a new meter to get started
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 }

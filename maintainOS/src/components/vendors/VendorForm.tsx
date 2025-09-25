@@ -90,9 +90,7 @@ export function VendorForm({
               type="file"
               multiple
               accept="image/*"
-              onChange={(e) =>
-                console.log("Selected images:", e.target.files)
-              }
+              onChange={(e) => console.log("Selected images:", e.target.files)}
             />
           </div>
 
@@ -141,9 +139,7 @@ export function VendorForm({
             <Input
               type="file"
               multiple
-              onChange={(e) =>
-                console.log("Selected files:", e.target.files)
-              }
+              onChange={(e) => console.log("Selected files:", e.target.files)}
             />
           </div>
 
@@ -239,10 +235,19 @@ export function VendorForm({
 
           {/* Actions */}
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onCancel}>
+            <Button
+              className="gap-2 cursor-pointer bg-orange-600 hover:bg-orange-700"
+              type="button"
+              onClick={onCancel}
+            >
               Cancel
             </Button>
-            <Button type="submit">Create Vendor</Button>
+            <Button
+              className="gap-2 cursor-pointer bg-orange-600 hover:bg-orange-700"
+              type="submit"
+            >
+              Create Vendor
+            </Button>
           </div>
         </form>
       </CardContent>

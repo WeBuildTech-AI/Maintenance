@@ -108,8 +108,11 @@ export function Vendors() {
               />
             </div>
             <Button
-              className="cursor-pointer"
-              onClick={() => setIsCreatingVendor(true)}
+              className="gap-2 cursor-pointer bg-orange-600 hover:bg-orange-700"
+              onClick={() => {
+                setIsCreatingVendor(true);
+                setViewMode("panel");
+              }}
             >
               <Plus className="mr-2 h-4 w-4" />
               New Vendor
@@ -119,7 +122,7 @@ export function Vendors() {
             </Button>
           </div>
         </div>
-        <div className="flex items-center mt-4 justify-between mb-4">
+        <div className="flex items-center mt-4 p-1 h-10 justify-between">
           {/* Left: Filter bar */}
           <POFilterBar />
 

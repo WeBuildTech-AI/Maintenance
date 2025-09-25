@@ -11,7 +11,7 @@ type FilterOption = {
 function FilterChip({ filter }: { filter: FilterOption }) {
   return (
     <button className="flex items-center gap-2 border rounded-md px-3 py-1 text-sm hover:bg-accent transition">
-      <span className="text-orange-500">{filter.icon}</span>
+      <span className="text-orange-600">{filter.icon}</span>
       {filter.label}
     </button>
   );
@@ -78,7 +78,7 @@ export default function FilterBar({ allFilters, defaultKeys = [] }: FilterBarPro
                       onClick={() => addFilter(f.key)}
                       className="px-3 py-2 text-sm hover:bg-accent cursor-pointer flex gap-2 items-center"
                     >
-                      <span className="text-orange-500">{f.icon}</span>
+                      <span className="text-orange-600">{f.icon}</span>
                       {f.label}
                     </div>
                   ))

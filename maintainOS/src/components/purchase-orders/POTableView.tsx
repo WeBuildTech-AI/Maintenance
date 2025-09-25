@@ -125,11 +125,11 @@ export default function PurchaseOrdersTable({
   }, [visibleOrders, selectedPOs]);
 
   return (
-    <div className="border  shadow-sm bg-white flex flex-col h-full">
+    <div className="border shadow-sm bg-white flex flex-col">
       {/* Scrollable table body */}
       <div className="flex-1 ">
         {/*  */}
-        <table className="table-auto w-full text-sm overflow-y-auto">
+        <table className="table-auto w-full text-sm ">
           {/* Header */}
           <thead className="bg-gray-50">
             <tr>
@@ -192,7 +192,7 @@ export default function PurchaseOrdersTable({
           </thead>
 
           {/* Body */}
-          <tbody>
+          <tbody className="h-full overflow-y-auto">
             {visibleOrders.length > 0 ? (
               visibleOrders.map((order) => (
                 <tr
@@ -242,19 +242,19 @@ export default function PurchaseOrdersTable({
                         );
                       case "vendor":
                         return (
-                          <td key={col.key} className="px-4 py-3">
+                          <td key={col.key} className="px-5 py-3">
                             <p>{order.vendor}</p>
                           </td>
                         );
                       case "status":
                         return (
-                          <td key={col.key} className="px-4 py-3 font-medium">
+                          <td key={col.key} className="px-5 py-3 font-medium">
                             {renderStatus(order.status)}
                           </td>
                         );
                       case "createdAt":
                         return (
-                          <td key={col.key} className="px-4 py-3 text-gray-700">
+                          <td key={col.key} className="px-5 py-3 text-gray-700">
                             {new Date(order.createdAt).toLocaleDateString(
                               "en-GB"
                             )}
@@ -264,7 +264,7 @@ export default function PurchaseOrdersTable({
                         return (
                           <td
                             key={col.key}
-                            className="px-4 py-3 flex items-center gap-2"
+                            className="px-5 py-3 flex items-center gap-2"
                           >
                             <Avatar className="h-8 w-8">
                               <AvatarFallback>
