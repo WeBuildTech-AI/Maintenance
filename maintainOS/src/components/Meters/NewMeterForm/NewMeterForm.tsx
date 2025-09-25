@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Upload, Lock, RefreshCcw, User, Paperclip } from "lucide-react";
-import { SearchWithDropdown } from "../Locations/SearchWithDropdown";
+import { Upload, Lock, RefreshCcw, User} from "lucide-react";
+import { SearchWithDropdown } from "../../Locations/SearchWithDropdown";
+
 
 interface NewMeterFormProps {
     onCreate: (data: any) => void;
-    onCancel?: () => void; // optional
 }
 
-export function NewMeterForm({ onCreate, onCancel }: NewMeterFormProps) {
+export function NewMeterForm({ onCreate}: NewMeterFormProps) {
     const [meterType, setMeterType] = useState<"manual" | "automated">("manual");
     const [meterName, setMeterName] = useState("");
     const [description, setDescription] = useState("");
@@ -494,14 +494,6 @@ export function NewMeterForm({ onCreate, onCancel }: NewMeterFormProps) {
 
             {/* Footer (fixed) */}
             <div className="sticky bottom-0 mt-6 flex items-center border-t bg-white px-6 py-4">
-                {onCancel && (
-                    <button
-                        onClick={onCancel}
-                        className="mr-2 h-10 rounded-md border border-gray-300 px-5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                    >
-                        Cancel
-                    </button>
-                )}
                 <button
                     onClick={handleCreate}
                     style={{ marginLeft: "auto", paddingLeft: "40px", paddingRight: "40px" }}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, MapPin, Plus, Search, Upload } from "lucide-react";
+import { ChevronDown, MapPin, Plus, Search, Upload, Calendar } from "lucide-react";
 import { Package } from "lucide-react";
 
 interface NewWorkOrderFormProps {
@@ -11,6 +11,20 @@ interface NewWorkOrderFormProps {
 
 export function NewWorkOrderForm({ onCreate }: NewWorkOrderFormProps) {
     const [qrCodeValue, setQrCodeValue] = useState("");
+    const [dueDate, setDueDate] = useState("");
+
+    const [selectedPriority, setSelectedPriority] = useState("None");
+    const [workTypeOpen, setWorkTypeOpen] = useState(false);
+    const [selectedWorkType, setSelectedWorkType] = useState("Reactive");
+
+    const workTypes = ["Reactive", "Preventive", "Other"];
+
+    const priorities = [
+        { name: "None", color: "bg-blue-500", textColor: "text-white" },
+        { name: "Low", color: "bg-green-500", textColor: "text-white" },
+        { name: "Medium", color: "bg-orange-500", textColor: "text-white" },
+        { name: "High", color: "bg-red-500", textColor: "text-white" }
+    ];
 
     return (
         <div className="flex h-full flex-col overflow-hidden rounded-lg border">
@@ -186,6 +200,147 @@ export function NewWorkOrderForm({ onCreate }: NewWorkOrderFormProps) {
                                 />
                             </div>
                         </div>
+                    </div>
+
+                    {/* Due Date section */}
+                    <div className="mt-4">
+                        <h3 className="mb-4 text-base font-medium text-gray-900">Due Date</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div style={{ position: "relative" }}>
+                                <input
+                                    type="text"
+                                    value={dueDate}
+                                    onChange={(e) => setDueDate(e.target.value)}
+                                    placeholder="mm/dd/yyyy"
+                                    className="w-full h-12 px-4 pr-12 border border-gray-300 rounded-md text-gray-900 placeholder:text-gray-400 bg-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                />
+                                <Calendar
+                                    style={{
+                                        position: "absolute",
+                                        right: "12px",
+                                        top: "50%",
+                                        transform: "translateY(-50%)",
+                                        color: "#3b82f6",
+                                        width: "20px",
+                                        height: "20px",
+                                        pointerEvents: "none",
+                                    }}
+                                />
+                            </div>
+                            <div></div>
+                        </div>
+                    </div>
+
+
+
+                    {/* Start Date section */}
+                    <div className="mt-4">
+                        <h3 className="mb-4 text-base font-medium text-gray-900">Start Date</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div style={{ position: "relative" }}>
+                                <input
+                                    type="text"
+                                    value={dueDate}
+                                    onChange={(e) => setDueDate(e.target.value)}
+                                    placeholder="mm/dd/yyyy"
+                                    className="w-full h-12 px-4 pr-12 border border-gray-300 rounded-md text-gray-900 placeholder:text-gray-400 bg-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                />
+                                <Calendar
+                                    style={{
+                                        position: "absolute",
+                                        right: "12px",
+                                        top: "50%",
+                                        transform: "translateY(-50%)",
+                                        color: "#3b82f6",
+                                        width: "20px",
+                                        height: "20px",
+                                        pointerEvents: "none",
+                                    }}
+                                />
+                            </div>
+                            <div></div>
+                        </div>
+                    </div>
+
+
+                    <div className="mt-4">
+                        <h3 className="mb-4 text-base font-medium text-gray-900">Recurrence</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            {/* Recurrence Dropdown */}
+                            <div className="relative">
+                                <select
+                                    className="w-full h-12 px-4 pr-10 border border-gray-300 rounded-md text-gray-900 bg-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none"
+                                >
+                                    <option>Does not repeat</option>
+                                    <option>Daily</option>
+                                    <option>Weekly</option>
+                                    <option>Monthly</option>
+                                </select>
+                            </div>
+
+                            {/* Work Type Custom Dropdown */}
+                            <div className="relative">
+                                {/* Trigger */}
+                                <div
+                                    onClick={() => setWorkTypeOpen(!workTypeOpen)}
+                                    className="flex items-center justify-between cursor-pointer text-gray-900"
+                                >
+                                    <span>
+                                        Work Type: <span className="font-semibold">{selectedWorkType}</span>
+                                    </span>
+                                    <ChevronDown
+                                        className={`ml-2 h-4 w-4 text-blue-500 transition-transform ${workTypeOpen ? "rotate-180" : ""
+                                            }`}
+                                    />
+                                </div>
+
+                                {/* Dropdown Menu */}
+                                {workTypeOpen && (
+                                    <div className="absolute left-0 mt-2 w-48 rounded-md border border-gray-200 bg-white shadow-lg z-10">
+                                        {workTypes.map((type) => (
+                                            <div
+                                                key={type}
+                                                onClick={() => {
+                                                    setSelectedWorkType(type);
+                                                    setWorkTypeOpen(false);
+                                                }}
+                                                className={`px-4 py-2 cursor-pointer text-sm ${selectedWorkType === type
+                                                        ? "text-blue-600 font-semibold bg-blue-50 flex justify-between"
+                                                        : "text-gray-700 hover:bg-gray-100"
+                                                    }`}
+                                            >
+                                                <span>{type}</span>
+                                                {selectedWorkType === type && (
+                                                    <span className="text-blue-600">✔</span>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div className="mt-4">
+                        <h3 className="mb-4 text-base font-medium text-gray-900">
+                            Priority
+                        </h3>
+                        <div className="flex w-full">
+                            {priorities.map((priority) => (
+                                <button
+                                    key={priority.name}
+                                    onClick={() => setSelectedPriority(priority.name)}
+                                    className={`flex-1 px-2 py-1 text-xs font-medium transition-all duration-200 hover:opacity-90 rounded ${selectedPriority === priority.name
+                                        ? `${priority.color} ${priority.textColor} shadow-sm`
+                                        : "text-gray-700 bg-gray-100 hover:bg-gray-200"
+                                        }`}
+                                >
+                                    {priority.name}
+                                </button>
+                            ))}
+                        </div>
+
                     </div>
 
 

@@ -1,17 +1,17 @@
 "use client";
 
+import { Building, MapPin, Plus } from "lucide-react";
 import { useState } from "react";
+import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "./ui/card";
-import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
-import { Plus, MapPin, Building } from "lucide-react";
-import { NewLocationForm } from "../components/Locations/NewLocationForm";
+} from "../ui/card";
+import { NewLocationForm } from "./NewLocationForm/NewLocationForm";
 
 export function Locations() {
   const [showForm, setShowForm] = useState(false);
