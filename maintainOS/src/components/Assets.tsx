@@ -425,9 +425,9 @@ export function Assets() {
         </div>
 
         {/* Right Panel - Content */}
-        <div className="flex-1 bg-card min-h-0 flex flex-col">
+        <div className="flex-1 bg-card min-h-0 flex  flex-col">
           {showNewAssetForm ? (
-            <div className="p-6 overflow-y-auto flex-1">
+            <div className="p-6 overflow-y-auto flex-1 border border ">
               <h2 className="text-lg font-medium mb-6">New Asset</h2>
 
               <div className="space-y-6 max-w-md">
@@ -523,8 +523,8 @@ export function Assets() {
           ) : selectedAsset ? (
             <div className="flex-1 bg-card mr-3 ml-2 border border-border min-h-0 flex flex-col border-border">
               {/* Asset Header */}
-              <div className="p-6 border-b border-border flex-shrink-0">
-                <div className="flex items-center justify-between mb-6">
+              <div className="p-6 border-b border-border flex-shrink-0 bg-white z-50 ">
+                <div className="flex items-center justify-between mb-6 ">
                   <div className="flex items-center gap-2">
                     <h1 className="text-xl font-medium">
                       {selectedAsset.name}
@@ -552,7 +552,7 @@ export function Assets() {
                 </div>
 
                 {/* Tabs */}
-                <Tabs defaultValue="details" className="w-full">
+                <Tabs defaultValue="details" className="w- z-50">
                   <TabsList className="grid w-full grid-cols-2 max-w-[200px]">
                     <TabsTrigger value="details">Details</TabsTrigger>
                     <TabsTrigger value="history">History</TabsTrigger>
@@ -577,7 +577,7 @@ export function Assets() {
                     </Button>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-4 s">
                     {/* Status Dropdown */}
                     <Select defaultValue="online">
                       <SelectTrigger className="w-48">

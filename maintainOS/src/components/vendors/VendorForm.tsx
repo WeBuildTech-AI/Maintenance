@@ -79,7 +79,7 @@ export function VendorForm({
         {/* Upload Box */}
         <div className="px-6 pt-6">
           <h3 className="mb-3 text-lg font-semibold text-gray-900">Pictures</h3>
-          <div className="mb-6 border border-dashed rounded-md p-6 text-center bg-blue-50 text-blue-600 cursor-pointer">
+          <div className="mb-6 border border-dashed rounded-md p-6 text-center bg-blue-50 text-orange-600 cursor-pointer">
             <Upload className="mx-auto mb-2 h-6 w-6" />
             <p>Add or drag pictures</p>
           </div>
@@ -95,10 +95,11 @@ export function VendorForm({
               <button
                 key={color}
                 type="button"
-                className={`h-8 w-8 rounded-full border-2 transition-all duration-200 ${form.color === color
-                  ? "ring-2 ring-pink-500 ring-offset-2 border-white"
-                  : "border-gray-200 hover:scale-110"
-                  }`}
+                className={`h-8 w-8 rounded-full border-2 transition-all duration-200 ${
+                  form.color === color
+                    ? "ring-2 ring-pink-500 ring-offset-2 border-white"
+                    : "border-gray-200 hover:scale-110"
+                }`}
                 style={{ backgroundColor: color }}
                 onClick={() => setForm((f) => ({ ...f, color }))}
               />
@@ -143,7 +144,7 @@ export function VendorForm({
             onClick={() => {
               /* add contact logic */
             }}
-            className="mt-2 inline-flex items-center px-2 py-1 text-sm font-normal text-blue-600 bg-white border border-gray-300 rounded hover:bg-gray-50 hover:border-gray-400 transition-all duration-150 w-fit h-8"
+            className="mt-2 inline-flex items-center px-2 py-1 text-sm font-normal text-orange-600 bg-white border border-orange-600 rounded hover:bg-gray-50 hover:border-gray-400 transition-all duration-150 w-fit h-8"
           >
             + New Contact
           </button>
@@ -159,7 +160,7 @@ export function VendorForm({
             onClick={() => {
               /* attach files logic */
             }}
-            className="mt-2 inline-flex items-center gap-2 px-3 py-2 text-sm font-normal text-blue-600 bg-white border border-blue-200 rounded hover:bg-blue-50 hover:border-blue-300 transition-all duration-150 w-fit"
+            className="mt-2 inline-flex items-center gap-2 px-3 py-2 text-sm font-normal text-orange-600 bg-white border border-orange-600 rounded hover:bg-blue-50 hover:border-blue-300 transition-all duration-150 w-fit"
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path
@@ -295,19 +296,16 @@ export function VendorForm({
       {/* Footer */}
       <div className="sticky bottom-0 mt-6 flex items-center border-t bg-white px-6 py-4">
         <button
-
           style={{
-            marginLeft: 'auto',
-            paddingLeft: '40px',
-            paddingRight: '40px',
+            marginLeft: "auto",
+            paddingLeft: "40px",
+            paddingRight: "40px",
           }}
-          className="h-10 rounded-md bg-blue-600 text-sm font-medium text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="h-10 rounded-md bg-orange-600 text-sm font-medium text-white shadow hover:bg-orange-600 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           Create
         </button>
       </div>
-
-
     </div>
   );
 }
