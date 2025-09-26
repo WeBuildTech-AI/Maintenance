@@ -1,8 +1,7 @@
 import axios from "axios";
 import type { LoginData, RegisterData, AuthResponse } from "./auth.types";
 
-const API_URL =
-  (globalThis as any).NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+const API_URL = import.meta.env.VITE_API_URL;
 
 export const authService = {
   login: async (data: LoginData): Promise<AuthResponse> => {

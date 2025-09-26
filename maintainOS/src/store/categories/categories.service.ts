@@ -6,8 +6,7 @@ import type {
   UpdateCategoryData,
 } from "./categories.types";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+const API_URL = import.meta.env.VITE_API_URL;
 
 export const categoryService = {
   fetchCategories: async (): Promise<CategoryResponse[]> => {
