@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MeterDetail } from "./MeterDetail/MeterDetail";
 import { MetersEmptyState } from "./MetersEmptyState";
 import { MetersHeader } from "./MetersHeader";
@@ -6,6 +6,7 @@ import { MetersList } from "./MetersList/MetersList";
 import { mockMeters } from "./mockData";
 import { NewMeterForm } from "./NewMeterForm/NewMeterForm";
 import { MeterTable } from "./MeterTable";
+import { meterService } from "../../store/meters";
 
 export function Meters() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -14,9 +15,28 @@ export function Meters() {
   const [selectedAsset, setSelectedAsset] = useState("all");
   const [selectedLocation, setSelectedLocation] = useState("all");
   const [viewMode, setViewMode] = useState<ViewMode>("panel");
+  const [meterData, setMeterData] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [selectedMeter, setSelectedMeter] = useState<
-    (typeof mockMeters)[0] | null
+    (typeof meterData)[0] | null
   >(null);
+
+  useEffect(() => {
+    const fetchMeters = async () => {
+      setLoading(true);
+      try {
+        const res = await meterService.fetchMeters(10, 1, 0);
+        setMeterData(res);
+        console.log(res);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMeters();
+  }, []);
 
   const filteredMeters = mockMeters.filter((meter) => {
     const matchesSearch =
@@ -61,7 +81,8 @@ export function Meters() {
         <>
           <div className="flex flex-1 overflow-hidden">
             <MetersList
-              filteredMeters={filteredMeters}
+              // filteredMeters={filteredMeters}
+              filteredMeters={meterData}
               selectedMeter={selectedMeter}
               setSelectedMeter={setSelectedMeter}
             />

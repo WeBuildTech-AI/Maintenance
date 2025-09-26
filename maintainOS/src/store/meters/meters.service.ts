@@ -9,8 +9,15 @@ import type {
 const API_URL = import.meta.env.VITE_API_URL;
 
 export const meterService = {
-  fetchMeters: async (): Promise<MeterResponse[]> => {
-    const res = await axios.get(`${API_URL}/meters`);
+  fetchMeters: async (
+    limit: number,
+    page: number,
+    offset: number
+  ): Promise<MeterResponse[]> => {
+    const res = await axios.get(`${API_URL}/meters`, {
+      params: { limit, page, offset },
+      headers: { Accept: "application/json" },
+    });
     return res.data;
   },
 

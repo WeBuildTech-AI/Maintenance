@@ -97,17 +97,17 @@ export function Vendors() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <div className="relative border-orange-600 focus:border-orange-600  ">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-orange-600" />
               <Input
-                placeholder="Search vendors"
-                className="w-[320px] pl-9"
+                placeholder="Search vendors "
+                className="w-[320px] pl-9 bg-white border-orange-600  "
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             <Button
-              className="gap-2 cursor-pointer bg-orange-600 hover:bg-orange-700"
+              className="gap-2 cursor-pointer bg-orange-600 hover:outline-none"
               onClick={() => {
                 setIsCreatingVendor(true);
                 setViewMode("panel");

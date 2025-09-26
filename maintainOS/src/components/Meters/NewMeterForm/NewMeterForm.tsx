@@ -1,29 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Upload, Lock, RefreshCcw, User } from "lucide-react";
 import { SearchWithDropdown } from "../../Locations/SearchWithDropdown";
 import { createMeter } from "../../../store/meters";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "../../../store";
+import { locationService } from "../../../store/locations";
+
+// import { locationService } from "../../store/locations/locationService"; // update path
+import type { LocationResponse } from "../../../store/locations";
 
 interface NewMeterFormProps {
   onCreate: (data: any) => void;
+  onCancel: (data: any) => void;
 }
 
-export function NewMeterForm({ onCreate }: NewMeterFormProps) {
+export function NewMeterForm({ onCreate, onCancel }: NewMeterFormProps) {
   const [meterType, setMeterType] = useState<"manual" | "automated">("manual");
   const [meterName, setMeterName] = useState("");
   const [description, setDescription] = useState("");
   const [measurementUnit, setMeasurementUnit] = useState("");
-  const [asset, setAsset] = useState("");
-  const [location, setLocation] = useState("");
-  const [readingFrequencyUnit, setReadingFrequencyUnit] = useState("");
+  const [asset, setAsset] = useState("none");
+  const [location, setLocation] = useState("none");
+  const [readingFrequencyValue, setReadingFrequencyValue] = useState("");
+  const [readingFrequencyUnit, setReadingFrequencyUnit] = useState("none");
   const [files, setFiles] = useState<File[]>([]);
   const [docs, setDocs] = useState<File[]>([]);
   const [error, setError] = useState("");
   const user = useSelector((state: RootState) => state.auth.user);
   const dispatch = useDispatch<AppDispatch>();
+  const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState([]);
+  const combinedValue = `${readingFrequencyValue} ${readingFrequencyUnit}`;
 
   // Split images/docs
   const splitFiles = (selectedFiles: File[]) => {
@@ -60,30 +69,6 @@ export function NewMeterForm({ onCreate }: NewMeterFormProps) {
     setDocs((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // const handleCreateMeter = () => {
-  //   if (!meterName.trim()) {
-  //     setError("You need to provide a Meter Name");
-  //     return;
-  //   }
-  //   if (!measurementUnit.trim()) {
-  //     setError("You need to select a Measurement Unit");
-  //     return;
-  //   }
-  //   setError("");
-
-  //   onCreate({
-  //     meterName,
-  //     meterType,
-  //     description,
-  //     measurementUnit,
-  //     asset,
-  //     location,
-  //     readingFrequencyUnit,
-  //     files,
-  //     docs,
-  //   });
-  // };
-
   const handleCreateMeter = () => {
     if (!meterName.trim()) {
       setError("You need to provide a Meter Name");
@@ -97,22 +82,33 @@ export function NewMeterForm({ onCreate }: NewMeterFormProps) {
 
     const newMeter = {
       organizationId: user.organizationId,
-      meterName,
-      meterType,
-      description,
-      measurementUnit,
-      asset,
-      location,
-      readingFrequencyUnit,
-      files,
-      docs,
+      name: meterName,
+      meterType: meterType,
+      description: description,
+      unit: measurementUnit,
+      // assetId: asset,
+      locationId: location,
+      readingFrequency: {
+        iterval: readingFrequencyUnit,
+        time: readingFrequencyValue,
+      },
+      photos: [],
     };
 
+    console.log(newMeter, "New Meter");
     // Dispatch to Redux thunk
     dispatch(createMeter(newMeter))
       .unwrap()
       .then(() => {
         console.log("Meter created successfully!");
+        setMeterName("");
+        setDescription("");
+        setAsset("none");
+        setLocation("none");
+        setMeasurementUnit("none");
+        setReadingFrequencyUnit("none");
+        setReadingFrequencyValue("");
+
         // maybe show toast or navigate
       })
       .catch((err) => {
@@ -121,8 +117,35 @@ export function NewMeterForm({ onCreate }: NewMeterFormProps) {
       });
   };
 
+  const handleReset = () => {
+    setMeterName("");
+    setDescription("");
+    setAsset("none");
+    setLocation("none");
+    setMeasurementUnit("none");
+    setReadingFrequencyUnit("none");
+    setReadingFrequencyValue("");
+  };
+
+  useEffect(() => {
+    const fetchLocations = async () => {
+      setLoading(true);
+      try {
+        const res = await locationService.fetchLocations(10, 1, 0);
+        setLoadingData(res);
+        console.log(res);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLocations();
+  }, []);
+
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-lg border">
+    <div className="flex h-full mr-2 flex-col overflow-hidden border">
       {/* Header (fixed) */}
       <div className="flex-none border-b px-6 py-4">
         <h2 className="text-xl font-semibold">New Meter</h2>
@@ -134,7 +157,9 @@ export function NewMeterForm({ onCreate }: NewMeterFormProps) {
         <div className="px-6 pt-6">
           <div className="flex items-start gap-4">
             <div className="mt-1 flex h-12 w-12 flex-none items-center justify-center rounded-full border bg-white text-gray-400">
-              <RefreshCcw className="h-5 w-5" />
+              <button onClick={handleReset}>
+                <RefreshCcw className="h-5 w-5" />
+              </button>
             </div>
 
             <div className="w-full">
@@ -163,7 +188,7 @@ export function NewMeterForm({ onCreate }: NewMeterFormProps) {
               onClick={() => setMeterType("manual")}
               className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
                 meterType === "manual"
-                  ? "border-blue-500 bg-blue-50 text-blue-600 ring-1 ring-blue-500/20"
+                  ? "border-orange-600 bg-white-50 text-orange-600 ring-1 ring-blue-500/20"
                   : "border-gray-300 text-gray-700 hover:bg-gray-50"
               }`}
             >
@@ -175,7 +200,7 @@ export function NewMeterForm({ onCreate }: NewMeterFormProps) {
               onClick={() => setMeterType("automated")}
               className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
                 meterType === "automated"
-                  ? "border-blue-500 bg-blue-50 text-blue-600 ring-1 ring-blue-500/20"
+                  ? "border-orange-600 bg-white-50 text-orange-600 ring-1 ring-blue-500/20"
                   : "border-gray-300 text-gray-700 hover:bg-gray-50"
               }`}
             >
@@ -211,6 +236,7 @@ export function NewMeterForm({ onCreate }: NewMeterFormProps) {
               onDropdownSelect={(val) => setMeasurementUnit(val)}
               className="mb-0 w-full"
             />
+            {measurementUnit}
             {error && !measurementUnit && (
               <p className="text-sm text-red-600">{error}</p>
             )}
@@ -312,12 +338,20 @@ export function NewMeterForm({ onCreate }: NewMeterFormProps) {
                   cursor: "pointer",
                 }}
               >
-                <option value="none">Start typing...</option>
-                <option value="all">All Locations</option>
+                <option value="none">start typing</option>
+                {loadingData?.map((items) => {
+                  return (
+                    <>
+                      <option value={items.id}>{items.name}</option>
+                    </>
+                  );
+                })}
+                {/* <option value="none">Start typing...</option> */}
+                {/* <option value="all">All Locations</option>
                 <option value="buildings">Buildings</option>
                 <option value="floors">Floors</option>
                 <option value="rooms">Rooms</option>
-                <option value="areas">Areas</option>
+                <option value="areas">Areas</option> */}
               </select>
 
               {/* Chevron Icon */}
@@ -367,18 +401,17 @@ export function NewMeterForm({ onCreate }: NewMeterFormProps) {
 
             <input
               type="number"
-              value="0"
-              readOnly
+              value={0 || readingFrequencyValue}
+              onChange={(e) => setReadingFrequencyValue(Number(e.target.value))}
               style={{
                 height: "40px",
                 width: "70px",
                 border: "1px solid #e5e7eb",
                 borderRadius: "6px",
-                backgroundColor: "#f3f4f6",
+                backgroundColor: "#fff", // allow typing
                 textAlign: "center",
-                color: "#6b7280",
+                color: "#374151",
                 fontSize: "14px",
-                pointerEvents: "none",
               }}
             />
 
@@ -537,7 +570,15 @@ export function NewMeterForm({ onCreate }: NewMeterFormProps) {
       </div>
 
       {/* Footer (fixed) */}
-      <div className="sticky bottom-0 mt-6 flex items-center border-t bg-white px-6 py-4">
+      <div className="sticky bottom-0 mt-6 flex items-center jusitfy-end border-t bg-white px-6 py-4">
+        {onCancel && (
+          <button
+            onClick={onCancel}
+            className="h-10 rounded-md border px-4 text-sm font-medium text-orange-600 hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+        )}
         <button
           onClick={handleCreateMeter}
           style={{

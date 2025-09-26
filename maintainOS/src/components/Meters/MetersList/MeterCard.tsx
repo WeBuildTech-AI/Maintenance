@@ -29,7 +29,7 @@ export function MeterCard({ meter, selectedMeter, setSelectedMeter }: any) {
             <div className="w-4 h-4 bg-orange-100 rounded flex items-center justify-center">
               <Building2 className="h-2 w-2 text-orange-600" />
             </div>
-            <span className="text-sm">{meter.type}</span>
+            <span className="text-sm">{meter.meterType}</span>
           </div>
 
           <div className="flex items-center gap-2">
