@@ -10,7 +10,7 @@ export const fetchLocations = createAsyncThunk(
   "locations/fetchLocations",
   async (_, { rejectWithValue }) => {
     try {
-      const locations = await locationService.fetchLocations();
+      const locations = await locationService.fetchLocations(10,1,0);
       return locations;
     } catch (error: any) {
       return rejectWithValue(

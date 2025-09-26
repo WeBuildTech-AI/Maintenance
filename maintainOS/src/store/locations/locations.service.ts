@@ -14,13 +14,12 @@ export const locationService = {
     page: number,
     offset: number
   ): Promise<LocationResponse[]> => {
+    
     const res = await axios.get(`${API_URL}/locations`, {
       params: { limit, page, offset },
-      headers: {
-        Accept: "application/json", // keep this
-        // no User-Agent, no X-Client needed
-      },
+      headers: { Accept: "application/json" },
     });
+
 
     return res.data;
   },
