@@ -4,6 +4,7 @@
       "private": true,
       "dependencies": {
             "@reduxjs/toolkit": "^2.9.0",
+            "axios": "^1.12.2",
             "class-variance-authority": "^0.7.1",
             "clsx": "*",
             "embla-carousel-react": "^8.6.0",

@@ -16,8 +16,8 @@ export interface MeterResponse {
 export interface CreateMeterData {
   organizationId: string;
   name: string;
-  description?: string;
   meterType?: "manual" | "automated";
+  description?: string;
   unit?: string;
   assetId?: string;
   locationId?: string;

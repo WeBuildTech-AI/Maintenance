@@ -17,10 +17,17 @@ export interface CreateLocationData {
   name: string;
   description?: string;
   address?: string;
-  city?: string;
-  state?: string;
-  country?: string;
-  postalCode?: string;
+  photoUrls: [];
+  teamsInCharge: [];
+  files: [];
+  vendorIds: [];
+  parentLocationId: string;
+}
+
+export interface fetchLocationData {
+  limit: number;
+  page: number;
+  offset: number;
 }
 
 export interface UpdateLocationData {

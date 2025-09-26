@@ -1,24 +1,49 @@
 "use client";
 
-import { Building, MapPin, Plus } from "lucide-react";
-import { useState } from "react";
-import { Badge } from "../ui/badge";
+import { Building, ChevronDown, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
+import { Card, CardContent } from "../ui/card";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../ui/card";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 import { NewLocationForm } from "./NewLocationForm/NewLocationForm";
+import { locationService } from "../../store/locations";
+// import { locationService } from "../../store/locations/locationService"; // update path
+import type { LocationResponse } from "../../store/locations";
 
 export function Locations() {
   const [showForm, setShowForm] = useState(false);
+  const [locations, setLocations] = useState<LocationResponse[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch locations on mount
+  useEffect(() => {
+    const fetchLocations = async () => {
+      setLoading(true);
+      try {
+        const res = await locationService.fetchLocations(10, 1, 0);
+        // setLocations(res);
+        console.log(res);
+        // setError(null);
+      } catch (err) {
+        // console.error(err);
+        // setError("Failed to fetch locations");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLocations();
+  }, []);
 
   return (
     <div className="h-screen flex flex-col p-2 overflow-hidden">
-      {/* Page Header (Fixed) */}
+      {/* Page Header */}
       <div className="flex justify-between items-center flex-none">
         <div>
           <h1>Locations</h1>
@@ -34,42 +59,56 @@ export function Locations() {
         </div>
       </div>
 
-      {/* Two Cards Layout using flex */}
+      {/* Two Cards Layout */}
       <div className="flex gap-2 flex-1 overflow-hidden mt-6 min-h-0">
         {/* Left Card (~40%) */}
-        <Card className="flex flex-col h-full overflow-hidden w-96">
-          <CardHeader>
-            <CardTitle>Location Hierarchy</CardTitle>
-            <CardDescription>
-              Tree structure of facilities and areas
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex-1 overflow-y-auto min-h-0">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 p-2">
-                <Building className="h-4 w-4" />
-                <span className="font-medium">Manufacturing Plant</span>
-                <Badge variant="outline">12 assets</Badge>
-              </div>
-              <div className="ml-6 space-y-1">
-                <div className="flex items-center gap-2 p-2">
-                  <MapPin className="h-4 w-4" />
-                  <span>Production Floor 1</span>
-                  <Badge variant="secondary">8 assets</Badge>
-                </div>
-                <div className="ml-6 flex items-center gap-2 p-2 text-sm">
-                  <span>Line A Station 1</span>
-                  <Badge variant="outline">3 assets</Badge>
-                </div>
-                <div className="flex items-center gap-2 p-2">
-                  <MapPin className="h-4 w-4" />
-                  <span>Utility Room</span>
-                  <Badge variant="secondary">4 assets</Badge>
-                </div>
-              </div>
+        <div className="border w-96 flex flex-col">
+          <div className="p-3 border-b border-border flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Sort By:</span>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-primary p-2 h-auto"
+                  >
+                    Name: Ascending Order
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem>Name: Ascending Order</DropdownMenuItem>
+                  <DropdownMenuItem>Name: Descending Order</DropdownMenuItem>
+                  <DropdownMenuItem>Status</DropdownMenuItem>
+                  <DropdownMenuItem>Location</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+
+          <div className="flex-1 overflow-y-auto min-h-0">
+            {loading && <p className="p-4 text-center">Loading...</p>}
+            {error && <p className="p-4 text-center text-red-500">{error}</p>}
+            {!loading && !error && locations?.length === 0 && (
+              <p className="p-4 text-center text-muted-foreground">
+                No locations found
+              </p>
+            )}
+            {!loading && !error && locations?.length > 0 && (
+              <ul>
+                {locations?.map((loc) => (
+                  <li
+                    key={loc.id}
+                    className="p-2 border-b cursor-pointer hover:bg-gray-50"
+                  >
+                    {loc.name}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
 
         {/* Right Card (~60%) */}
         <Card className="flex flex-col h-full overflow-hidden flex-1">
