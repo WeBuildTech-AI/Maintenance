@@ -3,12 +3,85 @@ import {
   createAsyncThunk,
   type PayloadAction,
 } from "@reduxjs/toolkit";
-import {
-  auditLogService,
-  type AuditLogResponse,
-  type CreateAuditLogData,
-  type AuditLogFilters,
-} from "../../services/auditLogService";
+
+// src/services/auditLogService.ts
+import axios from "axios";
+
+export interface AuditLogResponse {
+  id: string;
+  organizationId: string;
+  actorId: string;
+  action: string; // e.g., create, update, delete, login
+  targetType: string;
+  targetId?: string;
+  metadata?: Record<string, any>;
+  createdAt: string;
+}
+
+export interface CreateAuditLogData {
+  organizationId: string;
+  actorId: string;
+  action: string;
+  targetType: string;
+  targetId?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface AuditLogFilters {
+  action?: string;
+  actorId?: string;
+  targetType?: string;
+  targetId?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+export const auditLogService = {
+  fetchAuditLogs: async (
+    filters?: AuditLogFilters
+  ): Promise<AuditLogResponse[]> => {
+    const res = await axios.get(`${API_URL}/audit-logs`, { params: filters });
+    return res.data;
+  },
+
+  fetchAuditLogById: async (id: string): Promise<AuditLogResponse> => {
+    const res = await axios.get(`${API_URL}/audit-logs/${id}`);
+    return res.data;
+  },
+
+  createAuditLog: async (
+    data: CreateAuditLogData
+  ): Promise<AuditLogResponse> => {
+    const res = await axios.post(`${API_URL}/audit-logs`, data);
+    return res.data;
+  },
+
+  fetchAuditLogsByEntity: async (
+    entityType: string,
+    entityId: string
+  ): Promise<AuditLogResponse[]> => {
+    const res = await axios.get(
+      `${API_URL}/audit-logs/entity/${entityType}/${entityId}`
+    );
+    return res.data;
+  },
+
+  fetchAuditLogsByUser: async (userId: string): Promise<AuditLogResponse[]> => {
+    const res = await axios.get(`${API_URL}/audit-logs/user/${userId}`);
+    return res.data;
+  },
+
+  fetchRecentAuditLogs: async (limit: number = 50): Promise<AuditLogResponse[]> => {
+    const res = await axios.get(`${API_URL}/audit-logs/recent`, {
+      params: { limit },
+    });
+    return res.data;
+  },
+};
+
 
 interface AuditLogsState {
   auditLogs: AuditLogResponse[];

@@ -3,12 +3,76 @@ import {
   createAsyncThunk,
   type PayloadAction,
 } from "@reduxjs/toolkit";
-import {
-  procedureService,
-  type ProcedureResponse,
-  type CreateProcedureData,
-  type UpdateProcedureData,
-} from "../../services/procedureService";
+
+// src/services/procedureService.ts
+import axios from "axios";
+
+export interface ProcedureResponse {
+  id: string;
+  organizationId: string;
+  title: string;
+  assetIds?: string[];
+  type?: "maintenance" | "inspection" | "safety_check";
+  frequency?: "daily" | "weekly" | "monthly" | "quarterly" | "yearly";
+  description?: string;
+  files?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateProcedureData {
+  organizationId: string;
+  title: string;
+  assetIds?: string[];
+  type?: "maintenance" | "inspection" | "safety_check";
+  frequency?: "daily" | "weekly" | "monthly" | "quarterly" | "yearly";
+  description?: string;
+  files?: string[];
+}
+
+export interface UpdateProcedureData {
+  title?: string;
+  assetIds?: string[];
+  type?: "maintenance" | "inspection" | "safety_check";
+  frequency?: "daily" | "weekly" | "monthly" | "quarterly" | "yearly";
+  description?: string;
+  files?: string[];
+}
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+export const procedureService = {
+  fetchProcedures: async (): Promise<ProcedureResponse[]> => {
+    const res = await axios.get(`${API_URL}/procedures`);
+    return res.data;
+  },
+
+  fetchProcedureById: async (id: string): Promise<ProcedureResponse> => {
+    const res = await axios.get(`${API_URL}/procedures/${id}`);
+    return res.data;
+  },
+
+  createProcedure: async (
+    data: CreateProcedureData
+  ): Promise<ProcedureResponse> => {
+    const res = await axios.post(`${API_URL}/procedures`, data);
+    return res.data;
+  },
+
+  updateProcedure: async (
+    id: string,
+    data: UpdateProcedureData
+  ): Promise<ProcedureResponse> => {
+    const res = await axios.patch(`${API_URL}/procedures/${id}`, data);
+    return res.data;
+  },
+
+  deleteProcedure: async (id: string): Promise<void> => {
+    await axios.delete(`${API_URL}/procedures/${id}`);
+  },
+};
+
 
 export const fetchProcedures = createAsyncThunk(
   "procedures/fetchProcedures",

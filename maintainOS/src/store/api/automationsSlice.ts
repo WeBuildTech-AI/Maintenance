@@ -3,12 +3,76 @@ import {
   createAsyncThunk,
   type PayloadAction,
 } from "@reduxjs/toolkit";
-import {
-  automationService,
-  type AutomationResponse,
-  type CreateAutomationData,
-  type UpdateAutomationData,
-} from "../../services/automationService";
+
+// src/services/automationService.ts
+import axios from "axios";
+
+export interface AutomationResponse {
+  id: string;
+  organizationId: string;
+  name: string;
+  description?: string;
+  isEnabled?: boolean;
+  triggers?: Record<string, any>;
+  conditions?: Record<string, any>;
+  actions?: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateAutomationData {
+  organizationId: string;
+  name: string;
+  description?: string;
+  isEnabled?: boolean;
+  triggers?: Record<string, any>;
+  conditions?: Record<string, any>;
+  actions?: Record<string, any>;
+}
+
+export interface UpdateAutomationData {
+  name?: string;
+  description?: string;
+  isEnabled?: boolean;
+  triggers?: Record<string, any>;
+  conditions?: Record<string, any>;
+  actions?: Record<string, any>;
+}
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+export const automationService = {
+  fetchAutomations: async (): Promise<AutomationResponse[]> => {
+    const res = await axios.get(`${API_URL}/automations`);
+    return res.data;
+  },
+
+  fetchAutomationById: async (id: string): Promise<AutomationResponse> => {
+    const res = await axios.get(`${API_URL}/automations/${id}`);
+    return res.data;
+  },
+
+  createAutomation: async (
+    data: CreateAutomationData
+  ): Promise<AutomationResponse> => {
+    const res = await axios.post(`${API_URL}/automations`, data);
+    return res.data;
+  },
+
+  updateAutomation: async (
+    id: string,
+    data: UpdateAutomationData
+  ): Promise<AutomationResponse> => {
+    const res = await axios.patch(`${API_URL}/automations/${id}`, data);
+    return res.data;
+  },
+
+  deleteAutomation: async (id: string): Promise<void> => {
+    await axios.delete(`${API_URL}/automations/${id}`);
+  },
+};
+
 
 export const fetchAutomations = createAsyncThunk(
   "automations/fetchAutomations",

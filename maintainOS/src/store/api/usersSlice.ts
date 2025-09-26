@@ -3,12 +3,69 @@ import {
   createAsyncThunk,
   type PayloadAction,
 } from "@reduxjs/toolkit";
-import {
-  userService,
-  type UserResponse,
-  type CreateUserData,
-  type UpdateUserData,
-} from "../../services/userService";
+
+import axios from "axios";
+
+export interface UserResponse {
+  id: string;
+  fullName: string;
+  email: string;
+  phoneNumber?: string;
+  role?: string;
+  hourlyRate?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateUserData {
+  fullName: string;
+  email: string;
+  phoneNumber?: string;
+  role?: string;
+  hourlyRate?: number;
+  password?: string;
+}
+
+export interface UpdateUserData {
+  fullName?: string;
+  email?: string;
+  phoneNumber?: string;
+  role?: string;
+  hourlyRate?: number;
+  password?: string;
+}
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+export const userService = {
+  fetchUsers: async (): Promise<UserResponse[]> => {
+    const res = await axios.get(`${API_URL}/users`);
+    return res.data;
+  },
+
+  fetchUserById: async (id: string): Promise<UserResponse> => {
+    const res = await axios.get(`${API_URL}/users/${id}`);
+    return res.data;
+  },
+
+  createUser: async (data: CreateUserData): Promise<UserResponse> => {
+    const res = await axios.post(`${API_URL}/users`, data);
+    return res.data;
+  },
+
+  updateUser: async (
+    id: string,
+    data: UpdateUserData
+  ): Promise<UserResponse> => {
+    const res = await axios.patch(`${API_URL}/users/${id}`, data);
+    return res.data;
+  },
+
+  deleteUser: async (id: string): Promise<void> => {
+    await axios.delete(`${API_URL}/users/${id}`);
+  },
+};
 
 export const fetchUsers = createAsyncThunk(
   "users/fetchUsers",

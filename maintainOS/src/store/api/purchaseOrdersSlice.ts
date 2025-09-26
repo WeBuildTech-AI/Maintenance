@@ -3,12 +3,100 @@ import {
   createAsyncThunk,
   type PayloadAction,
 } from "@reduxjs/toolkit";
-import {
-  purchaseOrderService,
-  type PurchaseOrderResponse,
-  type CreatePurchaseOrderData,
-  type UpdatePurchaseOrderData,
-} from "../../services/purchaseOrderService";
+
+// src/services/purchaseOrderService.ts
+import axios from "axios";
+
+export interface PurchaseOrderItem {
+  partId: string;
+  quantity: number;
+  unitCost: number;
+}
+
+export interface AdditionalCost {
+  name: string;
+  value: number;
+  type: string;
+}
+
+export interface PurchaseOrderResponse {
+  id: string;
+  organizationId: string;
+  vendorId: string;
+  status: "draft" | "pending_approval" | "approved" | "rejected" | "ordered" | "completed" | "cancelled";
+  items: PurchaseOrderItem[];
+  taxesAndCosts?: AdditionalCost[];
+  shippingAddress?: string;
+  billingAddress?: string;
+  shippingContact?: Record<string, any>;
+  dueDate?: string;
+  notes?: string;
+  files?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePurchaseOrderData {
+  organizationId: string;
+  vendorId: string;
+  status: "draft" | "pending_approval" | "approved" | "rejected" | "ordered" | "completed" | "cancelled";
+  items: PurchaseOrderItem[];
+  taxesAndCosts?: AdditionalCost[];
+  shippingAddress?: string;
+  billingAddress?: string;
+  shippingContact?: Record<string, any>;
+  dueDate?: string;
+  notes?: string;
+  files?: string[];
+}
+
+export interface UpdatePurchaseOrderData {
+  vendorId?: string;
+  status?: "draft" | "pending_approval" | "approved" | "rejected" | "ordered" | "completed" | "cancelled";
+  items?: PurchaseOrderItem[];
+  taxesAndCosts?: AdditionalCost[];
+  shippingAddress?: string;
+  billingAddress?: string;
+  shippingContact?: Record<string, any>;
+  dueDate?: string;
+  notes?: string;
+  files?: string[];
+}
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+export const purchaseOrderService = {
+  fetchPurchaseOrders: async (): Promise<PurchaseOrderResponse[]> => {
+    const res = await axios.get(`${API_URL}/purchase-orders`);
+    return res.data;
+  },
+
+  fetchPurchaseOrderById: async (id: string): Promise<PurchaseOrderResponse> => {
+    const res = await axios.get(`${API_URL}/purchase-orders/${id}`);
+    return res.data;
+  },
+
+  createPurchaseOrder: async (
+    data: CreatePurchaseOrderData
+  ): Promise<PurchaseOrderResponse> => {
+    const res = await axios.post(`${API_URL}/purchase-orders`, data);
+    return res.data;
+  },
+
+  updatePurchaseOrder: async (
+    id: string,
+    data: UpdatePurchaseOrderData
+  ): Promise<PurchaseOrderResponse> => {
+    const res = await axios.patch(`${API_URL}/purchase-orders/${id}`, data);
+    return res.data;
+  },
+
+  deletePurchaseOrder: async (id: string): Promise<void> => {
+    await axios.delete(`${API_URL}/purchase-orders/${id}`);
+  },
+};
+
 
 interface PurchaseOrdersState {
   purchaseOrders: PurchaseOrderResponse[];

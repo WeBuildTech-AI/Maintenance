@@ -3,12 +3,67 @@ import {
   createAsyncThunk,
   type PayloadAction,
 } from "@reduxjs/toolkit";
-import {
-  categoryService,
-  type CategoryResponse,
-  type CreateCategoryData,
-  type UpdateCategoryData,
-} from "../../services/categoryService";
+
+// src/services/categoryService.ts
+import axios from "axios";
+
+export interface CategoryResponse {
+  id: string;
+  organizationId: string;
+  name: string;
+  description?: string;
+  color?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCategoryData {
+  organizationId: string;
+  name: string;
+  description?: string;
+  color?: string;
+}
+
+export interface UpdateCategoryData {
+  name?: string;
+  description?: string;
+  color?: string;
+}
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+export const categoryService = {
+  fetchCategories: async (): Promise<CategoryResponse[]> => {
+    const res = await axios.get(`${API_URL}/categories`);
+    return res.data;
+  },
+
+  fetchCategoryById: async (id: string): Promise<CategoryResponse> => {
+    const res = await axios.get(`${API_URL}/categories/${id}`);
+    return res.data;
+  },
+
+  createCategory: async (
+    data: CreateCategoryData
+  ): Promise<CategoryResponse> => {
+    const res = await axios.post(`${API_URL}/categories`, data);
+    return res.data;
+  },
+
+  updateCategory: async (
+    id: string,
+    data: UpdateCategoryData
+  ): Promise<CategoryResponse> => {
+    const res = await axios.patch(`${API_URL}/categories/${id}`, data);
+    return res.data;
+  },
+
+  deleteCategory: async (id: string): Promise<void> => {
+    await axios.delete(`${API_URL}/categories/${id}`);
+  },
+};
+
 
 export const fetchCategories = createAsyncThunk(
   "categories/fetchCategories",

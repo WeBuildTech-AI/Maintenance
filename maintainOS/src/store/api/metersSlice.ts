@@ -3,12 +3,80 @@ import {
   createAsyncThunk,
   type PayloadAction,
 } from "@reduxjs/toolkit";
-import {
-  meterService,
-  type MeterResponse,
-  type CreateMeterData,
-  type UpdateMeterData,
-} from "../../services/meterService";
+
+// src/services/meterService.ts
+import axios from "axios";
+
+export interface MeterResponse {
+  id: string;
+  organizationId: string;
+  name: string;
+  description?: string;
+  meterType?: "manual" | "automated";
+  unit?: string;
+  assetId?: string;
+  locationId?: string;
+  readingFrequency?: Record<string, any>;
+  photos?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateMeterData {
+  organizationId: string;
+  name: string;
+  description?: string;
+  meterType?: "manual" | "automated";
+  unit?: string;
+  assetId?: string;
+  locationId?: string;
+  readingFrequency?: Record<string, any>;
+  photos?: string[];
+}
+
+export interface UpdateMeterData {
+  name?: string;
+  description?: string;
+  meterType?: "manual" | "automated";
+  unit?: string;
+  assetId?: string;
+  locationId?: string;
+  readingFrequency?: Record<string, any>;
+  photos?: string[];
+}
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+export const meterService = {
+  fetchMeters: async (): Promise<MeterResponse[]> => {
+    const res = await axios.get(`${API_URL}/meters`);
+    return res.data;
+  },
+
+  fetchMeterById: async (id: string): Promise<MeterResponse> => {
+    const res = await axios.get(`${API_URL}/meters/${id}`);
+    return res.data;
+  },
+
+  createMeter: async (data: CreateMeterData): Promise<MeterResponse> => {
+    const res = await axios.post(`${API_URL}/meters`, data);
+    return res.data;
+  },
+
+  updateMeter: async (
+    id: string,
+    data: UpdateMeterData
+  ): Promise<MeterResponse> => {
+    const res = await axios.patch(`${API_URL}/meters/${id}`, data);
+    return res.data;
+  },
+
+  deleteMeter: async (id: string): Promise<void> => {
+    await axios.delete(`${API_URL}/meters/${id}`);
+  },
+};
+
 
 export const fetchMeters = createAsyncThunk(
   "meters/fetchMeters",

@@ -3,12 +3,68 @@ import {
   createAsyncThunk,
   type PayloadAction,
 } from "@reduxjs/toolkit";
-import {
-  teamService,
-  type TeamResponse,
-  type CreateTeamData,
-  type UpdateTeamData,
-} from "../../services/teamService";
+
+// src/services/teamService.ts
+import axios from "axios";
+
+export interface TeamResponse {
+  id: string;
+  organizationId: string;
+  name: string;
+  description?: string;
+  color?: string;
+  isEscalationTeam?: boolean;
+  criticalParts?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTeamData {
+  organizationId: string;
+  name: string;
+  description?: string;
+  color?: string; // hex color code
+  isEscalationTeam?: boolean;
+  criticalParts?: boolean;
+}
+
+export interface UpdateTeamData {
+  name?: string;
+  description?: string;
+  color?: string;
+  isEscalationTeam?: boolean;
+  criticalParts?: boolean;
+}
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+export const teamService = {
+  fetchTeams: async (): Promise<TeamResponse[]> => {
+    const res = await axios.get(`${API_URL}/teams`);
+    return res.data;
+  },
+
+  fetchTeamById: async (id: string): Promise<TeamResponse> => {
+    const res = await axios.get(`${API_URL}/teams/${id}`);
+    return res.data;
+  },
+
+  createTeam: async (data: CreateTeamData): Promise<TeamResponse> => {
+    const res = await axios.post(`${API_URL}/teams`, data);
+    return res.data;
+  },
+
+  updateTeam: async (id: string, data: UpdateTeamData): Promise<TeamResponse> => {
+    const res = await axios.patch(`${API_URL}/teams/${id}`, data);
+    return res.data;
+  },
+
+  deleteTeam: async (id: string): Promise<void> => {
+    await axios.delete(`${API_URL}/teams/${id}`);
+  },
+};
+
 
 interface TeamsState {
   teams: TeamResponse[];

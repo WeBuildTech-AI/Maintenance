@@ -3,12 +3,86 @@ import {
   createAsyncThunk,
   type PayloadAction,
 } from "@reduxjs/toolkit";
-import {
-  vendorService,
-  type VendorResponse,
-  type CreateVendorData,
-  type UpdateVendorData,
-} from "../../services/vendorService";
+
+// src/services/vendorService.ts
+import axios from "axios";
+
+export interface VendorResponse {
+  id: string;
+  organizationId: string;
+  name: string;
+  pictureUrl?: string;
+  color?: string;
+  description?: string;
+  contacts?: Record<string, any>;
+  files?: string[];
+  locations?: string[];
+  assetIds?: string[];
+  partIds?: string[];
+  vendorType?: "manufacturer" | "distributor";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateVendorData {
+  organizationId: string;
+  name: string;
+  pictureUrl?: string;
+  color?: string;
+  description?: string;
+  contacts?: Record<string, any>;
+  files?: string[];
+  locations?: string[];
+  assetIds?: string[];
+  partIds?: string[];
+  vendorType?: "manufacturer" | "distributor";
+}
+
+export interface UpdateVendorData {
+  name?: string;
+  pictureUrl?: string;
+  color?: string;
+  description?: string;
+  contacts?: Record<string, any>;
+  files?: string[];
+  locations?: string[];
+  assetIds?: string[];
+  partIds?: string[];
+  vendorType?: "manufacturer" | "distributor";
+}
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+export const vendorService = {
+  fetchVendors: async (): Promise<VendorResponse[]> => {
+    const res = await axios.get(`${API_URL}/vendors`);
+    return res.data;
+  },
+
+  fetchVendorById: async (id: string): Promise<VendorResponse> => {
+    const res = await axios.get(`${API_URL}/vendors/${id}`);
+    return res.data;
+  },
+
+  createVendor: async (data: CreateVendorData): Promise<VendorResponse> => {
+    const res = await axios.post(`${API_URL}/vendors`, data);
+    return res.data;
+  },
+
+  updateVendor: async (
+    id: string,
+    data: UpdateVendorData
+  ): Promise<VendorResponse> => {
+    const res = await axios.patch(`${API_URL}/vendors/${id}`, data);
+    return res.data;
+  },
+
+  deleteVendor: async (id: string): Promise<void> => {
+    await axios.delete(`${API_URL}/vendors/${id}`);
+  },
+};
+
 
 interface VendorsState {
   vendors: VendorResponse[];

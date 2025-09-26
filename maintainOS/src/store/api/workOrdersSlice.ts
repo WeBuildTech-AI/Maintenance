@@ -3,14 +3,116 @@ import {
   createAsyncThunk,
   type PayloadAction,
 } from "@reduxjs/toolkit";
-import {
-  workOrderService,
-  type WorkOrderResponse,
-  type CreateWorkOrderData,
-  type UpdateWorkOrderData,
-  type AssignWorkOrderData,
-  type AddWorkOrderCommentData,
-} from "../../services/workOrderService";
+
+// src/services/workOrderService.ts
+import axios from "axios";
+
+export interface WorkOrderResponse {
+  id: string;
+  organizationId: string;
+  title: string;
+  description?: string;
+  priority?: "low" | "medium" | "high" | "critical";
+  status: "open" | "in_progress" | "completed" | "on_hold";
+  dueDate?: string;
+  assigneeIds: string[];
+  comments: Array<{
+    id: string;
+    authorId: string;
+    message: string;
+    createdAt: string;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateWorkOrderData {
+  organizationId: string;
+  title: string;
+  description?: string;
+  priority?: "low" | "medium" | "high" | "critical";
+  dueDate?: string;
+  assigneeIds?: string[];
+}
+
+export interface UpdateWorkOrderData {
+  title?: string;
+  description?: string;
+  priority?: "low" | "medium" | "high" | "critical";
+  status?: "open" | "in_progress" | "completed" | "on_hold";
+  dueDate?: string;
+  assigneeIds?: string[];
+}
+
+export interface AssignWorkOrderData {
+  assigneeIds: string[];
+}
+
+export interface AddWorkOrderCommentData {
+  authorId: string;
+  message: string;
+}
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+export const workOrderService = {
+  fetchWorkOrders: async (): Promise<WorkOrderResponse[]> => {
+    const res = await axios.get(`${API_URL}/work-orders`);
+    return res.data;
+  },
+
+  fetchWorkOrderById: async (id: string): Promise<WorkOrderResponse> => {
+    const res = await axios.get(`${API_URL}/work-orders/${id}`);
+    return res.data;
+  },
+
+  createWorkOrder: async (
+    data: CreateWorkOrderData
+  ): Promise<WorkOrderResponse> => {
+    const res = await axios.post(`${API_URL}/work-orders`, data);
+    return res.data;
+  },
+
+  updateWorkOrder: async (
+    id: string,
+    data: UpdateWorkOrderData
+  ): Promise<WorkOrderResponse> => {
+    const res = await axios.patch(`${API_URL}/work-orders/${id}`, data);
+    return res.data;
+  },
+
+  deleteWorkOrder: async (id: string): Promise<void> => {
+    await axios.delete(`${API_URL}/work-orders/${id}`);
+  },
+
+  assignWorkOrder: async (
+    id: string,
+    data: AssignWorkOrderData
+  ): Promise<WorkOrderResponse> => {
+    const res = await axios.post(`${API_URL}/work-orders/${id}/assign`, data);
+    return res.data;
+  },
+
+  addComment: async (
+    id: string,
+    data: AddWorkOrderCommentData
+  ): Promise<WorkOrderResponse> => {
+    const res = await axios.post(`${API_URL}/work-orders/${id}/comments`, data);
+    return res.data;
+  },
+
+  markCompleted: async (id: string): Promise<WorkOrderResponse> => {
+    const res = await axios.post(`${API_URL}/work-orders/${id}/complete`);
+    return res.data;
+  },
+
+  markInProgress: async (id: string): Promise<WorkOrderResponse> => {
+    const res = await axios.post(`${API_URL}/work-orders/${id}/in-progress`);
+    return res.data;
+  },
+};
+
 
 interface WorkOrdersState {
   workOrders: WorkOrderResponse[];

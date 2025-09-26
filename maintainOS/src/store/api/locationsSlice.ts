@@ -3,12 +3,79 @@ import {
   createAsyncThunk,
   type PayloadAction,
 } from "@reduxjs/toolkit";
-import {
-  locationService,
-  type LocationResponse,
-  type CreateLocationData,
-  type UpdateLocationData,
-} from "../../services/locationService";
+
+// src/services/locationService.ts
+import axios from "axios";
+
+export interface LocationResponse {
+  id: string;
+  organizationId: string;
+  name: string;
+  description?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postalCode?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateLocationData {
+  organizationId: string;
+  name: string;
+  description?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postalCode?: string;
+}
+
+export interface UpdateLocationData {
+  name?: string;
+  description?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postalCode?: string;
+}
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+export const locationService = {
+  fetchLocations: async (): Promise<LocationResponse[]> => {
+    const res = await axios.get(`${API_URL}/locations`);
+    return res.data;
+  },
+
+  fetchLocationById: async (id: string): Promise<LocationResponse> => {
+    const res = await axios.get(`${API_URL}/locations/${id}`);
+    return res.data;
+  },
+
+  createLocation: async (
+    data: CreateLocationData
+  ): Promise<LocationResponse> => {
+    const res = await axios.post(`${API_URL}/locations`, data);
+    return res.data;
+  },
+
+  updateLocation: async (
+    id: string,
+    data: UpdateLocationData
+  ): Promise<LocationResponse> => {
+    const res = await axios.patch(`${API_URL}/locations/${id}`, data);
+    return res.data;
+  },
+
+  deleteLocation: async (id: string): Promise<void> => {
+    await axios.delete(`${API_URL}/locations/${id}`);
+  },
+};
+
 
 export const fetchLocations = createAsyncThunk(
   "locations/fetchLocations",

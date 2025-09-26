@@ -3,12 +3,86 @@ import {
   createAsyncThunk,
   type PayloadAction,
 } from "@reduxjs/toolkit";
-import {
-  assetService,
-  type AssetResponse,
-  type CreateAssetData,
-  type UpdateAssetData,
-} from "../../services/assetService";
+
+// src/services/assetService.ts
+import axios from "axios";
+
+export interface AssetResponse {
+  id: string;
+  organizationId: string;
+  name: string;
+  description?: string;
+  status?: string;
+  locationId?: string;
+  criticality?: string;
+  pictures?: string[];
+  files?: string[];
+  manufacturer?: string;
+  model?: string;
+  serialNumber?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateAssetData {
+  organizationId: string;
+  name: string;
+  description?: string;
+  status?: string;
+  locationId?: string;
+  criticality?: string;
+  pictures?: string[];
+  files?: string[];
+  manufacturer?: string;
+  model?: string;
+  serialNumber?: string;
+}
+
+export interface UpdateAssetData {
+  name?: string;
+  description?: string;
+  status?: string;
+  locationId?: string;
+  criticality?: string;
+  pictures?: string[];
+  files?: string[];
+  manufacturer?: string;
+  model?: string;
+  serialNumber?: string;
+}
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+export const assetService = {
+  fetchAssets: async (): Promise<AssetResponse[]> => {
+    const res = await axios.get(`${API_URL}/assets`);
+    return res.data;
+  },
+
+  fetchAssetById: async (id: string): Promise<AssetResponse> => {
+    const res = await axios.get(`${API_URL}/assets/${id}`);
+    return res.data;
+  },
+
+  createAsset: async (data: CreateAssetData): Promise<AssetResponse> => {
+    const res = await axios.post(`${API_URL}/assets`, data);
+    return res.data;
+  },
+
+  updateAsset: async (
+    id: string,
+    data: UpdateAssetData
+  ): Promise<AssetResponse> => {
+    const res = await axios.patch(`${API_URL}/assets/${id}`, data);
+    return res.data;
+  },
+
+  deleteAsset: async (id: string): Promise<void> => {
+    await axios.delete(`${API_URL}/assets/${id}`);
+  },
+};
+
 
 export const fetchAssets = createAsyncThunk(
   "assets/fetchAssets",

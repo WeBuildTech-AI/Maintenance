@@ -3,12 +3,89 @@ import {
   createAsyncThunk,
   type PayloadAction,
 } from "@reduxjs/toolkit";
-import {
-  partService,
-  type PartResponse,
-  type CreatePartData,
-  type UpdatePartData,
-} from "../../services/partService";
+
+// src/services/partService.ts
+import axios from "axios";
+
+export interface PartResponse {
+  id: string;
+  organizationId: string;
+  name: string;
+  description?: string;
+  unitCost?: number;
+  qrCode?: string;
+  photos?: string[];
+  partsType?: string[];
+  location?: Record<string, any>;
+  assetIds?: string[];
+  teamsInCharge?: string[];
+  vendorIds?: string[];
+  files?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePartData {
+  organizationId: string;
+  name: string;
+  description?: string;
+  unitCost?: number;
+  qrCode?: string;
+  photos?: string[];
+  partsType?: string[];
+  location?: Record<string, any>;
+  assetIds?: string[];
+  teamsInCharge?: string[];
+  vendorIds?: string[];
+  files?: string[];
+}
+
+export interface UpdatePartData {
+  name?: string;
+  description?: string;
+  unitCost?: number;
+  qrCode?: string;
+  photos?: string[];
+  partsType?: string[];
+  location?: Record<string, any>;
+  assetIds?: string[];
+  teamsInCharge?: string[];
+  vendorIds?: string[];
+  files?: string[];
+}
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+export const partService = {
+  fetchParts: async (): Promise<PartResponse[]> => {
+    const res = await axios.get(`${API_URL}/parts`);
+    return res.data;
+  },
+
+  fetchPartById: async (id: string): Promise<PartResponse> => {
+    const res = await axios.get(`${API_URL}/parts/${id}`);
+    return res.data;
+  },
+
+  createPart: async (data: CreatePartData): Promise<PartResponse> => {
+    const res = await axios.post(`${API_URL}/parts`, data);
+    return res.data;
+  },
+
+  updatePart: async (
+    id: string,
+    data: UpdatePartData
+  ): Promise<PartResponse> => {
+    const res = await axios.patch(`${API_URL}/parts/${id}`, data);
+    return res.data;
+  },
+
+  deletePart: async (id: string): Promise<void> => {
+    await axios.delete(`${API_URL}/parts/${id}`);
+  },
+};
+
 
 export const fetchParts = createAsyncThunk(
   "parts/fetchParts",

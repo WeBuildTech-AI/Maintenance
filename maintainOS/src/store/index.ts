@@ -1,21 +1,21 @@
 import { configureStore } from "@reduxjs/toolkit";
 import userReducer from "./userSlice";
-import usersReducer from "../api/usersSlice";
-import organizationsReducer from "../api/organizationSlice";
-import assetsReducer from "../api/assetsSlice";
-import automationsReducer from "../api/automationsSlice";
-import categoriesReducer from "../api/categoriesSlice";
-import metersReducer from "../api/metersSlice";
-import partsReducer from "../api/partsSlice";
-import locationsReducer from "../api/locationsSlice";
-import proceduresReducer from "../api/proceduresSlice";
-import purchaseOrdersReducer from "../api/purchaseOrdersSlice";
-import teamMembersReducer from "../api/teamMembersSlice";
-import teamsReducer from "../api/teamsSlice";
-import vendorsReducer from "../api/vendorsSlice";
-import workOrdersReducer from "../api/workOrdersSlice";
-import attachmentsReducer from "../api/attachmentsSlice";
-import auditLogsReducer from "../api/auditLogsSlice";
+import usersReducer from "./api/usersSlice";
+import organizationsReducer from "./api/organizationSlice";
+import assetsReducer from "./api/assetsSlice";
+import automationsReducer from "./api/automationsSlice";
+import categoriesReducer from "./api/categoriesSlice";
+import metersReducer from "./api/metersSlice";
+import partsReducer from "./api/partsSlice";
+import locationsReducer from "./api/locationsSlice";
+import proceduresReducer from "./api/proceduresSlice";
+import purchaseOrdersReducer from "./api/purchaseOrdersSlice";
+import teamMembersReducer from "./api/teamMembersSlice";
+import teamsReducer from "./api/teamsSlice";
+import vendorsReducer from "./api/vendorsSlice";
+import workOrdersReducer from "./api/workOrdersSlice";
+import attachmentsReducer from "./api/attachmentsSlice";
+import auditLogsReducer from "./api/auditLogsSlice";
 
 export const store = configureStore({
   reducer: {
