@@ -5,7 +5,7 @@ import { Sidebar } from "./Sidebar";
 import { useState } from "react";
 
 interface MainLayoutProps {
-  user?: { name: string; email: string; avatar?: string };
+  user?: { fullName: string; email: string; avatar?: string };
   onLogout?: () => void;
   children: React.ReactNode; // 👈 modules rendered here
 }

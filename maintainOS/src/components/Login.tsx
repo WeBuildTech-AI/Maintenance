@@ -3,32 +3,24 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import type { AppDispatch, RootState } from "../store";
+import {login} from "../store/auth/auth.thunks";
+import { useDispatch, useSelector } from "react-redux";
 
-
-interface LoginProps {
-  onLogin: (user: { name: string; email: string; avatar?: string }) => void;
-}
-
-export function Login({ onLogin }: LoginProps) {
+export function Login() {
+  const dispatch = useDispatch<AppDispatch>();
+  const { loading, error } = useSelector((state: RootState) => state.auth);
+  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock login - in real app you'd validate credentials
-    onLogin({
-      name: "Ashwini Chauhan",
-      email: email || "ashwini@example.com",
-      avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face"
-    });
+    dispatch(login({ email, password }));
   };
 
   const handleDemoLogin = () => {
-    onLogin({
-      name: "Ashwini Chauhan", 
-      email: "ashwini@example.com",
-      avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face"
-    });
+    dispatch(login({ email: "ashwini@example.com", password: "demo123" }));
   };
 
   return (
@@ -65,12 +57,20 @@ export function Login({ onLogin }: LoginProps) {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-            <Button type="submit" className="w-full">
-              Sign In
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Signing in..." : "Sign In"}
             </Button>
-            <Button type="button" variant="outline" className="w-full" onClick={handleDemoLogin}>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={handleDemoLogin}
+              disabled={loading}
+            >
               Continue with Demo Account
             </Button>
+
+            {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
           </form>
         </CardContent>
       </Card>

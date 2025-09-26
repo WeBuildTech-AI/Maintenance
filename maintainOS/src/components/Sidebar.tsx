@@ -30,7 +30,7 @@ import { NavLink } from "react-router-dom";
 
 interface SidebarProps {
   onClose?: () => void;
-  user?: { name: string; email: string; avatar?: string };
+  user?: { fullName: string; email: string; avatar?: string };
   onLogout?: () => void;
   expanded: boolean;
   setExpanded: (value: boolean) => void;
@@ -159,9 +159,9 @@ export function Sidebar({
         <div className="p-4 border-t border-sidebar-border">
           <div className="flex items-center gap-3 mb-3">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={user?.avatar} alt={user?.name} />
+              <AvatarImage src={user?.avatar} alt={user?.fullName} />
               <AvatarFallback>
-                {user?.name
+                {user?.fullName
                   ?.split(" ")
                   .map((n) => n[0])
                   .join("") || "U"}
@@ -169,7 +169,7 @@ export function Sidebar({
             </Avatar>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-sidebar-foreground truncate mb-1">
-                {user?.name || "User"}
+                {user?.fullName || "User"}
               </p>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -200,9 +200,9 @@ export function Sidebar({
         <div className="p-3 border-t border-sidebar-border">
           <div className="flex items-center gap-3 ">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={user?.avatar} alt={user?.name} />
+              <AvatarImage src={user?.avatar} alt={user?.fullName} />
               <AvatarFallback>
-                {user?.name
+                {user?.fullName
                   ?.split(" ")
                   .map((n) => n[0])
                   .join("") || "U"}

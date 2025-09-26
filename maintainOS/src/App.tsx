@@ -28,7 +28,7 @@ const TeamUsers = lazyImport(() => import("./components/TeamUsers"), "TeamUsers"
 const Vendors = lazyImport(() => import("./components/vendors/Vendors"), "Vendors");
 
 export default function App() {
-  const user = useSelector((state: RootState) => state.user.user);
+  const { user, accessToken } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch<AppDispatch>();
 
   const handleLogin = (userData: { name: string; email: string; avatar?: string }) => {
