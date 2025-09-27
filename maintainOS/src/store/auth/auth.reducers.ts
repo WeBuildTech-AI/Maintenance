@@ -3,7 +3,10 @@ import type { AuthState, AuthResponse } from "./auth.types";
 import { login, register } from "./auth.thunks";
 
 const initialState: AuthState = {
-  user: null,
+  user:
+    typeof window !== "undefined"
+      ? JSON.parse(localStorage.getItem("user") || "null")
+      : null,
   accessToken:
     typeof window !== "undefined" ? localStorage.getItem("accessToken") : null,
   loading: false,
@@ -18,6 +21,7 @@ const authSlice = createSlice({
       state.user = null;
       state.accessToken = null;
       if (typeof window !== "undefined") {
+        localStorage.removeItem("user");
         localStorage.removeItem("accessToken");
       }
     },
@@ -36,6 +40,12 @@ const authSlice = createSlice({
         state.loading = false;
         state.user = action.payload.user;
         state.accessToken = action.payload.accessToken;
+
+        // ✅ Save both user and token
+        if (typeof window !== "undefined") {
+          localStorage.setItem("user", JSON.stringify(action.payload.user));
+          localStorage.setItem("accessToken", action.payload.accessToken);
+        }
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
@@ -47,11 +57,20 @@ const authSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(register.fulfilled, (state, action: PayloadAction<AuthResponse>) => {
-        state.loading = false;
-        state.user = action.payload.user;
-        state.accessToken = action.payload.accessToken;
-      })
+      .addCase(
+        register.fulfilled,
+        (state, action: PayloadAction<AuthResponse>) => {
+          state.loading = false;
+          state.user = action.payload.user;
+          state.accessToken = action.payload.accessToken;
+
+          // ✅ Save both user and token
+          if (typeof window !== "undefined") {
+            localStorage.setItem("user", JSON.stringify(action.payload.user));
+            localStorage.setItem("accessToken", action.payload.accessToken);
+          }
+        }
+      )
       .addCase(register.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;

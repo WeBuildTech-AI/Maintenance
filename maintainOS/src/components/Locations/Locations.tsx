@@ -18,7 +18,7 @@ import type { LocationResponse } from "../../store/locations";
 export function Locations() {
   const [showForm, setShowForm] = useState(false);
   const [locations, setLocations] = useState<LocationResponse[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch locations on mount
@@ -90,78 +90,36 @@ export function Locations() {
 
           <div className="flex-1 overflow-y-auto min-h-0">
             <div className="">
-              {locations?.map((items) => (
-                <Card
-                // className={`cursor-pointer transition-colors ${
-                //   selected ? "border-primary bg-primary/5" : "hover:bg-muted/50"
-                // }`}
-                // onClick={() => {
-                //   onSelect();
-                //   setShowNewAssetForm(false);
-                // }}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
-                          {/* <span className="text-lg">{items.icon}</span> */}
-                        </div>
-                        <div>
-                          <h4 className="font-medium">{items.name}</h4>
-                          <div className="flex items-center gap-1 mt-1">
-                            <MapPin className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground">
-                              {items.description}
-                            </span>
+              {loading ? (
+                // Loader first
+                <div className="flex justify-center items-center py-12">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                </div>
+              ) : locations && locations.length > 0 ? (
+                // Locations list
+                locations.map((items) => (
+                  <Card key={items.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center"></div>
+                          <div>
+                            <h4 className="font-medium">{items.name}</h4>
+                            <div className="flex items-center gap-1 mt-1">
+                              <MapPin className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-sm text-muted-foreground">
+                                {items.description}
+                              </span>
+                            </div>
                           </div>
                         </div>
+                        <div className="flex flex-col items-end gap-2"></div>
                       </div>
-                      <div className="flex flex-col items-end gap-2">
-                        {/* <Badge
-              variant="outline"
-              className={`gap-1 ${
-                asset.status === "Online"
-                  ? "bg-green-50 text-green-700 border-green-200"
-                  : asset.status === "Offline"
-                  ? "bg-red-50 text-red-700 border-red-200"
-                  : "bg-yellow-50 text-yellow-700 border-yellow-200"
-              }`}
-            >
-              <div
-                className={`w-2 h-2 rounded-full ${
-                  asset.status === "Online"
-                    ? "bg-green-500"
-                    : asset.status === "Offline"
-                    ? "bg-red-500"
-                    : "bg-yellow-500"
-                }`}
-              />
-              {asset.status}
-            </Badge> */}
-
-                        {/* {asset.criticality && (
-              <Badge
-                variant="outline"
-                className={`text-xs ${
-                  asset.criticality === "Critical"
-                    ? "bg-red-50 text-red-700 border-red-200"
-                    : asset.criticality === "High"
-                    ? "bg-orange-50 text-orange-700 border-orange-200"
-                    : asset.criticality === "Medium"
-                    ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                    : "bg-gray-50 text-gray-700 border-gray-200"
-                }`}
-              >
-                {asset.criticality}
-              </Badge>
-            )} */}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-
-              {locations.length === 0 && (
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                // Empty state
                 <div className="text-center py-8">
                   <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
                     <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed"></div>
@@ -172,6 +130,7 @@ export function Locations() {
                   </Button>
                 </div>
               )}
+
             </div>
           </div>
         </div>
