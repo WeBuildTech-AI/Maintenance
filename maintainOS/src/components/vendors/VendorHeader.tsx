@@ -53,7 +53,7 @@ export function VendorHeaderComponent(
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-orange-600" />
           <Input
             placeholder="Search vendors "
-            className="w-[320px] pl-9 bg-white border-orange-600  "
+            className="w-96 pl-9 bg-white border-orange-600  "
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)} />
         </div>

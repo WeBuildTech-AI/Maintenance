@@ -46,11 +46,11 @@ const menuItems = [
   { to: "/categories", label: "Categories", icon: Tag },
   { to: "/inventory", label: "Parts Inventory", icon: Archive },
   { to: "/library", label: "Library", icon: BookOpen },
-  { to: "/vendors", label: "Vendors", icon: Handshake },
   { to: "/meters", label: "Meters", icon: Gauge },
   { to: "/automations", label: "Automations", icon: Zap },
   { to: "/locations", label: "Locations", icon: MapPin },
   { to: "/team-users", label: "Team & Users", icon: Users },
+  { to: "/vendors", label: "Vendors", icon: Handshake },
 ];
 
 export function Sidebar({

@@ -16,6 +16,7 @@ export type TeamRow = {
   description?: string;
   admin: { name: string; avatarUrl?: string };
   membersCount: number;
+  avatarUrl?: string;
 };
 
 export const SAMPLE_USERS: UserRow[] = [

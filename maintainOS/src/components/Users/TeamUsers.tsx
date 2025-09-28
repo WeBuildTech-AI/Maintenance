@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { SAMPLE_TEAMS, SAMPLE_USERS, type TeamRow, type UserRow, type ViewMode } from "./types.users";
 import { UserHeaderComponent } from "./UserHeader";
+import { renderInitials } from "../utils/renderInitials";
 
 
 
@@ -44,11 +45,13 @@ export function TeamUsers() {
       {UserHeaderComponent(viewMode, setViewMode, searchQuery, setSearchQuery, setIsCreatingUser, setShowSettings)}
 
       {/* Body */}
-      {viewMode === "users" ? (
-        <UsersTable rows={filteredUsers} />
-      ) : (
-        <TeamsList rows={SAMPLE_TEAMS} />
-      )}
+      <div className="p-6">
+        {viewMode === "users" ? (
+          <UsersTable rows={filteredUsers} />
+        ) : (
+          <TeamsList rows={SAMPLE_TEAMS} />
+        )}
+      </div>
 
       {/* Example “create user” placeholder */}
       {isCreatingUser && (
@@ -71,7 +74,7 @@ export function TeamUsers() {
 function UsersTable({ rows }: { rows: UserRow[] }) {
   return (
     <Card>
-      <CardContent className="p-0">
+      <CardContent className="p-1">
         <Table>
           <TableHeader>
             <TableRow>
@@ -84,16 +87,17 @@ function UsersTable({ rows }: { rows: UserRow[] }) {
           </TableHeader>
           <TableBody>
             {rows.map((u) => (
-              <TableRow key={u.id}>
+              <TableRow key={u.id} className="p-1">
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <Avatar className="size-9">
-                      <AvatarImage src={u.avatarUrl} />
-                      <AvatarFallback>{initials(u.fullName)}</AvatarFallback>
-                    </Avatar>
+                    <Avatar className="h-8 w-8">
+                        <AvatarImage src={u.avatarUrl} />
+                        <AvatarFallback>
+                          {renderInitials(u.fullName)}
+                        </AvatarFallback>
+                      </Avatar>
                     <div>
                       <div className="font-medium">{u.fullName}</div>
-                      {u.email && <div className="text-sm text-muted-foreground">{u.email}</div>}
                     </div>
                   </div>
                 </TableCell>
@@ -125,6 +129,57 @@ function UsersTable({ rows }: { rows: UserRow[] }) {
 /* -------------------------------------- Teams list -------------------------------------- */
 
 function TeamsList({ rows }: { rows: TeamRow[] }) {
+  return (
+    <Card>
+      <CardContent className="p-1">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[40%]">Name</TableHead>
+              <TableHead>Administrator</TableHead>
+              <TableHead>Members</TableHead>
+              <TableHead />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((u) => (
+              <TableRow key={u.id} className="p-1">
+                <TableCell>
+                  <div className="flex items-center gap-3">
+                    <Avatar className="size-9">
+                      <AvatarImage src={u.avatarUrl} />
+                      <AvatarFallback>{renderInitials(u.name)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="font-medium">{u.name}</div>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell className="align-middle">{u.role}</TableCell>
+                <TableCell className="align-middle">
+                  <div className="flex flex-wrap gap-2">
+                    {u.teams.map((t) => (
+                      <Badge key={t} variant="secondary" className="whitespace-nowrap">
+                        {t}
+                      </Badge>
+                    ))}
+                  </div>
+                </TableCell>
+                <TableCell className="text-right align-middle">{u.lastVisit}</TableCell>
+                <TableCell className="w-0 text-right">
+                  <RowMenu kind="user" onAction={(a) => console.log(a, u.id)} />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+function TeamsListOld({ rows }: { rows: TeamRow[] }) {
   return (
     <Card>
       <CardContent className="p-0">
@@ -205,12 +260,3 @@ function RowMenu({
   );
 }
 
-/* -------------------------------------- helpers -------------------------------------- */
-
-function initials(name?: string) {
-  if (!name) return "??";
-  const parts = name.trim().split(/\s+/);
-  const first = parts[0]?.[0] ?? "";
-  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
-  return (first + last).toUpperCase();
-}
