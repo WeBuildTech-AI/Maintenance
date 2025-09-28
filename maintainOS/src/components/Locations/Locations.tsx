@@ -12,14 +12,21 @@ import {
 } from "../ui/dropdown-menu";
 import { NewLocationForm } from "./NewLocationForm/NewLocationForm";
 import { locationService } from "../../store/locations";
-// import { locationService } from "../../store/locations/locationService"; // update path
 import type { LocationResponse } from "../../store/locations";
+import type { ViewMode } from "../purchase-orders/po.types";
+import { LocationHeaderComponent } from "./LocationsHeader";
 
 export function Locations() {
   const [showForm, setShowForm] = useState(false);
   const [locations, setLocations] = useState<LocationResponse[]>([]);
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [viewMode, setViewMode] = useState<ViewMode>("panel");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSettings, setShowSettings] = useState(false);
+
 
   // Fetch locations on mount
   useEffect(() => {
@@ -40,22 +47,9 @@ export function Locations() {
   }, []);
 
   return (
-    <div className="h-screen flex flex-col p-2 overflow-hidden">
-      {/* Page Header */}
-      <div className="flex justify-between items-center flex-none">
-        <div>
-          <h1>Locations</h1>
-          <p className="text-muted-foreground">
-            Manage facility hierarchy and location structure
-          </p>
-        </div>
-        <div className="gap-2 cursor-pointer bg-orange-600 hover:bg-orange-700">
-          <Button onClick={() => setShowForm(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Location
-          </Button>
-        </div>
-      </div>
+    <div className="flex h-full flex-col">
+      {/* Header */}
+      {LocationHeaderComponent(viewMode, setViewMode, searchQuery, setSearchQuery, setShowForm, setShowSettings)}
 
       {/* Two Cards Layout */}
       <div className="flex gap-2 flex-1 overflow-hidden mt-6 min-h-0">

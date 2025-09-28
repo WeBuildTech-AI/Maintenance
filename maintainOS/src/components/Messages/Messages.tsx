@@ -1,21 +1,24 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
-import { Input } from "./ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
+import { Input } from "../ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { MessageSquare, AtSign, CheckCircle, AlertTriangle } from "lucide-react";
+import { MessagesHeaderComponent } from "./MessagesHeader";
+import { useState } from "react";
+import type { ViewMode } from "../purchase-orders/po.types";
 
 export function Messages() {
+
+  const [viewMode, setViewMode] = useState<ViewMode>("panel");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSettings, setShowSettings] = useState(false);
+  const [isCreatingMessage, setIsCreatingMessage] = useState(false);
+
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1>Messages</h1>
-          <p className="text-muted-foreground">
-            Centralized communication hub for maintenance activities
-          </p>
-        </div>
-      </div>
+    <div className="flex h-full flex-col">
+      {/* Header */}
+      {MessagesHeaderComponent(viewMode, setViewMode, searchQuery, setSearchQuery, setIsCreatingMessage, setShowSettings)}
 
       <Tabs defaultValue="inbox" className="space-y-4">
         <TabsList>

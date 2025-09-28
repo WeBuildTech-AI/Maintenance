@@ -1,6 +1,7 @@
 import { Card, CardContent } from "../ui/card";
-import type { Item } from "./Inventory";
-import { mockLocations } from "./Inventory";
+import { mockLocations, type Item } from "./inventory.types";
+
+
 
 export function PartCard({
   item,

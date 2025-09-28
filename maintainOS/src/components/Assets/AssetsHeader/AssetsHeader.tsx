@@ -1,40 +1,25 @@
-import {
-  AlertTriangle,
-  ChevronDown,
-  LayoutGrid,
-  PanelTop,
-  Plus,
-  Search,
-  Settings,
-  Table,
-} from "lucide-react";
+import type { Dispatch, SetStateAction } from "react";
+import type { ViewMode } from "../../purchase-orders/po.types";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../../ui/dropdown-menu";
 import { Button } from "../../ui/button";
+import { ChevronDown, PanelTop, Plus, Search, Settings, Table } from "lucide-react";
 import { Input } from "../../ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../../ui/dropdown-menu";
-import POFilterBar from "../../purchase-orders/POFilterBar";
+import AssetFilterBar from "./AssetFilterBar";
 
-export function AssetsHeader({
-  searchQuery,
-  setSearchQuery,
-  onNewAsset,
-  viewMode,
-  setViewMode,
-}: {
-  searchQuery: string;
-  setSearchQuery: (v: string) => void;
-  onNewAsset: () => void;
-}) {
-  // const [showSettings, setShowSettings] = useSta(false);
-  return (
-    <div className="p-6 border-border bg-card flex-shrink-0">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-medium">Assets</h1>
+
+export function AssetHeaderComponent(
+  viewMode: ViewMode,
+  setViewMode: Dispatch<SetStateAction<ViewMode>>,
+  searchQuery: string,
+  setSearchQuery: Dispatch<SetStateAction<string>>,
+  setIsCreatingForm: Dispatch<SetStateAction<boolean>>,
+  setShowSettings: Dispatch<SetStateAction<boolean>>
+) {
+  return <header className=" border-border bg-card px-6 py-4">
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <div className="flex item-center gap-6">
+          <h1 className="text-2xl font-semibold">Assets</h1>
           <div className=" flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -63,60 +48,41 @@ export function AssetsHeader({
             </DropdownMenu>
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 w-64"
-            />
-          </div>
-          <Button
-            className="gap-2 bg-orange-600 hover:bg-orange-700"
-            onClick={() => {
-              onNewAsset(); // call the function
-              setViewMode("panel");
-            }}
-          >
-            <Plus className="h-4 w-4" />
-            New Asset
-          </Button>
-        </div>
       </div>
-
-      {/* <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" className="gap-2">
-            <AlertTriangle className="h-4 w-4" />
-            Criticality
-          </Button>
-          <Button variant="outline" size="sm" className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Filter
-          </Button>
+      <div className="flex items-center gap-3">
+        <div className="relative border-orange-600 focus:border-orange-600  ">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-orange-600" />
+          <Input
+            placeholder="Search assets "
+            className="w-[320px] pl-9 bg-white border-orange-600  "
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)} />
         </div>
-        <Button variant="ghost" size="sm" className="gap-2 text-orange-600">
-          <Settings className="h-4 w-4" />
-          My Filters
+        <Button
+          className="gap-2 cursor-pointer bg-orange-600 hover:outline-none"
+          onClick={() => {
+            setIsCreatingForm:(true);
+            setViewMode("panel");
+          } }
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          New Asset
         </Button>
-      </div> */}
-
-      <div className="flex items-center justify-between ">
-        {/* Left: Filter bar */}
-        <POFilterBar />
-
-        {/* Right: Settings button (only for table view) */}
-        {/* {viewMode === "table" && (
-          <button
-            onClick={() => setShowSettings(true)}
-            className="p-2 rounded-md border hover:bg-gray-100 transition"
-          >
-            <Settings className="h-5 w-5 text-orange-600" />
-          </button>
-        )} */}
       </div>
     </div>
-  );
+    <div className="flex items-center mt-4 p-1 h-10 justify-between">
+      {/* Left: Filter bar */}
+      <AssetFilterBar />
+
+      {/* Right: Settings button (only for table view) */}
+      {viewMode === "table" && (
+        <button
+          onClick={() => setShowSettings(true)}
+          className="p-2 rounded-md border hover:bg-gray-100 transition"
+        >
+          <Settings className="h-5 w-5 text-orange-600" />
+        </button>
+      )}
+    </div>
+  </header>;
 }

@@ -10,8 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import type { NewItem } from "./Inventory";
-import { mockVendors, mockLocations } from "./Inventory";
+import { mockLocations, mockVendors, type NewItem } from "./inventory.types";
 
 export function NewPartForm({
   newItem,

@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { MeterDetail } from "./MeterDetail/MeterDetail";
 import { MetersEmptyState } from "./MetersEmptyState";
-import { MetersHeader } from "./MetersHeader";
+import { MetersHeaderComponent } from "./MetersHeader";
 import { MetersList } from "./MetersList/MetersList";
 import { mockMeters } from "./mockData";
 import { NewMeterForm } from "./NewMeterForm/NewMeterForm";
 import { MeterTable } from "./MeterTable";
-import { meterService } from "../../store/meters";
+import { meterService, type MeterResponse } from "../../store/meters";
+import type { ViewMode } from "../purchase-orders/po.types";
+
 
 export function Meters() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -14,8 +16,9 @@ export function Meters() {
   const [selectedType, setSelectedType] = useState("all");
   const [selectedAsset, setSelectedAsset] = useState("all");
   const [selectedLocation, setSelectedLocation] = useState("all");
+  const [showSettings, setShowSettings] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("panel");
-  const [meterData, setMeterData] = useState([]);
+  const [meterData, setMeterData] = useState<MeterResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedMeter, setSelectedMeter] = useState<
     (typeof meterData)[0] | null
@@ -59,19 +62,8 @@ export function Meters() {
 
   return (
     <div className="flex flex-col h-full">
-      <MetersHeader
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        setShowNewMeterForm={setShowNewMeterForm}
-        selectedType={selectedType}
-        setSelectedType={setSelectedType}
-        selectedAsset={selectedAsset}
-        setSelectedAsset={setSelectedAsset}
-        selectedLocation={selectedLocation}
-        setSelectedLocation={setSelectedLocation}
-        viewMode={viewMode}
-        setViewMode={setViewMode}
-      />
+      {/* Header */}
+      {MetersHeaderComponent(viewMode, setViewMode, searchQuery, setSearchQuery, setShowNewMeterForm, setShowSettings)}
 
       {viewMode === "table" ? (
         <>

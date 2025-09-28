@@ -1,13 +1,13 @@
 import { useMemo, useState } from "react";
 
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
+} from "../ui/dropdown-menu";
 import {
   Calendar,
   ChevronDown,
@@ -18,12 +18,13 @@ import {
   Users,
 } from "lucide-react";
 
-import { CalendarView } from "./work-orders/CalendarView";
-import { ListView } from "./work-orders/ListView";
-import { ToDoView } from "./work-orders/ToDoView";
-import { WorkloadView } from "./work-orders/WorkloadView";
-import type { WorkOrder } from "./work-orders/types";
-import { WorkloadViewNew } from "./work-orders/WorkloadViewNew";
+import { CalendarView } from "./CalendarView";
+import { ListView } from "./ListView";
+import { ToDoView } from "./ToDoView";
+import { WorkloadView } from "./WorkloadView";
+import type { WorkOrder } from "./types";
+import { WorkOrderHeaderComponent } from "./WorkOrderHeader";
+import type { ViewMode } from "./types";
 
 const mockWorkOrders: WorkOrder[] = [
   {
@@ -97,16 +98,15 @@ const mockWorkOrders: WorkOrder[] = [
   },
 ];
 
-type ViewType = "todo" | "list" | "calendar" | "workload";
-
 export function WorkOrders() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrder>(
     mockWorkOrders[0]
   );
-  const [currentView, setCurrentView] = useState("todo" satisfies ViewType);
+  const [viewMode, setViewMode] = useState<ViewMode>("todo");
   const [workloadWeekOffset, setWorkloadWeekOffset] = useState(0);
   const [creatingWorkOrder, setCreatingWorkOrder] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const filteredWorkOrders = useMemo(() => {
     if (searchQuery.trim() === "") {
@@ -136,90 +136,12 @@ export function WorkOrders() {
 
   return (
     <div className="flex flex-col h-full bg-background">
-      <div className="p-6 border-b border-border bg-card">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-semibold flex-shrink-0">Work Orders</h1>
 
-          {/* View Switch */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="flex-shrink-0">
-                {currentView === "todo" && (
-                  <>
-                    <LayoutGrid className="h-4 w-4 mr-2" />
-                    To-Do View
-                  </>
-                )}
-                {currentView === "list" && (
-                  <>
-                    <List className="h-4 w-4 mr-2" />
-                    List View
-                  </>
-                )}
-                {currentView === "calendar" && (
-                  <>
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Calendar View
-                  </>
-                )}
-                {currentView === "workload" && (
-                  <>
-                    <Users className="h-4 w-4 mr-2" />
-                    Workload View
-                  </>
-                )}
-                <ChevronDown className="h-4 w-4 ml-2" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={() => setCurrentView("todo")}>
-                <LayoutGrid className="h-4 w-4 mr-2" />
-                To-Do View
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setCurrentView("list")}>
-                <List className="h-4 w-4 mr-2" />
-                List View
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setCurrentView("calendar")}>
-                <Calendar className="h-4 w-4 mr-2" />
-                Calendar View
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setCurrentView("workload")}>
-                <Users className="h-4 w-4 mr-2" />
-                Workload View
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          </div>
-          <div className="flex items-center gap-4">
-          {/* Search */}
-          <div className="relative flex-1 min-w-64 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search work orders..."
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              className="pl-10"
-            />
-          </div>
-
-          {/* Create Work Order */}
-          <Button
-            // className="bg-primary hover:bg-primary/90 flex-shrink-0 ml-auto"
-            className="gap-2 cursor-pointer bg-orange-600 hover:bg-orange-700"
-            onClick={() => setCreatingWorkOrder(true)}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Create Work Order
-          </Button>
-          </div>
-        </div>
-      </div>
+      {WorkOrderHeaderComponent(viewMode, setViewMode, searchQuery, setSearchQuery, setCreatingWorkOrder, setShowSettings)}
 
       {/* Views */}
       <div className="flex-1 overflow-hidden">
-        {currentView === "todo" && (
+        {viewMode === "todo" && (
           <ToDoView
             todoWorkOrders={todoWorkOrders}
             doneWorkOrders={doneWorkOrders}
@@ -229,11 +151,11 @@ export function WorkOrders() {
             onCancelCreate={() => setCreatingWorkOrder(false)}
           />
         )}
-        {currentView === "list" && <ListView workOrders={filteredWorkOrders} />}
-        {currentView === "calendar" && (
+        {viewMode === "list" && <ListView workOrders={filteredWorkOrders} />}
+        {viewMode === "calendar" && (
           <CalendarView workOrders={filteredWorkOrders} />
         )}
-        {currentView === "workload" && (
+        {viewMode === "workload" && (
           <WorkloadView
             workOrders={filteredWorkOrders}
             weekOffset={workloadWeekOffset}

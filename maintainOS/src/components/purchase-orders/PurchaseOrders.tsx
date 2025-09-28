@@ -67,6 +67,7 @@ import { NewPOFormDialog } from "./NewPOFormDialog";
 import { AvatarCheckbox } from "../ui/avatar-checkbox";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import Comment from "../Comment/Comment";
+import { POHeaderComponent } from "./POHeader";
 
 /* ---------------------------- Purchase Orders UI -------------------------- */
 export function PurchaseOrders() {
@@ -84,8 +85,8 @@ export function PurchaseOrders() {
   const [showSettings, setShowSettings] = useState(false);
   const [showCommentBox, setShowCommentBox] = useState(false);
   const [comment, setComment] = useState("");
-  const topRef = useRef<HTMLDivElement | null>(null);
-  const commentsRef = useRef<HTMLDivElement | null>(null);
+  const commentsRef = useRef<HTMLDivElement>(null);
+  const topRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState("details");
 
   const scrollToTop = () => {
@@ -350,78 +351,9 @@ export function PurchaseOrders() {
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* Header */}
-      <div className="ml-3 mt-6 mr-3 bg-card flex-shrink-0">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-medium">Purchase Orders</h1>
-            <div className=" flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-2"
-                  >
-                    {viewMode === "panel" ? (
-                      <PanelTop className="h-4 w-4" />
-                    ) : (
-                      <Table className="h-4 w-4" />
-                    )}
-                    {viewMode === "panel" ? "Panel View" : "Table View"}
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuItem onClick={() => setViewMode("panel")}>
-                    <PanelTop className="mr-2 h-4 w-4" /> Panel View
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setViewMode("table")}>
-                    <Table className="mr-2 h-4 w-4" /> Table View
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search Purchase Orders"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 w-72"
-              />
-            </div>
-            <Button
-              className="gap-2 cursor-pointer bg-orange-600 hover:bg-orange-700"
-              onClick={() => {
-                resetNewPO();
-                setCreatingPO(true);
-              }} // CHANGED
-            >
-              <Plus className="h-4 w-4" />
-              New Purchase Order
-            </Button>
-          </div>
-        </div>
+      {POHeaderComponent(viewMode, setViewMode, searchQuery, setSearchQuery, setCreatingPO, setShowSettings)}
 
-        {/* Filter Bar */}
-        <div className="flex items-center justify-between mb-4">
-          {/* Left: Filter bar */}
-          <POFilterBar />
-
-          {/* Right: Settings button (only for table view) */}
-          {viewMode === "table" && (
-            <button
-              onClick={() => setShowSettings(true)}
-              className="p-2 rounded-md border hover:bg-gray-100 transition"
-            >
-              <Settings className="h-5 w-5 text-orange-600" />
-            </button>
-          )}
-        </div>
-      </div>
-
+      
       {viewMode === "table" ? (
         <div className="flex-1 min-h-0 overflow-auto p-2">
           <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
@@ -733,7 +665,9 @@ export function PurchaseOrders() {
                       </h3>
                       <div className="border rounded-lg p-4">
                         <div className="text-sm text-muted-foreground mb-2">
-                          {comment.length === 0 ? "No Comments Found" : ""}
+                         {
+                          comment.length === 0 ? "No Comments Found" : ""
+                         }
                         </div>
                         {/* <div className="border rounded-md h-24 bg-muted/30" /> */}
                       </div>

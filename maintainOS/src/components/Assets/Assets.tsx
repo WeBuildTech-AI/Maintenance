@@ -2,15 +2,17 @@
 
 import { useState } from "react";
 import { AssetDetail } from "./AssetDetail/AssetDetail";
-import { AssetsHeader } from "./AssetsHeader/AssetsHeader";
 import { AssetsList } from "./AssetsList/AssetsList";
 import { mockAssets } from "./mockAssets";
 import { NewAssetForm } from "./NewAssetForm/NewAssetForm"; // keep your existing form
 import { AssetTable } from "./AssetsTable/AssetTable";
+import { AssetHeaderComponent } from "./AssetsHeader/AssetsHeader";
+import type { ViewMode } from "../purchase-orders/po.types";
 
 export function Assets() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showNewAssetForm, setShowNewAssetForm] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<
     (typeof mockAssets)[0] | null
   >(null);
@@ -24,14 +26,8 @@ export function Assets() {
   });
 
   return (
-    <div className="flex flex-col h-full min-h-0">
-      <AssetsHeader
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        onNewAsset={() => setShowNewAssetForm(true)}
-        viewMode={viewMode}
-        setViewMode={setViewMode}
-      />
+    <div className="flex h-full flex-col">
+      {AssetHeaderComponent(viewMode, setViewMode, searchQuery, setSearchQuery, setShowNewAssetForm, setShowSettings)}
 
       {viewMode === "table" ? (
         <>

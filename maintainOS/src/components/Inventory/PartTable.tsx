@@ -6,7 +6,7 @@ export function PartTable({
   setSelectedId,
 }: {
   inventory: any[];
-    selectedPartId: string;
+  setSelectedId: string;
 }) {
   const renderInitials = (text: string) =>
     text

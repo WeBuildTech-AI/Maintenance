@@ -4,9 +4,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Button } from "../ui/button";
 import { ChevronDown, PanelTop, Plus, Search, Settings, Table } from "lucide-react";
 import { Input } from "../ui/input";
-import VendorFilterBar from "./VendorFilterBar";
+import AutomationsFilterBar from "./AutomationsFilterBar";
 
-export function VendorHeaderComponent(
+export function AutomationsHeaderComponent(
   viewMode: ViewMode,
   setViewMode: Dispatch<SetStateAction<ViewMode>>,
   searchQuery: string,
@@ -18,7 +18,7 @@ export function VendorHeaderComponent(
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div>
         <div className="flex item-center gap-6">
-          <h1 className="text-2xl font-semibold">Vendors</h1>
+          <h1 className="text-2xl font-semibold">Automations</h1>
           <div className=" flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -52,7 +52,7 @@ export function VendorHeaderComponent(
         <div className="relative border-orange-600 focus:border-orange-600  ">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-orange-600" />
           <Input
-            placeholder="Search vendors "
+            placeholder="Search Automations "
             className="w-[320px] pl-9 bg-white border-orange-600  "
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)} />
@@ -65,13 +65,13 @@ export function VendorHeaderComponent(
           } }
         >
           <Plus className="mr-2 h-4 w-4" />
-          New Vendor
+          New Automation
         </Button>
       </div>
     </div>
     <div className="flex items-center mt-4 p-1 h-10 justify-between">
       {/* Left: Filter bar */}
-      <VendorFilterBar />
+       <AutomationsFilterBar/>
 
       {/* Right: Settings button (only for table view) */}
       {viewMode === "table" && (

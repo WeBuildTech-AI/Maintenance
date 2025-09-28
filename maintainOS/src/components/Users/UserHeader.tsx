@@ -1,12 +1,15 @@
 import type { Dispatch, SetStateAction } from "react";
-import type { ViewMode } from "../purchase-orders/po.types";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
-import { ChevronDown, PanelTop, Plus, Search, Settings, Table } from "lucide-react";
-import { Input } from "../ui/input";
-import VendorFilterBar from "./VendorFilterBar";
+import { ChevronDown, Plus, Search, Settings } from "lucide-react";
+import { User } from "lucide-react";
+import { Users } from "lucide-react";
 
-export function VendorHeaderComponent(
+import { Input } from "../ui/input";
+import UserFilterBar from "./UserFilterBar";
+import type { ViewMode } from "./types.users";
+
+export function UserHeaderComponent(
   viewMode: ViewMode,
   setViewMode: Dispatch<SetStateAction<ViewMode>>,
   searchQuery: string,
@@ -18,7 +21,7 @@ export function VendorHeaderComponent(
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div>
         <div className="flex item-center gap-6">
-          <h1 className="text-2xl font-semibold">Vendors</h1>
+          <h1 className="text-2xl font-semibold">Users</h1>
           <div className=" flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -27,21 +30,21 @@ export function VendorHeaderComponent(
                   size="sm"
                   className="flex items-center gap-2"
                 >
-                  {viewMode === "panel" ? (
-                    <PanelTop className="h-4 w-4" />
+                  {viewMode === "users" ? (
+                    <User className="h-4 w-4" />
                   ) : (
-                    <Table className="h-4 w-4" />
+                    <Users className="h-4 w-4" />
                   )}
-                  {viewMode === "panel" ? "Panel View" : "Table View"}
+                  {viewMode === "teams" ? "Teams" : "Users"}
                   <ChevronDown className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={() => setViewMode("panel")}>
-                  <PanelTop className="mr-2 h-4 w-4" /> Panel View
+                <DropdownMenuItem onClick={() => setViewMode("users")}>
+                  <User className="mr-2 h-4 w-4" /> Users
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setViewMode("table")}>
-                  <Table className="mr-2 h-4 w-4" /> Table View
+                <DropdownMenuItem onClick={() => setViewMode("teams")}>
+                  <Users className="mr-2 h-4 w-4" /> Teams
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -52,7 +55,7 @@ export function VendorHeaderComponent(
         <div className="relative border-orange-600 focus:border-orange-600  ">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-orange-600" />
           <Input
-            placeholder="Search vendors "
+            placeholder="Search users "
             className="w-[320px] pl-9 bg-white border-orange-600  "
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)} />
@@ -61,20 +64,20 @@ export function VendorHeaderComponent(
           className="gap-2 cursor-pointer bg-orange-600 hover:outline-none"
           onClick={() => {
             setIsCreatingForm(true);
-            setViewMode("panel");
+            setViewMode("teams");
           } }
         >
           <Plus className="mr-2 h-4 w-4" />
-          New Vendor
+          New User
         </Button>
       </div>
     </div>
     <div className="flex items-center mt-4 p-1 h-10 justify-between">
       {/* Left: Filter bar */}
-      <VendorFilterBar />
+      <UserFilterBar/>
 
       {/* Right: Settings button (only for table view) */}
-      {viewMode === "table" && (
+      {viewMode === "users" && (
         <button
           onClick={() => setShowSettings(true)}
           className="p-2 rounded-md border hover:bg-gray-100 transition"

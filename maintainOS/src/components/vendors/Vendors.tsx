@@ -21,9 +21,8 @@ import { VendorTable } from "./VendorTable";
 import { VendorForm } from "./VendorForm";
 import { mockVendors, type Vendor } from "./vendors.types";
 import POFilterBar from "../purchase-orders/POFilterBar";
-import { HeaderComponent } from "./VendorHeader";
-
-type ViewMode = "panel" | "table";
+import { VendorHeaderComponent } from "./VendorHeader";
+import type { ViewMode } from "../purchase-orders/po.types";
 
 export function Vendors() {
   const [vendors, setVendors] = useState<Vendor[]>(mockVendors);
@@ -60,7 +59,7 @@ export function Vendors() {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      {HeaderComponent(viewMode, setViewMode, searchQuery, setSearchQuery, setIsCreatingVendor, setShowSettings)}
+      {VendorHeaderComponent(viewMode, setViewMode, searchQuery, setSearchQuery, setIsCreatingVendor, setShowSettings)}
 
       {/* Body */}
       <div className="flex flex-1 overflow-hidden bg-muted/20">

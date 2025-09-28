@@ -11,7 +11,7 @@ import { lazyImport } from "./utils/lazyImport";
 // ✅ Lazy imports
 const Login = lazyImport(() => import("./components/Login"), "Login");
 const WorkOrders = lazyImport(
-  () => import("./components/WorkOrders"),
+  () => import("./components/work-orders/WorkOrders"),
   "WorkOrders"
 );
 const PurchaseOrders = lazyImport(
@@ -27,12 +27,12 @@ const Reporting = lazyImport(
   () => import("./components/Reporting"),
   "Reporting"
 );
-const Messages = lazyImport(() => import("./components/Messages"), "Messages");
+const Messages = lazyImport(() => import("./components/Messages/Messages"), "Messages");
 const Categories = lazyImport(
   () => import("./components/Categories"),
   "Categories"
 );
-const Library = lazyImport(() => import("./components/Library"), "Library");
+const Library = lazyImport(() => import("./components/Library/Library"), "Library");
 const Meters = lazyImport(() => import("./components/Meters/Meters"), "Meters");
 const Automations = lazyImport(
   () => import("./components/automations/Automations"),
@@ -44,7 +44,7 @@ const Locations = lazyImport(
   "Locations"
 );
 const TeamUsers = lazyImport(
-  () => import("./components/TeamUsers"),
+  () => import("./components/Users/TeamUsers"),
   "TeamUsers"
 );
 const Vendors = lazyImport(

@@ -1,41 +1,25 @@
-import {
-  Search,
-  Plus,
-  LayoutGrid,
-  ChevronDown,
-  Zap,
-  Building2,
-  PanelTop,
-  Table,
-} from "lucide-react";
+import type { Dispatch, SetStateAction } from "react";
+import type { ViewMode } from "../purchase-orders/po.types";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
+import { ChevronDown, PanelTop, Plus, Search, Settings, Table } from "lucide-react";
 import { Input } from "../ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
-import { useState } from "react";
+import MetersFilterBar from "./MetersFilterBar";
 
-export function MetersHeader({
-  searchQuery,
-  setSearchQuery,
-  setShowNewMeterForm,
-  selectedType,
-  setSelectedType,
-  selectedAsset,
-  setSelectedAsset,
-  selectedLocation,
-  setSelectedLocation,
-  viewMode,
-  setViewMode,
-}: any) {
-  return (
-    <div className="p-6 border-border bg-card">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-medium">Meters</h1>
+
+export function MetersHeaderComponent(
+  viewMode: ViewMode,
+  setViewMode: Dispatch<SetStateAction<ViewMode>>,
+  searchQuery: string,
+  setSearchQuery: Dispatch<SetStateAction<string>>,
+  setIsCreatingForm: Dispatch<SetStateAction<boolean>>,
+  setShowSettings: Dispatch<SetStateAction<boolean>>
+) {
+  return <header className=" border-border bg-card px-6 py-4">
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <div className="flex item-center gap-6">
+          <h1 className="text-2xl font-semibold">Meters</h1>
           <div className=" flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -64,54 +48,41 @@ export function MetersHeader({
             </DropdownMenu>
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Search Meters"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 w-64"
-            />
-          </div>
-          <Button
-            className="gap-2 bg-orange-600 hover:bg-orange-700"
-            onClick={() => setShowNewMeterForm(true)}
-          >
-            <Plus className="h-4 w-4" />
-            New Meter
-          </Button>
-        </div>
       </div>
-
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
+        <div className="relative border-orange-600 focus:border-orange-600  ">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-orange-600" />
+          <Input
+            placeholder="Search meters "
+            className="w-[320px] pl-9 bg-white border-orange-600  "
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)} />
+        </div>
         <Button
-          variant={selectedType === "all" ? "default" : "ghost"}
-          size="sm"
-          onClick={() => setSelectedType("all")}
-          className="gap-2 text-orange-600 bg-white hover:bg-orange-50 cursor-pointer border border-orange-600"
+          className="gap-2 cursor-pointer bg-orange-600 hover:outline-none"
+          onClick={() => {
+            setIsCreatingForm(true);
+            setViewMode("panel");
+          } }
         >
-          <Zap className="h-4 w-4" />
-          Type
-        </Button>
-        <Button
-          variant={selectedAsset === "all" ? "default" : "ghost"}
-          size="sm"
-          onClick={() => setSelectedAsset("all")}
-          className="gap-2 text-orange-600 bg-white hover:bg-orange-50 cursor-pointer border border-orange-600"
-        >
-          <Building2 className="h-4 w-4" />
-          Asset
-        </Button>
-        <Button
-          variant={selectedLocation === "all" ? "default" : "ghost"}
-          size="sm"
-          onClick={() => setSelectedLocation("all")}
-          className="gap-2 text-orange-600  hover:bg-orange-50 cursor-pointer bg-white border border-orange-600"
-        >
-          📍 Location
+          <Plus className="mr-2 h-4 w-4" />
+          New Vendor
         </Button>
       </div>
     </div>
-  );
+    <div className="flex items-center mt-4 p-1 h-10 justify-between">
+      {/* Left: Filter bar */}
+      <MetersFilterBar />
+
+      {/* Right: Settings button (only for table view) */}
+      {viewMode === "table" && (
+        <button
+          onClick={() => setShowSettings(true)}
+          className="p-2 rounded-md border hover:bg-gray-100 transition"
+        >
+          <Settings className="h-5 w-5 text-orange-600" />
+        </button>
+      )}
+    </div>
+  </header>;
 }

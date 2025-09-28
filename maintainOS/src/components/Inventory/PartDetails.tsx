@@ -17,9 +17,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "../ui/dropdown-menu";
-import type { Item, ItemVendor } from "./Inventory";
-import { mockVendors, mockLocations } from "./Inventory";
+
 import { money } from "./utils";
+import { mockLocations, mockVendors, type Item, type ItemVendor } from "./inventory.types";
 
 export function PartDetails({
   item,

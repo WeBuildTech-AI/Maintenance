@@ -6,29 +6,23 @@ import { Badge } from "../ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Pause, Plus } from "lucide-react";
 import { NewAutomationForm } from "./NewAutomationForm";
+import { AutomationsHeaderComponent } from "./AutomationsHeader";
+import type { ViewMode } from "../purchase-orders/po.types";
 
 export function Automations() {
   const [isCreatingRule, setIsCreatingRule] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("panel");
+  const [searchQuery, setSearchQuery] = useState("");
 
   if (isCreatingRule) {
     return <NewAutomationForm onBack={() => setIsCreatingRule(false)} />;
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1>Automations</h1>
-          <p className="text-muted-foreground">
-            No-code rule builder for automated maintenance workflows
-          </p>
-        </div>
-        <Button onClick={() => setIsCreatingRule(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create Rule
-        </Button>
-      </div>
+      {AutomationsHeaderComponent(viewMode, setViewMode, searchQuery, setSearchQuery, setIsCreatingRule, setShowSettings)}
 
       {/* Dashboard Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

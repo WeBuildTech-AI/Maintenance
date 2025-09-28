@@ -1,5 +1,7 @@
 import { type Dispatch,type SetStateAction } from "react";
 
+export type ViewMode = "todo" | "list" | "calendar" | "workload";
+
 export interface WorkOrderAssignee {
   name: string;
   avatar: string;

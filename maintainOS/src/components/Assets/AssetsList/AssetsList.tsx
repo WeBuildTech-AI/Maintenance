@@ -12,6 +12,7 @@ export function AssetsList({
   assets: any[];
   selectedAsset: any | null;
   setSelectedAsset: (a: any) => void;
+  setShowNewAssetForm: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   return (
     <div className="w-112 border ml-2 mr-3 border-border bg-card flex flex-col min-h-0">
