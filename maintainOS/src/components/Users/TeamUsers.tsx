@@ -155,17 +155,18 @@ function TeamsList({ rows }: { rows: TeamRow[] }) {
                     </div>
                   </div>
                 </TableCell>
-                <TableCell className="align-middle">{u.role}</TableCell>
-                <TableCell className="align-middle">
-                  <div className="flex flex-wrap gap-2">
-                    {u.teams.map((t) => (
-                      <Badge key={t} variant="secondary" className="whitespace-nowrap">
-                        {t}
-                      </Badge>
-                    ))}
+                <TableCell>
+                  <div className="flex items-center gap-3">
+                    <Avatar className="size-9">
+                      <AvatarImage src={u.admin.avatarUrl} />
+                      <AvatarFallback>{renderInitials(u.admin.name)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="font-medium">{u.admin.name}</div>
+                    </div>
                   </div>
                 </TableCell>
-                <TableCell className="text-right align-middle">{u.lastVisit}</TableCell>
+                <TableCell className="text-center align-middle text-sm text-muted-background">{u.membersCount} Member</TableCell>
                 <TableCell className="w-0 text-right">
                   <RowMenu kind="user" onAction={(a) => console.log(a, u.id)} />
                 </TableCell>
@@ -178,47 +179,6 @@ function TeamsList({ rows }: { rows: TeamRow[] }) {
   );
 }
 
-
-function TeamsListOld({ rows }: { rows: TeamRow[] }) {
-  return (
-    <Card>
-      <CardContent className="p-0">
-        <div className="divide-y">
-          {rows.map((t) => (
-            <div key={t.id} className="flex items-center justify-between p-4">
-              <div className="flex items-center gap-3">
-                <div className="size-10 rounded-full bg-orange-100 text-orange-700 grid place-items-center font-semibold">
-                  {initials(t.name)}
-                </div>
-                <div>
-                  <div className="font-medium">{t.name}</div>
-                  {t.description && <div className="text-sm text-muted-foreground">{t.description}</div>}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-10">
-                <div className="flex items-center gap-2">
-                  <Avatar className="size-8">
-                    <AvatarImage src={undefined} />
-                    <AvatarFallback>{initials(t.admin.name)}</AvatarFallback>
-                  </Avatar>
-                  <div className="text-sm">{t.admin.name}</div>
-                </div>
-
-                <div className="text-sm text-muted-foreground flex items-center gap-2">
-                  <UsersIcon className="size-4" />
-                  {t.membersCount} {t.membersCount === 1 ? "Member" : "Members"}
-                </div>
-
-                <RowMenu kind="team" onAction={(a) => console.log(a, t.id)} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
 /* --------------------------------------- Row menu --------------------------------------- */
 
