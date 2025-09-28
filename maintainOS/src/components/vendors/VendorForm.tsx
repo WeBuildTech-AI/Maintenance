@@ -1,8 +1,8 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { type FormEvent, useState } from "react";
 import { Upload, Paperclip } from "lucide-react";
-import { Vendor } from "./vendors.types";
+import type { Vendor } from "./vendors.types";
 
 export function VendorForm({
   setVendors,
