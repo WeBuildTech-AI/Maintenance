@@ -4,15 +4,21 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Paperclip, Send, Info, StepBack, ChevronDown } from "lucide-react";
 import { cn } from "../ui/utils";
-import type { ChatWindowProps } from "./messages.types";
+import { dummyUsers, type ChatWindowProps } from "./messages.types";
+import { Combobox, ComboboxLabel, ComboboxOption } from "../ui/combobox";
+import { Field, Label } from "../ui/fieldset";
+import { UserSelect } from "./UserSelect";
 
-export function ChatWindow({ messages }: ChatWindowProps) {
+
+export function ChatWindow({ messages, isCreatingMessage }: ChatWindowProps) {
   const [newMessage, setNewMessage] = useState("");
   const [showInfo, setShowInfo] = useState(false);
   const [showSharedFiles, setShowSharedFiles] = useState(false);
   const [showChatsInCommon, setShowChatsInCommon] = useState(false);
+  const [assignedUser, setAssignedUser] = useState<{ id: string; name: string } | null>(null);
 
 
+  const currentUser = dummyUsers[0];
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   // Auto-scroll to bottom
@@ -30,7 +36,15 @@ export function ChatWindow({ messages }: ChatWindowProps) {
       {!showInfo ? (
         <>
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-border p-4 bg-white">
+          {isCreatingMessage?(
+            <div className="flex items-center justify-between border-b border-border p-4 bg-white w-full">
+                <p className="text-sm text-muted-foreground">To:</p>
+                {/* Functionality to select the user for the new message */}
+                <div className="p-2 flex-1">
+                    <UserSelect users={dummyUsers} currentUser={currentUser} />
+                </div>
+            </div>
+          ):(<div className="flex items-center justify-between border-b border-border p-4 bg-white">
             <div className="flex items-center gap-3">
               <Avatar className="size-15">
                 <AvatarImage src="/avatar.png" />
@@ -45,40 +59,48 @@ export function ChatWindow({ messages }: ChatWindowProps) {
               <Info size={18} />
               View Info
             </Button>
-          </div>
+          </div>)}
+          
 
           {/* Messages list */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-card">
-            {messages.map((msg) => (
-              <div key={msg.id} className="flex gap-3">
-                {/* Avatar */}
-                <Avatar className="w-9 h-9">
-                  <AvatarImage src={msg.avatar} />
-                  <AvatarFallback>
-                    {msg.sender.split(" ").map((n) => n[0]).join("")}
-                  </AvatarFallback>
-                </Avatar>
+          {isCreatingMessage?(
+            <div className="flex-1 p-4 flex items-end justify-start text-sm text-muted-foreground">
+                Go ahead and write the first message!
+            </div>
+          ):(
+                <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-card">
+                    {messages.map((msg) => (
+                        <div key={msg.id} className="flex gap-3">
+                            {/* Avatar */}
+                            <Avatar className="w-9 h-9">
+                            <AvatarImage src={msg.avatar} />
+                            <AvatarFallback>
+                                {msg.sender.split(" ").map((n) => n[0]).join("")}
+                            </AvatarFallback>
+                            </Avatar>
 
-                {/* Message block */}
-                <div>
-                  <div className="flex items-baseline gap-2">
-                    <p className="font-semibold">{msg.sender}</p>
-                    <span className="text-xs text-muted-foreground">
-                      {msg.timestamp}
-                    </span>
-                  </div>
-                  <div className="mt-1 space-y-1">
-                    {msg.text.split("\n").map((line, i) => (
-                      <p key={i} className="text-sm">
-                        {line}
-                      </p>
+                            {/* Message block */}
+                            <div>
+                                <div className="flex items-baseline gap-2">
+                                    <p className="font-semibold">{msg.sender}</p>
+                                    <span className="text-xs text-muted-foreground">
+                                    {msg.timestamp}
+                                    </span>
+                                </div>
+                                <div className="mt-1 space-y-1">
+                                        {msg.text.split("\n").map((line, i) => (
+                                            <p key={i} className="text-sm">
+                                                {line}
+                                            </p>
+                                            ))}
+                                </div>
+                            </div>
+                        </div>
                     ))}
-                  </div>
+                    <div ref={messagesEndRef} />
                 </div>
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
+            )}
+          
 
           {/* Input area */}
           <div className="border-t border-border p-3 flex items-center gap-2 bg-white">

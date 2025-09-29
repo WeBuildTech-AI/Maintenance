@@ -37,7 +37,6 @@ export function MessagesHeaderComponent({
           className="gap-2 cursor-pointer bg-orange-600 hover:outline-none"
           onClick={() => {
             setIsCreatingForm(true);
-            setViewMode("panel");
           } }
         >
           <Plus className="mr-2 h-4 w-4" />

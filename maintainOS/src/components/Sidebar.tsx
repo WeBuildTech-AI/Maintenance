@@ -49,7 +49,7 @@ const menuItems = [
   { to: "/meters", label: "Meters", icon: Gauge },
   { to: "/automations", label: "Automations", icon: Zap },
   { to: "/locations", label: "Locations", icon: MapPin },
-  { to: "/team-users", label: "Team & Users", icon: Users },
+  { to: "/users", label: "Team & Users", icon: Users },
   { to: "/vendors", label: "Vendors", icon: Handshake },
 ];
 

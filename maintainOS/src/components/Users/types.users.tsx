@@ -19,6 +19,11 @@ export type TeamRow = {
   avatarUrl?: string;
 };
 
+export type RowMenuProps = {
+  kind: "user" | "team";
+  onAction?: (action: string) => void; // keep optional if we want navigation only
+};
+
 export const SAMPLE_USERS: UserRow[] = [
   {
     id: "u1",

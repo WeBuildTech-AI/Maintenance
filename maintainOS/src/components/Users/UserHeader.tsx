@@ -8,6 +8,7 @@ import { Users } from "lucide-react";
 import { Input } from "../ui/input";
 import UserFilterBar from "./UserFilterBar";
 import type { ViewMode } from "./types.users";
+import { useNavigate } from "react-router-dom";
 
 export function UserHeaderComponent(
   viewMode: ViewMode,
@@ -17,38 +18,14 @@ export function UserHeaderComponent(
   setIsCreatingForm: Dispatch<SetStateAction<boolean>>,
   setShowSettings: Dispatch<SetStateAction<boolean>>
 ) {
+
+  const navigate = useNavigate();
+
   return <header className=" border-border bg-card px-6 py-4">
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div>
         <div className="flex item-center gap-6">
           <h1 className="text-2xl font-semibold">Users</h1>
-          <div className=" flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-2"
-                >
-                  {viewMode === "users" ? (
-                    <User className="h-4 w-4" />
-                  ) : (
-                    <Users className="h-4 w-4" />
-                  )}
-                  {viewMode === "teams" ? "Teams" : "Users"}
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={() => setViewMode("users")}>
-                  <User className="mr-2 h-4 w-4" /> Users
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setViewMode("teams")}>
-                  <Users className="mr-2 h-4 w-4" /> Teams
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
         </div>
       </div>
       <div className="flex items-center gap-3">
@@ -60,31 +37,30 @@ export function UserHeaderComponent(
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)} />
         </div>
-        <Button
-          className="gap-2 cursor-pointer bg-orange-600 hover:outline-none"
-          onClick={() => {
-            setIsCreatingForm(true);
-            setViewMode("teams");
-          } }
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          New User
-        </Button>
-      </div>
-    </div>
-    <div className="flex items-center mt-4 p-1 h-10 justify-between">
-      {/* Left: Filter bar */}
-      <UserFilterBar/>
+        {viewMode === "users" ?(
+        <div className="flex gap-3">
+          <Button
+            className="gap-2 cursor-pointer bg-orange-600 hover:outline-none"
+            onClick={() => {
+              navigate("/users/invite");
+            }}
+          >
+            Invite Users
+          </Button>
 
-      {/* Right: Settings button (only for table view) */}
-      {viewMode === "users" && (
-        <button
-          onClick={() => setShowSettings(true)}
-          className="p-2 rounded-md border hover:bg-gray-100 transition"
-        >
-          <Settings className="h-5 w-5 text-orange-600" />
-        </button>
+          
+        </div>
+      ):(
+            <Button
+                className="gap-2 cursor-pointer bg-orange-600 hover:outline-none"
+                onClick={() => {
+                navigate("/teams/create");
+                }}
+            >
+                Create Team
+            </Button>
       )}
+      </div>
     </div>
   </header>;
 }

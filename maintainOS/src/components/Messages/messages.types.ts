@@ -11,9 +11,18 @@ export type MessagesHeaderProps = {
 
 export interface ChatWindowProps {
   messages: { id: number; sender: "me" | "them"; text: string ; avatar: string, timestamp: string}[];
+  isCreatingMessage: boolean;
+
 }
 
 // Dummy threads (left panel)
+export const dummyUsers = [
+  { id: "u1", name: "Alice Johnson", email: "alice@example.com" },
+  { id: "u2", name: "Bob Smith", email: "bob@example.com" },
+  { id: "u3", name: "Charlie Brown", email: "charlie@example.com" },
+  { id: "u4", name: "Diana Prince", email: "diana@example.com" },
+];
+
 export const dummyMessages = [
   { id: "m1", name: "Alice Johnson", lastMessage: "Hey, how are you?" },
   { id: "m2", name: "Bob Smith", lastMessage: "Let's meet tomorrow." },

@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Input } from "../ui/input";
+import { Link } from "react-router-dom";
 import {
   MoreHorizontal,
   Plus,
@@ -11,13 +12,17 @@ import {
   LayoutGrid,
   Rows3,
   Users as UsersIcon,
+  User,
+  Users,
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
-import { SAMPLE_TEAMS, SAMPLE_USERS, type TeamRow, type UserRow, type ViewMode } from "./types.users";
+import { SAMPLE_TEAMS, SAMPLE_USERS, type RowMenuProps, type TeamRow, type UserRow, type ViewMode } from "./types.users";
 import { UserHeaderComponent } from "./UserHeader";
 import { renderInitials } from "../utils/renderInitials";
+import { cn } from "../ui/utils";
+import { useNavigate } from "react-router-dom";
 
 
 
@@ -44,12 +49,35 @@ export function TeamUsers() {
       {/* Header */}
       {UserHeaderComponent(viewMode, setViewMode, searchQuery, setSearchQuery, setIsCreatingUser, setShowSettings)}
 
+      <div className="flex border-b">
+      <div className=" flex w-half">
+          <Button
+            onClick={() => setViewMode("users")}
+            className={cn(
+              "w-half mb-2 mt-2 rounded-none bg-white text-black border-b-4 border-transparent",
+              viewMode === "users" && "text-orange-600 border-orange-600"
+            )}
+          >
+            <User /> Users
+          </Button>
+          <Button
+            onClick={() => setViewMode("teams")}
+            className={cn(
+              "w-half mb-2 mt-2 rounded-none bg-white text-black border-b-4 border-transparent",
+              viewMode === "teams" && "text-orange-600 border-orange-600"
+            )}
+          >
+            <Users /> Teams
+          </Button>
+      </div>
+      </div>
+
       {/* Body */}
       <div className="p-6">
         {viewMode === "users" ? (
           <UsersTable rows={filteredUsers} />
         ) : (
-          <TeamsList rows={SAMPLE_TEAMS} />
+          <TeamsTable rows={SAMPLE_TEAMS} />
         )}
       </div>
 
@@ -97,7 +125,13 @@ function UsersTable({ rows }: { rows: UserRow[] }) {
                         </AvatarFallback>
                       </Avatar>
                     <div>
-                      <div className="font-medium">{u.fullName}</div>
+                      <Link
+                        to={`/users/profile/${encodeURIComponent(u.fullName)}`}
+                        className="font-medium hover:underline cursor-pointer"
+                      >
+                        {u.fullName}
+                      </Link>
+                      {/* <div className="font-medium">{u.fullName}</div> */}
                     </div>
                   </div>
                 </TableCell>
@@ -128,7 +162,7 @@ function UsersTable({ rows }: { rows: UserRow[] }) {
 
 /* -------------------------------------- Teams list -------------------------------------- */
 
-function TeamsList({ rows }: { rows: TeamRow[] }) {
+function TeamsTable({ rows }: { rows: TeamRow[] }) {
   return (
     <Card>
       <CardContent className="p-1">
@@ -151,7 +185,13 @@ function TeamsList({ rows }: { rows: TeamRow[] }) {
                       <AvatarFallback>{renderInitials(u.name)}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <div className="font-medium">{u.name}</div>
+                      <Link
+                        to={`/users/teams/${encodeURIComponent(u.name)}`}
+                        className="font-medium hover:underline cursor-pointer"
+                      >
+                        {u.name}
+                      </Link>
+                      {/* <div className="font-medium">{u.name}</div> */}
                     </div>
                   </div>
                 </TableCell>
@@ -162,13 +202,19 @@ function TeamsList({ rows }: { rows: TeamRow[] }) {
                       <AvatarFallback>{renderInitials(u.admin.name)}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <div className="font-medium">{u.admin.name}</div>
+                      <Link
+                        to={`/users/profile/${encodeURIComponent(u.admin.name)}`}
+                        className="font-medium hover:underline cursor-pointer"
+                      >
+                        {u.admin.name}
+                      </Link>
+                      {/* <div className="font-medium">{u.admin.name}</div> */}
                     </div>
                   </div>
                 </TableCell>
                 <TableCell className="text-center align-middle text-sm text-muted-background">{u.membersCount} Member</TableCell>
                 <TableCell className="w-0 text-right">
-                  <RowMenu kind="user" onAction={(a) => console.log(a, u.id)} />
+                  <RowMenu kind="team" onAction={(a) => console.log(a, u.id)} />
                 </TableCell>
               </TableRow>
             ))}
@@ -182,13 +228,25 @@ function TeamsList({ rows }: { rows: TeamRow[] }) {
 
 /* --------------------------------------- Row menu --------------------------------------- */
 
-function RowMenu({
-  kind,
-  onAction,
-}: {
-  kind: "user" | "team";
-  onAction: (action: string) => void;
-}) {
+function RowMenu({ kind, onAction }: RowMenuProps) {
+  const navigate = useNavigate();
+
+  const handleAction = (action: string) => {
+    if (action === "send_message") {
+      navigate("/messages/new"); // 👈 navigate to your messages page
+    }
+
+    if (action === "invite_members" || action === "see_details"
+    ) {
+      navigate("/users/teams"); // 👈 navigate to your invite members page
+    }
+
+    // still call external handler if passed
+    if (onAction) {
+      onAction(action);
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -199,18 +257,17 @@ function RowMenu({
       <DropdownMenuContent align="end" className="w-48">
         {kind === "user" ? (
           <>
-            <DropdownMenuItem onClick={() => onAction("send_message")}>Send Message</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onAction("see_account")}>See Account</DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive" onClick={() => onAction("leave_org")}>
+            <DropdownMenuItem onClick={() => handleAction("send_message")}>Send Message</DropdownMenuItem>
+            <DropdownMenuItem className="text-destructive" onClick={() => handleAction("leave_org")}>
               Leave Organization
             </DropdownMenuItem>
           </>
         ) : (
           <>
-            <DropdownMenuItem onClick={() => onAction("see_details")}>See Details</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onAction("invite_members")}>Invite Members</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onAction("send_message")}>Send Message</DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive" onClick={() => onAction("delete_team")}>
+            <DropdownMenuItem onClick={() => handleAction("see_details")}>See Details</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleAction("invite_members")}>Invite Members</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleAction("send_message")}>Send Message</DropdownMenuItem>
+            <DropdownMenuItem className="text-destructive" onClick={() => handleAction("delete_team")}>
               Delete
             </DropdownMenuItem>
           </>

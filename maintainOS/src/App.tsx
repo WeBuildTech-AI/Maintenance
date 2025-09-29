@@ -7,6 +7,8 @@ import { Toaster } from "./components/ui/sonner";
 import type { AppDispatch, RootState } from "./store";
 import { login, logout } from "./store/userSlice";
 import { lazyImport } from "./utils/lazyImport";
+import InviteUser from "./components/Users/InviteUser/InviteUser";
+import CreateTeamForm from "./components/Users/CreateTeam/CreateTeam";
 
 // ✅ Lazy imports
 const Login = lazyImport(() => import("./components/Login"), "Login");
@@ -51,6 +53,21 @@ const Vendors = lazyImport(
   () => import("./components/vendors/Vendors"),
   "Vendors"
 );
+const ManageTeam = lazyImport(
+  () => import("./components/Users/CreateTeam/ManageTeam"),
+  "ManageTeam"
+);
+
+const ManageUser = lazyImport(
+  () => import("./components/Users/InviteUser/ManageUser"),
+  "ManageUser"
+);
+
+const InviteUser = lazyImport(
+  () => import("./components/Users/InviteUser/InviteUser"),
+  "InviteUser"
+);
+
 
 export default function App() {
   const { user, accessToken } = useSelector((state: RootState) => state.auth);
@@ -91,6 +108,7 @@ export default function App() {
             <Route path="/reporting" element={<Reporting />} />
             <Route path="/assets" element={<Assets />} />
             <Route path="/messages" element={<Messages />} />
+            <Route path="/messages/new" element={<Messages />} />
             <Route path="/categories" element={<Categories />} />
             <Route path="/inventory" element={<Inventory />} />
             <Route path="/library" element={<Library />} />
@@ -98,7 +116,12 @@ export default function App() {
             <Route path="/meters" element={<Meters />} />
             <Route path="/automations" element={<Automations />} />
             <Route path="/locations" element={<Locations />} />
-            <Route path="/team-users" element={<TeamUsers />} />
+            <Route path="/users" element={<TeamUsers />} />
+            <Route path="/users/invite" element={<InviteUser />} />
+            <Route path="/users/teams/:teamId" element={<ManageTeam />} />
+            <Route path="/users/teams" element={<ManageTeam />} />
+            <Route path="/teams/create" element={<CreateTeamForm />} />
+            <Route path="/users/profile/:profileId" element={<ManageUser />} />
           </Routes>
         </Suspense>
       </MainLayout>

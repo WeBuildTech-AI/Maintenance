@@ -7,9 +7,13 @@ import { MessagesHeaderComponent } from "./MessagesHeader";
 import type { ViewMode } from "../purchase-orders/po.types";
 import { dummyConversation, dummyMessages, dummyThreads } from "./messages.types";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { useLocation, useNavigate } from "react-router-dom";
 
 
 export function Messages() {
+
+  const navigate = useNavigate();
+
   const [viewMode, setViewMode] = useState<ViewMode>("panel");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSettings, setShowSettings] = useState(false);
@@ -17,6 +21,14 @@ export function Messages() {
 
   const [active, setActive] = useState<"messages" | "threads">("messages");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const location = useLocation();
+  useEffect(() => {
+  if (location.pathname.endsWith("/messages/new")) {
+    setIsCreatingMessage(true);
+  }
+}, [location]);
+
 
   const items = active === "messages" ? dummyMessages : dummyThreads;
 
@@ -73,7 +85,11 @@ export function Messages() {
               "flex items-center gap-3 p-3 border-b",
                 selectedId === item.id && "bg-orange-50"
                 )}
-                onClick={() => setSelectedId(item.id)}
+                onClick={() => {
+                  setSelectedId(item.id);
+                  setIsCreatingMessage(false);
+                  navigate("/messages");
+                }}
                 >
                 <Avatar className="size-15">
                   <AvatarImage src="/avatar.png"/>
@@ -93,7 +109,7 @@ export function Messages() {
         {/* Chat Window */}
         <div className="flex-1 border border-border bg-card min-h-0">
           {selectedId ? (
-            <ChatWindow messages={dummyConversation[selectedId] || []} />
+            <ChatWindow messages={dummyConversation[selectedId] || []} isCreatingMessage={isCreatingMessage} />
           ) : (
             <div className="h-full flex items-center justify-center text-muted-foreground">
               Select a conversation
