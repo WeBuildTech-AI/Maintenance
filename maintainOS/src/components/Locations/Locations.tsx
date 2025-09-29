@@ -15,18 +15,18 @@ import { locationService } from "../../store/locations";
 import type { LocationResponse } from "../../store/locations";
 import type { ViewMode } from "../purchase-orders/po.types";
 import { LocationHeaderComponent } from "./LocationsHeader";
+import Loader from "../Loader/Loader";
 
 export function Locations() {
   const [showForm, setShowForm] = useState(false);
   const [locations, setLocations] = useState<LocationResponse[]>([]);
-  
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [viewMode, setViewMode] = useState<ViewMode>("panel");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSettings, setShowSettings] = useState(false);
-
 
   // Fetch locations on mount
   useEffect(() => {
@@ -49,7 +49,14 @@ export function Locations() {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      {LocationHeaderComponent(viewMode, setViewMode, searchQuery, setSearchQuery, setShowForm, setShowSettings)}
+      {LocationHeaderComponent(
+        viewMode,
+        setViewMode,
+        searchQuery,
+        setSearchQuery,
+        setShowForm,
+        setShowSettings
+      )}
 
       {/* Two Cards Layout */}
       <div className="flex gap-2 flex-1 overflow-hidden mt-6 min-h-0">
@@ -86,9 +93,7 @@ export function Locations() {
             <div className="">
               {loading ? (
                 // Loader first
-                <div className="flex justify-center items-center py-12">
-                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-                </div>
+                <Loader />
               ) : locations && locations?.length > 0 ? (
                 // Locations list
                 locations?.map((items) => (
@@ -124,7 +129,6 @@ export function Locations() {
                   </Button>
                 </div>
               )}
-
             </div>
           </div>
         </div>

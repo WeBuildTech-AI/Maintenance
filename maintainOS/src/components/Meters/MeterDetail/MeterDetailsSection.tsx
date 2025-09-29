@@ -1,4 +1,5 @@
 import { Tag, Clock, Calendar, Play } from "lucide-react";
+import { formatDate } from "../../utils/Date";
 
 export function MeterDetailsSection({ selectedMeter }: any) {
   return (
@@ -19,7 +20,9 @@ export function MeterDetailsSection({ selectedMeter }: any) {
           <h3 className="text-sm font-medium text-muted-foreground mb-2">Last Reading</h3>
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-muted-foreground" />
-            <span className="text-base">{selectedMeter.lastReading}</span>
+           <span className="text-base">
+              {`${selectedMeter.readingFrequency.time} ${selectedMeter.readingFrequency.iterval}`}
+            </span>
           </div>
         </div>
 
@@ -28,7 +31,7 @@ export function MeterDetailsSection({ selectedMeter }: any) {
           <h3 className="text-sm font-medium text-muted-foreground mb-2">Last Reading On</h3>
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span className="text-base">19/09/2025, 13:28</span>
+            <span className="text-base">{formatDate(selectedMeter.updatedAt)}</span>
           </div>
         </div>
 

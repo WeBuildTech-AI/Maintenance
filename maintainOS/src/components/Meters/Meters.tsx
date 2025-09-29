@@ -8,7 +8,8 @@ import { NewMeterForm } from "./NewMeterForm/NewMeterForm";
 import { MeterTable } from "./MeterTable";
 import { meterService, type MeterResponse } from "../../store/meters";
 import type { ViewMode } from "../purchase-orders/po.types";
-
+import { locationService } from "../../store/locations";
+import { assetService } from "../../store/assets";
 
 export function Meters() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -20,6 +21,8 @@ export function Meters() {
   const [viewMode, setViewMode] = useState<ViewMode>("panel");
   const [meterData, setMeterData] = useState<MeterResponse[]>([]);
   const [loading, setLoading] = useState(false);
+  const [getLocationData, setGetLocationData] = useState([]);
+  const [getAssetData, setGetAssestData] = useState([]);
   const [selectedMeter, setSelectedMeter] = useState<
     (typeof meterData)[0] | null
   >(null);
@@ -41,21 +44,63 @@ export function Meters() {
     fetchMeters();
   }, []);
 
-  const filteredMeters = mockMeters.filter((meter) => {
-    const matchesSearch =
-      meter.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      meter.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      meter.location.toLowerCase().includes(searchQuery.toLowerCase());
+  useEffect(() => {
+    const fetchLocations = async () => {
+      setLoading(true);
+      try {
+        const res = await locationService.fetchLocations(10, 1, 0);
+        setGetLocationData(res);
+        console.log(res);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    fetchLocations();
+  }, []);
+
+  useEffect(() => {
+    const fetchAssets = async () => {
+      setLoading(true);
+      try {
+        const res = await assetService.fetchAssets(10, 1, 0);
+        setGetAssestData(res);
+        console.log(res);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAssets();
+  }, []);
+
+  const filteredMeters = meterData.filter((meter) => {
+    const query = searchQuery.toLowerCase();
+
+    // Search by name, meterType, or locationId (if needed)
+    const matchesSearch =
+      meter.name.toLowerCase().includes(query) ||
+      meter.meterType.toLowerCase().includes(query) ||
+      (meter.locationId?.toLowerCase().includes(query) ?? false);
+
+    // Filter by type
     const matchesType =
       selectedType === "all" ||
-      meter.type.toLowerCase() === selectedType.toLowerCase();
+      meter.meterType.toLowerCase() === selectedType.toLowerCase();
+
+    // Filter by asset
     const matchesAsset =
       selectedAsset === "all" ||
-      meter.asset.toLowerCase() === selectedAsset.toLowerCase();
+      meter.assetId?.toLowerCase() === selectedAsset.toLowerCase();
+
+    // Filter by location
     const matchesLocation =
       selectedLocation === "all" ||
-      meter.location.toLowerCase() === selectedLocation.toLowerCase();
+      meter.locationId?.toLowerCase() === selectedLocation.toLowerCase();
 
     return matchesSearch && matchesType && matchesAsset && matchesLocation;
   });
@@ -63,7 +108,14 @@ export function Meters() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      {MetersHeaderComponent(viewMode, setViewMode, searchQuery, setSearchQuery, setShowNewMeterForm, setShowSettings)}
+      {MetersHeaderComponent(
+        viewMode,
+        setViewMode,
+        searchQuery,
+        setSearchQuery,
+        setShowNewMeterForm,
+        setShowSettings
+      )}
 
       {viewMode === "table" ? (
         <>
@@ -77,6 +129,9 @@ export function Meters() {
               filteredMeters={meterData}
               selectedMeter={selectedMeter}
               setSelectedMeter={setSelectedMeter}
+              loading={loading}
+              getLocationData={getLocationData}
+              getAssetData={getAssetData}
             />
 
             <div className="flex-1 bg-card">
@@ -88,9 +143,15 @@ export function Meters() {
                     console.log("Meter created!");
                     setShowNewMeterForm(false);
                   }}
+                  getLocationData={getLocationData}
+                  getAssetData={getAssetData}
                 />
               ) : selectedMeter ? (
-                <MeterDetail selectedMeter={selectedMeter} />
+                <MeterDetail
+                  selectedMeter={selectedMeter}
+                  getLocationData={getLocationData}
+                  getAssetData={getAssetData}
+                />
               ) : (
                 <MetersEmptyState />
               )}

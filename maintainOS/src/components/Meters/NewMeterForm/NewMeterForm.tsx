@@ -10,19 +10,28 @@ import { locationService } from "../../../store/locations";
 
 // import { locationService } from "../../store/locations/locationService"; // update path
 import type { LocationResponse } from "../../../store/locations";
+import { assetService } from "../../../store/assets";
+import Loader from "../../Loader/Loader";
 
 interface NewMeterFormProps {
   onCreate: (data: any) => void;
   onCancel: (data: any) => void;
+  getLocationData: [];
+  getAssetData: [];
 }
 
-export function NewMeterForm({ onCreate, onCancel }: NewMeterFormProps) {
+export function NewMeterForm({
+  onCreate,
+  onCancel,
+  getLocationData,
+  getAssetData,
+}: NewMeterFormProps) {
   const [meterType, setMeterType] = useState<"manual" | "automated">("manual");
   const [meterName, setMeterName] = useState("");
   const [description, setDescription] = useState("");
   const [measurementUnit, setMeasurementUnit] = useState("");
-  const [asset, setAsset] = useState("none");
-  const [location, setLocation] = useState("none");
+  const [asset, setAsset] = useState("");
+  const [location, setLocation] = useState("");
   const [readingFrequencyValue, setReadingFrequencyValue] = useState("");
   const [readingFrequencyUnit, setReadingFrequencyUnit] = useState("none");
   const [files, setFiles] = useState<File[]>([]);
@@ -30,8 +39,8 @@ export function NewMeterForm({ onCreate, onCancel }: NewMeterFormProps) {
   const [error, setError] = useState("");
   const user = useSelector((state: RootState) => state.auth.user);
   const dispatch = useDispatch<AppDispatch>();
-  const [loading, setLoading] = useState(false);
-  const [loadingData, setLoadingData] = useState([]);
+  const [postMeterDataloading, setPostMeterDataLoading] = useState(false);
+
   const combinedValue = `${readingFrequencyValue} ${readingFrequencyUnit}`;
 
   // Split images/docs
@@ -70,51 +79,57 @@ export function NewMeterForm({ onCreate, onCancel }: NewMeterFormProps) {
   };
 
   const handleCreateMeter = () => {
-    if (!meterName.trim()) {
-      setError("You need to provide a Meter Name");
-      return;
+    try {
+      if (!meterName.trim()) {
+        setError("You need to provide a Meter Name");
+        return;
+      }
+      if (!measurementUnit.trim()) {
+        setError("You need to select a Measurement Unit");
+        return;
+      }
+      setError("");
+      setPostMeterDataLoading(true);
+      const newMeter = {
+        organizationId: user.organizationId,
+        name: meterName,
+        meterType: meterType,
+        description: description,
+        unit: measurementUnit,
+        assetId: asset,
+        locationId: location,
+        readingFrequency: {
+          iterval: readingFrequencyUnit,
+          time: readingFrequencyValue,
+        },
+        photos: [],
+      };
+
+      console.log(newMeter, "New Meter");
+      // Dispatch to Redux thunk
+      dispatch(createMeter(newMeter))
+        .unwrap()
+        .then(() => {
+          console.log("Meter created successfully!");
+          setMeterName("");
+          setDescription("");
+          setAsset("");
+          setLocation("");
+          setMeasurementUnit("none");
+          setReadingFrequencyUnit("none");
+          setReadingFrequencyValue("");
+
+          // maybe show toast or navigate
+        })
+        .catch((err) => {
+          console.error("Meter creation failed:", err);
+          setError(err);
+        });
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setPostMeterDataLoading(false);
     }
-    if (!measurementUnit.trim()) {
-      setError("You need to select a Measurement Unit");
-      return;
-    }
-    setError("");
-
-    const newMeter = {
-      organizationId: user.organizationId,
-      name: meterName,
-      meterType: meterType,
-      description: description,
-      unit: measurementUnit,
-      // assetId: asset,
-      locationId: location,
-      readingFrequency: {
-        iterval: readingFrequencyUnit,
-        time: readingFrequencyValue,
-      },
-      photos: [],
-    };
-
-    console.log(newMeter, "New Meter");
-    // Dispatch to Redux thunk
-    dispatch(createMeter(newMeter))
-      .unwrap()
-      .then(() => {
-        console.log("Meter created successfully!");
-        setMeterName("");
-        setDescription("");
-        setAsset("none");
-        setLocation("none");
-        setMeasurementUnit("none");
-        setReadingFrequencyUnit("none");
-        setReadingFrequencyValue("");
-
-        // maybe show toast or navigate
-      })
-      .catch((err) => {
-        console.error("Meter creation failed:", err);
-        setError(err);
-      });
   };
 
   const handleReset = () => {
@@ -126,23 +141,6 @@ export function NewMeterForm({ onCreate, onCancel }: NewMeterFormProps) {
     setReadingFrequencyUnit("none");
     setReadingFrequencyValue("");
   };
-
-  // useEffect(() => {
-  //   const fetchLocations = async () => {
-  //     setLoading(true);
-  //     try {
-  //       const res = await locationService.fetchLocations(10, 1, 0);
-  //       setLoadingData(res);
-  //       console.log(res);
-  //     } catch (err) {
-  //       console.error(err);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   fetchLocations();
-  // }, []);
 
   return (
     <div className="flex h-full mr-2 flex-col overflow-hidden border">
@@ -244,7 +242,7 @@ export function NewMeterForm({ onCreate, onCancel }: NewMeterFormProps) {
         </div>
 
         {/* Asset & Location */}
-        <div className="flex gap-6 px-6 pb-6 pt-6 ">
+        <div className="flex gap-6 px-6 pb-6 pt-6">
           {/* Asset */}
           <div className="flex-1">
             <label
@@ -261,7 +259,7 @@ export function NewMeterForm({ onCreate, onCancel }: NewMeterFormProps) {
 
             <div style={{ position: "relative", width: "100%" }}>
               <select
-                defaultValue="none"
+                value={asset || ""} // controlled value
                 onChange={(e) => setAsset(e.target.value)}
                 style={{
                   height: "40px",
@@ -276,10 +274,14 @@ export function NewMeterForm({ onCreate, onCancel }: NewMeterFormProps) {
                   cursor: "pointer",
                 }}
               >
-                <option value="none">Start typing...</option>
-                <option value="assetA">Asset A</option>
-                <option value="assetB">Asset B</option>
-                <option value="assetC">Asset C</option>
+                {/* Show "start typing" only if no asset is selected */}
+                {!asset && <option value="">start typing</option>}
+
+                {getAssetData?.map((items) => (
+                  <option key={items.id} value={items.id}>
+                    {items.name}
+                  </option>
+                ))}
               </select>
 
               {/* Chevron Icon */}
@@ -323,7 +325,7 @@ export function NewMeterForm({ onCreate, onCancel }: NewMeterFormProps) {
 
             <div style={{ position: "relative", width: "100%" }}>
               <select
-                defaultValue="none"
+                value={location || ""} // controlled value
                 onChange={(e) => setLocation(e.target.value)}
                 style={{
                   height: "40px",
@@ -338,20 +340,13 @@ export function NewMeterForm({ onCreate, onCancel }: NewMeterFormProps) {
                   cursor: "pointer",
                 }}
               >
-                <option value="none">start typing</option>
-                {loadingData?.map((items) => {
-                  return (
-                    <>
-                      <option value={items.id}>{items.name}</option>
-                    </>
-                  );
-                })}
-                {/* <option value="none">Start typing...</option> */}
-                {/* <option value="all">All Locations</option>
-                <option value="buildings">Buildings</option>
-                <option value="floors">Floors</option>
-                <option value="rooms">Rooms</option>
-                <option value="areas">Areas</option> */}
+                {/* Show "start typing" only if no location is selected */}
+                {!location && <option value="">start typing</option>}
+                {getLocationData?.map((items) => (
+                  <option key={items.id} value={items.id}>
+                    {items.name}
+                  </option>
+                ))}
               </select>
 
               {/* Chevron Icon */}
@@ -588,7 +583,7 @@ export function NewMeterForm({ onCreate, onCancel }: NewMeterFormProps) {
           }}
           className="h-10 rounded-md bg-orange-600 text-sm font-medium text-white shadow hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          Create
+          {postMeterDataloading ? "Loading...." : "Create"}
         </button>
       </div>
     </div>

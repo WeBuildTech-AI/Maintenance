@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AssetDetail } from "./AssetDetail/AssetDetail";
 import { AssetsList } from "./AssetsList/AssetsList";
 import { mockAssets } from "./mockAssets";
@@ -8,6 +8,7 @@ import { NewAssetForm } from "./NewAssetForm/NewAssetForm"; // keep your existin
 import { AssetTable } from "./AssetsTable/AssetTable";
 import { AssetHeaderComponent } from "./AssetsHeader/AssetsHeader";
 import type { ViewMode } from "../purchase-orders/po.types";
+import { assetService } from "../../store/assets";
 
 export function Assets() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -17,11 +18,30 @@ export function Assets() {
     (typeof mockAssets)[0] | null
   >(null);
   const [viewMode, setViewMode] = useState<ViewMode>("panel");
-  const filteredAssets = mockAssets.filter((asset) => {
+  const [loading, setLoading] = useState(false);
+  const [assetData, setAssetData] = useState([]);
+  useEffect(() => {
+    const fetchMeters = async () => {
+      setLoading(true);
+      try {
+        const res = await assetService.fetchAssets(10, 1, 0);
+        setAssetData(res);
+        console.log(res);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMeters();
+  }, []);
+
+  const filteredAssets = assetData.filter((asset) => {
     const q = searchQuery.toLowerCase();
     return (
       asset.name.toLowerCase().includes(q) ||
-      asset.location.toLowerCase().includes(q)
+      (asset.locationId?.toLowerCase?.().includes(q) ?? false)
     );
   });
 
@@ -48,6 +68,7 @@ export function Assets() {
               selectedAsset={selectedAsset}
               setSelectedAsset={setSelectedAsset}
               setShowNewAssetForm={setShowNewAssetForm}
+              loading={loading}
             />
 
             <div className="flex-1 bg-card min-h-0 flex flex-col">

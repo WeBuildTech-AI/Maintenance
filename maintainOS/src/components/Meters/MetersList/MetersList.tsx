@@ -1,10 +1,22 @@
 import { ChevronDown } from "lucide-react";
 import { Button } from "../../ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../../ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../../ui/dropdown-menu";
 import { MeterCard } from "./MeterCard";
+import Loader from "../../Loader/Loader";
 
-export function MetersList({ filteredMeters, selectedMeter, setSelectedMeter }: any) {
-
+export function MetersList({
+  filteredMeters,
+  selectedMeter,
+  setSelectedMeter,
+  loading,
+  getAssetData,
+  getLocationData,
+}: any) {
   const meters = Array.isArray(filteredMeters) ? filteredMeters : [];
 
   return (
@@ -14,7 +26,11 @@ export function MetersList({ filteredMeters, selectedMeter, setSelectedMeter }: 
           <span className="text-sm text-muted-foreground">Sort By:</span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="text-primary p-2 h-auto">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-primary p-2 h-auto"
+              >
                 Name: Ascending Order
                 <ChevronDown className="h-3 w-3 ml-1" />
               </Button>
@@ -30,23 +46,38 @@ export function MetersList({ filteredMeters, selectedMeter, setSelectedMeter }: 
       </div>
 
       <div className="flex-1 overflow-auto">
-        <div className="">
-          {meters?.map((meter: any) => (
-            <MeterCard key={meter.id} meter={meter} selectedMeter={selectedMeter} setSelectedMeter={setSelectedMeter} />
-          ))}
+        {loading ? (
+          <>
+            <Loader />
+          </>
+        ) : (
+          <>
+            <div className="">
+              {meters?.map((meter: any) => (
+                <MeterCard
+                  key={meter.id}
+                  meter={meter}
+                  selectedMeter={selectedMeter}
+                  setSelectedMeter={setSelectedMeter}
+                  getAssetData={getAssetData}
+                  getLocationData={getLocationData}
+                />
+              ))}
 
-          {meters.length === 0 && (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed"></div>
-              </div>
-              <p className="text-muted-foreground mb-2">No meters found</p>
-              <Button variant="link" className="text-primary p-0">
-                Create the first meter
-              </Button>
+              {meters.length === 0 && (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
+                    <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed"></div>
+                  </div>
+                  <p className="text-muted-foreground mb-2">No meters found</p>
+                  <Button variant="link" className="text-primary p-0">
+                    Create the first meter
+                  </Button>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
     </div>
   );

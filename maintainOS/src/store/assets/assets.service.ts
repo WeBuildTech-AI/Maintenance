@@ -9,8 +9,15 @@ import type {
 const API_URL = import.meta.env.VITE_API_URL;
 
 export const assetService = {
-  fetchAssets: async (): Promise<AssetResponse[]> => {
-    const res = await axios.get(`${API_URL}/assets`);
+  fetchAssets: async (
+    limit: number,
+    page: number,
+    offset: number
+  ): Promise<AssetResponse[]> => {
+    const res = await axios.get(`${API_URL}/assets`, {
+      params: { limit, page, offset },
+      headers: { Accept: "application/json" },
+    });
     return res.data;
   },
 

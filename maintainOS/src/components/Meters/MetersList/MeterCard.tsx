@@ -2,7 +2,7 @@ import { AlertTriangle, Building2 } from "lucide-react";
 import { Badge } from "../../ui/badge";
 import { Card, CardContent } from "../../ui/card";
 
-export function MeterCard({ meter, selectedMeter, setSelectedMeter }: any) {
+export function MeterCard({ meter, selectedMeter, setSelectedMeter ,  }: any) {
   return (
     <Card
       key={meter.id}
@@ -29,7 +29,7 @@ export function MeterCard({ meter, selectedMeter, setSelectedMeter }: any) {
             <div className="w-4 h-4 bg-orange-100 rounded flex items-center justify-center">
               <Building2 className="h-2 w-2 text-orange-600" />
             </div>
-            <span className="text-sm">{meter.meterType}</span>
+            <span className="text-sm capitalize">{meter.meterType}</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -43,7 +43,7 @@ export function MeterCard({ meter, selectedMeter, setSelectedMeter }: any) {
 
           <div className="mt-2">
             <span className="text-sm text-muted-foreground">
-              Last Reading: {meter.lastReading}
+              Last Reading: {`${meter.readingFrequency.time} ${meter.readingFrequency.iterval}`}
             </span>
           </div>
         </div>

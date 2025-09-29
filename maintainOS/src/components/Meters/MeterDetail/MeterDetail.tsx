@@ -11,7 +11,7 @@ export function MeterDetail({ selectedMeter }: any) {
       {/* Header */}
       <div className="p-6 border-border">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-xl font-medium">{selectedMeter.name}</h1>
+          <h1 className="text-xl font-medium capitalize">{selectedMeter.name}</h1>
           <div className="flex items-center gap-2">
             <Button className="gap-2 bg-orange-600 hover:bg-orange-700">
               <Plus className="h-4 w-4" />
