@@ -27,7 +27,14 @@ export function Assets() {
 
   return (
     <div className="flex h-full flex-col">
-      {AssetHeaderComponent(viewMode, setViewMode, searchQuery, setSearchQuery, setShowNewAssetForm, setShowSettings)}
+      {AssetHeaderComponent(
+        viewMode,
+        setViewMode,
+        searchQuery,
+        setSearchQuery,
+        setShowNewAssetForm,
+        setShowSettings
+      )}
 
       {viewMode === "table" ? (
         <>
@@ -45,13 +52,15 @@ export function Assets() {
 
             <div className="flex-1 bg-card min-h-0 flex flex-col">
               {showNewAssetForm ? (
-                <NewAssetForm
-                  onCreate={() => {
-                    // handle asset creation logic
-                    setShowNewAssetForm(false);
-                  }}
-                  onCancel={() => setShowNewAssetForm(false)}
-                />
+                <>
+                  <NewAssetForm
+                    onCreate={() => {
+                      // handle asset creation logic
+                      setShowNewAssetForm(false);
+                    }}
+                    onCancel={() => setShowNewAssetForm(false)}
+                  />
+                </>
               ) : selectedAsset ? (
                 <AssetDetail asset={selectedAsset} />
               ) : (

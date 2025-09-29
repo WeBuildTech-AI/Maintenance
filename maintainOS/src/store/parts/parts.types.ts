@@ -21,6 +21,10 @@ export interface CreatePartData {
   name: string;
   description?: string;
   unitCost?: number;
+  unitInStock:number;
+  minInStock:number;
+  area:string;
+  locationId:string;
   qrCode?: string;
   photos?: string[];
   partsType?: string[];

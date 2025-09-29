@@ -89,9 +89,9 @@ export function Locations() {
                 <div className="flex justify-center items-center py-12">
                   <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
                 </div>
-              ) : locations && locations.length > 0 ? (
+              ) : locations && locations?.length > 0 ? (
                 // Locations list
-                locations.map((items) => (
+                locations?.map((items) => (
                   <Card key={items.id}>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-3">

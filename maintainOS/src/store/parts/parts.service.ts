@@ -9,8 +9,15 @@ import type {
 const API_URL = import.meta.env.VITE_API_URL;
 
 export const partService = {
-  fetchParts: async (): Promise<PartResponse[]> => {
-    const res = await axios.get(`${API_URL}/parts`);
+  fetchParts: async (
+    limit: number,
+    page: number,
+    offset: number
+  ): Promise<PartResponse[]> => {
+    const res = await axios.get(`${API_URL}/parts`, {
+      params: { limit, page, offset },
+      headers: { Accept: "application/json" },
+    });
     return res.data;
   },
 

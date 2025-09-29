@@ -1,64 +1,56 @@
-import { useState, useEffect, useRef } from "react";
 import { ChevronDown, Search } from "lucide-react";
+import { RefObject } from "react";
 import { useNavigate } from "react-router-dom";
 
-export function VendorsDropdown() {
-  const [vendorOpen, setVendorOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const [vendors] = useState<{ name: string }[]>([{ name: "Mfd" }, { name: "Paam" }]);
-  const [selectedVendor, setSelectedVendor] = useState<{ name: string } | null>(null);
-  const navigate = useNavigate();
+interface LocationDropdownProps {
+  vendorOpen: boolean;
+  setVendorOpen: (open: boolean) => void;
+  vendorRef: RefObject<HTMLDivElement>;
+}
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setVendorOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+export function VendorsDropdown({
+  vendorOpen,
+  setVendorOpen,
+  vendorRef,
+}: LocationDropdownProps) {
+  const navigate = useNavigate(); // ✅ Use React Router's hook
 
   return (
-    <div className="mt-4 relative z-50" ref={dropdownRef}>
-      <h3 className="mb-4 text-base font-medium text-gray-900">Vendors</h3>
+    <div className="relative" ref={vendorRef}>
+      <h3 className="mb-2 text-base font-medium text-gray-900">Vendor</h3>
+
       <div
         className="flex items-center gap-3 rounded-md border border-gray-300 bg-white px-4 py-3 h-12 cursor-pointer"
-        onClick={() => setVendorOpen((prev) => !prev)}
+        onClick={() => setVendorOpen(!vendorOpen)}
       >
         <Search className="h-4 w-4 text-gray-400" />
-        <span className="flex-1 text-gray-400">
-          {selectedVendor ? selectedVendor.name : "Start typing..."}
-        </span>
+        <span className="flex-1 text-gray-600">Select...</span>
         <ChevronDown className="h-5 w-5 text-gray-400" />
       </div>
 
       {vendorOpen && (
         <div className="absolute left-0 top-full mt-1 w-full rounded-md border bg-white shadow-lg z-50">
-          {vendors.map((vendor, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-3 px-4 py-2 text-sm cursor-pointer hover:bg-gray-50"
-              onClick={() => {
-                setSelectedVendor(vendor);
-                setVendorOpen(false);
-              }}
-            >
-              <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center font-bold">
-                {vendor.name.charAt(0).toUpperCase()}
-              </div>
-              <span>{vendor.name}</span>
-              <span className="ml-auto text-gray-500 text-sm">No contacts</span>
-            </div>
-          ))}
+          {/* CTA */}
           <div
-            onClick={() => navigate("/vendors")}
-            className="px-4 py-2 text-sm text-blue-600 bg-blue-50 cursor-pointer hover:bg-blue-100"
+            onClick={() => navigate("/vendor")} // ✅ Navigate works now
+            className="relative flex items-center px-4 py-2 rounded-md text-sm text-blue-600 bg-blue-50 cursor-pointer hover:bg-blue-100"
           >
-            + Create New Vendor
+            <div className="absolute left-0 top-0 h-full w-1 bg-blue-600 rounded-l-md" />
+            <span className="ml-3">Create Vendor</span>
           </div>
         </div>
       )}
     </div>
   );
 }
+
+// /* <div className="mt-4">
+//    <h3 className="mb-4 text-base font-medium text-gray-900">Location</h3>
+//    <div className="relative">
+//      <div className="flex items-center gap-3 rounded-md border border-gray-300 bg-white px-4 py-3 h-12">
+//        <MapPin className="h-5 w-5 text-blue-500" />
+//        <span className="flex-1 text-gray-900">General</span>
+//        <ChevronDown className="h-5 w-5 text-gray-400" />
+//      </div>
+//    </div>
+//  </div>

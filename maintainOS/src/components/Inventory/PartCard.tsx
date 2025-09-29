@@ -1,16 +1,16 @@
 import { Card, CardContent } from "../ui/card";
 import { mockLocations, type Item } from "./inventory.types";
 
-
-
 export function PartCard({
   item,
   selected,
   onSelect,
+  inventoryData,
 }: {
   item: Item;
   selected: boolean;
   onSelect: () => void;
+  inventoryData;
 }) {
   return (
     <Card
@@ -24,10 +24,12 @@ export function PartCard({
           <div>
             <h4 className="font-medium">{item.name}</h4>
             <div className="text-sm text-muted-foreground">
-              {mockLocations.find((l) => l.id === item.locationId)?.name ?? "-"}
+              {inventoryData.find((l) => l.id === item.locationId)?.name ?? "-"}
             </div>
           </div>
-          <div className="text-sm text-muted-foreground">{item.unitsInStock} units</div>
+          <div className="text-sm text-muted-foreground">
+            {item.unitCost} units
+          </div>
         </div>
       </CardContent>
     </Card>

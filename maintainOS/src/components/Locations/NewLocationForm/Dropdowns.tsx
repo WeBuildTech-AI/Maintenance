@@ -65,24 +65,6 @@ export function Dropdowns({
             <div className="absolute left-0 top-0 h-full w-1 bg-blue-600 rounded-l-md" />
             <span className="ml-3">{cta.text}</span>
           </div>
-
-          {/* Options */}
-          {/* {options.map((opt) => (
-            <div
-              key={opt}
-              onClick={() => {
-                onSelect(opt);
-                setOpen(false);
-              }}
-              className={`px-4 py-2 cursor-pointer hover:bg-gray-100 ${
-                (Array.isArray(value) && value.includes(opt)) || value === opt
-                  ? "bg-gray-200 font-medium"
-                  : ""
-              }`}
-            >
-              {opt}
-            </div>
-          ))} */}
         </div>
       )}
     </div>

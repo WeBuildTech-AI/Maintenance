@@ -40,7 +40,7 @@ export function NewPartForm({
           {/* Name + Pictures */}
           <section>
             <div className="text-xl font-medium mb-4">
-              {newItem.name || "New Part"}
+              {newItem.name || "Name"}
             </div>
 
             <div className="mb-6">
@@ -129,7 +129,7 @@ export function NewPartForm({
               <div className="text-base font-medium mb-2">Part Types</div>
               <div className="flex items-center gap-2">
                 {(newItem.partTypes || []).map((p, i) => (
-                  <Badge key={i} variant="outline">
+                  <Badge key={`${p}-${i}`} variant="outline">
                     {p}
                   </Badge>
                 ))}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 
@@ -28,10 +28,23 @@ import { PartDetails } from "./PartDetails";
 import { NewPartForm } from "./NewPartForm";
 import { id } from "./utils";
 import { PartTable } from "./PartTable";
-import { mockVendors, seedItems, type Item, type NewItem } from "./inventory.types";
+import {
+  mockVendors,
+  seedItems,
+  type Item,
+  type NewItem,
+} from "./inventory.types";
 import type { ViewMode } from "../purchase-orders/po.types";
 import { InventoryHeaderComponent } from "./InventoryHeader";
-
+import type { RootState, AppDispatch } from "../../store";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  createPart,
+  fetchParts,
+  partService,
+  type CreatePartData,
+} from "../../store/parts";
+import Loader from "../Loader/Loader";
 
 const emptyNewItem: NewItem = {
   name: "",
@@ -59,17 +72,38 @@ export function Inventory() {
   const [showSettings, setShowSettings] = useState(false);
   const [newItem, setNewItem] = useState<NewItem>(emptyNewItem);
   const [viewMode, setViewMode] = useState<ViewMode>("panel");
-  const filtered = items.filter((i) => {
-    const vendorNames = i.vendors
-      .map((v) => mockVendors.find((mv) => mv.id === v.vendorId)?.name ?? "")
-      .join(" ");
-    const text = `${i.name} ${vendorNames} ${
-      i.description ?? ""
-    }`.toLowerCase();
-    return text.includes(searchQuery.toLowerCase());
-  });
+  const user = useSelector((state: RootState) => state.auth.user);
+  const [inventoryData, setInventoryData] = useState([]);
+  const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    const fetchLocations = async () => {
+      setLoading(true);
+      try {
+        const res = await partService.fetchParts(10, 1, 0);
+        setInventoryData(res);
+        console.log(res);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLocations();
+  }, []);
+
+  // const filtered = inventoryData.filter((i) => {
+  //   const vendorNames = i.vendors
+  //     .map((v) => mockVendors.find((mv) => mv.id === v.vendorId)?.name ?? "")
+  //     .join(" ");
+  //   const text = `${i.name} ${vendorNames} ${
+  //     i.description ?? ""
+  //   }`.toLowerCase();
+  //   return text.includes(searchQuery.toLowerCase());
+  // });
   const selected = items.find((i) => i.id === selectedId) || null;
+  const dispatch = useDispatch<AppDispatch>();
 
   const stockStatus = useMemo(() => {
     if (!selected) return null;
@@ -97,44 +131,63 @@ export function Inventory() {
 
   const createItem = () => {
     if (!newItem.name) return;
-    const item: Item = {
-      id: id(),
+
+    const item: CreatePartData = {
+      organizationId: user.organizationId,
       name: newItem.name,
       description: newItem.description,
       unitCost: Number(newItem.unitCost) || 0,
-      unitsInStock: Number(newItem.unitsInStock) || 0,
-      minInStock: Number(newItem.minInStock) || 0,
-      locationId: newItem.locationId,
-      area: newItem.area,
+      // unitsInStock: Number(newItem.unitsInStock) || 0,
+      // minInStock: Number(newItem.minInStock) || 0,
+      // locationId: newItem.locationId,
       qrCode: newItem.qrCode || undefined,
-      partTypes: newItem.partTypes,
-      assetNames: newItem.assetNames,
-      vendors: newItem.vendors
+      partsTypes: newItem.partTypes,
+      assetIds: newItem.assetNames,
+      vendorIds: newItem.vendors
         .filter((v) => v.vendorId)
         .map((v) => ({
           vendorId: v.vendorId,
           orderingPartNumber: v.orderingPartNumber || "",
         })),
       files: newItem.files,
-      createdBy: "Ashwini Chauhan",
-      createdAt: new Date().toISOString(),
-      updatedBy: "Ashwini Chauhan",
-      updatedAt: new Date().toISOString(),
     };
-    setItems((s) => [item, ...s]);
-    setIsCreatingInventory(false);
-    setSelectedId(item.id);
+
+    console.log("partData to send:", item);
+
+    // 🔥 Dispatch the thunk
+    dispatch(createPart(item))
+      .unwrap()
+      .then((createdPart) => {
+        console.log("Part created successfully:", createdPart);
+
+        // if you still want to update local UI immediately:
+        // setItems((s) => [createdPart, ...s]);
+        // setNewItem();
+        setIsCreatingInventory(false);
+        setSelectedId(createdPart.id);
+      })
+      .catch((err) => {
+        console.error("Failed to create part:", err);
+      });
   };
 
   /* ------------------------------- UI ------------------------------- */
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* Header */}
-      {InventoryHeaderComponent(viewMode, setViewMode, searchQuery, setSearchQuery, setIsCreatingInventory, setShowSettings)}
+      {InventoryHeaderComponent(
+        viewMode,
+        setViewMode,
+        searchQuery,
+        setSearchQuery,
+        setIsCreatingInventory,
+        setShowSettings
+      )}
 
       {viewMode === "table" ? (
         <>
-          <PartTable inventory={filtered} setSelectedId={setSelectedId} />
+          {/* <PartTable inventory={filtered} setSelectedId={setSelectedId} /> */}
+          <PartTable inventory={inventoryData} setSelectedId={setSelectedId} />
         </>
       ) : (
         <>
@@ -168,25 +221,36 @@ export function Inventory() {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto min-h-0">
-                <div className="p-4 space-y-3">
-                  {filtered.map((it) => (
-                    <PartCard
-                      key={it.id}
-                      item={it}
-                      selected={selectedId === it.id}
-                      onSelect={() => {
-                        setSelectedId(it.id);
-                        setIsCreatingInventory(false);
-                      }}
-                    />
-                  ))}
+              {loading ? (
+                <>
+                  <Loader />
+                </>
+              ) : (
+                <>
+                  <div className="flex-1 overflow-y-auto min-h-0">
+                    <div className="">
+                      {inventoryData?.map((it) => (
+                        <>
+                          <PartCard
+                            key={it.id}
+                            inventoryData={inventoryData}
+                            item={it}
+                            selected={selectedId === it.id}
+                            onSelect={() => {
+                              setSelectedId(it.id);
+                              setIsCreatingInventory(false);
+                            }}
+                          />
+                        </>
+                      ))}
 
-                  {filtered.length === 0 && (
-                    <EmptyState variant="list" onCreate={startCreate} />
-                  )}
-                </div>
-              </div>
+                      {inventoryData.length === 0 && (
+                        <EmptyState variant="list" onCreate={startCreate} />
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Right panel */}

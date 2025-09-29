@@ -14,7 +14,7 @@ export function AssetNameInput({ assetName, setAssetName, error }: AssetNameInpu
         placeholder="Enter Asset Name (Required)"
         className="w-full border-0 border-b-2 border-gray-300 bg-transparent px-0 py-2 text-lg text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-500"
       />
-      {error && <p className="text-sm text-red-600 mt-1">{error}</p>}
+      {/* {error && <p className="text-sm text-red-600 mt-1">{error}</p>} */}
     </div>
   );
 }

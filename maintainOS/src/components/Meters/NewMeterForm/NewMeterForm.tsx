@@ -127,22 +127,22 @@ export function NewMeterForm({ onCreate, onCancel }: NewMeterFormProps) {
     setReadingFrequencyValue("");
   };
 
-  useEffect(() => {
-    const fetchLocations = async () => {
-      setLoading(true);
-      try {
-        const res = await locationService.fetchLocations(10, 1, 0);
-        setLoadingData(res);
-        console.log(res);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // useEffect(() => {
+  //   const fetchLocations = async () => {
+  //     setLoading(true);
+  //     try {
+  //       const res = await locationService.fetchLocations(10, 1, 0);
+  //       setLoadingData(res);
+  //       console.log(res);
+  //     } catch (err) {
+  //       console.error(err);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-    fetchLocations();
-  }, []);
+  //   fetchLocations();
+  // }, []);
 
   return (
     <div className="flex h-full mr-2 flex-col overflow-hidden border">

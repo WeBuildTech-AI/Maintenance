@@ -3,6 +3,9 @@
 import { type FormEvent, useState } from "react";
 import { Upload, Paperclip } from "lucide-react";
 import type { Vendor } from "./vendors.types";
+import type { AppDispatch, RootState } from "../../store";
+import { useDispatch, useSelector } from "react-redux";
+import { createVendor, type CreateVendorData } from "../../store/vendors";
 
 export function VendorForm({
   setVendors,
@@ -26,10 +29,12 @@ export function VendorForm({
     assets: [] as string[],
     parts: [] as string[],
   });
-
+  const dispatch = useDispatch<AppDispatch>();
   const [files, setFiles] = useState<File[]>([]);
   const [attachedDocs, setAttachedDocs] = useState<File[]>([]);
-
+  const user = useSelector((state: RootState) => state.auth.user);
+  const [showInputs, setShowInputs] = useState(false);
+  const [contact, setContact] = useState([{ email: "", phone: "" }]);
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const droppedFiles = Array.from(e.dataTransfer.files);
@@ -67,26 +72,38 @@ export function VendorForm({
     e.preventDefault();
     if (!form.name.trim()) return;
 
-    const newVendor: Vendor = {
-      id: `VEN-${Date.now()}`,
+    const newVendor: CreateVendorData = {
+      organizationId: user.organizationId,
       name: form.name.trim(),
-      category: form.category || "General",
-      services: form.services
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean),
-      contacts: [],
-      locations: form.locations.map((loc) => ({ name: loc })),
-      createdBy: form.createdBy || "System",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      deletedAt: null,
-      partsSummary: form.partsSummary || "—",
+      // vendorType: form.vendorType || "manufacturer", // added key
+      // pictureUrl: form.pictureUrl || "", // optional
+      color: form.color || "#000000", // optional
+      description: form.description || "",
+      // services: form.services
+      //   .split(",")
+      //   .map((s) => s.trim())
+      //   .filter(Boolean),
+      contacts: contact, // { email, phone }
+      // files: form.files || [], // array of file URLs
+      // locations: form.locations.map((loc) => loc.id || loc), // map to IDs if needed
+      // assetIds: form.assetIds || [],
+      // partIds: form.partIds || [],
     };
 
-    setVendors((prev) => [...prev, newVendor]);
-    setSelectedVendorId(newVendor.id);
-    onCancel();
+    console.log(newVendor, "newVendor");
+
+    // Dispatch the Redux thunk to call the API
+    dispatch(createVendor(newVendor))
+      .unwrap()
+      .then((res) => {
+        console.log("Vendor created successfully:", res);
+        // setVendors((prev) => [...prev, res]);
+        setSelectedVendorId(res.id);
+        onCancel();
+      })
+      .catch((err) => {
+        console.error("Failed to create vendor:", err);
+      });
   };
 
   const colorOptions = ["#2563eb", "#10b981", "#f97316", "#ec4899", "#6366f1"];
@@ -99,7 +116,10 @@ export function VendorForm({
       </div>
 
       {/* Scrollable content */}
-      <form onSubmit={handleSubmit} className="min-h-0 flex-1 overflow-y-auto">
+      <form
+        // onSubmit={handleSubmit}
+        className="min-h-0 flex-1 overflow-y-auto"
+      >
         {/* Vendor Name */}
         <div className="px-6 pt-6">
           <input
@@ -222,13 +242,37 @@ export function VendorForm({
           <label className="block text-base font-medium text-gray-700">
             Contact List
           </label>
+
           <button
             type="button"
-            onClick={() => {}}
+            onClick={() => setShowInputs((prev) => !prev)}
             className="mt-2 inline-flex items-center px-2 py-1 text-sm font-normal text-orange-600 bg-white border border-gray-300 rounded hover:bg-gray-50 hover:border-gray-400 transition-all duration-150 w-fit h-8"
           >
             + New Contact
           </button>
+
+          {showInputs && (
+            <div className="mt-4 flex flex-col gap-2">
+              <input
+                type="email"
+                placeholder="Email"
+                className="px-2 py-1 border rounded border-gray-300 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                value={contact.email}
+                onChange={(e) =>
+                  setContact((prev) => ({ ...prev, email: e.target.value }))
+                }
+              />
+              <input
+                type="number"
+                placeholder="Phone"
+                className="px-2 py-1 border rounded border-gray-300 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                value={contact.phone}
+                onChange={(e) =>
+                  setContact((prev) => ({ ...prev, phone: e.target.value }))
+                }
+              />
+            </div>
+          )}
         </div>
 
         {/* ✅ Files (DOC, PDF, etc.) */}
@@ -301,18 +345,6 @@ export function VendorForm({
               <option value="rooms">Rooms</option>
               <option value="areas">Areas</option>
             </select>
-            <svg
-              className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500 pointer-events-none"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M6 9l6 6 6-6" />
-            </svg>
           </div>
         </div>
 
@@ -330,18 +362,6 @@ export function VendorForm({
                 + Create New Asset
               </option>
             </select>
-            <svg
-              className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500 pointer-events-none"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M6 9l6 6 6-6" />
-            </svg>
           </div>
         </div>
 
@@ -359,18 +379,6 @@ export function VendorForm({
                 + Create New Asset
               </option>
             </select>
-            <svg
-              className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500 pointer-events-none"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M6 9l6 6 6-6" />
-            </svg>
           </div>
         </div>
 
@@ -388,18 +396,6 @@ export function VendorForm({
                 + Create New Asset
               </option>
             </select>
-            <svg
-              className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500 pointer-events-none"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M6 9l6 6 6-6" />
-            </svg>
           </div>
         </div>
       </form>
@@ -407,6 +403,7 @@ export function VendorForm({
       {/* Footer */}
       <div className="sticky bottom-0 mt-6 flex items-center border-t bg-white px-6 py-4">
         <button
+          onClick={handleSubmit}
           style={{
             marginLeft: "auto",
             paddingLeft: "40px",

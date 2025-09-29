@@ -12,7 +12,7 @@ export function AssetHeaderComponent(
   setViewMode: Dispatch<SetStateAction<ViewMode>>,
   searchQuery: string,
   setSearchQuery: Dispatch<SetStateAction<string>>,
-  setIsCreatingForm: Dispatch<SetStateAction<boolean>>,
+  setShowNewAssetForm: Dispatch<SetStateAction<boolean>>,
   setShowSettings: Dispatch<SetStateAction<boolean>>
 ) {
   return <header className=" border-border bg-card px-6 py-4">
@@ -61,7 +61,7 @@ export function AssetHeaderComponent(
         <Button
           className="gap-2 cursor-pointer bg-orange-600 hover:outline-none"
           onClick={() => {
-            setIsCreatingForm:(true);
+            setShowNewAssetForm(true);
             setViewMode("panel");
           } }
         >

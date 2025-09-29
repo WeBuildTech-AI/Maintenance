@@ -23,16 +23,34 @@ import { mockVendors, type Vendor } from "./vendors.types";
 import POFilterBar from "../purchase-orders/POFilterBar";
 import { VendorHeaderComponent } from "./VendorHeader";
 import type { ViewMode } from "../purchase-orders/po.types";
+import { vendorService } from "../../store/vendors";
 
 export function Vendors() {
-  const [vendors, setVendors] = useState<Vendor[]>(mockVendors);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>("panel");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSettings, setShowSettings] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [selectedVendorId, setSelectedVendorId] = useState(
     mockVendors[0]?.id ?? ""
   );
   const [isCreatingVendor, setIsCreatingVendor] = useState(false);
+
+  useEffect(() => {
+    const fetchLocations = async () => {
+      setLoading(true);
+      try {
+        const res = await vendorService.fetchVendors(10, 1, 0);
+        setVendors(res);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLocations();
+  }, []);
 
   const filteredVendors = useMemo(() => {
     if (!searchQuery.trim()) return vendors;
@@ -59,7 +77,14 @@ export function Vendors() {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      {VendorHeaderComponent(viewMode, setViewMode, searchQuery, setSearchQuery, setIsCreatingVendor, setShowSettings)}
+      {VendorHeaderComponent(
+        viewMode,
+        setViewMode,
+        searchQuery,
+        setSearchQuery,
+        setIsCreatingVendor,
+        setShowSettings
+      )}
 
       {/* Body */}
       <div className="flex flex-1 overflow-hidden bg-muted/20">
@@ -69,6 +94,7 @@ export function Vendors() {
               vendors={filteredVendors}
               selectedVendorId={selectedVendorId}
               setSelectedVendorId={setSelectedVendorId}
+              loading={loading}
             />
             <section className="flex-1 overflow-auto">
               {isCreatingVendor ? (
@@ -77,12 +103,11 @@ export function Vendors() {
                   setSelectedVendorId={setSelectedVendorId}
                   onCancel={() => setIsCreatingVendor(false)}
                 />
-              ) : selectedVendor ? (
-                <VendorDetails
-                  vendor={selectedVendor}
-                  setVendors={setVendors}
-                />
-              ) : (
+              ) : selectedVendor ? // <VendorDetails
+              //   vendor={selectedVendor}
+              //   setVendors={setVendors}
+              // />
+              null : (
                 <div className="flex h-full items-center justify-center text-muted-foreground">
                   Select a vendor to view details.
                 </div>
@@ -99,7 +124,3 @@ export function Vendors() {
     </div>
   );
 }
-
-
-
-

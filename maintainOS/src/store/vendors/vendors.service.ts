@@ -9,8 +9,15 @@ import type {
 const API_URL = import.meta.env.VITE_API_URL;
 
 export const vendorService = {
-  fetchVendors: async (): Promise<VendorResponse[]> => {
-    const res = await axios.get(`${API_URL}/vendors`);
+  fetchVendors: async (
+    limit: number,
+    page: number,
+    offset: number
+  ): Promise<VendorResponse[]> => {
+    const res = await axios.get(`${API_URL}/vendors`, {
+      params: { limit, page, offset },
+      headers: { Accept: "application/json" },
+    });
     return res.data;
   },
 
