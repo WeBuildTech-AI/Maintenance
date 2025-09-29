@@ -4,7 +4,13 @@ interface TeamGridProps {
   filteredAssignees: any[];
   weekMeta: any[];
   gridTemplateColumns: string;
-  onTaskDrop: (task: any, assignee: any, day: any) => void; // 👈 new
+  onTaskDrop: (task: any, assignee: any, day: any) => void; // 👈 existing
+  onTaskResize?: (
+    assigneeName: string,
+    taskTitle: string,
+    newStartDay: string,
+    newEndDay: string
+  ) => void; // 👈 added
 }
 
 export function TeamGrid({
@@ -12,6 +18,7 @@ export function TeamGrid({
   weekMeta,
   gridTemplateColumns,
   onTaskDrop,
+  onTaskResize, // 👈 added
 }: TeamGridProps) {
   return (
     <div className="overflow-x-auto rounded-lg border bg-card">
@@ -62,7 +69,8 @@ export function TeamGrid({
             assignee={a}
             gridTemplateColumns={gridTemplateColumns}
             isLast={i === filteredAssignees.length - 1}
-            onTaskDrop={onTaskDrop} // 👈 pass handler
+            onTaskDrop={onTaskDrop} // 👈 existing
+            onTaskResize={onTaskResize} // 👈 added
           />
         ))
       )}

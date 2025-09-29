@@ -240,17 +240,20 @@ export function WorkOrderStatusDrawer({
           {/* Content */}
           <div className="flex-1 p-4 text-sm text-gray-700 space-y-5 overflow-hidden">
             {/* Status */}
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Status</label>
-              <div className="border rounded px-2 h-8 bg-white shadow-sm flex items-center">
+            <div className="flex items-center justify-between">
+              <label className="text-xs text-gray-500">Status</label>
+
+              {/* Right-aligned, small width dropdown */}
+              <div className="flex items-center h-8 px-2 border rounded bg-white shadow-sm w-28 min-w-[7rem]">
                 <Lock size={14} className="text-blue-500 mr-1" />
-                <select className="w-full text-xs outline-none bg-transparent">
+                <select className="w-full min-w-0 text-xs outline-none bg-transparent">
                   <option>Open</option>
                   <option>Closed</option>
                   <option>On Hold</option>
                 </select>
               </div>
             </div>
+
 
             {/* Assign To */}
             <div>

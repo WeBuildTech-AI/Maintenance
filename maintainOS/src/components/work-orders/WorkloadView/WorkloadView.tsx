@@ -77,7 +77,7 @@ export function WorkloadView({
     return { weekRangeLabel, weekMeta };
   }, [weekOffset]);
 
-  /* ---------------- Assignees state (important for drop updates) ---------------- */
+  /* ---------------- Assignees state ---------------- */
   const [assignees, setAssignees] = useState<any[]>([]);
 
   useEffect(() => {
@@ -86,32 +86,22 @@ export function WorkloadView({
       const assigneeData = workOrders.find(
         (wo) => wo.assignedTo.name === name
       )?.assignedTo;
-      const assigneeWorkOrders = workOrders.filter(
-        (wo) => wo.assignedTo.name === name
-      );
 
-      const weeklySchedule = weekMeta.map((day) => {
-        const scheduledHours = 0; // 👈 start empty
-        const tasks: any[] = []; // 👈 no pre-assigned tasks
-        return {
-          day: day.day,
-          date: day.date,
-          scheduledHours,
-          tasks,
-          utilization: 0,
-        };
-      });
-
-      const totalHours = weeklySchedule.reduce((s, d) => s + d.scheduledHours, 0);
-      const avgUtilization = (totalHours / (HOURS_PER_DAY * 7)) * 100;
+      const weeklySchedule = weekMeta.map((day) => ({
+        day: day.day,
+        date: day.date,
+        scheduledHours: 0,
+        tasks: [],
+        utilization: 0,
+      }));
 
       return {
         name,
         avatar: assigneeData?.avatar,
         team: assigneeData?.team ?? "Unassigned",
         weeklySchedule,
-        totalHours,
-        avgUtilization,
+        totalHours: 0,
+        avgUtilization: 0,
       };
     });
 
@@ -189,7 +179,7 @@ export function WorkloadView({
 
   /* ---------------- Handle Task Drop ---------------- */
   const handleTaskDrop = (task: any, assignee: any, day: any) => {
-    const estHours = parseInt(task.estTime) || 1; // "2h" → 2
+    const estHours = parseInt(task.estTime) || 1;
     setAssignees((prev) =>
       prev.map((a) =>
         a.name === assignee.name
@@ -199,24 +189,82 @@ export function WorkloadView({
                 d.day === day.day
                   ? {
                       ...d,
+                      scheduledHours: (d.scheduledHours || 0) + estHours,
                       utilization: Math.min(
-                        (d.utilization || 0) + (estHours / HOURS_PER_DAY) * 100,
+                        ((d.scheduledHours || 0) + estHours) / HOURS_PER_DAY * 100,
                         100
                       ),
                       tasks: [...(d.tasks || []), task],
                     }
                   : d
               ),
+              totalHours: a.totalHours + estHours,
+              avgUtilization:
+                ((a.totalHours + estHours) / (HOURS_PER_DAY * 7)) * 100,
             }
           : a
       )
     );
   };
 
+  /* ---------------- Handle Task Resize ---------------- */
+  const handleTaskResize = (
+    assigneeName: string,
+    taskTitle: string,
+    newStartDay: string,
+    newEndDay: string
+  ) => {
+    setAssignees((prev) =>
+      prev.map((a) => {
+        if (a.name !== assigneeName) return a;
+
+        const order = (d: string) =>
+          ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].indexOf(d);
+
+        const s = order(newStartDay);
+        const e = order(newEndDay);
+        const rangeDays = a.weeklySchedule.filter(
+          (d: any) => order(d.day) >= Math.min(s, e) && order(d.day) <= Math.max(s, e)
+        );
+
+        const perDayHours = 8 / rangeDays.length;
+
+        const updatedSchedule = a.weeklySchedule.map((d: any) => {
+          const tasksWithout = (d.tasks || []).filter((t: any) => t.title !== taskTitle);
+
+          if (rangeDays.includes(d)) {
+            return {
+              ...d,
+              scheduledHours: perDayHours,
+              utilization: (perDayHours / HOURS_PER_DAY) * 100,
+              tasks: [
+                ...tasksWithout,
+                { title: taskTitle, startDay: newStartDay, endDay: newEndDay },
+              ],
+            };
+          }
+          return { ...d, tasks: tasksWithout, scheduledHours: d.scheduledHours || 0 };
+        });
+
+        const totalHours = updatedSchedule.reduce(
+          (sum: number, d: any) => sum + (d.scheduledHours || 0),
+          0
+        );
+        const avgUtilization = (totalHours / (HOURS_PER_DAY * 7)) * 100;
+
+        return {
+          ...a,
+          weeklySchedule: updatedSchedule,
+          totalHours,
+          avgUtilization,
+        };
+      })
+    );
+  };
+
   /* ---------------- Render ---------------- */
   return (
     <div className="flex flex-col lg:flex-row h-full bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white">
-      {/* Left Side */}
       <div className="flex-1 overflow-y-auto p-4 lg:p-6">
         <HeaderControls
           weekRangeLabel={weekRangeLabel}
@@ -247,11 +295,11 @@ export function WorkloadView({
           filteredAssignees={filteredAssignees}
           weekMeta={weekMeta}
           gridTemplateColumns={gridTemplateColumns}
-          onTaskDrop={handleTaskDrop} // 👈 pass handler
+          onTaskDrop={handleTaskDrop}
+          onTaskResize={handleTaskResize}
         />
       </div>
 
-      {/* Drawer */}
       <WorkOrderStatusDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
