@@ -1,13 +1,5 @@
 import { useMemo, useState } from "react";
 
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
 import {
   Calendar,
   ChevronDown,
@@ -17,14 +9,21 @@ import {
   Search,
   Users,
 } from "lucide-react";
+import { Button } from "../ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import { Input } from "../ui/input";
 
 import { CalendarView } from "./CalendarView";
 import { ListView } from "./ListView";
 import { ToDoView } from "./ToDoView";
-import { WorkloadView } from "./WorkloadView";
 import type { WorkOrder } from "./types";
+import { WorkloadView } from "./WorkloadView/WorkloadView";
 import { WorkOrderHeaderComponent } from "./WorkOrderHeader";
-import type { ViewMode } from "./types";
 
 const mockWorkOrders: WorkOrder[] = [
   {
