@@ -47,7 +47,7 @@ export function Messages() {
             <Button
               onClick={() => setActive("messages")}
               className={cn(
-                "w-1/2 mb-2 mt-2 rounded-none bg-white text-black border-b-4 border-transparent",
+                "w-half mb-2 mt-2 rounded-none bg-white text-black border-b-4 border-transparent",
                 active === "messages" && "text-orange-600 border-orange-600"
               )}
             >
@@ -56,7 +56,7 @@ export function Messages() {
             <Button
               onClick={() => setActive("threads")}
               className={cn(
-                "w-1/2 mb-2 mt-2 rounded-none bg-white text-black border-b-4 border-transparent",
+                "w-half mb-2 mt-2 rounded-none bg-white text-black border-b-4 border-transparent",
                 active === "threads" && "text-orange-600 border-orange-600"
               )}
             >
