@@ -34,7 +34,7 @@ export function VendorForm({
   const [attachedDocs, setAttachedDocs] = useState<File[]>([]);
   const user = useSelector((state: RootState) => state.auth.user);
   const [showInputs, setShowInputs] = useState(false);
-  const [contact, setContact] = useState([{ email: "", phone: "" }]);
+  const [contact, setContact] = useState({ email: "", phone: "" });
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const droppedFiles = Array.from(e.dataTransfer.files);
