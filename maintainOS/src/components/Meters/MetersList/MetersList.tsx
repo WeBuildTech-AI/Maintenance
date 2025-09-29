@@ -4,6 +4,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MeterCard } from "./MeterCard";
 
 export function MetersList({ filteredMeters, selectedMeter, setSelectedMeter }: any) {
+
+  const meters = Array.isArray(filteredMeters) ? filteredMeters : [];
+
   return (
     <div className="w-112 border ml-3 mr-2 border-border bg-card flex flex-col">
       <div className="p-2 border-b border-border">
@@ -28,11 +31,11 @@ export function MetersList({ filteredMeters, selectedMeter, setSelectedMeter }: 
 
       <div className="flex-1 overflow-auto">
         <div className="">
-          {filteredMeters.map((meter: any) => (
+          {meters?.map((meter: any) => (
             <MeterCard key={meter.id} meter={meter} selectedMeter={selectedMeter} setSelectedMeter={setSelectedMeter} />
           ))}
 
-          {filteredMeters.length === 0 && (
+          {meters.length === 0 && (
             <div className="text-center py-8">
               <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
                 <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed"></div>
