@@ -40,6 +40,7 @@ export function ChatWindow({ messages, isCreatingMessage }: ChatWindowProps) {
             <div className="flex items-center justify-between border-b border-border p-4 bg-white w-full">
                 <p className="text-sm text-muted-foreground">To:</p>
                 {/* Functionality to select the user for the new message */}
+                {/* TODO - This component needs to change, we can add multiple people from here */}
                 <div className="p-2 flex-1">
                     <UserSelect users={dummyUsers} currentUser={currentUser} />
                 </div>

@@ -6,6 +6,7 @@ import { ChevronDown, PanelTop, Plus, Search, Settings, Table } from "lucide-rea
 import { Input } from "../ui/input";
 import MessagesFilterBar from "./MessagesFilterBar";
 import type { MessagesHeaderProps } from "./messages.types";
+import { useNavigate } from "react-router-dom";
 
 
 
@@ -17,6 +18,9 @@ export function MessagesHeaderComponent({
   setIsCreatingForm,
   setShowSettings,
 }: MessagesHeaderProps) {
+
+  const navigate = useNavigate();
+
   return <header className=" border-border bg-card px-6 py-4">
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div>
@@ -37,6 +41,7 @@ export function MessagesHeaderComponent({
           className="gap-2 cursor-pointer bg-orange-600 hover:outline-none"
           onClick={() => {
             setIsCreatingForm(true);
+            navigate("/messages/new");
           } }
         >
           <Plus className="mr-2 h-4 w-4" />
