@@ -167,7 +167,7 @@ export function Sidebar({
                   .join("") || "U"}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 text-center">
               <p className="text-xs font-medium text-sidebar-foreground truncate mb-1">
                 {user?.fullName || "User"}
               </p>

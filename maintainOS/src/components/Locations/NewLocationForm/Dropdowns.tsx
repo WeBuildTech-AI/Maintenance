@@ -34,7 +34,7 @@ export function Dropdowns({
 
   const cta =
     stage === "teams"
-      ? { text: "+ Create New Team", path: "/team-users" }
+      ? { text: "+ Create New Team", path: "/teams/create" }
       : stage === "vendors"
       ? { text: "+ Create New Vendor", path: "/vendors" }
       : { text: "+ Create New Parent Location", path: "/locations" };
