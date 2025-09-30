@@ -19,6 +19,11 @@ import Loader from "../Loader/Loader";
 import { formatDate } from "../utils/Date";
 import { LocationTable } from "./LocationTable";
 import { Avatar, AvatarFallback } from "../ui/avatar";
+import { sortLocations } from "../utils/Sorted";
+import type { RootState } from "../../store";
+import { useSelector } from "react-redux";
+import { Links, NavLink } from "react-router-dom";
+import { SubLocationModal } from "./SubLocationModel";
 
 export function Locations() {
   const hasFetched = useRef(false);
@@ -35,7 +40,9 @@ export function Locations() {
   const [filteredLocations, setFilteredLocations] = useState<
     LocationResponse[]
   >([]);
-
+  const [sortBy, setSortBy] = useState("Name: Ascending Order");
+  const user = useSelector((state: RootState) => state.auth.user);
+  const [modalOpen, setModalOpen] = useState(false);
   // Fetch locations on mount
   useEffect(() => {
     if (hasFetched.current) return;
@@ -69,6 +76,12 @@ export function Locations() {
       );
     }
   }, [searchQuery, locations]);
+
+  useEffect(() => {
+    if (locations.length) {
+      setLocations(sortLocations(filteredLocations, sortBy));
+    }
+  }, [sortBy]);
 
   const renderInitials = (text: string) =>
     text
@@ -121,12 +134,18 @@ export function Locations() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
-                      <DropdownMenuItem>Name: Ascending Order</DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setSortBy("Name: Ascending Order")}
+                      >
+                        Name: Ascending Order
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setSortBy("Name: Descending Order")}
+                      >
                         Name: Descending Order
                       </DropdownMenuItem>
-                      <DropdownMenuItem>Status</DropdownMenuItem>
-                      <DropdownMenuItem>Location</DropdownMenuItem>
+                      {/* <DropdownMenuItem>Status</DropdownMenuItem>
+                      <DropdownMenuItem>Location</DropdownMenuItem> */}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -142,7 +161,10 @@ export function Locations() {
                     filteredLocations?.map((items) => (
                       <Card
                         key={items.id}
-                        onClick={() => setSelectedLocation(items)}
+                        onClick={() => {
+                          setSelectedLocation(items);
+                          setShowForm(false);
+                        }}
                         className={`cursor-pointer hover:border-blue-400 ${
                           selectedLocation?.id === items.id
                             ? "border-blue-500"
@@ -185,7 +207,12 @@ export function Locations() {
                       <p className="text-muted-foreground mb-2">
                         No Locations found
                       </p>
-                      <Button variant="link" className="text-primary p-0">
+                      <Button
+                        variant="link"
+                        onClick={() => setShowForm(true)}
+                        s
+                        className="text-primary p-0 cursor-pointer"
+                      >
                         Create the first asset
                       </Button>
                     </div>
@@ -199,6 +226,8 @@ export function Locations() {
                   <NewLocationForm
                     onCancel={() => setShowForm(false)}
                     onCreate={() => setShowForm(false)}
+                    setSelectedLocation={setSelectedLocation}
+                    setShowForm={setShowForm}
                   />
                 ) : selectedLocation ? (
                   <div className="max-w-2xl p-4 mx-auto bg-white">
@@ -224,7 +253,7 @@ export function Locations() {
                     </div>
 
                     {/* Description */}
-                    <div className="mb-6">
+                    <div className="mb-6 mt-6">
                       <h3 className="text-sm font-medium text-gray-700">
                         Description
                       </h3>
@@ -237,35 +266,49 @@ export function Locations() {
                     <hr className="my-4" />
 
                     {/* Sub-Locations */}
-                    <div className="mb-6">
+                    <div className="mb-6 mt-6">
                       <h3 className="text-sm font-medium text-gray-700">
                         Sub-Locations (0)
                       </h3>
                       <p className="text-gray-500 text-sm mt-1">
                         Add sub elements inside this Location
                       </p>
-                      <button className="mt-2 text-blue-600 hover:underline text-sm">
+                      <button
+                        onClick={() => setModalOpen(true)}
+                        className="mt-2 cursor-pointer text-orange-600 hover:underline text-sm"
+                      >
                         Create Sub-Location
                       </button>
                     </div>
 
+                    {/* <SubLocationModal
+                      isOpen={modalOpen}
+                      onClose={() => setModalOpen(false)}
+                      onCreate={(name) => {
+                        console.log("Sub-location created:", name);
+                        setModalOpen(false);
+                      }}
+                    /> */}
+
                     <hr className="my-4" />
 
                     {/* Footer */}
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-gray-500 mb- mt-6">
                       Created By{" "}
                       <span className="font-medium text-gray-700 capitalize">
                         {/* Replace with actual creator’s name if available */}
-                        {selectedLocation?.name}
+                        {user?.fullName}
                       </span>{" "}
                       on {formatDate(selectedLocation.createdAt)}
                     </div>
 
                     {/* Action Button */}
                     <div className="mt-6 flex justify-center">
-                      <button className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-3 p-2 rounded-full text-sm shadow-sm transition">
-                        Use in New Work Order
-                      </button>
+                      <NavLink to="/work-orders">
+                        <button className="bg-white border hover-bg-orange-50  border-orange-600 text-orange-600 px-5 py-3 p-2 cursor-pointer rounded-full text-sm shadow-sm transition">
+                          Use in New Work Order
+                        </button>
+                      </NavLink>
                     </div>
                   </div>
                 ) : (
