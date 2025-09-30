@@ -5,9 +5,11 @@ import { Input } from "../ui/input";
 import { Paperclip, Send, Info, StepBack, ChevronDown } from "lucide-react";
 import { cn } from "../ui/utils";
 import { dummyUsers, type ChatWindowProps } from "./messages.types";
-import { Combobox, ComboboxLabel, ComboboxOption } from "../ui/combobox";
-import { Field, Label } from "../ui/fieldset";
 import { UserSelect } from "./UserSelect";
+import { useMessagingSocket, useWebSocket } from "../../utils/useWebsocket";
+import { useSelector } from "react-redux";
+import type { RootState } from "../../store";
+
 
 
 export function ChatWindow({ messages, isCreatingMessage }: ChatWindowProps) {
@@ -16,6 +18,10 @@ export function ChatWindow({ messages, isCreatingMessage }: ChatWindowProps) {
   const [showSharedFiles, setShowSharedFiles] = useState(false);
   const [showChatsInCommon, setShowChatsInCommon] = useState(false);
   const [assignedUser, setAssignedUser] = useState<{ id: string; name: string } | null>(null);
+
+  const user = useSelector((state: RootState) => state.auth.user);
+
+  const { isConnected, lastMessage, sendMessage } = useMessagingSocket(user?.id ?? "");
 
 
   const currentUser = dummyUsers[0];
@@ -26,15 +32,24 @@ export function ChatWindow({ messages, isCreatingMessage }: ChatWindowProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const sendMessage = () => {
+  useEffect(() => {
+    if (lastMessage) {
+      console.log("New message:", lastMessage);
+    }
+  }, [lastMessage]);
+
+  const startSendingMessage = () => {
     if (!newMessage.trim()) return;
     setNewMessage("");
+    // TO-DO Complete this 
+    sendMessage("af0d6e00-80ed-4f53-b010-78f4a516e78f","Hello from client!");
   };
 
   return (
     <div className="relative flex flex-col h-full">
       {!showInfo ? (
         <>
+          <p>Status: {isConnected ? "🟢 Connected" : "🔴 Disconnected"}</p>
           {/* Header */}
           {isCreatingMessage?(
             <div className="flex items-center justify-between border-b border-border p-4 bg-white w-full">
@@ -113,9 +128,9 @@ export function ChatWindow({ messages, isCreatingMessage }: ChatWindowProps) {
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="Write a message..."
               className="flex-1"
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              onKeyDown={(e) => e.key === "Enter" && startSendingMessage()}
             />
-            <Button onClick={sendMessage}>
+            <Button onClick={startSendingMessage}>
               <Send size={18} />
             </Button>
           </div>

@@ -32,7 +32,7 @@ export function TeamsDropdown({
         <div className="absolute left-0 top-full mt-1 w-full rounded-md border bg-white shadow-lg z-50">
           {/* CTA */}
           <div
-            onClick={() => navigate("/team-users")} // ✅ Navigate works now
+            onClick={() => navigate("/teams/create")} // ✅ Navigate works now
             className="relative flex items-center px-4 py-2 rounded-md text-sm text-blue-600 bg-blue-50 cursor-pointer hover:bg-blue-100"
           >
             <div className="absolute left-0 top-0 h-full w-1 bg-blue-600 rounded-l-md" />
