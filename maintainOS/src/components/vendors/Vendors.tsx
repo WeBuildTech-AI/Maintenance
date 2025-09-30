@@ -1,29 +1,11 @@
-import { useMemo, useState, useEffect, type SetStateAction } from "react";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import {
-  Search,
-  Plus,
-  Settings,
-  PanelTop,
-  Table,
-  ChevronDown,
-} from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
-import { VendorSidebar } from "./VendorSidebar";
-import { VendorDetails } from "./VendorDetails";
-import { VendorTable } from "./VendorTable";
-import { VendorForm } from "./VendorForm";
-import { mockVendors, type Vendor } from "./vendors.types";
-import POFilterBar from "../purchase-orders/POFilterBar";
-import { VendorHeaderComponent } from "./VendorHeader";
-import type { ViewMode } from "../purchase-orders/po.types";
+import { useEffect, useMemo, useState } from "react";
 import { vendorService } from "../../store/vendors";
+import type { ViewMode } from "../purchase-orders/po.types";
+import { VendorForm } from "./VendorForm";
+import { VendorHeaderComponent } from "./VendorHeader";
+import { mockVendors, type Vendor } from "./vendors.types";
+import { VendorSidebar } from "./VendorSidebar";
+import { VendorTable } from "./VendorTable";
 
 export function Vendors() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
