@@ -90,7 +90,7 @@ export function LocationDropdown({
               <Loader />
             </div>
           ) : (
-            <ul className="max-h-48 overflow-y-auto">
+            <ul className="h-32 overflow-y-auto">
               {locationData.length > 0 ? (
                 locationData.map((loc, index) => (
                   <li

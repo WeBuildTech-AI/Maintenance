@@ -131,7 +131,7 @@ export function Dropdowns({
 
       {/* Dropdown menu */}
       {open && (
-        <div className="absolute left-0 top-full mt-1 w-full rounded-md border bg-white z-50 max-h-60 overflow-y-auto shadow-lg">
+        <div className="absolute max-h-32 left-0 top-full mt-1 w-full rounded-md border bg-white z-50 max-h-60 overflow-y-auto shadow-lg">
           {loading ? (
             <Loader />
           ) : (
@@ -145,7 +145,10 @@ export function Dropdowns({
                   className={`px-4 py-2 cursor-pointer hover:bg-gray-100 ${
                     isSelected ? "bg-gray-200" : ""
                   }`}
-                  onClick={() => toggleOption(item.id)}
+                  onClick={() => {
+                    toggleOption(item.id);
+                    setOpen(false);
+                  }}
                 >
                   {item.name}
                 </p>

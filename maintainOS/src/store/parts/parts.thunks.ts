@@ -16,6 +16,19 @@ export const fetchParts = createAsyncThunk(
     }
   }
 );
+export const fetchPartsName = createAsyncThunk(
+  "parts/fetchParts",
+  async (_, { rejectWithValue }) => {
+    try {
+      const parts = await partService.fetchPartsName(1,10,0);
+      return parts;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch parts"
+      );
+    }
+  }
+);
 
 export const fetchPartById = createAsyncThunk(
   "parts/fetchPartById",

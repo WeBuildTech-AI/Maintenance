@@ -80,7 +80,7 @@ export function VendorsDropdown({
               <Loader />
             </div>
           ) : (
-            <ul className="max-h-48 overflow-y-auto">
+            <ul className="max-h-32 overflow-y-auto">
               {vendorData.length > 0 ? (
                 vendorData.map((loc, index) => (
                   <li

@@ -1373,6 +1373,10 @@
   text-decoration: none;
   }
 
+  .max-h-32 {
+  max-height: 8rem; /* same as max-h-32 */
+}
+
   .bg-orange-100 {
     background-color: var(--color-orange-100);
   }

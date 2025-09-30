@@ -90,7 +90,7 @@ export function NewLocationForm({
     try {
       const res = await dispatch(createLocation(locationData)).unwrap();
       console.log("Location created:", res);
-      setSelectedLocation(res.id);
+      // setSelectedLocation(res.id);
       setShowForm(false);
 
       // reset form
