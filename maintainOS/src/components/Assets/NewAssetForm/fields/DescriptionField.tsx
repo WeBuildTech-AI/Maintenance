@@ -1,7 +1,7 @@
 export function DescriptionField({ description, setDescription }) {
   return (
     <div className="mt-4">
-      <label className="mb-2 block text-sm font-medium text-gray-900">
+      <label className="mb-2 block text-base font-medium text-gray-900">
         Description
       </label>
       <textarea

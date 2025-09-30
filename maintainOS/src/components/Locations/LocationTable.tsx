@@ -50,7 +50,9 @@ export function LocationTable({
                           {location.icon || renderInitials(location.name)}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="font-medium">{location.name}</span>
+                      <span className="font-medium capitalize ">
+                        {location.name}
+                      </span>
                     </div>
                   </td>
 

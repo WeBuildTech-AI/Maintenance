@@ -43,6 +43,8 @@ export function Locations() {
   const [sortBy, setSortBy] = useState("Name: Ascending Order");
   const user = useSelector((state: RootState) => state.auth.user);
   const [modalOpen, setModalOpen] = useState(false);
+
+
   // Fetch locations on mount
   useEffect(() => {
     if (hasFetched.current) return;
@@ -111,7 +113,7 @@ export function Locations() {
         </>
       ) : (
         <>
-          <div className="flex gap-2 flex-1 overflow-hidden mt-6 min-h-0">
+          <div className="flex gap-2 flex-1 overflow-hidden mt-3 min-h-0">
             {/* Left Card (~40%) */}
             <div
               className="border ml-3 mr-2 w-96
@@ -165,9 +167,9 @@ export function Locations() {
                           setSelectedLocation(items);
                           setShowForm(false);
                         }}
-                        className={`cursor-pointer hover:border-blue-400 ${
-                          selectedLocation?.id === items.id
-                            ? "border-blue-500"
+                        className={`border-b cursor-pointer border-border transition hover:bg-muted/40 ${
+                          items?.id === selectedLocation?.id
+                            ? "bg-primary/5"
                             : ""
                         }`}
                       >
@@ -281,14 +283,14 @@ export function Locations() {
                       </button>
                     </div>
 
-                    {/* <SubLocationModal
+                    <SubLocationModal
                       isOpen={modalOpen}
                       onClose={() => setModalOpen(false)}
                       onCreate={(name) => {
                         console.log("Sub-location created:", name);
                         setModalOpen(false);
                       }}
-                    /> */}
+                    />
 
                     <hr className="my-4" />
 

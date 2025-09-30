@@ -16,7 +16,7 @@ export function ParentAssetDropdown({
   const navigate = useNavigate(); // ✅ Use React Router's hook
 
   return (
-    <div className="relative" ref={parentAssetRef}>
+    <div className="relative mt-4" ref={parentAssetRef}>
       <h3 className="mb-2 text-base font-medium text-gray-900">Parent Assets</h3>
 
       <div

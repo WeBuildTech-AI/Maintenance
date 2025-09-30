@@ -16,7 +16,7 @@ export function TeamsDropdown({
   const navigate = useNavigate(); // ✅ Use React Router's hook
 
   return (
-    <div className="relative" ref={teamRef}>
+    <div className="relative mt-4" ref={teamRef}>
       <h3 className="mb-2 text-base font-medium text-gray-900">Teams</h3>
 
       <div

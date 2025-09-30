@@ -71,7 +71,7 @@ export function NewAssetForm({ onCreate, onCancel }: NewAssetFormProps) {
     const payload: CreateAssetData = {
       organizationId: user.organizationId,
       name: assetName,
-      // locationId: selectedLocation, // from dropdown
+      locationId: selectedLocation, // from dropdown
       criticality: criticality,
       description: description,
       year: year,
@@ -117,7 +117,6 @@ export function NewAssetForm({ onCreate, onCancel }: NewAssetFormProps) {
       <div className="flex-none border-b px-6 py-4">
         <h2 className="text-xl font-semibold">New Asset</h2>
       </div>
-
       {/* Scrollable content */}
       <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-6">
         {/* Icon + Asset Name */}
@@ -153,7 +152,7 @@ export function NewAssetForm({ onCreate, onCancel }: NewAssetFormProps) {
         />
         <YearInput year={year} setYear={setYear} />
         <ManufacturerDropdown />
-        <ModelField />
+        {/* <ModelField /> */}
         <SerialNumberInput
           serialNumber={serialNumber}
           setSerialNumber={setSerialNumber}

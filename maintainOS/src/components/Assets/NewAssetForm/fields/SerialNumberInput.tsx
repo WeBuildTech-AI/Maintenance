@@ -1,7 +1,7 @@
 export function SerialNumberInput({ serialNumber, setSerialNumber }) {
   return (
     <div className="mt-4">
-      <h3 className="mb-4 text-base font-medium text-gray-900">
+      <h3 className="mb-2 text-base font-medium text-gray-900">
         Serial Number
       </h3>
       <div className="relative">
