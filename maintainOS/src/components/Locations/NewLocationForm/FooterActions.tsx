@@ -7,12 +7,14 @@ type FooterActionsProps = {
   onCancel: () => void;
   onCreate: () => void;
   submitLocationFormLoader: boolean; // boolean flag
+  isEdit?: boolean; // ✅ new optional prop
 };
 
 export function FooterActions({
   onCancel,
   onCreate,
   submitLocationFormLoader,
+  isEdit = false, // ✅ default false
 }: FooterActionsProps) {
   return (
     <div className="flex border-t p-4 flex-none">
@@ -29,7 +31,13 @@ export function FooterActions({
           onClick={onCreate}
           disabled={submitLocationFormLoader} // disable while submitting
         >
-          {submitLocationFormLoader ? <Loader /> : "Create"}
+          {submitLocationFormLoader ? (
+            <Loader />
+          ) : isEdit ? (
+            "Update"
+          ) : (
+            "Create"
+          )}
         </Button>
       </div>
     </div>

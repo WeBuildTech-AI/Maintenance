@@ -355,7 +355,7 @@ import type { RootState } from "../../store";
 import { useSelector } from "react-redux";
 import { NavLink } from "react-router-dom";
 import { SubLocationModal } from "./SubLocationModel";
-import toast, { Toaster } from 'react-hot-toast';
+import toast, { Toaster } from "react-hot-toast";
 
 export function Locations() {
   const hasFetched = useRef(false);
@@ -375,7 +375,10 @@ export function Locations() {
   const [sortBy, setSortBy] = useState("Name: Ascending Order");
   const user = useSelector((state: RootState) => state.auth.user);
   const [modalOpen, setModalOpen] = useState(false);
-  
+
+  // ✅ new states for edit
+  const [isEdit, setIsEdit] = useState(false);
+  const [editData, setEditData] = useState<LocationResponse | null>(null);
 
   // 👉 Pagination states
   const [page, setPage] = useState(1);
@@ -393,16 +396,13 @@ export function Locations() {
       );
 
       if (currentPage === 1) {
-        // Replace data for first page
         setLocations(res);
         setFilteredLocations(res);
       } else {
-        // Append for next pages
         setLocations((prev) => [...prev, ...res]);
         setFilteredLocations((prev) => [...prev, ...res]);
       }
 
-      // Check if there’s more data
       if (res.length < limit) {
         setHasMore(false);
       } else {
@@ -417,13 +417,11 @@ export function Locations() {
     }
   };
 
-  // 👉 Initial fetch
   useEffect(() => {
     if (hasFetched.current) return;
     fetchLocations(1);
   }, []);
 
-  // 👉 Search filter
   useEffect(() => {
     if (!searchQuery.trim()) {
       setFilteredLocations(locations);
@@ -435,7 +433,6 @@ export function Locations() {
     }
   }, [searchQuery, locations]);
 
-  // 👉 Sorting
   useEffect(() => {
     if (filteredLocations.length) {
       setFilteredLocations(sortLocations(filteredLocations, sortBy));
@@ -519,6 +516,7 @@ export function Locations() {
                         onClick={() => {
                           setSelectedLocation(items);
                           setShowForm(false);
+                          setIsEdit(false); // ✅ reset when viewing
                         }}
                         className={`border-b cursor-pointer border-border transition hover:bg-muted/40 ${
                           items?.id === selectedLocation?.id
@@ -552,8 +550,6 @@ export function Locations() {
                         </CardContent>
                       </Card>
                     ))}
-
-                    {/* 👉 Load More Button */}
                     {!loading && hasMore && (
                       <div className="text-center py-4">
                         <Button
@@ -569,8 +565,6 @@ export function Locations() {
                         </Button>
                       </div>
                     )}
-
-                    {/* 👉 Loader for next pages */}
                     {loading && page > 1 && (
                       <div className="text-center py-4">
                         <Loader />
@@ -584,7 +578,10 @@ export function Locations() {
                     </p>
                     <Button
                       variant="link"
-                      onClick={() => setShowForm(true)}
+                      onClick={() => {
+                        setShowForm(true);
+                        setIsEdit(false); // ✅ ensure create
+                      }}
                       className="text-primary p-0 cursor-pointer"
                     >
                       Create the first asset
@@ -603,6 +600,8 @@ export function Locations() {
                     onCreate={() => setShowForm(false)}
                     setSelectedLocation={setSelectedLocation}
                     setShowForm={setShowForm}
+                    isEdit={isEdit} // ✅ pass flag
+                    editData={editData} // ✅ pass data
                   />
                 ) : selectedLocation ? (
                   <div className="max-w-2xl p-4 mx-auto bg-white">
@@ -621,6 +620,11 @@ export function Locations() {
                         <button
                           title="Edit"
                           className="flex items-center gap-1 px-3 py-1.5 rounded-md cursor-pointer text-orange-600 hover:bg-orange-50 border border-orange-600"
+                          onClick={() => {
+                            setIsEdit(true); // ✅ enter edit mode
+                            setEditData(selectedLocation); // ✅ pass data
+                            setShowForm(true);
+                          }}
                         >
                           <Edit size={16} /> Edit
                         </button>

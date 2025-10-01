@@ -12,19 +12,23 @@ import { Dropdowns } from "./Dropdowns";
 import { FooterActions } from "./FooterActions";
 
 import type { RootState, AppDispatch } from "../../../store";
-import { createLocation } from "../../../store/locations";
-import type { CreateLocationData } from "../../../store/locations";
+import { createLocation, updateLocation } from "../../../store/locations"; // ✅ added update
+import type { CreateLocationData, LocationResponse } from "../../../store/locations";
 
 type NewLocationFormProps = {
   onCancel: () => void;
   setSelectedLocation: (id: string) => void;
   setShowForm: (show: boolean) => void;
+  isEdit?: boolean; // ✅ new
+  editData?: LocationResponse | null; // ✅ new
 };
 
 export function NewLocationForm({
   onCancel,
   setSelectedLocation,
   setShowForm,
+  isEdit = false, // ✅ default false
+  editData = null, // ✅ default null
 }: NewLocationFormProps) {
   const [pictures, setPictures] = useState<File[]>([]);
   const [attachedDocs, setAttachedDocs] = useState<File[]>([]);
@@ -51,6 +55,19 @@ export function NewLocationForm({
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector((state: RootState) => state.auth.user);
 
+  // ✅ Pre-fill fields if editing
+  useEffect(() => {
+    if (isEdit && editData) {
+      setName(editData.name || "");
+      setAddress(editData.address || "");
+      setDescription(editData.description || "");
+      setQrCode(editData.qrCode || "");
+      setVendorId(editData.vendorIds || []);
+      setParentLocationId(editData.parentLocationId || "");
+      // pictures, attachedDocs, teamInCharge can be mapped if available in API
+    }
+  }, [isEdit, editData]);
+
   // Click outside handler
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -71,8 +88,8 @@ export function NewLocationForm({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Create location handler
-  const handleCreateLocation = async () => {
+  // Create / Update location handler
+  const handleSubmitLocation = async () => {
     if (!user) return;
 
     setSubmitLocationFormLoader(true);
@@ -84,15 +101,26 @@ export function NewLocationForm({
       description,
       vendorIds: vendorId,
       parentLocationId,
-      // teamsInCharge: teamInCharge, // uncomment if API expects it
     };
 
     try {
-      const res = await dispatch(createLocation(locationData)).unwrap();
-      console.log("Location created:", res);
-      // setSelectedLocation(res.id);
+      if (isEdit && editData?.id) {
+        // ✅ Update flow
+        const res = await dispatch(
+          updateLocation({ id: editData.id, data: locationData })
+        ).unwrap();
+        console.log("Location updated:", res);
+        toast.success("Location updated successfully");
+        setSelectedLocation(res.id);
+      } else {
+        // ✅ Create flow
+        const res = await dispatch(createLocation(locationData)).unwrap();
+        console.log("Location created:", res);
+        toast.success("Location created successfully");
+        setSelectedLocation(res.id);
+      }
+
       setShowForm(false);
-      toast("Hello World");
 
       // reset form
       setName("");
@@ -105,7 +133,8 @@ export function NewLocationForm({
       setVendorId([]);
       setParentLocationId("");
     } catch (err) {
-      console.error("Failed to create location:", err);
+      console.error("Failed to submit location:", err);
+      toast.error("Error while saving location");
     } finally {
       setSubmitLocationFormLoader(false);
     }
@@ -119,7 +148,9 @@ export function NewLocationForm({
       <div className="flex flex-col h-full overflow-hidden">
         {/* Header */}
         <div className="p-4 border-b flex-none">
-          <h2 className="text-lg font-semibold">New Location</h2>
+          <h2 className="text-lg font-semibold">
+            {isEdit ? "Edit Location" : "New Location"}
+          </h2>
         </div>
 
         {/* Scrollable content */}
@@ -194,8 +225,9 @@ export function NewLocationForm({
         {/* Footer Actions */}
         <FooterActions
           onCancel={onCancel}
-          onCreate={handleCreateLocation}
+          onCreate={handleSubmitLocation} // ✅ unified handler
           submitLocationFormLoader={submitLocationFormLoader}
+          isEdit={isEdit} // ✅ pass flag
         />
       </div>
     </>
