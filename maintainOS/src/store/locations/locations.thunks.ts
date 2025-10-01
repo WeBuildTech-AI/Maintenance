@@ -1,16 +1,41 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
 import { locationService } from "./locations.service";
-import type {
-  CreateLocationData,
-  UpdateLocationData,
-} from "./locations.types";
+import type { CreateLocationData, UpdateLocationData } from "./locations.types";
 
 export const fetchLocations = createAsyncThunk(
   "locations/fetchLocations",
-  async (_, { rejectWithValue }) => {
+  async (
+    { limit, page, offset }: { limit: number; page: number; offset: number },
+    { rejectWithValue }
+  ) => {
     try {
-      const locations = await locationService.fetchLocations(10,1,0);
+      const locations = await locationService.fetchLocations(
+        limit,
+        page,
+        offset
+      );
+      return locations;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch locations"
+      );
+    }
+  }
+);
+
+export const fetchLocationsName = createAsyncThunk(
+  "locations/fetchLocationsName",
+  async (
+    { limit, page, offset }: { limit: number; page: number; offset: number },
+    { rejectWithValue }
+  ) => {
+    try {
+      const locations = await locationService.fetchLocationsName(
+        limit,
+        page,
+        offset
+      );
       return locations;
     } catch (error: any) {
       return rejectWithValue(

@@ -16,7 +16,7 @@ export function PartsDropdown({
   const navigate = useNavigate(); // ✅ Use React Router's hook
 
   return (
-    <div className="relative" ref={partRef}>
+    <div className="relative mt-4" ref={partRef}>
       <h3 className="mb-2 text-base font-medium text-gray-900">Part</h3>
 
       <div

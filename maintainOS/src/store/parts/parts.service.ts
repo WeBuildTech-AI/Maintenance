@@ -21,6 +21,18 @@ export const partService = {
     return res.data;
   },
 
+  fetchPartsName: async (
+    limit: number,
+    page: number,
+    offset: number
+  ): Promise<PartResponse[]> => {
+    const res = await axios.get(`${API_URL}/parts/summary`, {
+      params: { limit, page, offset },
+      headers: { Accept: "application/json" },
+    });
+    return res.data;
+  },
+
   fetchPartById: async (id: string): Promise<PartResponse> => {
     const res = await axios.get(`${API_URL}/parts/${id}`);
     return res.data;

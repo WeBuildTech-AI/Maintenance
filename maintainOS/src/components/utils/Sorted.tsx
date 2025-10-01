@@ -1,5 +1,5 @@
 // utils/sortLocations.ts
-import { LocationResponse } from "@/types"; // adjust path to your type
+import { LocationResponse } from "../../store/locations"; // adjust path to your type
 
 export function sortLocations(
   locations: LocationResponse[],
@@ -14,11 +14,11 @@ export function sortLocations(
     case "Name: Descending Order":
       return sorted.sort((a, b) => b.name.localeCompare(a.name));
 
-    case "Status":
-      return sorted.sort((a, b) => a.status.localeCompare(b.status));
+    // case "Status":
+    //   return sorted.sort((a, b) => a.status.localeCompare(b.status));
 
-    case "Location":
-      return sorted.sort((a, b) => a.location.localeCompare(b.location));
+    // case "Location":
+    //   return sorted.sort((a, b) => a.location.localeCompare(b.location));
 
     default:
       return locations;

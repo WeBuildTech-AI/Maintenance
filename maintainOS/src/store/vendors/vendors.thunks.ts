@@ -16,6 +16,19 @@ export const fetchVendors = createAsyncThunk(
   }
 );
 
+export const fetchVendorName = createAsyncThunk(
+  "vendors/fetchVendorName",
+  async (_, { rejectWithValue }) => {
+    try {
+      return await vendorService.fetchVendorName(10, 1, 0);
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch vendors"
+      );
+    }
+  }
+);
+
 export const fetchVendorById = createAsyncThunk(
   "vendors/fetchVendorById",
   async (id: string, { rejectWithValue }) => {

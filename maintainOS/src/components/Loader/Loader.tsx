@@ -16,8 +16,8 @@ export default function Loader() {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          paddingTop: "3rem",
-          paddingBottom: "3rem",
+          paddingTop: "1rem",
+          paddingBottom: "1rem",
         }}
       >
         <div
