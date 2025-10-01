@@ -18,13 +18,17 @@ interface NewMeterFormProps {
   onCancel: (data: any) => void;
   getLocationData: [];
   getAssetData: [];
+  editingMeter?: any;   //  ye naya prop add karo
 }
+
+
 
 export function NewMeterForm({
   onCreate,
   onCancel,
   getLocationData,
   getAssetData,
+  editingMeter
 }: NewMeterFormProps) {
   const [meterType, setMeterType] = useState<"manual" | "automated">("manual");
   const [meterName, setMeterName] = useState("");
@@ -42,6 +46,25 @@ export function NewMeterForm({
   const [postMeterDataloading, setPostMeterDataLoading] = useState(false);
 
   const combinedValue = `${readingFrequencyValue} ${readingFrequencyUnit}`;
+
+
+
+
+
+
+  useEffect(() => {
+    if (editingMeter) {
+      setMeterType(editingMeter.meterType || "manual");
+      setMeterName(editingMeter.name || "");
+      setDescription(editingMeter.description || "");
+      setMeasurementUnit(editingMeter.unit || "");
+      setAsset(editingMeter.assetId || "");
+      setLocation(editingMeter.locationId || "");
+      setReadingFrequencyValue(editingMeter.readingFrequency?.time || "");
+      setReadingFrequencyUnit(editingMeter.readingFrequency?.interval || "none");
+    }
+  }, [editingMeter]);
+
 
   // Split images/docs
   const splitFiles = (selectedFiles: File[]) => {
@@ -78,6 +101,7 @@ export function NewMeterForm({
     setDocs((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // 👇 yaha naam update kiya
   const handleCreateMeter = () => {
     try {
       if (!meterName.trim()) {
@@ -90,41 +114,51 @@ export function NewMeterForm({
       }
       setError("");
       setPostMeterDataLoading(true);
-      const newMeter = {
+      const payload = {
         organizationId: user.organizationId,
         name: meterName,
-        meterType: meterType,
-        description: description,
+        meterType,
+        description,
         unit: measurementUnit,
         assetId: asset,
         locationId: location,
         readingFrequency: {
-          iterval: readingFrequencyUnit,
+          interval: readingFrequencyUnit,
           time: readingFrequencyValue,
         },
         photos: [],
       };
 
-      console.log(newMeter, "New Meter");
-      // Dispatch to Redux thunk
-      dispatch(createMeter(newMeter))
-        .unwrap()
-        .then(() => {
-          console.log("Meter created successfully!");
-          setMeterName("");
-          setDescription("");
-          setAsset("");
-          setLocation("");
-          setMeasurementUnit("none");
-          setReadingFrequencyUnit("none");
-          setReadingFrequencyValue("");
+      console.log(payload, editingMeter ? "Update Meter" : "New Meter");
 
-          // maybe show toast or navigate
-        })
-        .catch((err) => {
-          console.error("Meter creation failed:", err);
-          setError(err);
-        });
+      if (editingMeter) {
+        dispatch(updateMeter({ id: editingMeter.id, data: payload }))
+          .unwrap()
+          .then(() => {
+            console.log("Meter updated successfully!");
+          })
+          .catch((err) => {
+            console.error("Meter update failed:", err);
+            setError(err);
+          });
+      } else {
+        dispatch(createMeter(payload))
+          .unwrap()
+          .then(() => {
+            console.log("Meter created successfully!");
+            setMeterName("");
+            setDescription("");
+            setAsset("");
+            setLocation("");
+            setMeasurementUnit("none");
+            setReadingFrequencyUnit("none");
+            setReadingFrequencyValue("");
+          })
+          .catch((err) => {
+            console.error("Meter creation failed:", err);
+            setError(err);
+          });
+      }
     } catch (err) {
       console.log(err);
     } finally {
@@ -184,11 +218,10 @@ export function NewMeterForm({
             <button
               type="button"
               onClick={() => setMeterType("manual")}
-              className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
-                meterType === "manual"
+              className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${meterType === "manual"
                   ? "border-orange-600 bg-white-50 text-orange-600 ring-1 ring-blue-500/20"
                   : "border-gray-300 text-gray-700 hover:bg-gray-50"
-              }`}
+                }`}
             >
               <User className="h-4 w-4" />
               Manual
@@ -196,11 +229,10 @@ export function NewMeterForm({
             <button
               type="button"
               onClick={() => setMeterType("automated")}
-              className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
-                meterType === "automated"
+              className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${meterType === "automated"
                   ? "border-orange-600 bg-white-50 text-orange-600 ring-1 ring-blue-500/20"
                   : "border-gray-300 text-gray-700 hover:bg-gray-50"
-              }`}
+                }`}
             >
               <Lock className="h-4 w-4" />
               Automated
@@ -575,7 +607,7 @@ export function NewMeterForm({
           </button>
         )}
         <button
-          onClick={handleCreateMeter}
+          onClick={handleCreateMeter}   // 👈 ab sahi naam
           style={{
             marginLeft: "auto",
             paddingLeft: "40px",
@@ -583,8 +615,13 @@ export function NewMeterForm({
           }}
           className="h-10 rounded-md bg-orange-600 text-sm font-medium text-white shadow hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          {postMeterDataloading ? "Loading...." : "Create"}
+          {postMeterDataloading
+            ? "Loading...."
+            : editingMeter
+              ? "Update"
+              : "Create"}
         </button>
+
       </div>
     </div>
   );

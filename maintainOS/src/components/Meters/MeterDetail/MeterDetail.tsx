@@ -1,11 +1,30 @@
+"use client";
+
+import { useState } from "react";
 import { Building2, Edit, MapPin, MoreHorizontal, Plus } from "lucide-react";
 import { Button } from "../../ui/button";
 import { MeterAutomations } from "./MeterAutomations";
 import { MeterDetailsSection } from "./MeterDetailsSection";
 import { MeterReadings } from "./MeterReadings";
 import { MeterWorkOrders } from "./MeterWorkOrders";
+import { NewMeterForm } from "../NewMeterForm/NewMeterForm";
 
-export function MeterDetail({ selectedMeter }: any) {
+
+export function MeterDetail({ selectedMeter, getAssetData, getLocationData }: any) {
+  const [isEditing, setIsEditing] = useState(false);
+
+  if (isEditing) {
+    return (
+      <NewMeterForm
+        onCreate={() => setIsEditing(false)}
+        onCancel={() => setIsEditing(false)}
+        getLocationData={getLocationData}
+        getAssetData={getAssetData}
+        editingMeter={selectedMeter} // 👈 pass current meter
+      />
+    );
+  }
+
   return (
     <div className="flex border mr-2 flex-col h-full">
       {/* Header */}
@@ -17,7 +36,12 @@ export function MeterDetail({ selectedMeter }: any) {
               <Plus className="h-4 w-4" />
               Record Reading
             </Button>
-            <Button variant="ghost" size="sm" className="gap-2 text-orange-600">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2 text-orange-600"
+              onClick={() => setIsEditing(true)} // open form
+            >
               <Edit className="h-4 w-4" />
               Edit
             </Button>
