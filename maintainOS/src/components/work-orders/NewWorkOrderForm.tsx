@@ -422,9 +422,8 @@ export function NewWorkOrderForm({ onCreate }: NewWorkOrderFormProps) {
                     <span className="font-semibold">{selectedWorkType}</span>
                   </span>
                   <ChevronDown
-                    className={`ml-2 h-4 w-4 text-blue-500 transition-transform ${
-                      workTypeOpen ? "rotate-180" : ""
-                    }`}
+                    className={`ml-2 h-4 w-4 text-blue-500 transition-transform ${workTypeOpen ? "rotate-180" : ""
+                      }`}
                   />
                 </div>
                 {workTypeOpen && (
@@ -436,11 +435,10 @@ export function NewWorkOrderForm({ onCreate }: NewWorkOrderFormProps) {
                           setSelectedWorkType(type);
                           setWorkTypeOpen(false);
                         }}
-                        className={`px-4 py-2 cursor-pointer text-sm ${
-                          selectedWorkType === type
+                        className={`px-4 py-2 cursor-pointer text-sm ${selectedWorkType === type
                             ? "text-blue-600 font-semibold bg-blue-50 flex justify-between"
                             : "text-gray-700 hover:bg-gray-100"
-                        }`}
+                          }`}
                       >
                         <span>{type}</span>
                         {selectedWorkType === type && (
@@ -464,11 +462,10 @@ export function NewWorkOrderForm({ onCreate }: NewWorkOrderFormProps) {
                 <button
                   key={priority.name}
                   onClick={() => setSelectedPriority(priority.name)}
-                  className={`flex-1 px-2 py-1 text-xs font-medium transition-all duration-200 hover:opacity-90 rounded ${
-                    selectedPriority === priority.name
+                  className={`flex-1 px-2 py-1 text-xs font-medium transition-all duration-200 hover:opacity-90 rounded ${selectedPriority === priority.name
                       ? `${priority.color} ${priority.textColor} shadow-sm`
                       : "text-gray-700 bg-gray-100 hover:bg-gray-200"
-                  }`}
+                    }`}
                 >
                   {priority.name}
                 </button>

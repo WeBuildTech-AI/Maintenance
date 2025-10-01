@@ -1,29 +1,14 @@
+"use client";
+
 import { useMemo, useState } from "react";
-
-import {
-  Calendar,
-  ChevronDown,
-  LayoutGrid,
-  List,
-  Plus,
-  Search,
-  Users,
-} from "lucide-react";
-import { Button } from "../ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
-import { Input } from "../ui/input";
-
 import { CalendarView } from "./CalendarView";
 import { ListView } from "./ListView";
 import { ToDoView } from "./ToDoView";
 import type { WorkOrder } from "./types";
+import type { ViewMode } from "./types";
 import { WorkloadView } from "./WorkloadView/WorkloadView";
 import { WorkOrderHeaderComponent } from "./WorkOrderHeader";
+import NewWorkOrderModal from "./NewWorkOrderModal";
 
 const mockWorkOrders: WorkOrder[] = [
   {
@@ -106,6 +91,8 @@ export function WorkOrders() {
   const [workloadWeekOffset, setWorkloadWeekOffset] = useState(0);
   const [creatingWorkOrder, setCreatingWorkOrder] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  console.log(showSettings, "showSettings")
 
   const filteredWorkOrders = useMemo(() => {
     if (searchQuery.trim() === "") {
@@ -136,7 +123,15 @@ export function WorkOrders() {
   return (
     <div className="flex flex-col h-full bg-background">
 
-      {WorkOrderHeaderComponent(viewMode, setViewMode, searchQuery, setSearchQuery, setCreatingWorkOrder, setShowSettings)}
+      {WorkOrderHeaderComponent(
+        viewMode,
+        setViewMode,
+        searchQuery,
+        setSearchQuery,
+        setCreatingWorkOrder,
+        setShowSettings,
+        setIsModalOpen // ⬅️ pass modal opener
+      )}
 
       {/* Views */}
       <div className="flex-1 overflow-hidden">
@@ -162,6 +157,12 @@ export function WorkOrders() {
           />
         )}
       </div>
+
+      {/* Modal */}
+      <NewWorkOrderModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 }

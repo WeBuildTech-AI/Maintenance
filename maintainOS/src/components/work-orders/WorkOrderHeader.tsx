@@ -2,7 +2,7 @@ import type { Dispatch, SetStateAction } from "react";
 import type { ViewMode } from "./types";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
-import { Calendar, ChevronDown, LayoutGrid, List, PanelTop, Plus, Search, Settings, Table, Users } from "lucide-react";
+import { Calendar, ChevronDown, LayoutGrid, List,  Plus, Search, Settings,  Users } from "lucide-react";
 import { Input } from "../ui/input";
 import WorkOrderFilterBar from "./WorkOrderFilterBar";
 
@@ -12,7 +12,8 @@ export function WorkOrderHeaderComponent(
   searchQuery: string,
   setSearchQuery: Dispatch<SetStateAction<string>>,
   setIsCreatingForm: Dispatch<SetStateAction<boolean>>,
-  setShowSettings: Dispatch<SetStateAction<boolean>>
+  setShowSettings: Dispatch<SetStateAction<boolean>>,
+  setIsModalOpen?: Dispatch<SetStateAction<boolean>> // ⬅️ modal opener (optional for backward compat)
 ) {
   return <header className=" border-border bg-card px-6 py-4">
     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -84,8 +85,13 @@ export function WorkOrderHeaderComponent(
         <Button
           className="gap-2 cursor-pointer bg-orange-600 hover:outline-none"
           onClick={() => {
-            setIsCreatingForm(true);
-            setViewMode("todo");
+            // 🔴 condition: todo नहीं है ⇒ modal खोलो, वरना पुराना create flow
+            if (viewMode !== "todo") {
+              setIsModalOpen?.(true);
+            } else {
+              setIsCreatingForm(true);
+              setViewMode("todo");
+            }
           } }
         >
           <Plus className="mr-2 h-4 w-4" />
