@@ -48,14 +48,12 @@ export function Dropdowns({
       : { text: "+ Create New Parent Location", path: "/locations" };
 
   const handleFetchApi = async () => {
-    if (hasFetched.current) return;
     setLoading(true);
     try {
       if (stage === "vendors") {
         const res = await vendorService.fetchVendorName(10, 1, 0);
         setDynamicOptions(res.data);
       } else if (stage === "teams") {
-        // TODO: replace with actual team API
         const res = await Promise.resolve({ data: [] });
         setDynamicOptions(res.data);
       } else {
@@ -63,10 +61,10 @@ export function Dropdowns({
         setDynamicOptions(res.data);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Dropdown fetch error:", err);
+      setDynamicOptions([]); // clear options if error
     } finally {
       setLoading(false);
-      hasFetched.current = true;
     }
   };
 
@@ -91,8 +89,11 @@ export function Dropdowns({
       <div
         className="flex flex-wrap items-center gap-1 rounded-md border border-gray-300 bg-white px-2 py-1 h-auto min-h-[48px] cursor-pointer"
         onClick={() => {
-          setOpen(!open);
-          handleFetchApi();
+          const nextState = !open;
+          setOpen(nextState);
+          if (nextState) {
+            handleFetchApi(); // only fetch when opening
+          }
         }}
       >
         <Search className="h-8 w-4 text-gray-400 mr-1" />

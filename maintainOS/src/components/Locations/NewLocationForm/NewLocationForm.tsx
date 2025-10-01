@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-
+import toast, { Toaster } from "react-hot-toast";
 import { PicturesUpload } from "./PicturesUpload";
 import { AddressAndDescription } from "./AddressAndDescription";
 import { QrCodeSection } from "./QrCodeSection";
@@ -92,6 +92,7 @@ export function NewLocationForm({
       console.log("Location created:", res);
       // setSelectedLocation(res.id);
       setShowForm(false);
+      toast("Hello World");
 
       // reset form
       setName("");
@@ -111,85 +112,92 @@ export function NewLocationForm({
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* Header */}
-      <div className="p-4 border-b flex-none">
-        <h2 className="text-lg font-semibold">New Location</h2>
+    <>
+      <div>
+        <Toaster />
       </div>
+      <div className="flex flex-col h-full overflow-hidden">
+        {/* Header */}
+        <div className="p-4 border-b flex-none">
+          <h2 className="text-lg font-semibold">New Location</h2>
+        </div>
 
-      {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6 min-h-0 mb-2">
-        {/* Location Name */}
-        <div className="space-y-1">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Enter Location Name"
-            className="w-full px-0 py-2 p-3 text-gray-400 placeholder-gray-400 bg-transparent border-0 border-b-4 border-blue-500 focus:outline-none"
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-6 min-h-0 mb-2">
+          {/* Location Name */}
+          <div className="space-y-1">
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter Location Name"
+              className="w-full px-0 py-2 p-3 text-gray-400 placeholder-gray-400 bg-transparent border-0 border-b-4 border-blue-500 focus:outline-none"
+            />
+          </div>
+
+          {/* Pictures Upload */}
+          <PicturesUpload pictures={pictures} setPictures={setPictures} />
+
+          {/* Address + Description */}
+          <AddressAndDescription
+            address={address}
+            setAddress={setAddress}
+            description={description}
+            setDescription={setDescription}
+          />
+
+          {/* Teams Dropdown */}
+          <Dropdowns
+            stage="teams"
+            open={teamOpen}
+            setOpen={setTeamOpen}
+            containerRef={teamRef}
+            navigate={navigate}
+            value={teamInCharge}
+            onSelect={(val) =>
+              setTeamInCharge(Array.isArray(val) ? val : [val])
+            }
+          />
+
+          {/* QR Code Section */}
+          <QrCodeSection qrCode={qrCode} setQrCode={setQrCode} />
+
+          {/* Attached Docs */}
+          <FilesUpload
+            attachedDocs={attachedDocs}
+            setAttachedDocs={setAttachedDocs}
+          />
+
+          {/* Vendors Dropdown */}
+          <Dropdowns
+            stage="vendors"
+            open={vendorOpen}
+            setOpen={setVendorOpen}
+            containerRef={vendorRef}
+            navigate={navigate}
+            value={vendorId}
+            onSelect={(val) => setVendorId(Array.isArray(val) ? val : [val])}
+          />
+
+          {/* Parent Location Dropdown */}
+          <Dropdowns
+            stage="parent"
+            open={parentOpen}
+            setOpen={setParentOpen}
+            containerRef={parentRef}
+            navigate={navigate}
+            value={parentLocationId}
+            onSelect={(val) => setParentLocationId(val as string)}
           />
         </div>
 
-        {/* Pictures Upload */}
-        <PicturesUpload pictures={pictures} setPictures={setPictures} />
-
-        {/* Address + Description */}
-        <AddressAndDescription
-          address={address}
-          setAddress={setAddress}
-          description={description}
-          setDescription={setDescription}
-        />
-
-        {/* Teams Dropdown */}
-        <Dropdowns
-          stage="teams"
-          open={teamOpen}
-          setOpen={setTeamOpen}
-          containerRef={teamRef}
-          navigate={navigate}
-          value={teamInCharge}
-          onSelect={(val) => setTeamInCharge(Array.isArray(val) ? val : [val])}
-        />
-
-        {/* QR Code Section */}
-        <QrCodeSection qrCode={qrCode} setQrCode={setQrCode} />
-
-        {/* Attached Docs */}
-        <FilesUpload
-          attachedDocs={attachedDocs}
-          setAttachedDocs={setAttachedDocs}
-        />
-
-        {/* Vendors Dropdown */}
-        <Dropdowns
-          stage="vendors"
-          open={vendorOpen}
-          setOpen={setVendorOpen}
-          containerRef={vendorRef}
-          navigate={navigate}
-          value={vendorId}
-          onSelect={(val) => setVendorId(Array.isArray(val) ? val : [val])}
-        />
-
-        {/* Parent Location Dropdown */}
-        <Dropdowns
-          stage="parent"
-          open={parentOpen}
-          setOpen={setParentOpen}
-          containerRef={parentRef}
-          navigate={navigate}
-          value={parentLocationId}
-          onSelect={(val) => setParentLocationId(val as string)}
+        {/* Footer Actions */}
+        <FooterActions
+          onCancel={onCancel}
+          onCreate={handleCreateLocation}
+          submitLocationFormLoader={submitLocationFormLoader}
         />
       </div>
-
-      {/* Footer Actions */}
-      <FooterActions
-        onCancel={onCancel}
-        onCreate={handleCreateLocation}
-        submitLocationFormLoader={submitLocationFormLoader}
-      />
-    </div>
+    </>
   );
 }

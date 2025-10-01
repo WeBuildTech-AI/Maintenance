@@ -1,5 +1,5 @@
 import { Card, CardContent } from "../ui/card";
-import { mockLocations, type Item } from "./inventory.types";
+// import { mockLocations, type Item } from "./inventory.types";
 
 export function PartCard({
   item,
@@ -10,7 +10,7 @@ export function PartCard({
   item: Item;
   selected: boolean;
   onSelect: () => void;
-  inventoryData;
+  inventoryData: [];
 }) {
   return (
     <Card

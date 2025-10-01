@@ -20,7 +20,7 @@ export function MetersList({
   const meters = Array.isArray(filteredMeters) ? filteredMeters : [];
 
   return (
-    <div className="w-112 border ml-3 mr-2 border-border bg-card flex flex-col">
+    <div className="w-96 border ml-3 mr-2 border-border bg-card flex flex-col">
       <div className="p-2 border-b border-border">
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Sort By:</span>

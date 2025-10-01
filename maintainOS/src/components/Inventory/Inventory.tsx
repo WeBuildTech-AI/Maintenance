@@ -133,7 +133,7 @@ export function Inventory() {
     if (!newItem.name) return;
 
     const item: CreatePartData = {
-      organizationId: user.organizationId,
+      organizationId: user?.organizationId,
       name: newItem.name,
       description: newItem.description,
       unitCost: Number(newItem.unitCost) || 0,
@@ -193,7 +193,7 @@ export function Inventory() {
         <>
           <div className="flex flex-1 min-h-0">
             {/* Left list */}
-            <div className="w-112 border-r bg-card flex flex-col min-h-0">
+            <div className="w-96 border ml-2 mr-2 bg-card flex flex-col min-h-0">
               <div className="p-4 border-b flex-shrink-0">
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">
@@ -254,7 +254,7 @@ export function Inventory() {
             </div>
 
             {/* Right panel */}
-            <div className="flex-1 bg-card min-h-0 flex flex-col">
+            <div className="flex-1 ml-1 mr-2 border bg-card min-h-0 flex flex-col">
               {isCreatingInventory ? (
                 <NewPartForm
                   newItem={newItem}

@@ -22,7 +22,7 @@ export function AssetsList({
   setShowNewAssetForm: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   return (
-    <div className="w-112 border ml-2 mr-3 border-border bg-card flex flex-col min-h-0">
+    <div className="w-96 border ml-2 mr-3 border-border bg-card flex flex-col min-h-0">
       <div className="p-3 border-b border-border flex-shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Sort By:</span>

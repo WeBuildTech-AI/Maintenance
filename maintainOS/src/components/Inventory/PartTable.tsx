@@ -88,7 +88,7 @@ export function PartTable({
               ) : (
                 <tr>
                   <td
-                    className="px-4 py-6 text-center text-muted-foreground"
+                    className="px-4 py-6 p-2 text-center text-muted-foreground"
                     colSpan={6}
                   >
                     No parts found.

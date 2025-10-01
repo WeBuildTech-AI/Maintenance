@@ -29,12 +29,18 @@ const Reporting = lazyImport(
   () => import("./components/Reporting"),
   "Reporting"
 );
-const Messages = lazyImport(() => import("./components/Messages/Messages"), "Messages");
+const Messages = lazyImport(
+  () => import("./components/Messages/Messages"),
+  "Messages"
+);
 const Categories = lazyImport(
   () => import("./components/Categories"),
   "Categories"
 );
-const Library = lazyImport(() => import("./components/Library/Library"), "Library");
+const Library = lazyImport(
+  () => import("./components/Library/Library"),
+  "Library"
+);
 const Meters = lazyImport(() => import("./components/Meters/Meters"), "Meters");
 const Automations = lazyImport(
   () => import("./components/automations/Automations"),
@@ -68,7 +74,6 @@ const InviteUser = lazyImport(
   "InviteUser"
 );
 
-
 export default function App() {
   const { user, accessToken } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch<AppDispatch>();
@@ -96,6 +101,9 @@ export default function App() {
 
   return (
     <>
+      <div>
+        <Toaster position="top-center" reverseOrder={false} />
+      </div>
       <MainLayout user={user} onLogout={handleLogout}>
         <Suspense fallback={<div className="p-4">Loading...</div>}>
           <Routes>

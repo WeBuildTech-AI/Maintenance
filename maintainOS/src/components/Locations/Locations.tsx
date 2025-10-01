@@ -355,6 +355,7 @@ import type { RootState } from "../../store";
 import { useSelector } from "react-redux";
 import { NavLink } from "react-router-dom";
 import { SubLocationModal } from "./SubLocationModel";
+import toast, { Toaster } from 'react-hot-toast';
 
 export function Locations() {
   const hasFetched = useRef(false);
@@ -374,6 +375,7 @@ export function Locations() {
   const [sortBy, setSortBy] = useState("Name: Ascending Order");
   const user = useSelector((state: RootState) => state.auth.user);
   const [modalOpen, setModalOpen] = useState(false);
+  
 
   // 👉 Pagination states
   const [page, setPage] = useState(1);
@@ -471,7 +473,7 @@ export function Locations() {
         <>
           <div className="flex gap-2 flex-1 overflow-hidden mt-3 min-h-0">
             {/* Left Card */}
-            <div className="border ml-3 mr-2 w-96 flex flex-col">
+            <div className="border ml-3 mr-1 w-96 flex flex-col">
               {/* Sort By */}
               <div className="p-3 border-border flex-shrink-0">
                 <div className="flex items-center gap-2">
@@ -593,7 +595,7 @@ export function Locations() {
             </div>
 
             {/* Right Card */}
-            <Card className="flex flex-col h-full overflow-hidden flex-1 mr-2">
+            <Card className="flex flex-col h-full mr-2 overflow-hidden flex-1 mr-2">
               <CardContent className="flex-1 overflow-y-auto min-h-0">
                 {showForm ? (
                   <NewLocationForm
