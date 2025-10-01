@@ -77,7 +77,7 @@ export function LocationDropdown({
       >
         <Search className="h-4 w-4 text-gray-400" />
         <span className="flex-1 text-gray-600">
-          {selectedLocation || "Select..."}
+          {selectedLocation?.name || "Select..."}
         </span>
         <ChevronDown className="h-5 w-5 text-gray-400" />
       </div>
@@ -97,13 +97,12 @@ export function LocationDropdown({
                     key={index}
                     className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                     onClick={() => {
-                      setSelectedLocation(
-                        typeof loc === "string" ? loc : loc.name
-                      );
+                      setSelectedLocation(loc); // 👈 store whole object
                       setLocationOpen(false);
+                      console.log("Send ID to backend:", loc.id);
                     }}
                   >
-                    {typeof loc === "string" ? loc : loc.name}
+                    {loc.name}
                   </li>
                 ))
               ) : (

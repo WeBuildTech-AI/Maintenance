@@ -13,8 +13,6 @@ export const formatDate = (isoDate: string): string => {
   return `${day}/${month}/${year}, ${hours}:${minutes}`;
 };
 
-
-
 export function formatDateOnly(isoDate: string): string {
   if (!isoDate) return "";
 
@@ -25,4 +23,28 @@ export function formatDateOnly(isoDate: string): string {
   const year = date.getFullYear();
 
   return `${day}/${month}/${year}`;
+}
+
+// utils/date.ts
+// utils/date.ts
+export function formatFriendlyDate(isoDate: string) {
+  const date = new Date(isoDate);
+  const now = new Date();
+
+  const isToday =
+    date.getDate() === now.getDate() &&
+    date.getMonth() === now.getMonth() &&
+    date.getFullYear() === now.getFullYear();
+
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+
+  if (isToday) {
+    return `Today at ${hours}:${minutes}`;
+  }
+
+  // You can extend for yesterday or fallback to normal date format
+  return `${date.getDate().toString().padStart(2, "0")}/${(date.getMonth() + 1)
+    .toString()
+    .padStart(2, "0")}/${date.getFullYear()} at ${hours}:${minutes}`;
 }

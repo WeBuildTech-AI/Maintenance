@@ -75,6 +75,9 @@ export function Inventory() {
   const user = useSelector((state: RootState) => state.auth.user);
   const [inventoryData, setInventoryData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [selectedPart, setSelectedPart] = useState<
+    (typeof inventoryData)[0] | null
+  >(null);
 
   useEffect(() => {
     const fetchLocations = async () => {
@@ -239,6 +242,7 @@ export function Inventory() {
                             onSelect={() => {
                               setSelectedId(it.id);
                               setIsCreatingInventory(false);
+                              setSelectedPart(it);
                             }}
                           />
                         </>
@@ -264,8 +268,8 @@ export function Inventory() {
                   onCancel={() => setIsCreatingInventory(false)}
                   onCreate={createItem}
                 />
-              ) : selected ? (
-                <PartDetails item={selected} stockStatus={stockStatus} />
+              ) : selectedPart ? (
+                <PartDetails item={selectedPart} stockStatus={stockStatus} />
               ) : (
                 <EmptyState variant="panel" />
               )}

@@ -22,10 +22,10 @@ import { ContactFormDialog } from "./ContactFormDialog";
 
 export function VendorDetails({
   vendor,
-  setVendors,
-}: {
+}: // setVendors,
+{
   vendor?: Vendor;
-  setVendors: React.Dispatch<React.SetStateAction<Vendor[]>>;
+  // setVendors: React.Dispatch<React.SetStateAction<Vendor[]>>;
 }) {
   if (!vendor) {
     return (
@@ -203,52 +203,51 @@ export function VendorDetails({
             <h3 className="text-sm font-semibold text-foreground">
               Contact List
             </h3>
+
             <div className="mt-3 space-y-3">
-              {vendor.contacts.length === 0 ? (
+              {!vendor?.contacts ? (
                 <p className="text-xs text-muted-foreground">
                   No contacts yet. Add a contact to keep details handy.
                 </p>
               ) : (
-                vendor.contacts.map((c) => (
-                  <div
-                    key={`${vendor.id}-${c.name}`}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded border border-border px-3 py-2"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold text-white"
-                        style={{ backgroundColor: c.color ?? "#64748b" }}
-                      >
-                        {renderInitials(c.name || "C")}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">{c.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {c.role || "Contact"}
-                        </p>
-                      </div>
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded border border-border px-3 py-2">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold text-white"
+                      style={{ backgroundColor: vendor.color ?? "#64748b" }}
+                    >
+                      {renderInitials(vendor.name || "C")}
                     </div>
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                      {c.phone && (
-                        <span className="flex items-center gap-1">
-                          <Phone className="h-3 w-3" />
-                          {c.phone}
-                          {c.phoneExtension && ` x${c.phoneExtension}`}
-                        </span>
-                      )}
-                      {c.email && (
-                        <span className="flex items-center gap-1">
-                          <Mail className="h-3 w-3" />
-                          {c.email}
-                        </span>
-                      )}
+                    <div>
+                      <p className="text-sm font-medium">
+                        {vendor.name || "Contact"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Vendor Contact
+                      </p>
                     </div>
                   </div>
-                ))
+
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                    {vendor.contacts.phone && (
+                      <span className="flex items-center gap-1">
+                        <Phone className="h-3 w-3" />
+                        {vendor.contacts.phone}
+                      </span>
+                    )}
+                    {vendor.contacts.email && (
+                      <span className="flex items-center gap-1">
+                        <Mail className="h-3 w-3" />
+                        {vendor.contacts.email}
+                      </span>
+                    )}
+                  </div>
+                </div>
               )}
-              <ContactFormDialog vendor={vendor} setVendors={setVendors} />
             </div>
           </div>
+
+          {/* <ContactFormDialog vendor={vendor} setVendors={setVendors} /> */}
 
           {/* Locations */}
           <div>
@@ -287,7 +286,7 @@ export function VendorDetails({
           </div>
 
           {/* Services */}
-          <div className="flex flex-wrap gap-2">
+          {/* <div className="flex flex-wrap gap-2">
             {vendor.services.map((s) => (
               <Badge
                 key={s}
@@ -297,7 +296,7 @@ export function VendorDetails({
                 {s}
               </Badge>
             ))}
-          </div>
+          </div> */}
         </CardContent>
       </Card>
     </section>

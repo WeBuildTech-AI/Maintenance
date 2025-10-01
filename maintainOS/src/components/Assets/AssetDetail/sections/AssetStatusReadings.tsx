@@ -1,23 +1,38 @@
 import { Calendar, ChevronRight } from "lucide-react";
 import {
-    CartesianGrid,
-    Line,
-    LineChart,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis,
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from "recharts";
 import { Avatar, AvatarFallback, AvatarImage } from "../../../ui/avatar";
 import { Button } from "../../../ui/button";
 import { Card } from "../../../ui/card";
+import { useSelector } from "react-redux";
+import type { RootState } from "../../../../store";
+import { formatFriendlyDate } from "../../../utils/Date";
 
-export function AssetStatusReadings() {
+export function AssetStatusReadings({ asset }: { asset: any }) {
+  const user = useSelector((state: RootState) => state.auth.user);
+  const renderInitials = (text: string) =>
+    text
+      .split(" ")
+      .map((p) => p[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase();
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-medium">Status and Meter Readings</h2>
-        <Button variant="ghost" className="gap-1 text-orange-600 hover:text-orange-700 hover:bg-orange-50 p-0 h-auto">
+        <Button
+          variant="ghost"
+          className="gap-1 text-orange-600 hover:text-orange-700 hover:bg-orange-50 p-0 h-auto"
+        >
           See More
           <ChevronRight className="h-4 w-4" />
         </Button>
@@ -33,7 +48,8 @@ export function AssetStatusReadings() {
         </div>
 
         <p className="text-sm text-muted-foreground">
-          Last updated: <span className="font-medium">MaintainX</span>, Today at 11:41
+          Last updated: <span className="font-medium">MaintainOS</span>,{" "}
+          {formatFriendlyDate(asset?.updatedAt)}
         </p>
 
         {/* Meter reading card */}
@@ -47,9 +63,13 @@ export function AssetStatusReadings() {
               <div className="flex items-center gap-2">
                 <Avatar className="w-7 h-7">
                   <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face" />
-                  <AvatarFallback>AC</AvatarFallback>
+                  <AvatarFallback>
+                    {renderInitials(user?.fullName)}
+                  </AvatarFallback>
                 </Avatar>
-                <span className="text-sm text-muted-foreground">Ashwini Chauhan, Today at 13:28</span>
+                <span className="text-sm text-muted-foreground">
+                  {user?.fullName}, on {formatFriendlyDate(asset.createdAt)}
+                </span>
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </div>
@@ -62,7 +82,9 @@ export function AssetStatusReadings() {
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-medium">Work Order History</h3>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">Aug 1 - Sep 19</span>
+            <span className="text-sm text-muted-foreground">
+              Aug 1 - Sep 19
+            </span>
             <div className="flex items-center gap-2">
               <div className="h-8 w-8 p-0 grid place-items-center cursor-default">
                 <div className="h-4 w-4 text-muted-foreground" />
@@ -127,7 +149,10 @@ export function AssetStatusReadings() {
         </div>
 
         <div className="flex justify-center mt-8">
-          <Button variant="outline" className="gap-2 text-orange-600 border-orange-200 hover:bg-orange-50 rounded-full px-6">
+          <Button
+            variant="outline"
+            className="gap-2 text-orange-600 border-orange-200 hover:bg-orange-50 rounded-full px-6"
+          >
             <Calendar className="h-4 w-4" />
             Use in New Work Order
           </Button>

@@ -1,8 +1,19 @@
 import { CheckCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../../../ui/avatar";
 import { Badge } from "../../../ui/badge";
+import { useSelector } from "react-redux";
+import type { RootState } from "../../../../store";
 
 export function AssetWorkOrders() {
+  const renderInitials = (text: string) =>
+    text
+      .split(" ")
+      .map((p) => p[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase();
+
+  const user = useSelector((state: RootState) => state.auth.user);
   return (
     <div className="border-t border-border pt-8">
       <div className="space-y-4">
@@ -18,18 +29,26 @@ export function AssetWorkOrders() {
                 <span>Requested by</span>
                 <Avatar className="w-7 h-7">
                   <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face" />
-                  <AvatarFallback>AC</AvatarFallback>
+                  <AvatarFallback>
+                    {renderInitials(user?.fullName)}
+                  </AvatarFallback>
                 </Avatar>
-                <span>Ashwini Chauhan</span>
+                <span>{user?.fullName}</span>
               </div>
-              <Badge variant="outline" className="mt-2 bg-orange-50 text-orange-700 border-orange-200">
+              <Badge
+                variant="outline"
+                className="mt-2 bg-orange-50 text-orange-700 border-orange-200"
+              >
                 <div className="w-2 h-2 bg-orange-500 rounded-full mr-1" />
                 Open
               </Badge>
             </div>
           </div>
           <div className="text-right">
-            <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 mb-2">
+            <Badge
+              variant="outline"
+              className="bg-orange-50 text-orange-700 border-orange-200 mb-2"
+            >
               Electrical
             </Badge>
             <div className="text-sm text-muted-foreground">#6</div>
@@ -52,18 +71,26 @@ export function AssetWorkOrders() {
                 <span>Completed by</span>
                 <Avatar className="w-7 h-7">
                   <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face" />
-                  <AvatarFallback>AC</AvatarFallback>
+                  <AvatarFallback>
+                    {renderInitials(user?.fullName)}
+                  </AvatarFallback>
                 </Avatar>
-                <span>Ashwini Chauhan</span>
+                <span>{user?.fullName}</span>
               </div>
-              <Badge variant="outline" className="mt-2 bg-green-50 text-green-700 border-green-200">
+              <Badge
+                variant="outline"
+                className="mt-2 bg-green-50 text-green-700 border-green-200"
+              >
                 <CheckCircle className="w-3 h-3 mr-1" />
                 Done
               </Badge>
             </div>
           </div>
           <div className="text-right">
-            <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 mb-2">
+            <Badge
+              variant="outline"
+              className="bg-orange-50 text-orange-700 border-orange-200 mb-2"
+            >
               Electrical
             </Badge>
             <div className="text-sm text-muted-foreground">#2</div>
@@ -86,18 +113,26 @@ export function AssetWorkOrders() {
                 <span>Completed by</span>
                 <Avatar className="w-7 h-7">
                   <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face" />
-                  <AvatarFallback>AC</AvatarFallback>
+                  <AvatarFallback>
+                    {renderInitials(user?.fullName)}
+                  </AvatarFallback>
                 </Avatar>
-                <span>Ashwini Chauhan</span>
+                <span>{user?.fullName}</span>
               </div>
-              <Badge variant="outline" className="mt-2 bg-green-50 text-green-700 border-green-200">
+              <Badge
+                variant="outline"
+                className="mt-2 bg-green-50 text-green-700 border-green-200"
+              >
                 <CheckCircle className="w-3 h-3 mr-1" />
                 Done
               </Badge>
             </div>
           </div>
           <div className="text-right">
-            <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 mb-2">
+            <Badge
+              variant="outline"
+              className="bg-orange-50 text-orange-700 border-orange-200 mb-2"
+            >
               Electrical
             </Badge>
             <div className="text-sm text-muted-foreground">#3</div>
@@ -120,18 +155,26 @@ export function AssetWorkOrders() {
                 <span>Completed by</span>
                 <Avatar className="w-7 h-7">
                   <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face" />
-                  <AvatarFallback>AC</AvatarFallback>
+                  <AvatarFallback>
+                    {renderInitials(user?.fullName)}
+                  </AvatarFallback>
                 </Avatar>
-                <span>Ashwini Chauhan</span>
+                <span>{user?.fullName}</span>
               </div>
-              <Badge variant="outline" className="mt-2 bg-green-50 text-green-700 border-green-200">
+              <Badge
+                variant="outline"
+                className="mt-2 bg-green-50 text-green-700 border-green-200"
+              >
                 <CheckCircle className="w-3 h-3 mr-1" />
                 Done
               </Badge>
             </div>
           </div>
           <div className="text-right">
-            <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 mb-2">
+            <Badge
+              variant="outline"
+              className="bg-orange-50 text-orange-700 border-orange-200 mb-2"
+            >
               Electrical
             </Badge>
             <div className="text-sm text-muted-foreground">#4</div>
@@ -155,9 +198,11 @@ export function AssetWorkOrders() {
                   <span>Requested by</span>
                   <Avatar className="w-7 h-7">
                     <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face" />
-                    <AvatarFallback>AC</AvatarFallback>
+                    <AvatarFallback>
+                      {renderInitials(user?.fullName)}
+                    </AvatarFallback>
                   </Avatar>
-                  <span>Ashwini Chauhan</span>
+                  <span>{user?.fullName}</span>
                 </div>
               </div>
             </div>

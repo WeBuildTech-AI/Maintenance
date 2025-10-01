@@ -1,3 +1,112 @@
+// import { useEffect, useMemo, useState } from "react";
+// import { vendorService } from "../../store/vendors";
+// import type { ViewMode } from "../purchase-orders/po.types";
+// import { VendorForm } from "./VendorForm";
+// import { VendorHeaderComponent } from "./VendorHeader";
+// import { mockVendors, type Vendor } from "./vendors.types";
+// import { VendorSidebar } from "./VendorSidebar";
+// import { VendorTable } from "./VendorTable";
+
+// export function Vendors() {
+//   const [vendors, setVendors] = useState<Vendor[]>([]);
+//   const [viewMode, setViewMode] = useState<ViewMode>("panel");
+//   const [searchQuery, setSearchQuery] = useState("");
+//   const [showSettings, setShowSettings] = useState(false);
+//   const [loading, setLoading] = useState(false);
+//   const [selectedVendorId, setSelectedVendorId] = useState(
+//     mockVendors[0]?.id ?? ""
+//   );
+//   const [selectedVendors, setSelectedVendor] = useState(vendors[0]);
+//   const [isCreatingVendor, setIsCreatingVendor] = useState(false);
+
+//   useEffect(() => {
+//     const fetchLocations = async () => {
+//       setLoading(true);
+//       try {
+//         const res = await vendorService.fetchVendors(10, 1, 0);
+//         setVendors(res);
+//       } catch (err) {
+//         console.error(err);
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+
+//     fetchLocations();
+//   }, []);
+
+//   const filteredVendors = useMemo(() => {
+//     if (!searchQuery.trim()) return vendors;
+//     const query = searchQuery.toLowerCase();
+//     return vendors.filter(
+//       (vendor) =>
+//         vendor.name.toLowerCase().includes(query) ||
+//         vendor.category.toLowerCase().includes(query) ||
+//         vendor.services.some((s) => s.toLowerCase().includes(query))
+//     );
+//   }, [vendors, searchQuery]);
+
+//   useEffect(() => {
+//     if (filteredVendors.length === 0) return;
+//     if (!filteredVendors.some((v) => v.id === selectedVendorId)) {
+//       setSelectedVendorId(filteredVendors[0].id);
+//     }
+//   }, [filteredVendors, selectedVendorId]);
+
+//   const selectedVendor =
+//     filteredVendors.find((v) => v.id === selectedVendorId) ??
+//     filteredVendors[0];
+
+//   return (
+//     <div className="flex h-full flex-col">
+//       {/* Header */}
+//       {VendorHeaderComponent(
+//         viewMode,
+//         setViewMode,
+//         searchQuery,
+//         setSearchQuery,
+//         setIsCreatingVendor,
+//         setShowSettings
+//       )}
+
+//       {/* Body */}
+//       <div className="flex flex-1 overflow-hidden bg-muted/20">
+//         {viewMode === "panel" ? (
+//           <>
+//             <VendorSidebar
+//               vendors={filteredVendors}
+//               selectedVendorId={selectedVendorId}
+//               setSelectedVendorId={setSelectedVendorId}
+//               loading={loading}
+//             />
+//             <section className="flex-1 overflow-auto">
+//               {isCreatingVendor ? (
+//                 <VendorForm
+//                   setVendors={setVendors}
+//                   setSelectedVendorId={setSelectedVendorId}
+//                   onCancel={() => setIsCreatingVendor(false)}
+//                 />
+//               ) : selectedVendor ?  vendor={selecteādVendor}
+//                 setVendors={setSelectedVendor}
+//               />
+//               null : (
+//                 <div className="flex h-full items-center justify-center text-muted-foreground">
+//                   Select a vendor to view details.
+//                 </div>
+//               )}
+//             </section>
+//           </>
+//         ) : (
+//           <VendorTable
+//             vendors={filteredVendors}
+//             selectedVendorId={selectedVendorId}
+//           />
+//         )}
+//       </div>
+//     </div>
+//   );
+// }
+
 import { useEffect, useMemo, useState } from "react";
 import { vendorService } from "../../store/vendors";
 import type { ViewMode } from "../purchase-orders/po.types";
@@ -6,6 +115,7 @@ import { VendorHeaderComponent } from "./VendorHeader";
 import { mockVendors, type Vendor } from "./vendors.types";
 import { VendorSidebar } from "./VendorSidebar";
 import { VendorTable } from "./VendorTable";
+import { VendorDetails } from "./VendorDetails";
 
 export function Vendors() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -18,8 +128,9 @@ export function Vendors() {
   );
   const [isCreatingVendor, setIsCreatingVendor] = useState(false);
 
+  // Fetch vendors on mount
   useEffect(() => {
-    const fetchLocations = async () => {
+    const fetchVendors = async () => {
       setLoading(true);
       try {
         const res = await vendorService.fetchVendors(10, 1, 0);
@@ -31,9 +142,10 @@ export function Vendors() {
       }
     };
 
-    fetchLocations();
+    fetchVendors();
   }, []);
 
+  // Filter vendors by search query
   const filteredVendors = useMemo(() => {
     if (!searchQuery.trim()) return vendors;
     const query = searchQuery.toLowerCase();
@@ -45,6 +157,7 @@ export function Vendors() {
     );
   }, [vendors, searchQuery]);
 
+  // Ensure selectedVendorId is valid
   useEffect(() => {
     if (filteredVendors.length === 0) return;
     if (!filteredVendors.some((v) => v.id === selectedVendorId)) {
@@ -55,6 +168,8 @@ export function Vendors() {
   const selectedVendor =
     filteredVendors.find((v) => v.id === selectedVendorId) ??
     filteredVendors[0];
+
+  console.log(selectedVendor, "selectedVendor");
 
   return (
     <div className="flex h-full flex-col">
@@ -85,11 +200,10 @@ export function Vendors() {
                   setSelectedVendorId={setSelectedVendorId}
                   onCancel={() => setIsCreatingVendor(false)}
                 />
-              ) : selectedVendor ? // <VendorDetails
-              //   vendor={selectedVendor}
-              //   setVendors={setVendors}
-              // />
-              null : (
+              ) : selectedVendor ? (
+                <VendorDetails vendor={selectedVendor}  />
+
+              ) : (
                 <div className="flex h-full items-center justify-center text-muted-foreground">
                   Select a vendor to view details.
                 </div>

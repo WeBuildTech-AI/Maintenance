@@ -30,7 +30,7 @@ export function AssetCard({
               <span className="text-lg">{asset.icon}</span>
             </div>
             <div>
-              <h4 className="font-medium">{asset.name}</h4>
+              <h4 className="font-medium capitalize">{asset.name}</h4>
               <div className="flex items-center gap-1 mt-1">
                 <MapPin className="h-3 w-3 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">
@@ -65,7 +65,7 @@ export function AssetCard({
             {asset.criticality && (
               <Badge
                 variant="outline"
-                className={`text-xs ${
+                className={`text-xs capitalize ${
                   asset.criticality === "Critical"
                     ? "bg-red-50 text-red-700 border-red-200"
                     : asset.criticality === "High"

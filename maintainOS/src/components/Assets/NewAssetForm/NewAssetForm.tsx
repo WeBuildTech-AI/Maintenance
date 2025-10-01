@@ -69,9 +69,9 @@ export function NewAssetForm({ onCreate, onCancel }: NewAssetFormProps) {
     }
 
     const payload: CreateAssetData = {
-      organizationId: user.organizationId,
+      organizationId: user?.organizationId,
       name: assetName,
-      locationId: selectedLocation, // from dropdown
+      locationId: selectedLocation.id, // from dropdown
       criticality: criticality,
       description: description,
       year: year,
@@ -81,7 +81,7 @@ export function NewAssetForm({ onCreate, onCancel }: NewAssetFormProps) {
       teamsInCharge: selectedTeamInCharge,
       qrCode: qrCode,
       // assetTypeId: selectedAssetType,
-      // vendorId: selectedVendorId,
+      vendorId: selectedVendorId.id,
       // partIds: selectedParts,
       // parentAssetId: selectedParentAssets,
     };

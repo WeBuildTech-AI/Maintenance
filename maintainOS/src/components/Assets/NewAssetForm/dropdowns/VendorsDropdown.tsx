@@ -4,10 +4,12 @@ import { useNavigate } from "react-router-dom";
 import { vendorService, type VendorResponse } from "../../../../store/vendors";
 import Loader from "../../../Loader/Loader";
 
-interface LocationDropdownProps {
+interface VendorDropdownProps {
   vendorOpen: boolean;
   setVendorOpen: (open: boolean) => void;
   vendorRef: RefObject<HTMLDivElement>;
+  selectedVendorId: string;
+  setSelectedvendorId: (val: string) => void;
 }
 
 export function VendorsDropdown({
@@ -16,7 +18,7 @@ export function VendorsDropdown({
   vendorRef,
   setSelectedvendorId,
   selectedVendorId,
-}: LocationDropdownProps) {
+}: VendorDropdownProps) {
   const hasFetched = useRef(false);
   const navigate = useNavigate();
 
@@ -68,7 +70,9 @@ export function VendorsDropdown({
         }}
       >
         <Search className="h-4 w-4 text-gray-400" />
-        <span className="flex-1 text-gray-600">Select...</span>
+        <span className="flex-1 text-gray-600">
+          {selectedVendorId?.name || "Select..."}
+        </span>
         <ChevronDown className="h-5 w-5 text-gray-400" />
       </div>
 
@@ -87,13 +91,12 @@ export function VendorsDropdown({
                     key={index}
                     className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                     onClick={() => {
-                      setSelectedvendorId(
-                        typeof loc === "string" ? loc : loc.name
-                      );
+                      setSelectedvendorId(loc);
                       setVendorOpen(false);
+                      alert(loc.id);
                     }}
                   >
-                    {typeof loc === "string" ? loc : loc.name}
+                    {loc.name}
                   </li>
                 ))
               ) : (

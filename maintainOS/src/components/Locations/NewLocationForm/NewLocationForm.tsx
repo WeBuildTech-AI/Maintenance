@@ -142,9 +142,6 @@ export function NewLocationForm({
 
   return (
     <>
-      <div>
-        <Toaster />
-      </div>
       <div className="flex flex-col h-full overflow-hidden">
         {/* Header */}
         <div className="p-4 border-b flex-none">
