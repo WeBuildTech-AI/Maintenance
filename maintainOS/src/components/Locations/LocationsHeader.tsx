@@ -80,7 +80,7 @@ export function LocationHeaderComponent(
               onClick={() => {
                 setIsCreatingForm(true);
                 setViewMode("panel");
-                toast.success("congrulation");
+                // toast.success("congrulation");
               }}
             >
               <Plus className="mr-2 h-4 w-4" />

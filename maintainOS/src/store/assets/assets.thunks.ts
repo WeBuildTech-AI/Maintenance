@@ -20,6 +20,19 @@ export const fetchAssets = createAsyncThunk(
     }
   }
 );
+export const fetchAssetsName = createAsyncThunk(
+  "assets/fetchAssets",
+  async (_, { rejectWithValue }) => {
+    try {
+      const assets = await assetService.fetchAssetsName();
+      return assets;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch assets"
+      );
+    }
+  }
+);
 
 export const fetchAssetById = createAsyncThunk(
   "assets/fetchAssetById",

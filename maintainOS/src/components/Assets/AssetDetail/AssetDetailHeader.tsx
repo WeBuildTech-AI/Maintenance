@@ -7,8 +7,28 @@ import {
   DropdownMenuTrigger,
 } from "../../ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "../../ui/tabs";
+import { deleteAsset } from "../../../store/assets";
+import { useDispatch } from "react-redux";
+import type { AppDispatch } from "../../../store";
+import toast from "react-hot-toast";
 
 export function AssetDetailHeader({ asset }: { asset: any }) {
+  const dispatch = useDispatch<AppDispatch>();
+
+  const handleDeleteAsset = (id: string) => {
+    if (window.confirm("Are you sure you want to delete this location?")) {
+      dispatch(deleteAsset(id))
+        .unwrap()
+        .then(() => {
+          toast.success("Location deleted successfully!");
+        })
+        .catch((error) => {
+          console.error("Delete failed:", error);
+          alert("Failed to delete the location.");
+        });
+    }
+  };
+
   return (
     <div className="p-6 border-b border-border flex-shrink-0">
       <div className="flex items-center justify-between mb-6">
@@ -31,9 +51,9 @@ export function AssetDetailHeader({ asset }: { asset: any }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>Duplicate</DropdownMenuItem>
-              <DropdownMenuItem>Archive</DropdownMenuItem>
-              <DropdownMenuItem>Delete</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDeleteAsset(asset.id)}>
+                Delete
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
