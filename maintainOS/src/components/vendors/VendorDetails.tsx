@@ -5,7 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "../ui/card";
-import { Badge } from "../ui/badge";
+// import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import {
   Users,
@@ -22,11 +22,10 @@ import { ContactFormDialog } from "./ContactFormDialog";
 
 export function VendorDetails({
   vendor,
-  onEdit, // ✅ ADDED: edit handler
-}: // setVendors,
-{
+  onEdit, // 🔹 added callback
+}: {
   vendor?: Vendor;
-  onEdit?: (v: Vendor) => void; // ✅ ADDED: optional prop
+  onEdit: (vendor: Vendor) => void; // 🔹 new prop
   // setVendors: React.Dispatch<React.SetStateAction<Vendor[]>>;
 }) {
   if (!vendor) {
@@ -46,125 +45,6 @@ export function VendorDetails({
       .toUpperCase();
 
   return (
-    // <section className="flex-1 overflow-auto p-6">
-    //   <Card className="shadow-sm">
-    //     <CardHeader className="flex flex-wrap items-center justify-between gap-3 border-b border-border">
-    //       <div>
-    //         <CardTitle>{vendor.name}</CardTitle>
-    //         <CardDescription className="text-xs">
-    //           ID: {vendor.id} · Category: {vendor.category}
-    //         </CardDescription>
-    //       </div>
-    //       <div className="flex flex-wrap items-center gap-2">
-    //         <Button variant="outline" size="sm" className="gap-2">
-    //           <Link2 className="h-4 w-4" /> Link Asset
-    //         </Button>
-    //         <Button variant="outline" size="sm" className="gap-2">
-    //           <Plus className="h-4 w-4" /> New Purchase Order
-    //         </Button>
-    //         <Button variant="outline" size="sm" className="gap-2">
-    //           <ExternalLink className="h-4 w-4" /> Edit
-    //         </Button>
-    //         <Button variant="ghost" size="icon">
-    //           <MoreHorizontal className="h-4 w-4" />
-    //         </Button>
-    //       </div>
-    //     </CardHeader>
-
-    //     <CardContent className="space-y-6 p-6">
-    //       {/* Contacts */}
-    //       <div>
-    //         <h3 className="text-sm font-semibold text-foreground">Contact List</h3>
-    //         <div className="mt-3 space-y-3">
-    //           {vendor.contacts.length === 0 ? (
-    //             <p className="text-xs text-muted-foreground">
-    //               No contacts yet. Add a contact to keep details handy.
-    //             </p>
-    //           ) : (
-    //             vendor.contacts.map((c) => (
-    //               <div
-    //                 key={`${vendor.id}-${c.name}`}
-    //                 className="flex flex-wrap items-center justify-between gap-3 rounded border border-border px-3 py-2"
-    //               >
-    //                 <div className="flex items-center gap-3">
-    //                   <div
-    //                     className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold text-white"
-    //                     style={{ backgroundColor: c.color ?? "#64748b" }}
-    //                   >
-    //                     {renderInitials(c.name || "C")}
-    //                   </div>
-    //                   <div>
-    //                     <p className="text-sm font-medium">{c.name}</p>
-    //                     <p className="text-xs text-muted-foreground">{c.role || "Contact"}</p>
-    //                   </div>
-    //                 </div>
-    //                 <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-    //                   {c.phone && (
-    //                     <span className="flex items-center gap-1">
-    //                       <Phone className="h-3 w-3" />
-    //                       {c.phone}
-    //                       {c.phoneExtension && ` x${c.phoneExtension}`}
-    //                     </span>
-    //                   )}
-    //                   {c.email && (
-    //                     <span className="flex items-center gap-1">
-    //                       <Mail className="h-3 w-3" />
-    //                       {c.email}
-    //                     </span>
-    //                   )}
-    //                 </div>
-    //               </div>
-    //             ))
-    //           )}
-    //           <ContactFormDialog vendor={vendor} setVendors={setVendors} />
-    //         </div>
-    //       </div>
-
-    //       {/* Locations */}
-    //       <div>
-    //         <h3 className="text-sm font-semibold text-foreground">
-    //           Locations ({vendor.locations.length})
-    //         </h3>
-    //         <div className="mt-3 space-y-2">
-    //           {vendor.locations.map((loc) => (
-    //             <div
-    //               key={`${vendor.id}-${loc.name}`}
-    //               className="flex items-start gap-3 rounded border border-border px-3 py-2"
-    //             >
-    //               <MapPin className="mt-0.5 h-4 w-4 text-primary" />
-    //               <div>
-    //                 <p className="text-sm font-medium">{loc.name}</p>
-    //                 {loc.parent && (
-    //                   <p className="text-xs text-muted-foreground">Parent: {loc.parent}</p>
-    //                 )}
-    //               </div>
-    //             </div>
-    //           ))}
-    //         </div>
-    //       </div>
-
-    //       {/* Metadata */}
-    //       <div className="flex flex-wrap items-center justify-between gap-3 rounded border border-dashed border-border px-4 py-3 text-xs text-muted-foreground">
-    //         <span>
-    //           Created by <strong>{vendor.createdBy}</strong> on{" "}
-    //           {new Date(vendor.createdAt).toLocaleString()}
-    //         </span>
-    //         <Button variant="outline" size="sm" className="gap-2">
-    //           <Users className="h-4 w-4" /> Use in New Work Order
-    //         </Button>
-    //       </div>
-
-    //       {/* Services */}
-    //       <div className="flex flex-wrap gap-2">
-    //         {vendor.services.map((s) => (
-    //           <Badge key={s} variant="outline" className="bg-primary/5 text-primary">
-    //             {s}
-    //           </Badge>
-    //         ))}
-    //       </div>
-    //     </CardContent>
-    //   </Card>
-    // </section>
     <section className="flex-1 overflow-auto">
       <Card className="shadow-sm">
         <CardHeader className="flex flex-wrap items-center justify-between gap-3 border-b border-border">
@@ -189,8 +69,8 @@ export function VendorDetails({
             </Button>
             <Button
               size="sm"
+              onClick={() => vendor && onEdit(vendor)} // 🔹 wired edit action
               className="gap-2 border cursor-pointer border-orange-600 bg-white text-orange-600 hover:bg-orange-50"
-              onClick={() => onEdit?.(vendor)} // ✅ ADDED: open edit form
             >
               <ExternalLink className="h-4 w-4" /> Edit
             </Button>
@@ -249,8 +129,8 @@ export function VendorDetails({
               )}
             </div>
           </div>
-
-          {/* <ContactFormDialog vendor={vendor} setVendors={setVendors} /> */}
+{/* 
+          <ContactFormDialog vendor={vendor} setVendors={setVendors} /> */}
 
           {/* Locations */}
           <div>

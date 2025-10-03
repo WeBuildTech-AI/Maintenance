@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { vendorService } from "../../store/vendors";
 import type { ViewMode } from "../purchase-orders/po.types";
-import { VendorForm } from "./VendorForm";
+import { VendorForm } from "./VendorsForm/VendorForm";
 import { VendorHeaderComponent } from "./VendorHeader";
 import { mockVendors, type Vendor } from "./vendors.types";
 import { VendorSidebar } from "./VendorSidebar";
