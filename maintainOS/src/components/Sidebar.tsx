@@ -34,7 +34,6 @@ interface SidebarProps {
   onLogout?: () => void;
   expanded: boolean;
   setExpanded: (value: boolean) => void;
-
 }
 
 const menuItems = [
@@ -60,8 +59,8 @@ export function Sidebar({
   expanded,
   setExpanded,
 }: SidebarProps) {
+  const imageSrc = `data:${user?.avatarUrl.mimetype};base64,${user?.avatarUrl.base64}`;
 
-  
   return (
     <div
       className={`h-full bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300
@@ -159,7 +158,14 @@ export function Sidebar({
         <div className="p-4 border-t border-sidebar-border">
           <div className="flex items-center gap-3 mb-3">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={user?.avatar} alt={user?.fullName} />
+              <AvatarImage
+                src={
+                  user?.avatarUrl
+                    ? `data:${user.avatarUrl.mimetype};base64,${user.avatarUrl.base64}`
+                    : undefined
+                }
+                alt={user?.fullName}
+              />
               <AvatarFallback>
                 {user?.fullName
                   ?.split(" ")
@@ -167,6 +173,7 @@ export function Sidebar({
                   .join("") || "U"}
               </AvatarFallback>
             </Avatar>
+
             <div className="flex-1 min-w-0 text-center">
               <p className="text-xs font-medium text-sidebar-foreground truncate mb-1">
                 {user?.fullName || "User"}
@@ -200,7 +207,7 @@ export function Sidebar({
         <div className="p-3 border-t border-sidebar-border">
           <div className="flex items-center gap-3 ">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={user?.avatar} alt={user?.fullName} />
+              <AvatarImage src={imageSrc} alt={user?.fullName} />
               <AvatarFallback>
                 {user?.fullName
                   ?.split(" ")

@@ -9,10 +9,31 @@ import type {
 const API_URL = import.meta.env.VITE_API_URL;
 
 export const teamService = {
-  fetchTeams: async (): Promise<TeamResponse[]> => {
-    const res = await axios.get(`${API_URL}/teams`);
+  fetchTeams: async (
+    limit: number,
+    page: number,
+    offset: number
+  ): Promise<TeamResponse[]> => {
+    const res = await axios.get(`${API_URL}/teams`, {
+      params: { limit, page, offset },
+      headers: { Accept: "application/json" },
+    });
     return res.data;
   },
+
+  fetchTeamsName: async (
+    limit: number,
+    page: number,
+    offset: number
+  ): Promise<TeamResponse[]> => {
+    const res = await axios.get(`${API_URL}/teams/summary`, {
+      params: { limit, page, offset },
+      headers: { Accept: "application/json" },
+    });
+    return res.data;
+  },
+
+
 
   fetchTeamById: async (id: string): Promise<TeamResponse> => {
     const res = await axios.get(`${API_URL}/teams/${id}`);

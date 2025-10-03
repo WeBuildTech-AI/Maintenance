@@ -2,13 +2,29 @@ import { ChevronRight } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../../ui/avatar";
 import { Button } from "../../ui/button";
 import { Card } from "../../ui/card";
+import type { RootState } from "../../../store";
+import { useSelector } from "react-redux";
+import { formatDate } from "../../utils/Date";
 
-export function MeterWorkOrders() {
+export function MeterWorkOrders({ selectedMeter }) {
+  const user = useSelector((state: RootState) => state.auth.user);
+  const renderInitials = (text: string) =>
+    text
+      .split(" ")
+      .map((p) => p[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase();
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-medium">Upcoming Reading Work Orders (1)</h2>
-        <Button variant="ghost" className="gap-1 text-orange-600 hover:text-orange-700 hover:bg-orange-50 p-0 h-auto">
+        <h2 className="text-lg font-medium">
+          Upcoming Reading Work Orders (1)
+        </h2>
+        <Button
+          variant="ghost"
+          className="gap-1 text-orange-600 hover:text-orange-700 hover:bg-orange-50 p-0 h-auto"
+        >
           See all
           <ChevronRight className="h-4 w-4" />
         </Button>
@@ -29,11 +45,13 @@ export function MeterWorkOrders() {
               </div>
               <div className="text-sm text-muted-foreground">
                 Created by{" "}
-                <Avatar className="inline-flex w-4 h-4 mx-1 align-text-bottom">
+                <Avatar className="inline-flex w-6 h-6 mx-1 align-text-bottom">
                   <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face" />
-                  <AvatarFallback>AC</AvatarFallback>
+                  <AvatarFallback>
+                    {renderInitials(user?.fullName)}
+                  </AvatarFallback>
                 </Avatar>
-                Ashwini Chauhan on 19/09/2025, 11:56
+                {user?.fullName} on {formatDate(selectedMeter?.createdAt)}
               </div>
             </div>
           </div>

@@ -152,6 +152,7 @@ export function Meters() {
                   getLocationData={getLocationData}
                   getAssetData={getAssetData}
                 />
+
               ) : (
                 <MetersEmptyState />
               )}

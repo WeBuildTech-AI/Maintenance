@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { vendorService } from "../../../store/vendors";
 import { locationService } from "../../../store/locations";
 import Loader from "../../Loader/Loader";
+import { teamService } from "../../../store/teams";
 
 type Stage = "teams" | "vendors" | "parent";
 
@@ -54,7 +55,7 @@ export function Dropdowns({
         const res = await vendorService.fetchVendorName(10, 1, 0);
         setDynamicOptions(res.data);
       } else if (stage === "teams") {
-        const res = await Promise.resolve({ data: [] });
+        const res = await teamService.fetchTeamsName(10, 1, 0);
         setDynamicOptions(res.data);
       } else {
         const res = await locationService.fetchLocationsName(10, 1, 0);

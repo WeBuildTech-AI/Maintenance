@@ -1,11 +1,14 @@
 "use client";
 
 import {
+  Building,
   ChevronDown,
   Edit,
   Link,
   MapPin,
   MoreHorizontal,
+  Plus,
+  Turtle,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
@@ -24,13 +27,14 @@ import { LocationHeaderComponent } from "./LocationsHeader";
 import Loader from "../Loader/Loader";
 import { formatDate } from "../utils/Date";
 import { LocationTable } from "./LocationTable";
-import { Avatar, AvatarFallback } from "../ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { sortLocations } from "../utils/Sorted";
 import type { AppDispatch, RootState } from "../../store";
 import { useDispatch, useSelector } from "react-redux";
 import { NavLink } from "react-router-dom";
 import { SubLocationModal } from "./SubLocationModel";
 import toast, { Toaster } from "react-hot-toast";
+import QRCode from "react-qr-code";
 
 export function Locations() {
   const hasFetched = useRef(false);
@@ -72,7 +76,7 @@ export function Locations() {
       );
 
       if (currentPage === 1) {
-        setLocations(res);
+        setLocations([...res].reverse());
         setFilteredLocations(res);
       } else {
         setLocations((prev) => [...prev, ...res]);
@@ -121,6 +125,7 @@ export function Locations() {
         .unwrap()
         .then(() => {
           toast.success("Location deleted successfully!");
+          setShowForm(true);
         })
         .catch((error) => {
           console.error("Delete failed:", error);
@@ -224,7 +229,15 @@ export function Locations() {
                                 <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
                                   <Avatar className="h-8 w-8">
                                     <AvatarFallback>
-                                      {items.icon || renderInitials(items.name)}
+                                      {items?.photoUrls?.length > 0 ? (
+                                        <AvatarImage
+                                          className="w-6"
+                                          src={`data:${items.photoUrls[0].mimetype};base64,${items.photoUrls[0].base64}`}
+                                          alt={items?.name || "Location Image"}
+                                        />
+                                      ) : (
+                                        renderInitials(items.name)
+                                      )}
                                     </AvatarFallback>
                                   </Avatar>
                                 </div>
@@ -232,8 +245,8 @@ export function Locations() {
                                   <h4 className="font-medium capitalize">
                                     {items.name}
                                   </h4>
-                                  <div className="flex items-center gap-1 mt-1">
-                                    <MapPin className="h-3 w-3 text-muted-foreground" />
+                                  <div className="flex items-start justify-center gap-1 mt-1">
+                                    <MapPin className="h-3 w-3 mt-1 text-muted-foreground" />
                                     <span className="text-sm text-muted-foreground">
                                       {items.description}
                                     </span>
@@ -353,7 +366,45 @@ export function Locations() {
                             "No description available"}
                         </p>
                       </div>
+                      {selectedLocation?.photoUrls.length > 0 && (
+                        <div className="mb-6 mt-6 flex gap-2 flex-wrap">
+                          {selectedLocation?.photoUrls?.map((item) => (
+                            <img
+                              key={item.id}
+                              src={`data:${item.mimetype};base64,${item.base64}`}
+                              alt="Location"
+                              className="w-24 h-24 object-cover rounded" // adjust styling as needed
+                            />
+                          ))}
+                        </div>
+                      )}
 
+                      <hr></hr>
+
+                      {selectedLocation.qrCode && (
+                        <div>
+                          <h3 className="text-sm mt-2 font-medium text-gray-700">
+                            QR Code/Barcode
+                          </h3>
+                          {selectedLocation.qrCode && (
+                            <>
+                              <h4 className="text-sm mt-2 text-gray-700">
+                                {selectedLocation?.qrCode}
+                              </h4>
+                              <div className="mt-2 mb-3 flex justify-start">
+                                <div className="bg-white shadow-md rounded-lg p-2 w-fit border border-gray-200">
+                                  <div className="flex justify-center mb-1 ro">
+                                    <QRCode
+                                      value={selectedLocation.qrCode}
+                                      size={100}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
                       <hr className="my-4" />
 
                       {/* Sub-Locations */}

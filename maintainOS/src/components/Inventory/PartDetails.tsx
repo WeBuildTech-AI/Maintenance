@@ -27,39 +27,39 @@ export function PartDetails({
   item: Item;
   stockStatus: { ok: boolean; delta: number } | null;
 }) {
-  const vendorBadge = (v: ItemVendor) => {
-    const ven = mockVendors.find((mv) => mv.id === v.vendorId);
-    if (!ven) return null;
-    return (
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-700">
-          {ven.name.slice(0, 1)}
-        </div>
-        <div className="leading-tight">
-          <div className="font-medium">{ven.name}</div>
-          <div className="text-xs text-muted-foreground flex items-center gap-2">
-            {ven.email && (
-              <span className="inline-flex items-center gap-1">
-                <Mail className="h-3 w-3" />
-                {ven.email}
-              </span>
-            )}
-            {ven.phone && (
-              <span className="inline-flex items-center gap-1">
-                <Phone className="h-3 w-3" />
-                {ven.phone}
-              </span>
-            )}
-          </div>
-        </div>
-        {v.orderingPartNumber && (
-          <span className="ml-auto text-sm text-muted-foreground">
-            Ordering Part Number <span className="font-medium">{v.orderingPartNumber}</span>
-          </span>
-        )}
-      </div>
-    );
-  };
+  // const vendorBadge = (v: ItemVendor) => {
+  //   const ven = mockVendors.find((mv) => mv.id === v.vendorId);
+  //   if (!ven) return null;
+  //   return (
+  //     <div className="flex items-center gap-3">
+  //       <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-700">
+  //         {ven.name.slice(0, 1)}
+  //       </div>
+  //       <div className="leading-tight">
+  //         <div className="font-medium">{ven.name}</div>
+  //         <div className="text-xs text-muted-foreground flex items-center gap-2">
+  //           {ven.email && (
+  //             <span className="inline-flex items-center gap-1">
+  //               <Mail className="h-3 w-3" />
+  //               {ven.email}
+  //             </span>
+  //           )}
+  //           {ven.phone && (
+  //             <span className="inline-flex items-center gap-1">
+  //               <Phone className="h-3 w-3" />
+  //               {ven.phone}
+  //             </span>
+  //           )}
+  //         </div>
+  //       </div>
+  //       {v.orderingPartNumber && (
+  //         <span className="ml-auto text-sm text-muted-foreground">
+  //           Ordering Part Number <span className="font-medium">{v.orderingPartNumber}</span>
+  //         </span>
+  //       )}
+  //     </div>
+  //   );
+  // };
 
   return (
     <div className="h-full flex flex-col min-h-0">
@@ -100,10 +100,10 @@ export function PartDetails({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-8">
-        <div className="text-muted-foreground">{item.unitsInStock} units in stock</div>
+        {/* <div className="text-muted-foreground">{item.unitsInStock} units in stock</div> */}
 
         {/* Top stats */}
-        <div className="grid grid-cols-3 gap-6">
+        {/* <div className="grid grid-cols-3 gap-6">
           <Card className="p-4">
             <div className="text-sm text-muted-foreground">Minimum in Stock</div>
             <div className="mt-1">{item.minInStock} units</div>
@@ -126,10 +126,10 @@ export function PartDetails({
               )}
             </div>
           </Card>
-        </div>
+        </div> */}
 
         {/* Location table */}
-        <div>
+        {/* <div>
           <h3 className="font-medium mb-3">Location</h3>
           <div className="border rounded-lg overflow-hidden">
             <table className="w-full text-sm">
@@ -156,10 +156,10 @@ export function PartDetails({
               </tbody>
             </table>
           </div>
-        </div>
+        </div> */}
 
         {/* Description + QR */}
-        <div className="grid grid-cols-2 gap-6">
+        {/* <div className="grid grid-cols-2 gap-6">
           <Card className="p-4">
             <div className="text-sm text-muted-foreground mb-2">Description</div>
             <div>{item.description || "-"}</div>
@@ -175,10 +175,10 @@ export function PartDetails({
               <QrCode className="h-20 w-20 text-muted-foreground" />
             </div>
           </Card>
-        </div>
+        </div> */}
 
         {/* Assets */}
-        {item.assetNames?.length ? (
+        {/* {item.assetNames?.length ? (
           <div>
             <h3 className="font-medium mb-2">Assets ({item.assetNames.length})</h3>
             <div className="flex flex-wrap gap-2">
@@ -189,10 +189,10 @@ export function PartDetails({
               ))}
             </div>
           </div>
-        ) : null}
+        ) : null} */}
 
         {/* Vendors */}
-        <div>
+        {/* <div>
           <h3 className="font-medium mb-3">Vendors</h3>
           <div className="space-y-4">
             {item.vendors.map((v, i) => (
@@ -201,10 +201,10 @@ export function PartDetails({
               </Card>
             ))}
           </div>
-        </div>
+        </div> */}
 
         {/* Files */}
-        <div>
+        {/* <div>
           <h3 className="font-medium mb-3">Attached Files</h3>
           {item.files?.length ? (
             <div className="space-y-2">
@@ -218,10 +218,10 @@ export function PartDetails({
           ) : (
             <div className="text-sm text-muted-foreground">No files attached</div>
           )}
-        </div>
+        </div> */}
 
         {/* Created/Updated + CTA */}
-        <div className="grid grid-cols-2 gap-6">
+        {/* <div className="grid grid-cols-2 gap-6">
           <Card className="p-4">
             <div className="text-sm">
               Created By <span className="font-medium">{item.createdBy}</span>{" "}
@@ -234,7 +234,7 @@ export function PartDetails({
               {item.updatedAt ? `on ${new Date(item.updatedAt).toLocaleString()}` : ""}
             </div>
           </Card>
-        </div>
+        </div> */}
 
         <div className="flex justify-end">
           <Button className="gap-2 bg-orange-600 hover:bg-orange-700">

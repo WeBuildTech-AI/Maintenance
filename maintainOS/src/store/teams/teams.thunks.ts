@@ -5,9 +5,29 @@ import type { CreateTeamData, UpdateTeamData } from "./teams.types";
 
 export const fetchTeams = createAsyncThunk(
   "teams/fetchTeams",
-  async (_, { rejectWithValue }) => {
+  async (
+    { limit, page, offset }: { limit: number; page: number; offset: number },
+    { rejectWithValue }
+  ) => {
     try {
-      return await teamService.fetchTeams();
+      const team = await teamService.fetchTeams(limit, page, offset);
+      return team;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch teams"
+      );
+    }
+  }
+);
+export const fetchTeamsName = createAsyncThunk(
+  "teams/fetchTeams",
+  async (
+    { limit, page, offset }: { limit: number; page: number; offset: number },
+    { rejectWithValue }
+  ) => {
+    try {
+      const team = await teamService.fetchTeamsName(limit, page, offset);
+      return team;
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch teams"

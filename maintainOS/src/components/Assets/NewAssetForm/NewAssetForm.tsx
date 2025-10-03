@@ -43,7 +43,7 @@ export function NewAssetForm({ onCreate, onCancel }: NewAssetFormProps) {
   const [qrCode, setQrCode] = useState("");
   const [selectedAssetType, setSelectedAssetType] = useState("");
   const [selectedVendorId, setSelectedvendorId] = useState("");
-  const [selectedParts, setSelectedParts] = useState("");
+  const [selectedParts, setSelectedParts] = useState([]);
   const [selectedParentAssets, setSelectedParentAssets] = useState("");
   const [locationOpen, setLocationOpen] = useState(false);
   const [partOpen, setPartOpen] = useState(false);
@@ -82,7 +82,7 @@ export function NewAssetForm({ onCreate, onCancel }: NewAssetFormProps) {
       qrCode: qrCode,
       // assetTypeId: selectedAssetType,
       vendorId: selectedVendorId.id,
-      partIds: selectedParts.id,
+      partIds: [selectedParts.id],
       parentAssetId: selectedParentAssets.id,
     };
 

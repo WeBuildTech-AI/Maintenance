@@ -13,7 +13,10 @@ import { FooterActions } from "./FooterActions";
 
 import type { RootState, AppDispatch } from "../../../store";
 import { createLocation, updateLocation } from "../../../store/locations"; // ✅ added update
-import type { CreateLocationData, LocationResponse } from "../../../store/locations";
+import type {
+  CreateLocationData,
+  LocationResponse,
+} from "../../../store/locations";
 
 type NewLocationFormProps = {
   onCancel: () => void;
@@ -64,6 +67,7 @@ export function NewLocationForm({
       setQrCode(editData.qrCode || "");
       setVendorId(editData.vendorIds || []);
       setParentLocationId(editData.parentLocationId || "");
+      setPictures(editData.photoUrls || []);
       // pictures, attachedDocs, teamInCharge can be mapped if available in API
     }
   }, [isEdit, editData]);
@@ -89,40 +93,56 @@ export function NewLocationForm({
   }, []);
 
   // Create / Update location handler
+
   const handleSubmitLocation = async () => {
     if (!user) return;
 
     setSubmitLocationFormLoader(true);
 
-    const locationData: CreateLocationData = {
-      organizationId: user.organizationId || "",
-      name,
-      address,
-      description,
-      vendorIds: vendorId,
-      parentLocationId,
-    };
+    const formData = new FormData();
+    formData.append("organizationId", user.organizationId || "");
+    formData.append("name", name);
+    formData.append("address", address);
+    formData.append("description", description);
+    formData.append("parentLocationId", parentLocationId || "");
+    formData.append("qrCode", qrCode);
+
+    // ✅ Add vendorIds as array
+    vendorId.forEach((id) => {
+      formData.append("vendorIds[]", id); // matches curl
+    });
+
+    // ✅ Add teamsInCharge as array
+    teamInCharge.forEach((id) => {
+      formData.append("teamsInCharge[]", id); // matches curl
+    });
+
+    // ✅ Add photos as array
+    pictures.forEach((pic) => {
+      formData.append("photos", pic); // multiple photos with same key
+    });
+
+    // ✅ Add attached docs if needed
+    attachedDocs.forEach((doc) => {
+      formData.append("attachedDocs", doc);
+    });
 
     try {
+      let res;
       if (isEdit && editData?.id) {
-        // ✅ Update flow
-        const res = await dispatch(
-          updateLocation({ id: editData.id, data: locationData })
+        // console.log([...formData.entries()]);
+        res = await dispatch(
+          updateLocation({ id: editData.id, data: formData })
         ).unwrap();
-        console.log("Location updated:", res);
         toast.success("Location updated successfully");
-        setSelectedLocation(res.id);
       } else {
-        // ✅ Create flow
-        const res = await dispatch(createLocation(locationData)).unwrap();
-        console.log("Location created:", res);
+        res = await dispatch(createLocation(formData)).unwrap();
+        // setSelectedLocation(res.id);
         toast.success("Location created successfully");
-        setSelectedLocation(res.id);
       }
-
+      console.log("Location response:", res);
+      // setSelectedLocation(res.id);
       setShowForm(false);
-
-      // reset form
       setName("");
       setAddress("");
       setDescription("");

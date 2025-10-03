@@ -29,7 +29,7 @@ export function MeterCard({ meter, selectedMeter, setSelectedMeter ,  }: any) {
             <div className="w-4 h-4 bg-orange-100 rounded flex items-center justify-center">
               <Building2 className="h-2 w-2 text-orange-600" />
             </div>
-            <span className="text-sm capitalize">{meter.meterType}</span>
+            <span className="text-sm capitalize">{meter?.meterType}</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -37,13 +37,13 @@ export function MeterCard({ meter, selectedMeter, setSelectedMeter ,  }: any) {
               <span className="text-xs">📍</span>
             </div>
             <span className="text-sm text-muted-foreground">
-              {meter.location}
+              {meter?.location}
             </span>
           </div>
 
           <div className="mt-2">
             <span className="text-sm text-muted-foreground">
-              Last Reading: {`${meter.readingFrequency.time} ${meter.readingFrequency.iterval}`}
+              Last Reading: {`${meter?.readingFrequency?.time} ${meter?.readingFrequency?.iterval}`}
             </span>
           </div>
         </div>
