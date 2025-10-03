@@ -21,6 +21,18 @@ export const assetService = {
     return res.data;
   },
 
+  fetchAssetsName: async (
+    limit: number,
+    page: number,
+    offset: number
+  ): Promise<AssetResponse[]> => {
+    const res = await axios.get(`${API_URL}/assets/summary`, {
+      params: { limit, page, offset },
+      headers: { Accept: "application/json" },
+    });
+    return res.data;
+  },
+
   fetchAssetById: async (id: string): Promise<AssetResponse> => {
     const res = await axios.get(`${API_URL}/assets/${id}`);
     return res.data;
