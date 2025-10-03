@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { Upload, Paperclip } from "lucide-react";
 import type { Vendor } from "./vendors.types";
 import type { AppDispatch, RootState } from "../../store";
@@ -11,10 +11,15 @@ export function VendorForm({
   setVendors,
   setSelectedVendorId,
   onCancel,
+  // ✅ ADDED: edit props
+  initialData,
+  onSubmit,
 }: {
   setVendors: React.Dispatch<React.SetStateAction<Vendor[]>>;
   setSelectedVendorId: (id: string) => void;
   onCancel: () => void;
+  initialData?: Vendor;                 // ✅ prefill support
+  onSubmit?: (data: any) => void;      // ✅ edit submit callback
 }) {
   const [form, setForm] = useState({
     name: "",
@@ -35,6 +40,23 @@ export function VendorForm({
   const user = useSelector((state: RootState) => state.auth.user);
   const [showInputs, setShowInputs] = useState(false);
   const [contact, setContact] = useState({ email: "", phone: "" });
+
+  // ✅ ADDED: fill form when editing
+  useEffect(() => {
+    if (initialData) {
+      setForm((f) => ({
+        ...f,
+        name: initialData.name || "",
+        description: (initialData as any).description || "",
+        color: (initialData as any).color || f.color,
+      }));
+      setContact({
+        email: (initialData as any)?.contacts?.email || "",
+        phone: (initialData as any)?.contacts?.phone || "",
+      });
+    }
+  }, [initialData]);
+
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const droppedFiles = Array.from(e.dataTransfer.files);
@@ -71,6 +93,16 @@ export function VendorForm({
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) return;
+
+    // ✅ If editing, call onSubmit with form data & skip create API
+    if (initialData && onSubmit) {
+      const payload = {
+        ...form,
+        contacts: contact,
+      };
+      onSubmit(payload);
+      return;
+    }
 
     const newVendor: CreateVendorData = {
       organizationId: user.organizationId,
@@ -112,7 +144,10 @@ export function VendorForm({
     <div className="flex h-full flex-col overflow-hidden rounded-lg border">
       {/* Header */}
       <div className="flex-none border-b px-6 py-4">
-        <h2 className="text-xl font-semibold">New Vendor</h2>
+        <h2 className="text-xl font-semibold">
+          {/* ✅ ADDED: dynamic title */}
+          {initialData ? "Edit Vendor" : "New Vendor"}
+        </h2>
       </div>
 
       {/* Scrollable content */}
@@ -411,7 +446,8 @@ export function VendorForm({
           }}
           className="h-10 rounded-md bg-orange-600 text-sm font-medium text-white shadow hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          Create
+          {/* ✅ ADDED: dynamic button label */}
+          {initialData ? "Save Changes" : "Create"}
         </button>
       </div>
     </div>

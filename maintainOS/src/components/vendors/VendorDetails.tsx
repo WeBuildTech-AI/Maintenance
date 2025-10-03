@@ -22,9 +22,11 @@ import { ContactFormDialog } from "./ContactFormDialog";
 
 export function VendorDetails({
   vendor,
+  onEdit, // ✅ ADDED: edit handler
 }: // setVendors,
 {
   vendor?: Vendor;
+  onEdit?: (v: Vendor) => void; // ✅ ADDED: optional prop
   // setVendors: React.Dispatch<React.SetStateAction<Vendor[]>>;
 }) {
   if (!vendor) {
@@ -188,6 +190,7 @@ export function VendorDetails({
             <Button
               size="sm"
               className="gap-2 border cursor-pointer border-orange-600 bg-white text-orange-600 hover:bg-orange-50"
+              onClick={() => onEdit?.(vendor)} // ✅ ADDED: open edit form
             >
               <ExternalLink className="h-4 w-4" /> Edit
             </Button>

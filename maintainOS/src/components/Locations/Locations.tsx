@@ -1,13 +1,11 @@
 "use client";
 
 import {
-  Building,
   ChevronDown,
   Edit,
   Link,
   MapPin,
   MoreHorizontal,
-  Plus,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
