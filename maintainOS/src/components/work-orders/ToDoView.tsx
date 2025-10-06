@@ -28,7 +28,8 @@ import {
 } from "lucide-react";
 
 import { type ToDoViewProps } from "./types";
-import { NewWorkOrderForm } from "./NewWorkOrderForm";
+import { NewWorkOrderForm } from "./NewWorkOrderForm/NewWorkOrderFrom";
+
 
 export function ToDoView({
   todoWorkOrders,
@@ -236,7 +237,7 @@ export function ToDoView({
               console.log("Work order created!");
               onCancelCreate?.();
             }}
-            onCancel={onCancelCreate}
+            // onCancel={onCancelCreate}
           />
         ) : (
           <>

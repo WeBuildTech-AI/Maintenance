@@ -120,10 +120,10 @@ export default function App() {
             <Route path="/categories" element={<Categories />} />
             <Route path="/inventory" element={<Inventory />} />
             <Route path="/library" element={<Library />} />
-            <Route path="/vendors" element={<Vendors />} />
-            <Route path="/meters" element={<Meters />} />
+            <Route path="/vendors/*" element={<Vendors />} />
+            <Route path="/meters/*" element={<Meters />} />
             <Route path="/automations" element={<Automations />} />
-            <Route path="/locations" element={<Locations />} />
+            <Route path="/locations/*" element={<Locations />} />
             <Route path="/users" element={<TeamUsers />} />
             <Route path="/users/invite" element={<InviteUser />} />
             <Route path="/users/teams/:teamId" element={<ManageTeam />} />

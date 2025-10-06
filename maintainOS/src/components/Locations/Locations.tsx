@@ -31,7 +31,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { sortLocations } from "../utils/Sorted";
 import type { AppDispatch, RootState } from "../../store";
 import { useDispatch, useSelector } from "react-redux";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate, useMatch } from "react-router-dom";
 import { SubLocationModal } from "./SubLocationModel";
 import toast, { Toaster } from "react-hot-toast";
 import QRCode from "react-qr-code";
@@ -39,7 +39,8 @@ import QRCode from "react-qr-code";
 export function Locations() {
   const hasFetched = useRef(false);
   const dispatch = useDispatch<AppDispatch>();
-  const [showForm, setShowForm] = useState(false);
+  
+  // NOTE: showForm state is managed by the URL (isCreateRoute/isEditRoute)
   const [locations, setLocations] = useState<LocationResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -56,9 +57,37 @@ export function Locations() {
   const user = useSelector((state: RootState) => state.auth.user);
   const [modalOpen, setModalOpen] = useState(false);
 
-  // ✅ new states for edit
-  const [isEdit, setIsEdit] = useState(false);
-  const [editData, setEditData] = useState<LocationResponse | null>(null);
+  // 🔽 Router hooks to read the URL path
+  const navigate = useNavigate();
+  const isCreateRoute = useMatch("/locations/create");
+  // Match for /locations/:locationId/edit
+  const isEditRoute = useMatch("/locations/:locationId/edit"); 
+  
+  // 🔽 DERIVE form state from the URL
+  const isEditMode = !!isEditRoute;
+  const locationToEdit = isEditMode
+    ? locations.find((loc) => loc.id === isEditRoute?.params.locationId)
+    : null;
+
+  // ❌ REMOVE these states as they are now derived from the URL:
+  // const [isEdit, setIsEdit] = useState(false); 
+  // const [editData, setEditData] = useState<LocationResponse | null>(null);
+  
+  // 🔽 New handlers using router
+  const handleShowNewLocationForm = () => {
+    navigate("/locations/create");
+  };
+
+  const handleCancelForm = () => {
+    navigate("/locations");
+  };
+
+  const handleCreateForm = () => {
+    // This runs AFTER the creation/update API call succeeds inside NewLocationForm
+    navigate("/locations");
+  };
+
+  // -------------------- Existing Fetch & Filter Logic --------------------
 
   // 👉 Pagination states
   const [page, setPage] = useState(1);
@@ -125,7 +154,7 @@ export function Locations() {
         .unwrap()
         .then(() => {
           toast.success("Location deleted successfully!");
-          setShowForm(true);
+          navigate("/locations");
         })
         .catch((error) => {
           console.error("Delete failed:", error);
@@ -142,6 +171,8 @@ export function Locations() {
       .join("")
       .toUpperCase();
 
+  // -------------------- JSX Rendering --------------------
+  
   return (
     <>
       <div>
@@ -154,7 +185,7 @@ export function Locations() {
           setViewMode,
           searchQuery,
           setSearchQuery,
-          setShowForm,
+          handleShowNewLocationForm, // 👈 New URL-driven handler
           setShowSettings
         )}
 
@@ -168,9 +199,9 @@ export function Locations() {
         ) : (
           <>
             <div className="flex gap-2 flex-1 overflow-hidden mt-3 min-h-0">
-              {/* Left Card */}
+              {/* Left Card (Locations List) */}
               <div className="border ml-3 mr-1 w-96 flex flex-col">
-                {/* Sort By */}
+                {/* Sort By JSX remains the same */}
                 <div className="p-3 border-border flex-shrink-0">
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">
@@ -214,8 +245,7 @@ export function Locations() {
                           key={items.id}
                           onClick={() => {
                             setSelectedLocation(items);
-                            setShowForm(false);
-                            setIsEdit(false); // ✅ reset when viewing
+                            navigate("/locations"); // 👈 Navigate away from /create or /edit
                           }}
                           className={`border-b cursor-pointer border-border transition hover:bg-muted/40 ${
                             items?.id === selectedLocation?.id
@@ -285,10 +315,7 @@ export function Locations() {
                       </p>
                       <Button
                         variant="link"
-                        onClick={() => {
-                          setShowForm(true);
-                          setIsEdit(false); // ✅ ensure create
-                        }}
+                        onClick={handleShowNewLocationForm}
                         className="text-primary p-0 cursor-pointer"
                       >
                         Create the first asset
@@ -298,17 +325,17 @@ export function Locations() {
                 </div>
               </div>
 
-              {/* Right Card */}
+              {/* Right Card (Detail / Form View) */}
               <Card className="flex flex-col h-full mr-2 overflow-hidden flex-1 mr-2">
                 <CardContent className="flex-1 overflow-y-auto min-h-0">
-                  {showForm ? (
+                  {isCreateRoute || isEditRoute ? ( // 👈 Check for either create or edit URL
                     <NewLocationForm
-                      onCancel={() => setShowForm(false)}
-                      onCreate={() => setShowForm(false)}
+                      onCancel={handleCancelForm}
+                      onCreate={handleCreateForm}
                       setSelectedLocation={setSelectedLocation}
-                      setShowForm={setShowForm}
-                      isEdit={isEdit} // ✅ pass flag
-                      editData={editData} // ✅ pass data
+                      // setShowForm is now technically redundant as state is URL driven
+                      isEdit={isEditMode} // 👈 Pass derived state
+                      editData={locationToEdit} // 👈 Pass derived data
                     />
                   ) : selectedLocation ? (
                     <div className="max-w-2xl p-4 mx-auto bg-white">
@@ -328,9 +355,9 @@ export function Locations() {
                             title="Edit"
                             className="flex items-center gap-1 px-3 py-1.5 rounded-md cursor-pointer text-orange-600 hover:bg-orange-50 border border-orange-600"
                             onClick={() => {
-                              setIsEdit(true); // ✅ enter edit mode
-                              setEditData(selectedLocation); // ✅ pass data
-                              setShowForm(true);
+                              // ❌ REMOVED: setIsEdit(true) & setEditData(selectedLocation)
+                              // ✅ Navigate to the new parameterized URL
+                              navigate(`/locations/${selectedLocation.id}/edit`); 
                             }}
                           >
                             <Edit size={16} /> Edit
@@ -356,7 +383,7 @@ export function Locations() {
                         </div>
                       </div>
 
-                      {/* Description */}
+                      {/* Description and other detail JSX remains the same */}
                       <div className="mb-6 mt-6">
                         <h3 className="text-sm font-medium text-gray-700">
                           Description
@@ -373,7 +400,7 @@ export function Locations() {
                               key={item.id}
                               src={`data:${item.mimetype};base64,${item.base64}`}
                               alt="Location"
-                              className="w-24 h-24 object-cover rounded" // adjust styling as needed
+                              className="w-24 h-24 object-cover rounded" 
                             />
                           ))}
                         </div>

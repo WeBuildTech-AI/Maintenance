@@ -3,9 +3,9 @@
 import { type FormEvent, useEffect, useState } from "react";
 import type { AppDispatch, RootState } from "../../../store";
 import { useDispatch, useSelector } from "react-redux";
-import type { CreateVendorData } from "../../../store/vendors";
-import { createVendor } from "../../../store/vendors";
+import { createVendor, type CreateVendorData } from "../../../store/vendors";
 import type { SelectOption } from "./DynamicSelect";
+import axios from "axios";
 
 // Thunks & Child Components
 import { fetchLocationsName } from "../../../store/locations/locations.thunks";
@@ -21,19 +21,22 @@ export function VendorForm({
   onCancel,
   initialData,
   onSubmit,
-  setSelectedVendorId
+  onSuccess, // Using onSuccess for clarity
 }: any) {
   const [form, setForm] = useState({
     name: "",
     description: "",
+    category: "",
+    services: "",
+    createdBy: "",
     partsSummary: "",
     color: "#2563eb",
     vendorType: "Manufacturer",
   });
   const dispatch = useDispatch<AppDispatch>();
+  const user = useSelector((state: RootState) => state.auth.user);
   const [pictures, setPictures] = useState<File[]>([]);
   const [attachedDocs, setAttachedDocs] = useState<File[]>([]);
-  const user = useSelector((state: RootState) => state.auth.user);
   const [showContactInputs, setShowContactInputs] = useState(false);
   const [contact, setContact] = useState({ email: "", phone: "" });
 
@@ -87,42 +90,54 @@ export function VendorForm({
   };
 
   const handleCtaClick = (path: string) => { console.log(`Navigating to ${path}`); };
-  const splitFiles = (selectedFiles: File[]) => { /* ... */ };
   
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) return;
 
+    // ✅ Create a FormData object
+    const formData = new FormData();
+
+    // ✅ Append all the form fields to the FormData object
+    formData.append('organizationId', user.organizationId);
+    formData.append('name', form.name);
+    formData.append('description', form.description);
+    formData.append('category', form.category);
+    formData.append('services', form.services);
+    formData.append('createdBy', form.createdBy);
+    formData.append('partsSummary', form.partsSummary);
+    formData.append('color', form.color);
+    formData.append('vendorType', form.vendorType.toLowerCase());
+    
+    // Append contact and selected IDs
+    formData.append('contacts[email]', contact.email);
+    formData.append('contacts[phone]', contact.phone);
+    selectedLocationIds.forEach(id => formData.append('locationIds[]', id));
+    selectedAssetIds.forEach(id => formData.append('assetIds[]', id));
+    selectedPartIds.forEach(id => formData.append('partIds[]', id));
+
+    // Append the picture file
+    if (pictures[0]) {
+      formData.append('picture', pictures[0]); // Use 'picture' or the correct field name from your backend
+    }
+    
+    // Append any other attached documents
+    attachedDocs.forEach(doc => formData.append('files[]', doc));
+
     if (initialData && onSubmit) {
-      const updatePayload = { 
-        name: form.name,
-        description: form.description,
-        color: form.color,
-        contacts: contact,
-        assetIds: selectedAssetIds,
-        partIds: selectedPartIds,
-        vendorType: form.vendorType.toLowerCase(),
-      };
-      onSubmit(updatePayload);
+      onSubmit(formData);
       return;
     }
 
-    const newVendor: CreateVendorData = { 
-      organizationId: user.organizationId, 
-      name: form.name.trim(),
-      description: form.description,
-      color: form.color,
-      vendorType: form.vendorType.toLowerCase() as "manufacturer" | "distributor",
-      contacts: contact,
-      assetIds: selectedAssetIds,
-      partIds: selectedPartIds,
-    };
-    
-    dispatch(createVendor(newVendor))
+    // Dispatch the thunk with the FormData object
+    dispatch(createVendor(formData))
       .unwrap()
-      .then((res) => { 
-        setSelectedVendorId(res.id); 
-        onCancel(); 
+      .then((createdVendor) => {
+        if (onSuccess) {
+          onSuccess(createdVendor.id);
+        } else {
+          onCancel();
+        }
       })
       .catch((err) => {
         console.error("Create API failed:", err);
@@ -137,9 +152,9 @@ export function VendorForm({
 
       <form className="min-h-0 flex-1 overflow-y-auto space-y-8 py-8" onSubmit={handleSubmit}>
         <VendorPrimaryDetails form={form} setForm={setForm} />
-        <VendorPicturesInput files={pictures} setFiles={setPictures} onFilesSelected={splitFiles} />
+        <VendorPicturesInput files={pictures} setFiles={setPictures} />
         <VendorContactInput contact={contact} setContact={setContact} showInputs={showContactInputs} setShowInputs={setShowContactInputs} />
-        <VendorAttachmentsInput attachedDocs={attachedDocs} setAttachedDocs={setAttachedDocs} onFilesSelected={splitFiles} />
+        <VendorAttachmentsInput attachedDocs={attachedDocs} setAttachedDocs={setAttachedDocs} />
         <VendorLinkedItems
           availableLocations={availableLocations}
           selectedLocationIds={selectedLocationIds}
@@ -194,7 +209,8 @@ export function VendorForm({
           Cancel
         </button>
         <button 
-         onClick={handleSubmit}
+          type="submit"
+          onClick={handleSubmit}
           style={{
             height: '2.5rem',
             display: 'flex',

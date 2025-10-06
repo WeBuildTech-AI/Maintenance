@@ -7,11 +7,10 @@ import { mockVendors, type Vendor } from "./vendors.types";
 import { VendorSidebar } from "./VendorSidebar";
 import { VendorTable } from "./VendorTable";
 import { VendorDetails } from "./VendorDetails";
-
-// ✅ ADDED: update support
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store";
-import { updateVendor } from "../../store/vendors"; // uses your thunk definition
+import { updateVendor } from "../../store/vendors";
+import { useNavigate, useMatch } from "react-router-dom"; // <-- ADDED
 
 export function Vendors() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -22,11 +21,34 @@ export function Vendors() {
   const [selectedVendorId, setSelectedVendorId] = useState(
     mockVendors[0]?.id ?? ""
   );
-  const [isCreatingVendor, setIsCreatingVendor] = useState(false);
-
-  // ✅ ADDED: edit mode state + dispatch
-  const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
+  // ❌ REMOVED: [isCreatingVendor, setIsCreatingVendor]
+  // ❌ REMOVED: [editingVendor, setEditingVendor]
   const dispatch = useDispatch<AppDispatch>();
+
+  // 🔽 ADDED: Router Hooks
+  const navigate = useNavigate();
+  const isCreateRoute = useMatch("/vendors/create");
+  const isEditRoute = useMatch("/vendors/:vendorId/edit");
+
+  // 🔽 DERIVED STATE
+  const isEditMode = !!isEditRoute;
+  const vendorToEdit = isEditMode
+    ? vendors.find((v) => v.id === isEditRoute.params.vendorId)
+    : null;
+
+  const handleShowCreateForm = () => {
+    navigate("/vendors/create");
+  };
+
+  const handleCancelForm = () => {
+    navigate("/vendors");
+  };
+
+  const handleCreateSubmit = (newVendor: Vendor) => {
+    setVendors((prev) => [newVendor, ...prev]);
+    setSelectedVendorId(newVendor.id);
+    navigate("/vendors");
+  };
 
   // Fetch vendors on mount
   useEffect(() => {
@@ -71,13 +93,13 @@ export function Vendors() {
 
   console.log(selectedVendor, "selectedVendor");
 
-  // ✅ ADDED: submit handler for update
+  // ✅ MODIFIED: submit handler for update
   const handleUpdateSubmit = async (formData: any) => {
-    if (!editingVendor) return;
+    if (!vendorToEdit) return;
     try {
       await dispatch(
         updateVendor({
-          id: editingVendor.id,
+          id: vendorToEdit.id,
           data: {
             // map minimal fields you have in the form
             name: formData.name,
@@ -89,10 +111,10 @@ export function Vendors() {
         })
       ).unwrap();
 
-      // Optimistically update local list so UI reflects immediately (optional)
+      // Optimistically update local list so UI reflects immediately
       setVendors((prev) =>
         prev.map((v) =>
-          v.id === editingVendor.id
+          v.id === vendorToEdit.id
             ? {
                 ...v,
                 name: formData.name,
@@ -104,7 +126,7 @@ export function Vendors() {
         )
       );
 
-      setEditingVendor(null);
+      navigate("/vendors"); // Navigate away after successful update
     } catch (e) {
       console.error("Update vendor failed:", e);
     }
@@ -118,7 +140,7 @@ export function Vendors() {
         setViewMode,
         searchQuery,
         setSearchQuery,
-        setIsCreatingVendor,
+        handleShowCreateForm, // 👈 New URL-driven handler
         setShowSettings
       )}
 
@@ -133,27 +155,21 @@ export function Vendors() {
               loading={loading}
             />
             <section className="flex-1 overflow-auto">
-              {isCreatingVendor ? (
+              {isCreateRoute || isEditRoute ? ( // 👈 Check both URL routes
                 <VendorForm
+                  // 🔽 Conditional props based on route
+                  initialData={vendorToEdit}
+                  onSubmit={isEditMode ? handleUpdateSubmit : handleCreateSubmit}
+                  onCancel={handleCancelForm}
+                  // These props are no longer required/used here, relying on onSubmit/onCancel
                   setVendors={setVendors}
                   setSelectedVendorId={setSelectedVendorId}
-                  onCancel={() => setIsCreatingVendor(false)}
-                />
-              ) : editingVendor ? (
-                <VendorForm
-                  // ✅ ADDED: prefill edit form
-                  initialData={editingVendor}
-                  setVendors={setVendors}
-                  setSelectedVendorId={setSelectedVendorId}
-                  onCancel={() => setEditingVendor(null)}
-                  // ✅ ADDED: when saving, hit update thunk
-                  onSubmit={handleUpdateSubmit}
                 />
               ) : selectedVendor ? (
                 <VendorDetails
                   vendor={selectedVendor}
-                  // ✅ ADDED: open edit mode from details
-                  onEdit={(v) => setEditingVendor(v)}
+                  // 🔽 Updated onEdit to navigate to the new parameterized URL
+                  onEdit={(v) => navigate(`/vendors/${v.id}/edit`)}
                 />
               ) : (
                 <div className="flex h-full items-center justify-center text-muted-foreground">

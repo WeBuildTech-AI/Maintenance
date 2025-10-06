@@ -6,12 +6,6 @@ import { SearchWithDropdown } from "../../Locations/SearchWithDropdown";
 import { createMeter } from "../../../store/meters";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "../../../store";
-import { locationService } from "../../../store/locations";
-
-// import { locationService } from "../../store/locations/locationService"; // update path
-import type { LocationResponse } from "../../../store/locations";
-import { assetService } from "../../../store/assets";
-import Loader from "../../Loader/Loader";
 
 interface NewMeterFormProps {
   onCreate: (data: any) => void;
@@ -28,7 +22,7 @@ export function NewMeterForm({
   onCancel,
   getLocationData,
   getAssetData,
-  editingMeter
+   editingMeter
 }: NewMeterFormProps) {
   const [meterType, setMeterType] = useState<"manual" | "automated">("manual");
   const [meterName, setMeterName] = useState("");
@@ -53,17 +47,17 @@ export function NewMeterForm({
 
 
   useEffect(() => {
-    if (editingMeter) {
-      setMeterType(editingMeter.meterType || "manual");
-      setMeterName(editingMeter.name || "");
-      setDescription(editingMeter.description || "");
-      setMeasurementUnit(editingMeter.unit || "");
-      setAsset(editingMeter.assetId || "");
-      setLocation(editingMeter.locationId || "");
-      setReadingFrequencyValue(editingMeter.readingFrequency?.time || "");
-      setReadingFrequencyUnit(editingMeter.readingFrequency?.interval || "none");
-    }
-  }, [editingMeter]);
+  if (editingMeter) {
+    setMeterType(editingMeter.meterType || "manual");
+    setMeterName(editingMeter.name || "");
+    setDescription(editingMeter.description || "");
+    setMeasurementUnit(editingMeter.unit || "");
+    setAsset(editingMeter.assetId || "");
+    setLocation(editingMeter.locationId || "");
+    setReadingFrequencyValue(editingMeter.readingFrequency?.time || "");
+    setReadingFrequencyUnit(editingMeter.readingFrequency?.interval || "none");
+  }
+}, [editingMeter]);
 
 
   // Split images/docs
@@ -101,7 +95,6 @@ export function NewMeterForm({
     setDocs((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // 👇 yaha naam update kiya
   const handleCreateMeter = () => {
     try {
       if (!meterName.trim()) {
@@ -114,51 +107,41 @@ export function NewMeterForm({
       }
       setError("");
       setPostMeterDataLoading(true);
-      const payload = {
+      const newMeter = {
         organizationId: user.organizationId,
         name: meterName,
-        meterType,
-        description,
+        meterType: meterType,
+        description: description,
         unit: measurementUnit,
         assetId: asset,
         locationId: location,
         readingFrequency: {
-          interval: readingFrequencyUnit,
+          iterval: readingFrequencyUnit,
           time: readingFrequencyValue,
         },
         photos: [],
       };
 
-      console.log(payload, editingMeter ? "Update Meter" : "New Meter");
+      console.log(newMeter, "New Meter");
+      // Dispatch to Redux thunk
+      dispatch(createMeter(newMeter))
+        .unwrap()
+        .then(() => {
+          console.log("Meter created successfully!");
+          setMeterName("");
+          setDescription("");
+          setAsset("");
+          setLocation("");
+          setMeasurementUnit("none");
+          setReadingFrequencyUnit("none");
+          setReadingFrequencyValue("");
 
-      if (editingMeter) {
-        dispatch(updateMeter({ id: editingMeter.id, data: payload }))
-          .unwrap()
-          .then(() => {
-            console.log("Meter updated successfully!");
-          })
-          .catch((err) => {
-            console.error("Meter update failed:", err);
-            setError(err);
-          });
-      } else {
-        dispatch(createMeter(payload))
-          .unwrap()
-          .then(() => {
-            console.log("Meter created successfully!");
-            setMeterName("");
-            setDescription("");
-            setAsset("");
-            setLocation("");
-            setMeasurementUnit("none");
-            setReadingFrequencyUnit("none");
-            setReadingFrequencyValue("");
-          })
-          .catch((err) => {
-            console.error("Meter creation failed:", err);
-            setError(err);
-          });
-      }
+          // maybe show toast or navigate
+        })
+        .catch((err) => {
+          console.error("Meter creation failed:", err);
+          setError(err);
+        });
     } catch (err) {
       console.log(err);
     } finally {
@@ -218,10 +201,11 @@ export function NewMeterForm({
             <button
               type="button"
               onClick={() => setMeterType("manual")}
-              className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${meterType === "manual"
+              className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
+                meterType === "manual"
                   ? "border-orange-600 bg-white-50 text-orange-600 ring-1 ring-blue-500/20"
                   : "border-gray-300 text-gray-700 hover:bg-gray-50"
-                }`}
+              }`}
             >
               <User className="h-4 w-4" />
               Manual
@@ -229,10 +213,11 @@ export function NewMeterForm({
             <button
               type="button"
               onClick={() => setMeterType("automated")}
-              className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${meterType === "automated"
+              className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
+                meterType === "automated"
                   ? "border-orange-600 bg-white-50 text-orange-600 ring-1 ring-blue-500/20"
                   : "border-gray-300 text-gray-700 hover:bg-gray-50"
-                }`}
+              }`}
             >
               <Lock className="h-4 w-4" />
               Automated
@@ -607,7 +592,7 @@ export function NewMeterForm({
           </button>
         )}
         <button
-          onClick={handleCreateMeter}   // 👈 ab sahi naam
+          onClick={handleCreateMeter}
           style={{
             marginLeft: "auto",
             paddingLeft: "40px",
@@ -615,13 +600,8 @@ export function NewMeterForm({
           }}
           className="h-10 rounded-md bg-orange-600 text-sm font-medium text-white shadow hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          {postMeterDataloading
-            ? "Loading...."
-            : editingMeter
-              ? "Update"
-              : "Create"}
+          {postMeterDataloading ? "Loading...." : "Create"}
         </button>
-
       </div>
     </div>
   );

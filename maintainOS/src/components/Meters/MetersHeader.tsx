@@ -23,7 +23,7 @@ export function MetersHeaderComponent(
   setViewMode: Dispatch<SetStateAction<ViewMode>>,
   searchQuery: string,
   setSearchQuery: Dispatch<SetStateAction<string>>,
-  setIsCreatingForm: Dispatch<SetStateAction<boolean>>,
+  setIsCreatingForm: () => void, // 👈 UPDATED TYPE: now a void function for navigation
   setShowSettings: Dispatch<SetStateAction<boolean>>
 ) {
   return (
@@ -74,7 +74,7 @@ export function MetersHeaderComponent(
           <Button
             className="gap-2 cursor-pointer bg-orange-600 hover:outline-none"
             onClick={() => {
-              setIsCreatingForm(true);
+              setIsCreatingForm(); // 👈 Function call without boolean argument
               setViewMode("panel");
             }}
           >

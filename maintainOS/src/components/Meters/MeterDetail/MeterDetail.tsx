@@ -1,32 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { Building2, Edit, MapPin, MoreHorizontal, Plus } from "lucide-react";
+import { Building2, Edit, MoreHorizontal, Plus } from "lucide-react";
 import { Button } from "../../ui/button";
 import { MeterAutomations } from "./MeterAutomations";
 import { MeterDetailsSection } from "./MeterDetailsSection";
 import { MeterReadings } from "./MeterReadings";
 import { MeterWorkOrders } from "./MeterWorkOrders";
 import { NewMeterForm } from "../NewMeterForm/NewMeterForm";
+import { useNavigate } from "react-router-dom"; // 👈 ADD useNavigate
 
 export function MeterDetail({
   selectedMeter,
   getAssetData,
   getLocationData,
 }: any) {
-  const [isEditing, setIsEditing] = useState(false);
+  // Removed local editing state: const [isEditing, setIsEditing] = useState(false);
+  
+  const navigate = useNavigate(); // 👈 ADD hook
 
-  if (isEditing) {
-    return (
-      <NewMeterForm
-        onCreate={() => setIsEditing(false)}
-        onCancel={() => setIsEditing(false)}
-        getLocationData={getLocationData}
-        getAssetData={getAssetData}
-        editingMeter={selectedMeter} // 👈 pass current meter
-      />
-    );
-  }
+  // Removed conditional return for NewMeterForm
 
   return (
     <div className="flex border mr-2 flex-col h-full">
@@ -45,7 +38,10 @@ export function MeterDetail({
               variant="ghost"
               size="sm"
               className="gap-2 text-orange-600"
-              onClick={() => setIsEditing(true)} // open form
+              onClick={() => {
+                // 🔽 Navigate to the new parameterized URL for editing
+                navigate(`/meters/${selectedMeter.id}/edit`); 
+              }}
             >
               <Edit className="h-4 w-4" />
               Edit

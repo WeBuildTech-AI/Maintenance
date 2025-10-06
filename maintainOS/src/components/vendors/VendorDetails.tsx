@@ -69,7 +69,7 @@ export function VendorDetails({
             </Button>
             <Button
               size="sm"
-              onClick={() => vendor && onEdit(vendor)} // 🔹 wired edit action
+              onClick={() => vendor && onEdit(vendor)} // 🔹 Calls the parent's navigation handler
               className="gap-2 border cursor-pointer border-orange-600 bg-white text-orange-600 hover:bg-orange-50"
             >
               <ExternalLink className="h-4 w-4" /> Edit
@@ -129,8 +129,7 @@ export function VendorDetails({
               )}
             </div>
           </div>
-{/* 
-          <ContactFormDialog vendor={vendor} setVendors={setVendors} /> */}
+{/* <ContactFormDialog vendor={vendor} setVendors={setVendors} /> */}
 
           {/* Locations */}
           <div>
@@ -167,19 +166,6 @@ export function VendorDetails({
               <Users className="h-4 w-4" /> Use in New Work Order
             </Button>
           </div>
-
-          {/* Services */}
-          {/* <div className="flex flex-wrap gap-2">
-            {vendor.services.map((s) => (
-              <Badge
-                key={s}
-                variant="outline"
-                className="bg-primary/5 text-primary"
-              >
-                {s}
-              </Badge>
-            ))}
-          </div> */}
         </CardContent>
       </Card>
     </section>

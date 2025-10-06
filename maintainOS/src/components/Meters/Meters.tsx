@@ -10,10 +10,11 @@ import { meterService, type MeterResponse } from "../../store/meters";
 import type { ViewMode } from "../purchase-orders/po.types";
 import { locationService } from "../../store/locations";
 import { assetService } from "../../store/assets";
+import { useNavigate, useMatch } from "react-router-dom";
 
 export function Meters() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [showNewMeterForm, setShowNewMeterForm] = useState(false);
+  // Removed [showNewMeterForm, setShowNewMeterForm]
   const [selectedType, setSelectedType] = useState("all");
   const [selectedAsset, setSelectedAsset] = useState("all");
   const [selectedLocation, setSelectedLocation] = useState("all");
@@ -26,6 +27,31 @@ export function Meters() {
   const [selectedMeter, setSelectedMeter] = useState<
     (typeof meterData)[0] | null
   >(null);
+
+  // 🔽 Router hooks to manage /create and /:id/edit
+  const navigate = useNavigate();
+  const isCreateRoute = useMatch("/meters/create");
+  const isEditRoute = useMatch("/meters/:meterId/edit");
+
+  // 🔽 Derived State: Determine if we are in edit mode and fetch the data if needed
+  const isEditMode = !!isEditRoute;
+  const meterToEdit = isEditMode
+    ? meterData.find((m) => m.id === isEditRoute?.params.meterId)
+    : null;
+
+  const handleShowNewMeterForm = () => {
+    navigate("/meters/create");
+  };
+
+  const handleCancelForm = () => {
+    navigate("/meters");
+  };
+
+  const handleCreateForm = () => {
+    // Your create/update meter logic will go here
+    console.log("Meter operation complete!");
+    navigate("/meters");
+  };
 
   useEffect(() => {
     const fetchMeters = async () => {
@@ -113,7 +139,7 @@ export function Meters() {
         setViewMode,
         searchQuery,
         setSearchQuery,
-        setShowNewMeterForm,
+        handleShowNewMeterForm,
         setShowSettings
       )}
 
@@ -135,16 +161,14 @@ export function Meters() {
             />
 
             <div className="flex-1 bg-card">
-              {showNewMeterForm ? (
+              {isCreateRoute || isEditRoute ? (
                 <NewMeterForm
-                  onCancel={() => setShowNewMeterForm(false)}
-                  onCreate={() => {
-                    // Your create meter logic
-                    console.log("Meter created!");
-                    setShowNewMeterForm(false);
-                  }}
+                  onCancel={handleCancelForm}
+                  onCreate={handleCreateForm}
                   getLocationData={getLocationData}
                   getAssetData={getAssetData}
+                  // Pass the derived meter data for editing
+                  editingMeter={meterToEdit}
                 />
               ) : selectedMeter ? (
                 <MeterDetail
@@ -152,7 +176,6 @@ export function Meters() {
                   getLocationData={getLocationData}
                   getAssetData={getAssetData}
                 />
-
               ) : (
                 <MetersEmptyState />
               )}
