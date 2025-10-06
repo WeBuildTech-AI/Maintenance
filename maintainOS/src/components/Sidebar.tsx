@@ -59,7 +59,10 @@ export function Sidebar({
   expanded,
   setExpanded,
 }: SidebarProps) {
-  const imageSrc = `data:${user?.avatarUrl.mimetype};base64,${user?.avatarUrl.base64}`;
+  const imageSrc =
+    user?.avatarUrl?.mimetype && user?.avatarUrl?.base64
+      ? `data:${user.avatarUrl.mimetype};base64,${user.avatarUrl.base64}`
+      : "/default-avatar.png"; // fallback image path
 
   return (
     <div
@@ -158,14 +161,14 @@ export function Sidebar({
         <div className="p-4 border-t border-sidebar-border">
           <div className="flex items-center gap-3 mb-3">
             <Avatar className="h-8 w-8">
-              <AvatarImage
+              {/* <AvatarImage
                 src={
                   user?.avatarUrl
                     ? `data:${user.avatarUrl.mimetype};base64,${user.avatarUrl.base64}`
                     : undefined
                 }
                 alt={user?.fullName}
-              />
+              /> */}
               <AvatarFallback>
                 {user?.fullName
                   ?.split(" ")

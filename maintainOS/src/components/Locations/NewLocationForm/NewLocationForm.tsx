@@ -94,54 +94,120 @@ export function NewLocationForm({
 
   // Create / Update location handler
 
+  // const handleSubmitLocation = async () => {
+  //   if (!user) return;
+
+  //   setSubmitLocationFormLoader(true);
+
+  //   const formData = new FormData();
+  //   formData.append("organizationId", user.organizationId || "");
+  //   formData.append("name", name);
+  //   formData.append("address", address);
+  //   formData.append("description", description);
+  //   formData.append("parentLocationId", parentLocationId || "");
+  //   formData.append("qrCode", qrCode);
+
+  //   // ✅ Add vendorIds as array
+  //   vendorId.forEach((id) => {
+  //     formData.append("vendorIds[]", id); // matches curl
+  //   });
+
+  //   // ✅ Add teamsInCharge as array
+  //   teamInCharge.forEach((id) => {
+  //     formData.append("teamsInCharge[]", id); // matches curl
+  //   });
+
+  //   // ✅ Add photos as array
+  //   pictures.forEach((pic) => {
+  //     formData.append("photos", pic); // multiple photos with same key
+  //   });
+
+  //   // ✅ Add attached docs if needed
+  //   attachedDocs.forEach((doc) => {
+  //     formData.append("attachedDocs", doc);
+  //   });
+
+  //   try {
+  //     let res;
+  //     if (isEdit && editData?.id) {
+  //       // console.log([...formData.entries()]);
+  //       res = await dispatch(
+  //         updateLocation({ id: editData.id, data: formData })
+  //       ).unwrap();
+  //       toast.success("Location updated successfully");
+  //     } else {
+  //       res = await dispatch(createLocation(formData)).unwrap();
+  //       // setSelectedLocation(res.id);
+  //       toast.success("Location created successfully");
+  //     }
+  //     console.log("Location response:", res);
+  //     // setSelectedLocation(res.id);
+  //     setShowForm(false);
+  //     setName("");
+  //     setAddress("");
+  //     setDescription("");
+  //     setQrCode("");
+  //     setPictures([]);
+  //     setAttachedDocs([]);
+  //     setTeamInCharge([]);
+  //     setVendorId([]);
+  //     setParentLocationId("");
+  //   } catch (err) {
+  //     console.error("Failed to submit location:", err);
+  //     toast.error("Error while saving location");
+  //   } finally {
+  //     setSubmitLocationFormLoader(false);
+  //   }
+  // };
+
   const handleSubmitLocation = async () => {
     if (!user) return;
-
     setSubmitLocationFormLoader(true);
 
-    const formData = new FormData();
-    formData.append("organizationId", user.organizationId || "");
-    formData.append("name", name);
-    formData.append("address", address);
-    formData.append("description", description);
-    formData.append("parentLocationId", parentLocationId || "");
-    formData.append("qrCode", qrCode);
-
-    // ✅ Add vendorIds as array
-    vendorId.forEach((id) => {
-      formData.append("vendorIds[]", id); // matches curl
-    });
-
-    // ✅ Add teamsInCharge as array
-    teamInCharge.forEach((id) => {
-      formData.append("teamsInCharge[]", id); // matches curl
-    });
-
-    // ✅ Add photos as array
-    pictures.forEach((pic) => {
-      formData.append("photos", pic); // multiple photos with same key
-    });
-
-    // ✅ Add attached docs if needed
-    attachedDocs.forEach((doc) => {
-      formData.append("attachedDocs", doc);
-    });
-
     try {
+      const formData = new FormData();
+
+      formData.append("organizationId", user.organizationId || "");
+      formData.append("name", name);
+      formData.append("address", address);
+      formData.append("description", description);
+      formData.append("parentLocationId", parentLocationId || "");
+      formData.append("qrCode", qrCode);
+
+      vendorId.forEach((id) => formData.append("vendorIds[]", id));
+      teamInCharge.forEach((id) => formData.append("teamsInCharge[]", id));
+
+      // Handle pictures: allow new uploads or keep existing URLs
+      pictures.forEach((pic) => {
+        if (pic instanceof File) {
+          formData.append("photos", pic);
+        } else if (typeof pic === "string") {
+          formData.append("existingPhotos[]", pic); // backend should handle existing ones
+        }
+      });
+
+      attachedDocs.forEach((doc) => {
+        if (doc instanceof File) {
+          formData.append("attachedDocs", doc);
+        } else if (typeof doc === "string") {
+          formData.append("existingDocs[]", doc);
+        }
+      });
+
       let res;
       if (isEdit && editData?.id) {
-        // console.log([...formData.entries()]);
         res = await dispatch(
           updateLocation({ id: editData.id, data: formData })
         ).unwrap();
         toast.success("Location updated successfully");
       } else {
         res = await dispatch(createLocation(formData)).unwrap();
-        // setSelectedLocation(res.id);
         toast.success("Location created successfully");
       }
+
       console.log("Location response:", res);
-      // setSelectedLocation(res.id);
+
+      // Reset all form fields after submission
       setShowForm(false);
       setName("");
       setAddress("");
