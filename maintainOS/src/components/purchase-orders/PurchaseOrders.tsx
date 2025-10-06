@@ -459,7 +459,7 @@ export function PurchaseOrders() {
                       </h1>
                       <LinkIcon className="h-4 w-4 text-orange-600" />
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2"> 
                       <Button className="gap-2 border cursor-pointer border-orange-600 bg-white text-orange-600 hover:bg-orange-50">
                         <Upload className="h-4 w-4" />
                         Send to Vendor

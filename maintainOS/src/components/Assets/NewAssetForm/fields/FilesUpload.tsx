@@ -20,11 +20,11 @@ const handleSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
       <h3 className="mb-4 text-base font-medium text-gray-900">Files</h3>
       {files.length === 0 ? (
         <div
-          className="mb-20 border border-dashed rounded-md p-6 text-center bg-blue-50 text-blue-600 cursor-pointer"
+          className="mb-20 border border-dashed rounded-md p-6 text-center bg-orange-50 cursor-pointer"
           onClick={() => document.getElementById("fileInput")?.click()}
         >
           <Upload className="mx-auto mb-2 h-6 w-6" />
-          <p className="text-gray-900">Add or drag files</p>
+          <p className="text-orange-600">Add or drag files</p>
           <input id="fileInput" type="file" multiple className="hidden" onChange={handleSelect} />
         </div>
       ) : (
