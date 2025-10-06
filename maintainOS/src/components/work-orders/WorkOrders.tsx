@@ -17,6 +17,12 @@ const mockWorkOrders: WorkOrder[] = [
     status: "Open",
     priority: "Daily",
     dueDate: "Today",
+    description: "Inspect all critical areas of the facility.",
+    estimated_time: "2 hours",
+    work_type:"Preventive",
+    createdBy:"Ashwini Chauhan",
+    createdAt:"19/09/2025, 13:16",
+    updatedAt:"29/09/2025, 13:16",
     assignedTo: {
       name: "Ashwini Chauhan",
       avatar:
@@ -35,6 +41,12 @@ const mockWorkOrders: WorkOrder[] = [
     status: "In Progress",
     priority: "High",
     dueDate: "Tomorrow",
+    description: "Perform routine maintenance on Pump A.",
+    createdBy:"Ashwini Chauhan",
+    createdAt:"19/09/2025, 13:16",
+    updatedAt:"29/09/2025, 13:16",
+    estimated_time: "2 hours",
+    work_type:"Preventive",
     assignedTo: {
       name: "John Smith",
       avatar:
@@ -52,6 +64,12 @@ const mockWorkOrders: WorkOrder[] = [
     status: "Completed",
     priority: "Medium",
     dueDate: "Yesterday",
+    description: "Replace air filters in the ventilation system.",
+    createdBy:"Ashwini Chauhan",
+    createdAt:"19/09/2025, 13:16",
+    updatedAt:"29/09/2025, 13:16",
+    estimated_time: "2 hours",
+    work_type:"Preventive",
     assignedTo: {
       name: "Sarah Wilson",
       avatar:

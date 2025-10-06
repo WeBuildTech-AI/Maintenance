@@ -14,6 +14,12 @@ export interface WorkOrder {
   status: string;
   priority: string;
   dueDate: string;
+  description?: string;
+  createdBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  estimated_time?: string;
+  work_type?: string;
   assignedTo: WorkOrderAssignee;
   asset: string;
   location: string;
