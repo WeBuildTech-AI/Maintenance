@@ -26,7 +26,7 @@ const mockWorkOrders: WorkOrder[] = [
     asset: "HVAC-02",
     location: "Administration Wing",
     isCompleted: false,
-    wasDeleted: true,
+    wasDeleted: false,
     deletedDate: "19/09/2025, 13:16",
   },
   {
