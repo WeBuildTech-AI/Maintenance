@@ -59,23 +59,23 @@ export function Sidebar({
   expanded,
   setExpanded,
 }: SidebarProps) {
-  const imageSrc =
-    user?.avatarUrl?.mimetype && user?.avatarUrl?.base64
-      ? `data:${user.avatarUrl.mimetype};base64,${user.avatarUrl.base64}`
-      : "/default-avatar.png"; // fallback image path
+  const imageSrc = user?.avatar ? user.avatar : "/default-avatar.png";
 
   return (
     <div
       className={`h-full bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300
-        ${expanded ? "w-50" : "w-16"}`}
+        ${expanded ? "w-64" : "w-16"}`}
     >
       {/* Header */}
       <div className=" border-b border-sidebar-border flex items-center justify-between">
         {expanded ? (
-          <div className="p-4">
-            <h1 className="text-lg cursor-pointer font-bold text-sidebar-foreground">
-              MaintainOS
-            </h1>
+          <div className="flex gap-2 p-4">
+            <img src="/Vector.svg"   alt="MaintainOS" className="h-8 w-auto" />
+            <div className="inline-flex items-center bg-brand-yellow border border-brand-black rounded px-2 py-1">
+              <span className="font-bold text-brand-black">
+                MaintainOS
+              </span>
+            </div>
             {/* <p className="text-sm text-sidebar-foreground/70">Control Center</p> */}
           </div>
         ) : (
@@ -84,7 +84,7 @@ export function Sidebar({
               className="text-lg cursor-pointer p-4 font-bold text-sidebar-foreground"
               onClick={() => setExpanded(true)}
             >
-              MS
+              <img src="/Vector.svg"   alt="MaintainOS" className="h-8 w-auto" />
             </button>
           </div>
         )}
