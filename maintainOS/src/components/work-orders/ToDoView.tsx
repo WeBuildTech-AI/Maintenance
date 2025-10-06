@@ -661,7 +661,7 @@ export function ToDoView({
                             {/* Message block */}
                             <div>
                                 <div className="flex items-baseline gap-2">
-                                    <p className="font-semibold">{msg.sender}</p>
+                                    <p className="text-sm font-medium">{msg.sender}</p>
                                     <span className="text-xs text-muted-foreground">
                                     {msg.timestamp}
                                     </span>
