@@ -21,7 +21,9 @@ import {
 } from "../ui/select";
 import {
   AlertTriangle,
+  Edit,
   Edit2,
+  Link,
   MapPin,
   MessageSquare,
   MoreHorizontal,
@@ -83,12 +85,9 @@ export function ToDoView({
   return (
     <div className="flex h-full">
       {/* LEFT SIDE LIST */}
-      <div className="w-[420px] border-r border-border bg-card flex flex-col">
-        <div className="border-b border-border px-6 pt-6">
-          <div className="flex items-center font-medium text-sm text-muted-foreground uppercase tracking-wide">
-            To Do
-          </div>
-          <div className="mt-6 flex items-center justify-between">
+      <div className="w-96 mr-2 ml-3 mb-2 border border-border flex flex-col min-h-0">
+        <div className="border-b border-border">
+          <div className="flex items-center justify-between">
             <div className="flex rounded-full bg-muted/60 p-1 text-sm font-medium">
               <button
                 type="button"
@@ -230,7 +229,7 @@ export function ToDoView({
       </div>
 
       {/* RIGHT SIDE PANEL */}
-      <div className="flex-1 bg-card flex flex-col">
+      <div className="flex-1 bg-card mr-3 ml-2 mb-2 border border-border min-h-0 flex flex-col border-border">
         {creatingWorkOrder ? (
           <NewWorkOrderForm
             onCreate={() => {
@@ -247,12 +246,16 @@ export function ToDoView({
                   <h2 className="text-lg font-medium">
                     {selectedWorkOrder.title}
                   </h2>
-                  <Edit2 className="h-4 w-4 text-primary cursor-pointer" />
+                  <CopyPageUrlIcon/>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm">
                     <MessageSquare className="h-4 w-4 mr-2" />
                     Comments
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
                   </Button>
                   <Button variant="ghost" size="sm">
                     <MoreHorizontal className="h-4 w-4" />
@@ -291,7 +294,7 @@ export function ToDoView({
                   variant="outline"
                   className="text-primary border-primary/20 bg-primary/10"
                 >
-                  🔵 {selectedWorkOrder.status}
+                  {selectedWorkOrder.status}
                 </Badge>
               </div>
 

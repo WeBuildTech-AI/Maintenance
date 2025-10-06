@@ -3,12 +3,13 @@ import { Suspense } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { MainLayout } from "./components/MainLayout";
-import { Toaster } from "./components/ui/sonner";
+
 import type { AppDispatch, RootState } from "./store";
 import { login, logout } from "./store/userSlice";
 import { lazyImport } from "./utils/lazyImport";
-import InviteUser from "./components/Users/InviteUser/InviteUser";
+import InviteUsers from "./components/Users/InviteUser/InviteUser";
 import CreateTeamForm from "./components/Users/CreateTeam/CreateTeam";
+
 
 // ✅ Lazy imports
 const Login = lazyImport(() => import("./components/Login"), "Login");
@@ -94,16 +95,12 @@ export default function App() {
     return (
       <>
         <Login onLogin={handleLogin} />
-        <Toaster />
       </>
     );
   }
 
   return (
     <>
-      <div>
-        <Toaster position="top-center" reverseOrder={false} />
-      </div>
       <MainLayout user={user} onLogout={handleLogout}>
         <Suspense fallback={<div className="p-4">Loading...</div>}>
           <Routes>
@@ -125,7 +122,7 @@ export default function App() {
             <Route path="/automations" element={<Automations />} />
             <Route path="/locations/*" element={<Locations />} />
             <Route path="/users" element={<TeamUsers />} />
-            <Route path="/users/invite" element={<InviteUser />} />
+            <Route path="/users/invite" element={<InviteUsers />} />
             <Route path="/users/teams/:teamId" element={<ManageTeam />} />
             <Route path="/users/teams" element={<ManageTeam />} />
             <Route path="/teams/create" element={<CreateTeamForm />} />
@@ -133,7 +130,6 @@ export default function App() {
           </Routes>
         </Suspense>
       </MainLayout>
-      <Toaster />
     </>
   );
 }
