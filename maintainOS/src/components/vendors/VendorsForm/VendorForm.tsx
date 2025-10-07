@@ -1,11 +1,11 @@
 "use client";
 
 import { type FormEvent, useEffect, useState } from "react";
+import { useNavigate } from 'react-router-dom'; // 1. Ise import karein
 import type { AppDispatch, RootState } from "../../../store";
 import { useDispatch, useSelector } from "react-redux";
-import { createVendor, type CreateVendorData } from "../../../store/vendors";
+import { createVendor } from "../../../store/vendors";
 import type { SelectOption } from "./DynamicSelect";
-import axios from "axios";
 
 // Thunks & Child Components
 import { fetchLocationsName } from "../../../store/locations/locations.thunks";
@@ -22,8 +22,9 @@ export function VendorForm({
   onCancel,
   initialData,
   onSubmit,
-  onSuccess, // Using onSuccess for clarity
+  onSuccess,
 }: any) {
+  const navigate = useNavigate(); // 2. useRouter ki jagah useNavigate ka istemal karein
   const [form, setForm] = useState({
     name: "",
     description: "",

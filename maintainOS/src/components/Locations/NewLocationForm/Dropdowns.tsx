@@ -45,7 +45,7 @@ export function Dropdowns({
     stage === "teams"
       ? { text: "+ Create New Team", path: "/teams/create" }
       : stage === "vendors"
-      ? { text: "+ Create New Vendor", path: "/vendors" }
+      ? { text: "+ Create New Vendor", path: "/vendors/create" }
       : { text: "+ Create New Parent Location", path: "/locations" };
 
   const handleFetchApi = async () => {
