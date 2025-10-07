@@ -71,7 +71,11 @@ export function AssetsList({
                     <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed"></div>
                   </div>
                   <p className="text-muted-foreground mb-2">No assets found</p>
-                  <Button variant="link" className="text-primary p-0">
+                  <Button
+                    onClick={() => setShowNewAssetForm(true)}
+                    variant="link"
+                    className="text-primary p-0 cursor-pointer"
+                  >
                     Create the first asset
                   </Button>
                 </div>

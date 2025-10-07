@@ -86,8 +86,6 @@ export function MetersHeaderComponent(
       <div className="flex items-center mt-4 p-1 h-10 justify-between">
         {/* Left: Filter bar */}
         <MetersFilterBar />
-
-        {/* Right: Settings button (only for table view) */}
         {viewMode === "table" && (
           <button
             onClick={() => setShowSettings(true)}

@@ -14,7 +14,6 @@ import { useNavigate, useMatch } from "react-router-dom";
 
 export function Meters() {
   const [searchQuery, setSearchQuery] = useState("");
-  // Removed [showNewMeterForm, setShowNewMeterForm]
   const [selectedType, setSelectedType] = useState("all");
   const [selectedAsset, setSelectedAsset] = useState("all");
   const [selectedLocation, setSelectedLocation] = useState("all");
