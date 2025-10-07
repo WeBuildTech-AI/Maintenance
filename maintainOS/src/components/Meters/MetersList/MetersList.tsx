@@ -17,6 +17,7 @@ export function MetersList({
   getAssetData,
   getLocationData,
   handleShowNewMeterForm,
+
 }: any) {
   const meters = Array.isArray(filteredMeters) ? filteredMeters : [];
 
@@ -62,6 +63,7 @@ export function MetersList({
                   setSelectedMeter={setSelectedMeter}
                   getAssetData={getAssetData}
                   getLocationData={getLocationData}
+                  handleShowNewMeterForm={handleShowNewMeterForm}
                 />
               ))}
 
@@ -70,7 +72,7 @@ export function MetersList({
                   <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
                     <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed"></div>
                   </div>
-                  <p className="text-muted-foreground mb-2">No meters found</p>
+                  <p className="text-muted-foreground mb-2">Start adding Meters on MaintainOS</p>
                   <Button
                     variant=""
                     onClick={() => handleShowNewMeterForm(true)}

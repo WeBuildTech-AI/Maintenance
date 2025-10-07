@@ -8,6 +8,7 @@ import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "../../../store";
 import { assetService } from "../../../store/assets";
 import { locationService } from "../../../store/locations";
+import Loader from "../../Loader/Loader";
 
 interface NewMeterFormProps {
   onCreate: (data: any) => void;
@@ -158,26 +159,34 @@ export function NewMeterForm({
   };
 
   const handleGetAssetData = async () => {
+    // Fetch only if the data is not already loaded
+    if (getAssetData.length > 0) {
+      return;
+    }
     setLoading(true);
     try {
-      const res = await assetService.fetchAssetsName(10, 1, 0);
-      setGetAssestData(res);
-      console.log(res);
+      const assetsRes = await assetService.fetchAssetsName(10, 1, 0);
+      setGetAssestData(assetsRes.data || []);
     } catch (err) {
-      console.error(err);
+      console.error("Failed to fetch asset data:", err);
     } finally {
       setLoading(false);
     }
   };
 
+  console.log(getAssetData, getLocationData, "Dropdown data ");
+
   const handleGetLocationData = async () => {
+    // Fetch only if the data is not already loaded
+    if (getLocationData.length > 0) {
+      return;
+    }
     setLoading(true);
     try {
-      const res = await locationService.fetchLocationsName(10, 1, 0);
-      setGetLocationData(res);
-      console.log(res);
+      const locationsRes = await locationService.fetchLocationsName(10, 1, 0);
+      setGetLocationData(locationsRes.data || []);
     } catch (err) {
-      console.error(err);
+      console.error("Failed to fetch location data:", err);
     } finally {
       setLoading(false);
     }
@@ -328,12 +337,15 @@ export function NewMeterForm({
               >
                 {/* Show "start typing" only if no asset is selected */}
                 {!asset && <option value="">start typing</option>}
-
-                {getAssetData?.map((items) => (
-                  <option key={items.id} value={items.id}>
-                    {items.name}
-                  </option>
-                ))}
+                {loading ? (
+                  <Loader />
+                ) : (
+                  getAssetData?.map((items) => (
+                    <option key={items.id} value={items.id}>
+                      {items.name}
+                    </option>
+                  ))
+                )}
               </select>
 
               {/* Chevron Icon */}

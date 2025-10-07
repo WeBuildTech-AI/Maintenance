@@ -155,6 +155,7 @@ export function Meters() {
               setSelectedMeter={setSelectedMeter}
               loading={loading}
               handleShowNewMeterForm={handleShowNewMeterForm}
+              handleCreateForm={handleCreateForm}
               // getLocationData={getLocationData}
               // getAssetData={getAssetData}
             />
@@ -170,8 +171,8 @@ export function Meters() {
               ) : selectedMeter ? (
                 <MeterDetail
                   selectedMeter={selectedMeter}
-                  getLocationData={getLocationData}
-                  getAssetData={getAssetData}
+                  // getLocationData={getLocationData}
+                  // getAssetData={getAssetData}
                 />
               ) : (
                 <MetersEmptyState />

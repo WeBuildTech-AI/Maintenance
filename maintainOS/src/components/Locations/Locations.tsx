@@ -350,6 +350,19 @@ export function Locations() {
                                       </span>
                                     </div>
                                   )}
+                                  {/* <button
+                                    onClick={() => alert("sidit")}
+                                    className="text-sm text-orange-600 cursor-pointer"
+                                  >
+                                    <p>Sub Location </p>
+                                  </button> */}
+                                </div>
+                                <div>
+                                  {/* {items.subLocation&& (
+                                    <div>
+                                      <h3>Sub Location : {items.subLocation}</h3>
+                                      </div>
+                                  )} */}
                                 </div>
                               </div>
                             </div>
@@ -550,14 +563,36 @@ export function Locations() {
                       <hr className="my-4" />
 
                       {/* Footer */}
-                      <div className="text-sm text-gray-500 mt-6">
-                        Created By{" "}
-                        <span className="font-medium text-gray-700 capitalize">
-                          {user?.fullName}
-                        </span>{" "}
-                        on {formatDate(selectedLocation.createdAt)}
-                      </div>
 
+                      {selectedLocation.createdAt ===
+                      selectedLocation.updatedAt ? (
+                        <>
+                          <div className="text-sm text-gray-500 mt-6">
+                            Created By{" "}
+                            <span className="font-medium text-gray-700 capitalize">
+                              {user?.fullName}
+                            </span>{" "}
+                            on {formatDate(selectedLocation.createdAt)}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-sm text-gray-500 mt-6">
+                            Created By{" "}
+                            <span className="font-medium text-gray-700 capitalize">
+                              {user?.fullName}
+                            </span>{" "}
+                            on {formatDate(selectedLocation.createdAt)}
+                          </div>
+                          <div className="text-sm text-gray-500 mt-6">
+                            Updated By{" "}
+                            <span className="font-medium text-gray-700 capitalize">
+                              {user?.fullName}
+                            </span>{" "}
+                            on {formatDate(selectedLocation.updatedAt)}
+                          </div>
+                        </>
+                      )}
                       {/* Action Button */}
                       <div className="mt-6 flex justify-center">
                         <NavLink to="/work-orders">
