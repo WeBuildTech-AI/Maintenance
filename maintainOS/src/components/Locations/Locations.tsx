@@ -148,6 +148,7 @@ export function Locations() {
     }
   }, [sortBy]);
 
+  // Delete Location Functionality
   const handleDeleteLocation = (id: string) => {
     if (window.confirm("Are you sure you want to delete this location?")) {
       dispatch(deleteLocation(id))
@@ -163,6 +164,7 @@ export function Locations() {
     }
   };
 
+  // Funtional to minimize the Name 
   const renderInitials = (text: string) =>
     text
       .split(" ")

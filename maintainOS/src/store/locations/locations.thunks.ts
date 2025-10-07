@@ -64,6 +64,7 @@ export const createLocation = createAsyncThunk(
   async (locationData: CreateLocationData, { rejectWithValue }) => {
     try {
       const location = await locationService.createLocation(locationData);
+      console.log(locationData, "createdLocation");
       return location;
     } catch (error: any) {
       return rejectWithValue(
@@ -87,6 +88,7 @@ export const updateLocation = createAsyncThunk(
   ) => {
     try {
       const location = await locationService.updateLocation(id, locationData);
+      console.log(id, locationData, "updatedLocation");
       return location;
     } catch (error: any) {
       return rejectWithValue(

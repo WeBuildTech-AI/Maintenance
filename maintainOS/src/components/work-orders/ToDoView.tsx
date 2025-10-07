@@ -44,6 +44,7 @@ import {
 
 import { type ToDoViewProps } from "./types";
 import { NewWorkOrderForm } from "./NewWorkOrderForm/NewWorkOrderFrom";
+import CopyPageU from "../ui/copy-page-url-icon";
 
 import CopyPageUrlIcon from "../ui/copy-page-url-icon";
 import { ScrollArea } from "../ui/scroll-area";
@@ -307,7 +308,7 @@ export function ToDoView({
                   <h2 className="text-lg font-medium">
                     {selectedWorkOrder.title}
                   </h2>
-                  <CopyPageUrlIcon/>
+                  <CopyPageU/>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm">
