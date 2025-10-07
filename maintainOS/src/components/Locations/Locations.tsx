@@ -39,8 +39,7 @@ import QRCode from "react-qr-code";
 export function Locations() {
   const hasFetched = useRef(false);
   const dispatch = useDispatch<AppDispatch>();
-  
-  // NOTE: showForm state is managed by the URL (isCreateRoute/isEditRoute)
+
   const [locations, setLocations] = useState<LocationResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,23 +56,19 @@ export function Locations() {
   const user = useSelector((state: RootState) => state.auth.user);
   const [modalOpen, setModalOpen] = useState(false);
 
-  // 🔽 Router hooks to read the URL path
   const navigate = useNavigate();
   const isCreateRoute = useMatch("/locations/create");
-  // Match for /locations/:locationId/edit
-  const isEditRoute = useMatch("/locations/:locationId/edit"); 
-  
-  // 🔽 DERIVE form state from the URL
+  const isEditRoute = useMatch("/locations/:locationId/edit");
+  const isCreateSubLocationRoute = useMatch(
+    "/locations/:parentId/create-sublocation"
+  );
+
   const isEditMode = !!isEditRoute;
   const locationToEdit = isEditMode
     ? locations.find((loc) => loc.id === isEditRoute?.params.locationId)
     : null;
+  const parentIdFromUrl = isCreateSubLocationRoute?.params.parentId;
 
-  // ❌ REMOVE these states as they are now derived from the URL:
-  // const [isEdit, setIsEdit] = useState(false); 
-  // const [editData, setEditData] = useState<LocationResponse | null>(null);
-  
-  // 🔽 New handlers using router
   const handleShowNewLocationForm = () => {
     navigate("/locations/create");
   };
@@ -82,14 +77,50 @@ export function Locations() {
     navigate("/locations");
   };
 
-  const handleCreateForm = () => {
+  // ✅ ADD THIS ENTIRE NEW FUNCTION
+  const handleShowNewSubLocationForm = () => {
+    if (selectedLocation) {
+      navigate(`/locations/${selectedLocation.id}/create-sublocation`);
+    }
+  };
+
+  // 🔄 MODIFIED: This function now accepts the newly created location
+  // It updates the state and makes the new location active.
+  const handleCreateForm = (newLocation: LocationResponse) => {
+    // ✨ NEW: Add the new location to the top of the list for immediate UI update
+    const updatedLocations = [newLocation, ...locations];
+    setLocations(updatedLocations);
+    setFilteredLocations(updatedLocations); // Also update the filtered list
+
+    // ✨ NEW: Select the new location to show its details
+    setSelectedLocation(newLocation);
+
     // This runs AFTER the creation/update API call succeeds inside NewLocationForm
     navigate("/locations");
   };
 
-  // -------------------- Existing Fetch & Filter Logic --------------------
+  // ✅ NEW: A single function to handle both Create and Update success
+  const handleFormSuccess = (locationData: LocationResponse) => {
+    const locationIndex = locations.findIndex(
+      (loc) => loc.id === locationData.id
+    );
+    let updatedLocations;
 
-  // 👉 Pagination states
+    if (locationIndex > -1) {
+      // It's an UPDATE. Replace the old item with the new data.
+      updatedLocations = [...locations];
+      updatedLocations[locationIndex] = locationData;
+    } else {
+      // It's a CREATE. Add the new item to the beginning of the list.
+      updatedLocations = [locationData, ...locations];
+    }
+
+    setLocations(updatedLocations);
+    setFilteredLocations(updatedLocations);
+    setSelectedLocation(locationData);
+    navigate("/locations");
+  };
+
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [hasMore, setHasMore] = useState(true);
@@ -105,8 +136,14 @@ export function Locations() {
       );
 
       if (currentPage === 1) {
-        setLocations([...res].reverse());
-        setFilteredLocations(res);
+        const reversedLocations = [...res].reverse(); // 🔄 MODIFIED: Store the reversed array
+        setLocations(reversedLocations);
+        setFilteredLocations(reversedLocations); // 🔄 MODIFIED: Keep filtered and main list in sync
+
+        // ✨ NEW: If there are locations, automatically select the first one on page load.
+        if (reversedLocations.length > 0) {
+          setSelectedLocation(reversedLocations[0]);
+        }
       } else {
         setLocations((prev) => [...prev, ...res]);
         setFilteredLocations((prev) => [...prev, ...res]);
@@ -150,21 +187,49 @@ export function Locations() {
 
   // Delete Location Functionality
   const handleDeleteLocation = (id: string) => {
-    if (window.confirm("Are you sure you want to delete this location?")) {
-      dispatch(deleteLocation(id))
-        .unwrap()
-        .then(() => {
-          toast.success("Location deleted successfully!");
-          navigate("/locations");
-        })
-        .catch((error) => {
-          console.error("Delete failed:", error);
-          alert("Failed to delete the location.");
-        });
-    }
+    // if (window.confirm("Are you sure you want to delete this location?")) {
+    dispatch(deleteLocation(id))
+      .unwrap()
+      .then(() => {
+        toast.success("Location deleted successfully!");
+
+        // ✨ NEW LOGIC STARTS HERE ✨
+
+        // Find the index of the item we are about to delete
+        const indexToDelete = filteredLocations.findIndex(
+          (loc) => loc.id === id
+        );
+
+        // Only run this logic if the deleted item was the one selected
+        if (selectedLocation?.id === id && indexToDelete !== -1) {
+          // Case 1: If it's the ONLY item in the list, select nothing.
+          if (filteredLocations.length === 1) {
+            setSelectedLocation(null);
+          }
+          // Case 2: If we are deleting the LAST item, select the one BEFORE it.
+          else if (indexToDelete === filteredLocations.length - 1) {
+            setSelectedLocation(filteredLocations[indexToDelete - 1]);
+          }
+          // Case 3: For any other item (first or middle), select the one AFTER it.
+          else {
+            setSelectedLocation(filteredLocations[indexToDelete + 1]);
+          }
+        }
+
+        // Now, update the lists by removing the deleted item
+        setLocations((prev) => prev.filter((loc) => loc.id !== id));
+        setFilteredLocations((prev) => prev.filter((loc) => loc.id !== id));
+
+        navigate("/locations");
+      })
+      .catch((error) => {
+        console.error("Delete failed:", error);
+        alert("Failed to delete the location.");
+      });
+    // }
   };
 
-  // Funtional to minimize the Name 
+  // Funtional to minimize the Name
   const renderInitials = (text: string) =>
     text
       .split(" ")
@@ -174,7 +239,7 @@ export function Locations() {
       .toUpperCase();
 
   // -------------------- JSX Rendering --------------------
-  
+
   return (
     <>
       <div>
@@ -274,15 +339,17 @@ export function Locations() {
                                   </Avatar>
                                 </div>
                                 <div>
-                                  <h4 className="font-medium capitalize">
+                                  <h4 className="font-medium capitalize text-gray-900">
                                     {items.name}
                                   </h4>
-                                  <div className="flex items-start justify-center gap-1 mt-1">
-                                    <MapPin className="h-3 w-3 mt-1 text-muted-foreground" />
-                                    <span className="text-sm text-muted-foreground">
-                                      {items.description}
-                                    </span>
-                                  </div>
+                                  {items.address && (
+                                    <div className="flex items-center gap-1 mt-1 text-muted-foreground">
+                                      <MapPin className="h-3 w-3 text-muted-foreground" />
+                                      <span className="text-sm truncate max-w-[200px] capitalize">
+                                        {items.address}
+                                      </span>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -330,19 +397,21 @@ export function Locations() {
               {/* Right Card (Detail / Form View) */}
               <Card className="flex flex-col h-full mr-2 overflow-hidden flex-1 mr-2">
                 <CardContent className="flex-1 overflow-y-auto min-h-0">
-                  {isCreateRoute || isEditRoute ? ( // 👈 Check for either create or edit URL
+                  {isCreateRoute || isEditRoute || isCreateSubLocationRoute ? ( // 👈 Check for either create or edit URL
                     <NewLocationForm
                       onCancel={handleCancelForm}
                       onCreate={handleCreateForm}
                       setSelectedLocation={setSelectedLocation}
+                      onSuccess={handleFormSuccess}
                       // setShowForm is now technically redundant as state is URL driven
                       isEdit={isEditMode} // 👈 Pass derived state
                       editData={locationToEdit} // 👈 Pass derived data
+                      initialParentId={parentIdFromUrl}
                     />
                   ) : selectedLocation ? (
                     <div className="max-w-2xl p-4 mx-auto bg-white">
                       {/* Header */}
-                      <div className="flex justify-between items-center mb-4">
+                      <div className="flex justify-between items-center  mb-3">
                         <h2 className="text-xl font-semibold text-gray-800 capitalize">
                           {selectedLocation?.name}
                         </h2>
@@ -359,7 +428,9 @@ export function Locations() {
                             onClick={() => {
                               // ❌ REMOVED: setIsEdit(true) & setEditData(selectedLocation)
                               // ✅ Navigate to the new parameterized URL
-                              navigate(`/locations/${selectedLocation.id}/edit`); 
+                              navigate(
+                                `/locations/${selectedLocation.id}/edit`
+                              );
                             }}
                           >
                             <Edit size={16} /> Edit
@@ -385,30 +456,45 @@ export function Locations() {
                         </div>
                       </div>
 
+                      <hr></hr>
                       {/* Description and other detail JSX remains the same */}
-                      <div className="mb-6 mt-6">
-                        <h3 className="text-sm font-medium text-gray-700">
-                          Description
-                        </h3>
-                        <p className="text-gray-600 mt-1">
-                          {selectedLocation.description ||
-                            "No description available"}
-                        </p>
-                      </div>
-                      {selectedLocation?.photoUrls.length > 0 && (
-                        <div className="mb-6 mt-6 flex gap-2 flex-wrap">
-                          {selectedLocation?.photoUrls?.map((item) => (
-                            <img
-                              key={item.id}
-                              src={`data:${item.mimetype};base64,${item.base64}`}
-                              alt="Location"
-                              className="w-24 h-24 object-cover rounded" 
-                            />
-                          ))}
+                      {selectedLocation.address && (
+                        <div className="mb-6 mt-6">
+                          <h3 className="text-sm font-medium text-gray-700">
+                            Address
+                          </h3>
+                          <p className="text-gray-600 mt-1">
+                            {selectedLocation.address || "No Address available"}
+                          </p>
                         </div>
                       )}
 
-                      <hr></hr>
+                      {selectedLocation.description && (
+                        <div className="mb-6 mt-6">
+                          <h3 className="text-sm font-medium text-gray-700">
+                            Description
+                          </h3>
+                          <p className="text-gray-600 mt-1">
+                            {selectedLocation.description ||
+                              "No description available"}
+                          </p>
+                        </div>
+                      )}
+                      {selectedLocation?.photoUrls.length > 0 && (
+                        <>
+                          <div className="mb-6 mt-6 flex gap-2 flex-wrap">
+                            {selectedLocation?.photoUrls?.map((item) => (
+                              <img
+                                key={item.id}
+                                src={`data:${item.mimetype};base64,${item.base64}`}
+                                alt="Location"
+                                className="w-24 h-24 object-cover rounded"
+                              />
+                            ))}
+                          </div>
+                          <hr></hr>
+                        </>
+                      )}
 
                       {selectedLocation.qrCode && (
                         <div>
@@ -445,7 +531,7 @@ export function Locations() {
                           Add sub elements inside this Location
                         </p>
                         <button
-                          onClick={() => setModalOpen(true)}
+                          onClick={handleShowNewSubLocationForm}
                           className="mt-2 cursor-pointer text-orange-600 hover:underline text-sm"
                         >
                           Create Sub-Location
