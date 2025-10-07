@@ -24,20 +24,38 @@ interface VendorLinkedItemsProps {
 }
 
 export function VendorLinkedItems({
-  availableLocations, selectedLocationIds, onLocationsChange, onFetchLocations, locationsLoading,
-  availableAssets, selectedAssetIds, onAssetsChange, onFetchAssets, assetsLoading,
-  availableParts, selectedPartIds, onPartsChange, onFetchParts, partsLoading,
+  availableLocations,
+  selectedLocationIds,
+  onLocationsChange,
+  onFetchLocations,
+  locationsLoading,
+  availableAssets,
+  selectedAssetIds,
+  onAssetsChange,
+  onFetchAssets,
+  assetsLoading,
+  availableParts,
+  selectedPartIds,
+  onPartsChange,
+  onFetchParts,
+  partsLoading,
   onCtaClick,
 }: VendorLinkedItemsProps) {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
+  const vendorTypeOptions: SelectOption[] = [
+    { id: "manufacturer", name: "Manufacturer" },
+    { id: "distributor", name: "Distributor" },
+  ];
+  const [selectedVendorType, setSelectedVendorType] = useState<string[]>([]);
+
   return (
     <div className="space-y-6 px-6">
-      <h3 className="text-lg font-medium text-gray-900">Linked Items</h3>
-
       {/* Locations Dropdown */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Locations</label>
+        <label className="block text-sm font-medium text-gray-700 mb-4">
+          Locations
+        </label>
         <DynamicSelect
           name="locations"
           placeholder="Select locations..."
@@ -47,7 +65,7 @@ export function VendorLinkedItems({
           onSelect={(val) => onLocationsChange(val as string[])}
           onFetch={onFetchLocations}
           ctaText="+ Create New Location"
-          onCtaClick={() => onCtaClick('/locations/create')}
+          onCtaClick={() => onCtaClick("/locations/create")}
           activeDropdown={activeDropdown}
           setActiveDropdown={setActiveDropdown}
         />
@@ -55,7 +73,9 @@ export function VendorLinkedItems({
 
       {/* Assets Dropdown */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Assets</label>
+        <label className="block text-sm font-medium text-gray-700 mb-4">
+          Assets
+        </label>
         <DynamicSelect
           name="assets"
           placeholder="Select assets..."
@@ -65,7 +85,7 @@ export function VendorLinkedItems({
           onSelect={(val) => onAssetsChange(val as string[])}
           onFetch={onFetchAssets}
           ctaText="+ Create New Asset"
-          onCtaClick={() => onCtaClick('/assets/create')}
+          onCtaClick={() => onCtaClick("/assets/create")}
           activeDropdown={activeDropdown}
           setActiveDropdown={setActiveDropdown}
         />
@@ -73,7 +93,9 @@ export function VendorLinkedItems({
 
       {/* Parts Dropdown */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Parts</label>
+        <label className="block text-sm font-medium text-gray-700 mb-4">
+          Parts
+        </label>
         <DynamicSelect
           name="parts"
           placeholder="Select parts..."
@@ -83,7 +105,25 @@ export function VendorLinkedItems({
           onSelect={(val) => onPartsChange(val as string[])}
           onFetch={onFetchParts}
           ctaText="+ Create New Part"
-          onCtaClick={() => onCtaClick('/parts/create')}
+          onCtaClick={() => onCtaClick("/parts/create")}
+          activeDropdown={activeDropdown}
+          setActiveDropdown={setActiveDropdown}
+        />
+      </div>
+
+      {/* Vendor Type Dropdown */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-4">
+          Vendor Type
+        </label>
+        <DynamicSelect
+          name="vendorType"
+          placeholder="Select vendor type..."
+          options={vendorTypeOptions}
+          loading={false}
+          value={selectedVendorType}
+          onSelect={(val) => setSelectedVendorType(val as string[])}
+          onFetch={() => {}}
           activeDropdown={activeDropdown}
           setActiveDropdown={setActiveDropdown}
         />

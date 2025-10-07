@@ -10,6 +10,7 @@ import { VendorDetails } from "./VendorDetails";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store";
 import { updateVendor } from "../../store/vendors";
+import { useParams } from "react-router-dom";
 import { useNavigate, useMatch } from "react-router-dom"; // <-- ADDED
 
 export function Vendors() {
@@ -29,6 +30,16 @@ export function Vendors() {
   const navigate = useNavigate();
   const isCreateRoute = useMatch("/vendors/create");
   const isEditRoute = useMatch("/vendors/:vendorId/edit");
+
+
+  const params = useParams();
+
+  useEffect(() => {
+    if (params.vendorId) {
+      setSelectedVendorId(params.vendorId);
+    }
+  }, [params.vendorId]);
+
 
   // 🔽 DERIVED STATE
   const isEditMode = !!isEditRoute;
@@ -116,12 +127,12 @@ export function Vendors() {
         prev.map((v) =>
           v.id === vendorToEdit.id
             ? {
-                ...v,
-                name: formData.name,
-                description: formData.description,
-                color: formData.color,
-                contacts: formData.contacts || formData.contact || v.contacts,
-              }
+              ...v,
+              name: formData.name,
+              description: formData.description,
+              color: formData.color,
+              contacts: formData.contacts || formData.contact || v.contacts,
+            }
             : v
         )
       );
@@ -153,8 +164,8 @@ export function Vendors() {
               selectedVendorId={selectedVendorId}
               setSelectedVendorId={setSelectedVendorId}
               loading={loading}
-              
-              
+
+
             />
             <section className="flex-1 overflow-auto">
               {isCreateRoute || isEditRoute ? ( // 👈 Check both URL routes
@@ -166,6 +177,12 @@ export function Vendors() {
                   // These props are no longer required/used here, relying on onSubmit/onCancel
                   setVendors={setVendors}
                   setSelectedVendorId={setSelectedVendorId}
+                  // ✅ Added realtime sidebar update support
+                  onSuccess={(newVendor) => {
+                    setVendors((prev) => [newVendor, ...prev]);
+                    setSelectedVendorId(newVendor.id);
+                    navigate("/vendors"); // back to list after create
+                  }}
                 />
               ) : selectedVendor ? (
                 <VendorDetails

@@ -1,13 +1,11 @@
 "use client";
 
 import { type FormEvent, useEffect, useState } from "react";
-import { useNavigate } from 'react-router-dom'; // 1. Ise import karein
+import { useNavigate } from "react-router-dom";
 import type { AppDispatch, RootState } from "../../../store";
 import { useDispatch, useSelector } from "react-redux";
 import { createVendor } from "../../../store/vendors";
 import type { SelectOption } from "./DynamicSelect";
-
-// Thunks & Child Components
 import { fetchLocationsName } from "../../../store/locations/locations.thunks";
 import { fetchAssetsName } from "../../../store/assets/assets.thunks";
 import { fetchPartsName } from "../../../store/parts/parts.thunks";
@@ -18,13 +16,22 @@ import { VendorAttachmentsInput } from "./VendorAttachmentsInput";
 import { VendorLinkedItems } from "./VendorLinkedItems";
 import toast from "react-hot-toast";
 
+// ✅ Optional: full contact shape (agar contacts array use karna ho)
+export interface ContactFormData {
+  fullName: string;
+  role: string;
+  email: string;
+  phone: string;
+  phoneExtension: string;
+  color: string;
+}
+
 export function VendorForm({
   onCancel,
   initialData,
   onSubmit,
   onSuccess,
 }: any) {
-  const navigate = useNavigate(); // 2. useRouter ki jagah useNavigate ka istemal karein
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -37,14 +44,15 @@ export function VendorForm({
   });
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector((state: RootState) => state.auth.user);
+  const navigate = useNavigate();
+
   const [pictures, setPictures] = useState<File[]>([]);
   const [attachedDocs, setAttachedDocs] = useState<File[]>([]);
   const [showContactInputs, setShowContactInputs] = useState(false);
-  const [contact, setContact] = useState({ email: "", phone: "" });
-
-  const [availableLocations, setAvailableLocations] = useState<SelectOption[]>(
-    []
-  );
+  const [contact, setContact] = useState({ email: "", phone: "" }); // legacy single contact
+  const [contacts, setContacts] = useState<ContactFormData[]>([]);   // NEW: contacts array (optional)
+  const [showInputs, setShowInputs] = useState(false);
+  const [availableLocations, setAvailableLocations] = useState<SelectOption[]>([]);
   const [locationsLoading, setLocationsLoading] = useState(false);
   const [selectedLocationIds, setSelectedLocationIds] = useState<string[]>([]);
   const [availableAssets, setAvailableAssets] = useState<SelectOption[]>([]);
@@ -102,23 +110,40 @@ export function VendorForm({
       .finally(() => setPartsLoading(false));
   };
 
+  // ✅ Navigate to creation pages when clicking “+ Create New …”
   const handleCtaClick = (path: string) => {
-    console.log(`Navigating to ${path}`);
+    navigate(path);
   };
-  const splitFiles = (selectedFiles: File[]) => {
-    /* ... */
+
+  const handleFilesSelected = (selectedFiles: File[]) => {
+    const imageFiles: File[] = [];
+    const docFiles: File[] = [];
+
+    for (const file of selectedFiles) {
+      if (file.type.startsWith("image/")) {
+        imageFiles.push(file);
+      } else {
+        docFiles.push(file);
+      }
+    }
+
+    if (imageFiles.length > 0) {
+      setPictures((prev) => [...prev, ...imageFiles]);
+      toast.success(`${imageFiles.length} image(s) added.`);
+    }
+    if (docFiles.length > 0) {
+      setAttachedDocs((prev) => [...prev, ...docFiles]);
+      toast.success(`${docFiles.length} document(s) attached.`);
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    if (!form.name.trim()) return; // at least name is required
-
-    // setSubmitVendorFormLoader(true);
+    if (!form.name.trim()) return;
 
     const formData = new FormData();
 
-    // ✅ Helper: Append only non-empty fields
     const appendIfPresent = (key: string, value: any) => {
       if (
         value !== undefined &&
@@ -130,19 +155,50 @@ export function VendorForm({
       }
     };
 
-    // ✅ Append simple fields
+    // ✅ Basic fields
     appendIfPresent("organizationId", user.organizationId);
     appendIfPresent("name", form.name.trim());
     appendIfPresent("description", form.description);
     appendIfPresent("color", form.color);
     appendIfPresent("vendorType", form.vendorType?.toLowerCase());
 
-    // ✅ Append arrays (only if they have items)
-    if (contact && (contact.email.trim() || contact.phone.trim())) {
-      if (contact.email) formData.append("contacts[email]", contact.email);
-      if (contact.phone) formData.append("contacts[phone]", contact.phone);
+    // ✅ CONTACTS — JSON inside FormData
+    // ✅ CONTACTS — must be a single JSON object (not array)
+    if (Array.isArray(contacts) && contacts.length > 0) {
+      // merge or take first contact object
+      const firstContact = contacts[0];
+      const contactObject = {
+        fullName: firstContact.fullName || "",
+        role: firstContact.role || "",
+        email: firstContact.email || "",
+        phone: firstContact.phone || "",
+        phoneExtension: firstContact.phoneExtension || "",
+        color: firstContact.color || "#EC4899",
+      };
+      formData.append("contacts", JSON.stringify(contactObject));
+    } else if (contact && (contact.email.trim() || contact.phone.trim())) {
+      // fallback for legacy single contact
+      const single = {
+        fullName: "",
+        role: "",
+        email: contact.email || "",
+        phone: contact.phone || "",
+        phoneExtension: "",
+        color: "#EC4899",
+      };
+      formData.append("contacts", JSON.stringify(single));
     }
 
+
+    // (legacy per-field appends kept, but guarded so they don't run when contacts JSON is sent)
+    if (!(Array.isArray(contacts) && contacts.length > 0)) {
+      if (contact && (contact.email.trim() || contact.phone.trim())) {
+        if (contact.email) formData.append("contacts[email]", contact.email);
+        if (contact.phone) formData.append("contacts[phone]", contact.phone);
+      }
+    }
+
+    // ✅ Arrays
     if (Array.isArray(selectedLocationIds) && selectedLocationIds.length > 0) {
       selectedLocationIds.forEach((id) => formData.append("locations[]", id));
     }
@@ -155,45 +211,49 @@ export function VendorForm({
       selectedPartIds.forEach((id) => formData.append("partIds[]", id));
     }
 
-    // ✅ Append image file (if selected)
+    // ✅ Files (images + docs)
     if (pictures.length > 0) {
       pictures.forEach((pic) => {
-        formData.append("picture", pic); // append each file separately
+        formData.append("files", pic);
       });
+    }
+    if (attachedDocs.length > 0) {
+      attachedDocs.forEach((f) => formData.append("files", f));
     }
 
     try {
-      let res;
       if (initialData && onSubmit) {
-        // 🟢 Update vendor
         const updatePayload = formData;
         onSubmit(updatePayload);
         toast.success("Vendor updated successfully");
       } else {
-        // 🆕 Create vendor
-        res = await dispatch(createVendor(formData)).unwrap();
+        const created = await dispatch(createVendor(formData)).unwrap();
         toast.success("Vendor created successfully");
-        setSelectedVendorId(res.id);
+        if (onSuccess) onSuccess(created);
       }
 
-      // ✅ Reset form after success
+      // reset
       setForm({
         name: "",
         description: "",
-        color: "",
-        vendorType: "",
-        imageFile: null,
+        category: "",
+        services: "",
+        createdBy: "",
+        partsSummary: "",
+        color: "#2563eb",
+        vendorType: "Manufacturer",
       });
-      setContact([]);
+      setContact({ email: "", phone: "" });
+      setContacts([]); // reset contacts array too
       setSelectedAssetIds([]);
       setSelectedPartIds([]);
+      setPictures([]);
+      setAttachedDocs([]);
 
-      onCancel(); // close modal or reset UI
+      onCancel();
     } catch (err) {
       console.error("Failed to submit vendor:", err);
-      // toast.error("Error while saving vendor");
-    } finally {
-      // setSubmitVendorFormLoader(false);
+      toast.error("Error while saving vendor");
     }
   };
 
@@ -210,17 +270,27 @@ export function VendorForm({
         onSubmit={handleSubmit}
       >
         <VendorPrimaryDetails form={form} setForm={setForm} />
-        <VendorPicturesInput files={pictures} setFiles={setPictures} />
+        <VendorPicturesInput
+          files={pictures}
+          setFiles={setPictures}
+          onFilesSelected={handleFilesSelected}
+        />
         <VendorContactInput
           contact={contact}
           setContact={setContact}
-          showInputs={showContactInputs}
-          setShowInputs={setShowContactInputs}
+          showInputs={showInputs}
+          setShowInputs={setShowInputs}
+          // NEW: agar tum NewContactModal waala table use karte ho,
+          // to yeh callback array upar lift karega
+          onContactsChange={setContacts}
         />
+
         <VendorAttachmentsInput
           attachedDocs={attachedDocs}
           setAttachedDocs={setAttachedDocs}
+          onFilesSelected={handleFilesSelected}
         />
+
         <VendorLinkedItems
           availableLocations={availableLocations}
           selectedLocationIds={selectedLocationIds}

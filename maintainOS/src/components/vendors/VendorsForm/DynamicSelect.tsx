@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronDown, X, Loader2, Check } from "lucide-react";
+import { ChevronUp, ChevronDown, X, Loader2, Check } from "lucide-react";
 import { Badge } from "../../ui/badge";
 
 // --- Sub-components and Styles are inside this file ---
@@ -76,7 +76,7 @@ export function DynamicSelect({
   setActiveDropdown,
 }: DynamicSelectProps) {
   const dropdownRef = React.useRef<HTMLDivElement>(null);
-  
+
   const isMulti = Array.isArray(value);
   const open = activeDropdown === name;
 
@@ -142,15 +142,15 @@ export function DynamicSelect({
               >
                 {option.name}
                 {isMulti && (
-                   <button
-                     className="ml-1 rounded-full outline-none"
-                     onClick={(e) => {
-                       e.stopPropagation();
-                       toggleOption(option.id);
-                     }}
-                   >
-                     <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                   </button>
+                  <button
+                    className="ml-1 rounded-full outline-none"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleOption(option.id);
+                    }}
+                  >
+                    <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                  </button>
                 )}
               </Badge>
             ))
@@ -158,42 +158,56 @@ export function DynamicSelect({
             <span className="text-muted-foreground">{placeholder}</span>
           )}
         </div>
-        <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+
+        {open ? (
+          <ChevronUp className="h-4 w-4 shrink-0 opacity-50" />
+        ) : (
+          <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+        )}
       </div>
 
       {open && (
         <div className="absolute top-full mt-1 w-full rounded-md border bg-white z-20 max-h-60 overflow-y-auto shadow-lg">
-           {loading ? (
-             <div className="flex justify-center items-center p-4">
-               <Spinner />
-             </div>
-           ) : (
-             <div>
-               {options.map((option) => {
-                 const isSelected = isMulti && value.includes(option.id);
-                 return (
-                   <div
-                     key={option.id}
-                     className="flex items-center justify-between p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50"
-                     onClick={() => toggleOption(option.id)}
-                   >
-                     <label className="cursor-pointer">{option.name}</label>
-                     <ManualCheckbox checked={isSelected} />
-                   </div>
-                 );
-               })}
-               {options.length === 0 && <div className="p-3 text-muted-foreground">No options found.</div>}
-             </div>
-           )}
+          {loading ? (
+            <div className="flex justify-center items-center p-4">
+              <Spinner />
+            </div>
+          ) : (
+            <div>
+              {options.map((option) => {
+                const isSelected = isMulti && value.includes(option.id);
+                return (
+                  <div
+                    key={option.id}
+                    className="flex items-center justify-between border-b border-gray-100 cursor-pointer hover:bg-gray-50 px-3 py-2"
+                    onClick={() => toggleOption(option.id)}
+                  >
+                    <label
+                      className={`cursor-pointer pl-4 ${isSelected
+                          ? "text-gray-900 font-normal"
+                          : "text-gray-700 font-normal"
+                        }`}
+                    >
+                      {option.name}
+                    </label>
 
-           {ctaText && onCtaClick && (
-             <div
-               onClick={onCtaClick}
-               className="sticky bottom-0 flex items-center p-3 text-sm text-blue-600 bg-gray-50 border-t cursor-pointer hover:bg-blue-100"
-             >
-               <span>{ctaText}</span>
-             </div>
-           )}
+                    <ManualCheckbox checked={isSelected} />
+                  </div>
+
+                );
+              })}
+              {options.length === 0 && <div className="p-3 text-muted-foreground">No options found.</div>}
+            </div>
+          )}
+
+          {ctaText && onCtaClick && (
+            <div
+              onClick={onCtaClick}
+              className="sticky bottom-0 flex items-center p-3 text-sm text-blue-600 bg-gray-50 border-t cursor-pointer hover:bg-blue-100"
+            >
+              <span>{ctaText}</span>
+            </div>
+          )}
         </div>
       )}
     </div>
