@@ -6,6 +6,9 @@ import { SearchWithDropdown } from "../../Locations/SearchWithDropdown";
 import { createMeter } from "../../../store/meters";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "../../../store";
+import { assetService } from "../../../store/assets";
+import { locationService } from "../../../store/locations";
+import Loader from "../../Loader/Loader";
 
 interface NewMeterFormProps {
   onCreate: (data: any) => void;
@@ -19,8 +22,7 @@ interface NewMeterFormProps {
 export function NewMeterForm({
   onCreate,
   onCancel,
-  getLocationData,
-  getAssetData,
+
   editingMeter,
 }: NewMeterFormProps) {
   const [meterType, setMeterType] = useState<"manual" | "automated">("manual");
@@ -37,7 +39,9 @@ export function NewMeterForm({
   const user = useSelector((state: RootState) => state.auth.user);
   const dispatch = useDispatch<AppDispatch>();
   const [postMeterDataloading, setPostMeterDataLoading] = useState(false);
-
+  const [getLocationData, setGetLocationData] = useState([]);
+  const [getAssetData, setGetAssestData] = useState([]);
+  const [loading, setLoading] = useState(false);
   const combinedValue = `${readingFrequencyValue} ${readingFrequencyUnit}`;
 
   useEffect(() => {
@@ -151,6 +155,40 @@ export function NewMeterForm({
       setPostMeterDataLoading(false);
       setError("Unexpected error occurred");
       setError("Unexpected error occurred");
+    }
+  };
+
+  const handleGetAssetData = async () => {
+    // Fetch only if the data is not already loaded
+    if (getAssetData.length > 0) {
+      return;
+    }
+    setLoading(true);
+    try {
+      const assetsRes = await assetService.fetchAssetsName(10, 1, 0);
+      setGetAssestData(assetsRes.data || []);
+    } catch (err) {
+      console.error("Failed to fetch asset data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  console.log(getAssetData, getLocationData, "Dropdown data ");
+
+  const handleGetLocationData = async () => {
+    // Fetch only if the data is not already loaded
+    if (getLocationData.length > 0) {
+      return;
+    }
+    setLoading(true);
+    try {
+      const locationsRes = await locationService.fetchLocationsName(10, 1, 0);
+      setGetLocationData(locationsRes.data || []);
+    } catch (err) {
+      console.error("Failed to fetch location data:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -283,6 +321,7 @@ export function NewMeterForm({
               <select
                 value={asset || ""} // controlled value
                 onChange={(e) => setAsset(e.target.value)}
+                onClick={handleGetAssetData}
                 style={{
                   height: "40px",
                   width: "100%",
@@ -298,12 +337,15 @@ export function NewMeterForm({
               >
                 {/* Show "start typing" only if no asset is selected */}
                 {!asset && <option value="">start typing</option>}
-
-                {getAssetData?.map((items) => (
-                  <option key={items.id} value={items.id}>
-                    {items.name}
-                  </option>
-                ))}
+                {loading ? (
+                  <Loader />
+                ) : (
+                  getAssetData?.map((items) => (
+                    <option key={items.id} value={items.id}>
+                      {items.name}
+                    </option>
+                  ))
+                )}
               </select>
 
               {/* Chevron Icon */}
@@ -349,6 +391,7 @@ export function NewMeterForm({
               <select
                 value={location || ""} // controlled value
                 onChange={(e) => setLocation(e.target.value)}
+                onClick={handleGetLocationData}
                 style={{
                   height: "40px",
                   width: "100%",

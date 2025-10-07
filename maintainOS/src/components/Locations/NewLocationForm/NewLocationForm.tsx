@@ -21,17 +21,21 @@ import type {
 type NewLocationFormProps = {
   onCancel: () => void;
   setSelectedLocation: (id: string) => void;
+  onSuccess: (locationData: LocationResponse) => void;
   setShowForm: (show: boolean) => void;
   isEdit?: boolean; // ✅ new
   editData?: LocationResponse | null; // ✅ new
+  
 };
 
 export function NewLocationForm({
   onCancel,
   setSelectedLocation,
+  onSuccess,
   setShowForm,
   isEdit = false,
   editData = null,
+  initialParentId,
 }: NewLocationFormProps) {
   const [pictures, setPictures] = useState<File[]>([]);
   const [attachedDocs, setAttachedDocs] = useState<File[]>([]);
@@ -72,6 +76,13 @@ export function NewLocationForm({
     }
   }, [isEdit, editData]);
 
+  useEffect(() => {
+    // If we are creating a sub-location, pre-fill the parent ID
+    if (initialParentId && !isEdit) {
+      setParentLocationId(initialParentId);
+    }
+  }, [initialParentId, isEdit]);
+
   // Click outside handler
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -97,47 +108,36 @@ export function NewLocationForm({
   const handleSubmitLocation = async () => {
     if (!user) return;
 
+    // --- Better Validation (See explanation below) ---
+    // Check for required fields first. Let's assume 'name' is required.
+    if (!name || !name.trim()) {
+      toast.error("Location Name is required.");
+      return; // Stop the function here
+    }
+
     setSubmitLocationFormLoader(true);
 
     const formData = new FormData();
 
-    // ✅ Append basic fields
+    // ✅ Append basic fields ONLY if they have a value
     formData.append("organizationId", user.organizationId || "");
-    formData.append("name", name);
-    formData.append("address", address);
-    formData.append("description", description);
-    formData.append("parentLocationId", parentLocationId || "");
-    formData.append("qrCode", qrCode);
+    formData.append("name", name); // Name is required, so we always send it.
 
-    // ✅ Append arrays as JSON strings
+    if (address) formData.append("address", address);
+    if (description) formData.append("description", description);
+    if (parentLocationId) formData.append("parentLocationId", parentLocationId);
+    if (qrCode) formData.append("qrCode", qrCode);
+
+    // ✅ This logic for arrays is already correct because it checks the length
     if (Array.isArray(vendorId) && vendorId.length > 0) {
       vendorId.forEach((id) => formData.append("vendorIds[]", id));
     }
-    // formData.append("teamsInCharge", JSON.stringify(teamInCharge || []));
 
-    // ✅ Append photoUrls
     if (pictures.length > 0) {
       pictures.forEach((pic) => {
-        formData.append("photos", pic); // append each file separately
+        formData.append("photos", pic);
       });
     }
-
-    // ✅ Append files
-    // const files = attachedDocs
-    //   .map((doc) => {
-    //     if (doc instanceof File) return doc; // new file upload
-    //     if (typeof doc === "string") return doc; // existing file URL
-    //     if (doc.url) return doc.url;
-    //     return null;
-    //   })
-    //   .filter(Boolean);
-
-    // // Append files separately
-    // files.forEach((file) => {
-    //   // If it's a File object, append as file, else as string
-    //   if (file instanceof File) formData.append("files", file);
-    //   else formData.append("files", file);
-    // });
 
     try {
       let res;
@@ -150,20 +150,8 @@ export function NewLocationForm({
         res = await dispatch(createLocation(formData)).unwrap();
         toast.success("Location created successfully");
       }
-
-      console.log("Location response:", res);
-
-      // ✅ Reset form
-      setShowForm(false);
-      setName("");
-      setAddress("");
-      setDescription("");
-      setQrCode("");
-      setPictures([]);
-      setAttachedDocs([]);
-      setTeamInCharge([]);
-      setVendorId([]);
-      setParentLocationId("");
+      // ... (rest of your success logic remains the same)
+      onSuccess(res);
     } catch (err) {
       console.error("Failed to submit location:", err);
       toast.error("Error while saving location");

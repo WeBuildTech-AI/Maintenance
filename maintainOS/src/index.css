@@ -1395,6 +1395,10 @@
   text-decoration: none;
   }
 
+  .outline-none:focus{
+    outline: none;
+  }
+
   .max-h-32 {
   max-height: 8rem; /* same as max-h-32 */
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Building2, Edit, MoreHorizontal, Plus } from "lucide-react";
+import { Building2, Edit, MapPin, MoreHorizontal, Plus } from "lucide-react";
 import { Button } from "../../ui/button";
 import { MeterAutomations } from "./MeterAutomations";
 import { MeterDetailsSection } from "./MeterDetailsSection";
@@ -12,8 +12,6 @@ import { useNavigate } from "react-router-dom"; // 👈 ADD useNavigate
 
 export function MeterDetail({
   selectedMeter,
-  getAssetData,
-  getLocationData,
 }: any) {
   // Removed local editing state: const [isEditing, setIsEditing] = useState(false);
   
@@ -55,12 +53,12 @@ export function MeterDetail({
         <div className="flex items-center gap-4 text-muted-foreground">
           <div className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
-            <span>{selectedMeter.asset}</span>
+            {/* <span>{selectedMeter.asset}</span> */}
             <span>-</span>
           </div>
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4" />
-            <span>{selectedMeter.location}</span>
+            {/* <span>{selectedMeter.location}</span> */}
           </div>
         </div>
       </div>

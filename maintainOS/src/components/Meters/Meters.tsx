@@ -14,7 +14,6 @@ import { useNavigate, useMatch } from "react-router-dom";
 
 export function Meters() {
   const [searchQuery, setSearchQuery] = useState("");
-  // Removed [showNewMeterForm, setShowNewMeterForm]
   const [selectedType, setSelectedType] = useState("all");
   const [selectedAsset, setSelectedAsset] = useState("all");
   const [selectedLocation, setSelectedLocation] = useState("all");
@@ -22,8 +21,7 @@ export function Meters() {
   const [viewMode, setViewMode] = useState<ViewMode>("panel");
   const [meterData, setMeterData] = useState<MeterResponse[]>([]);
   const [loading, setLoading] = useState(false);
-  const [getLocationData, setGetLocationData] = useState([]);
-  const [getAssetData, setGetAssestData] = useState([]);
+
   const [selectedMeter, setSelectedMeter] = useState<
     (typeof meterData)[0] | null
   >(null);
@@ -70,39 +68,39 @@ export function Meters() {
     fetchMeters();
   }, []);
 
-  useEffect(() => {
-    const fetchLocations = async () => {
-      setLoading(true);
-      try {
-        const res = await locationService.fetchLocations(10, 1, 0);
-        setGetLocationData(res);
-        console.log(res);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // useEffect(() => {
+  //   const fetchLocations = async () => {
+  //     setLoading(true);
+  //     try {
+  //       const res = await locationService.fetchLocations(10, 1, 0);
+  //       setGetLocationData(res);
+  //       console.log(res);
+  //     } catch (err) {
+  //       console.error(err);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-    fetchLocations();
-  }, []);
+  //   fetchLocations();
+  // }, []);
 
-  useEffect(() => {
-    const fetchAssets = async () => {
-      setLoading(true);
-      try {
-        const res = await assetService.fetchAssets(10, 1, 0);
-        setGetAssestData(res);
-        console.log(res);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // useEffect(() => {
+  //   const fetchAssets = async () => {
+  //     setLoading(true);
+  //     try {
+  //       const res = await assetService.fetchAssets(10, 1, 0);
+  //       setGetAssestData(res);
+  //       console.log(res);
+  //     } catch (err) {
+  //       console.error(err);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-    fetchAssets();
-  }, []);
+  //   fetchAssets();
+  // }, []);
 
   const filteredMeters = meterData.filter((meter) => {
     const query = searchQuery.toLowerCase();
@@ -156,8 +154,10 @@ export function Meters() {
               selectedMeter={selectedMeter}
               setSelectedMeter={setSelectedMeter}
               loading={loading}
-              getLocationData={getLocationData}
-              getAssetData={getAssetData}
+              handleShowNewMeterForm={handleShowNewMeterForm}
+              handleCreateForm={handleCreateForm}
+              // getLocationData={getLocationData}
+              // getAssetData={getAssetData}
             />
 
             <div className="flex-1 bg-card">
@@ -165,16 +165,14 @@ export function Meters() {
                 <NewMeterForm
                   onCancel={handleCancelForm}
                   onCreate={handleCreateForm}
-                  getLocationData={getLocationData}
-                  getAssetData={getAssetData}
                   // Pass the derived meter data for editing
                   editingMeter={meterToEdit}
                 />
               ) : selectedMeter ? (
                 <MeterDetail
                   selectedMeter={selectedMeter}
-                  getLocationData={getLocationData}
-                  getAssetData={getAssetData}
+                  // getLocationData={getLocationData}
+                  // getAssetData={getAssetData}
                 />
               ) : (
                 <MetersEmptyState />
