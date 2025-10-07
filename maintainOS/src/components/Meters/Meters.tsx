@@ -11,6 +11,7 @@ import type { ViewMode } from "../purchase-orders/po.types";
 import { locationService } from "../../store/locations";
 import { assetService } from "../../store/assets";
 import { useNavigate, useMatch } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 
 export function Meters() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -56,8 +57,21 @@ export function Meters() {
       setLoading(true);
       try {
         const res = await meterService.fetchMeters(10, 1, 0);
-        setMeterData(res);
-        console.log(res);
+
+        // 1. Sort the incoming data to show the newest first
+        // NOTE: This assumes your meter object has a 'createdAt' or similar date field.
+        // Please change 'createdAt' to the correct field name if it's different.
+        const sortedData = [...res].sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
+
+        setMeterData(sortedData);
+
+        // 2. Set the first meter (the newest) as the selected one
+        // This check prevents errors if the API returns no data.
+        if (sortedData.length > 0) {
+          setSelectedMeter(sortedData[0]);
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -68,119 +82,65 @@ export function Meters() {
     fetchMeters();
   }, []);
 
-  // useEffect(() => {
-  //   const fetchLocations = async () => {
-  //     setLoading(true);
-  //     try {
-  //       const res = await locationService.fetchLocations(10, 1, 0);
-  //       setGetLocationData(res);
-  //       console.log(res);
-  //     } catch (err) {
-  //       console.error(err);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   fetchLocations();
-  // }, []);
-
-  // useEffect(() => {
-  //   const fetchAssets = async () => {
-  //     setLoading(true);
-  //     try {
-  //       const res = await assetService.fetchAssets(10, 1, 0);
-  //       setGetAssestData(res);
-  //       console.log(res);
-  //     } catch (err) {
-  //       console.error(err);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   fetchAssets();
-  // }, []);
-
-  const filteredMeters = meterData.filter((meter) => {
-    const query = searchQuery.toLowerCase();
-
-    // Search by name, meterType, or locationId (if needed)
-    const matchesSearch =
-      meter.name.toLowerCase().includes(query) ||
-      meter.meterType.toLowerCase().includes(query) ||
-      (meter.locationId?.toLowerCase().includes(query) ?? false);
-
-    // Filter by type
-    const matchesType =
-      selectedType === "all" ||
-      meter.meterType.toLowerCase() === selectedType.toLowerCase();
-
-    // Filter by asset
-    const matchesAsset =
-      selectedAsset === "all" ||
-      meter.assetId?.toLowerCase() === selectedAsset.toLowerCase();
-
-    // Filter by location
-    const matchesLocation =
-      selectedLocation === "all" ||
-      meter.locationId?.toLowerCase() === selectedLocation.toLowerCase();
-
-    return matchesSearch && matchesType && matchesAsset && matchesLocation;
-  });
-
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      {MetersHeaderComponent(
-        viewMode,
-        setViewMode,
-        searchQuery,
-        setSearchQuery,
-        handleShowNewMeterForm,
-        setShowSettings
-      )}
+    <>
+      <div>
+        <Toaster />
+      </div>
+      <div className="flex flex-col h-full">
+        {/* Header */}
+        {MetersHeaderComponent(
+          viewMode,
+          setViewMode,
+          searchQuery,
+          setSearchQuery,
+          handleShowNewMeterForm,
+          setShowSettings
+        )}
 
-      {viewMode === "table" ? (
-        <>
-          <MeterTable meter={filteredMeters} selectedMeter={selectedMeter} />
-        </>
-      ) : (
-        <>
-          <div className="flex flex-1 overflow-hidden">
-            <MetersList
-              // filteredMeters={filteredMeters}
-              filteredMeters={meterData}
-              selectedMeter={selectedMeter}
-              setSelectedMeter={setSelectedMeter}
-              loading={loading}
-              handleShowNewMeterForm={handleShowNewMeterForm}
-              handleCreateForm={handleCreateForm}
-              // getLocationData={getLocationData}
-              // getAssetData={getAssetData}
-            />
+        {viewMode === "table" ? (
+          <>
+            <MeterTable meter={meterData} selectedMeter={selectedMeter} />
+          </>
+        ) : (
+          <>
+            <div className="flex flex-1 overflow-hidden">
+              <MetersList
+                // filteredMeters={filteredMeters}
+                filteredMeters={meterData}
+                selectedMeter={selectedMeter}
+                setSelectedMeter={setSelectedMeter}
+                loading={loading}
+                handleShowNewMeterForm={handleShowNewMeterForm}
+                handleCreateForm={handleCreateForm}
+                handleCancelForm={handleCancelForm}
+                // getLocationData={getLocationData}
+                // getAssetData={getAssetData}
+              />
 
-            <div className="flex-1 bg-card">
-              {isCreateRoute || isEditRoute ? (
-                <NewMeterForm
-                  onCancel={handleCancelForm}
-                  onCreate={handleCreateForm}
-                  // Pass the derived meter data for editing
-                  editingMeter={meterToEdit}
-                />
-              ) : selectedMeter ? (
-                <MeterDetail
-                  selectedMeter={selectedMeter}
-                  // getLocationData={getLocationData}
-                  // getAssetData={getAssetData}
-                />
-              ) : (
-                <MetersEmptyState />
-              )}
+              <div className="flex-1 bg-card">
+                {isCreateRoute || isEditRoute ? (
+                  <NewMeterForm
+                    onCancel={handleCancelForm}
+                    onCreate={handleCreateForm}
+                    // Pass the derived meter data for editing
+                    editingMeter={meterToEdit}
+                  />
+                ) : selectedMeter ? (
+                  <MeterDetail
+                    selectedMeter={selectedMeter}
+                    filteredMeters={meterData}
+                    setSelectedMeter={setSelectedMeter}
+                    //  setF
+                  />
+                ) : (
+                  <MetersEmptyState />
+                )}
+              </div>
             </div>
-          </div>
-        </>
-      )}
-    </div>
+          </>
+        )}
+      </div>
+    </>
   );
 }

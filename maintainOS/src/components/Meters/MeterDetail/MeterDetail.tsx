@@ -9,15 +9,40 @@ import { MeterReadings } from "./MeterReadings";
 import { MeterWorkOrders } from "./MeterWorkOrders";
 import { NewMeterForm } from "../NewMeterForm/NewMeterForm";
 import { useNavigate } from "react-router-dom"; // 👈 ADD useNavigate
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../../ui/dropdown-menu";
+import { formatDate } from "../../utils/Date";
+import type { AppDispatch, RootState } from "../../../store";
+import { useDispatch, useSelector } from "react-redux";
+import { deleteMeter } from "../../../store/meters";
+import toast, { Toaster } from "react-hot-toast";
+import CopyPageU from "../../ui/copy-page-url-icon";
 
-export function MeterDetail({
-  selectedMeter,
-}: any) {
+export function MeterDetail({ selectedMeter }: any) {
   // Removed local editing state: const [isEditing, setIsEditing] = useState(false);
-  
-  const navigate = useNavigate(); // 👈 ADD hook
 
+  const navigate = useNavigate(); // 👈 ADD hook
+  const dispatch = useDispatch<AppDispatch>();
   // Removed conditional return for NewMeterForm
+  const user = useSelector((state: RootState) => state.auth.user);
+
+  const handleDeleteMeter = (id: string) => {
+    // if (window.confirm("Are you sure you want to delete this location?")) {
+    dispatch(deleteMeter(id))
+      .unwrap()
+      .then(() => {
+        toast.success("Meter Deleted Successfully!");
+      })
+      .catch((error) => {
+        // console.error("Delete failed:", error);
+        toast.error("Failed to delete Meter ");
+      });
+    // }
+  };
 
   return (
     <div className="flex border mr-2 flex-col h-full">
@@ -38,28 +63,44 @@ export function MeterDetail({
               className="gap-2 text-orange-600"
               onClick={() => {
                 // 🔽 Navigate to the new parameterized URL for editing
-                navigate(`/meters/${selectedMeter.id}/edit`); 
+                navigate(`/meters/${selectedMeter.id}/edit`);
               }}
             >
               <Edit className="h-4 w-4" />
               Edit
             </Button>
-            <Button variant="ghost" size="sm">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="mt-2">
+                  <DropdownMenuItem
+                    onClick={() => handleDeleteMeter(selectedMeter?.id)}
+                  >
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
 
         <div className="flex items-center gap-4 text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <Building2 className="h-4 w-4" />
-            {/* <span>{selectedMeter.asset}</span> */}
-            <span>-</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4" />
-            {/* <span>{selectedMeter.location}</span> */}
-          </div>
+          {selectedMeter?.assetId && (
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              <span>{selectedMeter.assetId}</span>
+            </div>
+          )}
+          {selectedMeter?.locationId && (
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              <span>{selectedMeter.locationId}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -69,6 +110,34 @@ export function MeterDetail({
         <MeterDetailsSection selectedMeter={selectedMeter} />
         <MeterAutomations />
         <MeterWorkOrders selectedMeter={selectedMeter} />
+        {selectedMeter.createdAt === selectedMeter.updatedAt ? (
+          <>
+            <div className="text-sm text-gray-500 mt-6">
+              Created By{" "}
+              <span className="font-medium text-gray-700 capitalize">
+                {user?.fullName}
+              </span>{" "}
+              on {formatDate(selectedMeter.createdAt)}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="text-sm text-gray-500 mt-6">
+              Created By{" "}
+              <span className="font-medium text-gray-700 capitalize">
+                {user?.fullName}
+              </span>{" "}
+              on {formatDate(selectedMeter.createdAt)}
+            </div>
+            <div className="text-sm text-gray-500 mt-6">
+              Updated By{" "}
+              <span className="font-medium text-gray-700 capitalize">
+                {user?.fullName}
+              </span>{" "}
+              on {formatDate(selectedMeter.updatedAt)}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
