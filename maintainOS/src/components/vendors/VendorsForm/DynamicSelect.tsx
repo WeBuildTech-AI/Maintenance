@@ -75,6 +75,7 @@ export function DynamicSelect({
 }: DynamicSelectProps) {
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   
+  const isMulti = Array.isArray(value);
   const open = activeDropdown === name;
 
   React.useEffect(() => {
@@ -100,7 +101,7 @@ export function DynamicSelect({
   };
 
   const toggleOption = (id: string) => {
-    if (Array.isArray(value)) {
+    if (isMulti) {
       const newSelected = value.includes(id)
         ? value.filter((v) => v !== id)
         : [...value, id];
@@ -111,7 +112,7 @@ export function DynamicSelect({
     }
   };
 
-  const selectedOptions = Array.isArray(value)
+  const selectedOptions = isMulti
     ? options.filter((opt) => value.includes(opt.id))
     : options.filter((opt) => opt.id === value);
     
@@ -128,16 +129,16 @@ export function DynamicSelect({
             selectedOptions.map((option) => (
               <Badge key={option.id} variant="secondary" className="flex items-center gap-1">
                 {option.name}
-                {Array.isArray(value) && (
+                {isMulti && (
                    <button
-                    className="ml-1 rounded-full outline-none"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleOption(option.id);
-                    }}
+                     className="ml-1 rounded-full outline-none"
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       toggleOption(option.id);
+                     }}
                    >
-                      <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                    </button>
+                     <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                   </button>
                 )}
               </Badge>
             ))
@@ -155,32 +156,32 @@ export function DynamicSelect({
                <Spinner />
              </div>
            ) : (
-            <div>
-              {options.map((option) => {
-                const isSelected = Array.isArray(value) && value.includes(option.id);
-                return (
-                  <div
-                    key={option.id}
-                    className="flex items-center justify-between p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50"
-                    onClick={() => toggleOption(option.id)}
-                  >
-                    <label className="cursor-pointer">{option.name}</label>
-                    <ManualCheckbox checked={isSelected} />
-                  </div>
-                );
-              })}
-              {options.length === 0 && <div className="p-3 text-muted-foreground">No options found.</div>}
-            </div>
-          )}
+             <div>
+               {options.map((option) => {
+                 const isSelected = isMulti && value.includes(option.id);
+                 return (
+                   <div
+                     key={option.id}
+                     className="flex items-center justify-between p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50"
+                     onClick={() => toggleOption(option.id)}
+                   >
+                     <label className="cursor-pointer">{option.name}</label>
+                     <ManualCheckbox checked={isSelected} />
+                   </div>
+                 );
+               })}
+               {options.length === 0 && <div className="p-3 text-muted-foreground">No options found.</div>}
+             </div>
+           )}
 
-          {ctaText && onCtaClick && (
-            <div
-              onClick={onCtaClick}
-              className="sticky bottom-0 flex items-center p-3 text-sm text-blue-600 bg-gray-50 border-t cursor-pointer hover:bg-blue-100"
-            >
-              <span>{ctaText}</span>
-            </div>
-          )}
+           {ctaText && onCtaClick && (
+             <div
+               onClick={onCtaClick}
+               className="sticky bottom-0 flex items-center p-3 text-sm text-blue-600 bg-gray-50 border-t cursor-pointer hover:bg-blue-100"
+             >
+               <span>{ctaText}</span>
+             </div>
+           )}
         </div>
       )}
     </div>
