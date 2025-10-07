@@ -19,11 +19,24 @@ import {
 } from "lucide-react";
 import { type Vendor } from "./vendors.types";
 import { ContactFormDialog } from "./ContactFormDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import { deleteVendor } from "../../store/vendors";
+import toast from "react-hot-toast";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "../../store";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { NavLink } from "react-router-dom";
 
 export function VendorDetails({
   vendor,
   onEdit, // 🔹 added callback
-}: {
+}: // setIsCreatingVendor,
+{
   vendor?: Vendor;
   onEdit: (vendor: Vendor) => void; // 🔹 new prop
   // setVendors: React.Dispatch<React.SetStateAction<Vendor[]>>;
@@ -43,6 +56,22 @@ export function VendorDetails({
       .slice(0, 2)
       .join("")
       .toUpperCase();
+  const dispatch = useDispatch<AppDispatch>();
+  const user = useSelector((state: RootState) => state.auth.user);
+  const handleDeleteVendor = (id: string) => {
+    if (window.confirm("Are you sure you want to delete this location?")) {
+      dispatch(deleteVendor(id))
+        .unwrap()
+        .then(() => {
+          toast.success("Vendor deleted successfully!");
+          // setIsCreatingVendor(true);
+        })
+        .catch((error) => {
+          console.error("Delete failed:", error);
+          alert("Failed to delete the location.");
+        });
+    }
+  };
 
   return (
     <section className="flex-1 overflow-auto">
@@ -50,23 +79,23 @@ export function VendorDetails({
         <CardHeader className="flex flex-wrap items-center justify-between gap-3 border-b border-border">
           <div>
             <CardTitle>{vendor.name}</CardTitle>
-            <CardDescription className="text-xs">
+            {/* <CardDescription className="text-xs">
               ID: {vendor.id} · Category: {vendor.category}
-            </CardDescription>
+            </CardDescription> */}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button
+            {/* <Button
               size="sm"
               className="gap-2 border cursor-pointer border-orange-600 bg-white text-orange-600 hover:bg-orange-50"
             >
               <Link2 className="h-4 w-4" /> Link Asset
-            </Button>
-            <Button
+            </Button> */}
+            {/* <Button
               size="sm"
               className="gap-2 border cursor-pointer border-orange-600 bg-white text-orange-600 hover:bg-orange-50"
             >
               <Plus className="h-4 w-4" /> New Purchase Order
-            </Button>
+            </Button> */}
             <Button
               size="sm"
               onClick={() => vendor && onEdit(vendor)} // 🔹 Calls the parent's navigation handler
@@ -74,20 +103,59 @@ export function VendorDetails({
             >
               <ExternalLink className="h-4 w-4" /> Edit
             </Button>
-            <Button variant="ghost" size="icon">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="mt-2">
+                  <DropdownMenuItem
+                    onClick={() => handleDeleteVendor(vendor?.id)}
+                  >
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </CardHeader>
 
         <CardContent className="space-y-6 p-6">
+          {/* Description */}
+
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">
+              Discription
+            </h3>
+            <div>
+              {vendor.description || "There are no description Present"}
+            </div>
+          </div>
+
+          <div>
+            {/* {vendor?.photoUrl.length > 0 && (
+              <div className="mb-6 mt-6 flex gap-2 flex-wrap">
+                {vendor?.photoUrl?.map((item) => (
+                  <img
+                    key={item.id}
+                    src={`data:${item.mimetype};base64,${item.base64}`}
+                    alt="Location"
+                    className="w-24 h-24 object-cover rounded"
+                  />
+                ))}
+              </div>
+            )} */}
+          </div>
+
           {/* Contacts */}
           <div>
             <h3 className="text-sm font-semibold text-foreground">
               Contact List
             </h3>
 
-            <div className="mt-3 space-y-3">
+            <div className="mt-4 space-y-3">
               {!vendor?.contacts ? (
                 <p className="text-xs text-muted-foreground">
                   No contacts yet. Add a contact to keep details handy.
@@ -129,14 +197,14 @@ export function VendorDetails({
               )}
             </div>
           </div>
-{/* <ContactFormDialog vendor={vendor} setVendors={setVendors} /> */}
+          {/* <ContactFormDialog vendor={vendor} setVendors={setVendors} /> */}
 
           {/* Locations */}
           <div>
             <h3 className="text-sm font-semibold text-foreground">
               Locations ({vendor.locations.length})
             </h3>
-            <div className="mt-3 space-y-2">
+            <div className="mt-4 space-y-2">
               {vendor.locations.map((loc) => (
                 <div
                   key={`${vendor.id}-${loc.name}`}
@@ -144,12 +212,12 @@ export function VendorDetails({
                 >
                   <MapPin className="mt-0.5 h-4 w-4 text-primary" />
                   <div>
-                    <p className="text-sm font-medium">{loc.name}</p>
-                    {loc.parent && (
+                    <p className="text-sm font-medium">{loc}</p>
+                    {/* {loc.parent && (
                       <p className="text-xs text-muted-foreground">
                         Parent: {loc.parent}
                       </p>
-                    )}
+                    )} */}
                   </div>
                 </div>
               ))}
@@ -159,12 +227,18 @@ export function VendorDetails({
           {/* Metadata */}
           <div className="flex flex-wrap items-center justify-between gap-3 rounded border border-dashed border-border px-4 py-3 text-xs text-muted-foreground">
             <span>
-              Created by <strong>{vendor.createdBy}</strong> on{" "}
+              Created by <strong>{user?.fullName}</strong> on{" "}
               {new Date(vendor.createdAt).toLocaleString()}
             </span>
-            <Button variant="outline" size="sm" className="gap-2">
-              <Users className="h-4 w-4" /> Use in New Work Order
-            </Button>
+            <NavLink to="/work-orders">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 cursor-pointer"
+              >
+                <Users className="h-4 w-4" /> Use in New Work Order
+              </Button>
+            </NavLink>
           </div>
         </CardContent>
       </Card>

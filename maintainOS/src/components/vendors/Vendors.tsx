@@ -153,6 +153,8 @@ export function Vendors() {
               selectedVendorId={selectedVendorId}
               setSelectedVendorId={setSelectedVendorId}
               loading={loading}
+              
+              
             />
             <section className="flex-1 overflow-auto">
               {isCreateRoute || isEditRoute ? ( // 👈 Check both URL routes
@@ -168,6 +170,7 @@ export function Vendors() {
               ) : selectedVendor ? (
                 <VendorDetails
                   vendor={selectedVendor}
+                  // setIsCreatedVendor={setIsCreatingVendor}
                   // 🔽 Updated onEdit to navigate to the new parameterized URL
                   onEdit={(v) => navigate(`/vendors/${v.id}/edit`)}
                 />

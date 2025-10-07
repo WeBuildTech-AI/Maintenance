@@ -24,8 +24,6 @@ export function PicturesUpload({ pictures, setPictures }: PicturesUploadProps) {
     setPictures((prev) => prev.filter((_, i) => i !== index));
   };
 
-  console.log(pictures , "picture")
-
   return (
     <div>
       <h3 className="mb-3 text-lg font-semibold text-gray-900">Pictures</h3>
@@ -66,28 +64,29 @@ export function PicturesUpload({ pictures, setPictures }: PicturesUploadProps) {
             />
           </div>
 
-          {pictures.map((file, i) => {
-            const url = `data:${file?.mimetype};base64,${file?.base64}`;
-            return (
-              <div
-                key={i}
-                className="relative w-32 h-32 rounded-md overflow-hidden flex items-center justify-center"
-              >
-                <img
-                  src={url}
-                  alt={file.name}
-                  className="object-cover w-full h-full"
-                />
-                <button
-                  type="button"
-                  onClick={() => removePicture(i)}
-                  className="absolute top-1 right-1 bg-white text-blue-600 rounded-full p-1 shadow"
+          {pictures &&
+            pictures.map((file, i) => {
+              const url = `data:${file?.mimetype};base64,${file?.base64}`;
+              return (
+                <div
+                  key={i}
+                  className="relative w-32 h-32 rounded-md overflow-hidden flex items-center justify-center"
                 >
-                  ✕
-                </button>
-              </div>
-            );
-          })}
+                  <img
+                    src={url}
+                    alt={file.name}
+                    className="object-cover w-full h-full"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removePicture(i)}
+                    className="absolute top-1 right-1 bg-white text-blue-600 rounded-full p-1 shadow"
+                  >
+                    ✕
+                  </button>
+                </div>
+              );
+            })}
         </div>
       )}
     </div>

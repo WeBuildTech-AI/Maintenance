@@ -12,17 +12,16 @@ interface NewMeterFormProps {
   onCancel: (data: any) => void;
   getLocationData: [];
   getAssetData: [];
-  editingMeter?: any;   //  ye naya prop add karo
+  editingMeter?: any; //  ye naya prop add karo
+  editingMeter?: any; //  ye naya prop add karo
 }
-
-
 
 export function NewMeterForm({
   onCreate,
   onCancel,
   getLocationData,
   getAssetData,
-   editingMeter
+  editingMeter,
 }: NewMeterFormProps) {
   const [meterType, setMeterType] = useState<"manual" | "automated">("manual");
   const [meterName, setMeterName] = useState("");
@@ -41,24 +40,20 @@ export function NewMeterForm({
 
   const combinedValue = `${readingFrequencyValue} ${readingFrequencyUnit}`;
 
-
-
-
-
-
   useEffect(() => {
-  if (editingMeter) {
-    setMeterType(editingMeter.meterType || "manual");
-    setMeterName(editingMeter.name || "");
-    setDescription(editingMeter.description || "");
-    setMeasurementUnit(editingMeter.unit || "");
-    setAsset(editingMeter.assetId || "");
-    setLocation(editingMeter.locationId || "");
-    setReadingFrequencyValue(editingMeter.readingFrequency?.time || "");
-    setReadingFrequencyUnit(editingMeter.readingFrequency?.interval || "none");
-  }
-}, [editingMeter]);
-
+    if (editingMeter) {
+      setMeterType(editingMeter.meterType || "manual");
+      setMeterName(editingMeter.name || "");
+      setDescription(editingMeter.description || "");
+      setMeasurementUnit(editingMeter.unit || "");
+      setAsset(editingMeter.assetId || "");
+      setLocation(editingMeter.locationId || "");
+      setReadingFrequencyValue(editingMeter.readingFrequency?.time || "");
+      setReadingFrequencyUnit(
+        editingMeter.readingFrequency?.interval || "none"
+      );
+    }
+  }, [editingMeter]);
 
   // Split images/docs
   const splitFiles = (selectedFiles: File[]) => {
@@ -97,55 +92,65 @@ export function NewMeterForm({
 
   const handleCreateMeter = () => {
     try {
+      // 🧩 Validation
+      // 🧩 Validation
       if (!meterName.trim()) {
         setError("You need to provide a Meter Name");
         return;
       }
-      if (!measurementUnit.trim()) {
-        setError("You need to select a Measurement Unit");
-        return;
+
+      if (!measurementUnit || measurementUnit === "none") {
+        if (!measurementUnit || measurementUnit === "none") {
+          setError("You need to select a Measurement Unit");
+          return;
+        }
+
+        setError("");
+        setPostMeterDataLoading(true);
+        const newMeter = {
+          organizationId: user.organizationId,
+          name: meterName,
+          meterType: meterType,
+          description: description,
+          unit: measurementUnit,
+          assetId: asset,
+          locationId: location,
+          readingFrequency: {
+            iterval: readingFrequencyUnit,
+            time: readingFrequencyValue,
+          },
+        };
+
+        // ✅ Add photos array (only if needed)
+        // payload.photos = [];
+
+        console.log(newMeter, "New Meter");
+        // Dispatch to Redux thunk
+        dispatch(createMeter(newMeter))
+          .unwrap()
+          .then(() => {
+            console.log("Meter created successfully!");
+            setMeterName("");
+            setDescription("");
+            setAsset("");
+            setLocation("");
+            setMeasurementUnit("none");
+            setReadingFrequencyUnit("none");
+            setReadingFrequencyValue("");
+
+            // maybe show toast or navigate
+          })
+          .catch((err) => {
+            console.error("Meter creation failed:", err);
+            setError(err);
+          });
       }
-      setError("");
-      setPostMeterDataLoading(true);
-      const newMeter = {
-        organizationId: user.organizationId,
-        name: meterName,
-        meterType: meterType,
-        description: description,
-        unit: measurementUnit,
-        assetId: asset,
-        locationId: location,
-        readingFrequency: {
-          iterval: readingFrequencyUnit,
-          time: readingFrequencyValue,
-        },
-        photos: [],
-      };
-
-      console.log(newMeter, "New Meter");
-      // Dispatch to Redux thunk
-      dispatch(createMeter(newMeter))
-        .unwrap()
-        .then(() => {
-          console.log("Meter created successfully!");
-          setMeterName("");
-          setDescription("");
-          setAsset("");
-          setLocation("");
-          setMeasurementUnit("none");
-          setReadingFrequencyUnit("none");
-          setReadingFrequencyValue("");
-
-          // maybe show toast or navigate
-        })
-        .catch((err) => {
-          console.error("Meter creation failed:", err);
-          setError(err);
-        });
     } catch (err) {
-      console.log(err);
-    } finally {
+      console.error("Unexpected Error:", err);
+      console.error("Unexpected Error:", err);
       setPostMeterDataLoading(false);
+      setError("Unexpected error occurred");
+      setError("Unexpected error occurred");
     }
   };
 

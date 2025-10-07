@@ -1,6 +1,7 @@
+import type { Description } from "@headlessui/react";
 import type { Dispatch, SetStateAction } from "react";
 
-type FormState = { name: string; partsSummary: string; color: string; };
+type FormState = { name: string; partsSummary: string; color: string; description:string };
 interface VendorPrimaryDetailsProps { form: FormState; setForm: Dispatch<SetStateAction<any>>; }
 
 export function VendorPrimaryDetails({ form, setForm }: VendorPrimaryDetailsProps) {
@@ -14,7 +15,7 @@ export function VendorPrimaryDetails({ form, setForm }: VendorPrimaryDetailsProp
       </div>
       <div className="px-6 pt-6">
         <label className="block text-base font-medium text-gray-900 mb-3">Description</label>
-        <textarea value={form.partsSummary} onChange={(e) => setForm((f) => ({ ...f, partsSummary: e.target.value }))} placeholder="Add a description" rows={4} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-3 text-gray-600 placeholder-gray-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Add a description" rows={4} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-3 text-gray-600 placeholder-gray-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500" />
       </div>
     </>
   );

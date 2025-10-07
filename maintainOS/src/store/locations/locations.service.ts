@@ -42,7 +42,9 @@ export const locationService = {
   createLocation: async (
     data: CreateLocationData
   ): Promise<LocationResponse> => {
-    const res = await axios.post(`${API_URL}/locations`, data);
+    const res = await axios.post(`${API_URL}/locations`, data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
     return res.data;
   },
 

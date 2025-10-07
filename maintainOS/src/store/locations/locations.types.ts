@@ -10,6 +10,8 @@ export interface LocationResponse {
   postalCode?: string;
   createdAt: string;
   updatedAt: string;
+  qrCode: string;
+  parentLocationId: string;
 }
 
 export interface CreateLocationData {
