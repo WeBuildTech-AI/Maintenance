@@ -6,6 +6,8 @@ import { SearchWithDropdown } from "../../Locations/SearchWithDropdown";
 import { createMeter } from "../../../store/meters";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "../../../store";
+import { assetService } from "../../../store/assets";
+import { locationService } from "../../../store/locations";
 
 interface NewMeterFormProps {
   onCreate: (data: any) => void;
@@ -19,8 +21,7 @@ interface NewMeterFormProps {
 export function NewMeterForm({
   onCreate,
   onCancel,
-  getLocationData,
-  getAssetData,
+
   editingMeter,
 }: NewMeterFormProps) {
   const [meterType, setMeterType] = useState<"manual" | "automated">("manual");
@@ -37,7 +38,9 @@ export function NewMeterForm({
   const user = useSelector((state: RootState) => state.auth.user);
   const dispatch = useDispatch<AppDispatch>();
   const [postMeterDataloading, setPostMeterDataLoading] = useState(false);
-
+  const [getLocationData, setGetLocationData] = useState([]);
+  const [getAssetData, setGetAssestData] = useState([]);
+  const [loading, setLoading] = useState(false);
   const combinedValue = `${readingFrequencyValue} ${readingFrequencyUnit}`;
 
   useEffect(() => {
@@ -151,6 +154,32 @@ export function NewMeterForm({
       setPostMeterDataLoading(false);
       setError("Unexpected error occurred");
       setError("Unexpected error occurred");
+    }
+  };
+
+  const handleGetAssetData = async () => {
+    setLoading(true);
+    try {
+      const res = await assetService.fetchAssetsName(10, 1, 0);
+      setGetAssestData(res);
+      console.log(res);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGetLocationData = async () => {
+    setLoading(true);
+    try {
+      const res = await locationService.fetchLocationsName(10, 1, 0);
+      setGetLocationData(res);
+      console.log(res);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -283,6 +312,7 @@ export function NewMeterForm({
               <select
                 value={asset || ""} // controlled value
                 onChange={(e) => setAsset(e.target.value)}
+                onClick={handleGetAssetData}
                 style={{
                   height: "40px",
                   width: "100%",
@@ -349,6 +379,7 @@ export function NewMeterForm({
               <select
                 value={location || ""} // controlled value
                 onChange={(e) => setLocation(e.target.value)}
+                onClick={handleGetLocationData}
                 style={{
                   height: "40px",
                   width: "100%",

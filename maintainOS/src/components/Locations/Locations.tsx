@@ -316,9 +316,9 @@ export function Locations() {
                         No Locations found
                       </p>
                       <Button
-                        variant="link"
+                        // variant="link"
                         onClick={handleShowNewLocationForm}
-                        className="text-primary p-0 cursor-pointer"
+                        className="text-primary p-0 bg-white cursor-pointer"
                       >
                         Create the first asset
                       </Button>

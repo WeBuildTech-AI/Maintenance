@@ -16,6 +16,7 @@ export function MetersList({
   loading,
   getAssetData,
   getLocationData,
+  handleShowNewMeterForm,
 }: any) {
   const meters = Array.isArray(filteredMeters) ? filteredMeters : [];
 
@@ -70,7 +71,11 @@ export function MetersList({
                     <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed"></div>
                   </div>
                   <p className="text-muted-foreground mb-2">No meters found</p>
-                  <Button variant="link" className="text-primary p-0">
+                  <Button
+                    variant=""
+                    onClick={() => handleShowNewMeterForm(true)}
+                    className="text-primary bg-white p-0 cursor-pointer"
+                  >
                     Create the first meter
                   </Button>
                 </div>
