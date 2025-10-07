@@ -44,7 +44,7 @@ export const fetchVendorById = createAsyncThunk(
 
 export const createVendor = createAsyncThunk(
   "vendors/createVendor",
-  async (vendorData: CreateVendorData, { rejectWithValue }) => {
+  async (vendorData: FormData, { rejectWithValue }) => {
     try {
       return await vendorService.createVendor(vendorData);
     } catch (error: any) {

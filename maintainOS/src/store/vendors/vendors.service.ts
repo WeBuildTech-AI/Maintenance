@@ -1,10 +1,6 @@
 import axios from "axios";
 
-import type {
-  CreateVendorData,
-  UpdateVendorData,
-  VendorResponse,
-} from "./vendors.types";
+import type { UpdateVendorData, VendorResponse } from "./vendors.types";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -38,7 +34,7 @@ export const vendorService = {
     return res.data;
   },
 
-  createVendor: async (data: CreateVendorData): Promise<VendorResponse> => {
+  createVendor: async (data: FormData): Promise<VendorResponse> => {
     const res = await axios.post(`${API_URL}/vendors`, data);
     return res.data;
   },

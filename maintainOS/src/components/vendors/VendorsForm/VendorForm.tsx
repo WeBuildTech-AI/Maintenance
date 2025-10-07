@@ -16,14 +16,14 @@ import { VendorAttachmentsInput } from "./VendorAttachmentsInput";
 import { VendorLinkedItems } from "./VendorLinkedItems";
 import toast from "react-hot-toast";
 
-// ✅ Optional: full contact shape (agar contacts array use karna ho)
+// ✅ Contact interface matching backend ContactDto
 export interface ContactFormData {
   fullName: string;
   role: string;
   email: string;
-  phone: string;
+  phoneNumber: string; // backend expects phoneNumber
   phoneExtension: string;
-  color: string;
+  contactColour: string; // backend expects contactColour
 }
 
 export function VendorForm({
@@ -50,9 +50,11 @@ export function VendorForm({
   const [attachedDocs, setAttachedDocs] = useState<File[]>([]);
   const [showContactInputs, setShowContactInputs] = useState(false);
   const [contact, setContact] = useState({ email: "", phone: "" }); // legacy single contact
-  const [contacts, setContacts] = useState<ContactFormData[]>([]);   // NEW: contacts array (optional)
+  const [contacts, setContacts] = useState<ContactFormData[]>([]); // NEW: contacts array (optional)
   const [showInputs, setShowInputs] = useState(false);
-  const [availableLocations, setAvailableLocations] = useState<SelectOption[]>([]);
+  const [availableLocations, setAvailableLocations] = useState<SelectOption[]>(
+    []
+  );
   const [locationsLoading, setLocationsLoading] = useState(false);
   const [selectedLocationIds, setSelectedLocationIds] = useState<string[]>([]);
   const [availableAssets, setAvailableAssets] = useState<SelectOption[]>([]);
@@ -162,40 +164,84 @@ export function VendorForm({
     appendIfPresent("color", form.color);
     appendIfPresent("vendorType", form.vendorType?.toLowerCase());
 
-    // ✅ CONTACTS — JSON inside FormData
-    // ✅ CONTACTS — must be a single JSON object (not array)
+    // ✅ CONTACTS — Must be an array as per backend ContactDto[]
+    const contactsArray = [];
+
     if (Array.isArray(contacts) && contacts.length > 0) {
-      // merge or take first contact object
-      const firstContact = contacts[0];
-      const contactObject = {
-        fullName: firstContact.fullName || "",
-        role: firstContact.role || "",
-        email: firstContact.email || "",
-        phone: firstContact.phone || "",
-        phoneExtension: firstContact.phoneExtension || "",
-        color: firstContact.color || "#EC4899",
-      };
-      formData.append("contacts", JSON.stringify(contactObject));
+      // Convert frontend contacts to backend format
+      contacts.forEach((contact) => {
+        if (contact.fullName || contact.email || contact.phoneNumber) {
+          // Format phone number properly for international validation
+          let formattedPhone = contact.phoneNumber || "";
+          if (formattedPhone && !formattedPhone.startsWith("+")) {
+            // If phone extension exists and doesn't start with +, combine them
+            if (
+              contact.phoneExtension &&
+              contact.phoneExtension.startsWith("+")
+            ) {
+              formattedPhone = contact.phoneExtension + formattedPhone;
+            } else if (
+              formattedPhone.startsWith("91") ||
+              formattedPhone.startsWith("1")
+            ) {
+              // If starts with country code, add +
+              formattedPhone = "+" + formattedPhone;
+            } else {
+              // Default to +91 for Indian numbers (adjust as needed)
+              formattedPhone = "+91" + formattedPhone;
+            }
+          }
+
+          contactsArray.push({
+            fullName: contact.fullName || "",
+            role: contact.role || "",
+            email: contact.email || "",
+            phoneNumber: formattedPhone, // backend expects 'phoneNumber' in international format
+            phoneExtension: contact.phoneExtension || "",
+            contactColour: contact.contactColour || "#EC4899", // backend expects 'contactColour'
+          });
+        }
+      });
     } else if (contact && (contact.email.trim() || contact.phone.trim())) {
-      // fallback for legacy single contact
-      const single = {
+      // fallback for legacy single contact - convert to array format
+      let formattedPhone = contact.phone || "";
+      if (formattedPhone && !formattedPhone.startsWith("+")) {
+        // Default to +91 for Indian numbers (adjust as needed)
+        formattedPhone = "+91" + formattedPhone;
+      }
+
+      contactsArray.push({
         fullName: "",
         role: "",
         email: contact.email || "",
-        phone: contact.phone || "",
+        phoneNumber: formattedPhone, // backend expects 'phoneNumber' in international format
         phoneExtension: "",
-        color: "#EC4899",
-      };
-      formData.append("contacts", JSON.stringify(single));
+        contactColour: "#EC4899", // backend expects 'contactColour'
+      });
     }
 
+    // Send each contact as individual array items in FormData
+    if (contactsArray.length > 0) {
+      contactsArray.forEach((contact, index) => {
+        formData.append(`contacts[${index}][fullName]`, contact.fullName);
+        formData.append(`contacts[${index}][role]`, contact.role);
+        formData.append(`contacts[${index}][email]`, contact.email);
+        formData.append(`contacts[${index}][phoneNumber]`, contact.phoneNumber);
+        formData.append(
+          `contacts[${index}][phoneExtension]`,
+          contact.phoneExtension
+        );
+        formData.append(
+          `contacts[${index}][contactColour]`,
+          contact.contactColour
+        );
+      });
+    }
 
-    // (legacy per-field appends kept, but guarded so they don't run when contacts JSON is sent)
-    if (!(Array.isArray(contacts) && contacts.length > 0)) {
-      if (contact && (contact.email.trim() || contact.phone.trim())) {
-        if (contact.email) formData.append("contacts[email]", contact.email);
-        if (contact.phone) formData.append("contacts[phone]", contact.phone);
-      }
+    // Debug: Log FormData contents
+    console.log("FormData contents:");
+    for (const [key, value] of formData.entries()) {
+      console.log(`${key}:`, value);
     }
 
     // ✅ Arrays

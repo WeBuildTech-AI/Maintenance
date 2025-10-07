@@ -1,13 +1,13 @@
-import { X } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { X } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export interface ContactFormData {
   fullName: string;
   role: string;
   email: string;
-  phone: string;
+  phoneNumber: string; // backend expects phoneNumber
   phoneExtension: string;
-  color: string;
+  contactColour: string; // backend expects contactColour
 }
 
 interface NewContactModalProps {
@@ -18,25 +18,30 @@ interface NewContactModalProps {
 }
 
 const COLORS = [
-  '#3B82F6',
-  '#10B981',
-  '#F59E0B',
-  '#EF4444',
-  '#14B8A6',
-  '#EC4899',
-  '#8B5CF6',
-  '#F97316',
+  "#3B82F6",
+  "#10B981",
+  "#F59E0B",
+  "#EF4444",
+  "#14B8A6",
+  "#EC4899",
+  "#8B5CF6",
+  "#F97316",
 ];
 
-export function NewContactModal({ isOpen, onClose, onSave, initialData }: NewContactModalProps) {
+export function NewContactModal({
+  isOpen,
+  onClose,
+  onSave,
+  initialData,
+}: NewContactModalProps) {
   const [contact, setContact] = useState<ContactFormData>(
     initialData || {
-      fullName: '',
-      role: '',
-      email: '',
-      phone: '',
-      phoneExtension: '',
-      color: '#EC4899',
+      fullName: "",
+      role: "",
+      email: "",
+      phoneNumber: "",
+      phoneExtension: "",
+      contactColour: "#EC4899",
     }
   );
   const [showExtension, setShowExtension] = useState(false);
@@ -47,30 +52,30 @@ export function NewContactModal({ isOpen, onClose, onSave, initialData }: NewCon
       if (initialData.phoneExtension) setShowExtension(true);
     } else {
       setContact({
-        fullName: '',
-        role: '',
-        email: '',
-        phone: '',
-        phoneExtension: '',
-        color: '#EC4899',
+        fullName: "",
+        role: "",
+        email: "",
+        phoneNumber: "",
+        phoneExtension: "",
+        contactColour: "#EC4899",
       });
       setShowExtension(false);
     }
   }, [initialData, isOpen]);
 
   const getInitial = () => {
-    return contact.fullName.trim().charAt(0).toUpperCase() || 'C';
+    return contact.fullName.trim().charAt(0).toUpperCase() || "C";
   };
 
   const handleCreate = () => {
     onSave(contact);
     setContact({
-      fullName: '',
-      role: '',
-      email: '',
-      phone: '',
-      phoneExtension: '',
-      color: '#EC4899',
+      fullName: "",
+      role: "",
+      email: "",
+      phoneNumber: "",
+      phoneExtension: "",
+      contactColour: "#EC4899",
     });
     setShowExtension(false);
     onClose();
@@ -78,12 +83,12 @@ export function NewContactModal({ isOpen, onClose, onSave, initialData }: NewCon
 
   const handleCancel = () => {
     setContact({
-      fullName: '',
-      role: '',
-      email: '',
-      phone: '',
-      phoneExtension: '',
-      color: '#EC4899',
+      fullName: "",
+      role: "",
+      email: "",
+      phoneNumber: "",
+      phoneExtension: "",
+      contactColour: "#EC4899",
     });
     setShowExtension(false);
     onClose();
@@ -92,8 +97,14 @@ export function NewContactModal({ isOpen, onClose, onSave, initialData }: NewCon
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center " style={{ backgroundColor: 'rgba(0, 0, 0, 0.1)' }}>
-      <div className="w-full bg-white rounded-lg shadow-lg overflow-hidden" style={{ maxWidth: '672px', maxHeight: '90vh' }}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center "
+      style={{ backgroundColor: "rgba(0, 0, 0, 0.1)" }}
+    >
+      <div
+        className="w-full bg-white rounded-lg shadow-lg overflow-hidden"
+        style={{ maxWidth: "672px", maxHeight: "90vh" }}
+      >
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <h2 className="text-2xl font-semibold text-gray-700">
             {initialData ? "Edit Contact" : "New Contact"}
@@ -106,17 +117,20 @@ export function NewContactModal({ isOpen, onClose, onSave, initialData }: NewCon
           </button>
         </div>
 
-        <div className="overflow-y-auto" style={{ maxHeight: 'calc(90vh - 140px)' }}>
+        <div
+          className="overflow-y-auto"
+          style={{ maxHeight: "calc(90vh - 140px)" }}
+        >
           <div className="px-6 py-8">
             <div className="flex justify-start mb-8">
               <div
                 className="flex items-center justify-center text-white font-light"
-                style={{ 
-                  backgroundColor: contact.color, 
-                  fontSize: '48px',
-                  width: '128px',
-                  height: '128px',
-                  borderRadius: '50%'
+                style={{
+                  backgroundColor: contact.contactColour,
+                  fontSize: "48px",
+                  width: "128px",
+                  height: "128px",
+                  borderRadius: "50%",
                 }}
               >
                 {getInitial()}
@@ -124,11 +138,17 @@ export function NewContactModal({ isOpen, onClose, onSave, initialData }: NewCon
             </div>
 
             <div className="mb-8">
-              <h3 className="text-base font-semibold text-gray-700 mb-4" style={{ marginBottom: '20px' }}>
+              <h3
+                className="text-base font-semibold text-gray-700 mb-4"
+                style={{ marginBottom: "20px" }}
+              >
                 Contact Info
               </h3>
-              
-              <div className="grid grid-cols-2 gap-6" style={{ gap: '20px 24px' }}>
+
+              <div
+                className="grid grid-cols-2 gap-6"
+                style={{ gap: "20px 24px" }}
+              >
                 <div className="flex flex-col">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Full Name
@@ -137,9 +157,14 @@ export function NewContactModal({ isOpen, onClose, onSave, initialData }: NewCon
                     type="text"
                     placeholder="Name"
                     value={contact.fullName}
-                    onChange={(e) => setContact((prev) => ({ ...prev, fullName: e.target.value }))}
+                    onChange={(e) =>
+                      setContact((prev) => ({
+                        ...prev,
+                        fullName: e.target.value,
+                      }))
+                    }
                     className="w-full rounded border border-blue-500 px-3 text-sm text-gray-700 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                    style={{ padding: '10px 12px' }}
+                    style={{ padding: "10px 12px" }}
                   />
                 </div>
 
@@ -151,9 +176,11 @@ export function NewContactModal({ isOpen, onClose, onSave, initialData }: NewCon
                     type="text"
                     placeholder="Role"
                     value={contact.role}
-                    onChange={(e) => setContact((prev) => ({ ...prev, role: e.target.value }))}
+                    onChange={(e) =>
+                      setContact((prev) => ({ ...prev, role: e.target.value }))
+                    }
                     className="w-full rounded border border-gray-200 px-3 text-sm text-gray-700 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                    style={{ padding: '10px 12px' }}
+                    style={{ padding: "10px 12px" }}
                   />
                 </div>
 
@@ -165,9 +192,11 @@ export function NewContactModal({ isOpen, onClose, onSave, initialData }: NewCon
                     type="email"
                     placeholder="Email"
                     value={contact.email}
-                    onChange={(e) => setContact((prev) => ({ ...prev, email: e.target.value }))}
+                    onChange={(e) =>
+                      setContact((prev) => ({ ...prev, email: e.target.value }))
+                    }
                     className="w-full rounded border border-gray-200 px-3 text-sm text-gray-700 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                    style={{ padding: '10px 12px' }}
+                    style={{ padding: "10px 12px" }}
                   />
                 </div>
 
@@ -177,12 +206,20 @@ export function NewContactModal({ isOpen, onClose, onSave, initialData }: NewCon
                   </label>
                   <input
                     type="tel"
-                    placeholder="Phone Number"
-                    value={contact.phone}
-                    onChange={(e) => setContact((prev) => ({ ...prev, phone: e.target.value }))}
+                    placeholder="Enter phone number (e.g., 8750118899)"
+                    value={contact.phoneNumber}
+                    onChange={(e) =>
+                      setContact((prev) => ({
+                        ...prev,
+                        phoneNumber: e.target.value,
+                      }))
+                    }
                     className="w-full rounded border border-gray-200 px-3 text-sm text-gray-700 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                    style={{ padding: '10px 12px' }}
+                    style={{ padding: "10px 12px" }}
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Format: Country code will be added automatically
+                  </p>
                 </div>
               </div>
 
@@ -192,43 +229,61 @@ export function NewContactModal({ isOpen, onClose, onSave, initialData }: NewCon
                   onClick={() => setShowExtension(true)}
                   className="mt-4 cursor-pointer border-0 bg-transparent p-0 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
                 >
-                  + Add Phone Extension
+                  + Add Country Code
                 </button>
               )}
 
               {showExtension && (
-                <div className="mt-4" style={{ width: 'calc(50% - 12px)' }}>
+                <div className="mt-4" style={{ width: "calc(50% - 12px)" }}>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Extension
+                    Country Code
                   </label>
                   <input
                     type="text"
-                    placeholder="Extension"
+                    placeholder="e.g., +91"
                     value={contact.phoneExtension}
-                    onChange={(e) => setContact((prev) => ({ ...prev, phoneExtension: e.target.value }))}
+                    onChange={(e) =>
+                      setContact((prev) => ({
+                        ...prev,
+                        phoneExtension: e.target.value,
+                      }))
+                    }
                     className="w-full rounded border border-gray-200 px-3 text-sm text-gray-700 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                    style={{ padding: '10px 12px' }}
+                    style={{ padding: "10px 12px" }}
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Include + sign (e.g., +91, +1)
+                  </p>
                 </div>
               )}
             </div>
 
             <div>
-              <h3 className="text-base font-semibold text-gray-700 mb-4">Contact Color</h3>
+              <h3 className="text-base font-semibold text-gray-700 mb-4">
+                Contact Color
+              </h3>
               <div className="flex gap-3">
                 {COLORS.map((color) => (
                   <button
                     key={color}
                     type="button"
-                    onClick={() => setContact((prev) => ({ ...prev, color }))}
+                    onClick={() =>
+                      setContact((prev) => ({ ...prev, contactColour: color }))
+                    }
                     className="cursor-pointer transition-all"
-                    style={{ 
+                    style={{
                       backgroundColor: color,
-                      width: '28px',
-                      height: '28px',
-                      borderRadius: '50%',
-                      border: contact.color === color ? '2px solid gray' : '2px solid transparent',
-                      transform: contact.color === color ? 'scale(1.1)' : 'scale(1)',
+                      width: "28px",
+                      height: "28px",
+                      borderRadius: "50%",
+                      border:
+                        contact.contactColour === color
+                          ? "2px solid gray"
+                          : "2px solid transparent",
+                      transform:
+                        contact.contactColour === color
+                          ? "scale(1.1)"
+                          : "scale(1)",
                     }}
                     aria-label={`Select color ${color}`}
                   />
@@ -242,14 +297,14 @@ export function NewContactModal({ isOpen, onClose, onSave, initialData }: NewCon
           <button
             onClick={handleCancel}
             className="cursor-pointer border-0 bg-transparent px-6 text-sm font-medium text-gray-700 hover:text-gray-700 transition-colors"
-            style={{ padding: '10px 24px' }}
+            style={{ padding: "10px 24px" }}
           >
             Cancel
           </button>
           <button
             onClick={handleCreate}
             className="cursor-pointer rounded border-0 bg-blue-600 px-6 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
-            style={{ padding: '10px 24px' }}
+            style={{ padding: "10px 24px" }}
           >
             {initialData ? "Save Changes" : "Create"}
           </button>

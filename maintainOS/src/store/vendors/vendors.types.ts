@@ -1,3 +1,11 @@
+export interface Contact {
+  fullName: string;
+  email: string;
+  role?: string;
+  phoneNumber?: string;
+  contactColour?: string;
+}
+
 export interface VendorResponse {
   id: string;
   organizationId: string;
@@ -5,7 +13,7 @@ export interface VendorResponse {
   pictureUrl?: string;
   color?: string;
   description?: string;
-  contacts?: Record<string, any>;
+  contacts?: Contact[];
   files?: string[];
   locations?: string[];
   assetIds?: string[];
@@ -21,7 +29,7 @@ export interface CreateVendorData {
   pictureUrl?: string;
   color?: string;
   description?: string;
-  contacts?: Record<string, any>;
+  contacts?: Contact[];
   files?: string[];
   locations?: string[];
   assetIds?: string[];
@@ -34,7 +42,7 @@ export interface UpdateVendorData {
   pictureUrl?: string;
   color?: string;
   description?: string;
-  contacts?: Record<string, any>;
+  contacts?: Contact[];
   files?: string[];
   locations?: string[];
   assetIds?: string[];
