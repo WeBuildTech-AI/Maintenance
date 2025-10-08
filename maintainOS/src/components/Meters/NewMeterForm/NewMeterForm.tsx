@@ -424,7 +424,7 @@ export function NewMeterForm({
                       {items.name}
                     </option>
                   ))
-                )}
+                }
               </select>
 
               {/* Chevron Icon */}
