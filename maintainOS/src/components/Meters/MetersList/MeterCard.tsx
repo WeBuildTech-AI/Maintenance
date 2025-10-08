@@ -1,6 +1,7 @@
 import { AlertTriangle, Building2 } from "lucide-react";
 import { Badge } from "../../ui/badge";
 import { Card, CardContent } from "../../ui/card";
+import { Avatar, AvatarFallback } from "../../ui/avatar";
 
 export function MeterCard({
   meter,
@@ -8,6 +9,13 @@ export function MeterCard({
   setSelectedMeter,
   handleCancelForm,
 }: any) {
+  const renderInitials = (text: string) =>
+    text
+      .split(" ")
+      .map((p) => p[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase();
   return (
     <Card
       key={meter.id}
@@ -21,45 +29,52 @@ export function MeterCard({
         handleCancelForm(false);
       }}
     >
-      <CardContent className="p-3">
-        <div className="flex items-start justify-between mb-2">
-          <h4 className="font-medium">{meter.name}</h4>
+      <CardContent className="p-4">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10">
+              <AvatarFallback>{renderInitials(meter.name)}</AvatarFallback>
+            </Avatar>
+            <h4 className="font-medium text-gray-900">{meter.name}</h4>
+          </div>
+
           {meter.isOverdue && (
-            <Badge variant="destructive" className="gap-1 mt-1">
-              <AlertTriangle className="h-3 w-3" />
+            <Badge variant="destructive" className="flex items-center gap-1">
+              <AlertTriangle className="h-4 w-4" />
               Overdue
             </Badge>
           )}
         </div>
 
-        <div className="">
-          {meter?.assetId && (
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-orange-100 rounded flex items-center justify-center">
-                <Building2 className="h-2 w-2 text-orange-600" />
+        {/* Asset & Location Info */}
+        <div className="space-y-2">
+          {meter.assetId && (
+            <div className="flex items-center gap-2 text-sm">
+              <div className="w-5 h-5 bg-orange-100 rounded flex items-center justify-center">
+                <Building2 className="h-3 w-3 text-orange-600" />
               </div>
-              <span className="text-sm capitalize">{meter?.assetId}</span>
+              <span className="capitalize">{meter.assetId}</span>
             </div>
           )}
 
           {meter.locationId && (
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-muted rounded flex items-center justify-center">
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="w-5 h-5 bg-gray-200 rounded flex items-center justify-center">
                 <span className="text-xs">📍</span>
               </div>
-              <span className="text-sm text-muted-foreground">
-                {meter?.locationId}
-              </span>
+              <span>{meter.locationId}</span>
             </div>
           )}
-
-          <div className="mt-2">
-            <span className="text-sm text-muted-foreground">
-              Last Reading:{" "}
-              {`${meter?.readingFrequency?.time} ${meter?.readingFrequency?.interval}`}
-            </span>
-          </div>
         </div>
+
+        {/* Last Reading */}
+        {meter.readingFrequency && (
+          <div className="mt-3 text-sm text-gray-500">
+            Last Reading:{" "}
+            {`${meter.readingFrequency.time} ${meter.readingFrequency.interval}`}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

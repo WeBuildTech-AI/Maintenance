@@ -17,32 +17,15 @@ import {
 } from "../../ui/dropdown-menu";
 import { formatDate } from "../../utils/Date";
 import type { AppDispatch, RootState } from "../../../store";
-import { useDispatch, useSelector } from "react-redux";
-import { deleteMeter } from "../../../store/meters";
-import toast, { Toaster } from "react-hot-toast";
-import CopyPageU from "../../ui/copy-page-url-icon";
+import { useSelector } from "react-redux";
 
-export function MeterDetail({ selectedMeter }: any) {
+export function MeterDetail({ selectedMeter, handleDeleteMeter }: any) {
   // Removed local editing state: const [isEditing, setIsEditing] = useState(false);
 
   const navigate = useNavigate(); // 👈 ADD hook
-  const dispatch = useDispatch<AppDispatch>();
+
   // Removed conditional return for NewMeterForm
   const user = useSelector((state: RootState) => state.auth.user);
-
-  const handleDeleteMeter = (id: string) => {
-    // Yahan ID check karein
-    console.log("Deleting meter with ID:", id);
-
-    dispatch(deleteMeter(id))
-      .unwrap()
-      .then(() => {
-        toast.success("Meter Deleted Successfully!");
-      })
-      .catch((error) => {
-        toast.error("Failed to delete Meter ");
-      });
-  };
 
   return (
     <div className="flex border mr-2 flex-col h-full">

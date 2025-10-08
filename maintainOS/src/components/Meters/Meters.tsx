@@ -6,12 +6,18 @@ import { MetersList } from "./MetersList/MetersList";
 import { mockMeters } from "./mockData";
 import { NewMeterForm } from "./NewMeterForm/NewMeterForm";
 import { MeterTable } from "./MeterTable";
-import { meterService, type MeterResponse } from "../../store/meters";
+import {
+  deleteMeter,
+  meterService,
+  type MeterResponse,
+} from "../../store/meters";
 import type { ViewMode } from "../purchase-orders/po.types";
 import { locationService } from "../../store/locations";
 import { assetService } from "../../store/assets";
 import { useNavigate, useMatch } from "react-router-dom";
-import { Toaster } from "react-hot-toast";
+import toast, { Toaster } from "react-hot-toast";
+import { useDispatch } from "react-redux";
+import type { AppDispatch } from "../../store";
 
 export function Meters() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -26,6 +32,8 @@ export function Meters() {
   const [selectedMeter, setSelectedMeter] = useState<
     (typeof meterData)[0] | null
   >(null);
+
+  const dispatch = useDispatch<AppDispatch>();
 
   // 🔽 Router hooks to manage /create and /:id/edit
   const navigate = useNavigate();
@@ -46,11 +54,11 @@ export function Meters() {
     navigate("/meters");
   };
 
-  const handleCreateForm = async() => {
+  const handleCreateForm = async () => {
     // Your create/update meter logic will go here
     console.log("Meter operation complete!");
     navigate("/meters");
-     await fetchMeters(); 
+    await fetchMeters();
   };
 
   const fetchMeters = async () => {
@@ -59,7 +67,7 @@ export function Meters() {
       const res = await meterService.fetchMeters(10, 1, 0);
       const sortedData = [...res].sort(
         (a, b) =>
-          new Date(b.createdAt).valueOf() - new Date(a.createdAt).valueOf()
+          new Date(b.updatedAt).valueOf() - new Date(a.updatedAt).valueOf()
       );
 
       setMeterData(sortedData);
@@ -80,6 +88,45 @@ export function Meters() {
   useEffect(() => {
     fetchMeters();
   }, []); // This still runs only once on mount
+
+  const handleDeleteMeter = (id) => {
+    dispatch(deleteMeter(id))
+      .unwrap()
+      .then(() => {
+        toast.success("Meter Deleted Successfully!");
+
+        // ✨ Naya logic, aapke location wale code jaisa ✨
+
+        // Step 1: Delete hone wale item ka index find karo
+        const indexToDelete = meterData.findIndex((meter) => meter.id === id);
+
+        // Step 2: Naya meter sirf tab select karo jab deleted meter hi active/selected tha
+        if (selectedMeter?.id === id && indexToDelete !== -1) {
+          // Case 1: Agar list mein sirf ek hi item tha
+          if (meterData.length === 1) {
+            setSelectedMeter(null);
+          }
+          // Case 2: Agar aakhri item delete hua hai, toh pichla wala select karo
+          else if (indexToDelete === meterData.length - 1) {
+            setSelectedMeter(meterData[indexToDelete - 1]);
+          }
+          // Case 3: Baaki sab cases mein (pehla ya beech ka), agla wala select karo
+          else {
+            setSelectedMeter(meterData[indexToDelete + 1]);
+          }
+        }
+
+        // Step 3: Frontend ki list ko manually update karo
+        // Yeh maan kar ki aapke paas setFilteredMeters state setter hai
+        setMeterData((prev) => prev.filter((meter) => meter.id !== id));
+
+        // Optional: Agar aapko delete ke baad page navigate karna hai
+        // navigate("/meters");
+      })
+      .catch((error) => {
+        toast.error(error.message || "Failed to delete Meter");
+      });
+  };
 
   return (
     <>
@@ -113,8 +160,6 @@ export function Meters() {
                 handleShowNewMeterForm={handleShowNewMeterForm}
                 handleCreateForm={handleCreateForm}
                 handleCancelForm={handleCancelForm}
-                // getLocationData={getLocationData}
-                // getAssetData={getAssetData}
               />
 
               <div className="flex-1 bg-card">
@@ -128,9 +173,7 @@ export function Meters() {
                 ) : selectedMeter ? (
                   <MeterDetail
                     selectedMeter={selectedMeter}
-                    filteredMeters={meterData}
-                    setSelectedMeter={setSelectedMeter}
-                    //  setF
+                    handleDeleteMeter={handleDeleteMeter}
                   />
                 ) : (
                   <MetersEmptyState />

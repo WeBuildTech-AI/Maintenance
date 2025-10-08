@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Upload, Lock, RefreshCcw, User } from "lucide-react";
 import { SearchWithDropdown } from "../../Locations/SearchWithDropdown";
-import { createMeter } from "../../../store/meters";
+import { createMeter, updateMeter } from "../../../store/meters";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "../../../store";
 import { assetService } from "../../../store/assets";
@@ -43,6 +43,7 @@ export function NewMeterForm({
   const [loading, setLoading] = useState(false);
   // const combinedValue = `${readingFrequencyValue} ${readingFrequencyUnit}`;
 
+  const isEdit = !!editingMeter;
   useEffect(() => {
     if (editingMeter) {
       setMeterType(editingMeter.meterType || "manual");
@@ -95,9 +96,10 @@ export function NewMeterForm({
 
   // create New Meter Function
 
-  const handleCreateMeter = () => {
+  const handleCreateMeter = async () => {
+    // Yeh function ab async hai
     try {
-      // --- Validation ---
+      // --- Validation (Aapka validation logic aesa hi rahega) ---
       if (!meterName.trim()) {
         setError("You need to provide a Meter Name");
         return;
@@ -112,59 +114,53 @@ export function NewMeterForm({
 
       const formData = new FormData();
 
-      // --- Mandatory Fields ---
+      // --- FormData Population (Ismein koi badlav nahi hai) ---
+      // Mandatory Fields
       formData.append("organizationId", user.organizationId);
       formData.append("name", meterName);
       formData.append("unit", measurementUnit);
       formData.append("meterType", meterType);
 
-      // --- Optional Fields ---
+      // Optional Fields
       if (description.trim()) formData.append("description", description);
       if (asset) formData.append("assetId", asset);
       if (location) formData.append("locationId", location);
 
-      // --- Reading Frequency (SAFE JSON append) ---
+      // Reading Frequency
       const freqUnit = readingFrequencyUnit;
       const freqValue = String(readingFrequencyValue || "").trim();
-
       if (freqUnit && freqUnit !== "none" && freqValue) {
         const readingFrequencyObj = {
           interval: freqUnit,
           time: freqValue,
         };
-
-        // ✅ Convert to JSON string and append
         formData.append(
           "readingFrequency",
           JSON.stringify(readingFrequencyObj)
         );
       }
 
-      // --- Debug log ---
-      console.log("🚀 FormData ready to send:");
-      for (const pair of formData.entries()) {
-        console.log(pair[0], ":", pair[1]);
+      // --- Dispatch API (Yahan par main badlav kiya gaya hai) ---
+      if (isEdit && editingMeter?.id) {
+        // EDIT MODE
+        await dispatch(
+          updateMeter({ id: editingMeter.id, meterData: formData })
+        ).unwrap();
+        toast.success("Meter updated successfully");
+      } else {
+        // CREATE MODE: Agar isEdit false hai
+        await dispatch(createMeter(formData)).unwrap();
+        toast.success("Successfully added the Meter");
       }
 
-      // --- Dispatch API ---
-      dispatch(createMeter(formData))
-        .unwrap()
-        .then(() => {
-          toast.success("Successfully added the Meter");
-          onCreate();
-        })
-        .catch((err) => {
-          console.error("❌ Meter creation failed:", err);
-          toast.error(
-            err.message || "Meter creation failed. Please try again."
-          );
-        })
-        .finally(() => {
-          setPostMeterDataLoading(false);
-        });
+      // Dono cases mein common success logic
+      onCreate();
     } catch (err) {
-      console.error("🔥 Error before dispatch:", err);
-      toast.error("Something broke before sending the API call.");
+      // Error handling ab ek hi jagah par hai
+      console.error("❌ Meter save failed:", err);
+      toast.error(err.message || "Meter save failed. Please try again.");
+    } finally {
+      // Loading state ko false set karna
       setPostMeterDataLoading(false);
     }
   };
@@ -186,14 +182,16 @@ export function NewMeterForm({
   };
 
   const handleGetLocationData = async () => {
-    // Fetch only if the data is not already loaded
+    // Agar location ka data pehle se hai, toh API call nahi hogi.
     if (getLocationData.length > 0) {
       return;
     }
+
     setLoading(true);
     try {
-      const locationsRes = await locationService.fetchLocationsName(10, 1, 0);
-      setGetLocationData(locationsRes.data || []);
+      // Yahan aap apni location fetch karne wali API call likhein
+      const locationRes = await locationService.fetchLocationsName(10, 1, 0);
+      setGetLocationData(locationRes.data || []);
     } catch (err) {
       console.error("Failed to fetch location data:", err);
     } finally {
@@ -210,6 +208,8 @@ export function NewMeterForm({
     setReadingFrequencyUnit("none");
     setReadingFrequencyValue("");
   };
+
+  const dropdownOptions = ["Liters", "Gallons", "Cubic Meters", "kWh"];
 
   return (
     <div className="flex h-full mr-2 flex-col overflow-hidden border">
@@ -296,16 +296,52 @@ export function NewMeterForm({
         {/* Measurement Unit (Required) */}
         <div className="px-6 pt-6 pb-2">
           <div className="w-full sm:max-w-md md:max-w-lg">
-            <SearchWithDropdown
-              title="Measurement Unit (Required)"
-              placeholder="Start typing..."
-              dropdownOptions={["Liters", "Gallons", "Cubic Meters", "kWh"]}
-              onDropdownSelect={(val) => setMeasurementUnit(val)}
-              className="mb-0 w-full"
-            />
-            {measurementUnit}
+            {/* 1. Added a <label> for better accessibility */}
+            <label
+              htmlFor="measurement-unit-select"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Measurement Unit (Required)
+            </label>
+
+            {/* 2. Replaced the custom component with a standard <select> element */}
+            <select
+              id="measurement-unit-select"
+              name="measurementUnit"
+              value={measurementUnit}
+              onChange={(e) => setMeasurementUnit(e.target.value)}
+              style={{
+                height: "40px",
+                width: "100%",
+                border: "1px solid #d1d5db",
+                borderRadius: "6px",
+                padding: "0 32px 0 12px",
+                fontSize: "14px",
+                color: "#374151",
+                backgroundColor: "#fff",
+                appearance: "none",
+                cursor: "pointer",
+                // borderRadius:"5px"
+              }}
+              // Using common TailwindCSS classes for a clean look. Adjust as needed.
+              className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            >
+              {/* 3. The placeholder is now the first, disabled option */}
+              <option value="" disabled>
+                Select a unit...
+              </option>
+
+              {/* 4. Map over your options to create the <option> tags */}
+              {dropdownOptions.map((unit) => (
+                <option key={unit} value={unit}>
+                  {unit}
+                </option>
+              ))}
+            </select>
+
+            {/* Error handling remains the same */}
             {error && !measurementUnit && (
-              <p className="text-sm text-red-600">{error}</p>
+              <p className="mt-2 text-sm text-red-600">{error}</p>
             )}
           </div>
         </div>
@@ -315,140 +351,74 @@ export function NewMeterForm({
           {/* Asset */}
           <div className="flex-1">
             <label
-              style={{
-                display: "block",
-                marginBottom: "6px",
-                fontSize: "14px",
-                fontWeight: 500,
-                color: "#111827",
-              }}
+              htmlFor="asset-select"
+              className="block mb-1.5 text-sm font-medium text-gray-900"
             >
               Asset
             </label>
 
-            <div style={{ position: "relative", width: "100%" }}>
+            <div className="relative w-full">
               <select
-                value={asset || ""} // controlled value
+                id="asset-select"
+                value={asset}
                 onChange={(e) => setAsset(e.target.value)}
+                // JAISE HI USER CLICK KAREGA, YEH FUNCTION CALL HOGA
                 onClick={handleGetAssetData}
-                style={{
-                  height: "40px",
-                  width: "100%",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "6px",
-                  padding: "0 32px 0 12px",
-                  fontSize: "14px",
-                  color: "#374151",
-                  backgroundColor: "#fff",
-                  appearance: "none",
-                  cursor: "pointer",
-                }}
+                className="w-full h-10 pl-3 pr-8 text-sm bg-white border border-gray-300 rounded-md appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
-                {/* Show "start typing" only if no asset is selected */}
-                {!asset && <option value="">start typing</option>}
+                <option value="" disabled>
+                  Select an Asset
+                </option>
+
+                {/* Loading state waise hi kaam karega jab API call hogi */}
                 {loading ? (
-                  <Loader />
+                  <option disabled>Loading...</option>
                 ) : (
-                  getAssetData?.map((items) => (
-                    <option key={items.id} value={items.id}>
-                      {items.name}
+                  getAssetData?.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
                     </option>
                   ))
                 )}
               </select>
-
-              {/* Chevron Icon */}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{
-                  position: "absolute",
-                  right: "10px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  width: "16px",
-                  height: "16px",
-                  color: "#4b5563",
-                  pointerEvents: "none",
-                }}
-              >
-                <path d="M6 9l6 6 6-6" />
-              </svg>
             </div>
           </div>
 
           {/* Location */}
           <div className="flex-1">
+            {/* Label ko behtar accessibility ke liye update kiya gaya hai */}
             <label
-              style={{
-                display: "block",
-                marginBottom: "6px",
-                fontSize: "14px",
-                fontWeight: 500,
-                color: "#111827",
-              }}
+              htmlFor="location-select"
+              className="block mb-1.5 text-sm font-medium text-gray-900"
             >
               Location
             </label>
 
-            <div style={{ position: "relative", width: "100%" }}>
+            <div className="relative w-full">
               <select
-                value={location || ""} // controlled value
+                id="location-select"
+                value={location}
                 onChange={(e) => setLocation(e.target.value)}
+                // onClick event ko yahan select par lagaya gaya hai
                 onClick={handleGetLocationData}
-                style={{
-                  height: "40px",
-                  width: "100%",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "6px",
-                  padding: "0 32px 0 12px",
-                  fontSize: "14px",
-                  color: "#374151",
-                  backgroundColor: "#fff",
-                  appearance: "none",
-                  cursor: "pointer",
-                }}
+                className="w-full h-10 pl-3 pr-8 text-sm bg-white border border-gray-300 rounded-md appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
-                {/* Show "start typing" only if no location is selected */}
-                {!location && <option value="">start typing</option>}
+                {/* Ek permanent, disabled placeholder */}
+                <option value="" disabled>
+                  Select a Location
+                </option>
+
+                {/* Loading state ko sahi tarike se handle kiya gaya hai */}
                 {loading ? (
-                  <Loader />
-                ) : 
-                  getLocationData?.map((items) => (
-                    <option key={items.id} value={items.id}>
-                      {items.name}
+                  <option disabled>Loading...</option>
+                ) : (
+                  getLocationData?.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
                     </option>
                   ))
-                }
+                )}
               </select>
-
-              {/* Chevron Icon */}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{
-                  position: "absolute",
-                  right: "10px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  width: "16px",
-                  height: "16px",
-                  color: "#4b5563",
-                  pointerEvents: "none",
-                }}
-              >
-                <path d="M6 9l6 6 6-6" />
-              </svg>
             </div>
           </div>
         </div>
