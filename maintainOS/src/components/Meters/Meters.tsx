@@ -46,41 +46,40 @@ export function Meters() {
     navigate("/meters");
   };
 
-  const handleCreateForm = () => {
+  const handleCreateForm = async() => {
     // Your create/update meter logic will go here
     console.log("Meter operation complete!");
     navigate("/meters");
+     await fetchMeters(); 
   };
 
-  useEffect(() => {
-    const fetchMeters = async () => {
-      setLoading(true);
-      try {
-        const res = await meterService.fetchMeters(10, 1, 0);
+  const fetchMeters = async () => {
+    setLoading(true);
+    try {
+      const res = await meterService.fetchMeters(10, 1, 0);
+      const sortedData = [...res].sort(
+        (a, b) =>
+          new Date(b.createdAt).valueOf() - new Date(a.createdAt).valueOf()
+      );
 
-        // 1. Sort the incoming data to show the newest first
-        // NOTE: This assumes your meter object has a 'createdAt' or similar date field.
-        // Please change 'createdAt' to the correct field name if it's different.
-        const sortedData = [...res].sort(
-          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-        );
+      setMeterData(sortedData);
 
-        setMeterData(sortedData);
-
-        // 2. Set the first meter (the newest) as the selected one
-        // This check prevents errors if the API returns no data.
-        if (sortedData.length > 0) {
-          setSelectedMeter(sortedData[0]);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+      if (sortedData.length > 0) {
+        setSelectedMeter(sortedData[0]);
       }
-    };
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // handle
+
+  // 2. Call the new function inside your useEffect
+  useEffect(() => {
     fetchMeters();
-  }, []);
+  }, []); // This still runs only once on mount
 
   return (
     <>

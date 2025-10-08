@@ -31,17 +31,17 @@ export function MeterDetail({ selectedMeter }: any) {
   const user = useSelector((state: RootState) => state.auth.user);
 
   const handleDeleteMeter = (id: string) => {
-    // if (window.confirm("Are you sure you want to delete this location?")) {
+    // Yahan ID check karein
+    console.log("Deleting meter with ID:", id);
+
     dispatch(deleteMeter(id))
       .unwrap()
       .then(() => {
         toast.success("Meter Deleted Successfully!");
       })
       .catch((error) => {
-        // console.error("Delete failed:", error);
         toast.error("Failed to delete Meter ");
       });
-    // }
   };
 
   return (

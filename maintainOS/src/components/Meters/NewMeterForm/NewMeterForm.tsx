@@ -41,7 +41,7 @@ export function NewMeterForm({
   const [getAssetData, setGetAssestData] = useState([]);
   const [getLocationData, setGetLocationData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const combinedValue = `${readingFrequencyValue} ${readingFrequencyUnit}`;
+  // const combinedValue = `${readingFrequencyValue} ${readingFrequencyUnit}`;
 
   useEffect(() => {
     if (editingMeter) {
@@ -93,81 +93,80 @@ export function NewMeterForm({
     setDocs((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // create New Meter Function
+
   const handleCreateMeter = () => {
-    // --- Validation ---
-    if (!meterName.trim()) {
-      setError("You need to provide a Meter Name");
-      return;
+    try {
+      // --- Validation ---
+      if (!meterName.trim()) {
+        setError("You need to provide a Meter Name");
+        return;
+      }
+      if (!measurementUnit || measurementUnit === "none") {
+        setError("You need to select a Measurement Unit");
+        return;
+      }
+
+      setError("");
+      setPostMeterDataLoading(true);
+
+      const formData = new FormData();
+
+      // --- Mandatory Fields ---
+      formData.append("organizationId", user.organizationId);
+      formData.append("name", meterName);
+      formData.append("unit", measurementUnit);
+      formData.append("meterType", meterType);
+
+      // --- Optional Fields ---
+      if (description.trim()) formData.append("description", description);
+      if (asset) formData.append("assetId", asset);
+      if (location) formData.append("locationId", location);
+
+      // --- Reading Frequency (SAFE JSON append) ---
+      const freqUnit = readingFrequencyUnit;
+      const freqValue = String(readingFrequencyValue || "").trim();
+
+      if (freqUnit && freqUnit !== "none" && freqValue) {
+        const readingFrequencyObj = {
+          interval: freqUnit,
+          time: freqValue,
+        };
+
+        // ✅ Convert to JSON string and append
+        formData.append(
+          "readingFrequency",
+          JSON.stringify(readingFrequencyObj)
+        );
+      }
+
+      // --- Debug log ---
+      console.log("🚀 FormData ready to send:");
+      for (const pair of formData.entries()) {
+        console.log(pair[0], ":", pair[1]);
+      }
+
+      // --- Dispatch API ---
+      dispatch(createMeter(formData))
+        .unwrap()
+        .then(() => {
+          toast.success("Successfully added the Meter");
+          onCreate();
+        })
+        .catch((err) => {
+          console.error("❌ Meter creation failed:", err);
+          toast.error(
+            err.message || "Meter creation failed. Please try again."
+          );
+        })
+        .finally(() => {
+          setPostMeterDataLoading(false);
+        });
+    } catch (err) {
+      console.error("🔥 Error before dispatch:", err);
+      toast.error("Something broke before sending the API call.");
+      setPostMeterDataLoading(false);
     }
-    if (!measurementUnit || measurementUnit === "none") {
-      setError("You need to select a Measurement Unit");
-      return;
-    }
-
-    setError("");
-    setPostMeterDataLoading(true);
-
-    const formData = new FormData();
-
-    // --- Mandatory Fields ---
-    formData.append("organizationId", user.organizationId);
-    formData.append("name", meterName);
-    formData.append("unit", measurementUnit);
-    formData.append("meterType", meterType);
-
-    // --- Optional Fields ---
-    if (description.trim()) {
-      formData.append("description", description);
-    }
-
-    if (asset) {
-      formData.append("assetId", asset);
-    }
-
-    if (location) {
-      formData.append("locationId", location);
-    }
-
-    // ✅ Correct handling for readingFrequency (must be an object)
-    // if (
-    //   readingFrequencyUnit &&
-    //   readingFrequencyUnit !== "none" &&
-    //   readingFrequencyValue.trim()
-    // ) {
-    //   formData.append("readingFrequency[interval]", readingFrequencyUnit);
-    //   formData.append("readingFrequency[time]", readingFrequencyValue);
-    // }
-
-    // if (contact && (contact.email.trim() || contact.phone.trim())) {
-    //   if (contact.email) formData.append("contacts[email]", contact.email);
-    //   if (contact.phone) formData.append("contacts[phone]", contact.phone);
-    // }
-
-    // --- Handle Photos ---
-    // if (meterImages && meterImages.length > 0) {
-    //   meterImages.forEach((file) => {
-    //     formData.append("photos", file);
-    //   });
-    // }
-
-    // --- Debug: Log FormData contents ---
-    console.log("📤 Sending FormData to backend:");
-
-    // --- Dispatch API ---
-    dispatch(createMeter(formData))
-      .unwrap()
-      .then(() => {
-        console.log("✅ Meter created successfully!");
-        toast.success("Successfully add the Meter");
-        // Reset your form fields here if needed
-      })
-      .catch((err) => {
-        console.error("❌ Meter creation failed:", err);
-        toast.error(err.message || "Meter creation failed. Please try again.");
-      })
-      .finally(() => {
-        setPostMeterDataLoading(false);
-      });
   };
 
   const handleGetAssetData = async () => {
@@ -417,11 +416,15 @@ export function NewMeterForm({
               >
                 {/* Show "start typing" only if no location is selected */}
                 {!location && <option value="">start typing</option>}
-                {getLocationData?.map((items) => (
-                  <option key={items.id} value={items.id}>
-                    {items.name}
-                  </option>
-                ))}
+                {loading ? (
+                  <Loader />
+                ) : 
+                  getLocationData?.map((items) => (
+                    <option key={items.id} value={items.id}>
+                      {items.name}
+                    </option>
+                  ))
+                )}
               </select>
 
               {/* Chevron Icon */}

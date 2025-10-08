@@ -56,7 +56,7 @@ export function MeterCard({
           <div className="mt-2">
             <span className="text-sm text-muted-foreground">
               Last Reading:{" "}
-              {`${meter?.readingFrequency?.time} ${meter?.readingFrequency?.iterval}`}
+              {`${meter?.readingFrequency?.time} ${meter?.readingFrequency?.interval}`}
             </span>
           </div>
         </div>
