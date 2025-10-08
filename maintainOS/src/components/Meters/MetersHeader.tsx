@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Input } from "../ui/input";
 import MetersFilterBar from "./MetersFilterBar";
+import type { setSelectedMeter } from "../../store/meters";
 
 export function MetersHeaderComponent(
   viewMode: ViewMode,
@@ -25,6 +26,7 @@ export function MetersHeaderComponent(
   setSearchQuery: Dispatch<SetStateAction<string>>,
   setIsCreatingForm: () => void, // 👈 UPDATED TYPE: now a void function for navigation
   setShowSettings: Dispatch<SetStateAction<boolean>>
+  // setSelectedMeter:Dispatch<SetStateAction<boolean>>
 ) {
   return (
     <header className=" border-border bg-card px-6 py-4">
@@ -76,6 +78,7 @@ export function MetersHeaderComponent(
             onClick={() => {
               setIsCreatingForm(); // 👈 Function call without boolean argument
               setViewMode("panel");
+              // setSelectedMeter("");
             }}
           >
             <Plus className="mr-2 h-4 w-4" />

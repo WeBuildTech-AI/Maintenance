@@ -35,7 +35,7 @@ const Messages = lazyImport(
   "Messages"
 );
 const Categories = lazyImport(
-  () => import("./components/Categories"),
+  () => import("./components/Categories/Categories"),
   "Categories"
 );
 const Library = lazyImport(

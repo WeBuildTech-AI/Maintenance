@@ -141,7 +141,8 @@ export function Meters() {
           searchQuery,
           setSearchQuery,
           handleShowNewMeterForm,
-          setShowSettings
+          setShowSettings,
+          // setSelectedMeter
         )}
 
         {viewMode === "table" ? (

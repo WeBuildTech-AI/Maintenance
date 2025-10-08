@@ -31,7 +31,7 @@ export function NewMeterForm({
   const [asset, setAsset] = useState("");
   const [location, setLocation] = useState("");
   const [readingFrequencyValue, setReadingFrequencyValue] = useState("");
-  const [readingFrequencyUnit, setReadingFrequencyUnit] = useState("none");
+  const [readingFrequencyUnit, setReadingFrequencyUnit] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [docs, setDocs] = useState<File[]>([]);
   const [error, setError] = useState("");
@@ -215,7 +215,9 @@ export function NewMeterForm({
     <div className="flex h-full mr-2 flex-col overflow-hidden border">
       {/* Header (fixed) */}
       <div className="flex-none border-b px-6 py-4">
-        <h2 className="text-xl font-semibold">New Meter</h2>
+        <h2 className="text-xl font-semibold">
+          {isEdit ? "Update Meter" : "New Meter"}
+        </h2>
       </div>
 
       {/* Scrollable content */}
@@ -631,7 +633,7 @@ export function NewMeterForm({
           }}
           className="h-10 rounded-md bg-orange-600 text-sm font-medium text-white shadow hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          {postMeterDataloading ? "Loading...." : "Create"}
+          {postMeterDataloading ? "Loading..." : isEdit ? "Update" : "Create"}
         </button>
       </div>
     </div>
