@@ -18,11 +18,13 @@ import { workOrdersReducer } from "./workOrders";
 import { attachmentsReducer } from "./attachments";
 import { auditLogsReducer } from "./auditLogs";
 import { authReducer } from "./auth";
+import { messageReducer } from "./messages";
 
 export const store = configureStore({
   reducer: {
     user: userReducer,
     auth: authReducer,
+    messaging : messageReducer
     // users: usersReducer,
     // organizations: organizationsReducer,
     // assets: assetsReducer,
