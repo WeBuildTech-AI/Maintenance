@@ -9,8 +9,10 @@ import {
   MoreHorizontal,
   Plus,
   Turtle,
+  Check, // NEW: Added icon
+  ChevronUp, // NEW: Added icon
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import {
@@ -28,7 +30,7 @@ import Loader from "../Loader/Loader";
 import { formatDate } from "../utils/Date";
 import { LocationTable } from "./LocationTable";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { sortLocations } from "../utils/Sorted";
+// import { sortLocations } from "../utils/Sorted"; // REMOVED: No longer needed
 import type { AppDispatch, RootState } from "../../store";
 import { useDispatch, useSelector } from "react-redux";
 import { NavLink, useNavigate, useMatch } from "react-router-dom";
@@ -43,18 +45,27 @@ export function Locations() {
   const [locations, setLocations] = useState<LocationResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedLocation, setSelectedLocation] = useState<
-    (typeof locations)[0] | null
-  >(null);
+  const [selectedLocation, setSelectedLocation] =
+    useState<LocationResponse | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("panel");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [filteredLocations, setFilteredLocations] = useState<
     LocationResponse[]
   >([]);
-  const [sortBy, setSortBy] = useState("Name: Ascending Order");
+  // const [sortBy, setSortBy] = useState("Name: Ascending Order"); // REMOVED: Replaced with new state
   const user = useSelector((state: RootState) => state.auth.user);
   const [modalOpen, setModalOpen] = useState(false);
+
+  // --- NEW: State and Refs for the custom sorting dropdown ---
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [sortType, setSortType] = useState("Name"); // e.g., "Name", "Creation Date"
+  const [sortOrder, setSortOrder] = useState("asc"); // "asc" or "desc"
+  const [openSection, setOpenSection] = useState<string | null>("Name");
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
+  const headerRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  // --- END NEW ---
 
   const navigate = useNavigate();
   const isCreateRoute = useMatch("/locations/create");
@@ -77,29 +88,20 @@ export function Locations() {
     navigate("/locations");
   };
 
-  // ✅ ADD THIS ENTIRE NEW FUNCTION
   const handleShowNewSubLocationForm = () => {
     if (selectedLocation) {
       navigate(`/locations/${selectedLocation.id}/create-sublocation`);
     }
   };
 
-  // 🔄 MODIFIED: This function now accepts the newly created location
-  // It updates the state and makes the new location active.
   const handleCreateForm = (newLocation: LocationResponse) => {
-    // ✨ NEW: Add the new location to the top of the list for immediate UI update
     const updatedLocations = [newLocation, ...locations];
     setLocations(updatedLocations);
-    setFilteredLocations(updatedLocations); // Also update the filtered list
-
-    // ✨ NEW: Select the new location to show its details
+    setFilteredLocations(updatedLocations);
     setSelectedLocation(newLocation);
-
-    // This runs AFTER the creation/update API call succeeds inside NewLocationForm
     navigate("/locations");
   };
 
-  // ✅ NEW: A single function to handle both Create and Update success
   const handleFormSuccess = (locationData: LocationResponse) => {
     const locationIndex = locations.findIndex(
       (loc) => loc.id === locationData.id
@@ -107,16 +109,13 @@ export function Locations() {
     let updatedLocations;
 
     if (locationIndex > -1) {
-      // It's an UPDATE. Replace the old item with the new data.
       updatedLocations = [...locations];
       updatedLocations[locationIndex] = locationData;
     } else {
-      // It's a CREATE. Add the new item to the beginning of the list.
       updatedLocations = [locationData, ...locations];
     }
 
     setLocations(updatedLocations);
-    setFilteredLocations(updatedLocations);
     setSelectedLocation(locationData);
     navigate("/locations");
   };
@@ -125,7 +124,6 @@ export function Locations() {
   const [limit] = useState(10);
   const [hasMore, setHasMore] = useState(true);
 
-  // 👉 Fetch locations
   const fetchLocations = async (currentPage = 1) => {
     setLoading(true);
     try {
@@ -136,17 +134,13 @@ export function Locations() {
       );
 
       if (currentPage === 1) {
-        const reversedLocations = [...res].reverse(); // 🔄 MODIFIED: Store the reversed array
+        const reversedLocations = [...res].reverse();
         setLocations(reversedLocations);
-        setFilteredLocations(reversedLocations); // 🔄 MODIFIED: Keep filtered and main list in sync
-
-        // ✨ NEW: If there are locations, automatically select the first one on page load.
         if (reversedLocations.length > 0) {
           setSelectedLocation(reversedLocations[0]);
         }
       } else {
         setLocations((prev) => [...prev, ...res]);
-        setFilteredLocations((prev) => [...prev, ...res]);
       }
 
       if (res.length < limit) {
@@ -168,68 +162,111 @@ export function Locations() {
     fetchLocations(1);
   }, []);
 
+  // NEW: Combined filtering and sorting into a single useEffect for efficiency
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredLocations(locations);
-    } else {
-      const lowerQuery = searchQuery.toLowerCase();
-      setFilteredLocations(
-        locations.filter((loc) => loc.name.toLowerCase().includes(lowerQuery))
-      );
-    }
-  }, [searchQuery, locations]);
+    if (!locations.length) return;
 
+    // 1. Filter by search query
+    const lowerQuery = searchQuery.toLowerCase();
+    const searchedLocations = searchQuery.trim()
+      ? locations.filter((loc) => loc.name.toLowerCase().includes(lowerQuery))
+      : [...locations];
+
+    // 2. Sort the filtered results
+    searchedLocations.sort((a, b) => {
+      let comparison = 0;
+      switch (sortType) {
+        case "Name":
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case "Creation Date":
+          comparison =
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+        case "Last Updated":
+          comparison =
+            new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+          break;
+        default:
+          return 0;
+      }
+      return sortOrder === "asc" ? comparison : -comparison;
+    });
+
+    setFilteredLocations(searchedLocations);
+  }, [searchQuery, locations, sortType, sortOrder]);
+
+  // NEW: useEffect to position the custom dropdown
   useEffect(() => {
-    if (filteredLocations.length) {
-      setFilteredLocations(sortLocations(filteredLocations, sortBy));
+    if (isDropdownOpen && headerRef.current) {
+      const rect = headerRef.current.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom + window.scrollY + 5,
+        left: rect.left + rect.width / 2,
+      });
     }
-  }, [sortBy]);
+  }, [isDropdownOpen]);
 
-  // Delete Location Functionality
+  // show the name in sortbar
+  const sortLabel = useMemo(() => {
+    switch (sortType) {
+      case "Last Updated":
+        return sortOrder === "desc"
+          ? "Most Recent First"
+          : "Least Recent First";
+      case "Creation Date":
+        return sortOrder === "desc" ? "Newest First" : "Oldest First";
+      case "Name":
+        return sortOrder === "asc" ? "Ascending Order" : "Descending Order";
+      default:
+        return "Sort By"; // Fallback text
+    }
+  }, [sortType, sortOrder]);
+
+  // NEW: useEffect to close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        modalRef.current &&
+        !modalRef.current.contains(event.target as Node)
+      ) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [modalRef]);
+
   const handleDeleteLocation = (id: string) => {
-    // if (window.confirm("Are you sure you want to delete this location?")) {
     dispatch(deleteLocation(id))
       .unwrap()
       .then(() => {
         toast.success("Location deleted successfully!");
 
-        // ✨ NEW LOGIC STARTS HERE ✨
-
-        // Find the index of the item we are about to delete
         const indexToDelete = filteredLocations.findIndex(
           (loc) => loc.id === id
         );
 
-        // Only run this logic if the deleted item was the one selected
         if (selectedLocation?.id === id && indexToDelete !== -1) {
-          // Case 1: If it's the ONLY item in the list, select nothing.
           if (filteredLocations.length === 1) {
             setSelectedLocation(null);
-          }
-          // Case 2: If we are deleting the LAST item, select the one BEFORE it.
-          else if (indexToDelete === filteredLocations.length - 1) {
+          } else if (indexToDelete === filteredLocations.length - 1) {
             setSelectedLocation(filteredLocations[indexToDelete - 1]);
-          }
-          // Case 3: For any other item (first or middle), select the one AFTER it.
-          else {
+          } else {
             setSelectedLocation(filteredLocations[indexToDelete + 1]);
           }
         }
-
-        // Now, update the lists by removing the deleted item
         setLocations((prev) => prev.filter((loc) => loc.id !== id));
-        setFilteredLocations((prev) => prev.filter((loc) => loc.id !== id));
-
         navigate("/locations");
       })
       .catch((error) => {
         console.error("Delete failed:", error);
         alert("Failed to delete the location.");
       });
-    // }
   };
 
-  // Funtional to minimize the Name
   const renderInitials = (text: string) =>
     text
       .split(" ")
@@ -246,7 +283,6 @@ export function Locations() {
         <Toaster />
       </div>
       <div className="flex h-full flex-col">
-        {/* Header */}
         {LocationHeaderComponent(
           viewMode,
           setViewMode,
@@ -266,40 +302,132 @@ export function Locations() {
         ) : (
           <>
             <div className="flex gap-2 flex-1 overflow-hidden mt-3 min-h-0">
-              {/* Left Card (Locations List) */}
               <div className="border ml-3 mr-1 w-96 flex flex-col">
-                {/* Sort By JSX remains the same */}
-                <div className="p-3 border-border flex-shrink-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">
-                      Sort By:
-                    </span>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-primary p-2 h-auto"
-                        >
-                          {sortBy}
-                          <ChevronDown className="h-3 w-3 ml-1" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem
-                          onClick={() => setSortBy("Name: Ascending Order")}
-                        >
-                          Name: Ascending Order
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => setSortBy("Name: Descending Order")}
-                        >
-                          Name: Descending Order
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                {/* --- REPLACED: Old sort dropdown is replaced with your new custom one --- */}
+                <div
+                  ref={headerRef}
+                  className="flex items-center justify-between px-5 py-3 border-b bg-white relative z-10" // Reduced z-index
+                >
+                  <div className="flex items-center ml-3 gap-2 text-sm text-gray-700 font-medium">
+                    <span>Sort By:</span>
+                    <button
+                      onClick={() => setIsDropdownOpen((p) => !p)}
+                      className="flex items-center gap-1 text-sm text-orange-600 font-semibold focus:outline-none"
+                    >
+                      {sortType}: {sortLabel}
+                      {isDropdownOpen ? (
+                        <ChevronUp className="w-4 h-4 mt-1 text-orange-600" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 mt-1 text-orange-600" />
+                      )}
+                    </button>
                   </div>
                 </div>
+
+                {isDropdownOpen && (
+                  <div
+                    ref={modalRef}
+                    className="fixed z-50 text-sm rounded-md border border-gray-200 bg-white shadow-lg animate-fade-in p-2"
+                    style={{
+                      top: dropdownPos.top,
+                      left: dropdownPos.left,
+                      transform: "translateX(-50%)",
+                      width: "300px",
+                      maxWidth: "90vw",
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex flex-col divide-y divide-gray-100">
+                      {[
+                        {
+                          label: "Creation Date",
+                          options: ["Oldest First", "Newest First"],
+                        },
+                        {
+                          label: "Last Updated",
+                          options: ["Least Recent First", "Most Recent First"],
+                        },
+                        {
+                          label: "Name",
+                          options: ["Ascending Order", "Descending Order"],
+                        },
+                      ].map((section) => (
+                        <div
+                          key={section.label}
+                          className="flex flex-col mt-1 mb-1"
+                        >
+                          <button
+                            onClick={() =>
+                              setOpenSection(
+                                openSection === section.label
+                                  ? null
+                                  : section.label
+                              )
+                            }
+                            className={`flex items-center justify-between w-full px-4 py-3 text-sm transition-all rounded-md ${
+                              sortType === section.label
+                                ? "text-orange-600 font-medium bg-gray-50"
+                                : "text-gray-800 hover:bg-gray-50"
+                            }`}
+                          >
+                            <span>{section.label}</span>
+                            {openSection === section.label ? (
+                              <ChevronUp className="w-3.5 h-3.5 text-gray-400" />
+                            ) : (
+                              <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                            )}
+                          </button>
+
+                          {openSection === section.label && (
+                            <div className="flex flex-col bg-gray-50 border-t border-gray-100 py-1">
+                              {section.options.map((opt) => {
+                                const isSelected =
+                                  (section.label === sortType &&
+                                    sortOrder === "asc" &&
+                                    (opt.includes("Asc") ||
+                                      opt.includes("Oldest") ||
+                                      opt.includes("Least"))) ||
+                                  (section.label === sortType &&
+                                    sortOrder === "desc" &&
+                                    (opt.includes("Desc") ||
+                                      opt.includes("Newest") ||
+                                      opt.includes("Most")));
+
+                                return (
+                                  <button
+                                    key={opt}
+                                    onClick={() => {
+                                      setSortType(section.label);
+                                      setSortOrder(
+                                        opt.includes("Asc") ||
+                                          opt.includes("Oldest") ||
+                                          opt.includes("Least")
+                                          ? "asc"
+                                          : "desc"
+                                      );
+                                      setIsDropdownOpen(false); // Close dropdown on selection
+                                    }}
+                                    className={`flex items-center justify-between px-6 py-2 text-left text-sm transition rounded-md ${
+                                      isSelected
+                                        ? "text-orange-600  bg-white"
+                                        : "text-gray-700 hover:text-blue-300 hover:bg-white"
+                                    }`}
+                                  >
+                                    {opt}
+                                    {isSelected && (
+                                      <Check className="w-3.5 h-3.5 text-orange-600" />
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* --- END REPLACEMENT --- */}
 
                 {/* Locations List */}
                 <div className="flex-1 overflow-y-auto min-h-0">
@@ -312,7 +440,7 @@ export function Locations() {
                           key={items.id}
                           onClick={() => {
                             setSelectedLocation(items);
-                            navigate("/locations"); // 👈 Navigate away from /create or /edit
+                            navigate("/locations");
                           }}
                           className={`border-b cursor-pointer border-border transition hover:bg-muted/40 ${
                             items?.id === selectedLocation?.id
@@ -350,19 +478,18 @@ export function Locations() {
                                       </span>
                                     </div>
                                   )}
-                                  {/* <button
+                                  <button
                                     onClick={() => alert("sidit")}
                                     className="text-sm text-orange-600 cursor-pointer"
                                   >
-                                    <p>Sub Location </p>
-                                  </button> */}
+                                    <p>
+                                      Sub Location : {items.children.length}{" "}
+                                    </p>
+                                  </button>
                                 </div>
                                 <div>
-                                  {/* {items.subLocation&& (
-                                    <div>
-                                      <h3>Sub Location : {items.subLocation}</h3>
-                                      </div>
-                                  )} */}
+                                  {/* {items.children.l && ( */}
+                                  {/* )} */}
                                 </div>
                               </div>
                             </div>
@@ -393,10 +520,9 @@ export function Locations() {
                   ) : (
                     <div className="text-center py-8">
                       <p className="text-muted-foreground mb-2">
-                        No Locations found
+                        Start adding Location on MaintainOS
                       </p>
                       <Button
-                        // variant="link"
                         onClick={handleShowNewLocationForm}
                         className="text-primary p-0 bg-white cursor-pointer"
                       >
@@ -407,203 +533,215 @@ export function Locations() {
                 </div>
               </div>
 
-              {/* Right Card (Detail / Form View) */}
-              <Card className="flex flex-col h-full mr-2 overflow-hidden flex-1 mr-2">
-                <CardContent className="flex-1 overflow-y-auto min-h-0">
-                  {isCreateRoute || isEditRoute || isCreateSubLocationRoute ? ( // 👈 Check for either create or edit URL
+              {/* Right Card (Detail / Form View) - No Changes Below This Line */}
+              <Card className="flex flex-col h-full mr-2 flex-1">
+                <CardContent className="flex-1 min-h-0">
+                  {isCreateRoute || isEditRoute || isCreateSubLocationRoute ? (
                     <NewLocationForm
                       onCancel={handleCancelForm}
                       onCreate={handleCreateForm}
                       setSelectedLocation={setSelectedLocation}
                       onSuccess={handleFormSuccess}
-                      // setShowForm is now technically redundant as state is URL driven
-                      isEdit={isEditMode} // 👈 Pass derived state
-                      editData={locationToEdit} // 👈 Pass derived data
+                      isEdit={isEditMode}
+                      editData={locationToEdit}
                       initialParentId={parentIdFromUrl}
                     />
                   ) : selectedLocation ? (
-                    <div className="max-w-2xl p-4 mx-auto bg-white">
-                      {/* Header */}
-                      <div className="flex justify-between items-center  mb-3">
-                        <h2 className="text-xl font-semibold text-gray-800 capitalize">
-                          {selectedLocation?.name}
-                        </h2>
-                        <div className="flex items-center gap-2">
-                          <button
-                            title="Copy Link"
-                            className="p-2 rounded-md text-orange-600 cursor-pointer"
-                          >
-                            <Link size={18} />
-                          </button>
-                          <button
-                            title="Edit"
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-md cursor-pointer text-orange-600 hover:bg-orange-50 border border-orange-600"
-                            onClick={() => {
-                              // ❌ REMOVED: setIsEdit(true) & setEditData(selectedLocation)
-                              // ✅ Navigate to the new parameterized URL
-                              navigate(
-                                `/locations/${selectedLocation.id}/edit`
-                              );
-                            }}
-                          >
-                            <Edit size={16} /> Edit
-                          </button>
+                    <div className="mx-auto flex flex-col h-full bg-white">
+                      <div className="flex-none border-b bg-white px-6 py-4 z-10">
+                        <div className="flex items-center justify-between">
+                          <h2 className="capitalize text-xl font-semibold text-gray-800">
+                            {selectedLocation?.name || "Unnamed Location"}
+                          </h2>
                           <div className="flex items-center gap-2">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="mt-2">
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    handleDeleteLocation(selectedLocation?.id)
-                                  }
+                            <button
+                              title="Copy Link"
+                              onClick={() => {
+                                const url = `${window.location.origin}/locations/${selectedLocation?.id}`;
+                                navigator.clipboard.writeText(url);
+                                toast.success("location link copied!");
+                              }}
+                              className="cursor-pointer rounded-md p-2 text-orange-600"
+                            >
+                              <Link size={18} />
+                            </button>
+                            <button
+                              title="Edit"
+                              className="flex cursor-pointer items-center gap-1 rounded-md border border-orange-600 px-3 py-1.5 text-orange-600 hover:bg-orange-50"
+                              onClick={() => {
+                                navigate(
+                                  `/locations/${selectedLocation.id}/edit`
+                                );
+                              }}
+                            >
+                              <Edit size={16} /> Edit
+                            </button>
+                            <div className="flex items-center gap-2">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                  align="end"
+                                  className="mt-2"
                                 >
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleDeleteLocation(selectedLocation?.id)
+                                    }
+                                  >
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           </div>
                         </div>
                       </div>
 
-                      <hr></hr>
-                      {/* Description and other detail JSX remains the same */}
-                      {selectedLocation.address && (
-                        <div className="mb-6 mt-6">
-                          <h3 className="text-sm font-medium text-gray-700">
-                            Address
-                          </h3>
-                          <p className="text-gray-600 mt-1">
-                            {selectedLocation.address || "No Address available"}
-                          </p>
-                        </div>
-                      )}
-
-                      {selectedLocation.description && (
-                        <div className="mb-6 mt-6">
-                          <h3 className="text-sm font-medium text-gray-700">
-                            Description
-                          </h3>
-                          <p className="text-gray-600 mt-1">
-                            {selectedLocation.description ||
-                              "No description available"}
-                          </p>
-                        </div>
-                      )}
-                      {selectedLocation?.photoUrls.length > 0 && (
-                        <>
-                          <div className="mb-6 mt-6 flex gap-2 flex-wrap">
-                            {selectedLocation?.photoUrls?.map((item) => (
-                              <img
-                                key={item.id}
-                                src={`data:${item.mimetype};base64,${item.base64}`}
-                                alt="Location"
-                                className="w-24 h-24 object-cover rounded"
-                              />
-                            ))}
+                      <div className="flex-grow overflow-y-auto  p-6">
+                        {selectedLocation.address && (
+                          <div className="mb-6">
+                            <h3 className="text-sm font-medium text-gray-700">
+                              Address
+                            </h3>
+                            <p className="mt-1 text-gray-600">
+                              {selectedLocation.address ||
+                                "No Address available"}
+                            </p>
                           </div>
-                          <hr></hr>
-                        </>
-                      )}
+                        )}
 
-                      {selectedLocation.qrCode && (
-                        <div>
-                          <h3 className="text-sm mt-2 font-medium text-gray-700">
-                            QR Code/Barcode
-                          </h3>
-                          {selectedLocation.qrCode && (
-                            <>
-                              <h4 className="text-sm mt-2 text-gray-700">
-                                {selectedLocation?.qrCode}
-                              </h4>
-                              <div className="mt-2 mb-3 flex justify-start">
-                                <div className="bg-white shadow-md rounded-lg p-2 w-fit border border-gray-200">
-                                  <div className="flex justify-center mb-1 ro">
-                                    <QRCode
-                                      value={selectedLocation.qrCode}
-                                      size={100}
-                                    />
+                        {selectedLocation.description && (
+                          <div className="mb-6">
+                            <h3 className="text-sm font-medium text-gray-700">
+                              Description
+                            </h3>
+                            <p className="mt-1 text-gray-600">
+                              {selectedLocation.description ||
+                                "No description available"}
+                            </p>
+                          </div>
+                        )}
+                        {selectedLocation?.photoUrls.length > 0 && (
+                          <>
+                            <div className="mb-6 flex flex-wrap gap-2">
+                              {selectedLocation?.photoUrls?.map((item) => (
+                                <img
+                                  key={item.id}
+                                  src={`data:${item.mimetype};base64,${item.base64}`}
+                                  alt="Location"
+                                  className="h-24 w-24 rounded object-cover"
+                                />
+                              ))}
+                            </div>
+                            <hr />
+                          </>
+                        )}
+
+                        {selectedLocation.qrCode && (
+                          <div className="mt-6">
+                            <h3 className="text-sm font-medium text-gray-700">
+                              QR Code/Barcode
+                            </h3>
+                            {selectedLocation.qrCode && (
+                              <>
+                                <h4 className="mt-2 text-sm text-gray-700">
+                                  {selectedLocation?.qrCode}
+                                </h4>
+                                <div className="mb-3 mt-2 flex justify-start">
+                                  <div className="w-fit rounded-lg border border-gray-200 bg-white p-2 shadow-md">
+                                    <div className="ro mb-1 flex justify-center">
+                                      <QRCode
+                                        value={selectedLocation.qrCode}
+                                        size={100}
+                                      />
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      )}
-                      <hr className="my-4" />
+                              </>
+                            )}
+                          </div>
+                        )}
+                        <hr className="my-4" />
 
-                      {/* Sub-Locations */}
-                      <div className="mb-6 mt-6">
-                        <h3 className="text-sm font-medium text-gray-700">
-                          Sub-Locations (0)
-                        </h3>
-                        <p className="text-gray-500 text-sm mt-1">
-                          Add sub elements inside this Location
-                        </p>
-                        <button
-                          onClick={handleShowNewSubLocationForm}
-                          className="mt-2 cursor-pointer text-orange-600 hover:underline text-sm"
-                        >
-                          Create Sub-Location
-                        </button>
+                        <div className="mb-6 mt-2">
+                          <h3 className="text-sm font-medium text-gray-700">
+                            Sub-Locations ({selectedLocation?.children.length})
+                          </h3>
+                          {selectedLocation?.children.length === 0 ? (
+                            <>
+                              <p className="mt-1 text-sm text-gray-500">
+                                Add sub elements inside this Location
+                              </p>
+                            </>
+                          ) : (
+                            <></>
+                          )}
+                          <button
+                            onClick={handleShowNewSubLocationForm}
+                            className="mt-2 cursor-pointer text-sm text-orange-600 hover:underline"
+                          >
+                            Create Sub-Location
+                          </button>
+                        </div>
+
+                        <SubLocationModal
+                          isOpen={modalOpen}
+                          onClose={() => setModalOpen(false)}
+                          onCreate={(name) => {
+                            console.log("Sub-location created:", name);
+                            setModalOpen(false);
+                          }}
+                        />
+
+                        <hr className="my-4" />
+
+                        {selectedLocation.createdAt ===
+                        selectedLocation.updatedAt ? (
+                          <>
+                            <div className="text-sm text-gray-500 mt-2">
+                              Created By{" "}
+                              <span className="capitalize font-medium text-gray-700">
+                                {user?.fullName}
+                              </span>{" "}
+                              on {formatDate(selectedLocation.createdAt)}
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="text-sm text-gray-500 mt-2">
+                              Created By{" "}
+                              <span className="capitalize font-medium text-gray-700">
+                                {user?.fullName}
+                              </span>{" "}
+                              on {formatDate(selectedLocation.createdAt)}
+                            </div>
+                            <div className="mt-2 text-sm text-gray-500">
+                              Updated By{" "}
+                              <span className="capitalize font-medium text-gray-700">
+                                {user?.fullName}
+                              </span>{" "}
+                              on {formatDate(selectedLocation.updatedAt)}
+                            </div>
+                          </>
+                        )}
                       </div>
 
-                      <SubLocationModal
-                        isOpen={modalOpen}
-                        onClose={() => setModalOpen(false)}
-                        onCreate={(name) => {
-                          console.log("Sub-location created:", name);
-                          setModalOpen(false);
-                        }}
-                      />
-
-                      <hr className="my-4" />
-
-                      {/* Footer */}
-
-                      {selectedLocation.createdAt ===
-                      selectedLocation.updatedAt ? (
-                        <>
-                          <div className="text-sm text-gray-500 mt-6">
-                            Created By{" "}
-                            <span className="font-medium text-gray-700 capitalize">
-                              {user?.fullName}
-                            </span>{" "}
-                            on {formatDate(selectedLocation.createdAt)}
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="text-sm text-gray-500 mt-6">
-                            Created By{" "}
-                            <span className="font-medium text-gray-700 capitalize">
-                              {user?.fullName}
-                            </span>{" "}
-                            on {formatDate(selectedLocation.createdAt)}
-                          </div>
-                          <div className="text-sm text-gray-500 mt-6">
-                            Updated By{" "}
-                            <span className="font-medium text-gray-700 capitalize">
-                              {user?.fullName}
-                            </span>{" "}
-                            on {formatDate(selectedLocation.updatedAt)}
-                          </div>
-                        </>
-                      )}
-                      {/* Action Button */}
-                      <div className="mt-6 flex justify-center">
-                        <NavLink to="/work-orders">
-                          <button className="bg-white border hover-bg-orange-50 border-orange-600 text-orange-600 px-5 py-3 p-2 cursor-pointer rounded-full text-sm shadow-sm transition">
-                            Use in New Work Order
-                          </button>
-                        </NavLink>
+                      <div className="flex-none border-t bg-white p-4">
+                        <div className="flex justify-center">
+                          <NavLink to="/work-orders">
+                            <button className="cursor-pointer rounded-full border border-orange-600 bg-white px-5 py-3 p-2 text-sm text-orange-600 shadow-sm transition hover:bg-orange-50">
+                              Use in New Work Order
+                            </button>
+                          </NavLink>
+                        </div>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center h-full text-gray-500">
+                    <div className="flex h-full items-center justify-center text-gray-500">
                       Select a location to view details
                     </div>
                   )}

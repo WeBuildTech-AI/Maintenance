@@ -21,15 +21,8 @@ export const locationService = {
 
     return res.data;
   },
-  fetchLocationsName: async (
-    limit: number,
-    page: number,
-    offset: number
-  ): Promise<LocationResponse[]> => {
-    const res = await axios.get(`${API_URL}/locations/summary`, {
-      params: { limit, page, offset },
-      headers: { Accept: "application/json" },
-    });
+  fetchLocationsName: async (): Promise<LocationResponse[]> => {
+    const res = await axios.get(`${API_URL}/locations/summary`);
 
     return res.data;
   },

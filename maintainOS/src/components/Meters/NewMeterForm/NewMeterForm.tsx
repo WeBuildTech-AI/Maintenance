@@ -172,8 +172,8 @@ export function NewMeterForm({
     }
     setLoading(true);
     try {
-      const assetsRes = await assetService.fetchAssetsName(10, 1, 0);
-      setGetAssestData(assetsRes.data || []);
+      const assetsRes = await assetService.fetchAssetsName();
+      setGetAssestData(assetsRes || []);
     } catch (err) {
       console.error("Failed to fetch asset data:", err);
     } finally {
@@ -190,8 +190,8 @@ export function NewMeterForm({
     setLoading(true);
     try {
       // Yahan aap apni location fetch karne wali API call likhein
-      const locationRes = await locationService.fetchLocationsName(10, 1, 0);
-      setGetLocationData(locationRes.data || []);
+      const locationRes = await locationService.fetchLocationsName();
+      setGetLocationData(locationRes || []);
     } catch (err) {
       console.error("Failed to fetch location data:", err);
     } finally {

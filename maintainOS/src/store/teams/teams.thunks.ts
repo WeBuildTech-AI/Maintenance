@@ -21,12 +21,9 @@ export const fetchTeams = createAsyncThunk(
 );
 export const fetchTeamsName = createAsyncThunk(
   "teams/fetchTeams",
-  async (
-    { limit, page, offset }: { limit: number; page: number; offset: number },
-    { rejectWithValue }
-  ) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const team = await teamService.fetchTeamsName(limit, page, offset);
+      const team = await teamService.fetchTeamsName();
       return team;
     } catch (error: any) {
       return rejectWithValue(

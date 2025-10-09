@@ -1,49 +1,123 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, FC, useMemo } from "react";
 import { AssetDetail } from "./AssetDetail/AssetDetail";
 import { AssetsList } from "./AssetsList/AssetsList";
-import { mockAssets } from "./mockAssets";
-import { NewAssetForm } from "./NewAssetForm/NewAssetForm"; // keep your existing form
+import { NewAssetForm } from "./NewAssetForm/NewAssetForm";
 import { AssetTable } from "./AssetsTable/AssetTable";
 import { AssetHeaderComponent } from "./AssetsHeader/AssetsHeader";
 import type { ViewMode } from "../purchase-orders/po.types";
 import { assetService } from "../../store/assets";
 
-export function Assets() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showNewAssetForm, setShowNewAssetForm] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [selectedAsset, setSelectedAsset] = useState<
-    (typeof mockAssets)[0] | null
-  >(null);
-  const [viewMode, setViewMode] = useState<ViewMode>("panel");
-  const [loading, setLoading] = useState(false);
-  const [assetData, setAssetData] = useState([]);
-  useEffect(() => {
-    const fetchMeters = async () => {
-      setLoading(true);
-      try {
-        const res = await assetService.fetchAssets(10, 1, 0);
-        setAssetData(res);
-        console.log(res);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+// Define a clear type for your Asset data
+// IMPORTANT: Apne real data ke according is interface ko adjust karein.
+export interface Asset {
+  id: number | string;
+  name: string;
+  updatedAt: string; // ISO date string
+  createdAt: string; // ISO date string (Added for sorting)
+  location: {
+    id: number | string;
+    name: string;
+  };
+  // Add any other asset properties here
+}
 
-    fetchMeters();
+export const Assets: FC = () => {
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [showNewAssetForm, setShowNewAssetForm] = useState<boolean>(false);
+  const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("panel");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [assetData, setAssetData] = useState<Asset[]>([]);
+
+  // 1. Sorting state is now managed here in the parent component
+  const [sortType, setSortType] = useState<string>("Last Updated");
+  const [sortOrder, setSortOrder] = useState<string>("desc"); // 'asc' or 'desc'
+  const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
+
+  const fetchAssetsData = async () => {
+    setLoading(true);
+    try {
+      const assets: Asset[] = await assetService.fetchAssets(10, 1, 0);
+      setAssetData(assets);
+
+      // Set initial selected asset without sorting here
+      if (assets.length > 0) {
+        // To maintain original behavior, find the most recently updated
+        const mostRecent = [...assets].sort(
+          (a, b) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        );
+        setSelectedAsset(mostRecent[0]);
+      }
+    } catch (err) {
+      console.error("Failed to fetch assets:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    fetchAssetsData();
   }, []);
 
-  const filteredAssets = assetData.filter((asset) => {
+  // Function to handle editing an asset
+  const handleEditAsset = (assetToEdit: Asset) => {
+    setEditingAsset(assetToEdit); // Set the asset we want to edit
+    setShowNewAssetForm(true); // Show the form
+  };
+
+  // --- NEW FUNCTION TO HANDLE FORM COMPLETION ---
+  const handleFormComplete = () => {
+    setShowNewAssetForm(false);
+    setEditingAsset(null); // IMPORTANT: Reset the editing asset
+    fetchAssetsData(); // Refetch the data to show updated info
+  };
+
+  // 2. useMemo hook to efficiently sort and filter data
+  const sortedAndFilteredAssets = useMemo(() => {
+    // Start with a copy of the original data
+    let processedAssets = [...assetData];
+
+    // --- Sorting Logic ---
+    processedAssets.sort((a, b) => {
+      let comparison = 0;
+      switch (sortType) {
+        case "Name":
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case "Last Updated":
+          comparison =
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+          break;
+        case "Creation Date":
+          comparison =
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          break;
+        default:
+          break;
+      }
+      // For 'Last Updated' and 'Creation Date', the default is newest first (desc)
+      // so we only flip for 'asc'. For 'Name', the default is 'asc'.
+      if (sortType === "Name") {
+        return sortOrder === "asc" ? comparison : -comparison;
+      }
+      return sortOrder === "desc" ? comparison : -comparison;
+    });
+
+    // --- Filtering Logic ---
+    if (!searchQuery) {
+      return processedAssets;
+    }
+
     const q = searchQuery.toLowerCase();
-    return (
-      asset.name.toLowerCase().includes(q) ||
-      (asset.locationId?.toLowerCase?.().includes(q) ?? false)
+    return processedAssets.filter(
+      (asset) =>
+        asset.name.toLowerCase().includes(q) ||
+        asset.location.name.toLowerCase().includes(q)
     );
-  });
+  }, [assetData, sortType, sortOrder, searchQuery]);
 
   return (
     <div className="flex h-full flex-col">
@@ -57,33 +131,38 @@ export function Assets() {
       )}
 
       {viewMode === "table" ? (
-        <>
-          <AssetTable assets={filteredAssets} selectedAsset={selectedAsset} />
-        </>
+        <AssetTable
+          assets={sortedAndFilteredAssets}
+          selectedAsset={selectedAsset}
+        />
       ) : (
         <>
           <div className="flex flex-1 min-h-0">
             <AssetsList
-              assets={filteredAssets}
+              assets={sortedAndFilteredAssets}
               selectedAsset={selectedAsset}
               setSelectedAsset={setSelectedAsset}
               setShowNewAssetForm={setShowNewAssetForm}
               loading={loading}
+              // 3. Pass sorting state and setters to AssetsList
+              sortType={sortType}
+              setSortType={setSortType}
+              sortOrder={sortOrder}
+              setSortOrder={setSortOrder}
             />
-
             <div className="flex-1 bg-card min-h-0 flex flex-col">
               {showNewAssetForm ? (
-                <>
-                  <NewAssetForm
-                    onCreate={() => {
-                      // handle asset creation logic
-                      setShowNewAssetForm(false);
-                    }}
-                    onCancel={() => setShowNewAssetForm(false)}
-                  />
-                </>
+                <NewAssetForm
+                  onCreate={() => {
+                    setShowNewAssetForm(false);
+                    // TODO: Add logic to refetch assets after creation
+                  }}
+                  onCancel={() => setShowNewAssetForm(false)}
+                  isEdit={!!editingAsset} // Converts object to boolean (true if editingAsset is not null)
+                  assetData={editingAsset}
+                />
               ) : selectedAsset ? (
-                <AssetDetail asset={selectedAsset} />
+                <AssetDetail asset={selectedAsset} onEdit={handleEditAsset} />
               ) : (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
@@ -105,4 +184,4 @@ export function Assets() {
       )}
     </div>
   );
-}
+};

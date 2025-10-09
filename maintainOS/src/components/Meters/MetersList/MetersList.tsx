@@ -17,7 +17,6 @@ export function MetersList({
   getAssetData,
   getLocationData,
   handleShowNewMeterForm,
-  handleCancelForm
 
 }: any) {
   const meters = Array.isArray(filteredMeters) ? filteredMeters : [];
@@ -64,7 +63,7 @@ export function MetersList({
                   setSelectedMeter={setSelectedMeter}
                   getAssetData={getAssetData}
                   getLocationData={getLocationData}
-                  handleCancelForm={handleCancelForm}
+                  handleShowNewMeterForm={handleShowNewMeterForm}
                 />
               ))}
 

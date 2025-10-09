@@ -30,16 +30,14 @@ export function LocationDropdown({
   const [locationData, setLocationData] = useState<LocationItem[]>([]);
 
   const handleFetchApi = async () => {
-    if (hasFetched.current) return;
     setLoading(true);
     try {
-      const res = await locationService.fetchLocationsName(10, 1, 0);
-      setLocationData(res.data || []);
+      const res = await locationService.fetchLocationsName();
+      setLocationData(res || []);
     } catch (err) {
       console.error("Error fetching locations:", err);
     } finally {
       setLoading(false);
-      hasFetched.current = true;
     }
   };
 
@@ -90,7 +88,7 @@ export function LocationDropdown({
               <Loader />
             </div>
           ) : (
-            <ul className="h-32 overflow-y-auto">
+            <ul className="max-h-32 overflow-y-auto">
               {locationData.length > 0 ? (
                 locationData.map((loc, index) => (
                   <li
@@ -114,7 +112,7 @@ export function LocationDropdown({
           {/* Create Location CTA */}
           <div
             onClick={() => navigate("/locations")}
-            className="relative flex items-center px-4 py-2 rounded-b-md text-sm text-blue-600 bg-blue-50 cursor-pointer hover:bg-blue-100 border-t"
+            className="relative flex items-center px-4 py-2 rounded-md text-sm text-blue-600 bg-blue-50 cursor-pointer hover:bg-blue-100 border-t"
           >
             <div className="absolute left-0 top-0 h-full w-1 bg-blue-600 rounded-l-md" />
             <span className="ml-3">+ Create Location</span>
