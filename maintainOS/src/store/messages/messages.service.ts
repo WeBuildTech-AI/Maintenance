@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import type { User } from "./messages.types";
+import type { DMConversation, User } from "./messages.types";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -22,4 +22,27 @@ export const messageService = {
     }));
     return transformedUsers;
   },
+
+  userDMs: async(userId:string) : Promise<DMConversation[]> => {
+    const response = await axios.get(`${API_URL}/messaging/conversations/allconvo/${userId}`);
+    const conversations = response.data;
+
+    const transformed: DMConversation[] = conversations.map((convo: any) => {
+      const otherUsers = convo.participants
+        .filter((p: any) => p.userId !== userId)  // Exclude current user
+        .map((p: any) => ({
+          id: p.userId,
+          name: p.user?.fullName || p.userId,     // Get fullName from backend user object
+          avatarUrl: p.user?.avatarUrl,
+        }));
+
+      return {
+        id: convo.id,
+        participants: otherUsers,
+        lastMessage: convo.messages?.[0] || null,
+      };
+    });
+
+    return transformed;
+  } 
 };

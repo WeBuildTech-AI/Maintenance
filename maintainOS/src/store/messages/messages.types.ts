@@ -31,6 +31,13 @@ export interface Message {
   status?: "sent" | "delivered" | "read";
 }
 
+export interface DMConversation {
+  id: string; // conversation ID
+  participants: User[]; // only other users (exclude current user)
+  lastMessage?: Message;
+}
+
+
 // ---------- SUPPORTING TYPES ----------
 
 export interface User {
@@ -82,9 +89,12 @@ export interface SendMessagePayload {
 
 export interface MessagingState {
     searchResults : User[];
+    dms: DMConversation[];       // new field
+    dmsStatus: 'idle' | 'loading' | 'succeeded' | 'failed'; 
     searchStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
     error: string | null;
     searchError: string | null;
+    dmsError: string | null;
 }
 
 export type MessagesHeaderProps = {
@@ -95,3 +105,4 @@ export type MessagesHeaderProps = {
   setIsCreatingForm: React.Dispatch<React.SetStateAction<boolean>>;
   setShowSettings: React.Dispatch<React.SetStateAction<boolean>>;
 };
+

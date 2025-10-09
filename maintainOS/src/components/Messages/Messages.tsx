@@ -5,14 +5,22 @@ import { cn } from "../ui/utils";
 import { ChatWindow } from "./ChatWindow";
 import { MessagesHeaderComponent } from "./MessagesHeader";
 import type { ViewMode } from "../purchase-orders/po.types";
-import { dummyConversation, dummyMessages, dummyThreads } from "./messages.types";
+import {
+  dummyConversation,
+  dummyThreads,
+} from "./messages.types";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useLocation, useNavigate } from "react-router-dom";
-
+import type { RootState } from "../../store";
+import { getDMs } from "../../store/messages/messages.thunks";
+import type { DMConversation } from "../../store/messages/messages.types";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch } from "../../store";
 
 export function Messages() {
-
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
+  const currentUserId = useSelector((state: RootState) => state.auth.user?.id);
 
   const [viewMode, setViewMode] = useState<ViewMode>("panel");
   const [searchQuery, setSearchQuery] = useState("");
@@ -22,15 +30,27 @@ export function Messages() {
   const [active, setActive] = useState<"messages" | "threads">("messages");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  const dms = useSelector((state: RootState) => state.messaging.dms);
+  const dmsStatus = useSelector(
+    (state: RootState) => state.messaging.dmsStatus
+  );
+
+  useEffect(() => {
+    if (currentUserId && dmsStatus === "idle") {
+      dispatch(getDMs(currentUserId));
+    }
+  }, [dispatch, currentUserId, dmsStatus]);
+
   const location = useLocation();
   useEffect(() => {
-  if (location.pathname.endsWith("/messages/new")) {
-    setIsCreatingMessage(true);
-  }
-}, [location]);
+    if (location.pathname.endsWith("/messages/new")) {
+      setIsCreatingMessage(true);
+    }
+  }, [location]);
 
-
-  const items = active === "messages" ? dummyMessages : dummyThreads;
+  // const items = active === "messages" ? dummyMessages : dummyThreads;
+  const items: (DMConversation | (typeof dummyThreads)[0])[] =
+    active === "messages" ? dms : dummyThreads;
 
   // 👇 Always select the first item when "active" changes
   useEffect(() => {
@@ -79,26 +99,61 @@ export function Messages() {
           {/* List */}
           <div className="flex-1 overflow-y-auto border border-border">
             {items.map((item) => (
-              <div 
-              key={item.id} 
-              className={cn(
-              "flex items-center gap-3 p-3 border-b",
-                selectedId === item.id && "bg-orange-50"
+              <div
+                key={item.id}
+                className={cn(
+                  "flex items-center gap-3 p-3 border-b",
+                  selectedId === item.id && "bg-orange-50"
                 )}
                 onClick={() => {
                   setSelectedId(item.id);
                   setIsCreatingMessage(false);
                   navigate("/messages");
                 }}
-                >
-                <Avatar className="size-15">
-                  <AvatarImage src="/avatar.png"/>
-                  <AvatarFallback>AB</AvatarFallback>
+              >
+                <Avatar>
+                  {"participants" in item ? (
+                    <>
+                      <AvatarImage
+                        src={item.participants[0]?.avatarUrl || "/avatar.png"}
+                      />
+                      <AvatarFallback>
+                        {item.participants[0]?.name?.[0] || "U"}
+                      </AvatarFallback>
+                    </>
+                  ) : (
+                    <>
+                      <AvatarImage src="/avatar.png" />
+                      <AvatarFallback>{item.name?.[0] || "U"}</AvatarFallback>
+                    </>
+                  )}
                 </Avatar>
-                <div>
-                  <p className="font-medium">{item.name}</p>
+                {/* <div className="truncate">
+                  <p className="font-medium truncate">
+                    {item.participants.map((p) => p.name).join(", ")}
+                  </p>
                   <p className="text-sm text-muted-foreground truncate">
-                    {item.lastMessage}
+                    {item.lastMessage?.body || "No messages yet"}
+                  </p>
+                </div> */}
+                <div className="truncate">
+                  {/* <p className="font-medium truncate">
+                    {"participants" in item
+                      ? item.participants.map((p) => p.name).join(", ")
+                      : item.name}
+                  </p> */}
+                  <p className="font-medium truncate">
+                    {"participants" in item
+                      ? item.participants.map((p) => p.name || p.id).join(", ")
+                      : item.name || "Unknown"}
+                  </p>
+
+                  <p className="text-sm text-muted-foreground truncate">
+                    {item.lastMessage
+                      ? typeof item.lastMessage === "string"
+                        ? item.lastMessage
+                        : item.lastMessage.body || "No messages yet"
+                      : "No messages yet"}
                   </p>
                 </div>
               </div>
@@ -109,7 +164,10 @@ export function Messages() {
         {/* Chat Window */}
         <div className="flex-1 border border-border bg-card min-h-0">
           {selectedId ? (
-            <ChatWindow messages={dummyConversation[selectedId] || []} isCreatingMessage={isCreatingMessage} />
+            <ChatWindow
+              messages={dummyConversation[selectedId] || []}
+              isCreatingMessage={isCreatingMessage}
+            />
           ) : (
             <div className="h-full flex items-center justify-center text-muted-foreground">
               Select a conversation

@@ -54,7 +54,12 @@ export function ChatWindow({ messages, isCreatingMessage }: ChatWindowProps) {
     <div className="relative flex flex-col h-full">
       {!showInfo ? (
         <>
-          <p>Status: {isConnected ? "🟢 Connected" : "🔴 Disconnected"}</p>
+          <p className="text-center mt-4">
+            <span className="bg-orange-600 px-4 py-1 rounded-full">
+              Status: {isConnected ? "🟢 Connected" : "🔴 Disconnected"}
+            </span>
+          </p>
+
           {/* Header */}
           {isCreatingMessage ? (
             <div className="flex items-center justify-between border-b border-border p-4 bg-white w-full">
