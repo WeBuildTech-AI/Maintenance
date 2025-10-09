@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -6,7 +6,8 @@ import { Paperclip, Send, Info, StepBack, ChevronDown } from "lucide-react";
 import { cn } from "../ui/utils";
 import { type ChatWindowProps } from "./messages.types";
 import { UserSelect } from "./UserSelect";
-import { useMessagingSocket, useWebSocket } from "../../utils/useWebsocket";
+import { CreateConversationModal } from "./GroupInfoForm";
+import { useMessagingSocket } from "../../utils/useWebsocket";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../store";
 import type { User } from "../../store/messages";
@@ -16,7 +17,8 @@ export function ChatWindow({ messages, isCreatingMessage }: ChatWindowProps) {
   const [showInfo, setShowInfo] = useState(false);
   const [showSharedFiles, setShowSharedFiles] = useState(false);
   const [showChatsInCommon, setShowChatsInCommon] = useState(false);
-  const [selectedRecipient, setSelectedRecipient] = useState<User | null>(null);
+  const [selectedRecipients, setSelectedRecipients] = useState<User[]>([]);
+  const [showGroupModal, setShowGroupModal] = useState(false);
 
   const user = useSelector((state: RootState) => state.auth.user);
 
@@ -27,10 +29,18 @@ export function ChatWindow({ messages, isCreatingMessage }: ChatWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   // Handle user selection from UserSelect component
-  const handleUsersSelect = (selectedUsers: User[]) => {
-    setSelectedRecipient(selectedUsers[0] || null); // For now, just take the first user
-    console.log("Selected recipients:", selectedUsers);
-  };
+  const handleUsersSelect = useCallback((selectedUsers: User[]) => {
+    setSelectedRecipients(selectedUsers);
+  }, []);
+
+  // Handle group creation
+  const handleCreateGroup = useCallback(
+    (groupName: string) => {
+      // TODO: Implement group creation logic here
+      setShowGroupModal(false);
+    },
+    [selectedRecipients]
+  );
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -91,8 +101,30 @@ export function ChatWindow({ messages, isCreatingMessage }: ChatWindowProps) {
 
           {/* Messages list */}
           {isCreatingMessage ? (
-            <div className="flex-1 p-4 flex items-end justify-start text-sm text-muted-foreground">
-              Go ahead and write the first message!
+            <div className="flex-1 p-4 flex items-center justify-center items-end text-sm text-muted-foreground">
+              {selectedRecipients.length > 1 ? (
+                <div className="text-center">
+                  <p className="mb-4">
+                    You've selected {selectedRecipients.length} people for this
+                    conversation.
+                  </p>
+                  <button
+                    onClick={() => setShowGroupModal(true)}
+                    className="px-6 py-2 bg-orange-600 text-black rounded-md hover:bg-orange-700 transition-colors"
+                  >
+                    Give a name or image to this group
+                  </button>
+                </div>
+              ) : selectedRecipients.length === 1 ? (
+                <div className="text-center">
+                  <p className="mb-2 text-sm">
+                    Starting a conversation with {selectedRecipients[0].name}
+                  </p>
+                  <p>Go ahead and write the first message!</p>
+                </div>
+              ) : (
+                "Go ahead and write the first message!"
+              )}
             </div>
           ) : (
             <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-card">
@@ -218,6 +250,13 @@ export function ChatWindow({ messages, isCreatingMessage }: ChatWindowProps) {
           )}
         </div>
       )}
+
+      {/* Group Info Modal */}
+      <CreateConversationModal
+        isOpen={showGroupModal}
+        onClose={() => setShowGroupModal(false)}
+        onCreate={handleCreateGroup}
+      />
     </div>
   );
 }

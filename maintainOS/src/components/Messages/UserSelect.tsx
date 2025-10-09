@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "../../store";
 import { clearSearchResults, searchUsers } from "../../store/messages";
 import type { User } from "../../store/messages";
-import { DynamicSelect } from "../../components/vendors/VendorsForm/DynamicSelect"; 
+import { DynamicSelect } from "../../components/vendors/VendorsForm/DynamicSelect";
 
 type UserSelectProps = {
   // an array of selected User objects
@@ -19,15 +19,10 @@ export function UserSelect({ onUsersSelect }: UserSelectProps) {
   const currentUser = useSelector((state: RootState) => state.auth.user);
 
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
-
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   useEffect(() => {
     if (currentUser?.id) {
-      console.log(
-        "UserSelect mounted - Dispatching searchUsers for currentUserId:",
-        currentUser.id
-      );
       dispatch(searchUsers(currentUser.id) as any);
     } else {
       console.log(
@@ -38,12 +33,9 @@ export function UserSelect({ onUsersSelect }: UserSelectProps) {
   }, [dispatch, currentUser?.id]);
 
   useEffect(() => {
-    console.log("UserSelect - Redux state changed:", {
-      searchResults,
-      searchStatus,
-    });
   }, [searchResults, searchStatus]);
 
+  // unmount 
   useEffect(() => {
     return () => {
       dispatch(clearSearchResults());
@@ -55,7 +47,7 @@ export function UserSelect({ onUsersSelect }: UserSelectProps) {
       selectedUserIds.includes(user.id)
     );
     onUsersSelect(selectedUsers);
-  }, [selectedUserIds, searchResults, onUsersSelect]);
+  }, [selectedUserIds, searchResults]); // Removed onUsersSelect from dependencies
 
   const handleFetchUsers = () => {
     if (currentUser?.id && searchStatus === "idle") {
@@ -63,7 +55,6 @@ export function UserSelect({ onUsersSelect }: UserSelectProps) {
       dispatch(searchUsers(currentUser.id) as any);
     }
   };
-
 
   return (
     <div className="relative w-full">

@@ -36,16 +36,11 @@ const messagingSlice = createSlice({
       .addCase(
         searchUsers.fulfilled,
         (state, action: PayloadAction<User[]>) => {
-          console.log(
-            "searchUsers.fulfilled - Users received:",
-            action.payload
-          );
           state.searchStatus = "succeeded";
           state.searchResults = action.payload;
         }
       )
       .addCase(searchUsers.rejected, (state, action) => {
-        console.log("searchUsers.rejected - Error:", action.payload);
         state.searchStatus = "failed";
         state.searchError = action.payload as string;
       });
