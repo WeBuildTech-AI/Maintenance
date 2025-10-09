@@ -27,9 +27,9 @@ export function ChatWindow({ messages, isCreatingMessage }: ChatWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   // Handle user selection from UserSelect component
-  const handleUserSelect = (selectedUser: User) => {
-    setSelectedRecipient(selectedUser);
-    console.log("Selected recipient:", selectedUser);
+  const handleUsersSelect = (selectedUsers: User[]) => {
+    setSelectedRecipient(selectedUsers[0] || null); // For now, just take the first user
+    console.log("Selected recipients:", selectedUsers);
   };
 
   // Auto-scroll to bottom
@@ -67,7 +67,7 @@ export function ChatWindow({ messages, isCreatingMessage }: ChatWindowProps) {
               {/* Functionality to select the user for the new message */}
               {/* TODO - This component needs to change, we can add multiple people from here */}
               <div className="p-2 flex-1">
-                <UserSelect onUserSelect={handleUserSelect} />
+                <UserSelect onUsersSelect={handleUsersSelect} />
               </div>
             </div>
           ) : (
