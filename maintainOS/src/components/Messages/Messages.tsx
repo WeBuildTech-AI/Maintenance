@@ -7,7 +7,6 @@ import { MessagesHeaderComponent } from "./MessagesHeader";
 import type { ViewMode } from "../purchase-orders/po.types";
 import {
   dummyConversation,
-  dummyThreads,
 } from "./messages.types";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -30,7 +29,14 @@ export function Messages() {
   const [active, setActive] = useState<"messages" | "threads">("messages");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const dms = useSelector((state: RootState) => state.messaging.dms);
+  const allConvos = useSelector((state: RootState) => state.messaging.dms);
+
+  // DMs: (only 1 other participant)
+  const oneOnOneDMs = allConvos.filter(convo => convo.participants.length === 1);
+
+  // Threads: group conversations (>1 other participants)
+  const threads = allConvos.filter(convo => convo.participants.length > 1);
+
   const dmsStatus = useSelector(
     (state: RootState) => state.messaging.dmsStatus
   );
@@ -48,11 +54,9 @@ export function Messages() {
     }
   }, [location]);
 
-  // const items = active === "messages" ? dummyMessages : dummyThreads;
-  const items: (DMConversation | (typeof dummyThreads)[0])[] =
-    active === "messages" ? dms : dummyThreads;
+  const items: DMConversation[] = active === "messages" ? oneOnOneDMs : threads;
 
-  // 👇 Always select the first item when "active" changes
+
   useEffect(() => {
     if (items.length > 0) {
       setSelectedId(items[0].id);
@@ -111,49 +115,22 @@ export function Messages() {
                   navigate("/messages");
                 }}
               >
+                
                 <Avatar>
-                  {"participants" in item ? (
-                    <>
-                      <AvatarImage
-                        src={item.participants[0]?.avatarUrl || "/avatar.png"}
-                      />
-                      <AvatarFallback>
-                        {item.participants[0]?.name?.[0] || "U"}
-                      </AvatarFallback>
-                    </>
-                  ) : (
-                    <>
-                      <AvatarImage src="/avatar.png" />
-                      <AvatarFallback>{item.name?.[0] || "U"}</AvatarFallback>
-                    </>
-                  )}
+                  <AvatarImage
+                    src={item.participants[0]?.avatarUrl || "/avatar.png"}
+                  />
+                  <AvatarFallback>
+                    {item.participants[0]?.name?.[0] || "U"}
+                  </AvatarFallback>
                 </Avatar>
-                {/* <div className="truncate">
+               
+               <div className="truncate">
                   <p className="font-medium truncate">
-                    {item.participants.map((p) => p.name).join(", ")}
+                    {item.participants.map((p) => p.name || p.id).join(", ")}
                   </p>
                   <p className="text-sm text-muted-foreground truncate">
                     {item.lastMessage?.body || "No messages yet"}
-                  </p>
-                </div> */}
-                <div className="truncate">
-                  {/* <p className="font-medium truncate">
-                    {"participants" in item
-                      ? item.participants.map((p) => p.name).join(", ")
-                      : item.name}
-                  </p> */}
-                  <p className="font-medium truncate">
-                    {"participants" in item
-                      ? item.participants.map((p) => p.name || p.id).join(", ")
-                      : item.name || "Unknown"}
-                  </p>
-
-                  <p className="text-sm text-muted-foreground truncate">
-                    {item.lastMessage
-                      ? typeof item.lastMessage === "string"
-                        ? item.lastMessage
-                        : item.lastMessage.body || "No messages yet"
-                      : "No messages yet"}
                   </p>
                 </div>
               </div>
