@@ -107,6 +107,9 @@ export interface MessagingState {
   };
 
   isConnected: boolean;
+
+  createConversationStatus: "idle" | "loading" | "succeeded" | "failed";
+  createConversationError: string | null;
 }
 export interface ChatWindowProps {
   messages: {
@@ -134,3 +137,4 @@ export type MessagesHeaderProps = {
   setIsCreatingForm: React.Dispatch<React.SetStateAction<boolean>>;
   setShowSettings: React.Dispatch<React.SetStateAction<boolean>>;
 };
+

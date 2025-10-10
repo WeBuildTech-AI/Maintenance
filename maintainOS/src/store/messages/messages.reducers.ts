@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { chatHistory, getDMs, searchUsers } from "./messages.thunks";
+import { chatHistory, getDMs, searchUsers, createConversation } from "./messages.thunks";
+
 import type {
   DMConversation,
   User,
@@ -16,6 +17,8 @@ const initialState: MessagingState = {
   error: null,
   searchError: null,
   dmsError: null,
+  createConversationStatus : "idle",
+  createConversationError: null,
 
   // Initial state for the active conversation
   activeConversation: {
@@ -40,16 +43,7 @@ const messagingSlice = createSlice({
     },
     addMessage: (state, action) => {
       const newMessage = action.payload;
-      console.log("🔄 Redux addMessage received:", newMessage);
-
-      // If the message doesn't have a complete sender object, we need to handle it
-      // For now, we'll add it as-is and let the UI transformation handle the fallback
-      // In a production app, you might want to fetch user data or maintain a user cache
       state.activeConversation.messages.unshift(newMessage);
-      console.log(
-        "🔄 Redux state updated, total messages:",
-        state.activeConversation.messages.length
-      );
     },
 
     // Reducer for connection status
@@ -70,7 +64,6 @@ const messagingSlice = createSlice({
 
       if (convoIndex !== -1) {
         const conversation = state.dms[convoIndex];
-        // Directly assign the new, complete message object
         conversation.lastMessage = lastMessage;
 
         // Move the updated conversation to the top of the list
@@ -79,17 +72,13 @@ const messagingSlice = createSlice({
       }
     },
 
-    // Example reducer for sending a message (will be caught by middleware)
+    //  reducer for sending a message (will be caught by middleware)
     // This action doesn't need to change state here, it's just a trigger.
-    sendMessage: (
-      state,
-      action: PayloadAction<SendMessagePayload & { conversationId: string }>
-    ) => {
-      // You could implement optimistic UI updates here if you want
-      // For now, it does nothing. The middleware will handle the emit.
+    sendMessage: (state,action: PayloadAction<SendMessagePayload & { conversationId: string }>) => {
     },
   },
   extraReducers: (builder) => {
+
     builder
       // Reducers for searchUsersThunk
       .addCase(searchUsers.pending, (state) => {
@@ -140,6 +129,22 @@ const messagingSlice = createSlice({
       .addCase(chatHistory.rejected, (state, action) => {
         state.activeConversation.status = "failed";
         state.activeConversation.error = action.payload as string;
+      });
+
+
+      builder
+      .addCase(createConversation.pending, (state) => {
+        state.createConversationStatus = "loading";
+        state.createConversationError = null;
+      })
+      .addCase(createConversation.fulfilled, (state, action: PayloadAction<DMConversation>) => {
+        state.createConversationStatus = "succeeded";
+        // Add the new conversation to the top of the DMs list
+        state.dms.unshift(action.payload);
+      })
+      .addCase(createConversation.rejected, (state, action) => {
+        state.createConversationStatus = "failed";
+        state.createConversationError = action.payload as string;
       });
   },
 });

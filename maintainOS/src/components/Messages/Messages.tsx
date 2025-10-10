@@ -26,18 +26,21 @@ export function Messages() {
   const [active, setActive] = useState<"messages" | "threads">("messages");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const allConvos = useSelector((state: RootState) => state.messaging.dms);
+  const allConvos =
+    useSelector((state: RootState) => state.messaging.dms) || [];
   const activeConversation = useSelector(
     (state: RootState) => state.messaging.activeConversation
   );
 
   // DMs: (only 1 other participant)
   const oneOnOneDMs = allConvos.filter(
-    (convo) => convo.participants.length === 1
+    (convo) => convo && convo.participants && convo.participants.length === 1
   );
 
   // Threads: group conversations (>1 other participants)
-  const threads = allConvos.filter((convo) => convo.participants.length > 1);
+  const threads = allConvos.filter(
+    (convo) => convo && convo.participants && convo.participants.length > 1
+  );
 
   const dmsStatus = useSelector(
     (state: RootState) => state.messaging.dmsStatus
@@ -58,7 +61,6 @@ export function Messages() {
 
   const items: DMConversation[] = active === "messages" ? oneOnOneDMs : threads;
 
-  // Transform messages from backend format to ChatWindow format
   const transformMessages = () => {
     console.log("Current user:", currentUserId);
     console.log("Active conversation messages:", activeConversation.messages);

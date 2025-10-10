@@ -3,13 +3,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Paperclip, Send, Info, StepBack, ChevronDown } from "lucide-react";
-import { type ChatWindowProps } from "../../store/messages/messages.types";
+import type {  ChatWindowProps, ConversationType } from "../../store/messages/messages.types";
 import { UserSelect } from "./UserSelect";
 import { CreateConversationModal } from "./GroupInfoForm";
 import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "../../store";
 import type { User } from "../../store/messages";
 import type { AppDispatch } from "../../store";
+import { useNavigate } from "react-router-dom";
+import { unwrapResult } from "@reduxjs/toolkit";
+import {createConversation} from "../../store/messages/messages.thunks"
 
 export function ChatWindow({
   messages,
@@ -25,6 +28,7 @@ export function ChatWindow({
   const [showGroupModal, setShowGroupModal] = useState(false);
 
   const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
 
   // Get real-time state from Redux store
   const isConnected = useSelector(
@@ -71,10 +75,45 @@ export function ChatWindow({
     }
   }, [conversationId, dispatch]);
 
-  const startSendingMessage = () => {
+
+  const handleSendMessage = async () => {
+  if (isCreatingMessage) {
+    if (!newMessage.trim() || selectedRecipients.length === 0) return;
+
+    try {
+      const participantIds = selectedRecipients.map((u) => u.id);
+      
+      const conversationType: ConversationType = participantIds.length === 1 ? 'dm' : 'group';
+
+
+      const payload = {
+        participantIds,
+        type: conversationType,
+      };
+      
+      const createAction = await dispatch(createConversation(payload));
+      const newConversation = unwrapResult(createAction);
+
+      dispatch({
+        type: "socket/sendMessage",
+        payload: {
+          conversationId: newConversation.id,
+          body: newMessage,
+          type: "text",
+        },
+      });
+      
+      setNewMessage("");
+      // navigate(`/messaging/t/${newConversation.id}`);
+
+    } catch (error) {
+      console.error("Failed to start new conversation:", error);
+      // TODO: Show an error toast to the user
+    }
+  } 
+  else {
     if (!newMessage.trim() || !conversationId) return;
 
-    // Dispatch action for sending message - will be intercepted by middleware
     dispatch({
       type: "socket/sendMessage",
       payload: {
@@ -85,7 +124,10 @@ export function ChatWindow({
     });
 
     setNewMessage("");
-  };
+  }
+};
+
+  
 
   return (
     <div className="relative flex flex-col h-full">
@@ -214,9 +256,9 @@ export function ChatWindow({
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="Write a message..."
               className="flex-1"
-              onKeyDown={(e) => e.key === "Enter" && startSendingMessage()}
+              onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
             />
-            <Button onClick={startSendingMessage}>
+            <Button onClick={handleSendMessage}>
               <Send size={18} />
             </Button>
           </div>

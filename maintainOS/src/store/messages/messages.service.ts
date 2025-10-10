@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import type { DMConversation, MessageWithSender, User } from "./messages.types";
+import type { DMConversation, MessageWithSender, User, CreateConversationPayload } from "./messages.types";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -49,15 +49,10 @@ export const messageService = {
   },
 
   // get all chats of a particular coversation ID
-  getChatHistory: async (
-    conversationId: string
-  ): Promise<MessageWithSender[]> => {
-    const response = await axios.get(
-      `${API_URL}/messaging/conversations/${conversationId}/messages`
-    );
+  getChatHistory: async (conversationId: string): Promise<MessageWithSender[]> => {
+    const response = await axios.get(`${API_URL}/messaging/conversations/${conversationId}/messages`);
     const messages = response.data;
 
-    // Debug: Log the first message to see the structure
     if (messages.length > 0) {
       console.log("Backend message structure:", messages[0]);
     }
@@ -79,7 +74,7 @@ export const messageService = {
         sender: {
           id: msg.sender.id,
           fullName: msg.sender.fullName,
-          avatarUrl: msg.sender.avatarUrl || undefined, // Convert null to undefined
+          avatarUrl: msg.sender.avatarUrl || undefined, 
         },
       })
     );
@@ -87,4 +82,16 @@ export const messageService = {
     console.log("Transformed message:", transformedMessages[0]);
     return transformedMessages;
   },
+
+
+  createConversation: async (
+    payload: CreateConversationPayload & { userId: string }
+  ): Promise<DMConversation> => {
+    const response = await axios.post(
+      `${API_URL}/messaging/conversations`,
+      payload
+    );
+    return response.data;
+  },
+  
 };
