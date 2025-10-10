@@ -12,6 +12,7 @@ import { getDMs, chatHistory } from "../../store/messages/messages.thunks";
 import type { DMConversation } from "../../store/messages/messages.types";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "../../store";
+import { Toaster } from "react-hot-toast";
 
 export function Messages() {
   const navigate = useNavigate();
@@ -122,10 +123,37 @@ export function Messages() {
   }, [location]);
 
   useEffect(() => {
-    if (items.length > 0) {
+    if (items.length > 0 && !isCreatingMessage) {
       setSelectedId(items[0].id);
     }
-  }, [active]);
+  }, [active, items.length, isCreatingMessage]);
+
+  // Handle conversation creation callback
+  const handleConversationCreated = async (newConversationId: string) => {
+    // Switch to the new conversation immediately
+    setSelectedId(newConversationId);
+
+    // Fetch chat history for the new conversation
+    dispatch(chatHistory(newConversationId));
+
+    // Refresh the DMs list to get the latest conversations
+    // Add a small delay to ensure the backend has processed the conversation creation
+    setTimeout(() => {
+      if (currentUserId) {
+        dispatch(getDMs(currentUserId));
+      }
+    }, 500);
+
+    // Check if we need to switch to the correct tab based on conversation type
+    // If it's a group conversation (more than 1 other participant), switch to threads tab
+    // This will be determined when the conversation list updates
+  };
+
+  // Handle exiting create mode
+  const handleExitCreateMode = () => {
+    setIsCreatingMessage(false);
+    navigate("/messages");
+  };
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
@@ -209,14 +237,46 @@ export function Messages() {
                 Loading messages...
               </div>
             ) : activeConversation.messages.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-muted-foreground">
-                No messages in this conversation
-              </div>
+              <ChatWindow
+                messages={[]}
+                isCreatingMessage={false}
+                conversationId={selectedId}
+                onConversationCreated={handleConversationCreated}
+                onExitCreateMode={handleExitCreateMode}
+                currentChatUser={(() => {
+                  const selectedConversation = items.find(
+                    (item) => item.id === selectedId
+                  );
+                  if (!selectedConversation) return undefined;
+
+                  // For DMs, use the other participant's info
+                  if (selectedConversation.participants.length === 1) {
+                    const participant = selectedConversation.participants[0];
+                    return {
+                      name: participant.name,
+                      avatarUrl: participant.avatarUrl,
+                      isGroup: false,
+                    };
+                  }
+
+                  // For group conversations, create a group name
+                  return {
+                    name: selectedConversation.participants
+                      .map((p) => p.name)
+                      .join(", "),
+                    avatarUrl: selectedConversation.participants[0]?.avatarUrl,
+                    isGroup: true,
+                    participants: selectedConversation.participants,
+                  };
+                })()}
+              />
             ) : (
               <ChatWindow
                 messages={transformMessages()}
                 isCreatingMessage={isCreatingMessage}
                 conversationId={selectedId}
+                onConversationCreated={handleConversationCreated}
+                onExitCreateMode={handleExitCreateMode}
                 currentChatUser={(() => {
                   const selectedConversation = items.find(
                     (item) => item.id === selectedId
@@ -245,6 +305,15 @@ export function Messages() {
                 })()}
               />
             )
+          ) : isCreatingMessage ? (
+            <ChatWindow
+              messages={[]}
+              isCreatingMessage={isCreatingMessage}
+              conversationId={undefined}
+              currentChatUser={undefined}
+              onConversationCreated={handleConversationCreated}
+              onExitCreateMode={handleExitCreateMode}
+            />
           ) : (
             <div className="h-full flex items-center justify-center text-muted-foreground">
               Select a conversation
@@ -252,6 +321,7 @@ export function Messages() {
           )}
         </div>
       </div>
+      <Toaster />
     </div>
   );
 }

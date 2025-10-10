@@ -3,22 +3,27 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Paperclip, Send, Info, StepBack, ChevronDown } from "lucide-react";
-import type {  ChatWindowProps, ConversationType } from "../../store/messages/messages.types";
+import type {
+  ChatWindowProps,
+  ConversationType,
+} from "../../store/messages/messages.types";
 import { UserSelect } from "./UserSelect";
 import { CreateConversationModal } from "./GroupInfoForm";
 import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "../../store";
 import type { User } from "../../store/messages";
 import type { AppDispatch } from "../../store";
-import { useNavigate } from "react-router-dom";
 import { unwrapResult } from "@reduxjs/toolkit";
-import {createConversation} from "../../store/messages/messages.thunks"
+import { createConversation } from "../../store/messages/messages.thunks";
+import toast from "react-hot-toast";
 
 export function ChatWindow({
   messages,
   isCreatingMessage,
   conversationId,
   currentChatUser,
+  onConversationCreated,
+  onExitCreateMode,
 }: ChatWindowProps) {
   const [newMessage, setNewMessage] = useState("");
   const [showInfo, setShowInfo] = useState(false);
@@ -28,7 +33,6 @@ export function ChatWindow({
   const [showGroupModal, setShowGroupModal] = useState(false);
 
   const dispatch = useDispatch<AppDispatch>();
-  const navigate = useNavigate();
 
   // Get real-time state from Redux store
   const isConnected = useSelector(
@@ -47,7 +51,7 @@ export function ChatWindow({
 
   // Handle group creation
   const handleCreateGroup = useCallback(
-    (groupName: string) => {
+    (_groupName: string) => {
       // TODO: Implement group creation logic here
       setShowGroupModal(false);
     },
@@ -75,59 +79,69 @@ export function ChatWindow({
     }
   }, [conversationId, dispatch]);
 
-
   const handleSendMessage = async () => {
-  if (isCreatingMessage) {
-    if (!newMessage.trim() || selectedRecipients.length === 0) return;
+    if (isCreatingMessage) {
+      if (!newMessage.trim() || selectedRecipients.length === 0) return;
 
-    try {
-      const participantIds = selectedRecipients.map((u) => u.id);
-      
-      const conversationType: ConversationType = participantIds.length === 1 ? 'dm' : 'group';
+      try {
+        const participantIds = selectedRecipients.map((u) => u.id);
 
+        const conversationType: ConversationType =
+          participantIds.length === 1 ? "dm" : "group";
 
-      const payload = {
-        participantIds,
-        type: conversationType,
-      };
-      
-      const createAction = await dispatch(createConversation(payload));
-      const newConversation = unwrapResult(createAction);
+        const payload = {
+          participantIds,
+          type: conversationType,
+        };
+
+        const createAction = await dispatch(createConversation(payload));
+        const newConversation = unwrapResult(createAction);
+
+        // Send the first message to the new conversation
+        dispatch({
+          type: "socket/sendMessage",
+          payload: {
+            conversationId: newConversation.id,
+            body: newMessage,
+            type: "text",
+          },
+        });
+
+        // Show success toast
+        toast.success("Conversation created successfully!");
+
+        // Clear input and reset recipients
+        setNewMessage("");
+        setSelectedRecipients([]);
+
+        // Notify parent component to update UI
+        if (onConversationCreated) {
+          onConversationCreated(newConversation.id);
+        }
+
+        // Exit create mode
+        if (onExitCreateMode) {
+          onExitCreateMode();
+        }
+      } catch (error) {
+        console.error("Failed to start new conversation:", error);
+        toast.error("Failed to create conversation");
+      }
+    } else {
+      if (!newMessage.trim() || !conversationId) return;
 
       dispatch({
         type: "socket/sendMessage",
         payload: {
-          conversationId: newConversation.id,
-          body: newMessage,
+          conversationId,
           type: "text",
+          body: newMessage,
         },
       });
-      
+
       setNewMessage("");
-      // navigate(`/messaging/t/${newConversation.id}`);
-
-    } catch (error) {
-      console.error("Failed to start new conversation:", error);
-      // TODO: Show an error toast to the user
     }
-  } 
-  else {
-    if (!newMessage.trim() || !conversationId) return;
-
-    dispatch({
-      type: "socket/sendMessage",
-      payload: {
-        conversationId,
-        type: "text",
-        body: newMessage,
-      },
-    });
-
-    setNewMessage("");
-  }
-};
-
-  
+  };
 
   return (
     <div className="relative flex flex-col h-full">

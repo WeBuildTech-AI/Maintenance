@@ -127,6 +127,8 @@ export interface ChatWindowProps {
     isGroup?: boolean;
     participants?: User[];
   };
+  onConversationCreated?: (conversationId: string) => void; // Callback when conversation is created
+  onExitCreateMode?: () => void; // Callback to exit create mode
 }
 
 export type MessagesHeaderProps = {
@@ -137,4 +139,3 @@ export type MessagesHeaderProps = {
   setIsCreatingForm: React.Dispatch<React.SetStateAction<boolean>>;
   setShowSettings: React.Dispatch<React.SetStateAction<boolean>>;
 };
-
