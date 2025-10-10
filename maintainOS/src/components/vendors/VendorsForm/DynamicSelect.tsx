@@ -80,6 +80,18 @@ export function DynamicSelect({
   const isMulti = Array.isArray(value);
   const open = activeDropdown === name;
 
+  // ✅ added local trigger to force re-render once new options arrive
+  const [forceRender, setForceRender] = React.useState(0);
+
+  // 🧩 Debug logs
+  console.log("🔍 DynamicSelect:", {
+    name,
+    open,
+    optionsCount: options?.length,
+    loading,
+  });
+
+  // ✅ handle outside click close
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -97,12 +109,22 @@ export function DynamicSelect({
     };
   }, [open, setActiveDropdown]);
 
+  // ✅ when options update after async fetch, force re-render
+  React.useEffect(() => {
+    if (options.length > 0 && activeDropdown === name) {
+      console.log(`✅ Forcing re-render for ${name} because options arrived`);
+      setForceRender((v) => v + 1);
+    }
+  }, [options, activeDropdown, name]);
+
+  // ✅ handle toggle
   const handleToggle = () => {
     const nextState = open ? null : name;
-    if (nextState) {
+    setActiveDropdown(nextState);
+    if (!open) {
+      console.log(`📡 Fetching data for ${name}...`);
       onFetch();
     }
-    setActiveDropdown(nextState);
   };
 
   const toggleOption = (id: string) => {
@@ -123,6 +145,7 @@ export function DynamicSelect({
 
   return (
     <div
+      key={forceRender} // ✅ triggers UI refresh when options update
       className={`relative ${open ? "z-50" : ""} ${className}`}
       ref={dropdownRef}
     >
@@ -167,7 +190,10 @@ export function DynamicSelect({
       </div>
 
       {open && (
-        <div className="absolute top-full mt-1 w-full rounded-md border bg-white z-20 max-h-60 overflow-y-auto shadow-lg">
+        <div
+          onMouseDown={(e) => e.stopPropagation()} // ✅ prevent premature close
+          className="absolute top-full mt-1 w-full rounded-md border bg-white z-20 max-h-60 overflow-y-auto shadow-lg"
+        >
           {loading ? (
             <div className="flex justify-center items-center p-4">
               <Spinner />
@@ -183,20 +209,24 @@ export function DynamicSelect({
                     onClick={() => toggleOption(option.id)}
                   >
                     <label
-                      className={`cursor-pointer pl-4 ${isSelected
+                      className={`cursor-pointer pl-4 ${
+                        isSelected
                           ? "text-gray-900 font-normal"
                           : "text-gray-700 font-normal"
-                        }`}
+                      }`}
                     >
                       {option.name}
                     </label>
 
                     <ManualCheckbox checked={isSelected} />
                   </div>
-
                 );
               })}
-              {options.length === 0 && <div className="p-3 text-muted-foreground">No options found.</div>}
+              {options.length === 0 && (
+                <div className="p-3 text-muted-foreground">
+                  No options found.
+                </div>
+              )}
             </div>
           )}
 

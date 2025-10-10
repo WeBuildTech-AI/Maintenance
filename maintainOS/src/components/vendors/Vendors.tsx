@@ -4,12 +4,13 @@ import { useMatch, useNavigate } from "react-router-dom"; // <-- ADDED
 import type { AppDispatch } from "../../store";
 import { updateVendor, vendorService } from "../../store/vendors";
 import type { ViewMode } from "../purchase-orders/po.types";
-import { VendorDetails } from "./VendorDetails";
+
 import { VendorHeaderComponent } from "./VendorHeader";
 import { mockVendors, type Vendor } from "./vendors.types";
 import { VendorForm } from "./VendorsForm/VendorForm";
 import { VendorSidebar } from "./VendorSidebar";
 import { VendorTable } from "./VendorTable";
+import VendorDetails from "./VendorDetails/VendorDetails";
 
 export function Vendors() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -47,9 +48,12 @@ export function Vendors() {
     navigate("/vendors");
   };
 
-  const handleCreateSubmit = (newVendor: Vendor) => {
-    setVendors((prev) => [newVendor, ...prev]);
+  // ✅ ADDED FIX: Real-time sidebar refresh after creating vendor
+  const handleCreateSubmit = async (newVendor: Vendor) => {
+    setVendors((prev) => [newVendor, ...prev]); // add instantly
     setSelectedVendorId(newVendor.id);
+    await refreshVendors(); // fetch fresh data
+    setSelectedVendorId(newVendor.id); // keep selected vendor highlighted
     navigate("/vendors");
   };
 
@@ -57,7 +61,7 @@ export function Vendors() {
   const refreshVendors = async () => {
     try {
       const res = await vendorService.fetchVendors(10, 1, 0);
-      setVendors(res);
+      setVendors(() => [...res]); // ✅ force re-render with new array reference
     } catch (err) {
       console.error(err);
     }
@@ -216,6 +220,12 @@ export function Vendors() {
                   onCancel={handleCancelForm}
                   setVendors={setVendors}
                   setSelectedVendorId={setSelectedVendorId}
+                  // ✅ ADDED: now VendorForm tells parent when new vendor created
+                  onSuccess={async (newVendor) => {
+                    setVendors((prev) => [newVendor, ...prev]); // instant UI
+                    await refreshVendors(); // sync with backend
+                    setSelectedVendorId(newVendor.id);
+                  }}
                 />
               ) : selectedVendor ? (
                 <div
@@ -226,6 +236,14 @@ export function Vendors() {
                   <VendorDetails
                     vendor={selectedVendor}
                     onEdit={(v) => navigate(`/vendors/${v.id}/edit`)}
+                    onDeleteSuccess={async (deletedId) => {
+                      // ✅ ADDED REAL-TIME DELETE UPDATE
+                      setVendors((prev) =>
+                        prev.filter((v) => v.id !== deletedId)
+                      );
+                      await refreshVendors();
+                      setSelectedVendorId("");
+                    }}
                   />
                 </div>
               ) : (

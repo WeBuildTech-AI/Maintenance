@@ -7,8 +7,10 @@ import {
   MapPin,
   Package,
   Wrench,
+  UserCog,
+  FileText,
 } from "lucide-react";
-import { fetchFilterData } from "./../utils/filterDataFetcher";
+import { fetchFilterData } from "../utils/filterDataFetcher";
 
 interface FilterDropdownProps {
   title: string;
@@ -18,6 +20,7 @@ interface FilterDropdownProps {
   onSelect: (option: string) => void;
   onDelete: () => void;
   selectedOptions: string[];
+  onClose?: () => void;
 }
 
 export function FilterDropdown({
@@ -28,31 +31,56 @@ export function FilterDropdown({
   onSelect,
   onDelete,
   selectedOptions,
+  onClose,
 }: FilterDropdownProps) {
   const [condition, setCondition] = useState("One of");
   const [showConditionMenu, setShowConditionMenu] = useState(false);
   const [dynamicOptions, setDynamicOptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [isOpen, setIsOpen] = useState(true);
 
-  // Auto-fetch dynamic options for Location
+  // ✅ Auto-fetch data for all supported dropdowns
   useEffect(() => {
     const fetchData = async () => {
-      if (title === "Location") {
+      const type = title.toLowerCase();
+      if (
+        [
+          "location",
+          "asset",
+          "assets",
+          "parts",
+          "part",
+          "vendor",
+          "vendors",
+          "procedure",
+          "procedures",
+        ].includes(type)
+      ) {
         setLoading(true);
-        const { data } = await fetchFilterData("location");
-        setDynamicOptions(data);
+        const { data } = await fetchFilterData(type);
+        setDynamicOptions(data || []);
         setLoading(false);
       }
     };
     fetchData();
   }, [title]);
 
-  // If dynamicOptions exist (Location), use those; else fallback to provided options
+  // ✅ Filter results
   const filtered =
-    title === "Location"
-      ? dynamicOptions.filter((l) =>
-          (l.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+    [
+      "location",
+      "asset",
+      "assets",
+      "parts",
+      "part",
+      "vendor",
+      "vendors",
+      "procedure",
+      "procedures",
+    ].includes(title.toLowerCase())
+      ? dynamicOptions.filter((opt) =>
+          (opt.name || "").toLowerCase().includes(searchQuery.toLowerCase())
         )
       : options
           .filter((o) => o.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -61,16 +89,21 @@ export function FilterDropdown({
   const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
 
   const getFallbackIcon = () => {
-    if (title.toLowerCase().includes("location"))
+    const t = title.toLowerCase();
+    if (t.includes("location"))
       return <MapPin size={16} className="text-blue-600" />;
-    if (title.toLowerCase().includes("asset"))
+    if (t.includes("asset"))
       return <Package size={16} className="text-green-600" />;
-    if (title.toLowerCase().includes("vendor"))
-      return <Wrench size={16} className="text-orange-600" />;
+    if (t.includes("part"))
+      return <Wrench size={16} className="text-amber-600" />;
+    if (t.includes("vendor"))
+      return <UserCog size={16} className="text-orange-600" />;
+    if (t.includes("procedure"))
+      return <FileText size={16} className="text-purple-600" />;
     return <MapPin size={16} className="text-gray-400" />;
   };
 
-  // Prevent closing when clicking inside
+  // Prevent accidental close when clicking inside
   useEffect(() => {
     const preventClose = (e: MouseEvent) => {
       if (dropdownRef.current?.contains(e.target as Node)) e.stopPropagation();
@@ -79,11 +112,37 @@ export function FilterDropdown({
     return () => document.removeEventListener("mousedown", preventClose, true);
   }, []);
 
+  // Close on outside click or ESC
+  useEffect(() => {
+    const handleOutside = (e: MouseEvent) => {
+      const inside = dropdownRef.current?.contains(e.target as Node);
+      if (!inside) {
+        setShowConditionMenu(false);
+        if (onClose) onClose();
+        else setIsOpen(false);
+      }
+    };
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setShowConditionMenu(false);
+        if (onClose) onClose();
+        else setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutside);
+    document.addEventListener("keydown", handleEsc);
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("keydown", handleEsc);
+    };
+  }, [onClose]);
+
   return (
     <div
       ref={dropdownRef}
       className="w-80 bg-white border rounded-lg shadow-xl z-50"
       onClick={stopPropagation}
+      style={{ display: isOpen ? "block" : "none" }}
     >
       {/* Header */}
       <div className="flex justify-between items-center px-3 py-2 border-b text-sm font-semibold text-gray-700 relative">
@@ -152,7 +211,7 @@ export function FilterDropdown({
           <Search size={14} className="text-gray-400" />
           <input
             type="text"
-            placeholder="Search"
+            placeholder={`Search ${title}`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full text-sm outline-none placeholder-gray-400"
@@ -167,13 +226,10 @@ export function FilterDropdown({
           <div className="px-3 py-2 text-sm text-gray-500">Loading...</div>
         ) : filtered.length > 0 ? (
           filtered.map((opt: any, idx: number) => {
-            // ✅ for Location we send/track ID; for others we send/track name
-            const valueForSelect =
-              title === "Location" ? (opt.id ?? opt.name) : opt.name;
-
+            const valueForSelect = opt.id ?? opt.name;
             return (
               <div
-                key={opt.name}
+                key={opt.id || opt.name}
                 className={`flex items-center justify-between px-3 py-2 text-sm cursor-pointer ${
                   idx !== filtered.length - 1 ? "border-b" : ""
                 } hover:bg-gray-50`}
@@ -198,11 +254,7 @@ export function FilterDropdown({
                     console.log(
                       "%c🟢 SELECTED OPTION:",
                       "color:#10b981;font-weight:bold;",
-                      {
-                        id: opt.id || "(no id)",
-                        name: opt.name,
-                        valueSentUp: valueForSelect,
-                      }
+                      { id: opt.id, name: opt.name }
                     );
                     onSelect(valueForSelect);
                   }}

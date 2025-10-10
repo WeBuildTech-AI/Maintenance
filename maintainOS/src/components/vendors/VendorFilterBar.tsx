@@ -18,7 +18,7 @@ const ALL_FILTERS = [
     key: "vendorTypes",
     label: "Vendor Types",
     icon: <Settings size={16} />,
-    options: ["Electrical", "Mechanical", "Plumbing"],
+    options: ["Manufacturer", "Distributor"],
   },
   {
     key: "location",

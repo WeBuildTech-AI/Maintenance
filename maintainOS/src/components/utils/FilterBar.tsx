@@ -28,20 +28,25 @@ export default function FilterBar({
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const addMenuRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null); // ✅ Added ref for dropdown modal
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(target) &&
-        addMenuRef.current &&
-        !addMenuRef.current.contains(target)
-      ) {
+      // ✅ Improved outside click detection
+      const clickedInsideDropdown =
+        dropdownRef.current && dropdownRef.current.contains(target);
+      const clickedInsideModal =
+        modalRef.current && modalRef.current.contains(target);
+      const clickedInsideAddMenu =
+        addMenuRef.current && addMenuRef.current.contains(target);
+
+      if (!clickedInsideDropdown && !clickedInsideAddMenu && !clickedInsideModal) {
         setOpenFilterKey(null);
         setShowAddMenu(false);
       }
     };
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -107,7 +112,10 @@ export default function FilterBar({
           <div key={key} className="relative" ref={isOpen ? dropdownRef : null}>
             <FilterChip filter={filter} onClick={() => toggleDropdown(key)} />
             {isOpen && (
-              <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 w-80 z-50">
+              <div
+                ref={modalRef} // ✅ attached to the modal container
+                className="absolute top-full mt-1 left-1/2 -translate-x-1/2 w-80 z-50"
+              >
                 <FilterDropdown
                   title={filter.label}
                   options={filter.options || []}

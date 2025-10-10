@@ -1,20 +1,21 @@
 import { X } from "lucide-react";
 import { useState, useEffect } from "react";
+import { saveContact } from "./contactService";
 
 export interface ContactFormData {
   fullName: string;
   role: string;
   email: string;
-  phoneNumber: string; // backend expects phoneNumber
+  phoneNumber: string;
   phoneExtension: string;
-  contactColour: string; // backend expects contactColour
+  contactColour: string;
 }
 
 interface NewContactModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (contact: ContactFormData) => void;
-  initialData?: ContactFormData | null;
+  initialData?: any | null; // vendor/contact data
 }
 
 const COLORS = [
@@ -67,18 +68,35 @@ export function NewContactModal({
     return contact.fullName.trim().charAt(0).toUpperCase() || "C";
   };
 
-  const handleCreate = () => {
-    onSave(contact);
-    setContact({
-      fullName: "",
-      role: "",
-      email: "",
-      phoneNumber: "",
-      phoneExtension: "",
-      contactColour: "#EC4899",
-    });
-    setShowExtension(false);
-    onClose();
+  const handleSave = async () => {
+    try {
+      if (initialData?.vendorId) {
+        // ✅ Always use PUT API for both new + existing contacts
+        await saveContact({
+          contact,
+          vendorId: initialData.vendorId,
+          contactId: initialData?.id || initialData?._id,
+        });
+      } else {
+        console.warn("⚠️ Vendor ID missing — contact will be saved later.");
+      }
+
+      onSave(contact);
+      onClose();
+
+      // Reset fields
+      setContact({
+        fullName: "",
+        role: "",
+        email: "",
+        phoneNumber: "",
+        phoneExtension: "",
+        contactColour: "#EC4899",
+      });
+      setShowExtension(false);
+    } catch (error) {
+      console.error("❌ handleSave error:", error);
+    }
   };
 
   const handleCancel = () => {
@@ -98,16 +116,17 @@ export function NewContactModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center "
+      className="fixed inset-0 z-50 flex items-center justify-center"
       style={{ backgroundColor: "rgba(0, 0, 0, 0.1)" }}
     >
       <div
         className="w-full bg-white rounded-lg shadow-lg overflow-hidden"
         style={{ maxWidth: "672px", maxHeight: "90vh" }}
       >
+        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <h2 className="text-2xl font-semibold text-gray-700">
-            {initialData ? "Edit Contact" : "New Contact"}
+            {initialData?.id ? "Edit Contact" : "New Contact"}
           </h2>
           <button
             onClick={handleCancel}
@@ -117,11 +136,10 @@ export function NewContactModal({
           </button>
         </div>
 
-        <div
-          className="overflow-y-auto"
-          style={{ maxHeight: "calc(90vh - 140px)" }}
-        >
+        {/* Scrollable Content */}
+        <div className="overflow-y-auto" style={{ maxHeight: "calc(90vh - 140px)" }}>
           <div className="px-6 py-8">
+            {/* Avatar */}
             <div className="flex justify-start mb-8">
               <div
                 className="flex items-center justify-center text-white font-light"
@@ -137,18 +155,13 @@ export function NewContactModal({
               </div>
             </div>
 
+            {/* Contact Fields */}
             <div className="mb-8">
-              <h3
-                className="text-base font-semibold text-gray-700 mb-4"
-                style={{ marginBottom: "20px" }}
-              >
+              <h3 className="text-base font-semibold text-gray-700 mb-4">
                 Contact Info
               </h3>
-
-              <div
-                className="grid grid-cols-2 gap-6"
-                style={{ gap: "20px 24px" }}
-              >
+              <div className="grid grid-cols-2 gap-6" style={{ gap: "20px 24px" }}>
+                {/* Full Name */}
                 <div className="flex flex-col">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Full Name
@@ -158,16 +171,14 @@ export function NewContactModal({
                     placeholder="Name"
                     value={contact.fullName}
                     onChange={(e) =>
-                      setContact((prev) => ({
-                        ...prev,
-                        fullName: e.target.value,
-                      }))
+                      setContact((prev) => ({ ...prev, fullName: e.target.value }))
                     }
                     className="w-full rounded border border-blue-500 px-3 text-sm text-gray-700 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                     style={{ padding: "10px 12px" }}
                   />
                 </div>
 
+                {/* Role */}
                 <div className="flex flex-col">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Role
@@ -184,6 +195,7 @@ export function NewContactModal({
                   />
                 </div>
 
+                {/* Email */}
                 <div className="flex flex-col">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Email
@@ -200,6 +212,7 @@ export function NewContactModal({
                   />
                 </div>
 
+                {/* Phone */}
                 <div className="flex flex-col">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Phone Number
@@ -209,10 +222,7 @@ export function NewContactModal({
                     placeholder="Enter phone number (e.g., 8750118899)"
                     value={contact.phoneNumber}
                     onChange={(e) =>
-                      setContact((prev) => ({
-                        ...prev,
-                        phoneNumber: e.target.value,
-                      }))
+                      setContact((prev) => ({ ...prev, phoneNumber: e.target.value }))
                     }
                     className="w-full rounded border border-gray-200 px-3 text-sm text-gray-700 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                     style={{ padding: "10px 12px" }}
@@ -223,6 +233,7 @@ export function NewContactModal({
                 </div>
               </div>
 
+              {/* Add Country Code */}
               {!showExtension && (
                 <button
                   type="button"
@@ -243,10 +254,7 @@ export function NewContactModal({
                     placeholder="e.g., +91"
                     value={contact.phoneExtension}
                     onChange={(e) =>
-                      setContact((prev) => ({
-                        ...prev,
-                        phoneExtension: e.target.value,
-                      }))
+                      setContact((prev) => ({ ...prev, phoneExtension: e.target.value }))
                     }
                     className="w-full rounded border border-gray-200 px-3 text-sm text-gray-700 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                     style={{ padding: "10px 12px" }}
@@ -258,6 +266,7 @@ export function NewContactModal({
               )}
             </div>
 
+            {/* Contact Color */}
             <div>
               <h3 className="text-base font-semibold text-gray-700 mb-4">
                 Contact Color
@@ -293,6 +302,7 @@ export function NewContactModal({
           </div>
         </div>
 
+        {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-white">
           <button
             onClick={handleCancel}
@@ -302,11 +312,11 @@ export function NewContactModal({
             Cancel
           </button>
           <button
-            onClick={handleCreate}
+            onClick={handleSave}
             className="cursor-pointer rounded border-0 bg-blue-600 px-6 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
             style={{ padding: "10px 24px" }}
           >
-            {initialData ? "Save Changes" : "Create"}
+            Save
           </button>
         </div>
       </div>
