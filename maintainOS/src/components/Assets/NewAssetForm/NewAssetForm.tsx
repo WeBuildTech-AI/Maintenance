@@ -33,7 +33,7 @@ import toast from "react-hot-toast";
 interface NewAssetFormProps {
   isEdit?: boolean; // To check if we are in edit mode
   assetData?: Asset | null;
-  onCreate: () => void;
+  onCreate: (newAsset: Asset) => void;
   onCancel?: () => void;
 }
 
@@ -172,10 +172,10 @@ export function NewAssetForm({
       // We are editing: dispatch the update action
       dispatch(updateAsset({ id: assetData.id, assetData: payload }))
         .unwrap()
-        .then(() => {
+        .then((res) => {
           toast.success("Asset updated successfully");
           toast.success("Successfully Update the Asset");
-          onCreate(); // Call the success callback
+          onCreate(res); // Call the success callback
         })
         .catch((err) => {
           setError(err || "Failed to update asset");
@@ -186,7 +186,7 @@ export function NewAssetForm({
         .unwrap()
         .then((res) => {
           toast.success("Successfully Create the Asset");
-
+          onCreate(res);
           // Reset all form fields
           setAssetName("");
           setSelectedLocation(null); // Recommended to reset objects to null

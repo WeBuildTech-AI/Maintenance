@@ -23,10 +23,11 @@ interface Asset {
 interface AssetDetailProps {
   asset: Asset;
   onEdit: (asset: Asset) => void; // Add this line
+  onDelete: (asset: Asset) => void; // Add this line
 }
 
 // 3. Use the defined types in your component.
-export const AssetDetail: FC<AssetDetailProps> = ({ asset , onEdit }) => {
+export const AssetDetail: FC<AssetDetailProps> = ({ asset , onEdit , onDelete }) => {
   const [showHistory, setShowHistory] = useState<boolean>(false);
   const user = useSelector((state: RootState) => state.auth.user);
   const renderInitials = (text: string) =>
@@ -39,7 +40,7 @@ export const AssetDetail: FC<AssetDetailProps> = ({ asset , onEdit }) => {
 
   return (
     <div className="h-full border mr-3 flex flex-col min-h-0">
-      <AssetDetailHeader asset={asset} setShowHistory={setShowHistory} onEdit={onEdit} />
+      <AssetDetailHeader asset={asset} setShowHistory={setShowHistory} onEdit={onEdit} onDelete={onDelete} />
 
       {showHistory ? (
         <div className="flex items-start gap-3 p-3 border-b border-gray-100">

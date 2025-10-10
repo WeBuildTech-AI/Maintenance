@@ -7,7 +7,10 @@ import { NewAssetForm } from "./NewAssetForm/NewAssetForm";
 import { AssetTable } from "./AssetsTable/AssetTable";
 import { AssetHeaderComponent } from "./AssetsHeader/AssetsHeader";
 import type { ViewMode } from "../purchase-orders/po.types";
-import { assetService } from "../../store/assets";
+import { assetService, deleteAsset } from "../../store/assets";
+import toast, { Toaster } from "react-hot-toast";
+import { useDispatch } from "react-redux";
+import type { AppDispatch } from "../../store";
 
 // Define a clear type for your Asset data
 // IMPORTANT: Apne real data ke according is interface ko adjust karein.
@@ -36,7 +39,7 @@ export const Assets: FC = () => {
   const [sortType, setSortType] = useState<string>("Name");
   const [sortOrder, setSortOrder] = useState<string>("asc"); // 'asc' or 'desc'
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
-
+  const dispatch = useDispatch<AppDispatch>();
   const fetchAssetsData = async () => {
     setLoading(true);
     try {
@@ -66,13 +69,6 @@ export const Assets: FC = () => {
   const handleEditAsset = (assetToEdit: Asset) => {
     setEditingAsset(assetToEdit); // Set the asset we want to edit
     setShowNewAssetForm(true); // Show the form
-  };
-
-  // --- NEW FUNCTION TO HANDLE FORM COMPLETION ---
-  const handleFormComplete = () => {
-    setShowNewAssetForm(false);
-    setEditingAsset(null); // IMPORTANT: Reset the editing asset
-    fetchAssetsData(); // Refetch the data to show updated info
   };
 
   // 2. useMemo hook to efficiently sort and filter data
@@ -107,6 +103,7 @@ export const Assets: FC = () => {
     });
 
     // --- Filtering Logic ---
+
     if (!searchQuery) {
       return processedAssets;
     }
@@ -115,74 +112,134 @@ export const Assets: FC = () => {
     return processedAssets.filter(
       (asset) =>
         asset.name.toLowerCase().includes(q) ||
-        asset.location.name.toLowerCase().includes(q)
+        // Use optional chaining (?.) to prevent crash if location is null
+        asset.location?.name.toLowerCase().includes(q)
     );
   }, [assetData, sortType, sortOrder, searchQuery]);
-  
+
+  // In your Assets.tsx component
+
+  const handleDeleteAsset = (id: string | number) => {
+    // Find the index of the item to be deleted from the currently visible list
+    const currentIndex = sortedAndFilteredAssets.findIndex((a) => a.id === id);
+
+    if (window.confirm("Are you sure you want to delete this asset?")) {
+      dispatch(deleteAsset(id))
+        .unwrap()
+        .then(() => {
+          const newAssetList = assetData.filter((asset) => asset.id !== id);
+          setAssetData(newAssetList);
+          if (newAssetList.length === 0) {
+            // If the list becomes empty, select null
+            setSelectedAsset(null);
+          } else {
+            // Calculate the new index to select. This handles deleting the last item correctly.
+            const newIndexToSelect = Math.min(
+              currentIndex,
+              newAssetList.length - 1
+            );
+
+            // We need to select from the sorted/filtered list to match what the user was seeing
+            const newSortedList = sortedAndFilteredAssets.filter(
+              (a) => a.id !== id
+            );
+            setSelectedAsset(newSortedList[newIndexToSelect]);
+          }
+
+          toast.success("Asset deleted successfully!");
+        })
+        .catch((error) => {
+          console.error("Delete failed:", error);
+          toast.error("Failed to delete the asset."); // Use toast.error for better UI
+        });
+    }
+  };
 
   return (
-    <div className="flex h-full flex-col">
-      {AssetHeaderComponent(
-        viewMode,
-        setViewMode,
-        searchQuery,
-        setSearchQuery,
-        setShowNewAssetForm,
-        setShowSettings
-      )}
+    <>
+      <div>
+        <Toaster />
+      </div>
+      <div className="flex h-full flex-col">
+        {AssetHeaderComponent(
+          viewMode,
+          setViewMode,
+          searchQuery,
+          setSearchQuery,
+          setShowNewAssetForm,
+          setShowSettings,
+          setSelectedAsset
+        )}
 
-      {viewMode === "table" ? (
-        <AssetTable
-          assets={sortedAndFilteredAssets}
-          selectedAsset={selectedAsset}
-        />
-      ) : (
-        <>
-          <div className="flex flex-1 min-h-0">
-            <AssetsList
-              assets={sortedAndFilteredAssets}
-              selectedAsset={selectedAsset}
-              setSelectedAsset={setSelectedAsset}
-              setShowNewAssetForm={setShowNewAssetForm}
-              loading={loading}
-              // 3. Pass sorting state and setters to AssetsList
-              sortType={sortType}
-              setSortType={setSortType}
-              sortOrder={sortOrder}
-              setSortOrder={setSortOrder}
-            />
-            <div className="flex-1 bg-card min-h-0 flex flex-col">
-              {showNewAssetForm ? (
-                <NewAssetForm
-                  onCreate={() => {
-                    setShowNewAssetForm(false);
-                    // TODO: Add logic to refetch assets after creation
-                  }}
-                  onCancel={() => setShowNewAssetForm(false)}
-                  isEdit={!!editingAsset} // Converts object to boolean (true if editingAsset is not null)
-                  assetData={editingAsset}
-                />
-              ) : selectedAsset ? (
-                <AssetDetail asset={selectedAsset} onEdit={handleEditAsset} />
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
-                      <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed"></div>
+        {viewMode === "table" ? (
+          <AssetTable
+            assets={sortedAndFilteredAssets}
+            selectedAsset={selectedAsset}
+          />
+        ) : (
+          <>
+            <div className="flex flex-1 min-h-0">
+              <AssetsList
+                assets={sortedAndFilteredAssets}
+                selectedAsset={selectedAsset}
+                setSelectedAsset={setSelectedAsset}
+                setShowNewAssetForm={setShowNewAssetForm}
+                loading={loading}
+                // 3. Pass sorting state and setters to AssetsList
+                sortType={sortType}
+                setSortType={setSortType}
+                sortOrder={sortOrder}
+                setSortOrder={setSortOrder}
+              />
+              <div className="flex-1 bg-card min-h-0 flex flex-col">
+                {showNewAssetForm ? (
+                  <NewAssetForm
+                    onCreate={(newlyCreatedAsset) => {
+                      // 1. State mein naye asset ko list ke shuru mein add karein
+                      setAssetData((prevAssets) => [
+                        newlyCreatedAsset,
+                        ...prevAssets,
+                      ]);
+
+                      // 2. Naye asset ko select karein taaki uski details dikhein
+                      setSelectedAsset(newlyCreatedAsset);
+
+                      // 3. Form ko hide karein
+                      setShowNewAssetForm(false);
+
+                      // Edit state ko reset karna bhi zaroori hai
+                      setEditingAsset(null);
+                    }}
+                    onCancel={() => setShowNewAssetForm(false)}
+                    isEdit={!!editingAsset} // Converts object to boolean (true if editingAsset is not null)
+                    assetData={editingAsset}
+                  />
+                ) : selectedAsset ? (
+                  <AssetDetail
+                    asset={selectedAsset}
+                    onDelete={handleDeleteAsset}
+                    onEdit={handleEditAsset}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
+                        <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed"></div>
+                      </div>
+                      <p className="text-muted-foreground mb-2">
+                        Select an asset to view details
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        or create a new asset to get started
+                      </p>
                     </div>
-                    <p className="text-muted-foreground mb-2">
-                      Select an asset to view details
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      or create a new asset to get started
-                    </p>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
-        </>
-      )}
-    </div>
+          </>
+        )}
+      </div>
+    </>
   );
 };

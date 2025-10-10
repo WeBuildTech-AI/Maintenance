@@ -159,7 +159,7 @@ export function Locations() {
 
   useEffect(() => {
     if (hasFetched.current) return;
-    fetchLocations(1);
+    fetchLocations();
   }, []);
 
   // NEW: Combined filtering and sorting into a single useEffect for efficiency
@@ -240,31 +240,46 @@ export function Locations() {
   }, [modalRef]);
 
   const handleDeleteLocation = (id: string) => {
-    dispatch(deleteLocation(id))
-      .unwrap()
-      .then(() => {
-        toast.success("Location deleted successfully!");
+    // Step 1: Find the index of the item in the VISIBLE list (filteredLocations)
+    const currentVisibleIndex = filteredLocations.findIndex(
+      (loc) => loc.id === id
+    );
 
-        const indexToDelete = filteredLocations.findIndex(
-          (loc) => loc.id === id
-        );
+    if (window.confirm("Are you sure you want to delete this location?")) {
+      dispatch(deleteLocation(id))
+        .unwrap()
+        .then(() => {
+          // Step 2: Update the main source of truth.
+          // The useEffect will automatically update the filtered list later.
+          const newLocationsList = locations.filter((loc) => loc.id !== id);
+          setLocations(newLocationsList);
 
-        if (selectedLocation?.id === id && indexToDelete !== -1) {
-          if (filteredLocations.length === 1) {
+          // Step 3: Predict what the new visible list will be after the delete
+          const newFilteredList = filteredLocations.filter(
+            (loc) => loc.id !== id
+          );
+
+          // Step 4: Smartly decide which item to select next
+          if (newFilteredList.length === 0) {
+            // If the visible list is now empty, select nothing
             setSelectedLocation(null);
-          } else if (indexToDelete === filteredLocations.length - 1) {
-            setSelectedLocation(filteredLocations[indexToDelete - 1]);
           } else {
-            setSelectedLocation(filteredLocations[indexToDelete + 1]);
+            // Calculate the new index, ensuring it's not out of bounds
+            const newIndexToSelect = Math.min(
+              currentVisibleIndex,
+              newFilteredList.length - 1
+            );
+            // Select the correct next item from the updated visible list
+            setSelectedLocation(newFilteredList[newIndexToSelect]);
           }
-        }
-        setLocations((prev) => prev.filter((loc) => loc.id !== id));
-        navigate("/locations");
-      })
-      .catch((error) => {
-        console.error("Delete failed:", error);
-        alert("Failed to delete the location.");
-      });
+
+          toast.success("Location deleted successfully!");
+        })
+        .catch((error) => {
+          console.error("Delete failed:", error);
+          toast.error("Failed to delete the location.");
+        });
+    }
   };
 
   const renderInitials = (text: string) =>

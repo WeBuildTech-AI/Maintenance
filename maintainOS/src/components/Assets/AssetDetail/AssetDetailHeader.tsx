@@ -11,6 +11,7 @@ import { deleteAsset } from "../../../store/assets";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../../store";
 import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 // Define a type for the asset object for type safety
 interface Asset {
@@ -24,35 +25,30 @@ interface AssetDetailHeaderProps {
   asset: Asset;
   setShowHistory: (show: boolean) => void;
   onEdit: (asset: Asset) => void;
+  onDelete: (asset: Asset) => void;
 }
 
 export function AssetDetailHeader({
   asset,
   setShowHistory,
   onEdit,
+  onDelete,
 }: AssetDetailHeaderProps) {
-  const dispatch = useDispatch<AppDispatch>();
-
-  const handleDeleteAsset = (id: string) => {
-    if (window.confirm("Are you sure you want to delete this location?")) {
-      dispatch(deleteAsset(id))
-        .unwrap()
-        .then(() => {
-          toast.success("Location deleted successfully!");
-        })
-        .catch((error) => {
-          console.error("Delete failed:", error);
-          alert("Failed to delete the location.");
-        });
-    }
-  };
-
+  
+  const navigate = useNavigate();
   return (
     <div className="p-6 border-b border-border flex-shrink-0">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-medium capitalize">{asset.name}</h1>
-          <Link className="h-4 w-4 text-orange-600" />
+          <Link
+            onClick={() => {
+              const url = `${window.location.origin}/assets/${asset?.id}`;
+              navigator.clipboard.writeText(url);
+              toast.success("Asset link copied!");
+            }}
+            className="h-4 w-4 text-orange-600"
+          />
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -70,7 +66,7 @@ export function AssetDetailHeader({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleDeleteAsset(asset.id)}>
+              <DropdownMenuItem onClick={() => onDelete(asset.id)}>
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
