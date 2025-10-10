@@ -23,16 +23,18 @@ export const messageService = {
     return transformedUsers;
   },
 
-  userDMs: async(userId:string) : Promise<DMConversation[]> => {
-    const response = await axios.get(`${API_URL}/messaging/conversations/allconvo/${userId}`);
+  userDMs: async (userId: string): Promise<DMConversation[]> => {
+    const response = await axios.get(
+      `${API_URL}/messaging/conversations/allconvo/${userId}`
+    );
     const conversations = response.data;
 
     const transformed: DMConversation[] = conversations.map((convo: any) => {
       const otherUsers = convo.participants
-        .filter((p: any) => p.userId !== userId)  // Exclude current user
+        .filter((p: any) => p.userId !== userId) // Exclude current user
         .map((p: any) => ({
           id: p.userId,
-          name: p.user?.fullName || p.userId,     // Get fullName from backend user object
+          name: p.user?.fullName || p.userId, // Get fullName from backend user object
           avatarUrl: p.user?.avatarUrl,
         }));
 
@@ -47,9 +49,42 @@ export const messageService = {
   },
 
   // get all chats of a particular coversation ID
-  getChatHistory : async(conversationId: string) : Promise<MessageWithSender[]> => {
-    const response = await axios.get(`${API_URL}/messaging/conversations/${conversationId}/messages`);
-    const messages: MessageWithSender[] = response.data;
-    return messages;
-  }
+  getChatHistory: async (
+    conversationId: string
+  ): Promise<MessageWithSender[]> => {
+    const response = await axios.get(
+      `${API_URL}/messaging/conversations/${conversationId}/messages`
+    );
+    const messages = response.data;
+
+    // Debug: Log the first message to see the structure
+    if (messages.length > 0) {
+      console.log("Backend message structure:", messages[0]);
+    }
+
+    // The backend already returns the correct format, just ensure type safety
+    const transformedMessages: MessageWithSender[] = messages.map(
+      (msg: any) => ({
+        id: msg.id,
+        conversationId: msg.conversationId,
+        senderId: msg.senderId,
+        type: msg.type,
+        body: msg.body || "",
+        attachments: msg.attachments || [],
+        metadata: msg.metadata,
+        createdAt: msg.createdAt,
+        updatedAt: msg.updatedAt || msg.createdAt,
+        status: msg.status,
+        // The sender object is already properly formatted from backend
+        sender: {
+          id: msg.sender.id,
+          fullName: msg.sender.fullName,
+          avatarUrl: msg.sender.avatarUrl || undefined, // Convert null to undefined
+        },
+      })
+    );
+
+    console.log("Transformed message:", transformedMessages[0]);
+    return transformedMessages;
+  },
 };

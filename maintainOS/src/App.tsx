@@ -1,5 +1,4 @@
-// src/App.tsx
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { MainLayout } from "./components/MainLayout";
@@ -9,7 +8,6 @@ import { login, logout } from "./store/userSlice";
 import { lazyImport } from "./utils/lazyImport";
 import InviteUsers from "./components/Users/InviteUser/InviteUser";
 import CreateTeamForm from "./components/Users/CreateTeam/CreateTeam";
-
 
 // ✅ Lazy imports
 const Login = lazyImport(() => import("./components/Login"), "Login");
@@ -78,6 +76,17 @@ const InviteUser = lazyImport(
 export default function App() {
   const { user, accessToken } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch<AppDispatch>();
+
+  // Socket connection lifecycle management
+  useEffect(() => {
+    if (user?.id) {
+      dispatch({ type: "socket/connect" });
+
+      return () => {
+        dispatch({ type: "socket/disconnect" });
+      };
+    }
+  }, [dispatch, user?.id]);
 
   const handleLogin = (userData: {
     name: string;

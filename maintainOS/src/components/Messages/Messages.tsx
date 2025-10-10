@@ -56,20 +56,60 @@ export function Messages() {
     }
   }, [dispatch, selectedId]);
 
+  const items: DMConversation[] = active === "messages" ? oneOnOneDMs : threads;
+
   // Transform messages from backend format to ChatWindow format
   const transformMessages = () => {
+    console.log("Current user:", currentUserId);
+    console.log("Active conversation messages:", activeConversation.messages);
+
     return [...activeConversation.messages] // Create a copy of the array to avoid mutating Redux state
+      .filter((msg) => msg && msg.id) // Filter out any null/undefined/invalid messages
       .sort(
         (a, b) =>
           new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       ) // Sort by createdAt ascending (oldest first)
-      .map((msg, index) => ({
-        id: parseInt(msg.id) || index,
-        sender: msg.sender.fullName || "Unknown User",
-        text: msg.body || "",
-        avatar: msg.sender.avatarUrl || "/avatar.png",
-        timestamp: new Date(msg.createdAt).toLocaleString(),
-      }));
+      .map((msg, index) => {
+        console.log("Transforming message:", msg);
+        console.log("Sender object:", msg.sender);
+        console.log("Sender fullName:", msg.sender?.fullName);
+
+        // Handle both complete sender objects and messages with just senderId
+        let senderName = "Unknown User";
+        let senderAvatar = "/avatar.png";
+
+        if (msg.sender?.fullName) {
+          // Complete sender object from API
+          senderName = msg.sender.fullName;
+          senderAvatar = msg.sender.avatarUrl || "/avatar.png";
+        } else if (msg.senderId === currentUserId) {
+          // If it's the current user's message, use "You" or get from auth state
+          senderName = "You";
+        } else {
+          // Try to find the sender in the conversation participants
+          const selectedConversation = items.find(
+            (item) => item.id === selectedId
+          );
+          const participant = selectedConversation?.participants.find(
+            (p) => p.id === msg.senderId
+          );
+          if (participant) {
+            senderName = participant.name;
+            senderAvatar = participant.avatarUrl || "/avatar.png";
+          }
+        }
+
+        const transformedMsg = {
+          id: parseInt(msg.id) || index,
+          sender: senderName,
+          text: msg.body || "",
+          avatar: senderAvatar,
+          timestamp: new Date(msg.createdAt).toLocaleString(),
+        };
+
+        console.log("Final transformed message:", transformedMsg);
+        return transformedMsg;
+      });
   };
 
   const location = useLocation();
@@ -78,8 +118,6 @@ export function Messages() {
       setIsCreatingMessage(true);
     }
   }, [location]);
-
-  const items: DMConversation[] = active === "messages" ? oneOnOneDMs : threads;
 
   useEffect(() => {
     if (items.length > 0) {
@@ -168,10 +206,15 @@ export function Messages() {
               <div className="h-full flex items-center justify-center text-muted-foreground">
                 Loading messages...
               </div>
+            ) : activeConversation.messages.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-muted-foreground">
+                No messages in this conversation
+              </div>
             ) : (
               <ChatWindow
                 messages={transformMessages()}
                 isCreatingMessage={isCreatingMessage}
+                conversationId={selectedId}
                 currentChatUser={(() => {
                   const selectedConversation = items.find(
                     (item) => item.id === selectedId

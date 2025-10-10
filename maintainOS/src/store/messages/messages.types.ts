@@ -105,6 +105,8 @@ export interface MessagingState {
     status: "idle" | "loading" | "succeeded" | "failed";
     error: string | null;
   };
+
+  isConnected: boolean;
 }
 export interface ChatWindowProps {
   messages: {
@@ -115,6 +117,7 @@ export interface ChatWindowProps {
     timestamp: string;
   }[];
   isCreatingMessage: boolean;
+  conversationId?: string; // Add conversationId prop
   currentChatUser?: {
     name: string;
     avatarUrl?: string;

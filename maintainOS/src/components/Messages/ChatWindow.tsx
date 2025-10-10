@@ -3,18 +3,18 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Paperclip, Send, Info, StepBack, ChevronDown } from "lucide-react";
-import { cn } from "../ui/utils";
 import { type ChatWindowProps } from "../../store/messages/messages.types";
 import { UserSelect } from "./UserSelect";
 import { CreateConversationModal } from "./GroupInfoForm";
-import { useMessagingSocket } from "../../utils/useWebsocket";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "../../store";
 import type { User } from "../../store/messages";
+import type { AppDispatch } from "../../store";
 
 export function ChatWindow({
   messages,
   isCreatingMessage,
+  conversationId,
   currentChatUser,
 }: ChatWindowProps) {
   const [newMessage, setNewMessage] = useState("");
@@ -24,15 +24,15 @@ export function ChatWindow({
   const [selectedRecipients, setSelectedRecipients] = useState<User[]>([]);
   const [showGroupModal, setShowGroupModal] = useState(false);
 
-  const user = useSelector((state: RootState) => state.auth.user);
+  const dispatch = useDispatch<AppDispatch>();
 
-  const {
-    isConnected,
-    lastMessage,
-    sendMessage,
-    updatedConversation,
-    joinConversation,
-  } = useMessagingSocket(user?.id ?? "");
+  // Get real-time state from Redux store
+  const isConnected = useSelector(
+    (state: RootState) => state.messaging.isConnected
+  );
+  const lastMessage = useSelector(
+    (state: RootState) => state.messaging.activeConversation.messages[0]
+  );
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -61,18 +61,30 @@ export function ChatWindow({
     }
   }, [lastMessage]);
 
+  // Join conversation when conversationId changes
   useEffect(() => {
-    if (updatedConversation) {
-      console.log("Conversation updated:", updatedConversation);
-      // Update the conversation list with the updated conversation
+    if (conversationId) {
+      dispatch({
+        type: "socket/joinConversation",
+        payload: { conversationId },
+      });
     }
-  }, [updatedConversation]);
+  }, [conversationId, dispatch]);
 
   const startSendingMessage = () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !conversationId) return;
+
+    // Dispatch action for sending message - will be intercepted by middleware
+    dispatch({
+      type: "socket/sendMessage",
+      payload: {
+        conversationId,
+        type: "text",
+        body: newMessage,
+      },
+    });
+
     setNewMessage("");
-    // TO-DO Complete this
-    sendMessage("af0d6e00-80ed-4f53-b010-78f4a516e78f", "Hello from client!");
   };
 
   return (

@@ -1,6 +1,12 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { chatHistory, getDMs, searchUsers } from "./messages.thunks";
-import type { DMConversation, User, MessagingState } from "./messages.types";
+import type {
+  DMConversation,
+  User,
+  MessagingState,
+  SendMessagePayload,
+  MessageWithSender,
+} from "./messages.types";
 
 const initialState: MessagingState = {
   searchResults: [],
@@ -17,6 +23,7 @@ const initialState: MessagingState = {
     status: "idle",
     error: null,
   },
+  isConnected: false,
 };
 
 const messagingSlice = createSlice({
@@ -32,7 +39,54 @@ const messagingSlice = createSlice({
       state.dmsStatus = "idle";
     },
     addMessage: (state, action) => {
-      state.activeConversation.messages.unshift(action.payload); // Add to the beginning
+      const newMessage = action.payload;
+      console.log("🔄 Redux addMessage received:", newMessage);
+
+      // If the message doesn't have a complete sender object, we need to handle it
+      // For now, we'll add it as-is and let the UI transformation handle the fallback
+      // In a production app, you might want to fetch user data or maintain a user cache
+      state.activeConversation.messages.unshift(newMessage);
+      console.log(
+        "🔄 Redux state updated, total messages:",
+        state.activeConversation.messages.length
+      );
+    },
+
+    // Reducer for connection status
+    setSocketStatus: (state, action: PayloadAction<boolean>) => {
+      state.isConnected = action.payload;
+    },
+
+    // Reducer to update the conversation list when a new message arrives
+    updateConversationPreview: (
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        lastMessage: MessageWithSender;
+      }>
+    ) => {
+      const { conversationId, lastMessage } = action.payload;
+      const convoIndex = state.dms.findIndex((c) => c.id === conversationId);
+
+      if (convoIndex !== -1) {
+        const conversation = state.dms[convoIndex];
+        // Directly assign the new, complete message object
+        conversation.lastMessage = lastMessage;
+
+        // Move the updated conversation to the top of the list
+        state.dms.splice(convoIndex, 1);
+        state.dms.unshift(conversation);
+      }
+    },
+
+    // Example reducer for sending a message (will be caught by middleware)
+    // This action doesn't need to change state here, it's just a trigger.
+    sendMessage: (
+      state,
+      action: PayloadAction<SendMessagePayload & { conversationId: string }>
+    ) => {
+      // You could implement optimistic UI updates here if you want
+      // For now, it does nothing. The middleware will handle the emit.
     },
   },
   extraReducers: (builder) => {
@@ -90,6 +144,13 @@ const messagingSlice = createSlice({
   },
 });
 
-export const { clearSearchResults, clearDMs, addMessage } =
-  messagingSlice.actions;
+export const {
+  clearSearchResults,
+  clearDMs,
+  addMessage,
+  setSocketStatus,
+  updateConversationPreview,
+  sendMessage,
+} = messagingSlice.actions;
+
 export default messagingSlice.reducer;
