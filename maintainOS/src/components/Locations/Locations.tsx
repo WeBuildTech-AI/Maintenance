@@ -687,12 +687,12 @@ export function Locations() {
                           ) : (
                             <></>
                           )} */}
-                          <button
+                          {/* <button
                             onClick={handleShowNewSubLocationForm}
                             className="mt-2 cursor-pointer text-sm text-orange-600 hover:underline"
                           >
                             Create Sub-Location
-                          </button>
+                          </button> */}
                         </div>
                         <SubLocationModal
                           isOpen={modalOpen}
