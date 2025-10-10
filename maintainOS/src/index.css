@@ -3047,7 +3047,7 @@ html {
 
   
   /* Custom Scrollbar Styles */
-  ::-webkit-scrollbar {
+  /* ::-webkit-scrollbar {
     width: calc(var(--spacing) * 2);
   }
   ::-webkit-scrollbar-track {
@@ -3063,19 +3063,57 @@ html {
   }
   .dark ::-webkit-scrollbar-thumb {
     background: transparent;
-  }
+  } */
 
   /* Placeholder color utility */
-  ::placeholder {
+  /* ::placeholder {
     color: #6B7280; /* placeholder-gray-500 */
-    opacity: 1;
-  }
+    /* opacity: 1;
+  }  */
 
   /* px-2 py-1 utility for textarea */
-  textarea {
+  /* textarea {
     padding-inline: calc(var(--spacing) * 2);
     padding-block: calc(var(--spacing) * 1);
     resize: none;
     background: transparent;
-  }
+  } */
+
+  ::-webkit-scrollbar {
+  width: 4px; /* 👈 Chhoti width for vertical scrollbar */
+  height: 6px; /* Optional: chhoti height for horizontal scrollbar */
+}
+
+::-webkit-scrollbar-track {
+  border-radius: 3.40282e38px;
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 3.40282e38px;
+  background: var(--color-gray-700, #4B5563);
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+/* Placeholder color utility */
+::placeholder {
+  color: #6B7280; /* placeholder-gray-500 */
+  opacity: 1;
+}
+
+/* px-2 py-1 utility for textarea */
+textarea {
+  padding-inline: calc(var(--spacing) * 2);
+  padding-block: calc(var(--spacing) * 1);
+  resize: none;
+  background: transparent;
+}
+
 }

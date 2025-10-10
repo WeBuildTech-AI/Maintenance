@@ -59,8 +59,8 @@ export function Locations() {
 
   // --- NEW: State and Refs for the custom sorting dropdown ---
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [sortType, setSortType] = useState("Name"); // e.g., "Name", "Creation Date"
-  const [sortOrder, setSortOrder] = useState("asc"); // "asc" or "desc"
+  const [sortType, setSortType] = useState("Last Updated"); // e.g., "Name", "Creation Date"
+  const [sortOrder, setSortOrder] = useState("dsc"); // "asc" or "desc"
   const [openSection, setOpenSection] = useState<string | null>("Name");
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const headerRef = useRef<HTMLDivElement>(null);
@@ -478,14 +478,17 @@ export function Locations() {
                                       </span>
                                     </div>
                                   )}
-                                  <button
-                                    onClick={() => alert("sidit")}
-                                    className="text-sm text-orange-600 cursor-pointer"
-                                  >
-                                    <p>
-                                      Sub Location : {items.children.length}{" "}
-                                    </p>
-                                  </button>
+                                  {items.children &&
+                                    items.children.length > 0 && (
+                                      <button
+                                        onClick={() => alert("sidit")}
+                                        className="text-sm text-orange-600 cursor-pointer"
+                                      >
+                                        <p>
+                                          Sub Location: {items.children.length}
+                                        </p>
+                                      </button>
+                                    )}
                                 </div>
                                 <div>
                                   {/* {items.children.l && ( */}
@@ -672,9 +675,10 @@ export function Locations() {
 
                         <div className="mb-6 mt-2">
                           <h3 className="text-sm font-medium text-gray-700">
-                            Sub-Locations ({selectedLocation?.children.length})
+                            Sub-Locations (
+                            {selectedLocation?.children?.length || 0})
                           </h3>
-                          {selectedLocation?.children.length === 0 ? (
+                          {/* {selectedLocation?.children.length === 0 ||  ? (
                             <>
                               <p className="mt-1 text-sm text-gray-500">
                                 Add sub elements inside this Location
@@ -682,7 +686,7 @@ export function Locations() {
                             </>
                           ) : (
                             <></>
-                          )}
+                          )} */}
                           <button
                             onClick={handleShowNewSubLocationForm}
                             className="mt-2 cursor-pointer text-sm text-orange-600 hover:underline"
@@ -690,7 +694,6 @@ export function Locations() {
                             Create Sub-Location
                           </button>
                         </div>
-
                         <SubLocationModal
                           isOpen={modalOpen}
                           onClose={() => setModalOpen(false)}

@@ -25,7 +25,6 @@ type NewLocationFormProps = {
   setShowForm: (show: boolean) => void;
   isEdit?: boolean; // ✅ new
   editData?: LocationResponse | null; // ✅ new
-  
 };
 
 export function NewLocationForm({
@@ -127,6 +126,7 @@ export function NewLocationForm({
     if (description) formData.append("description", description);
     if (parentLocationId) formData.append("parentLocationId", parentLocationId);
     if (qrCode) formData.append("qrCode", qrCode);
+    formData.append("createdBy", user.id);
 
     // ✅ This logic for arrays is already correct because it checks the length
     if (Array.isArray(vendorId) && vendorId.length > 0) {
@@ -152,6 +152,9 @@ export function NewLocationForm({
       }
       // ... (rest of your success logic remains the same)
       onSuccess(res);
+      // fetchLocations(); // Refresh the locations list
+      // setSelectedLocation(res.id);
+      // onCancel
     } catch (err) {
       console.error("Failed to submit location:", err);
       toast.error("Error while saving location");

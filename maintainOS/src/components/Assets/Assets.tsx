@@ -118,6 +118,7 @@ export const Assets: FC = () => {
         asset.location.name.toLowerCase().includes(q)
     );
   }, [assetData, sortType, sortOrder, searchQuery]);
+  
 
   return (
     <div className="flex h-full flex-col">
