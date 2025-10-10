@@ -1,21 +1,52 @@
-import { User, MapPin, Tag, Settings } from "lucide-react";
+import { MapPin, Tag, Settings } from "lucide-react";
 import FilterBar from "../utils/FilterBar";
 
 const ALL_FILTERS = [
-  { key: "vendor", label: "Vendor", icon: <Settings size={16} /> },
-  { key: "status", label: "Status", icon: <Tag size={16} /> },
-  { key: "part", label: "Part", icon: <Settings size={16} /> },
-  { key: "shipping", label: "Shipping Address", icon: <MapPin size={16} /> },
-  { key: "assigned", label: "Assigned To", icon: <User size={16} /> },
-  { key: "billing", label: "Billing Address", icon: <MapPin size={16} /> },
-  { key: "createdBy", label: "Created By", icon: <User size={16} /> },
+  {
+    key: "asset",
+    label: "Asset",
+    icon: <Settings size={16} />,
+    options: ["HVAC", "Boiler", "Generator", "Pump"],
+  },
+  {
+    key: "part",
+    label: "Part",
+    icon: <Tag size={16} />,
+    options: ["Switch", "Cable", "Sensor", "Panel"],
+  },
+  {
+    key: "vendorTypes",
+    label: "Vendor Types",
+    icon: <Settings size={16} />,
+    options: ["Electrical", "Mechanical", "Plumbing"],
+  },
+  {
+    key: "location",
+    label: "Location",
+    icon: <MapPin size={16} />,
+    options: ["Mumbai", "Delhi", "Bangalore", "Hyderabad"], // static fallback (dynamic list is handled inside FilterDropdown already)
+  },
 ];
 
-export default function VendorFilterBar() {
+export default function VendorFilterBar({
+  onFilterChange,
+}: {
+  onFilterChange?: (filters: Record<string, string[]>) => void;
+}) {
+  // keep a local accumulator so every onFilterSelect call pushes latest state up
+  const filtersState: Record<string, string[]> = {};
+
   return (
-    <FilterBar
-      allFilters={ALL_FILTERS}
-      defaultKeys={["vendor", "status", "part"]}
-    />
+    <div className="px-0 py-4">
+      <FilterBar
+        allFilters={ALL_FILTERS}
+        defaultKeys={["asset", "part", "vendorTypes", "location"]}
+        onFilterSelect={(key, selectedIds) => {
+          filtersState[key] = selectedIds; // IDs for location, strings for others
+          console.log("🟣 VendorFilterBar (bubbling up):", filtersState);
+          if (onFilterChange) onFilterChange({ ...filtersState });
+        }}
+      />
+    </div>
   );
 }

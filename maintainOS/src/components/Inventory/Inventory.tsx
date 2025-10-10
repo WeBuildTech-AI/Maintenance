@@ -294,7 +294,7 @@ import { ChevronDown } from "lucide-react";
 import { PartCard } from "./PartCard";
 import { EmptyState } from "./EmptyState";
 import { PartDetails } from "./PartDetails";
-import { NewPartForm } from "./NewPartForm";
+import { NewPartForm } from "./NewPartForm/NewPartForm";
 import { PartTable } from "./PartTable";
 import type { NewItem } from "./inventory.types";
 import type { ViewMode } from "../purchase-orders/po.types";

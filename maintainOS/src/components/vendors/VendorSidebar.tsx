@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect } from "react";
+import { Check, ChevronDown, ChevronUp } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Loader from "../Loader/Loader";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Card, CardContent } from "../ui/card";
-import { ChevronDown, ChevronUp, Check } from "lucide-react";
 import { type Vendor } from "./vendors.types";
 
 export function VendorSidebar({
@@ -84,7 +84,7 @@ export function VendorSidebar({
         ref={headerRef}
         className="flex items-center justify-between px-5 py-3 border-b bg-white ml-3 relative z-40"
       >
-        <div className="flex items-center gap-2 text-sm text-gray-700 font-medium">
+        <div className="flex items-center gap-2 text-sm text-gray-700 font-medium ">
           <span>Sort By:</span>
           <button
             onClick={() => setIsDropdownOpen((p) => !p)}

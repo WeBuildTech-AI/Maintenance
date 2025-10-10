@@ -1,33 +1,33 @@
 "use client";
-import { Button } from "../ui/button";
 import {
-  MoreHorizontal,
-  MapPin,
-  Plus,
-  Edit3,
-  Trash2,
   Cog,
-  Globe,
-  Users,
   Copy,
+  Edit3,
+  Globe,
+  MapPin,
+  MoreHorizontal,
+  Plus,
+  Trash2,
+  Users,
   X,
 } from "lucide-react";
-import { type Vendor } from "./vendors.types";
+import { useState } from "react";
+import toast from "react-hot-toast";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "../../store";
+import { deleteVendor } from "../../store/vendors";
+import { Button } from "../ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { deleteVendor } from "../../store/vendors";
-import toast from "react-hot-toast";
-import { useDispatch, useSelector } from "react-redux";
-import type { AppDispatch, RootState } from "../../store";
-import { useState } from "react";
 import {
   NewContactModal,
   type ContactFormData,
 } from "../vendors/VendorsForm/NewContactModal";
+import { type Vendor } from "./vendors.types";
 
 export function VendorDetails({
   vendor,
@@ -217,114 +217,107 @@ export function VendorDetails({
           </h3>
 
           {contacts && contacts.length > 0 && (
-            <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm mb-3">
-              <table className="min-w-full text-sm border-collapse">
-                <thead className="bg-gray-50 text-gray-700 text-xs  uppercase ">
-                  <tr>
-                    <th className="px-6 py-3 text-left whitespace-nowrap">
-                      FULL NAME
-                    </th>
-                    <th className="px-6 py-3 text-left whitespace-nowrap">
-                      ROLE
-                    </th>
-                    <th className="px-6 py-3 text-left whitespace-nowrap">
-                      EMAIL
-                    </th>
-                    <th className="px-6 py-3 text-left whitespace-nowrap">
-                      PHONE NUMBER
-                    </th>
-                    <th className="px-6 py-3 text-right w-20"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {Array.isArray(contacts) &&
-                    contacts.map((contact: any, index: number) => (
-                      <tr
-                        key={index}
-                        className="hover:bg-gray-50 transition-colors duration-150"
-                      >
-                        {/* Full Name + Avatar */}
-                        <td className="px-6 py-3 whitespace-nowrap">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className="h-8 w-8 rounded-full flex items-center justify-center text-white text-sm font-medium"
-                              style={{
-                                backgroundColor:
-                                  contact.contactColour ||
-                                  contact.color ||
-                                  "#EC4899",
-                              }}
-                            >
-                              {contact.fullName
-                                ? contact.fullName
-                                    .split(" ")
-                                    .map((n: string) => n[0])
-                                    .slice(0, 2)
-                                    .join("")
-                                    .toUpperCase()
-                                : "U"}
+            <div className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm mt-4 mb-6">
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm border-collapse">
+                  <thead className="bg-gray-50 text-gray-600 text-xs uppercase">
+                    <tr>
+                      <th className="px-6 py-3 text-left font-medium">FULL NAME</th>
+                      <th className="px-6 py-3 text-left font-medium">ROLE</th>
+                      <th className="px-6 py-3 text-left font-medium">EMAIL</th>
+                      <th className="px-6 py-3 text-left font-medium">PHONE NUMBER</th>
+                      <th className="px-6 py-3 text-right font-medium">ACTIONS</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {contacts.map((contact: any, index: number) => {
+                      const initials = contact.fullName
+                        ? contact.fullName
+                          .split(" ")
+                          .map((n: string) => n[0])
+                          .slice(0, 2)
+                          .join("")
+                          .toUpperCase()
+                        : "U";
+
+                      const color = contact.color || contact.contactColour || "#EC4899";
+
+                      return (
+                        <tr
+                          key={index}
+                          className="hover:bg-gray-50 transition-colors duration-150"
+                        >
+                          {/* Full Name + Avatar */}
+                          <td className="px-6 py-3 whitespace-nowrap">
+                            <div className="flex items-center gap-3">
+                              <div
+                                className="flex items-center justify-center text-white font-medium text-sm rounded-full h-8 w-8 flex-shrink-0"
+                                style={{ backgroundColor: color }}
+                              >
+                                {initials}
+                              </div>
+                              <span className="text-gray-900 text-sm font-medium capitalize">
+                                {contact.fullName || "-"}
+                              </span>
                             </div>
-                            <span className="text-gray-900 text-sm">
-                              {contact.fullName || "-"}
-                            </span>
-                          </div>
-                        </td>
+                          </td>
 
-                        {/* Role */}
-                        <td className="px-6 py-3 text-gray-800 font-normal whitespace-nowrap">
-                          {contact.role || "-"}
-                        </td>
+                          {/* Role */}
+                          <td className="px-6 py-3 text-gray-800 font-normal whitespace-nowrap">
+                            {contact.role || "-"}
+                          </td>
 
-                        {/* Email */}
-                        <td className="px-6 py-3 text-blue-600 font-medium whitespace-nowrap">
-                          <a
-                            href={`mailto:${contact.email}`}
-                            className="hover:underline break-all"
-                          >
-                            {contact.email || "-"}
-                          </a>
-                        </td>
-
-                        {/* Phone */}
-                        <td className="px-6 py-3 text-blue-600 font-medium whitespace-nowrap">
-                          <a
-                            href={`tel:${contact.phoneNumber || contact.phone}`}
-                            className="hover:underline"
-                          >
-                            {contact.phoneNumber || contact.phone || "-"}
-                          </a>
-                        </td>
-
-                        {/* Edit/Delete Buttons */}
-                        <td className="px-6 py-3 text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingContact(contact);
-                                setIsModalOpen(true);
-                              }}
-                              className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500 hover:text-blue-600 transition-colors"
+                          {/* Email */}
+                          <td className="px-6 py-3 text-blue-600 font-medium break-all">
+                            <a
+                              href={`mailto:${contact.email}`}
+                              className="hover:underline"
                             >
-                              <Edit3 className="h-4 w-4" />
-                            </button>
+                              {contact.email || "-"}
+                            </a>
+                          </td>
 
-                            {/* 🔹 Only this click updated to open modal */}
-                            <button
-                              type="button"
-                              onClick={() => openDeleteModal(contact.email)}
-                              className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500 hover:text-red-600 transition-colors"
+                          {/* Phone */}
+                          <td className="px-6 py-3 text-blue-600 font-medium whitespace-nowrap">
+                            <a
+                              href={`tel:${contact.phone || contact.phoneNumber}`}
+                              className="hover:underline"
                             >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
+                              {contact.phone || contact.phoneNumber || "-"}
+                            </a>
+                          </td>
+
+                          {/* Actions */}
+                          <td className="px-6 py-3 text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-3">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingContact(contact);
+                                  setIsModalOpen(true);
+                                }}
+                                className="text-gray-500 hover:text-blue-600 transition-colors"
+                              >
+                                <Edit3 className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => openDeleteModal(contact.email)}
+                                className="text-gray-500 hover:text-red-600 transition-colors"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
+
 
           <Button
             variant="link"
@@ -425,16 +418,16 @@ export function VendorDetails({
             <span className="text-gray-900">
               {vendor.createdAt
                 ? new Date(vendor.createdAt).toLocaleDateString("en-US", {
-                    month: "2-digit",
-                    day: "2-digit",
-                    year: "numeric",
-                  }) +
-                  ", " +
-                  new Date(vendor.createdAt).toLocaleTimeString("en-US", {
-                    hour: "numeric",
-                    minute: "2-digit",
-                    hour12: true,
-                  })
+                  month: "2-digit",
+                  day: "2-digit",
+                  year: "numeric",
+                }) +
+                ", " +
+                new Date(vendor.createdAt).toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                })
                 : "N/A"}
             </span>
           </div>

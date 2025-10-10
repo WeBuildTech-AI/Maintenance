@@ -48,7 +48,6 @@ export function VendorForm({
 
   const [pictures, setPictures] = useState<File[]>([]);
   const [attachedDocs, setAttachedDocs] = useState<File[]>([]);
-  const [showContactInputs, setShowContactInputs] = useState(false);
   const [contact, setContact] = useState({ email: "", phone: "" }); // legacy single contact
   const [contacts, setContacts] = useState<ContactFormData[]>([]); // NEW: contacts array (optional)
   const [showInputs, setShowInputs] = useState(false);
@@ -63,6 +62,9 @@ export function VendorForm({
   const [availableParts, setAvailableParts] = useState<SelectOption[]>([]);
   const [partsLoading, setPartsLoading] = useState(false);
   const [selectedPartIds, setSelectedPartIds] = useState<string[]>([]);
+
+  // ✅ NEW: guard to avoid double submit (button onClick + form submit)
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (initialData) {
@@ -142,7 +144,8 @@ export function VendorForm({
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    if (!form.name.trim()) return;
+    if (submitting) return; // ✅ prevent double-fire
+    setSubmitting(true);
 
     const formData = new FormData();
 
@@ -270,7 +273,7 @@ export function VendorForm({
     try {
       if (initialData && onSubmit) {
         const updatePayload = formData;
-        onSubmit(updatePayload);
+        onSubmit(updatePayload); // (kept your original line)
         toast.success("Vendor updated successfully");
       } else {
         const created = await dispatch(createVendor(formData)).unwrap();
@@ -300,6 +303,8 @@ export function VendorForm({
     } catch (err) {
       console.error("Failed to submit vendor:", err);
       toast.error("Error while saving vendor");
+    } finally {
+      setSubmitting(false); // ✅ release guard
     }
   };
 
@@ -392,7 +397,7 @@ export function VendorForm({
         </button>
         <button
           type="submit"
-          onClick={handleSubmit}
+          onClick={handleSubmit} 
           style={{
             height: "2.5rem",
             display: "flex",

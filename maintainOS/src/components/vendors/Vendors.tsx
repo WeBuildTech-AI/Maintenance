@@ -1,17 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { vendorService } from "../../store/vendors";
+import { useDispatch } from "react-redux";
+import { useMatch, useNavigate } from "react-router-dom"; // <-- ADDED
+import type { AppDispatch } from "../../store";
+import { updateVendor, vendorService } from "../../store/vendors";
 import type { ViewMode } from "../purchase-orders/po.types";
-import { VendorForm } from "./VendorsForm/VendorForm";
+import { VendorDetails } from "./VendorDetails";
 import { VendorHeaderComponent } from "./VendorHeader";
 import { mockVendors, type Vendor } from "./vendors.types";
+import { VendorForm } from "./VendorsForm/VendorForm";
 import { VendorSidebar } from "./VendorSidebar";
 import { VendorTable } from "./VendorTable";
-import { VendorDetails } from "./VendorDetails";
-import { useDispatch } from "react-redux";
-import type { AppDispatch } from "../../store";
-import { updateVendor } from "../../store/vendors";
-import { useParams } from "react-router-dom";
-import { useNavigate, useMatch } from "react-router-dom"; // <-- ADDED
 
 export function Vendors() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -22,24 +20,18 @@ export function Vendors() {
   const [selectedVendorId, setSelectedVendorId] = useState(
     mockVendors[0]?.id ?? ""
   );
-  // ❌ REMOVED: [isCreatingVendor, setIsCreatingVendor]
-  // ❌ REMOVED: [editingVendor, setEditingVendor]
+
+  // ✅ ADDED FILTER STATE
+  const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>(
+    {}
+  );
+
   const dispatch = useDispatch<AppDispatch>();
 
   // 🔽 ADDED: Router Hooks
   const navigate = useNavigate();
   const isCreateRoute = useMatch("/vendors/create");
   const isEditRoute = useMatch("/vendors/:vendorId/edit");
-
-
-  const params = useParams();
-
-  useEffect(() => {
-    if (params.vendorId) {
-      setSelectedVendorId(params.vendorId);
-    }
-  }, [params.vendorId]);
-
 
   // 🔽 DERIVED STATE
   const isEditMode = !!isEditRoute;
@@ -61,12 +53,23 @@ export function Vendors() {
     navigate("/vendors");
   };
 
+  // ✅ ADDED: refresh vendors helper (keeps sidebar in sync after create/edit)
+  const refreshVendors = async () => {
+    try {
+      const res = await vendorService.fetchVendors(10, 1, 0);
+      setVendors(res);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   // Fetch vendors on mount
   useEffect(() => {
     const fetchVendors = async () => {
       setLoading(true);
       try {
         const res = await vendorService.fetchVendors(10, 1, 0);
+        console.log("📦 Vendor API response:", res);
         setVendors(res);
       } catch (err) {
         console.error(err);
@@ -74,33 +77,52 @@ export function Vendors() {
         setLoading(false);
       }
     };
-
     fetchVendors();
   }, []);
 
-  // Filter vendors by search query
+  // ✅ UPDATED FILTER LOGIC (location-based filter)
   const filteredVendors = useMemo(() => {
-    if (!searchQuery.trim()) return vendors;
-    const query = searchQuery.toLowerCase();
-    return vendors.filter(
-      (vendor) =>
-        vendor.name.toLowerCase().includes(query) ||
-        vendor.category.toLowerCase().includes(query) ||
-        vendor.services.some((s) => s.toLowerCase().includes(query))
-    );
-  }, [vendors, searchQuery]);
+    let list = vendors;
 
-  // Ensure selectedVendorId is valid
-  useEffect(() => {
-    if (filteredVendors.length === 0) return;
-    if (!filteredVendors.some((v) => v.id === selectedVendorId)) {
-      setSelectedVendorId(filteredVendors[0].id);
+    // 🔹 LOCATION FILTER
+    const selectedLocationIds = activeFilters["location"] || [];
+    if (selectedLocationIds.length > 0) {
+      list = list.filter((vendor: any) => {
+        const vendorLocIds = (vendor.locations || []).map((loc: any) =>
+          typeof loc === "string" ? loc : loc?.id || ""
+        );
+        return vendorLocIds.some((id: string) =>
+          selectedLocationIds.includes(id)
+        );
+      });
     }
-  }, [filteredVendors, selectedVendorId]);
 
-  const selectedVendor =
-    filteredVendors.find((v) => v.id === selectedVendorId) ??
-    filteredVendors[0];
+    // 🔹 SEARCH FILTER
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      list = list.filter(
+        (vendor) =>
+          vendor.name.toLowerCase().includes(query) ||
+          vendor.category?.toLowerCase().includes(query) ||
+          vendor.services?.some((s) => s.toLowerCase().includes(query))
+      );
+    }
+
+    return list;
+  }, [vendors, searchQuery, activeFilters]);
+
+  // ✅ KEEP vendor details visible even if filtered out
+  const selectedVendor = useMemo(() => {
+    const vendor = vendors.find((v) => v.id === selectedVendorId);
+    return vendor || null;
+  }, [vendors, selectedVendorId]);
+
+  // ✅ Ensure at least one selected
+  useEffect(() => {
+    if (vendors.length > 0 && !selectedVendorId) {
+      setSelectedVendorId(vendors[0].id);
+    }
+  }, [vendors, selectedVendorId]);
 
   console.log(selectedVendor, "selectedVendor");
 
@@ -108,40 +130,60 @@ export function Vendors() {
   const handleUpdateSubmit = async (formData: any) => {
     if (!vendorToEdit) return;
     try {
+      // ✅ NEW: if formData is FormData, send it directly (don’t try to read properties)
+      if (formData instanceof FormData) {
+        await dispatch(
+          updateVendor({
+            id: vendorToEdit.id,
+            data: formData,
+          })
+        ).unwrap();
+
+        // ✅ refresh sidebar list after update
+        await refreshVendors();
+
+        navigate("/vendors");
+        return; // ensure we don't run the JSON path below
+      }
+
+      // 🔽 ORIGINAL JSON PATH (left intact, not removed)
       await dispatch(
         updateVendor({
           id: vendorToEdit.id,
           data: {
-            // map minimal fields you have in the form
             name: formData.name,
             description: formData.description,
             color: formData.color,
             contacts: formData.contacts || formData.contact || {},
-            // you can extend this mapping as needed later
           },
         })
       ).unwrap();
 
-      // Optimistically update local list so UI reflects immediately
       setVendors((prev) =>
         prev.map((v) =>
           v.id === vendorToEdit.id
             ? {
-              ...v,
-              name: formData.name,
-              description: formData.description,
-              color: formData.color,
-              contacts: formData.contacts || formData.contact || v.contacts,
-            }
+                ...v,
+                name: formData.name,
+                description: formData.description,
+                color: formData.color,
+                contacts:
+                  formData.contacts || formData.contact || v.contacts,
+              }
             : v
         )
       );
 
-      navigate("/vendors"); // Navigate away after successful update
+      navigate("/vendors");
     } catch (e) {
       console.error("Update vendor failed:", e);
     }
   };
+
+  // ✅ Check if vendor is visible in filtered list (for dimming)
+  const isVendorVisible = filteredVendors.some(
+    (v) => v.id === selectedVendorId
+  );
 
   return (
     <div className="flex h-full flex-col">
@@ -151,8 +193,9 @@ export function Vendors() {
         setViewMode,
         searchQuery,
         setSearchQuery,
-        handleShowCreateForm, // 👈 New URL-driven handler
-        setShowSettings
+        handleShowCreateForm,
+        setShowSettings,
+        setActiveFilters // ✅ Pass filter setter to header
       )}
 
       {/* Body */}
@@ -164,33 +207,27 @@ export function Vendors() {
               selectedVendorId={selectedVendorId}
               setSelectedVendorId={setSelectedVendorId}
               loading={loading}
-
-
             />
             <section className="flex-1 overflow-auto">
-              {isCreateRoute || isEditRoute ? ( // 👈 Check both URL routes
+              {isCreateRoute || isEditRoute ? (
                 <VendorForm
-                  // 🔽 Conditional props based on route
                   initialData={vendorToEdit}
                   onSubmit={isEditMode ? handleUpdateSubmit : handleCreateSubmit}
                   onCancel={handleCancelForm}
-                  // These props are no longer required/used here, relying on onSubmit/onCancel
                   setVendors={setVendors}
                   setSelectedVendorId={setSelectedVendorId}
-                  // ✅ Added realtime sidebar update support
-                  onSuccess={(newVendor) => {
-                    setVendors((prev) => [newVendor, ...prev]);
-                    setSelectedVendorId(newVendor.id);
-                    navigate("/vendors"); // back to list after create
-                  }}
                 />
               ) : selectedVendor ? (
-                <VendorDetails
-                  vendor={selectedVendor}
-                  // setIsCreatedVendor={setIsCreatingVendor}
-                  // 🔽 Updated onEdit to navigate to the new parameterized URL
-                  onEdit={(v) => navigate(`/vendors/${v.id}/edit`)}
-                />
+                <div
+                  className={`transition-opacity duration-200 ${
+                    !isVendorVisible ? "opacity-50 pointer-events-none" : ""
+                  }`}
+                >
+                  <VendorDetails
+                    vendor={selectedVendor}
+                    onEdit={(v) => navigate(`/vendors/${v.id}/edit`)}
+                  />
+                </div>
               ) : (
                 <div className="flex h-full items-center justify-center text-muted-foreground">
                   Select a vendor to view details.

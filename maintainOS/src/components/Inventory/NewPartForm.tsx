@@ -255,7 +255,7 @@ export function NewPartForm({
           </section>
 
           {/* Files */}
-          <section>
+          <section className="mt-4">
             <div className="text-base font-medium mb-2">Files</div>
             <Button className="gap-2 h-9 bg-white hover:bg-white cursor-pointer text-orange-600">
               <Paperclip className="h-4 w-4" />
