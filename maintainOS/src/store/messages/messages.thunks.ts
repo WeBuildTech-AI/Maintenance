@@ -30,17 +30,16 @@ export const getDMs = createAsyncThunk<DMConversation[], string>(
   }
 );
 
-export const chatHisory = createAsyncThunk(
+export const chatHistory = createAsyncThunk(
   "messaging/getChatHistory",
-  async(conversationId:string, {rejectWithValue}) =>{
-    try{
+  async (conversationId: string, { rejectWithValue }) => {
+    try {
       const chat = await messageService.getChatHistory(conversationId);
       return chat;
-    } catch(error:any){
+    } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch chat history"
       );
     }
   }
 );
-

@@ -109,7 +109,7 @@ export interface MessagingState {
 export interface ChatWindowProps {
   messages: {
     id: number;
-    sender: "me" | "them";
+    sender: string; // Changed from "me" | "them" to string
     text: string;
     avatar: string;
     timestamp: string;

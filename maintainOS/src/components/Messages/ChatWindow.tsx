@@ -172,7 +172,7 @@ export function ChatWindow({
 
                   {/* Message block */}
                   <div>
-                    <div className="flex items-baseline gap-2">
+                    <div className="flex items-center gap-2">
                       <p className="font-semibold">{msg.sender}</p>
                       <span className="text-xs text-muted-foreground">
                         {msg.timestamp}

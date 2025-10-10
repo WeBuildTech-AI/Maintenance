@@ -5,11 +5,10 @@ import { cn } from "../ui/utils";
 import { ChatWindow } from "./ChatWindow";
 import { MessagesHeaderComponent } from "./MessagesHeader";
 import type { ViewMode } from "../purchase-orders/po.types";
-import { dummyConversation } from "./messages.types";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useLocation, useNavigate } from "react-router-dom";
 import type { RootState } from "../../store";
-import { getDMs } from "../../store/messages/messages.thunks";
+import { getDMs, chatHistory } from "../../store/messages/messages.thunks";
 import type { DMConversation } from "../../store/messages/messages.types";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "../../store";
@@ -28,6 +27,9 @@ export function Messages() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const allConvos = useSelector((state: RootState) => state.messaging.dms);
+  const activeConversation = useSelector(
+    (state: RootState) => state.messaging.activeConversation
+  );
 
   // DMs: (only 1 other participant)
   const oneOnOneDMs = allConvos.filter(
@@ -46,6 +48,29 @@ export function Messages() {
       dispatch(getDMs(currentUserId));
     }
   }, [dispatch, currentUserId, dmsStatus]);
+
+  // Fetch chat history when a conversation is selected
+  useEffect(() => {
+    if (selectedId) {
+      dispatch(chatHistory(selectedId));
+    }
+  }, [dispatch, selectedId]);
+
+  // Transform messages from backend format to ChatWindow format
+  const transformMessages = () => {
+    return [...activeConversation.messages] // Create a copy of the array to avoid mutating Redux state
+      .sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      ) // Sort by createdAt ascending (oldest first)
+      .map((msg, index) => ({
+        id: parseInt(msg.id) || index,
+        sender: msg.sender.fullName || "Unknown User",
+        text: msg.body || "",
+        avatar: msg.sender.avatarUrl || "/avatar.png",
+        timestamp: new Date(msg.createdAt).toLocaleString(),
+      }));
+  };
 
   const location = useLocation();
   useEffect(() => {
@@ -139,36 +164,42 @@ export function Messages() {
         {/* Chat Window */}
         <div className="flex-1 border border-border bg-card min-h-0">
           {selectedId ? (
-            <ChatWindow
-              messages={dummyConversation[selectedId] || []}
-              isCreatingMessage={isCreatingMessage}
-              currentChatUser={(() => {
-                const selectedConversation = items.find(
-                  (item) => item.id === selectedId
-                );
-                if (!selectedConversation) return undefined;
+            activeConversation.status === "loading" ? (
+              <div className="h-full flex items-center justify-center text-muted-foreground">
+                Loading messages...
+              </div>
+            ) : (
+              <ChatWindow
+                messages={transformMessages()}
+                isCreatingMessage={isCreatingMessage}
+                currentChatUser={(() => {
+                  const selectedConversation = items.find(
+                    (item) => item.id === selectedId
+                  );
+                  if (!selectedConversation) return undefined;
 
-                // For DMs, use the other participant's info
-                if (selectedConversation.participants.length === 1) {
-                  const participant = selectedConversation.participants[0];
+                  // For DMs, use the other participant's info
+                  if (selectedConversation.participants.length === 1) {
+                    const participant = selectedConversation.participants[0];
+                    return {
+                      name: participant.name,
+                      avatarUrl: participant.avatarUrl,
+                      isGroup: false,
+                    };
+                  }
+
+                  // For group conversations, create a group name
                   return {
-                    name: participant.name,
-                    avatarUrl: participant.avatarUrl,
-                    isGroup: false,
+                    name: selectedConversation.participants
+                      .map((p) => p.name)
+                      .join(", "),
+                    avatarUrl: selectedConversation.participants[0]?.avatarUrl,
+                    isGroup: true,
+                    participants: selectedConversation.participants,
                   };
-                }
-
-                // For group conversations, create a group name
-                return {
-                  name: selectedConversation.participants
-                    .map((p) => p.name)
-                    .join(", "),
-                  avatarUrl: selectedConversation.participants[0]?.avatarUrl,
-                  isGroup: true,
-                  participants: selectedConversation.participants,
-                };
-              })()}
-            />
+                })()}
+              />
+            )
           ) : (
             <div className="h-full flex items-center justify-center text-muted-foreground">
               Select a conversation
