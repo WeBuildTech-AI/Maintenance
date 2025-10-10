@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Package } from "lucide-react";
 
 import { AssetNameInput } from "./fields/AssetNameInput";
@@ -21,16 +21,50 @@ import { PartsDropdown } from "./dropdowns/PartsDropdown";
 import { ParentAssetDropdown } from "./dropdowns/ParentAssetDropdown";
 import { FooterActions } from "./FooterActions";
 import { useNavigate } from "react-router-dom";
-import { createAsset, type CreateAssetData } from "../../../store/assets";
+import {
+  createAsset,
+  updateAsset,
+  type CreateAssetData,
+} from "../../../store/assets";
 import type { AppDispatch, RootState } from "../../../store";
 import { useDispatch, useSelector } from "react-redux";
+import toast from "react-hot-toast";
 
 interface NewAssetFormProps {
+  isEdit?: boolean; // To check if we are in edit mode
+  assetData?: Asset | null;
   onCreate: () => void;
   onCancel?: () => void;
 }
 
-export function NewAssetForm({ onCreate, onCancel }: NewAssetFormProps) {
+interface Asset {
+  id: number | string;
+  name: string;
+  location: {
+    id: number | string;
+    name: string;
+  };
+  criticality?: string;
+  description?: string;
+  year?: string | number;
+  manufacturer?: string;
+  model?: string;
+  serialNumber?: string;
+  teams?: Array<{ id: number | string; name: string }>;
+  qrCode?: string;
+  assetType?: string;
+  vendor?: { id: number | string; name: string };
+  parts?: Array<{ id: number | string; name: string }>;
+  parentAsset?: { id: number | string; name: string };
+  // Add other properties as needed
+}
+
+export function NewAssetForm({
+  isEdit = false,
+  assetData,
+  onCreate,
+  onCancel,
+}: NewAssetFormProps) {
   const [assetName, setAssetName] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("");
   const [criticality, setCriticality] = useState("");
@@ -62,57 +96,122 @@ export function NewAssetForm({ onCreate, onCancel }: NewAssetFormProps) {
   const user = useSelector((state: RootState) => state.auth.user);
   const dispatch = useDispatch<AppDispatch>();
 
+  useEffect(() => {
+    if (isEdit && assetData) {
+      setAssetName(assetData.name || "");
+      setSelectedLocation(assetData.location || null);
+      setCriticality(assetData.criticality || "");
+      setDescription(assetData.description || "");
+      setSerialNumber(assetData.serialNumber || "");
+      setSelectedTeamInCharge(assetData.teams || []); // Adjust based on your data structure
+      setQrCode(assetData.qrCode || "");
+      setSelectedAssetType(assetData.assetType || "");
+      setSelectedvendorId(assetData.vendor || null);
+      setSelectedParts(assetData.parts || []);
+    }
+  }, [isEdit, assetData]);
+
   const handleCreate = () => {
+    // 1. Basic validation for the required field
     if (!assetName.trim()) {
       setError("You need to provide an Asset Name");
       return;
     }
 
-    const payload: CreateAssetData = {
+    // 2. Start building the payload with only the mandatory fields
+    // Using 'Partial' tells TypeScript that we are building the object piece by piece.
+    const payload: Partial<CreateAssetData> = {
       organizationId: user?.organizationId,
-      name: assetName,
-      locationId: selectedLocation.id, // from dropdown
-      criticality: criticality,
-      description: description,
-      year: year,
-      manufacturer: selectedManufacture,
-      model: selectedModel,
-      serialNumber: serialNumber,
-      teamsInCharge: selectedTeamInCharge,
-      qrCode: qrCode,
-      // assetTypeId: selectedAssetType,
-      vendorId: selectedVendorId.id,
-      partIds: [selectedParts.id],
-      parentAssetId: selectedParentAssets.id,
+      name: assetName.trim(),
     };
 
-    // Dispatch the thunk
-    dispatch(createAsset(payload))
-      .unwrap()
-      .then((res) => {
-        console.log(res, "response");
-        setAssetName("");
-        setSelectedLocation("");
-        setCriticality("");
-        setDescription("");
-        setYear("");
-        setSelectedManufacture("");
-        setSelectedModel("");
-        setSerialNumber("");
-        setSelectedTeamInCharge([]);
-        setQrCode("");
-        setSelectedAssetType("");
-        setSelectedvendorId("");
-        setSelectedParts([]);
-        setSelectedParentAssets("");
-      })
-      .catch((err) => {
-        setError(err || "Failed to create asset");
-      });
+    // 3. Conditionally add other fields to the payload ONLY if they have a value
+    if (selectedLocation?.id) {
+      payload.locationId = selectedLocation.id;
+    }
+    if (criticality) {
+      payload.criticality = criticality;
+    }
+    if (description.trim()) {
+      payload.description = description;
+    }
+    if (year) {
+      // Assuming year is a string or number
+      payload.year = year;
+    }
+    if (selectedManufacture) {
+      payload.manufacturer = selectedManufacture;
+    }
+    if (selectedModel) {
+      payload.model = selectedModel;
+    }
+    if (serialNumber.trim()) {
+      payload.serialNumber = serialNumber;
+    }
+    if (selectedTeamInCharge?.length > 0) {
+      payload.teamsInCharge = selectedTeamInCharge;
+    }
+    if (qrCode.trim()) {
+      payload.qrCode = qrCode;
+    }
+    if (selectedAssetType) {
+      payload.assetTypeId = selectedAssetType;
+    }
+    if (selectedVendorId?.id) {
+      payload.vendorId = selectedVendorId.id;
+    }
+    // Correctly handle an array of parts by mapping over them
+    if (selectedParts?.length > 0) {
+      payload.partIds = selectedParts.map((part) => part.id);
+    }
+    if (selectedParentAssets?.id) {
+      payload.parentAssetId = selectedParentAssets.id;
+    }
+
+    if (isEdit && assetData?.id) {
+      // We are editing: dispatch the update action
+      dispatch(updateAsset({ id: assetData.id, assetData: payload }))
+        .unwrap()
+        .then(() => {
+          toast.success("Asset updated successfully");
+          toast.success("Successfully Update the Asset");
+          onCreate(); // Call the success callback
+        })
+        .catch((err) => {
+          setError(err || "Failed to update asset");
+          toast.error(err || "Failed to update asset");
+        });
+    } else {
+      dispatch(createAsset(payload as CreateAssetData)) // We cast it back to the full type here
+        .unwrap()
+        .then((res) => {
+          toast.success("Successfully Create the Asset");
+
+          // Reset all form fields
+          setAssetName("");
+          setSelectedLocation(null); // Recommended to reset objects to null
+          setCriticality("");
+          setDescription("");
+          setYear("");
+          setSelectedManufacture("");
+          setSelectedModel("");
+          setSerialNumber("");
+          setSelectedTeamInCharge([]);
+          setQrCode("");
+          setSelectedAssetType("");
+          setSelectedvendorId(null); // Recommended to reset objects to null
+          setSelectedParts([]);
+          setSelectedParentAssets(null); // Recommended to reset objects to null
+        })
+        .catch((err) => {
+          setError(err || "Failed to create asset");
+          toast.error(err || "Failed to create asset");
+        });
+    }
   };
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-lg border">
+    <div className="flex h-full flex-col overflow-hidden  border">
       {/* Header */}
       <div className="flex-none border-b px-6 py-4">
         <h2 className="text-xl font-semibold">New Asset</h2>

@@ -103,7 +103,7 @@ export function Sidebar({
 
       {/* Navigation */}
       {expanded ? (
-        <ScrollArea className="flex-1 px-2 py-4">
+        <ScrollArea className="flex-1 px-2 py-4 ">
           <nav className="space-y-1">
             {menuItems.map((item) => {
               const Icon = item.icon;

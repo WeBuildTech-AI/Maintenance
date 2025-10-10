@@ -17,16 +17,9 @@ export const vendorService = {
     return res.data;
   },
 
-  fetchVendorName: async (
-    limit: number,
-    page: number,
-    offset: number
-  ): Promise<VendorResponse[]> => {
-    const res = await axios.get(`${API_URL}/vendors/summary`, {
-      params: { limit, page, offset },
-      headers: { Accept: "application/json" },
-    });
-    return res.data;
+  fetchVendorName: async (): Promise<VendorResponse[]> => {
+    const res = await axios.get(`${API_URL}/vendors/summary`);
+    return res.data; // <-- Ensure res.data is an array
   },
 
   fetchVendorById: async (id: string): Promise<VendorResponse> => {

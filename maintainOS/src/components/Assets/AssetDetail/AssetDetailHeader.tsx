@@ -12,7 +12,25 @@ import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../../store";
 import toast from "react-hot-toast";
 
-export function AssetDetailHeader({ asset }: { asset: any }) {
+// Define a type for the asset object for type safety
+interface Asset {
+  id: string;
+  name: string;
+  // You can add other properties of your asset here
+}
+
+// Define the props type for the component
+interface AssetDetailHeaderProps {
+  asset: Asset;
+  setShowHistory: (show: boolean) => void;
+  onEdit: (asset: Asset) => void;
+}
+
+export function AssetDetailHeader({
+  asset,
+  setShowHistory,
+  onEdit,
+}: AssetDetailHeaderProps) {
   const dispatch = useDispatch<AppDispatch>();
 
   const handleDeleteAsset = (id: string) => {
@@ -39,6 +57,7 @@ export function AssetDetailHeader({ asset }: { asset: any }) {
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
+            onClick={() => onEdit(asset)}
             className="gap-2 text-orange-600 border-orange-600 hover:bg-orange-50"
           >
             <Edit className="h-4 w-4" />
@@ -59,7 +78,12 @@ export function AssetDetailHeader({ asset }: { asset: any }) {
         </div>
       </div>
 
-      <Tabs defaultValue="details" className="w-full">
+      {/* Correctly handle tab changes */}
+      <Tabs
+        defaultValue="details"
+        className="w-full"
+        onValueChange={(value) => setShowHistory(value === "history")}
+      >
         <TabsList className="grid w-full grid-cols-2 max-w-[200px]">
           <TabsTrigger value="details">Details</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>

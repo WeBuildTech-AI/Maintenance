@@ -29,22 +29,23 @@ export function ParentAssetDropdown({
   const hasFetched = useRef(false);
 
   const handleFetchApi = async () => {
-    if (hasFetched.current) return;
     setLoading(true);
     try {
-      const res = await assetService.fetchAssetsName(10, 1, 0);
-      setParentAssetData(res.data || []);
+      const res = await assetService.fetchAssetsName();
+      setParentAssetData(res || []);
     } catch (err) {
       console.error("Error fetching locations:", err);
     } finally {
       setLoading(false);
-      hasFetched.current = true;
     }
   };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (parentAssetRef.current && !parentAssetRef.current.contains(event.target as Node)) {
+      if (
+        parentAssetRef.current &&
+        !parentAssetRef.current.contains(event.target as Node)
+      ) {
         setParentAssetOpen(false);
       }
     };
@@ -63,7 +64,10 @@ export function ParentAssetDropdown({
 
       <div
         className="flex items-center gap-3 rounded-md border border-gray-300 bg-white px-4 py-3 h-12 cursor-pointer"
-        onClick={() =>{ setParentAssetOpen(!parentAssetOpen); handleFetchApi()}}
+        onClick={() => {
+          setParentAssetOpen(!parentAssetOpen);
+          handleFetchApi();
+        }}
       >
         <Search className="h-4 w-4 text-gray-400" />
         <span className="flex-1 text-gray-600">Select...</span>
@@ -73,30 +77,30 @@ export function ParentAssetDropdown({
       {parentAssetOpen && (
         <div className="absolute left-0 top-full mt-1 w-full rounded-md border bg-white shadow-lg z-50">
           {loading ? (
-                     <div className="flex justify-center items-center py-4">
-                       <Loader />
-                     </div>
-                   ) : (
-                     <ul className="max-h-32 overflow-y-auto">
-                       {parentAssetData.length > 0 ? (
-                         parentAssetData.map((loc, index) => (
-                           <li
-                             key={index}
-                             className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                             onClick={() => {
-                               setSelectedParentAssets(loc); // 👈 store whole object
-                               setParentAssetOpen(false);
-                              //  console.log("Send ID to backend:", loc.id);
-                             }}
-                           >
-                             {loc.name}
-                           </li>
-                         ))
-                       ) : (
-                         <li className="px-4 py-2 text-gray-500">No locations found</li>
-                       )}
-                     </ul>
-                   )}
+            <div className="flex justify-center items-center py-4">
+              <Loader />
+            </div>
+          ) : (
+            <ul className="max-h-32 overflow-y-auto">
+              {parentAssetData.length > 0 ? (
+                parentAssetData.map((loc, index) => (
+                  <li
+                    key={index}
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                    onClick={() => {
+                      setSelectedParentAssets(loc); // 👈 store whole object
+                      setParentAssetOpen(false);
+                      //  console.log("Send ID to backend:", loc.id);
+                    }}
+                  >
+                    {loc.name}
+                  </li>
+                ))
+              ) : (
+                <li className="px-4 py-2 text-gray-500">No locations found</li>
+              )}
+            </ul>
+          )}
           <div
             onClick={() => navigate("")} // ✅ Navigate works now
             className="relative flex items-center px-4 py-2 rounded-md text-sm text-blue-600 bg-blue-50 cursor-pointer hover:bg-blue-100"

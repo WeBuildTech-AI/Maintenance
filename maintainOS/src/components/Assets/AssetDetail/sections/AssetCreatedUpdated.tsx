@@ -15,30 +15,35 @@ export function AssetCreatedUpdated({ asset }: { asset: any }) {
 
   return (
     <>
-      <div className="border-t border-border pt-8">
-        <div className="flex items-center gap-3">
-          <span>Created By</span>
-          <Avatar className="w-7 h-7">
-            <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face" />
-            <AvatarFallback>{renderInitials(user?.fullName)}</AvatarFallback>
-          </Avatar>
-          <span>
-            {user?.fullName} on {formatDate(asset?.createdAt)}
-          </span>
-        </div>
-      </div>
-
-      <div className="pt-4">
-        <div className="flex items-center gap-3">
-          <span>Last updated By</span>
-          <Avatar className="w-7 h-7">
-            <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b524?w=40&h=40&fit=crop&crop=face" />
-            <AvatarFallback>{renderInitials(user?.fullName)}</AvatarFallback>
-          </Avatar>
-          <span>
-            {user?.fullName} on {formatDate(asset?.updatedAt)}
-          </span>
-        </div>
+      <div>
+        {asset.createdAt === asset.updatedAt ? (
+          <>
+            <div className="text-sm text-gray-500 mt-2">
+              Created By{" "}
+              <span className="capitalize font-medium text-gray-700">
+                {user?.fullName}
+              </span>{" "}
+              on {formatDate(asset.createdAt)}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="text-sm text-gray-500 mt-2">
+              Created By{" "}
+              <span className="capitalize font-medium text-gray-700">
+                {user?.fullName}
+              </span>{" "}
+              on {formatDate(asset.createdAt)}
+            </div>
+            <div className="mt-2 text-sm text-gray-500">
+              Updated By{" "}
+              <span className="capitalize font-medium text-gray-700">
+                {user?.fullName}
+              </span>{" "}
+              on {formatDate(asset.updatedAt)}
+            </div>
+          </>
+        )}
       </div>
     </>
   );
