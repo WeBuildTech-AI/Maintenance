@@ -9,11 +9,7 @@ export type MessagesHeaderProps = {
   setShowSettings: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
-export interface ChatWindowProps {
-  messages: { id: number; sender: "me" | "them"; text: string ; avatar: string, timestamp: string}[];
-  isCreatingMessage: boolean;
 
-}
 
 // Dummy threads (left panel)
 export const dummyUsers = [
@@ -23,17 +19,17 @@ export const dummyUsers = [
   { id: "u4", name: "Diana Prince", email: "diana@example.com" },
 ];
 
-export const dummyMessages = [
-  { id: "m1", name: "Alice Johnson", lastMessage: "Hey, how are you?" },
-  { id: "m2", name: "Bob Smith", lastMessage: "Let's meet tomorrow." },
-  { id: "m3", name: "Charlie Brown", lastMessage: "Can you send me the file?" },
-];
+// export const dummyMessages = [
+//   { id: "m1", name: "Alice Johnson", lastMessage: "Hey, how are you?" },
+//   { id: "m2", name: "Bob Smith", lastMessage: "Let's meet tomorrow." },
+//   { id: "m3", name: "Charlie Brown", lastMessage: "Can you send me the file?" },
+// ];
 
-export const dummyThreads = [
-  { id: "t1", name: "Team Alpha", lastMessage: "Project deadline is next week." },
-  { id: "t2", name: "Design Group", lastMessage: "Mockups are ready for review." },
-  { id: "t3", name: "Dev Squad", lastMessage: "API integration is complete." },
-];
+// export const dummyThreads = [
+//   { id: "t1", name: "Team Alpha", lastMessage: "Project deadline is next week." },
+//   { id: "t2", name: "Design Group", lastMessage: "Mockups are ready for review." },
+//   { id: "t3", name: "Dev Squad", lastMessage: "API integration is complete." },
+// ];
 
 // Dummy conversation messages
 export const dummyConversation = {

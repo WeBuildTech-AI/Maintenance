@@ -1,42 +1,75 @@
-import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import type { RootState } from "../../store";
+import { clearSearchResults, searchUsers } from "../../store/messages";
+import type { User } from "../../store/messages";
+import { DynamicSelect } from "../../components/vendors/VendorsForm/DynamicSelect";
 
-type User = {
-  id: string | number;
-  name: string;
+type UserSelectProps = {
+  // an array of selected User objects
+  onUsersSelect: (users: User[]) => void;
 };
 
-export function UserSelect({ users, currentUser }: { users: User[]; currentUser: User }) {
-  const [selectedUser, setSelectedUser] = useState<User>(currentUser);
-  const [open, setOpen] = useState(false);
+export function UserSelect({ onUsersSelect }: UserSelectProps) {
+  const dispatch = useDispatch();
+
+  const { searchResults, searchStatus } = useSelector(
+    (state: RootState) => state.messaging
+  );
+  const currentUser = useSelector((state: RootState) => state.auth.user);
+
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (currentUser?.id) {
+      dispatch(searchUsers(currentUser.id) as any);
+    } else {
+      console.log(
+        "UserSelect mounted - No currentUser.id available:",
+        currentUser
+      );
+    }
+  }, [dispatch, currentUser?.id]);
+
+  useEffect(() => {
+  }, [searchResults, searchStatus]);
+
+  // unmount 
+  useEffect(() => {
+    return () => {
+      dispatch(clearSearchResults());
+    };
+  }, [dispatch]);
+
+  useEffect(() => {
+    const selectedUsers = searchResults.filter((user) =>
+      selectedUserIds.includes(user.id)
+    );
+    onUsersSelect(selectedUsers);
+  }, [selectedUserIds, searchResults]); // Removed onUsersSelect from dependencies
+
+  const handleFetchUsers = () => {
+    if (currentUser?.id && searchStatus === "idle") {
+      console.log("DynamicSelect - Fetching users on dropdown open");
+      dispatch(searchUsers(currentUser.id) as any);
+    }
+  };
 
   return (
     <div className="relative w-full">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="flex items-center justify-between w-full border border-border rounded-md px-3 py-2 text-sm bg-white hover:bg-gray-50"
-      >
-        <span>{selectedUser?.name || "Select a user"}</span>
-        <ChevronDown className="h-4 w-4 text-muted-foreground" />
-      </button>
-
-      {open && (
-        <ul className="absolute z-50 mt-1 w-full bg-card border border-border rounded-md shadow-lg max-h-60 overflow-auto">
-          {users.map((user) => (
-            <li
-              key={user.id}
-              onClick={() => {
-                setSelectedUser(user);
-                setOpen(false);
-              }}
-              className="cursor-pointer px-3 py-2 text-sm hover:bg-gray-100"
-            >
-              {user.name}
-            </li>
-          ))}
-        </ul>
-      )}
+      <DynamicSelect
+        // A unique name is required to manage the active dropdown state
+        name="user-selector"
+        activeDropdown={activeDropdown}
+        setActiveDropdown={setActiveDropdown}
+        options={searchResults}
+        loading={searchStatus === "loading"}
+        onFetch={handleFetchUsers}
+        placeholder="Select one or more users"
+        value={selectedUserIds}
+        onSelect={(selectedIds) => setSelectedUserIds(selectedIds as string[])}
+      />
     </div>
   );
 }

@@ -38,7 +38,7 @@ export function MessagesHeaderComponent({
             onChange={(e) => setSearchQuery(e.target.value)} />
         </div>
         <Button
-          className="gap-2 cursor-pointer bg-orange-600 hover:outline-none"
+          className="gap-2 cursor-pointer bg-orange-600 hover:outline-none text-black"
           onClick={() => {
             setIsCreatingForm(true);
             navigate("/messages/new");
