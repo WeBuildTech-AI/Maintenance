@@ -519,6 +519,9 @@ export function Locations() {
                     </>
                   ) : (
                     <div className="text-center py-8">
+                      <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
+                        <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed"></div>
+                      </div>
                       <p className="text-muted-foreground mb-2">
                         Start adding Location on MaintainOS
                       </p>
@@ -526,7 +529,7 @@ export function Locations() {
                         onClick={handleShowNewLocationForm}
                         className="text-primary p-0 bg-white cursor-pointer"
                       >
-                        Create the first asset
+                        Create the first Location
                       </Button>
                     </div>
                   )}
@@ -534,7 +537,7 @@ export function Locations() {
               </div>
 
               {/* Right Card (Detail / Form View) - No Changes Below This Line */}
-              <Card className="flex flex-col h-full mr-2 flex-1">
+              <Card className="flex flex-col h-full mr-2 flex-1 ">
                 <CardContent className="flex-1 min-h-0">
                   {isCreateRoute || isEditRoute || isCreateSubLocationRoute ? (
                     <NewLocationForm
@@ -741,8 +744,18 @@ export function Locations() {
                       </div>
                     </div>
                   ) : (
-                    <div className="flex h-full items-center justify-center text-gray-500">
-                      Select a location to view details
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
+                          <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed"></div>
+                        </div>
+                        <p className="text-muted-foreground mb-2">
+                          Select a Location to view details
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          or create a new Location to get started
+                        </p>
+                      </div>
                     </div>
                   )}
                 </CardContent>

@@ -299,7 +299,9 @@ export function AssetsList({
                 <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
                   <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed"></div>
                 </div>
-                <p className="text-muted-foreground mb-2">No assets found</p>
+                <p className="text-muted-foreground mb-2">
+                  Start adding Asset on MaintainOS
+                </p>
                 <Button
                   onClick={() => setShowNewAssetForm(true)}
                   variant="link"

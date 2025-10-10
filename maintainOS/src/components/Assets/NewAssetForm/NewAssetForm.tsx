@@ -211,7 +211,7 @@ export function NewAssetForm({
   };
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-lg border">
+    <div className="flex h-full flex-col overflow-hidden  border">
       {/* Header */}
       <div className="flex-none border-b px-6 py-4">
         <h2 className="text-xl font-semibold">New Asset</h2>

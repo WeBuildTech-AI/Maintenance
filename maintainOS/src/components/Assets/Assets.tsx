@@ -33,8 +33,8 @@ export const Assets: FC = () => {
   const [assetData, setAssetData] = useState<Asset[]>([]);
 
   // 1. Sorting state is now managed here in the parent component
-  const [sortType, setSortType] = useState<string>("Last Updated");
-  const [sortOrder, setSortOrder] = useState<string>("desc"); // 'asc' or 'desc'
+  const [sortType, setSortType] = useState<string>("Name");
+  const [sortOrder, setSortOrder] = useState<string>("asc"); // 'asc' or 'desc'
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
 
   const fetchAssetsData = async () => {
