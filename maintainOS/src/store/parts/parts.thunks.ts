@@ -20,7 +20,7 @@ export const fetchPartsName = createAsyncThunk(
   "parts/fetchParts",
   async (_, { rejectWithValue }) => {
     try {
-      const parts = await partService.fetchPartsName(1,10,0);
+      const parts = await partService.fetchPartsName();
       return parts;
     } catch (error: any) {
       return rejectWithValue(

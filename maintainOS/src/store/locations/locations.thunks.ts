@@ -26,16 +26,9 @@ export const fetchLocations = createAsyncThunk(
 
 export const fetchLocationsName = createAsyncThunk(
   "locations/fetchLocationsName",
-  async (
-    { limit, page, offset }: { limit: number; page: number; offset: number },
-    { rejectWithValue }
-  ) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const locations = await locationService.fetchLocationsName(
-        limit,
-        page,
-        offset
-      );
+      const locations = await locationService.fetchLocationsName();
       return locations;
     } catch (error: any) {
       return rejectWithValue(

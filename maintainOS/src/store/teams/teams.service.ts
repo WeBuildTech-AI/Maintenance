@@ -21,19 +21,10 @@ export const teamService = {
     return res.data;
   },
 
-  fetchTeamsName: async (
-    limit: number,
-    page: number,
-    offset: number
-  ): Promise<TeamResponse[]> => {
-    const res = await axios.get(`${API_URL}/teams/summary`, {
-      params: { limit, page, offset },
-      headers: { Accept: "application/json" },
-    });
+  fetchTeamsName: async (): Promise<TeamResponse[]> => {
+    const res = await axios.get(`${API_URL}/teams/summary`);
     return res.data;
   },
-
-
 
   fetchTeamById: async (id: string): Promise<TeamResponse> => {
     const res = await axios.get(`${API_URL}/teams/${id}`);

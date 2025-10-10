@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MeterDetail } from "./MeterDetail/MeterDetail";
 import { MetersEmptyState } from "./MetersEmptyState";
 import { MetersHeaderComponent } from "./MetersHeader";
@@ -12,8 +12,7 @@ import {
   type MeterResponse,
 } from "../../store/meters";
 import type { ViewMode } from "../purchase-orders/po.types";
-import { locationService } from "../../store/locations";
-import { assetService } from "../../store/assets";
+
 import { useNavigate, useMatch } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import { useDispatch } from "react-redux";
@@ -32,6 +31,13 @@ export function Meters() {
   const [selectedMeter, setSelectedMeter] = useState<
     (typeof meterData)[0] | null
   >(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [sortType, setSortType] = useState("Name"); // "Name", "Status", or "Last Reading"
+  const [sortOrder, setSortOrder] = useState("asc"); // "asc" or "desc"
+  const [openSection, setOpenSection] = useState("Name");
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
+  const headerRef = useRef(null);
+  const modalRef = useRef(null);
 
   const dispatch = useDispatch<AppDispatch>();
 
@@ -81,6 +87,32 @@ export function Meters() {
       setLoading(false);
     }
   };
+
+  // NEW: useEffect for sorting and filtering the meters
+
+  // NEW: useEffect to position the custom dropdown
+  useEffect(() => {
+    if (isDropdownOpen && headerRef.current) {
+      const rect = headerRef.current.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom + window.scrollY + 5,
+        left: rect.left + rect.width / 2,
+      });
+    }
+  }, [isDropdownOpen]);
+
+  // NEW: useEffect to close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [modalRef]);
 
   // handle
 
@@ -141,7 +173,7 @@ export function Meters() {
           searchQuery,
           setSearchQuery,
           handleShowNewMeterForm,
-          setShowSettings,
+          setShowSettings
           // setSelectedMeter
         )}
 

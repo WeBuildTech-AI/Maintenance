@@ -19,23 +19,20 @@ export function VendorsDropdown({
   setSelectedvendorId,
   selectedVendorId,
 }: VendorDropdownProps) {
-  const hasFetched = useRef(false);
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
   const [vendorData, setVendorData] = useState<VendorResponse[]>([]);
 
   const handleFetchApi = async () => {
-    if (hasFetched.current) return;
     setLoading(true);
     try {
-      const res = await vendorService.fetchVendorName(10, 1, 0);
-      setVendorData(res.data || []);
+      const res = await vendorService.fetchVendorName();
+      setVendorData(res || []);
     } catch (err) {
       console.error("Error fetching locations:", err);
     } finally {
       setLoading(false);
-      hasFetched.current = true;
     }
   };
 
@@ -117,13 +114,3 @@ export function VendorsDropdown({
   );
 }
 
-// /* <div className="mt-4">
-//    <h3 className="mb-4 text-base font-medium text-gray-900">Location</h3>
-//    <div className="relative">
-//      <div className="flex items-center gap-3 rounded-md border border-gray-300 bg-white px-4 py-3 h-12">
-//        <MapPin className="h-5 w-5 text-blue-500" />
-//        <span className="flex-1 text-gray-900">General</span>
-//        <ChevronDown className="h-5 w-5 text-gray-400" />
-//      </div>
-//    </div>
-//  </div>

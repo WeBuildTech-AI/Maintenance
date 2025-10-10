@@ -34,7 +34,7 @@ export function AssetCard({
               <div className="flex items-center gap-1 mt-1">
                 <MapPin className="h-3 w-3 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">
-                  {asset.location}
+                  {asset.locationId}
                 </span>
               </div>
             </div>

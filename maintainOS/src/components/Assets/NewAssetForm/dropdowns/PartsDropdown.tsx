@@ -30,16 +30,14 @@ export function PartsDropdown({
   const hasFetched = useRef(false);
 
   const handleFetchApi = async () => {
-    if (hasFetched.current) return;
     setLoading(true);
     try {
-      const res = await partService.fetchPartsName(10, 1, 0);
-      setPartData(res.data || []);
+      const res = await partService.fetchPartsName();
+      setPartData(res || []);
     } catch (err) {
       console.error("Error fetching locations:", err);
     } finally {
       setLoading(false);
-      hasFetched.current = true;
     }
   };
 

@@ -13,10 +13,21 @@ export function AssetCriticality({ asset }: { asset: any }) {
 
   return (
     <div>
-      <h3 className="font-medium mb-3">Criticality</h3>
-      <Badge variant="outline" className={`inline-flex w-fit ${classes}`}>
-        {c || "None"}
-      </Badge>
+      {
+        <div className="border-t">
+          {asset.criticality && (
+            <div className="mt-4">
+              <h3 className="font-medium mb-3">Criticality</h3>
+              <Badge
+                variant="outline"
+                className={`inline-flex w-fit ${classes}`}
+              >
+                {c || "None"}
+              </Badge>
+            </div>
+          )}
+        </div>
+      }
     </div>
   );
 }
