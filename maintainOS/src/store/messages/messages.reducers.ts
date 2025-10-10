@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { getDMs,searchUsers } from "./messages.thunks";
+import { chatHisory, getDMs,searchUsers } from "./messages.thunks";
 import type { DMConversation, User, MessagingState } from "./messages.types";
 
 const initialState: MessagingState = {
@@ -10,6 +10,13 @@ const initialState: MessagingState = {
   error: null,
   searchError: null,
   dmsError : null,
+
+  // Initial state for the active conversation
+  activeConversation: {
+    messages: [],
+    status: "idle",
+    error: null,
+  },
 };
 
 const messagingSlice = createSlice({
@@ -24,6 +31,9 @@ const messagingSlice = createSlice({
       state.dms = [];
       state.dmsStatus = "idle";
     },
+    addMessage: (state, action) => {
+      state.activeConversation.messages.unshift(action.payload); // Add to the beginning
+    }
   },
   extraReducers: (builder) => {
 
@@ -59,11 +69,25 @@ const messagingSlice = createSlice({
         state.dmsStatus = "failed";
         state.dmsError = action.payload as string;
       });
+
+
+      builder
+      // get chat by conversation id 
+      .addCase(chatHisory.pending, (state) => {
+        state.activeConversation.status = "loading";
+        state.activeConversation.error = null;
+      })
+      .addCase(chatHisory.fulfilled, (state, action) => {
+        state.activeConversation.status = "succeeded";
+        // The payload is the array of messages
+        state.activeConversation.messages = action.payload;
+      })
+      .addCase(chatHisory.rejected, (state, action) => {
+        state.activeConversation.status = "failed";
+        state.activeConversation.error = action.payload as string;
+      });
   },
 });
 
-
-
-
-export const { clearSearchResults, clearDMs} = messagingSlice.actions;
+export const { clearSearchResults, clearDMs, addMessage} = messagingSlice.actions;
 export default messagingSlice.reducer;

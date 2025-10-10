@@ -85,6 +85,11 @@ export interface SendMessagePayload {
   metadata?: Record<string, any>;
 }
 
+// ADD THIS TYPE to represent the API response shape
+export interface MessageWithSender extends Message {
+  sender: UserResponse;
+}
+
 export interface MessagingState {
   searchResults: User[];
   dms: DMConversation[]; // new field
@@ -93,6 +98,13 @@ export interface MessagingState {
   error: string | null;
   searchError: string | null;
   dmsError: string | null;
+
+  // ADD THIS section to handle the active chat window's messages
+  activeConversation: {
+    messages: MessageWithSender[];
+    status: "idle" | "loading" | "succeeded" | "failed";
+    error: string | null;
+  };
 }
 export interface ChatWindowProps {
   messages: {

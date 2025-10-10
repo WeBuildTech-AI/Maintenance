@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import type { DMConversation, User } from "./messages.types";
+import type { DMConversation, MessageWithSender, User } from "./messages.types";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -44,5 +44,12 @@ export const messageService = {
     });
 
     return transformed;
-  } 
+  },
+
+  // get all chats of a particular coversation ID
+  getChatHistory : async(conversationId: string) : Promise<MessageWithSender[]> => {
+    const response = await axios.get(`${API_URL}/messaging/conversations/${conversationId}/messages`);
+    const messages: MessageWithSender[] = response.data;
+    return messages;
+  }
 };
