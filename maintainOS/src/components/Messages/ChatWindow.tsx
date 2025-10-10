@@ -4,7 +4,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Paperclip, Send, Info, StepBack, ChevronDown } from "lucide-react";
 import { cn } from "../ui/utils";
-import { type ChatWindowProps } from "./messages.types";
+import { type ChatWindowProps } from "../../store/messages/messages.types";
 import { UserSelect } from "./UserSelect";
 import { CreateConversationModal } from "./GroupInfoForm";
 import { useMessagingSocket } from "../../utils/useWebsocket";
@@ -12,7 +12,11 @@ import { useSelector } from "react-redux";
 import type { RootState } from "../../store";
 import type { User } from "../../store/messages";
 
-export function ChatWindow({ messages, isCreatingMessage }: ChatWindowProps) {
+export function ChatWindow({
+  messages,
+  isCreatingMessage,
+  currentChatUser,
+}: ChatWindowProps) {
   const [newMessage, setNewMessage] = useState("");
   const [showInfo, setShowInfo] = useState(false);
   const [showSharedFiles, setShowSharedFiles] = useState(false);
@@ -22,9 +26,13 @@ export function ChatWindow({ messages, isCreatingMessage }: ChatWindowProps) {
 
   const user = useSelector((state: RootState) => state.auth.user);
 
-  const { isConnected, lastMessage, sendMessage } = useMessagingSocket(
-    user?.id ?? ""
-  );
+  const {
+    isConnected,
+    lastMessage,
+    sendMessage,
+    updatedConversation,
+    joinConversation,
+  } = useMessagingSocket(user?.id ?? "");
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -49,9 +57,16 @@ export function ChatWindow({ messages, isCreatingMessage }: ChatWindowProps) {
 
   useEffect(() => {
     if (lastMessage) {
-      console.log("New message:", lastMessage);
+      console.log("New message received:", lastMessage);
     }
   }, [lastMessage]);
+
+  useEffect(() => {
+    if (updatedConversation) {
+      console.log("Conversation updated:", updatedConversation);
+      // Update the conversation list with the updated conversation
+    }
+  }, [updatedConversation]);
 
   const startSendingMessage = () => {
     if (!newMessage.trim()) return;
@@ -84,12 +99,26 @@ export function ChatWindow({ messages, isCreatingMessage }: ChatWindowProps) {
             <div className="flex items-center justify-between border-b border-border p-4 bg-white">
               <div className="flex items-center gap-3">
                 <Avatar className="size-15">
-                  <AvatarImage src="/avatar.png" />
-                  <AvatarFallback>AB</AvatarFallback>
+                  <AvatarImage
+                    src={currentChatUser?.avatarUrl || "/avatar.png"}
+                  />
+                  <AvatarFallback>
+                    {currentChatUser?.name
+                      ? currentChatUser.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .toUpperCase()
+                      : "AB"}
+                  </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h2 className="font-semibold">Chat Window</h2>
-                  <p className="text-sm text-muted-foreground">Conversation</p>
+                  <h2 className="font-semibold">
+                    {currentChatUser?.name || "Chat Window"}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    {currentChatUser?.isGroup ? "Group Chat" : "Conversation"}
+                  </p>
                 </div>
               </div>
               <Button variant="ghost" onClick={() => setShowInfo(true)}>
@@ -195,26 +224,36 @@ export function ChatWindow({ messages, isCreatingMessage }: ChatWindowProps) {
           <div className="flex mt-4 items-center justify-center">
             <div className="flex-col">
               <Avatar className="size-40 p-4 bg-gray-100 rounded-full">
-                <AvatarImage src="/avatar.png" />
-                <AvatarFallback>RM</AvatarFallback>
+                <AvatarImage
+                  src={currentChatUser?.avatarUrl || "/avatar.png"}
+                />
+                <AvatarFallback>
+                  {currentChatUser?.name
+                    ? currentChatUser.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                        .toUpperCase()
+                    : "RM"}
+                </AvatarFallback>
               </Avatar>
-              <div className="mt-2 text-center font-medium">Rajesh Meena</div>
+              <div className="mt-2 text-center font-medium">
+                {currentChatUser?.name || "Unknown User"}
+              </div>
               <div className="mt-1 text-center text-sm text-muted-foreground">
-                Private Chat
+                {currentChatUser?.isGroup ? "Group Chat" : "Private Chat"}
               </div>
             </div>
           </div>
 
           <div className="mt-4 border-b flex w-full justify-between pb-3">
             <p className="text-sm">Email</p>
-            <p className="text-sm text-muted-foreground">
-              rajeshkumarmeena094@gmail.com
-            </p>
+            <p className="text-sm text-muted-foreground">user@gmail.com</p>
           </div>
 
           <div className="mt-4 flex w-full justify-between pb-3">
             <p className="text-sm">Mobile Phone Number</p>
-            <p className="text-sm text-muted-foreground">+91 70239 64317</p>
+            <p className="text-sm text-muted-foreground">+91 1234</p>
           </div>
 
           <div className="mt-6 mb-2 border-b">

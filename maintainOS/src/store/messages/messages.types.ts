@@ -37,7 +37,6 @@ export interface DMConversation {
   lastMessage?: Message;
 }
 
-
 // ---------- SUPPORTING TYPES ----------
 
 export interface User {
@@ -47,9 +46,9 @@ export interface User {
 }
 
 export interface UserResponse {
-    id: string;
-    fullName : string;
-    avatarUrl?: string;
+  id: string;
+  fullName: string;
+  avatarUrl?: string;
 }
 
 export interface Attachment {
@@ -59,7 +58,6 @@ export interface Attachment {
   mimeType?: string;
   size?: number;
 }
-
 
 // ---------- PAYLOAD TYPES (correspond to your NestJS DTOs) ----------
 
@@ -88,13 +86,29 @@ export interface SendMessagePayload {
 }
 
 export interface MessagingState {
-    searchResults : User[];
-    dms: DMConversation[];       // new field
-    dmsStatus: 'idle' | 'loading' | 'succeeded' | 'failed'; 
-    searchStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
-    error: string | null;
-    searchError: string | null;
-    dmsError: string | null;
+  searchResults: User[];
+  dms: DMConversation[]; // new field
+  dmsStatus: "idle" | "loading" | "succeeded" | "failed";
+  searchStatus: "idle" | "loading" | "succeeded" | "failed";
+  error: string | null;
+  searchError: string | null;
+  dmsError: string | null;
+}
+export interface ChatWindowProps {
+  messages: {
+    id: number;
+    sender: "me" | "them";
+    text: string;
+    avatar: string;
+    timestamp: string;
+  }[];
+  isCreatingMessage: boolean;
+  currentChatUser?: {
+    name: string;
+    avatarUrl?: string;
+    isGroup?: boolean;
+    participants?: User[];
+  };
 }
 
 export type MessagesHeaderProps = {
@@ -105,4 +119,3 @@ export type MessagesHeaderProps = {
   setIsCreatingForm: React.Dispatch<React.SetStateAction<boolean>>;
   setShowSettings: React.Dispatch<React.SetStateAction<boolean>>;
 };
-

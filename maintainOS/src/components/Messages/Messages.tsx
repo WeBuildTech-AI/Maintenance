@@ -5,9 +5,7 @@ import { cn } from "../ui/utils";
 import { ChatWindow } from "./ChatWindow";
 import { MessagesHeaderComponent } from "./MessagesHeader";
 import type { ViewMode } from "../purchase-orders/po.types";
-import {
-  dummyConversation,
-} from "./messages.types";
+import { dummyConversation } from "./messages.types";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useLocation, useNavigate } from "react-router-dom";
 import type { RootState } from "../../store";
@@ -32,10 +30,12 @@ export function Messages() {
   const allConvos = useSelector((state: RootState) => state.messaging.dms);
 
   // DMs: (only 1 other participant)
-  const oneOnOneDMs = allConvos.filter(convo => convo.participants.length === 1);
+  const oneOnOneDMs = allConvos.filter(
+    (convo) => convo.participants.length === 1
+  );
 
   // Threads: group conversations (>1 other participants)
-  const threads = allConvos.filter(convo => convo.participants.length > 1);
+  const threads = allConvos.filter((convo) => convo.participants.length > 1);
 
   const dmsStatus = useSelector(
     (state: RootState) => state.messaging.dmsStatus
@@ -55,7 +55,6 @@ export function Messages() {
   }, [location]);
 
   const items: DMConversation[] = active === "messages" ? oneOnOneDMs : threads;
-
 
   useEffect(() => {
     if (items.length > 0) {
@@ -115,7 +114,6 @@ export function Messages() {
                   navigate("/messages");
                 }}
               >
-                
                 <Avatar>
                   <AvatarImage
                     src={item.participants[0]?.avatarUrl || "/avatar.png"}
@@ -124,8 +122,8 @@ export function Messages() {
                     {item.participants[0]?.name?.[0] || "U"}
                   </AvatarFallback>
                 </Avatar>
-               
-               <div className="truncate">
+
+                <div className="truncate">
                   <p className="font-medium truncate">
                     {item.participants.map((p) => p.name || p.id).join(", ")}
                   </p>
@@ -144,6 +142,32 @@ export function Messages() {
             <ChatWindow
               messages={dummyConversation[selectedId] || []}
               isCreatingMessage={isCreatingMessage}
+              currentChatUser={(() => {
+                const selectedConversation = items.find(
+                  (item) => item.id === selectedId
+                );
+                if (!selectedConversation) return undefined;
+
+                // For DMs, use the other participant's info
+                if (selectedConversation.participants.length === 1) {
+                  const participant = selectedConversation.participants[0];
+                  return {
+                    name: participant.name,
+                    avatarUrl: participant.avatarUrl,
+                    isGroup: false,
+                  };
+                }
+
+                // For group conversations, create a group name
+                return {
+                  name: selectedConversation.participants
+                    .map((p) => p.name)
+                    .join(", "),
+                  avatarUrl: selectedConversation.participants[0]?.avatarUrl,
+                  isGroup: true,
+                  participants: selectedConversation.participants,
+                };
+              })()}
             />
           ) : (
             <div className="h-full flex items-center justify-center text-muted-foreground">
