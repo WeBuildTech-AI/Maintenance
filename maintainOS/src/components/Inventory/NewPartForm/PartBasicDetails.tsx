@@ -25,13 +25,8 @@ export function PartBasicDetails({
       <PartPicturesInput
         files={newItem.pictures || []}
         setFiles={(files) => setNewItem((s) => ({ ...s, pictures: files }))}
-        onFilesSelected={(selectedFiles) =>
-          setNewItem((s) => ({
-            ...s,
-            pictures: [...(s.pictures || []), ...selectedFiles],
-          }))
-        }
       />
+
 
       {/* Unit Cost */}
       <div className="space-y-2">

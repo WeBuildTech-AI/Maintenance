@@ -20,28 +20,52 @@ export function PartLocationSection({
   const [loadingLocations, setLoadingLocations] = React.useState(false);
   const [activeDropdown, setActiveDropdown] = React.useState<string | null>(null);
 
-  const selectedLocation = newItem.locationId || "";
+  const selectedLocations = newItem.locationIds ?? [];
 
-  const fetchLocations = React.useCallback(() => {
-    if (loadingLocations || locationOptions.length > 0) return;
+  const fetchLocations = React.useCallback(async () => {
+    if (loadingLocations) {
+      console.log("⚠️ Already loading locations...");
+      return;
+    }
+    console.log("📡 Fetching Locations...");
     setLoadingLocations(true);
-    dispatch(fetchLocationsName({ limit: 1000, page: 1, offset: 0 }))
-      .unwrap()
-      .then((response) => {
-        const options = response.data.map((loc: any) => ({
-          id: loc.id,
-          name: loc.name,
-        }));
-        setLocationOptions(options);
-      })
-      .catch((err) => console.error("Failed to fetch locations:", err))
-      .finally(() => setLoadingLocations(false));
-  }, [dispatch, loadingLocations, locationOptions.length]);
+    try {
+      const res = await dispatch(fetchLocationsName({ limit: 1000, page: 1, offset: 0 })).unwrap();
+      console.log("🧾 Raw API Response (fetchLocationsName):", res);
 
-  const handleSelectLocation = (val: string | string[]) => {
-    const id = Array.isArray(val) ? val[0] ?? "" : val;
-    setNewItem((s) => ({ ...s, locationId: id }));
+      let data = [];
+      if (Array.isArray(res)) data = res;
+      else if (Array.isArray(res?.data)) data = res.data;
+      else if (Array.isArray(res?.results)) data = res.results;
+      else if (Array.isArray(res?.items)) data = res.items;
+      else if (Array.isArray(res?.rows)) data = res.rows;
+      else {
+        console.warn("⚠️ Unknown response structure. Full response:", res);
+      }
+
+      const options = data.map((loc: any, i) => ({
+        id: String(loc.id ?? loc.location_id ?? i),
+        name: loc.name ?? loc.location_name ?? `Unnamed (${i + 1})`,
+      }));
+
+      console.log("✅ Final Parsed Options (to render):", options);
+      setLocationOptions(options);
+    } catch (error) {
+      console.error("❌ Failed to fetch locations:", error);
+    } finally {
+      setLoadingLocations(false);
+    }
+  }, [dispatch, loadingLocations]);
+
+  const handleSelectLocation = (vals: string[] | string) => {
+    const ids = Array.isArray(vals) ? vals : [vals];
+    console.log("📍 Selected Location IDs:", ids);
+    setNewItem((s) => ({ ...s, locationIds: ids }));
   };
+
+  React.useEffect(() => {
+    console.log("🔁 Location Options Updated:", locationOptions);
+  }, [locationOptions]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "25px" }}>
@@ -57,23 +81,25 @@ export function PartLocationSection({
         {/* Location */}
         <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
           <label style={{ fontSize: "14px", color: "#111827", fontWeight: 600, marginBottom: "6px" }}>
-            Location
+            Locations
           </label>
           <div style={{ height: "40px", display: "flex" }}>
             <div style={{ flex: 1 }}>
               <PartDynamicSelect
                 options={locationOptions}
-                value={selectedLocation}
-                onSelect={handleSelectLocation}
+                value={newItem.locationId ?? ""}
+                onSelect={(val) => setNewItem((s) => ({ ...s, locationId: val }))}
                 onFetch={fetchLocations}
                 loading={loadingLocations}
                 placeholder="Select Location"
                 ctaText="Add New Location"
-                onCtaClick={() => console.log("Open Add Location modal")}
+                onCtaClick={() => console.log("Add Location")}
                 name="part_location"
                 activeDropdown={activeDropdown}
                 setActiveDropdown={setActiveDropdown}
+                isMulti={false} // SINGLE
               />
+
             </div>
           </div>
         </div>
@@ -108,9 +134,7 @@ export function PartLocationSection({
           <input
             type="number"
             value={newItem.unitInStock || ""}
-            onChange={(e) =>
-              setNewItem((s) => ({ ...s, unitInStock: Number(e.target.value) }))
-            }
+            onChange={(e) => setNewItem((s) => ({ ...s, unitInStock: Number(e.target.value) }))}
             style={{
               height: "40px",
               border: "1px solid #e5e7eb",
@@ -132,9 +156,7 @@ export function PartLocationSection({
           <input
             type="number"
             value={newItem.minInStock || ""}
-            onChange={(e) =>
-              setNewItem((s) => ({ ...s, minInStock: Number(e.target.value) }))
-            }
+            onChange={(e) => setNewItem((s) => ({ ...s, minInStock: Number(e.target.value) }))}
             style={{
               height: "40px",
               border: "1px solid #e5e7eb",

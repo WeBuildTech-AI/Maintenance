@@ -9,7 +9,7 @@ const Spinner = () => (
   <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
 );
 
-// ------------------- Manual Checkbox Styles -------------------
+// ------------------- Checkbox Styles -------------------
 const checkboxStyles = `
   .custom-checkbox-box {
     width: 1rem; height: 1rem; border: 1px solid #d1d5db; border-radius: 0.25rem;
@@ -59,7 +59,7 @@ interface PartDynamicSelectProps {
   name: string;
   activeDropdown: string | null;
   setActiveDropdown: (name: string | null) => void;
-  isMulti?: boolean; // ✅ NEW PROP
+  isMulti?: boolean;
 }
 
 // ------------------- Main Component -------------------
@@ -76,18 +76,14 @@ export function PartDynamicSelect({
   name,
   activeDropdown,
   setActiveDropdown,
-  isMulti = false, // ✅ default false
+  isMulti = false,
 }: PartDynamicSelectProps) {
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   const open = activeDropdown === name;
 
-  // Close dropdown when clicking outside
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setActiveDropdown(null);
       }
     };
@@ -101,7 +97,6 @@ export function PartDynamicSelect({
     setActiveDropdown(nextState);
   };
 
-  // ✅ Ensure value is always array when multi-select enabled
   const selectedValues = React.useMemo(() => {
     if (isMulti) {
       if (Array.isArray(value)) return value;
@@ -111,7 +106,7 @@ export function PartDynamicSelect({
     return typeof value === "string" ? value : "";
   }, [value, isMulti]);
 
-  // ✅ Toggle logic
+  // ✅ Multi-select stays open
   const toggleOption = (id: string) => {
     if (isMulti) {
       const current = Array.isArray(selectedValues) ? selectedValues : [];
@@ -121,7 +116,7 @@ export function PartDynamicSelect({
       onSelect(newSelected);
     } else {
       onSelect(id);
-      setActiveDropdown(null);
+      setActiveDropdown(null); // close only single-select
     }
   };
 
@@ -130,37 +125,29 @@ export function PartDynamicSelect({
     : options.filter((opt) => opt.id === selectedValues);
 
   return (
-    <div
-      ref={dropdownRef}
-      className={`relative ${open ? "z-50" : ""} ${className || ""}`}
-    >
+    <div ref={dropdownRef} className={`relative ${open ? "z-50" : ""} ${className || ""}`}>
       <style>{checkboxStyles}</style>
 
       {/* Input Display */}
       <div
-        className="flex flex-wrap items-center gap-2 border border-gray-300 rounded-md bg-white px-3 py-2 h-auto min-h-[42px] cursor-pointer shadow-sm placeholder-gray-400 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all"
+        className="flex flex-wrap items-center gap-2 border border-gray-300 rounded-md bg-white px-3 py-2 min-h-[42px] cursor-pointer shadow-sm transition-all"
         onClick={handleToggle}
       >
         <div className="flex flex-wrap items-center gap-1 flex-1">
           {selectedOptions.length > 0 ? (
             selectedOptions.map((option) => (
-              <Badge
-                key={option.id}
-                variant="secondary"
-                className="flex items-center gap-1"
-              >
+              <Badge key={option.id} variant="secondary" className="flex items-center gap-1 px-2 py-1">
                 {option.name}
-                {isMulti && (
-                  <button
-                    className="ml-1 rounded-full outline-none"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleOption(option.id);
-                    }}
-                  >
-                    <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                  </button>
-                )}
+                <button
+                  className="ml-1 rounded-full outline-none hover:text-red-600"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isMulti) toggleOption(option.id);
+                    else onSelect("");
+                  }}
+                >
+                  <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                </button>
               </Badge>
             ))
           ) : (
@@ -168,11 +155,7 @@ export function PartDynamicSelect({
           )}
         </div>
 
-        {open ? (
-          <ChevronUp className="h-4 w-4 shrink-0 opacity-50" />
-        ) : (
-          <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
-        )}
+        {open ? <ChevronUp className="h-4 w-4 opacity-50" /> : <ChevronDown className="h-4 w-4 opacity-50" />}
       </div>
 
       {/* Dropdown */}
@@ -192,13 +175,14 @@ export function PartDynamicSelect({
                   <div
                     key={option.id}
                     className="flex items-center justify-between border-b border-gray-100 cursor-pointer hover:bg-gray-50 px-3 py-2"
-                    onClick={() => toggleOption(option.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleOption(option.id);
+                    }}
                   >
                     <label
                       className={`cursor-pointer pl-4 ${
-                        isSelected
-                          ? "text-gray-900 font-medium"
-                          : "text-gray-700 font-normal"
+                        isSelected ? "text-gray-900 font-medium" : "text-gray-700 font-normal"
                       }`}
                     >
                       {option.name}
@@ -209,17 +193,17 @@ export function PartDynamicSelect({
               })}
 
               {options.length === 0 && (
-                <div className="p-3 text-sm text-muted-foreground">
-                  No options found.
-                </div>
+                <div className="p-3 text-sm text-muted-foreground">No options found.</div>
               )}
             </div>
           )}
 
-          {/* CTA Button */}
           {ctaText && onCtaClick && (
             <div
-              onClick={onCtaClick}
+              onClick={(e) => {
+                e.stopPropagation();
+                onCtaClick();
+              }}
               className="sticky bottom-0 flex items-center p-3 text-sm text-orange-600 bg-gray-50 border-t cursor-pointer hover:bg-orange-100"
             >
               <span>{ctaText}</span>

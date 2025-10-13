@@ -1,12 +1,13 @@
 "use client";
 
 import { Upload, X } from "lucide-react";
-import type { Dispatch, SetStateAction } from "react";
+import React, { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 
 interface PartPicturesInputProps {
   files: File[];
   setFiles: Dispatch<SetStateAction<File[]>>;
-  onFilesSelected: (files: File[]) => void;
+  // parent should NOT modify files in this callback
+  onFilesSelected?: (newFiles: File[]) => void;
 }
 
 export function PartPicturesInput({
@@ -14,87 +15,115 @@ export function PartPicturesInput({
   setFiles,
   onFilesSelected,
 }: PartPicturesInputProps) {
+  const [previews, setPreviews] = useState<{ url: string; name: string }[]>([]);
+
+  // ✅ Generate blob URLs for previews
+  useEffect(() => {
+    const urls = files.map((file) => ({
+      url: URL.createObjectURL(file),
+      name: file.name,
+    }));
+    setPreviews(urls);
+
+    return () => {
+      urls.forEach((u) => URL.revokeObjectURL(u.url));
+    };
+  }, [files]);
+
+  // ✅ Handle File Selection (no duplicate)
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const newFiles = Array.from(e.target.files);
+    // 🟢 Filter duplicates by file.name + size
+    const uniqueFiles = newFiles.filter(
+      (f) => !files.some((existing) => existing.name === f.name && existing.size === f.size)
+    );
+    const updated = [...files, ...uniqueFiles];
+    setFiles(updated);
+    onFilesSelected?.(uniqueFiles); // inform parent only
+    e.target.value = "";
+  };
+
+  // ✅ Handle Drag-Drop
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const dropped = Array.from(e.dataTransfer.files);
-    onFilesSelected(dropped);
+    const uniqueFiles = dropped.filter(
+      (f) => !files.some((existing) => existing.name === f.name && existing.size === f.size)
+    );
+    const updated = [...files, ...uniqueFiles];
+    setFiles(updated);
+    onFilesSelected?.(uniqueFiles);
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-    const selected = Array.from(e.target.files);
-    onFilesSelected(selected);
-    e.target.value = ""; // reset input for reupload
+  // ✅ Remove File
+  const handleRemove = (index: number) => {
+    const updated = files.filter((_, i) => i !== index);
+    setFiles(updated);
   };
-
-  const removeFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const fileInput = (
-    <input
-      id="partPictureInput"
-      type="file"
-      multiple
-      accept="image/*"
-      className="hidden"
-      onChange={handleFileSelect}
-    />
-  );
 
   return (
-    <div className="">
-      <h3 className="block text-sm font-medium text-gray-700 mb-4">
-        Part Pictures
-      </h3>
+    <div>
+      <h3 className="block text-sm font-medium text-gray-700 mb-4">Part Pictures</h3>
 
       {files.length === 0 ? (
+        // 🟠 Dropzone for first upload
         <div
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
-          className="border border-dashed rounded-md p-6 text-center bg-orange-50 text-orange-600 cursor-pointer flex flex-col items-center justify-center h-48 transition hover:bg-orange-100"
           onClick={() => document.getElementById("partPictureInput")?.click()}
+          className="border border-dashed rounded-md p-6 text-center bg-orange-50 text-orange-600 cursor-pointer flex flex-col items-center justify-center h-48 transition hover:bg-orange-100"
         >
           <Upload className="h-8 w-8 mb-2" />
           <p className="text-sm">Add or drag pictures</p>
-          {fileInput}
+          <input
+            id="partPictureInput"
+            type="file"
+            multiple
+            accept="image/*"
+            className="hidden"
+            onChange={handleFileSelect}
+          />
         </div>
       ) : (
+        // 🟢 Grid for previews
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
-          {/* Add More Button */}
+          {/* Add More */}
           <div
             onClick={() => document.getElementById("partPictureInput")?.click()}
             className="border border-dashed rounded-md text-center bg-orange-50 text-orange-600 cursor-pointer flex flex-col items-center justify-center w-32 h-24 transition hover:bg-orange-100"
           >
             <Upload className="h-6 w-6 mb-2" />
             <p className="text-xs">Add more</p>
-            {fileInput}
+            <input
+              id="partPictureInput"
+              type="file"
+              multiple
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileSelect}
+            />
           </div>
 
-          {/* Image Previews */}
-          {files.map((file, i) => {
-            const url = URL.createObjectURL(file);
-            return (
-              <div
-                key={i}
-                className="relative w-32 h-24 rounded-md overflow-hidden flex items-center justify-center border border-gray-200 bg-white shadow-sm"
+          {/* ✅ Preview Thumbnails */}
+          {previews.map((p, i) => (
+            <div
+              key={`${p.name}-${i}`}
+              className="relative w-32 h-24 rounded-md overflow-hidden flex items-center justify-center border border-gray-200 bg-white shadow-sm"
+            >
+              <img src={p.url} alt={p.name} className="object-cover w-full h-full" />
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemove(i);
+                }}
+                className="absolute top-1 right-1 bg-white text-orange-600 rounded-full p-1 shadow border border-gray-200 hover:bg-orange-100 transition"
               >
-                <img
-                  src={url}
-                  alt={file.name}
-                  className="object-cover w-full h-full"
-                  onLoad={() => URL.revokeObjectURL(url)} // Clean up URL
-                />
-                <button
-                  type="button"
-                  onClick={() => removeFile(i)}
-                  className="absolute top-1 right-1 bg-white text-orange-600 rounded-full p-1 shadow border border-gray-200 hover:bg-orange-50 transition"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            );
-          })}
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
         </div>
       )}
     </div>

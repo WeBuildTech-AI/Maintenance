@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../../store";
 import { fetchAssetsName } from "../../../store/assets/assets.thunks";
@@ -25,70 +25,91 @@ export function PartVendorsSection({
   const [loadingVendors, setLoadingVendors] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
+  const hasFetchedAssets = useRef(false);
+  const hasFetchedTeams = useRef(false);
+  const hasFetchedVendors = useRef(false);
+
+  // -------------------- NORMALIZER --------------------
+  const normalizeResponse = (res: any, label: string) => {
+    console.log(`🧾 Raw ${label} response:`, res);
+    if (Array.isArray(res)) return res;
+    if (Array.isArray(res?.data)) return res.data;
+    if (Array.isArray(res?.results)) return res.results;
+    if (Array.isArray(res?.items)) return res.items;
+    if (Array.isArray(res?.rows)) return res.rows;
+    console.warn(`⚠️ Unexpected ${label} response`, res);
+    return [];
+  };
+
   // -------------------- FETCH HANDLERS --------------------
   const handleFetchAssets = useCallback(async () => {
-    if (loadingAssets || assetOptions.length > 0) return;
+    if (loadingAssets || hasFetchedAssets.current) return;
     setLoadingAssets(true);
     try {
       const res = await dispatch(fetchAssetsName({ limit: 1000, page: 1, offset: 0 })).unwrap();
-      const options = res.data.map((a: any) => ({ id: a.id, name: a.name }));
-      setAssetOptions(options);
+      const data = normalizeResponse(res, "Assets");
+      setAssetOptions(data.map((a: any) => ({ id: String(a.id), name: a.name || "Unnamed Asset" })));
+      hasFetchedAssets.current = true;
     } catch (err) {
-      console.error("Failed to fetch assets:", err);
+      console.error("❌ Failed to fetch assets:", err);
     } finally {
       setLoadingAssets(false);
     }
-  }, [dispatch, loadingAssets, assetOptions.length]);
+  }, [dispatch, loadingAssets]);
 
   const handleFetchTeams = useCallback(async () => {
-    if (loadingTeams || teamOptions.length > 0) return;
+    if (loadingTeams || hasFetchedTeams.current) return;
     setLoadingTeams(true);
     try {
       const res = await dispatch(fetchTeamsName({ limit: 1000, page: 1, offset: 0 })).unwrap();
-      const options = res.data.map((t: any) => ({ id: t.id, name: t.name }));
-      setTeamOptions(options);
+      const data = normalizeResponse(res, "Teams");
+      setTeamOptions(data.map((t: any) => ({ id: String(t.id), name: t.name || "Unnamed Team" })));
+      hasFetchedTeams.current = true;
     } catch (err) {
-      console.error("Failed to fetch teams:", err);
+      console.error("❌ Failed to fetch teams:", err);
     } finally {
       setLoadingTeams(false);
     }
-  }, [dispatch, loadingTeams, teamOptions.length]);
+  }, [dispatch, loadingTeams]);
 
   const handleFetchVendors = useCallback(async () => {
-    if (loadingVendors || vendorOptions.length > 0) return;
+    if (loadingVendors || hasFetchedVendors.current) return;
     setLoadingVendors(true);
     try {
       const res = await dispatch(fetchVendorName({ limit: 1000, page: 1, offset: 0 })).unwrap();
-      const options = res.data.map((v: any) => ({ id: v.id, name: v.name }));
-      setVendorOptions(options);
+      const data = normalizeResponse(res, "Vendors");
+      setVendorOptions(data.map((v: any) => ({ id: String(v.id), name: v.name || "Unnamed Vendor" })));
+      hasFetchedVendors.current = true;
     } catch (err) {
-      console.error("Failed to fetch vendors:", err);
+      console.error("❌ Failed to fetch vendors:", err);
     } finally {
       setLoadingVendors(false);
     }
-  }, [dispatch, loadingVendors, vendorOptions.length]);
+  }, [dispatch, loadingVendors]);
 
-  // -------------------- AUTO-FETCH FOR PRESELECTED VALUES --------------------
   useEffect(() => {
-    if (newItem.assetId) handleFetchAssets();
-    if (newItem.teamId) handleFetchTeams();
-    if (newItem.vendorId) handleFetchVendors();
-  }, [newItem.assetId, newItem.teamId, newItem.vendorId, handleFetchAssets, handleFetchTeams, handleFetchVendors]);
+    handleFetchAssets();
+    handleFetchTeams();
+    handleFetchVendors();
+  }, [handleFetchAssets, handleFetchTeams, handleFetchVendors]);
 
   // -------------------- SELECT HANDLERS --------------------
-  const handleAssetSelect = (val: string | string[]) => {
-    const id = Array.isArray(val) ? val[0] ?? "" : val;
-    setNewItem((s) => ({ ...s, assetId: id }));
+  const handleAssetSelect = (vals: string[] | string) => {
+    const ids = Array.isArray(vals) ? vals : [vals];
+    console.log("🟣 Assets selected:", ids);
+    setNewItem((s) => ({ ...s, assetIds: ids }));
   };
 
-  const handleTeamSelect = (val: string | string[]) => {
-    const id = Array.isArray(val) ? val[0] ?? "" : val;
-    setNewItem((s) => ({ ...s, teamId: id }));
+  const handleTeamSelect = (vals: string[] | string) => {
+    const ids = Array.isArray(vals) ? vals : [vals];
+    console.log("🟣 Teams selected:", ids);
+    setNewItem((s) => ({ ...s, teamIds: ids }));
   };
 
-  const handleVendorSelect = (val: string | string[]) => {
-    const id = Array.isArray(val) ? val[0] ?? "" : val;
-    setNewItem((s) => ({ ...s, vendorId: id }));
+  const handleVendorSelect = (vals: string[] | string) => {
+    const ids = Array.isArray(vals) ? vals : [vals];
+    console.log("🟣 Vendors selected:", ids);
+    setNewItem((s) => ({ ...s, vendorIds: ids }));
   };
 
   // -------------------- RENDER --------------------
@@ -99,16 +120,17 @@ export function PartVendorsSection({
         <label style={{ fontSize: "14px", color: "#111827", fontWeight: 600 }}>Assets</label>
         <PartDynamicSelect
           options={assetOptions}
-          value={newItem.assetId ?? ""}
+          value={newItem.assetIds ?? []}
           onSelect={handleAssetSelect}
           onFetch={handleFetchAssets}
           loading={loadingAssets}
-          placeholder="Select Asset"
+          placeholder="Select Assets"
           name="assets"
           activeDropdown={activeDropdown}
           setActiveDropdown={setActiveDropdown}
           ctaText="+ Add New Asset"
-          onCtaClick={() => console.log("Open Add Asset Modal")}
+          onCtaClick={() => console.log("🟢 Open Add Asset Modal")}
+          isMulti={true}
         />
       </div>
 
@@ -117,16 +139,17 @@ export function PartVendorsSection({
         <label style={{ fontSize: "14px", color: "#111827", fontWeight: 600 }}>Teams in Charge</label>
         <PartDynamicSelect
           options={teamOptions}
-          value={newItem.teamId ?? ""}
+          value={newItem.teamIds ?? []}
           onSelect={handleTeamSelect}
           onFetch={handleFetchTeams}
           loading={loadingTeams}
-          placeholder="Select Team"
+          placeholder="Select Teams"
           name="teams"
           activeDropdown={activeDropdown}
           setActiveDropdown={setActiveDropdown}
           ctaText="+ Add New Team"
-          onCtaClick={() => console.log("Open Add Team Modal")}
+          onCtaClick={() => console.log("🟢 Open Add Team Modal")}
+          isMulti={true}
         />
       </div>
 
@@ -135,16 +158,17 @@ export function PartVendorsSection({
         <label style={{ fontSize: "14px", color: "#111827", fontWeight: 600 }}>Vendors</label>
         <PartDynamicSelect
           options={vendorOptions}
-          value={newItem.vendorId ?? ""}
+          value={newItem.vendorIds ?? []}
           onSelect={handleVendorSelect}
           onFetch={handleFetchVendors}
           loading={loadingVendors}
-          placeholder="Select Vendor"
+          placeholder="Select Vendors"
           name="vendors"
           activeDropdown={activeDropdown}
           setActiveDropdown={setActiveDropdown}
           ctaText="+ Add New Vendor"
-          onCtaClick={() => console.log("Open Add Vendor Modal")}
+          onCtaClick={() => console.log("🟢 Open Add Vendor Modal")}
+          isMulti={true}
         />
       </div>
     </section>
