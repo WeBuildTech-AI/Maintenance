@@ -1,6 +1,23 @@
 import { MapPin } from "lucide-react";
 
-export function AssetLocation({ asset }: { asset: any }) {
+export function AssetLocation({
+  asset,
+  allLocationData,
+}: {
+  asset: any;
+  allLocationData?: { name: string }[];
+}) {
+  const locationName = Array.isArray(allLocationData)
+    ? allLocationData.find(
+        (loc) => String(loc.id) === String(asset.locationId)
+      )?.name
+    : null;
+
+  console.log("AssetLocation - locationName:", locationName);
+  console.log(allLocationData , "location Data");
+
+  console.log(asset.locationId , "asset locationId");
+
   return (
     <div>
       {asset?.locationId && (
@@ -9,7 +26,7 @@ export function AssetLocation({ asset }: { asset: any }) {
             <h3 className="font-medium mb-3">Location</h3>
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-orange-500" />
-              <span>{asset.locationId}</span>
+              <span>{locationName || "No Location Found"}</span>
             </div>
           </div>
         </div>

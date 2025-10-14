@@ -9,8 +9,15 @@ import type {
 const API_URL = import.meta.env.VITE_API_URL;
 
 export const userService = {
-  fetchUsers: async (): Promise<UserResponse[]> => {
-    const res = await axios.get(`${API_URL}/users`);
+  fetchUsers: async (
+    limit: number,
+    page: number,
+    offset: number
+  ): Promise<UserResponse[]> => {
+    const res = await axios.get(`${API_URL}/users`, {
+      params: { limit, page, offset },
+      headers: { Accept: "application/json" },
+    });
     return res.data;
   },
 

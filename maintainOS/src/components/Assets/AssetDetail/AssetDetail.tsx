@@ -24,10 +24,16 @@ interface AssetDetailProps {
   asset: Asset;
   onEdit: (asset: Asset) => void; // Add this line
   onDelete: (asset: Asset) => void; // Add this line
+  allLocationData?: { name: string }[]; // Optional prop for location data
 }
 
 // 3. Use the defined types in your component.
-export const AssetDetail: FC<AssetDetailProps> = ({ asset , onEdit , onDelete }) => {
+export const AssetDetail: FC<AssetDetailProps> = ({
+  asset,
+  onEdit,
+  onDelete,
+  allLocationData,
+}) => {
   const [showHistory, setShowHistory] = useState<boolean>(false);
   const user = useSelector((state: RootState) => state.auth.user);
   const renderInitials = (text: string) =>
@@ -38,9 +44,16 @@ export const AssetDetail: FC<AssetDetailProps> = ({ asset , onEdit , onDelete })
       .join("")
       .toUpperCase();
 
+  console.log("AssetDetail - :", allLocationData);
+
   return (
     <div className="h-full border mr-3 flex flex-col min-h-0">
-      <AssetDetailHeader asset={asset} setShowHistory={setShowHistory} onEdit={onEdit} onDelete={onDelete} />
+      <AssetDetailHeader
+        asset={asset}
+        setShowHistory={setShowHistory}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
 
       {showHistory ? (
         <div className="flex items-start gap-3 p-3 border-b border-gray-100">
@@ -65,16 +78,20 @@ export const AssetDetail: FC<AssetDetailProps> = ({ asset , onEdit , onDelete })
               {asset?.locationId ? (
                 <>
                   <MapPin className="w-4 h-4 text-orange-600 mx-1" />
-                  <span className="font-medium">{asset?.locationId}</span>
+                  <span className="font-medium">
+                    {" "}
+                    {allLocationData.find((loc) => loc.id === asset.locationId)
+                      ?.name || "No Location Found"}
+                  </span>
                 </>
               ) : (
-                <div className="ml-2"> -  Null</div>
+                <div className="ml-2"> - Null</div>
               )}
             </div>
           </div>
         </div> // This will show when showHistory is true
       ) : (
-        <AssetDetailContent asset={asset} /> // This will show when show-history is false
+        <AssetDetailContent asset={asset} allLocationData={allLocationData} /> // This will show when show-history is false
       )}
     </div>
   );

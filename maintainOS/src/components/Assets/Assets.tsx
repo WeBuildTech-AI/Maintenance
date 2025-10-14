@@ -11,44 +11,42 @@ import { assetService, deleteAsset } from "../../store/assets";
 import toast, { Toaster } from "react-hot-toast";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store";
+import { locationService } from "../../store/locations";
 
-// Define a clear type for your Asset data
-// IMPORTANT: Apne real data ke according is interface ko adjust karein.
 export interface Asset {
   id: number | string;
   name: string;
-  updatedAt: string; // ISO date string
-  createdAt: string; // ISO date string (Added for sorting)
+  updatedAt: string;
+  createdAt: string;
   location: {
     id: number | string;
     name: string;
   };
-  // Add any other asset properties here
 }
 
 export const Assets: FC = () => {
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [showNewAssetForm, setShowNewAssetForm] = useState<boolean>(false);
-  const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showNewAssetForm, setShowNewAssetForm] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("panel");
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState(false);
   const [assetData, setAssetData] = useState<Asset[]>([]);
-
-  // 1. Sorting state is now managed here in the parent component
-  const [sortType, setSortType] = useState<string>("Name");
-  const [sortOrder, setSortOrder] = useState<string>("asc"); // 'asc' or 'desc'
+  const [sortType, setSortType] = useState("Name");
+  const [sortOrder, setSortOrder] = useState("asc");
+  const [allLocationData, setAllLocationData] = useState<{ name: string }[]>(
+    []
+  );
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const dispatch = useDispatch<AppDispatch>();
+
   const fetchAssetsData = async () => {
     setLoading(true);
     try {
       const assets: Asset[] = await assetService.fetchAssets(10, 1, 0);
       setAssetData(assets);
 
-      // Set initial selected asset without sorting here
       if (assets.length > 0) {
-        // To maintain original behavior, find the most recently updated
         const mostRecent = [...assets].sort(
           (a, b) =>
             new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
@@ -61,22 +59,34 @@ export const Assets: FC = () => {
       setLoading(false);
     }
   };
-  useEffect(() => {
-    fetchAssetsData();
-  }, []);
 
-  // Function to handle editing an asset
-  const handleEditAsset = (assetToEdit: Asset) => {
-    setEditingAsset(assetToEdit); // Set the asset we want to edit
-    setShowNewAssetForm(true); // Show the form
+  const FetchAllLocationApi = async () => {
+    setLoading(true);
+    try {
+      const res = await locationService.fetchLocationsName();
+      setAllLocationData(res || []);
+      console.log("Fetched locations:", res);
+    } catch (err) {
+      console.error("Error fetching locations:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // 2. useMemo hook to efficiently sort and filter data
+  useEffect(() => {
+    fetchAssetsData();
+    FetchAllLocationApi();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleEditAsset = (assetToEdit: Asset) => {
+    setEditingAsset(assetToEdit);
+    setShowNewAssetForm(true);
+  };
+
   const sortedAndFilteredAssets = useMemo(() => {
-    // Start with a copy of the original data
     let processedAssets = [...assetData];
 
-    // --- Sorting Logic ---
     processedAssets.sort((a, b) => {
       let comparison = 0;
       switch (sortType) {
@@ -94,34 +104,25 @@ export const Assets: FC = () => {
         default:
           break;
       }
-      // For 'Last Updated' and 'Creation Date', the default is newest first (desc)
-      // so we only flip for 'asc'. For 'Name', the default is 'asc'.
+
       if (sortType === "Name") {
         return sortOrder === "asc" ? comparison : -comparison;
       }
       return sortOrder === "desc" ? comparison : -comparison;
     });
 
-    // --- Filtering Logic ---
-
-    if (!searchQuery) {
-      return processedAssets;
-    }
+    if (!searchQuery) return processedAssets;
 
     const q = searchQuery.toLowerCase();
     return processedAssets.filter(
       (asset) =>
         asset.name.toLowerCase().includes(q) ||
-        // Use optional chaining (?.) to prevent crash if location is null
         asset.location?.name.toLowerCase().includes(q)
     );
   }, [assetData, sortType, sortOrder, searchQuery]);
 
-  // In your Assets.tsx component
-
   const handleDeleteAsset = (id: string | number) => {
-    // Find the index of the item to be deleted from the currently visible list
-    const currentIndex = sortedAndFilteredAssets.findIndex((a) => a.id === id);
+    const currentIndex = assetData.findIndex((a) => a.id === id);
 
     if (window.confirm("Are you sure you want to delete this asset?")) {
       dispatch(deleteAsset(id))
@@ -129,37 +130,29 @@ export const Assets: FC = () => {
         .then(() => {
           const newAssetList = assetData.filter((asset) => asset.id !== id);
           setAssetData(newAssetList);
+
           if (newAssetList.length === 0) {
-            // If the list becomes empty, select null
             setSelectedAsset(null);
           } else {
-            // Calculate the new index to select. This handles deleting the last item correctly.
             const newIndexToSelect = Math.min(
               currentIndex,
               newAssetList.length - 1
             );
-
-            // We need to select from the sorted/filtered list to match what the user was seeing
-            const newSortedList = sortedAndFilteredAssets.filter(
-              (a) => a.id !== id
-            );
-            setSelectedAsset(newSortedList[newIndexToSelect]);
+            setSelectedAsset(newAssetList[newIndexToSelect]);
           }
 
           toast.success("Asset deleted successfully!");
         })
         .catch((error) => {
           console.error("Delete failed:", error);
-          toast.error("Failed to delete the asset."); // Use toast.error for better UI
+          toast.error("Failed to delete the asset.");
         });
     }
   };
 
   return (
     <>
-      <div>
-        <Toaster />
-      </div>
+      <Toaster />
       <div className="flex h-full flex-col">
         {AssetHeaderComponent(
           viewMode,
@@ -177,67 +170,81 @@ export const Assets: FC = () => {
             selectedAsset={selectedAsset}
           />
         ) : (
-          <>
-            <div className="flex flex-1 min-h-0">
-              <AssetsList
-                assets={sortedAndFilteredAssets}
-                selectedAsset={selectedAsset}
-                setSelectedAsset={setSelectedAsset}
-                setShowNewAssetForm={setShowNewAssetForm}
-                loading={loading}
-                // 3. Pass sorting state and setters to AssetsList
-                sortType={sortType}
-                setSortType={setSortType}
-                sortOrder={sortOrder}
-                setSortOrder={setSortOrder}
-              />
-              <div className="flex-1 bg-card min-h-0 flex flex-col">
-                {showNewAssetForm ? (
-                  <NewAssetForm
-                    onCreate={(newlyCreatedAsset) => {
-                      // 1. State mein naye asset ko list ke shuru mein add karein
+          <div className="flex flex-1 min-h-0">
+            <AssetsList
+              assets={sortedAndFilteredAssets}
+              selectedAsset={selectedAsset}
+              setSelectedAsset={setSelectedAsset}
+              setShowNewAssetForm={setShowNewAssetForm}
+              loading={loading}
+              sortType={sortType}
+              setSortType={setSortType}
+              sortOrder={sortOrder}
+              setSortOrder={setSortOrder}
+              allLocationData={allLocationData}
+            />
+
+            <div className="flex-1 bg-card min-h-0 flex flex-col">
+              {showNewAssetForm ? (
+                <NewAssetForm
+                  onCreate={(updatedOrNewAsset) => {
+                    if (editingAsset) {
+                      // Edit Mode: Purane asset ko naye, merged data se replace karein
+                      setAssetData((prevAssets) =>
+                        prevAssets.map((asset) => {
+                          if (asset.id === updatedOrNewAsset.id) {
+                            // Yahan hum purane asset (...asset) aur API se aaye naye data
+                            // (...updatedOrNewAsset) ko merge kar rahe hain.
+                            // Isse 'createdAt' jaisi properties bani rehti hain.
+                            return { ...asset, ...updatedOrNewAsset };
+                          }
+                          return asset;
+                        })
+                      );
+                    } else {
+                      // Create Mode: List ke shuru mein naya asset add karein
                       setAssetData((prevAssets) => [
-                        newlyCreatedAsset,
+                        updatedOrNewAsset as Asset,
                         ...prevAssets,
                       ]);
+                    }
 
-                      // 2. Naye asset ko select karein taaki uski details dikhein
-                      setSelectedAsset(newlyCreatedAsset);
-
-                      // 3. Form ko hide karein
-                      setShowNewAssetForm(false);
-
-                      // Edit state ko reset karna bhi zaroori hai
-                      setEditingAsset(null);
-                    }}
-                    onCancel={() => setShowNewAssetForm(false)}
-                    isEdit={!!editingAsset} // Converts object to boolean (true if editingAsset is not null)
-                    assetData={editingAsset}
-                  />
-                ) : selectedAsset ? (
-                  <AssetDetail
-                    asset={selectedAsset}
-                    onDelete={handleDeleteAsset}
-                    onEdit={handleEditAsset}
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                      <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
-                        <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed"></div>
-                      </div>
-                      <p className="text-muted-foreground mb-2">
-                        Select an asset to view details
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        or create a new asset to get started
-                      </p>
+                    // Baaki logic same rahega
+                    setSelectedAsset(updatedOrNewAsset);
+                    setShowNewAssetForm(false);
+                    setEditingAsset(null);
+                  }}
+                  onCancel={() => {
+                    setShowNewAssetForm(false);
+                    setEditingAsset(null);
+                  }}
+                  isEdit={!!editingAsset}
+                  assetData={editingAsset}
+                />
+              ) : selectedAsset ? (
+                <AssetDetail
+                  asset={selectedAsset}
+                  onDelete={handleDeleteAsset}
+                  onEdit={handleEditAsset}
+                  allLocationData={allLocationData}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-center">
+                  <div>
+                    <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
+                      <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed"></div>
                     </div>
+                    <p className="text-muted-foreground mb-2">
+                      Select an asset to view details
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      or create a new asset to get started
+                    </p>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
-          </>
+          </div>
         )}
       </div>
     </>

@@ -1,3 +1,4 @@
+import type { all } from "axios";
 import { AssetAutomations } from "./sections/AssetAutomations";
 import { AssetCreatedUpdated } from "./sections/AssetCreatedUpdated";
 import { AssetCriticality } from "./sections/AssetCriticality";
@@ -8,13 +9,18 @@ import { AssetManufacturer } from "./sections/AssetManufacturer";
 import { AssetQrCode } from "./sections/AssetQrCode";
 // import { AssetStatusReadings } from "./sections/AssetStatusReadings";
 import { AssetSubAssets } from "./sections/AssetSubAssets";
+import { AssetVendor } from "./sections/AssetVendor";
 // import { AssetWorkOrders } from "./sections/AssetWorkOrders";
 
-export function AssetDetailContent({ asset }: { asset: any }) {
+export function AssetDetailContent(
+  { asset }: { asset: any },
+  allLocationData?: { name: string }[]
+) {
+  console.log("AssetDetailContent - allLocationData:", allLocationData);
   return (
     <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-6">
       {/* <AssetStatusReadings asset={asset} /> */}
-      <AssetLocation asset={asset} />
+      <AssetLocation asset={asset} allLocationData={allLocationData} />
       <AssetCriticality asset={asset} />
       <AssetManufacturer asset={asset} />
       {/* <div className="pt-4"> */}
@@ -25,6 +31,7 @@ export function AssetDetailContent({ asset }: { asset: any }) {
       <AssetDescription asset={asset} />
       <AssetQrCode asset={asset} />
       <AssetSubAssets />
+      <AssetVendor asset={asset} />
       <AssetAutomations />
       <AssetCreatedUpdated asset={asset} />
       {/* <AssetWorkOrders /> */}

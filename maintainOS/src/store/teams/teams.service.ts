@@ -9,15 +9,8 @@ import type {
 const API_URL = import.meta.env.VITE_API_URL;
 
 export const teamService = {
-  fetchTeams: async (
-    limit: number,
-    page: number,
-    offset: number
-  ): Promise<TeamResponse[]> => {
-    const res = await axios.get(`${API_URL}/teams`, {
-      params: { limit, page, offset },
-      headers: { Accept: "application/json" },
-    });
+  fetchTeams: async (): Promise<TeamResponse[]> => {
+    const res = await axios.get(`${API_URL}/teams`);
     return res.data;
   },
 

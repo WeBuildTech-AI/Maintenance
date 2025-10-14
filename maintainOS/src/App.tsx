@@ -132,10 +132,10 @@ export default function App() {
             <Route path="/locations/*" element={<Locations />} />
             <Route path="/users" element={<TeamUsers />} />
             <Route path="/users/invite" element={<InviteUsers />} />
-            <Route path="/users/teams/:teamId" element={<ManageTeam />} />
+            <Route path="/users/teams/:id" element={<ManageTeam />} />
             <Route path="/users/teams" element={<ManageTeam />} />
             <Route path="/teams/create" element={<CreateTeamForm />} />
-            <Route path="/users/profile/:profileId" element={<ManageUser />} />
+            <Route path="/users/profile/:id" element={<ManageUser />} />
           </Routes>
         </Suspense>
       </MainLayout>
