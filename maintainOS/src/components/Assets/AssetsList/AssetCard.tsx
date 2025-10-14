@@ -7,11 +7,13 @@ export function AssetCard({
   selected,
   onSelect,
   setShowNewAssetForm,
+  allLocationData,
 }: {
   asset: any;
   selected: boolean;
   onSelect: () => void;
   setShowNewAssetForm;
+  allLocationData: { name: string }[];
 }) {
   return (
     <Card
@@ -34,7 +36,8 @@ export function AssetCard({
               <div className="flex items-start gap-1 mt-1">
                 <MapPin className="h-3 w-3 mt-1 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">
-                  {asset.locationId}
+                  At {allLocationData.find((loc) => loc.id === asset.locationId)
+                    ?.name || "No Location"}
                 </span>
               </div>
             </div>

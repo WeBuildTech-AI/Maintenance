@@ -157,7 +157,7 @@ export function NewLocationForm({
       // onCancel
     } catch (err) {
       console.error("Failed to submit location:", err);
-      toast.error("Error while saving location");
+      toast.error(err);
     } finally {
       setSubmitLocationFormLoader(false);
     }

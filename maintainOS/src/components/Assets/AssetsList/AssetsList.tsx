@@ -107,6 +107,7 @@ interface AssetsListProps {
   setSortType: (type: string) => void;
   sortOrder: string;
   setSortOrder: (order: string) => void;
+  allLocationData: { name: string }[]; // Use the strong type
 }
 
 export function AssetsList({
@@ -119,6 +120,7 @@ export function AssetsList({
   setSortType,
   sortOrder,
   setSortOrder,
+  allLocationData,
 }: AssetsListProps) {
   // --- State and Refs for the custom dropdown ---
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -291,6 +293,7 @@ export function AssetsList({
                 selected={selectedAsset?.id === asset.id}
                 onSelect={() => setSelectedAsset(asset)}
                 setShowNewAssetForm={setShowNewAssetForm}
+                allLocationData={allLocationData}
               />
             ))}
 

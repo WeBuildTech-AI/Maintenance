@@ -173,7 +173,6 @@ export function NewAssetForm({
       dispatch(updateAsset({ id: assetData.id, assetData: payload }))
         .unwrap()
         .then((res) => {
-          toast.success("Asset updated successfully");
           toast.success("Successfully Update the Asset");
           onCreate(res); // Call the success callback
         })
