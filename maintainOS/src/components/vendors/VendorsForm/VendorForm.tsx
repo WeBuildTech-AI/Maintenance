@@ -9,12 +9,11 @@ import { fetchLocationsName } from "../../../store/locations/locations.thunks";
 import { fetchAssetsName } from "../../../store/assets/assets.thunks";
 import { fetchPartsName } from "../../../store/parts/parts.thunks";
 import { VendorPrimaryDetails } from "./VendorPrimaryDetails";
-import { VendorPicturesInput } from "./VendorPicturesInput";
 import { VendorContactInput } from "./VendorContactInput";
-import { VendorAttachmentsInput } from "./VendorAttachmentsInput";
 import { VendorLinkedItems } from "./VendorLinkedItems";
 import toast from "react-hot-toast";
 import { saveVendor } from "./vendorService"; 
+import { BlobUpload, type BUD } from "../../utils/BlobUpload";
 
 // ✅ Contact interface matching backend ContactDto
 export interface ContactFormData {
@@ -47,8 +46,8 @@ export function VendorForm({
   const user = useSelector((state: RootState) => state.auth.user);
   const navigate = useNavigate();
 
-  const [pictures, setPictures] = useState<File[]>([]);
-  const [attachedDocs, setAttachedDocs] = useState<File[]>([]);
+  const [vendorImages, setVendorImages] = useState<BUD[]>([]);
+  const [vendorDocs, setVendorDocs] = useState<BUD[]>([]);
   const [contact, setContact] = useState({ email: "", phone: "" });
   const [contacts, setContacts] = useState<ContactFormData[]>([]);
   const [showInputs, setShowInputs] = useState(false);
@@ -76,16 +75,11 @@ export function VendorForm({
   // ✅ Fetch handlers
   const handleFetchLocations = () => {
     setLocationsLoading(true);
-    dispatch(fetchLocationsName({ limit: 1000, page: 1, offset: 0 }))
+    dispatch(fetchLocationsName())
       .unwrap()
       .then((response) => {
         console.log("📦 Raw locations API response:", response);
-        const list =
-          response?.data?.data ||
-          response?.data ||
-          response?.results ||
-          response ||
-          [];
+        const list =response || [];
         if (!Array.isArray(list)) {
           console.error("❌ Unexpected locations response format:", list);
           setAvailableLocations([]);
@@ -106,16 +100,11 @@ export function VendorForm({
 
   const handleFetchAssets = () => {
     setAssetsLoading(true);
-    dispatch(fetchAssetsName({ limit: 1000, page: 1, offset: 0 }))
+    dispatch(fetchAssetsName())
       .unwrap()
       .then((response) => {
         console.log("📦 Raw assets API response:", response);
-        const list =
-          response?.data?.data ||
-          response?.data ||
-          response?.results ||
-          response ||
-          [];
+        const list = response || [];
         if (!Array.isArray(list)) {
           console.error("❌ Unexpected assets response format:", list);
           setAvailableAssets([]);
@@ -136,16 +125,11 @@ export function VendorForm({
 
   const handleFetchParts = () => {
     setPartsLoading(true);
-    dispatch(fetchPartsName({ limit: 1000, page: 1, offset: 0 }))
+    dispatch(fetchPartsName())
       .unwrap()
       .then((response) => {
         console.log("📦 Raw parts API response:", response);
-        const list =
-          response?.data?.data ||
-          response?.data ||
-          response?.results ||
-          response ||
-          [];
+        const list = response || [];
         if (!Array.isArray(list)) {
           console.error("❌ Unexpected parts response format:", list);
           setAvailableParts([]);
@@ -168,27 +152,16 @@ export function VendorForm({
     navigate(path);
   };
 
-  const handleFilesSelected = (selectedFiles: File[]) => {
-    const imageFiles: File[] = [];
-    const docFiles: File[] = [];
+  const handleBlobChange = (data: { formId: string; buds: BUD[] }) => {
+  console.log("Upload complete for:", data.formId);
+  console.table(data.buds);
 
-    for (const file of selectedFiles) {
-      if (file.type.startsWith("image/")) {
-        imageFiles.push(file);
-      } else {
-        docFiles.push(file);
-      }
-    }
-
-    if (imageFiles.length > 0) {
-      setPictures((prev) => [...prev, ...imageFiles]);
-      toast.success(`${imageFiles.length} image(s) added.`);
-    }
-    if (docFiles.length > 0) {
-      setAttachedDocs((prev) => [...prev, ...docFiles]);
-      toast.success(`${docFiles.length} document(s) attached.`);
-    }
-  };
+  if (data.formId === "vendor_profile") {
+    setVendorImages(data.buds);
+  } else if (data.formId === "vendor_docs") {
+    setVendorDocs(data.buds);
+  }
+};
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -257,7 +230,7 @@ export function VendorForm({
         formData.append(`contacts[${index}][email]`, contact.email);
         formData.append(`contacts[${index}][phoneNumber]`, contact.phoneNumber);
         formData.append(`contacts[${index}][phoneExtension]`, contact.phoneExtension);
-        formData.append(`contacts[${index}][contactColour]`, contact.contactColour);
+        formData.append(`contacts[${index}][contactColor]`, contact.contactColour);
       });
     }
 
@@ -271,8 +244,15 @@ export function VendorForm({
       selectedPartIds.forEach((id) => formData.append("partIds[]", id));
     }
 
-    pictures.forEach((pic) => formData.append("files", pic));
-    attachedDocs.forEach((f) => formData.append("files", f));
+    vendorImages.forEach((img, i) => {
+      formData.append(`vendorImages[${i}][key]`, img.key);
+      formData.append(`vendorImages[${i}][fileName]`, img.fileName);
+    });
+
+    vendorDocs.forEach((doc, i) => {
+      formData.append(`vendorDocs[${i}][key]`, doc.key);
+      formData.append(`vendorDocs[${i}][fileName]`, doc.fileName);
+    });
 
     // ✅ Centralized saveVendor logic
     await saveVendor({
@@ -297,11 +277,15 @@ export function VendorForm({
 
       <form className="min-h-0 flex-1 overflow-y-auto space-y-8 py-8" onSubmit={handleSubmit}>
         <VendorPrimaryDetails form={form} setForm={setForm} />
-        <VendorPicturesInput
+
+      <BlobUpload formId="vendor_profile" type="images" onChange={handleBlobChange} />
+        {/* <VendorPicturesInput
           files={pictures}
           setFiles={setPictures}
           onFilesSelected={handleFilesSelected}
-        />
+        /> */}
+
+
         <VendorContactInput
           contact={contact}
           setContact={setContact}
@@ -309,11 +293,14 @@ export function VendorForm({
           setShowInputs={setShowInputs}
           onContactsChange={setContacts}
         />
-        <VendorAttachmentsInput
+
+        <BlobUpload formId="vendor_docs" type="files" onChange={handleBlobChange} />
+
+        {/* <VendorAttachmentsInput
           attachedDocs={attachedDocs}
           setAttachedDocs={setAttachedDocs}
           onFilesSelected={handleFilesSelected}
-        />
+        /> */}
         <VendorLinkedItems
           availableLocations={availableLocations}
           selectedLocationIds={selectedLocationIds}

@@ -16,6 +16,8 @@ import VendorPartsSection from "./VendorPartsSection";
 import VendorLocationsSection from "./VendorLocationsSection";
 import VendorFooter from "./VendorFooter";
 import DeleteModal from "./DeleteModal";
+import { VendorImages } from "./VendorImages";
+import { VendorFiles } from "./VendorFiles";
 
 interface VendorDetailsProps {
   vendor?: Vendor;
@@ -117,14 +119,20 @@ export default function VendorDetails({
         </div>
 
         <VendorContactList
-          contacts={contacts}
+          contacts={vendor.contacts}
           setEditingContact={setEditingContact}
           setIsModalOpen={setIsModalOpen}
           openDeleteModal={openDeleteModal}
         />
 
         <VendorPartsSection vendor={vendor} />
+
+        <VendorImages vendor={vendor} />
+
+
         <VendorLocationsSection vendor={vendor} />
+
+        <VendorFiles vendor={vendor}/>
         <VendorFooter user={user} vendor={vendor} />
       </div>
 

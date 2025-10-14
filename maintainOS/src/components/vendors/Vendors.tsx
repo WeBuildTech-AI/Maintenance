@@ -6,7 +6,6 @@ import { updateVendor, vendorService } from "../../store/vendors";
 import type { ViewMode } from "../purchase-orders/po.types";
 
 import { VendorHeaderComponent } from "./VendorHeader";
-import { mockVendors, type Vendor } from "./vendors.types";
 import { VendorForm } from "./VendorsForm/VendorForm";
 import { VendorSidebar } from "./VendorSidebar";
 import { VendorTable } from "./VendorTable";
@@ -18,9 +17,7 @@ export function Vendors() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [selectedVendorId, setSelectedVendorId] = useState(
-    mockVendors[0]?.id ?? ""
-  );
+  const [selectedVendorId, setSelectedVendorId] = useState();
 
   // ✅ ADDED FILTER STATE
   const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>(
@@ -60,7 +57,7 @@ export function Vendors() {
   // ✅ ADDED: refresh vendors helper (keeps sidebar in sync after create/edit)
   const refreshVendors = async () => {
     try {
-      const res = await vendorService.fetchVendors(10, 1, 0);
+      const res = await vendorService.fetchVendors();
       setVendors(() => [...res]); // ✅ force re-render with new array reference
     } catch (err) {
       console.error(err);
@@ -72,7 +69,7 @@ export function Vendors() {
     const fetchVendors = async () => {
       setLoading(true);
       try {
-        const res = await vendorService.fetchVendors(10, 1, 0);
+        const res = await vendorService.fetchVendors();
         console.log("📦 Vendor API response:", res);
         setVendors(res);
       } catch (err) {
@@ -158,7 +155,7 @@ export function Vendors() {
             name: formData.name,
             description: formData.description,
             color: formData.color,
-            contacts: formData.contacts || formData.contact || {},
+            contacts: formData.contacts || {},
           },
         })
       ).unwrap();
@@ -172,7 +169,7 @@ export function Vendors() {
                 description: formData.description,
                 color: formData.color,
                 contacts:
-                  formData.contacts || formData.contact || v.contacts,
+                  formData.contacts || v.contacts,
               }
             : v
         )

@@ -19,6 +19,17 @@ export interface AuthResponse {
     fullName: string;
     email: string;
     role?: string;
+    organizationId?: string;
+    phoneNumber?: string;
+    avatarUrl?: string;
+    fullUserVisiblity?: string;
+    hourlyRate?: number;
+    rateVisibility?: string;
+    schedulableUser?: boolean;
+    hoursPerDay?: number;
+    workingDays?: string[];
+    createdAt: string;
+    updatedAt: string;
   };
 }
 

@@ -167,7 +167,7 @@ export function VendorContactInput({
         <button
           type="button"
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 border border-blue-300 text-blue-600 font-medium text-sm px-4 py-2 rounded-md hover:bg-blue-50 transition-all duration-200"
+          className="flex items-center gap-2 border border-orange-300 text-orange-600 font-medium text-sm px-4 py-2 rounded-md hover:bg-blue-50 transition-all duration-200"
         >
           + New Contact
         </button>

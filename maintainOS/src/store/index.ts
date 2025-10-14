@@ -18,6 +18,7 @@ import userReducer from "./userSlice";
 // import { workOrdersReducer } from "./workOrders";
 // import { attachmentsReducer } from "./attachments";
 // import { auditLogsReducer } from "./auditLogs";
+// import { storageReducer } from "./storage";
 import { authReducer } from "./auth";
 import { messageReducer } from "./messages";
 
@@ -25,7 +26,7 @@ export const store = configureStore({
   reducer: {
     user: userReducer,
     auth: authReducer,
-    messaging : messageReducer
+    messaging : messageReducer,
     // users: usersReducer,
     // organizations: organizationsReducer,
     // assets: assetsReducer,
@@ -42,6 +43,7 @@ export const store = configureStore({
     // workOrders: workOrdersReducer,
     // attachments: attachmentsReducer,
     // auditLogs: auditLogsReducer,
+    // storage: storageReducer,
   },
 
   middleware: (getDefaultMiddleware) =>
