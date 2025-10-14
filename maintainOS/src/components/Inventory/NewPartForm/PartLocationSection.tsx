@@ -30,7 +30,7 @@ export function PartLocationSection({
     console.log("📡 Fetching Locations...");
     setLoadingLocations(true);
     try {
-      const res = await dispatch(fetchLocationsName({ limit: 1000, page: 1, offset: 0 })).unwrap();
+      const res = await dispatch(fetchLocationsName()).unwrap();
       console.log("🧾 Raw API Response (fetchLocationsName):", res);
 
       let data = [];

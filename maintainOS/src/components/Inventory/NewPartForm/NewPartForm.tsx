@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { useDispatch, useSelector } from "react-redux"; // Import useSelector
-import type { AppDispatch } from "../../../store";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "../../../store";
 import { createPart, updatePart } from "../../../store/parts/parts.thunks";
 import { PartHeader } from "./PartHeader";
 import { PartBasicDetails } from "./PartBasicDetails";
@@ -30,52 +30,53 @@ export function NewPartForm({
   onCreate: () => void;
 }) {
   const dispatch = useDispatch<AppDispatch>();
-  // 1. Get user data from the Redux store
-  // Adjust 'state.auth.user' if your state structure is different
-  const { user } = useSelector((state: any) => state.auth);
+
+  // ✅ Get organizationId from Redux store
+  const organizationId = useSelector(
+    (state: RootState) => state.auth?.user?.organizationId
+  );
 
   const handleSubmitPart = async () => {
     try {
       const formData = new FormData();
 
       // ✅ Basic fields
-      // 2. Use the organizationId from the logged-in user state
-      formData.append("organizationId", user?.organizationId || "");
+      formData.append("organizationId", organizationId || "");
       formData.append("name", newItem.name || "");
       formData.append("description", newItem.description || "");
       formData.append("unitCost", newItem.unitCost ? String(newItem.unitCost) : "0");
       formData.append("qrCode", newItem.qrCode || "");
 
-      // ✅ Nested Locations
-      if (Array.isArray(newItem.locations) && newItem.locations.length > 0) {
-        newItem.locations.forEach((loc: any, index: number) => {
-          formData.append(`locations[${index}][locationId]`, loc.locationId || "");
-          formData.append(`locations[${index}][area]`, loc.area || "");
-          formData.append(`locations[${index}][unitsInStock]`, String(loc.unitsInStock || 0));
-          formData.append(`locations[${index}][minimumInStock]`, String(loc.minimumInStock || 0));
-        });
-      }
+      // ✅ Part Type (JSON)
+      formData.append("partsType", JSON.stringify(newItem.partsType || []));
 
-      // ✅ Arrays - 3. Append `[]` to the key for array fields
-      (newItem.partsType || []).forEach((t: any) => formData.append("partsType[]", t));
-      (newItem.assetIds || []).forEach((a: any) => formData.append("assetIds[]", a));
-      (newItem.teamsInCharge || []).forEach((t: any) => formData.append("teamsInCharge[]", t));
-      (newItem.vendorIds || []).forEach((v: any) => formData.append("vendorIds[]", v));
+      // ✅ Locations (as JSON array)
+      const locationsPayload = [
+        {
+          locationId: newItem.locationId || "",
+          area: newItem.area || "",
+          unitsInStock: Number(newItem.unitInStock || 0),
+          minimumInStock: Number(newItem.minInStock || 0),
+        },
+      ];
+      formData.append("locations", JSON.stringify(locationsPayload));
 
-      // ✅ Photos (base64 or File)
+      // ✅ Other arrays (JSON)
+      formData.append("assetIds", JSON.stringify(newItem.assetIds || []));
+      formData.append("teamsInCharge", JSON.stringify(newItem.teamsInCharge || []));
+      formData.append("vendorIds", JSON.stringify(newItem.vendorIds || []));
+
+      // ✅ Photos
       if (Array.isArray(newItem.pictures) && newItem.pictures.length > 0) {
         newItem.pictures.forEach((file: any) => {
           if (file instanceof File) {
             formData.append("photos", file);
           } else if (typeof file === "string" && file.startsWith("data:")) {
-            // handle base64 strings
             const byteString = atob(file.split(",")[1]);
             const mimeString = file.split(",")[0].split(":")[1].split(";")[0];
             const ab = new ArrayBuffer(byteString.length);
             const ia = new Uint8Array(ab);
-            for (let i = 0; i < byteString.length; i++) {
-              ia[i] = byteString.charCodeAt(i);
-            }
+            for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
             const blob = new Blob([ab], { type: mimeString });
             formData.append("photos", blob);
           }
@@ -85,15 +86,11 @@ export function NewPartForm({
       // ✅ Files (attachments)
       if (Array.isArray(newItem.files) && newItem.files.length > 0) {
         newItem.files.forEach((file: any) => {
-          if (file instanceof File) {
-            formData.append("files", file);
-          } else {
-            formData.append("files", file); // fallback string filenames
-          }
+          formData.append("files", file instanceof File ? file : String(file));
         });
       }
 
-      // ✅ Vendors
+      // ✅ Vendors extra mapping (optional)
       if (Array.isArray(newItem.vendors)) {
         newItem.vendors.forEach((vendor: any, index: number) => {
           formData.append(`vendors[${index}][vendorId]`, vendor.vendorId || "");
@@ -107,7 +104,7 @@ export function NewPartForm({
         console.log(`${key}:`, value);
       }
 
-      // ✅ Dispatch
+      // ✅ Dispatch create or update
       if (newItem.id) {
         await dispatch(updatePart({ id: String(newItem.id), partData: formData })).unwrap();
         toast.success("Part updated successfully!");
@@ -119,15 +116,13 @@ export function NewPartForm({
       onCreate();
     } catch (error: any) {
       console.error("❌ Error saving part:", error);
-      // Attempt to show backend error message if available
-      const errorMessage = error?.message?.[0] || "Failed to save part";
-      toast.error(errorMessage);
+      toast.error("Failed to save part");
     }
   };
 
   return (
     <div className="h-full flex flex-col min-h-0">
-      <PartHeader />
+      <PartHeader isEditing={!!newItem.id} />
       <div className="flex-1 min-h-0 overflow-y-auto">
         <div className="mx-auto w-full max-w-[840px] p-6 space-y-20">
           <PartBasicDetails newItem={newItem} setNewItem={setNewItem} />
@@ -135,7 +130,7 @@ export function NewPartForm({
             qrCode={newItem.qrCode}
             setQrCode={(code) => setNewItem((s: any) => ({ ...s, qrCode: code }))}
           />
-          <PartType />
+          <PartType newItem={newItem} setNewItem={setNewItem} />
           <PartLocationSection newItem={newItem} setNewItem={setNewItem} />
           <PartVendorsSection
             newItem={newItem}
@@ -150,6 +145,7 @@ export function NewPartForm({
         onCancel={onCancel}
         onCreate={handleSubmitPart}
         disabled={!newItem.name}
+        isEditing={!!newItem.id}
       />
     </div>
   );
