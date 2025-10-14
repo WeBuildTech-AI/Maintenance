@@ -29,6 +29,7 @@ import {
 import type { AppDispatch, RootState } from "../../../store";
 import { useDispatch, useSelector } from "react-redux";
 import toast from "react-hot-toast";
+import { stat } from "fs";
 
 interface NewAssetFormProps {
   isEdit?: boolean; // To check if we are in edit mode
@@ -84,7 +85,7 @@ export function NewAssetForm({
   const [vendorOpen, setVendorOpen] = useState(false);
   const [teamOpen, setTeamsOpen] = useState(false);
   const [parentAssetOpen, setParentAssetOpen] = useState(false);
-
+  const [status, setStatus] = useState("online");
   const LocationRef = useRef<HTMLDivElement>(null);
   const teamRef = useRef<HTMLDivElement>(null);
   const partRef = useRef<HTMLDivElement>(null);
@@ -166,6 +167,10 @@ export function NewAssetForm({
     }
     if (selectedParentAssets?.id) {
       payload.parentAssetId = selectedParentAssets.id;
+    }
+
+    if (status) {
+      payload.status = status;
     }
 
     if (isEdit && assetData?.id) {

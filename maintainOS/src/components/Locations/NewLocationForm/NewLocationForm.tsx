@@ -25,6 +25,7 @@ type NewLocationFormProps = {
   setShowForm: (show: boolean) => void;
   isEdit?: boolean; // ✅ new
   editData?: LocationResponse | null; // ✅ new
+  initialParentId?: string; // ✅ new
 };
 
 export function NewLocationForm({
@@ -53,9 +54,9 @@ export function NewLocationForm({
   const [vendorOpen, setVendorOpen] = useState(false);
   const [parentOpen, setParentOpen] = useState(false);
 
-  const teamRef = useRef<HTMLDivElement>(null);
-  const vendorRef = useRef<HTMLDivElement>(null);
-  const parentRef = useRef<HTMLDivElement>(null);
+  const teamRef = useRef<HTMLDivElement>(null!);
+  const vendorRef = useRef<HTMLDivElement>(null!);
+  const parentRef = useRef<HTMLDivElement>(null!);
 
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();

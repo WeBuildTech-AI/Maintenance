@@ -1,22 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
 import {
   Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
   CardContent,
 } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
-import { Input } from "../ui/input";
 import { Link } from "react-router-dom";
 import {
   MoreHorizontal,
-  Plus,
-  Search,
-  LayoutGrid,
-  Rows3,
+
   Users as UsersIcon,
   User,
   Users,
@@ -37,8 +29,6 @@ import {
   TableRow,
 } from "../ui/table";
 import {
-  SAMPLE_TEAMS,
-  SAMPLE_USERS,
   type RowMenuProps,
   type TeamRow,
   type UserRow,
@@ -50,7 +40,7 @@ import { cn } from "../ui/utils";
 import { useNavigate } from "react-router-dom";
 import { userService } from "../../store/users";
 import Loader from "../Loader/Loader";
-import UserTable from "./UserTable";
+// import UserTable from "./UserTable";
 import { Toaster } from "react-hot-toast";
 import { teamService } from "../../store/teams";
 
@@ -64,10 +54,8 @@ export function TeamUsers() {
   const [allUserData, setAllUserData] = useState<UserRow[]>([]);
   const [allTeamData, setAllTeamData] = useState<TeamRow[]>([]);
   const hasFetched = useRef(false);
-  const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [hasMore, setHasMore] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchUsers = async (currentPage = 1) => {
     setLoading(true);
@@ -97,13 +85,6 @@ export function TeamUsers() {
     setLoading(true);
     try {
       const res = await teamService.fetchTeams();
-
-      // if (currentPage === 1) {
-      //   setAllUserData([...res]);
-      // } else {
-      //   setAllUserData((prev) => [...prev, ...res]);
-      // }
-
       setAllTeamData(res);
       console.log(res, "fetched teams");
 
@@ -242,7 +223,7 @@ function UserTable({ rows = [] }: { rows?: UserRow[] }) {
                         to={`/users/profile/${encodeURIComponent(
                           u.id || "unknown"
                         )}`}
-                        className="font-medium hover:underline cursor-pointer"
+                        className="font-medium cursor-pointer"
                       >
                         {u.fullName || "Unknown"}
                       </Link>
@@ -397,6 +378,7 @@ function RowMenu({ kind, onAction }: RowMenuProps) {
           </>
         ) : (
           <>
+          
             <DropdownMenuItem onClick={() => handleAction("see_details")}>
               See Details
             </DropdownMenuItem>

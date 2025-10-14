@@ -12,6 +12,8 @@ import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../../store";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import DeleteAssetModal from "./DeleteAssetModal";
 
 // Define a type for the asset object for type safety
 interface Asset {
@@ -34,8 +36,9 @@ export function AssetDetailHeader({
   onEdit,
   onDelete,
 }: AssetDetailHeaderProps) {
-  
   const navigate = useNavigate();
+  const [openAssetDeleteModal, setOpenAssetDeleteModal] = useState(false);
+  const modalRef = React.useRef<HTMLDivElement>(null);
   return (
     <div className="p-6 border-b border-border flex-shrink-0">
       <div className="flex items-center justify-between mb-6">
@@ -66,7 +69,7 @@ export function AssetDetailHeader({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onDelete(asset.id)}>
+              <DropdownMenuItem onClick={() => setOpenAssetDeleteModal(true)}>
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -85,6 +88,13 @@ export function AssetDetailHeader({
           <TabsTrigger value="history">History</TabsTrigger>
         </TabsList>
       </Tabs>
+      {openAssetDeleteModal && (
+        <DeleteAssetModal
+          modalRef={modalRef}
+          onClose={() => setOpenAssetDeleteModal(false)}
+          onConfirm={() => onDelete(asset.id)}
+        />
+      )}
     </div>
   );
 }

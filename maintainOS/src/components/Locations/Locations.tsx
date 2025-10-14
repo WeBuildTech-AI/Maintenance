@@ -37,6 +37,7 @@ import { NavLink, useNavigate, useMatch } from "react-router-dom";
 import { SubLocationModal } from "./SubLocationModel";
 import toast, { Toaster } from "react-hot-toast";
 import QRCode from "react-qr-code";
+import LocationDetails from "./locationDetails";
 
 export function Locations() {
   const hasFetched = useRef(false);
@@ -88,12 +89,6 @@ export function Locations() {
     navigate("/locations");
   };
 
-  const handleShowNewSubLocationForm = () => {
-    if (selectedLocation) {
-      navigate(`/locations/${selectedLocation.id}/create-sublocation`);
-    }
-  };
-
   const handleCreateForm = (newLocation: LocationResponse) => {
     const updatedLocations = [newLocation, ...locations];
     setLocations(updatedLocations);
@@ -136,9 +131,9 @@ export function Locations() {
       if (currentPage === 1) {
         const reversedLocations = [...res].reverse();
         setLocations(reversedLocations);
-        if (reversedLocations.length > 0) {
-          setSelectedLocation(reversedLocations[0]);
-        }
+        // if (reversedLocations.length > 0) {
+        //   setSelectedLocation("");
+        // }
       } else {
         setLocations((prev) => [...prev, ...res]);
       }
@@ -245,41 +240,39 @@ export function Locations() {
       (loc) => loc.id === id
     );
 
-    if (window.confirm("Are you sure you want to delete this location?")) {
-      dispatch(deleteLocation(id))
-        .unwrap()
-        .then(() => {
-          // Step 2: Update the main source of truth.
-          // The useEffect will automatically update the filtered list later.
-          const newLocationsList = locations.filter((loc) => loc.id !== id);
-          setLocations(newLocationsList);
+    dispatch(deleteLocation(id))
+      .unwrap()
+      .then(() => {
+        // Step 2: Update the main source of truth.
+        // The useEffect will automatically update the filtered list later.
+        const newLocationsList = locations.filter((loc) => loc.id !== id);
+        setLocations(newLocationsList);
 
-          // Step 3: Predict what the new visible list will be after the delete
-          const newFilteredList = filteredLocations.filter(
-            (loc) => loc.id !== id
+        // Step 3: Predict what the new visible list will be after the delete
+        const newFilteredList = filteredLocations.filter(
+          (loc) => loc.id !== id
+        );
+
+        // Step 4: Smartly decide which item to select next
+        if (newFilteredList.length === 0) {
+          // If the visible list is now empty, select nothing
+          setSelectedLocation(null);
+        } else {
+          // Calculate the new index, ensuring it's not out of bounds
+          const newIndexToSelect = Math.min(
+            currentVisibleIndex,
+            newFilteredList.length - 1
           );
+          // Select the correct next item from the updated visible list
+          setSelectedLocation(newFilteredList[newIndexToSelect]);
+        }
 
-          // Step 4: Smartly decide which item to select next
-          if (newFilteredList.length === 0) {
-            // If the visible list is now empty, select nothing
-            setSelectedLocation(null);
-          } else {
-            // Calculate the new index, ensuring it's not out of bounds
-            const newIndexToSelect = Math.min(
-              currentVisibleIndex,
-              newFilteredList.length - 1
-            );
-            // Select the correct next item from the updated visible list
-            setSelectedLocation(newFilteredList[newIndexToSelect]);
-          }
-
-          toast.success("Location deleted successfully!");
-        })
-        .catch((error) => {
-          console.error("Delete failed:", error);
-          toast.error("Failed to delete the location.");
-        });
-    }
+        toast.success("Location deleted successfully!");
+      })
+      .catch((error) => {
+        console.error("Delete failed:", error);
+        toast.error("Failed to delete the location.");
+      });
   };
 
   const renderInitials = (text: string) =>
@@ -455,7 +448,7 @@ export function Locations() {
                           key={items.id}
                           onClick={() => {
                             setSelectedLocation(items);
-                            navigate("/locations");
+                            navigate(`/locations/${items.id}`);
                           }}
                           className={`border-b cursor-pointer border-border transition hover:bg-muted/40 ${
                             items?.id === selectedLocation?.id
@@ -568,199 +561,12 @@ export function Locations() {
                       initialParentId={parentIdFromUrl}
                     />
                   ) : selectedLocation ? (
-                    <div className="mx-auto flex flex-col h-full bg-white">
-                      <div className="flex-none border-b bg-white px-6 py-4 z-10">
-                        <div className="flex items-center justify-between">
-                          <h2 className="capitalize text-xl font-semibold text-gray-800">
-                            {selectedLocation?.name || "Unnamed Location"}
-                          </h2>
-                          <div className="flex items-center gap-2">
-                            <button
-                              title="Copy Link"
-                              onClick={() => {
-                                const url = `${window.location.origin}/locations/${selectedLocation?.id}`;
-                                navigator.clipboard.writeText(url);
-                                toast.success("location link copied!");
-                              }}
-                              className="cursor-pointer rounded-md p-2 text-orange-600"
-                            >
-                              <Link size={18} />
-                            </button>
-                            <button
-                              title="Edit"
-                              className="flex cursor-pointer items-center gap-1 rounded-md border border-orange-600 px-3 py-1.5 text-orange-600 hover:bg-orange-50"
-                              onClick={() => {
-                                navigate(
-                                  `/locations/${selectedLocation.id}/edit`
-                                );
-                              }}
-                            >
-                              <Edit size={16} /> Edit
-                            </button>
-                            <div className="flex items-center gap-2">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent
-                                  align="end"
-                                  className="mt-2"
-                                >
-                                  <DropdownMenuItem
-                                    onClick={() =>
-                                      handleDeleteLocation(selectedLocation?.id)
-                                    }
-                                  >
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex-grow overflow-y-auto  p-6">
-                        {selectedLocation.address && (
-                          <div className="mb-6">
-                            <h3 className="text-sm font-medium text-gray-700">
-                              Address
-                            </h3>
-                            <p className="mt-1 text-gray-600">
-                              {selectedLocation.address ||
-                                "No Address available"}
-                            </p>
-                          </div>
-                        )}
-
-                        {selectedLocation.description && (
-                          <div className="mb-6">
-                            <h3 className="text-sm font-medium text-gray-700">
-                              Description
-                            </h3>
-                            <p className="mt-1 text-gray-600">
-                              {selectedLocation.description ||
-                                "No description available"}
-                            </p>
-                          </div>
-                        )}
-                        {selectedLocation?.photoUrls.length > 0 && (
-                          <>
-                            <div className="mb-6 flex flex-wrap gap-2">
-                              {selectedLocation?.photoUrls?.map((item) => (
-                                <img
-                                  key={item.id}
-                                  src={`data:${item.mimetype};base64,${item.base64}`}
-                                  alt="Location"
-                                  className="h-24 w-24 rounded object-cover"
-                                />
-                              ))}
-                            </div>
-                            <hr />
-                          </>
-                        )}
-
-                        {selectedLocation.qrCode && (
-                          <div className="mt-6">
-                            <h3 className="text-sm font-medium text-gray-700">
-                              QR Code/Barcode
-                            </h3>
-                            {selectedLocation.qrCode && (
-                              <>
-                                <h4 className="mt-2 text-sm text-gray-700">
-                                  {selectedLocation?.qrCode}
-                                </h4>
-                                <div className="mb-3 mt-2 flex justify-start">
-                                  <div className="w-fit rounded-lg border border-gray-200 bg-white p-2 shadow-md">
-                                    <div className="ro mb-1 flex justify-center">
-                                      <QRCode
-                                        value={selectedLocation.qrCode}
-                                        size={100}
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        )}
-                        <hr className="my-4" />
-
-                        <div className="mb-6 mt-2">
-                          <h3 className="text-sm font-medium text-gray-700">
-                            Sub-Locations (
-                            {selectedLocation?.children?.length || 0})
-                          </h3>
-                          {/* {selectedLocation?.children.length === 0 ||  ? (
-                            <>
-                              <p className="mt-1 text-sm text-gray-500">
-                                Add sub elements inside this Location
-                              </p>
-                            </>
-                          ) : (
-                            <></>
-                          )} */}
-                          {/* <button
-                            onClick={handleShowNewSubLocationForm}
-                            className="mt-2 cursor-pointer text-sm text-orange-600 hover:underline"
-                          >
-                            Create Sub-Location
-                          </button> */}
-                        </div>
-                        <SubLocationModal
-                          isOpen={modalOpen}
-                          onClose={() => setModalOpen(false)}
-                          onCreate={(name) => {
-                            console.log("Sub-location created:", name);
-                            setModalOpen(false);
-                          }}
-                        />
-
-                        <hr className="my-4" />
-
-                        {selectedLocation.createdAt ===
-                        selectedLocation.updatedAt ? (
-                          <>
-                            <div className="text-sm text-gray-500 mt-2">
-                              Created By{" "}
-                              <span className="capitalize font-medium text-gray-700">
-                                {user?.fullName}
-                              </span>{" "}
-                              on {formatDate(selectedLocation.createdAt)}
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="text-sm text-gray-500 mt-2">
-                              Created By{" "}
-                              <span className="capitalize font-medium text-gray-700">
-                                {user?.fullName}
-                              </span>{" "}
-                              on {formatDate(selectedLocation.createdAt)}
-                            </div>
-                            <div className="mt-2 text-sm text-gray-500">
-                              Updated By{" "}
-                              <span className="capitalize font-medium text-gray-700">
-                                {user?.fullName}
-                              </span>{" "}
-                              on {formatDate(selectedLocation.updatedAt)}
-                            </div>
-                          </>
-                        )}
-                      </div>
-
-                      <div className="flex-none border-t bg-white p-4">
-                        <div className="flex justify-center">
-                          <NavLink to="/work-orders">
-                            <button className="cursor-pointer rounded-full border border-orange-600 bg-white px-5 py-3 p-2 text-sm text-orange-600 shadow-sm transition hover:bg-orange-50">
-                              Use in New Work Order
-                            </button>
-                          </NavLink>
-                        </div>
-                      </div>
-                    </div>
+                    <LocationDetails
+                      selectedLocation={selectedLocation}
+                      onEdit={(v) => navigate(`/vendors/${v.id}/edit`)}
+                      handleDeleteLocation={handleDeleteLocation}
+                      user={user}
+                    />
                   ) : (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center">

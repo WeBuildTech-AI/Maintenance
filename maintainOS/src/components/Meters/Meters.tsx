@@ -60,6 +60,15 @@ export function Meters() {
     navigate("/meters");
   };
 
+  // 🔍 Derived: Filtered meter list based on search
+  const filteredMeters = meterData.filter((meter) => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true; // show all if search empty
+
+    // Choose what fields to search on
+    return meter.name?.toLowerCase().includes(q);
+  });
+
   const handleCreateForm = async () => {
     // Your create/update meter logic will go here
     console.log("Meter operation complete!");
@@ -75,12 +84,7 @@ export function Meters() {
         (a, b) =>
           new Date(b.updatedAt).valueOf() - new Date(a.updatedAt).valueOf()
       );
-
       setMeterData(sortedData);
-
-      if (sortedData.length > 0) {
-        setSelectedMeter(sortedData[0]);
-      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -186,7 +190,7 @@ export function Meters() {
             <div className="flex flex-1 overflow-hidden">
               <MetersList
                 // filteredMeters={filteredMeters}
-                filteredMeters={meterData}
+                filteredMeters={filteredMeters}
                 selectedMeter={selectedMeter}
                 setSelectedMeter={setSelectedMeter}
                 loading={loading}

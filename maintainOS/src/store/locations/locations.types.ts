@@ -12,6 +12,11 @@ export interface LocationResponse {
   updatedAt: string;
   qrCode: string;
   parentLocationId: string;
+  children:[];
+  photoUrls:[];
+  teamsInCharge: [];
+  files: [];
+  vendorIds: [];
 }
 
 export interface CreateLocationData {

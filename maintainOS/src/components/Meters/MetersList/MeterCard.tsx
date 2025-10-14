@@ -2,6 +2,7 @@ import { AlertTriangle, Building2 } from "lucide-react";
 import { Badge } from "../../ui/badge";
 import { Card, CardContent } from "../../ui/card";
 import { Avatar, AvatarFallback } from "../../ui/avatar";
+import { useNavigate } from "react-router-dom";
 
 export function MeterCard({
   meter,
@@ -16,6 +17,8 @@ export function MeterCard({
       .slice(0, 2)
       .join("")
       .toUpperCase();
+
+  const navigate = useNavigate();
   return (
     <Card
       key={meter.id}
@@ -26,7 +29,7 @@ export function MeterCard({
       }`}
       onClick={() => {
         setSelectedMeter(meter);
-        handleCancelForm(false);
+        navigate(`/meters/${meter.id}`);
       }}
     >
       <CardContent className="p-4">
@@ -37,14 +40,15 @@ export function MeterCard({
               <AvatarFallback>{renderInitials(meter.name)}</AvatarFallback>
             </Avatar>
             <h4 className="font-medium text-gray-900">{meter.name}</h4>
+            {/* <h4 className="font-medium text-gray-900">{meter.id}</h4> */}
           </div>
 
-          {meter.isOverdue && (
+          {/* {meter.isOverdue && (
             <Badge variant="destructive" className="flex items-center gap-1">
               <AlertTriangle className="h-4 w-4" />
               Overdue
             </Badge>
-          )}
+          )} */}
         </div>
 
         {/* Asset & Location Info */}

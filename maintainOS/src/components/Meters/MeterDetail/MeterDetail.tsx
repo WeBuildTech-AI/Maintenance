@@ -1,14 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Building2, Edit, MapPin, MoreHorizontal, Plus } from "lucide-react";
 import { Button } from "../../ui/button";
 import { MeterAutomations } from "./MeterAutomations";
 import { MeterDetailsSection } from "./MeterDetailsSection";
 import { MeterReadings } from "./MeterReadings";
 import { MeterWorkOrders } from "./MeterWorkOrders";
-import { NewMeterForm } from "../NewMeterForm/NewMeterForm";
-import { useNavigate } from "react-router-dom"; // 👈 ADD useNavigate
+import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,14 +17,31 @@ import {
 import { formatDate } from "../../utils/Date";
 import type { AppDispatch, RootState } from "../../../store";
 import { useSelector } from "react-redux";
+import MeterDeleteModal from "../MeterDeleteModal";
+import RecordReadingModal from "./RecordReadingModal"; // 👈 Naya modal import karein
 
 export function MeterDetail({ selectedMeter, handleDeleteMeter }: any) {
-  // Removed local editing state: const [isEditing, setIsEditing] = useState(false);
-
-  const navigate = useNavigate(); // 👈 ADD hook
-
-  // Removed conditional return for NewMeterForm
+  const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
+
+  // Modals ke liye state
+  const [openMeterDeleteModal, setOpenMeterDeleteModal] = useState(false);
+  const [isRecordModalOpen, setIsRecordModalOpen] = useState(false); // 👈 Modal ke liye state add karein
+
+  const modalRef = React.useRef<HTMLDivElement>(null);
+
+  // Jab form submit hoga to ye function chalega
+  const handleRecordReadingConfirm = (readingData: {
+    value: string;
+    date: string;
+  }) => {
+    console.log("New Reading Recorded:", {
+      meterId: selectedMeter.id,
+      ...readingData,
+    });
+    // Yahan aap API call ya Redux action dispatch kar sakte hain
+    setIsRecordModalOpen(false); // Modal ko band kar dein
+  };
 
   return (
     <div className="flex border mr-2 flex-col h-full">
@@ -36,7 +52,11 @@ export function MeterDetail({ selectedMeter, handleDeleteMeter }: any) {
             {selectedMeter.name}
           </h1>
           <div className="flex items-center gap-2">
-            <Button className="gap-2 bg-orange-600 hover:bg-orange-700">
+            {/* ▼ Button pr onClick event add karein */}
+            <Button
+              className="gap-2 bg-orange-600 hover:bg-orange-700"
+              onClick={() => setIsRecordModalOpen(true)} // 👈 Modal open karne ke liye state update karein
+            >
               <Plus className="h-4 w-4" />
               Record Reading
             </Button>
@@ -45,7 +65,6 @@ export function MeterDetail({ selectedMeter, handleDeleteMeter }: any) {
               size="sm"
               className="gap-2 text-orange-600"
               onClick={() => {
-                // 🔽 Navigate to the new parameterized URL for editing
                 navigate(`/meters/${selectedMeter.id}/edit`);
               }}
             >
@@ -61,7 +80,7 @@ export function MeterDetail({ selectedMeter, handleDeleteMeter }: any) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="mt-2">
                   <DropdownMenuItem
-                    onClick={() => handleDeleteMeter(selectedMeter?.id)}
+                    onClick={() => setOpenMeterDeleteModal(true)}
                   >
                     Delete
                   </DropdownMenuItem>
@@ -121,7 +140,23 @@ export function MeterDetail({ selectedMeter, handleDeleteMeter }: any) {
             </div>
           </>
         )}
+
+        {/* Delete Modal */}
+        {openMeterDeleteModal && (
+          <MeterDeleteModal
+            modalRef={modalRef}
+            onClose={() => setOpenMeterDeleteModal(false)}
+            onConfirm={() => handleDeleteMeter(selectedMeter?.id)}
+          />
+        )}
       </div>
+      {isRecordModalOpen && (
+        <RecordReadingModal
+          modalRef={modalRef}
+          onClose={() => setIsRecordModalOpen(false)}
+          // onConfirm={handleRecordReadingConfirm}
+        />
+      )}
     </div>
   );
 }

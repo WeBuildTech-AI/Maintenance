@@ -51,7 +51,7 @@ export const Assets: FC = () => {
           (a, b) =>
             new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
         );
-        setSelectedAsset(mostRecent[0]);
+        setSelectedAsset("");
       }
     } catch (err) {
       console.error("Failed to fetch assets:", err);
@@ -123,31 +123,28 @@ export const Assets: FC = () => {
 
   const handleDeleteAsset = (id: string | number) => {
     const currentIndex = assetData.findIndex((a) => a.id === id);
+    dispatch(deleteAsset(id))
+      .unwrap()
+      .then(() => {
+        const newAssetList = assetData.filter((asset) => asset.id !== id);
+        setAssetData(newAssetList);
 
-    if (window.confirm("Are you sure you want to delete this asset?")) {
-      dispatch(deleteAsset(id))
-        .unwrap()
-        .then(() => {
-          const newAssetList = assetData.filter((asset) => asset.id !== id);
-          setAssetData(newAssetList);
+        if (newAssetList.length === 0) {
+          setSelectedAsset(null);
+        } else {
+          const newIndexToSelect = Math.min(
+            currentIndex,
+            newAssetList.length - 1
+          );
+          setSelectedAsset(newAssetList[newIndexToSelect]);
+        }
 
-          if (newAssetList.length === 0) {
-            setSelectedAsset(null);
-          } else {
-            const newIndexToSelect = Math.min(
-              currentIndex,
-              newAssetList.length - 1
-            );
-            setSelectedAsset(newAssetList[newIndexToSelect]);
-          }
-
-          toast.success("Asset deleted successfully!");
-        })
-        .catch((error) => {
-          console.error("Delete failed:", error);
-          toast.error("Failed to delete the asset.");
-        });
-    }
+        toast.success("Asset deleted successfully!");
+      })
+      .catch((error) => {
+        console.error("Delete failed:", error);
+        toast.error("Failed to delete the asset.");
+      });
   };
 
   return (

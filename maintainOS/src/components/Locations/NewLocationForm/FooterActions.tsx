@@ -1,5 +1,6 @@
 "use client";
 
+import { useNavigate } from "react-router-dom";
 import Loader from "../../Loader/Loader";
 import { Button } from "../../ui/button";
 
@@ -16,12 +17,17 @@ export function FooterActions({
   submitLocationFormLoader,
   isEdit = false, // ✅ default false
 }: FooterActionsProps) {
+  const navigate = useNavigate();
+
   return (
     <div className="flex border-t p-4 flex-none">
       <div className="ml-auto flex gap-2">
         <Button
           className="gap-2 bg-white cursor-pointer text-orange-600 border border-orange-600 hover:bg-orange-50"
-          onClick={onCancel}
+          onClick={() => {
+            onCancel();
+            navigate("/meters");
+          }}
         >
           Cancel
         </Button>
@@ -31,13 +37,7 @@ export function FooterActions({
           onClick={onCreate}
           disabled={submitLocationFormLoader} // disable while submitting
         >
-          {submitLocationFormLoader ? (
-            <Loader />
-          ) : isEdit ? (
-            "Update"
-          ) : (
-            "Create"
-          )}
+          {submitLocationFormLoader ? <Loader /> : isEdit ? "Update" : "Create"}
         </Button>
       </div>
     </div>

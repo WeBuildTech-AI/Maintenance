@@ -12,9 +12,10 @@ export function AssetCard({
   asset: any;
   selected: boolean;
   onSelect: () => void;
-  setShowNewAssetForm;
+  setShowNewAssetForm: React.Dispatch<React.SetStateAction<boolean>>;
   allLocationData: { name: string }[];
 }) {
+  asset.status === "Online";
   return (
     <Card
       className={`cursor-pointer transition-colors ${
@@ -22,6 +23,7 @@ export function AssetCard({
       }`}
       onClick={() => {
         onSelect();
+
         setShowNewAssetForm(false);
       }}
     >
@@ -36,7 +38,8 @@ export function AssetCard({
               <div className="flex items-start gap-1 mt-1">
                 <MapPin className="h-3 w-3 mt-1 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">
-                  At {allLocationData.find((loc) => loc.id === asset.locationId)
+                  At{" "}
+                  {allLocationData.find((loc) => loc.id === asset.locationId)
                     ?.name || "No Location"}
                 </span>
               </div>
