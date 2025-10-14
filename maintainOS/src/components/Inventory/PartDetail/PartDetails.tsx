@@ -14,24 +14,32 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../ui/button";
 import DeletePartModal from "./DeletePartModal";
+import { useDispatch } from "react-redux";
+import type { AppDispatch } from "../../../store";
+import { deletePart } from "../../../store/parts/parts.thunks";
+import toast from "react-hot-toast";
 
 export function PartDetails({
   item,
   stockStatus,
   onEdit,
+  onDeleteSuccess, // ✅ added prop
 }: {
   item: any;
   stockStatus?: { ok: boolean; delta: number } | null;
   onEdit: () => void;
+  onDeleteSuccess: (id: string) => void; // ✅ added type
 }) {
   const [activeTab, setActiveTab] = useState<"details" | "history">("details");
   const [menuOpen, setMenuOpen] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
 
-  // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -42,7 +50,6 @@ export function PartDetails({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuOpen]);
 
-  // Copy URL button
   const handleCopyClick = () => {
     const url = window.location.href;
     navigator.clipboard.writeText(url).then(() => {
@@ -51,14 +58,61 @@ export function PartDetails({
     });
   };
 
+  const handleDeletePart = async () => {
+    try {
+      setLoading(true);
+      await dispatch(deletePart(item.id)).unwrap();
+      toast.success("Part deleted successfully!");
+      setShowDeleteModal(false);
+
+      // ✅ instantly update list
+      onDeleteSuccess(item.id);
+
+      // ✅ navigate back to inventory
+      navigate("/inventory");
+    } catch (error: any) {
+      console.error("❌ Delete failed:", error);
+      toast.error(error || "Failed to delete part");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ instant navigation + send data to edit route (prefill)
+  const handleEditPart = () => {
+    setEditLoading(true);
+    navigate(`/inventory/${item.id}/edit`, {
+      state: { partData: item },
+    });
+    // small timeout just to show the overlay while the route mounts
+    setTimeout(() => setEditLoading(false), 800);
+  };
+
+  // ✅ Fallback handling for units and part type
+  const availableUnits = item.unitsInStock ?? item.locations?.[0]?.unitsInStock ?? 0;
+  const minUnits = item.minInStock ?? item.locations?.[0]?.minimumInStock ?? 0;
+  const partType =
+    Array.isArray(item.partsType)
+      ? item.partsType[0]?.name || item.partsType[0] || "N/A"
+      : item.partsType?.name || "N/A";
+
   return (
     <div className="flex flex-col h-full bg-white shadow-sm border relative">
+      {editLoading && (
+        <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-50">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-10 h-10 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-yellow-600 font-medium text-sm">Opening edit form...</p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex justify-between items-start p-6 relative">
         <div>
           <h2 className="text-2xl font-normal">{item.name}</h2>
           <p className="text-base text-gray-700 mt-2">
-            {item.unitsInStock} units in stock
+            {availableUnits} units in stock
           </p>
         </div>
 
@@ -78,10 +132,10 @@ export function PartDetails({
             )}
           </Button>
 
-          {/* ✅ Restock button */}
+          {/* Restock */}
           <Button
             className="bg-white text-yellow-600 hover:bg-yellow-50 border-2 border-yellow-400 rounded-md px-4 py-2 font-medium"
-            onClick={() => navigate(`/inventory/${item.id}/restock`)} // navigates to modal route
+            onClick={() => navigate(`/inventory/${item.id}/restock`)}
           >
             <Plus className="h-4 w-4 mr-2" />
             Restock
@@ -89,7 +143,7 @@ export function PartDetails({
 
           {/* Edit */}
           <Button
-            onClick={onEdit}
+            onClick={handleEditPart}
             className="bg-white text-yellow-600 hover:bg-yellow-50 border-2 border-yellow-400 rounded-md px-4 py-2 font-medium"
           >
             <Edit className="h-4 w-4 mr-2" />
@@ -172,7 +226,7 @@ export function PartDetails({
             <div className="grid grid-cols-3 gap-8 mb-8 pb-8">
               <div>
                 <h4 className="text-sm text-gray-600 mb-2">Minimum in Stock</h4>
-                <p className="text-base font-normal">{item.minInStock} unit</p>
+                <p className="text-base font-normal">{minUnits} units</p>
               </div>
               <div>
                 <h4 className="text-sm text-gray-600 mb-2">Unit Cost</h4>
@@ -183,19 +237,15 @@ export function PartDetails({
               <div>
                 <h4 className="text-sm text-gray-600 mb-2">Part Type</h4>
                 <p className="text-base font-normal text-yellow-500">
-                  {item.partType || "N/A"}
+                  {partType}
                 </p>
               </div>
             </div>
 
             {/* Available Quantity */}
             <div className="mb-8">
-              <h4 className="text-sm text-gray-600 mb-2">
-                Available Quantity
-              </h4>
-              <p className="text-base font-normal">
-                {item.unitsInStock} units
-              </p>
+              <h4 className="text-sm text-gray-600 mb-2">Available Quantity</h4>
+              <p className="text-base font-normal">{availableUnits} units</p>
             </div>
 
             <hr className="border-t border-gray-200 my-4" />
@@ -207,34 +257,76 @@ export function PartDetails({
                 <table className="w-full text-sm text-gray-700">
                   <thead className="bg-gray-50 text-gray-700">
                     <tr>
-                      <th className="py-3 px-4 text-left font-medium">
-                        Location
-                      </th>
+                      <th className="py-3 px-4 text-left font-medium">Location</th>
                       <th className="py-3 px-4 text-left font-medium">Area</th>
-                      <th className="py-3 px-4 text-left font-medium">
-                        Units in Stock
-                      </th>
-                      <th className="py-3 px-4 text-left font-medium">
-                        Minimum in Stock
-                      </th>
+                      <th className="py-3 px-4 text-left font-medium">Units</th>
+                      <th className="py-3 px-4 text-left font-medium">Minimum</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white">
-                    <tr className="border-t hover:bg-gray-50 transition-colors">
-                      <td className="py-3 px-4 flex items-center gap-2">
-                        <MapPin className="w-5 h-5 text-gray-600 shrink-0" />
-                        <span className="text-gray-800">
-                          {item.locationId || "Warehouse C"}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">{item.area || "Rack 7D"}</td>
-                      <td className="py-3 px-4">{item.unitsInStock || 40}</td>
-                      <td className="py-3 px-4">{item.minInStock || 15}</td>
-                    </tr>
+                    {item.locations?.length ? (
+                      item.locations.map((loc: any, i: number) => (
+                        <tr key={i} className="border-t hover:bg-gray-50">
+                          <td className="py-3 px-4 flex items-center gap-2">
+                            <MapPin className="w-5 h-5 text-gray-600 shrink-0" />
+                            <span className="text-gray-800">
+                              {loc.name || loc.locationName || "Warehouse"}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">{loc.area || "-"}</td>
+                          <td className="py-3 px-4">{loc.unitsInStock ?? 0}</td>
+                          <td className="py-3 px-4">{loc.minimumInStock ?? 0}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={4} className="text-center text-gray-500 py-3">
+                          No location data available
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
+
+            {/* Images */}
+            {item.photos?.length > 0 && (
+              <div className="mb-8">
+                <h4 className="font-medium text-gray-800 mb-3">Part Images</h4>
+                <div
+                  className={`grid gap-3 ${
+                    item.photos.length === 1
+                      ? "grid-cols-1"
+                      : item.photos.length === 2
+                      ? "grid-cols-2"
+                      : "grid-cols-3"
+                  }`}
+                >
+                  {item.photos.map((photo: any, i: number) => (
+                    <div
+                      key={i}
+                      className="border rounded-md overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow"
+                      style={{
+                        width: "120px",
+                        height: "120px",
+                        alignSelf: "start",
+                      }}
+                    >
+                      <img
+                        src={
+                          photo.base64
+                            ? `data:${photo.mimetype};base64,${photo.base64}`
+                            : photo.url
+                        }
+                        alt={`Part ${i + 1}`}
+                        className="object-cover w-full h-full rounded-md"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <hr className="border-t border-gray-200 my-4" />
 
@@ -242,7 +334,7 @@ export function PartDetails({
             <div className="py-4">
               <h4 className="font-medium text-gray-900 mb-2">Description</h4>
               <p className="text-gray-700 text-base leading-relaxed">
-                {item.description || "PS5 console"}
+                {item.description || "No description available"}
               </p>
             </div>
 
@@ -251,28 +343,37 @@ export function PartDetails({
             {/* QR & Assets */}
             <div className="grid grid-cols-2 gap-6 mb-8 mt-4 pb-8">
               <div>
-                <h4 className="font-medium text-gray-900 mb-3">
-                  QR Code/Barcode
-                </h4>
+                <h4 className="font-medium text-gray-900 mb-3">QR Code</h4>
                 <p className="text-sm text-gray-700 mb-3">
-                  {item.qrCode || "sumit@test.in"}
+                  {item.qrCode || "N/A"}
                 </p>
                 <div className="bg-white rounded-md shadow-sm flex items-center">
                   <img
-                    src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=sumit@test.in"
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${item.qrCode}`}
                     alt="QR Code"
                     className="rounded-md"
                   />
                 </div>
               </div>
               <div>
-                <h4 className="font-medium text-gray-900 mb-3">Assets (1)</h4>
-                <div className="flex items-center gap-2 text-gray-700">
-                  <div className="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center">
-                    <Package2 className="w-5 h-5 text-yellow-500" />
-                  </div>
-                  <span className="text-gray-800 font-normal">HVAC</span>
-                </div>
+                <h4 className="font-medium text-gray-900 mb-3">
+                  Assets ({item.assetIds?.length || 0})
+                </h4>
+                {item.assetIds?.length > 0 ? (
+                  item.assetIds.map((a: string, i: number) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-2 text-gray-700 mb-2"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center">
+                        <Package2 className="w-5 h-5 text-yellow-500" />
+                      </div>
+                      <span className="text-gray-800 font-normal">{a}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-sm">No assets linked</p>
+                )}
               </div>
             </div>
 
@@ -281,34 +382,49 @@ export function PartDetails({
             {/* Vendors */}
             <div className="pb-6 mb-8 mt-4 border-b">
               <h4 className="font-medium text-gray-800 mb-3">Vendors</h4>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white font-medium text-sm">
-                  M
-                </div>
-                <span className="text-gray-600">mfd ,</span>
-              </div>
+              {item.vendorIds?.length ? (
+                item.vendorIds.map((v: string, i: number) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-2 text-gray-700 mb-1"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white font-medium text-sm">
+                      {v.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-gray-600">{v}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-sm">No vendors linked</p>
+              )}
             </div>
 
             {/* Created / Updated */}
             <div className="space-y-3 mb-8 mt-4">
               <div className="flex items-center gap-1 text-sm text-gray-600">
                 <UserCircle2 className="w-4 h-4 text-yellow-500" />
-                <span>Created By</span>
-                <span className="font-medium">sumit sahani</span>
+                <span>Created</span>
                 <CalendarDays className="w-4 h-4 text-gray-500 ml-1" />
-                <span>on 10/03/2025, 2:55 PM</span>
+                <span>
+                  {item.createdAt
+                    ? new Date(item.createdAt).toLocaleString()
+                    : "N/A"}
+                </span>
               </div>
               <div className="flex items-center gap-1 text-sm text-gray-600">
                 <UserCircle2 className="w-4 h-4 text-yellow-500" />
-                <span>Last updated By</span>
-                <span className="font-medium">sumit sahani</span>
+                <span>Last Updated</span>
+                <CalendarDays className="w-4 h-4 text-gray-500 ml-1" />
+                <span>
+                  {item.updatedAt
+                    ? new Date(item.updatedAt).toLocaleString()
+                    : "N/A"}
+                </span>
               </div>
             </div>
           </>
         ) : (
-          <div className="text-gray-500 italic">
-            History will appear here...
-          </div>
+          <div className="text-gray-500 italic">History will appear here...</div>
         )}
       </div>
 
@@ -335,10 +451,7 @@ export function PartDetails({
       {showDeleteModal && (
         <DeletePartModal
           onClose={() => setShowDeleteModal(false)}
-          onConfirm={() => {
-            console.log("Part deleted!");
-            setShowDeleteModal(false);
-          }}
+          onConfirm={handleDeletePart}
         />
       )}
     </div>

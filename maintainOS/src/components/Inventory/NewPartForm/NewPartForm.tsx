@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux"; // Import useSelector
 import type { AppDispatch } from "../../../store";
 import { createPart, updatePart } from "../../../store/parts/parts.thunks";
 import { PartHeader } from "./PartHeader";
@@ -30,13 +30,17 @@ export function NewPartForm({
   onCreate: () => void;
 }) {
   const dispatch = useDispatch<AppDispatch>();
+  // 1. Get user data from the Redux store
+  // Adjust 'state.auth.user' if your state structure is different
+  const { user } = useSelector((state: any) => state.auth);
 
   const handleSubmitPart = async () => {
     try {
       const formData = new FormData();
 
       // ✅ Basic fields
-      formData.append("organizationId", newItem.organizationId || "");
+      // 2. Use the organizationId from the logged-in user state
+      formData.append("organizationId", user?.organizationId || "");
       formData.append("name", newItem.name || "");
       formData.append("description", newItem.description || "");
       formData.append("unitCost", newItem.unitCost ? String(newItem.unitCost) : "0");
@@ -52,11 +56,11 @@ export function NewPartForm({
         });
       }
 
-      // ✅ Arrays
-      (newItem.partsType || []).forEach((t: any) => formData.append("partsType", t));
-      (newItem.assetIds || []).forEach((a: any) => formData.append("assetIds", a));
-      (newItem.teamsInCharge || []).forEach((t: any) => formData.append("teamsInCharge", t));
-      (newItem.vendorIds || []).forEach((v: any) => formData.append("vendorIds", v));
+      // ✅ Arrays - 3. Append `[]` to the key for array fields
+      (newItem.partsType || []).forEach((t: any) => formData.append("partsType[]", t));
+      (newItem.assetIds || []).forEach((a: any) => formData.append("assetIds[]", a));
+      (newItem.teamsInCharge || []).forEach((t: any) => formData.append("teamsInCharge[]", t));
+      (newItem.vendorIds || []).forEach((v: any) => formData.append("vendorIds[]", v));
 
       // ✅ Photos (base64 or File)
       if (Array.isArray(newItem.pictures) && newItem.pictures.length > 0) {
@@ -115,7 +119,9 @@ export function NewPartForm({
       onCreate();
     } catch (error: any) {
       console.error("❌ Error saving part:", error);
-      toast.error("Failed to save part");
+      // Attempt to show backend error message if available
+      const errorMessage = error?.message?.[0] || "Failed to save part";
+      toast.error(errorMessage);
     }
   };
 

@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "../../ui/button";
 import { Upload } from "lucide-react";
 
@@ -5,10 +7,12 @@ export function PartFooter({
   onCancel,
   onCreate,
   disabled,
+  isEditing,
 }: {
   onCancel: () => void;
   onCreate: () => void;
   disabled: boolean;
+  isEditing: boolean;
 }) {
   return (
     <div className="p-6 border-t flex justify-end">
@@ -22,7 +26,7 @@ export function PartFooter({
           disabled={disabled}
         >
           <Upload className="h-4 w-4" />
-          Create
+          {isEditing ? "Update" : "Create"}
         </Button>
       </div>
     </div>
