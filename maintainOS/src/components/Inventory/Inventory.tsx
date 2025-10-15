@@ -1,14 +1,13 @@
 import { Check, ChevronDown, ChevronUp } from "lucide-react";
-import { useEffect, useRef, useState, useMemo } from "react";
-import { Route, Routes, useNavigate, useParams, useLocation } from "react-router-dom";
-import { Button } from "../ui/button";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
 import { EmptyState } from "./EmptyState";
 import { InventoryHeaderComponent } from "./InventoryHeader";
 import { NewPartForm } from "./NewPartForm/NewPartForm";
 import { PartCard } from "./PartCard";
 import { PartDetails } from "./PartDetail/PartDetails";
-import { PartTable } from "./PartTable";
 import RestockModal from "./PartDetail/RestockModal";
+import { PartTable } from "./PartTable";
 
 /* ✅ Import partService like vendorService */
 import { partService } from "../../store/parts/parts.service";
@@ -168,7 +167,7 @@ export function Inventory() {
               </div>
             </div>
 
-            {/* Dropdown Modal (VendorSidebar-style) */}
+            {/* Dropdown Modal */}
             {isDropdownOpen && (
               <div
                 ref={modalRef}
@@ -325,7 +324,8 @@ export function Inventory() {
                 path=":id/edit"
                 element={<EditPartRoute onSuccess={refreshParts} />}
               />
-              <Route path=":id/restock" element={<RestockRoute />} />
+              {/* ✅ Modified Restock Route */}
+              <Route path=":id/restock" element={<RestockRoute parts={parts} />} />
             </Routes>
           </div>
         </div>
@@ -424,6 +424,7 @@ function EditPartRoute({ onSuccess }: { onSuccess: () => void }) {
         const part = await partService.fetchPartById(id!);
         setEditItem({
           ...part,
+          _original: part,
           pictures: [],
           files: [],
           partsType: [],
@@ -473,16 +474,26 @@ function EditPartRoute({ onSuccess }: { onSuccess: () => void }) {
 }
 
 /* ✅ RESTOCK MODAL ROUTE */
-function RestockRoute() {
+function RestockRoute({ parts }: { parts: any[] }) {
   const { id } = useParams();
   const navigate = useNavigate();
+
+  const part = parts.find((p) => String(p.id) === String(id));
+
+  if (!part) return <EmptyState variant="panel" />;
+
+  console.log("🧩 RestockRoute received part:", part);
+  console.log("📍 Location data:", part.locations);
 
   return (
     <RestockModal
       isOpen={true}
+      part={part}
       onClose={() => navigate(`/inventory/${id}`)}
       onConfirm={(data) => {
-        console.log("Restocked part", id, data);
+        console.log("✅ Restock confirmed for:", part.name);
+        console.log("📦 Location data:", part.locations);
+        console.log("📥 Restock input:", data);
         navigate(`/inventory/${id}`, { state: { refresh: true } });
       }}
     />

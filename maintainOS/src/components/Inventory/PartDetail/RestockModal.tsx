@@ -1,4 +1,4 @@
-import  { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, MapPin, Camera } from "lucide-react";
 import { createPortal } from "react-dom";
 
@@ -6,13 +6,27 @@ interface RestockModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (data: { quantity: number; location: string; note: string }) => void;
+  part?: any; // ✅ Add part as prop
 }
 
-export default function RestockModal({ isOpen, onClose, onConfirm }: RestockModalProps) {
+export default function RestockModal({ isOpen, onClose, onConfirm, part }: RestockModalProps) {
   const [quantity, setQuantity] = useState(0);
   const [location, setLocation] = useState("General");
   const [note, setNote] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
+
+  // 🟢 Log received part data
+  useEffect(() => {
+    if (part) {
+      console.log("📦 RestockModal received part:", part);
+      console.log("🏬 Available locations:", part.locations || "No locations found");
+      // Default first location if available
+      if (part.locations?.length) {
+        setLocation(part.locations[0].name || part.locations[0].locationName || "General");
+      }
+    }
+  }, [part]);
 
   // Close modal when clicking outside
   useEffect(() => {
@@ -36,6 +50,7 @@ export default function RestockModal({ isOpen, onClose, onConfirm }: RestockModa
   const decrement = () => setQuantity((p) => Math.max(0, p - 1));
 
   const handleConfirm = () => {
+    console.log("🧾 Confirm clicked:", { quantity, location, note });
     onConfirm({ quantity, location, note });
     setQuantity(0);
     setNote("");
@@ -76,7 +91,9 @@ export default function RestockModal({ isOpen, onClose, onConfirm }: RestockModa
             borderBottom: "1px solid #e5e7eb",
           }}
         >
-          <h2 style={{ fontSize: "18px", fontWeight: 600, color: "#111827" }}>Restock Items</h2>
+          <h2 style={{ fontSize: "18px", fontWeight: 600, color: "#111827" }}>
+            Restock {part?.name ? `– ${part.name}` : "Items"}
+          </h2>
           <button
             onClick={onClose}
             style={{
@@ -148,8 +165,8 @@ export default function RestockModal({ isOpen, onClose, onConfirm }: RestockModa
             </button>
           </div>
 
-          {/* Location */}
-          <div>
+          {/* Location Dropdown */}
+          <div style={{ position: "relative" }}>
             <label
               style={{
                 display: "block",
@@ -162,6 +179,7 @@ export default function RestockModal({ isOpen, onClose, onConfirm }: RestockModa
               Location
             </label>
             <div
+              onClick={() => setIsDropdownOpen((p) => !p)}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -170,6 +188,8 @@ export default function RestockModal({ isOpen, onClose, onConfirm }: RestockModa
                 border: "1px solid #d1d5db",
                 borderRadius: "6px",
                 cursor: "pointer",
+                position: "relative",
+                backgroundColor: "#fff",
               }}
             >
               <MapPin size={18} color="#2563eb" />
@@ -188,6 +208,51 @@ export default function RestockModal({ isOpen, onClose, onConfirm }: RestockModa
                 />
               </svg>
             </div>
+
+            {isDropdownOpen && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: 0,
+                  right: 0,
+                  background: "white",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "6px",
+                  marginTop: "4px",
+                  zIndex: 10000,
+                  maxHeight: "150px",
+                  overflowY: "auto",
+                }}
+              >
+                {(part?.locations?.length
+                  ? part.locations
+                  : [{ name: "General" }]
+                ).map((loc: any, i: number) => {
+                  const locName = loc.name || loc.locationName || "General";
+                  return (
+                    <div
+                      key={i}
+                      onClick={() => {
+                        setLocation(locName);
+                        setIsDropdownOpen(false);
+                      }}
+                      style={{
+                        padding: "8px 12px",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        backgroundColor:
+                          location === locName ? "#eff6ff" : "white",
+                        color:
+                          location === locName ? "#2563eb" : "#111827",
+                      }}
+                    >
+                      {locName}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Note */}

@@ -48,7 +48,9 @@ export function PartVendorsSection({
     try {
       const res = await dispatch(fetchAssetsName({ limit: 1000, page: 1, offset: 0 })).unwrap();
       const data = normalizeResponse(res, "Assets");
-      setAssetOptions(data.map((a: any) => ({ id: String(a.id), name: a.name || "Unnamed Asset" })));
+      setAssetOptions(
+        data.map((a: any) => ({ id: String(a.id), name: a.name || "Unnamed Asset" }))
+      );
       hasFetchedAssets.current = true;
     } catch (err) {
       console.error("❌ Failed to fetch assets:", err);
@@ -63,7 +65,9 @@ export function PartVendorsSection({
     try {
       const res = await dispatch(fetchTeamsName({ limit: 1000, page: 1, offset: 0 })).unwrap();
       const data = normalizeResponse(res, "Teams");
-      setTeamOptions(data.map((t: any) => ({ id: String(t.id), name: t.name || "Unnamed Team" })));
+      setTeamOptions(
+        data.map((t: any) => ({ id: String(t.id), name: t.name || "Unnamed Team" }))
+      );
       hasFetchedTeams.current = true;
     } catch (err) {
       console.error("❌ Failed to fetch teams:", err);
@@ -78,7 +82,9 @@ export function PartVendorsSection({
     try {
       const res = await dispatch(fetchVendorName({ limit: 1000, page: 1, offset: 0 })).unwrap();
       const data = normalizeResponse(res, "Vendors");
-      setVendorOptions(data.map((v: any) => ({ id: String(v.id), name: v.name || "Unnamed Vendor" })));
+      setVendorOptions(
+        data.map((v: any) => ({ id: String(v.id), name: v.name || "Unnamed Vendor" }))
+      );
       hasFetchedVendors.current = true;
     } catch (err) {
       console.error("❌ Failed to fetch vendors:", err);
@@ -103,7 +109,8 @@ export function PartVendorsSection({
   const handleTeamSelect = (vals: string[] | string) => {
     const ids = Array.isArray(vals) ? vals : [vals];
     console.log("🟣 Teams selected:", ids);
-    setNewItem((s) => ({ ...s, teamIds: ids }));
+    // ✅ FIXED KEY: match NewPartForm logic
+    setNewItem((s) => ({ ...s, teamsInCharge: ids }));
   };
 
   const handleVendorSelect = (vals: string[] | string) => {
@@ -117,7 +124,9 @@ export function PartVendorsSection({
     <section style={{ display: "flex", flexDirection: "column", gap: "24px", marginTop: "25px" }}>
       {/* ASSETS */}
       <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-        <label style={{ fontSize: "14px", color: "#111827", fontWeight: 600 }}>Assets</label>
+        <label style={{ fontSize: "14px", color: "#111827", fontWeight: 600 }}>
+          Assets
+        </label>
         <PartDynamicSelect
           options={assetOptions}
           value={newItem.assetIds ?? []}
@@ -136,10 +145,12 @@ export function PartVendorsSection({
 
       {/* TEAMS */}
       <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-        <label style={{ fontSize: "14px", color: "#111827", fontWeight: 600 }}>Teams in Charge</label>
+        <label style={{ fontSize: "14px", color: "#111827", fontWeight: 600 }}>
+          Teams in Charge
+        </label>
         <PartDynamicSelect
           options={teamOptions}
-          value={newItem.teamIds ?? []}
+          value={newItem.teamsInCharge ?? []} // ✅ match correct key
           onSelect={handleTeamSelect}
           onFetch={handleFetchTeams}
           loading={loadingTeams}
@@ -155,7 +166,9 @@ export function PartVendorsSection({
 
       {/* VENDORS */}
       <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-        <label style={{ fontSize: "14px", color: "#111827", fontWeight: 600 }}>Vendors</label>
+        <label style={{ fontSize: "14px", color: "#111827", fontWeight: 600 }}>
+          Vendors
+        </label>
         <PartDynamicSelect
           options={vendorOptions}
           value={newItem.vendorIds ?? []}

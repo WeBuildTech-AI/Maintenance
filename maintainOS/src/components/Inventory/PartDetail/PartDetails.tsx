@@ -357,10 +357,10 @@ export function PartDetails({
               </div>
               <div>
                 <h4 className="font-medium text-gray-900 mb-3">
-                  Assets ({item.assetIds?.length || 0})
+                  Assets ({item.assets?.length || 0})
                 </h4>
-                {item.assetIds?.length > 0 ? (
-                  item.assetIds.map((a: string, i: number) => (
+                {item.assets?.length > 0 ? (
+                  item.assets.map((a: any, i: number) => (
                     <div
                       key={i}
                       className="flex items-center gap-2 text-gray-700 mb-2"
@@ -368,7 +368,7 @@ export function PartDetails({
                       <div className="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center">
                         <Package2 className="w-5 h-5 text-yellow-500" />
                       </div>
-                      <span className="text-gray-800 font-normal">{a}</span>
+                      <span className="text-gray-800 font-normal">{a.name}</span>
                     </div>
                   ))
                 ) : (
@@ -382,20 +382,37 @@ export function PartDetails({
             {/* Vendors */}
             <div className="pb-6 mb-8 mt-4 border-b">
               <h4 className="font-medium text-gray-800 mb-3">Vendors</h4>
-              {item.vendorIds?.length ? (
-                item.vendorIds.map((v: string, i: number) => (
+              {item.vendors?.length > 0 ? (
+                item.vendors.map((v: any, i: number) => (
                   <div
                     key={i}
                     className="flex items-center gap-2 text-gray-700 mb-1"
                   >
                     <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white font-medium text-sm">
-                      {v.charAt(0).toUpperCase()}
+                      {v.name?.charAt(0).toUpperCase()}
                     </div>
-                    <span className="text-gray-600">{v}</span>
+                    <span className="text-gray-600">{v.name}</span>
                   </div>
                 ))
               ) : (
                 <p className="text-gray-500 text-sm">No vendors linked</p>
+              )}
+            </div>
+
+            {/* Teams */}
+            <div className="pb-6 mb-8 mt-4 border-b">
+              <h4 className="font-medium text-gray-800 mb-3">Teams</h4>
+              {item.teams?.length > 0 ? (
+                item.teams.map((t: any, i: number) => (
+                  <div key={i} className="flex items-center gap-2 text-gray-700 mb-1">
+                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium text-sm">
+                      {t.name?.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-gray-600">{t.name}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-sm">No teams linked</p>
               )}
             </div>
 
@@ -414,6 +431,7 @@ export function PartDetails({
               <div className="flex items-center gap-1 text-sm text-gray-600">
                 <UserCircle2 className="w-4 h-4 text-yellow-500" />
                 <span>Last Updated</span>
+            
                 <CalendarDays className="w-4 h-4 text-gray-500 ml-1" />
                 <span>
                   {item.updatedAt

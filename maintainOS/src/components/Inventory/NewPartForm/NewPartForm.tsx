@@ -36,37 +36,136 @@ export function NewPartForm({
     (state: RootState) => state.auth?.user?.organizationId
   );
 
+  // ✅ Prefill ID arrays from nested objects when editing
+  React.useEffect(() => {
+    if (!newItem) return;
+    setNewItem((prev: any) => ({
+      ...prev,
+      assetIds:
+        prev.assetIds && prev.assetIds.length > 0
+          ? prev.assetIds
+          : prev.assets?.map((a: any) => a.id) || [],
+      teamsInCharge:
+        prev.teamsInCharge && prev.teamsInCharge.length > 0
+          ? prev.teamsInCharge
+          : prev.teams?.map((t: any) => t.id) || [],
+      vendorIds:
+        prev.vendorIds && prev.vendorIds.length > 0
+          ? prev.vendorIds
+          : prev.vendors?.map((v: any) => v.id) || [],
+      partsType:
+        prev.partsType && prev.partsType.length > 0
+          ? prev.partsType
+          : Array.isArray(prev.partsType)
+          ? prev.partsType
+          : prev.partsType
+          ? [prev.partsType]
+          : [],
+    }));
+  }, [newItem?.id, setNewItem]); // ✅
+
   const handleSubmitPart = async () => {
     try {
       const formData = new FormData();
 
+      const isEditing = !!newItem.id;
+      const original = newItem._original || {}; // keep original fetched data for diff
+
+      // ✅ Helper: append only changed and non-empty fields
+      const appendIfChanged = (key: string, newVal: any, oldVal: any) => {
+        // Handle serialized JSON case
+        if (typeof newVal === "string") {
+          if (newVal === "[]" || newVal === "{}") return; // skip empty JSON arrays/objects
+        }
+
+        // Ignore null / undefined / empty string / empty array / empty object
+        const isEmpty =
+          newVal === "" ||
+          newVal === null ||
+          newVal === undefined ||
+          (Array.isArray(newVal) && newVal.length === 0) ||
+          (typeof newVal === "object" &&
+            !Array.isArray(newVal) &&
+            Object.keys(newVal).length === 0);
+
+        const isChanged =
+          !isEditing || JSON.stringify(newVal) !== JSON.stringify(oldVal);
+
+        if (!isEmpty && isChanged) {
+          formData.append(key, newVal);
+        }
+      };
+
       // ✅ Basic fields
-      formData.append("organizationId", organizationId || "");
-      formData.append("name", newItem.name || "");
-      formData.append("description", newItem.description || "");
-      formData.append("unitCost", newItem.unitCost ? String(newItem.unitCost) : "0");
-      formData.append("qrCode", newItem.qrCode || "");
+      appendIfChanged("organizationId", organizationId || "", original.organizationId);
+      appendIfChanged("name", newItem.name || "", original.name);
+      appendIfChanged("description", newItem.description || "", original.description);
+      appendIfChanged(
+        "unitCost",
+        newItem.unitCost ? String(newItem.unitCost) : "",
+        original.unitCost ? String(original.unitCost) : ""
+      );
+      appendIfChanged("qrCode", newItem.qrCode || "", original.qrCode);
 
-      // ✅ Part Type (JSON)
-      formData.append("partsType", JSON.stringify(newItem.partsType || []));
+      // ✅ Part Type (JSON) — now correctly skipped if empty
+      const partTypeVal = Array.isArray(newItem.partsType)
+        ? newItem.partsType
+        : [];
+      if (partTypeVal.length > 0) {
+        appendIfChanged(
+          "partsType",
+          JSON.stringify(partTypeVal),
+          JSON.stringify(original.partsType || [])
+        );
+      }
 
-      // ✅ Locations (as JSON array)
-      const locationsPayload = [
-        {
-          locationId: newItem.locationId || "",
-          area: newItem.area || "",
-          unitsInStock: Number(newItem.unitInStock || 0),
-          minimumInStock: Number(newItem.minInStock || 0),
-        },
-      ];
-      formData.append("locations", JSON.stringify(locationsPayload));
+      // ✅ Locations (only if user actually filled anything)
+      const hasLocationValues =
+        newItem.locationId ||
+        newItem.area ||
+        Number(newItem.unitInStock) > 0 ||
+        Number(newItem.minInStock) > 0;
 
-      // ✅ Other arrays (JSON)
-      formData.append("assetIds", JSON.stringify(newItem.assetIds || []));
-      formData.append("teamsInCharge", JSON.stringify(newItem.teamsInCharge || []));
-      formData.append("vendorIds", JSON.stringify(newItem.vendorIds || []));
+      if (hasLocationValues) {
+        const locationsPayload = [
+          {
+            locationId: newItem.locationId || "",
+            area: newItem.area || "",
+            unitsInStock: Number(newItem.unitInStock || 0),
+            minimumInStock: Number(newItem.minInStock || 0),
+          },
+        ];
+        appendIfChanged(
+          "locations",
+          JSON.stringify(locationsPayload),
+          JSON.stringify(original.locations || [])
+        );
+      }
 
-      // ✅ Photos
+      // ✅ Arrays (only if non-empty and changed)
+      if (Array.isArray(newItem.assetIds) && newItem.assetIds.length > 0) {
+        appendIfChanged(
+          "assetIds",
+          JSON.stringify(newItem.assetIds),
+          JSON.stringify(original.assetIds || [])
+        );
+      }
+      if (Array.isArray(newItem.teamsInCharge) && newItem.teamsInCharge.length > 0) {
+        appendIfChanged(
+          "teamsInCharge",
+          JSON.stringify(newItem.teamsInCharge),
+          JSON.stringify(original.teamsInCharge || [])
+        );
+      }
+      if (Array.isArray(newItem.vendorIds) && newItem.vendorIds.length > 0) {
+        appendIfChanged(
+          "vendorIds",
+          JSON.stringify(newItem.vendorIds),
+          JSON.stringify(original.vendorIds || [])
+        );
+      }
+
+      // ✅ Photos (only if added)
       if (Array.isArray(newItem.pictures) && newItem.pictures.length > 0) {
         newItem.pictures.forEach((file: any) => {
           if (file instanceof File) {
@@ -83,7 +182,7 @@ export function NewPartForm({
         });
       }
 
-      // ✅ Files (attachments)
+      // ✅ Files (only if added)
       if (Array.isArray(newItem.files) && newItem.files.length > 0) {
         newItem.files.forEach((file: any) => {
           formData.append("files", file instanceof File ? file : String(file));
@@ -91,22 +190,27 @@ export function NewPartForm({
       }
 
       // ✅ Vendors extra mapping (optional)
-      if (Array.isArray(newItem.vendors)) {
+      if (Array.isArray(newItem.vendors) && newItem.vendors.length > 0) {
         newItem.vendors.forEach((vendor: any, index: number) => {
           formData.append(`vendors[${index}][vendorId]`, vendor.vendorId || "");
-          formData.append(`vendors[${index}][orderingPartNumber]`, vendor.orderingPartNumber || "");
+          formData.append(
+            `vendors[${index}][orderingPartNumber]`,
+            vendor.orderingPartNumber || ""
+          );
         });
       }
 
       // ✅ Debug Log
-      console.log("📦 FormData contents:");
+      console.log("📦 FormData contents (final to send):");
       for (let [key, value] of formData.entries()) {
         console.log(`${key}:`, value);
       }
 
-      // ✅ Dispatch create or update
-      if (newItem.id) {
-        await dispatch(updatePart({ id: String(newItem.id), partData: formData })).unwrap();
+      // ✅ Create or Update
+      if (isEditing) {
+        await dispatch(
+          updatePart({ id: String(newItem.id), partData: formData })
+        ).unwrap();
         toast.success("Part updated successfully!");
       } else {
         await dispatch(createPart(formData)).unwrap();
