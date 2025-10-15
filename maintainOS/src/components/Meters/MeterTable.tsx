@@ -34,6 +34,7 @@ export function MeterTable({
             </thead>
             <tbody>
               {meter.length > 0 ? (
+                meter &&
                 meter.map((m) => (
                   <tr
                     key={m.id}
@@ -51,31 +52,34 @@ export function MeterTable({
                             {renderInitials(m.name)}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="font-medium">{m.name}</span>
+                        <span className="font-medium">{m.name || "-"}</span>
                       </div>
                     </td>
 
                     {/* ID */}
-                    <td className="px-4 py-3 text-muted-foreground">{m.id}</td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {m.id || "-"}
+                    </td>
 
                     {/* Type */}
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {m.type}
+                    <td className="px-4 py-3 capitalize text-muted-foreground">
+                      {m.meterType || "-"}
                     </td>
 
                     {/* Asset */}
                     <td className="px-4 py-3 text-muted-foreground">
-                      {m.asset}
+                      {(m.asset && m.asset.name) || "-"}
                     </td>
 
                     {/* Location */}
                     <td className="px-4 py-3 text-muted-foreground">
-                      {m.location}
+                      {(m.location && m.location.name) || "-"}
                     </td>
 
                     {/* Last Reading */}
                     <td className="px-4 py-3 text-muted-foreground">
-                      {m.lastReading}
+                      {`${m.readingFrequency.time} ${m.readingFrequency.interval}` ||
+                        "-"}
                     </td>
 
                     {/* Status */}
@@ -86,7 +90,7 @@ export function MeterTable({
                           : "text-muted-foreground"
                       }`}
                     >
-                      {m.status}
+                      {m.status || "-"}
                     </td>
                   </tr>
                 ))

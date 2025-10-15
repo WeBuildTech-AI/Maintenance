@@ -28,6 +28,7 @@ type NewLocationFormProps = {
   // ✨ NEW: Prop to identify if the form is for a sub-location
   isSubLocation?: boolean;
   fetchLocations: () => void;
+  fetchLocationById: () => void;
 };
 
 export function NewLocationForm({
@@ -39,6 +40,7 @@ export function NewLocationForm({
   initialParentId,
   isSubLocation = false, // ✅ Use new prop
   fetchLocations,
+  fetchLocationById,
 }: NewLocationFormProps) {
   const [pictures, setPictures] = useState<File[]>([]);
   const [attachedDocs, setAttachedDocs] = useState<File[]>([]);
@@ -146,7 +148,8 @@ export function NewLocationForm({
           isSubLocation ? "Sub-location added!" : "Location created!"
         );
         // ✅ CHANGE 3: Call onCreate for CREATION
-        isSubLocation ? null : onCreate(res);
+        isSubLocation ? fetchLocationById(res?.id) : onCreate(res);
+        // fetchLocationById(res?.id);
       }
       fetchLocations();
       onCancel();

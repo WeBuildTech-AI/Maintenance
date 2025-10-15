@@ -308,10 +308,14 @@ export function Locations() {
       .join("")
       .toUpperCase();
 
-
   const fetchLocationById = (id) => {
-      
-  }
+    // try {
+    //   const res = locationService.fetchLocationById(id);
+    //   // setSelectedLocation(res);
+    // } catch (err) {
+    //   toast.error("Data is not Fetch Successfully");
+    // }
+  };
 
   // -------------------- JSX Rendering --------------------
 
@@ -519,7 +523,7 @@ export function Locations() {
                                   {items.children &&
                                     items.children.length > 0 && (
                                       <button
-                                        onClick={() => alert("sidit")}
+                                        // onClick={() => alert("sidit")}
                                         className="text-sm text-orange-600 cursor-pointer"
                                       >
                                         <p>
@@ -595,6 +599,7 @@ export function Locations() {
                       editData={locationToEdit}
                       initialParentId={parentIdFromUrl}
                       isSubLocation={!!isCreateSubLocationRoute}
+                      fetchLocationById={fetchLocationById}
                     />
                   ) : selectedLocation ? (
                     <LocationDetails

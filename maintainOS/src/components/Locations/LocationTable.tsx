@@ -84,7 +84,7 @@ export function LocationTable({
                     {location.teamsInCharge || "-"}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
-                    {location.vendorIds || "-"}
+                    {location.vendor && location.vendorId.name || "-"}
                   </td>
                 </tr>
               ))}

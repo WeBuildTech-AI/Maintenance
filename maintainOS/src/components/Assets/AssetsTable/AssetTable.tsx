@@ -54,21 +54,21 @@ export function AssetTable({
 
                   {/* ID */}
                   <td className="px-4 py-3 text-muted-foreground">
-                    {asset.id}
+                    {asset.id || "-"}
                   </td>
 
                   {/* Status */}
                   <td className="px-4 py-3">
                     <span
                       className={`inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium ${
-                        asset.isOnline
+                        asset.status
                           ? "bg-green-100 text-green-700"
                           : "bg-red-100 text-red-700"
                       }`}
                     >
                       <span
                         className={`h-2 w-2 rounded-full ${
-                          asset.isOnline ? "bg-green-500" : "bg-red-500"
+                          asset.status ? "bg-green-500" : "bg-red-500"
                         }`}
                       />
                       {asset.status ?? "—"}
@@ -77,22 +77,22 @@ export function AssetTable({
 
                   {/* Location */}
                   <td className="px-4 py-3 text-muted-foreground">
-                    {asset.location}
+                    {(asset.location && asset.location.name) || "-"}
                   </td>
 
                   {/* Criticality */}
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {asset.criticality}
+                  <td className="px-4 py-3 cursor-pointer text-muted-foreground">
+                    {asset.criticality || "-"}
                   </td>
 
                   {/* Manufacturer */}
                   <td className="px-4 py-3 text-muted-foreground">
-                    {asset.manufacturer}
+                    {asset.manufacturer || "-"}
                   </td>
 
                   {/* Model */}
                   <td className="px-4 py-3 text-muted-foreground">
-                    {asset.model}
+                    {asset.model || "-"}
                   </td>
                 </tr>
               ))}
