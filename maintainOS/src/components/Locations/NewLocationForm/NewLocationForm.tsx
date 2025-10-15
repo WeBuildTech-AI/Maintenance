@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import { PicturesUpload } from "./PicturesUpload";
 import { AddressAndDescription } from "./AddressAndDescription";
 import { QrCodeSection } from "./QrCodeSection";
@@ -12,30 +12,33 @@ import { Dropdowns } from "./Dropdowns";
 import { FooterActions } from "./FooterActions";
 
 import type { RootState, AppDispatch } from "../../../store";
-import { createLocation, updateLocation } from "../../../store/locations"; // ✅ added update
-import type {
-  CreateLocationData,
-  LocationResponse,
-} from "../../../store/locations";
+import { createLocation, updateLocation } from "../../../store/locations";
+import type { LocationResponse } from "../../../store/locations";
 
+// ✅ CHANGE 1: Updated props to be more specific
 type NewLocationFormProps = {
   onCancel: () => void;
-  setSelectedLocation: (id: string) => void;
+  // This is called when a NEW item (root or sub) is created
+  onCreate: (locationData: LocationResponse) => void;
+  // This is called ONLY when an existing item is successfully updated
   onSuccess: (locationData: LocationResponse) => void;
-  setShowForm: (show: boolean) => void;
-  isEdit?: boolean; // ✅ new
-  editData?: LocationResponse | null; // ✅ new
-  initialParentId?: string; // ✅ new
+  isEdit?: boolean;
+  editData?: LocationResponse | null;
+  initialParentId?: string;
+  // ✨ NEW: Prop to identify if the form is for a sub-location
+  isSubLocation?: boolean;
+  fetchLocations: () => void;
 };
 
 export function NewLocationForm({
   onCancel,
-  setSelectedLocation,
+  onCreate, // ✅ Use new prop
   onSuccess,
-  setShowForm,
   isEdit = false,
   editData = null,
   initialParentId,
+  isSubLocation = false, // ✅ Use new prop
+  fetchLocations,
 }: NewLocationFormProps) {
   const [pictures, setPictures] = useState<File[]>([]);
   const [attachedDocs, setAttachedDocs] = useState<File[]>([]);
@@ -49,7 +52,6 @@ export function NewLocationForm({
   const [vendorId, setVendorId] = useState<string[]>([]);
   const [parentLocationId, setParentLocationId] = useState("");
 
-  // Dropdown states
   const [teamOpen, setTeamOpen] = useState(false);
   const [vendorOpen, setVendorOpen] = useState(false);
   const [parentOpen, setParentOpen] = useState(false);
@@ -62,7 +64,7 @@ export function NewLocationForm({
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector((state: RootState) => state.auth.user);
 
-  // ✅ Pre-fill fields if editing
+  // Pre-fill fields if editing (no changes here)
   useEffect(() => {
     if (isEdit && editData) {
       setName(editData.name);
@@ -71,19 +73,20 @@ export function NewLocationForm({
       setQrCode(editData.qrCode || "");
       setVendorId(editData.vendorIds || []);
       setParentLocationId(editData.parentLocationId || "");
-      setPictures(editData.photoUrls || []);
-      // pictures, attachedDocs, teamInCharge can be mapped if available in API
+      // Note: mapping `photoUrls` to `File[]` is complex.
+      // This line might need adjustment if `editData.photoUrls` is not an array of File objects.
+      // setPictures(editData.photoUrls || []);
     }
   }, [isEdit, editData]);
 
+  // Pre-fill parent ID for sub-locations (no changes here)
   useEffect(() => {
-    // If we are creating a sub-location, pre-fill the parent ID
     if (initialParentId && !isEdit) {
       setParentLocationId(initialParentId);
     }
   }, [initialParentId, isEdit]);
 
-  // Click outside handler
+  // Click outside handler (no changes here)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (teamRef.current && !teamRef.current.contains(event.target as Node))
@@ -103,41 +106,29 @@ export function NewLocationForm({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Create / Update location handler
-
   const handleSubmitLocation = async () => {
     if (!user) return;
-
-    // --- Better Validation (See explanation below) ---
-    // Check for required fields first. Let's assume 'name' is required.
     if (!name || !name.trim()) {
       toast.error("Location Name is required.");
-      return; // Stop the function here
+      return;
     }
 
     setSubmitLocationFormLoader(true);
-
     const formData = new FormData();
 
-    // ✅ Append basic fields ONLY if they have a value
+    // Append fields logic is correct
     formData.append("organizationId", user.organizationId || "");
-    formData.append("name", name); // Name is required, so we always send it.
-
+    formData.append("name", name);
     if (address) formData.append("address", address);
     if (description) formData.append("description", description);
     if (parentLocationId) formData.append("parentLocationId", parentLocationId);
     if (qrCode) formData.append("qrCode", qrCode);
     formData.append("createdBy", user.id);
-
-    // ✅ This logic for arrays is already correct because it checks the length
     if (Array.isArray(vendorId) && vendorId.length > 0) {
       vendorId.forEach((id) => formData.append("vendorIds[]", id));
     }
-
     if (pictures.length > 0) {
-      pictures.forEach((pic) => {
-        formData.append("photos", pic);
-      });
+      pictures.forEach((pic) => formData.append("photos", pic));
     }
 
     try {
@@ -147,34 +138,49 @@ export function NewLocationForm({
           updateLocation({ id: editData.id, locationData: formData })
         ).unwrap();
         toast.success("Location updated successfully");
+        // ✅ CHANGE 3: Call onSuccess for UPDATES
+        onSuccess(res);
       } else {
         res = await dispatch(createLocation(formData)).unwrap();
-        toast.success("Location created successfully");
+        toast.success(
+          isSubLocation ? "Sub-location added!" : "Location created!"
+        );
+        // ✅ CHANGE 3: Call onCreate for CREATION
+        isSubLocation ? null : onCreate(res);
       }
-      // ... (rest of your success logic remains the same)
-      onSuccess(res);
-      // fetchLocations(); // Refresh the locations list
-      // setSelectedLocation(res.id);
-      // onCancel
-    } catch (err) {
+      fetchLocations();
+      onCancel();
+    } catch (err: any) {
       console.error("Failed to submit location:", err);
-      toast.error(err);
+      toast.error(err.message || "An error occurred.");
     } finally {
       setSubmitLocationFormLoader(false);
     }
   };
+
+  // ✅ CHANGE 2: Dynamic title and button text based on context
+  const title = isEdit
+    ? "Update Location Details"
+    : isSubLocation
+    ? "Add New Sub-Location"
+    : "Create New Location";
+
+  const buttonText = isEdit
+    ? "Save Changes"
+    : isSubLocation
+    ? "Add Sub-Location"
+    : "Create Location";
 
   return (
     <>
       <div className="flex flex-col h-full overflow-hidden">
         {/* Header */}
         <div className="p-4 border-b flex-none">
-          <h2 className="text-lg font-semibold">
-            {isEdit ? "Edit Location" : "New Location"}
-          </h2>
+          {/* Use the dynamic title */}
+          <h2 className="text-lg font-semibold">{title}</h2>
         </div>
 
-        {/* Scrollable content */}
+        {/* Scrollable content (no changes needed in the form fields) */}
         <div className="flex-1 overflow-y-auto p-4 space-y-6 min-h-0 mb-2">
           {/* Location Name */}
           <div className="space-y-1">
@@ -186,19 +192,13 @@ export function NewLocationForm({
               className="w-full px-0 py-2 p-3 text-gray-400 placeholder-gray-400 bg-transparent border-0 border-b-4 border-blue-500 focus:outline-none"
             />
           </div>
-
-          {/* Pictures Upload */}
           <PicturesUpload pictures={pictures} setPictures={setPictures} />
-
-          {/* Address + Description */}
           <AddressAndDescription
             address={address}
             setAddress={setAddress}
             description={description}
             setDescription={setDescription}
           />
-
-          {/* Teams Dropdown */}
           <Dropdowns
             stage="teams"
             open={teamOpen}
@@ -210,17 +210,11 @@ export function NewLocationForm({
               setTeamInCharge(Array.isArray(val) ? val : [val])
             }
           />
-
-          {/* QR Code Section */}
           <QrCodeSection qrCode={qrCode} setQrCode={setQrCode} />
-
-          {/* Attached Docs */}
           <FilesUpload
             attachedDocs={attachedDocs}
             setAttachedDocs={setAttachedDocs}
           />
-
-          {/* Vendors Dropdown */}
           <Dropdowns
             stage="vendors"
             open={vendorOpen}
@@ -230,8 +224,6 @@ export function NewLocationForm({
             value={vendorId}
             onSelect={(val) => setVendorId(Array.isArray(val) ? val : [val])}
           />
-
-          {/* Parent Location Dropdown */}
           <Dropdowns
             stage="parent"
             open={parentOpen}
@@ -240,15 +232,20 @@ export function NewLocationForm({
             navigate={navigate}
             value={parentLocationId}
             onSelect={(val) => setParentLocationId(val as string)}
+            // You might want to disable this dropdown if editing or creating a sub-location
+            disabled={isEdit || isSubLocation}
           />
         </div>
 
         {/* Footer Actions */}
         <FooterActions
           onCancel={onCancel}
-          onCreate={handleSubmitLocation} // ✅ unified handler
+          onCreate={handleSubmitLocation}
           submitLocationFormLoader={submitLocationFormLoader}
-          isEdit={isEdit} // ✅ pass flag
+          isEdit={isEdit}
+          // ✨ NEW: Pass the dynamic button text to the footer
+          // (You will need to update the FooterActions component to accept this prop)
+          buttonText={buttonText}
         />
       </div>
     </>

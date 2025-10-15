@@ -7,6 +7,7 @@ import { renderInitials } from "../../utils/renderInitials";
 import Loader from "../../Loader/Loader";
 import { teamService } from "../../../store/teams";
 import EditUser from "./EditUser";
+import toast from "react-hot-toast";
 
 // Assuming your userService has a method like this.
 // You'll need to create it if it doesn't exist.
@@ -107,15 +108,26 @@ function ManageUser() {
     }
     setLoading(true);
     setError(null);
+
+    // 1. Create the payload object from your form's state
+    const updatePayload = {
+      // Combine first and last name into a single fullName field
+      fullName: `${formData.firstName} ${formData.lastName}`.trim(),
+      email: formData.email,
+      phoneNumber: formData.phoneNumber,
+    };
+
     try {
-      // Assuming you have an `updateUser` method in your userService
-      await userService.updateUser(id, formData);
-      alert("User updated successfully!"); // Or use a toast notification
-      fetchUserById();
+      // 2. Pass the payload to your update service function
+      await userService.updateUser(id, updatePayload);
+
+      toast.success("User updated successfully!"); // Or use a toast notification
+      fetchUserById(); // Refetch the data to show the latest changes
       setViewMode("RecentActivity"); // Go back to the activity view
     } catch (err) {
       console.error("Failed to update user:", err);
       setError("Failed to update user. Please try again.");
+      toast.error("Failed to update user. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -238,8 +250,14 @@ function ManageUser() {
           <div className="w-half ">
             {viewMode === "EditAccount" && (
               <>
-               <EditUser formData={formData} setViewMode={setViewMode} handleInputChange={handleInputChange} handleResend={handleResend} 
-               handleUpdate={handleUpdate} loading={loading} />
+                <EditUser
+                  formData={formData}
+                  setViewMode={setViewMode}
+                  handleInputChange={handleInputChange}
+                  handleResend={handleResend}
+                  handleUpdate={handleUpdate}
+                  loading={loading}
+                />
               </>
             )}
 

@@ -58,7 +58,9 @@ export function MeterCard({
               <div className="w-5 h-5 bg-orange-100 rounded flex items-center justify-center">
                 <Building2 className="h-3 w-3 text-orange-600" />
               </div>
-              <span className="capitalize">{meter.assetId}</span>
+              <span className="capitalize">
+                {meter.asset && meter.asset.name}
+              </span>
             </div>
           )}
 
@@ -67,7 +69,9 @@ export function MeterCard({
               <div className="w-5 h-5 bg-gray-200 rounded flex items-center justify-center">
                 <span className="text-xs">📍</span>
               </div>
-              <span>{meter.locationId}</span>
+              <span className="capitalize">
+                {meter.location && meter.location.name}
+              </span>
             </div>
           )}
         </div>

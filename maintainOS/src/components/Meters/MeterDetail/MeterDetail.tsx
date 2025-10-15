@@ -94,13 +94,13 @@ export function MeterDetail({ selectedMeter, handleDeleteMeter }: any) {
           {selectedMeter?.assetId && (
             <div className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
-              <span>{selectedMeter.assetId}</span>
+              <span>{selectedMeter.asset && selectedMeter.asset.name}</span>
             </div>
           )}
           {selectedMeter?.locationId && (
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
-              <span>{selectedMeter.locationId}</span>
+              <span>{selectedMeter.location && selectedMeter.location.name}</span>
             </div>
           )}
         </div>

@@ -15,29 +15,22 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
 import { NewLocationForm } from "./NewLocationForm/NewLocationForm";
 import { deleteLocation, locationService } from "../../store/locations";
 import type { LocationResponse } from "../../store/locations";
 import type { ViewMode } from "../purchase-orders/po.types";
 import { LocationHeaderComponent } from "./LocationsHeader";
 import Loader from "../Loader/Loader";
-import { formatDate } from "../utils/Date";
+
 import { LocationTable } from "./LocationTable";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 // import { sortLocations } from "../utils/Sorted"; // REMOVED: No longer needed
 import type { AppDispatch, RootState } from "../../store";
 import { useDispatch, useSelector } from "react-redux";
-import { NavLink, useNavigate, useMatch } from "react-router-dom";
-import { SubLocationModal } from "./SubLocationModel";
+import { useNavigate, useMatch } from "react-router-dom";
+
 import toast, { Toaster } from "react-hot-toast";
-import QRCode from "react-qr-code";
-import LocationDetails from "./locationDetails";
+import LocationDetails from "./LocationDetails";
 
 export function Locations() {
   const hasFetched = useRef(false);
@@ -89,12 +82,44 @@ export function Locations() {
     navigate("/locations");
   };
 
-  const handleCreateForm = (newLocation: LocationResponse) => {
+  const handleShowNewSubLocationForm = () => {
+    if (selectedLocation) {
+      navigate(`/locations/${selectedLocation.id}/create-sublocation`);
+    }
+  };
+
+  const handleRootLocationCreate = (newLocation: LocationResponse) => {
     const updatedLocations = [newLocation, ...locations];
     setLocations(updatedLocations);
     setFilteredLocations(updatedLocations);
     setSelectedLocation(newLocation);
     navigate("/locations");
+  };
+
+  const handleSubLocationCreated = (newSubLocation: LocationResponse) => {
+    const parentId = newSubLocation.parentId;
+    if (!parentId) return; // Safety check
+
+    // Find the parent in the state and add the new sub-location to its children
+    const updatedLocations = locations.map((loc) => {
+      if (loc.id === parentId) {
+        // Create a new children array with the new sub-location
+        const updatedChildren = [...(loc.children || []), newSubLocation];
+        return { ...loc, children: updatedChildren };
+      }
+      return loc;
+    });
+
+    setLocations(updatedLocations);
+
+    // Find the updated parent to set it as the selected location
+    const updatedParent = updatedLocations.find((loc) => loc.id === parentId);
+    if (updatedParent) {
+      setSelectedLocation(updatedParent);
+    }
+
+    toast.success("Sub-location added successfully!");
+    navigate(`/locations/${parentId}`); // Navigate back to the parent's detail view
   };
 
   const handleFormSuccess = (locationData: LocationResponse) => {
@@ -282,6 +307,11 @@ export function Locations() {
       .slice(0, 2)
       .join("")
       .toUpperCase();
+
+
+  const fetchLocationById = (id) => {
+      
+  }
 
   // -------------------- JSX Rendering --------------------
 
@@ -553,18 +583,27 @@ export function Locations() {
                   {isCreateRoute || isEditRoute || isCreateSubLocationRoute ? (
                     <NewLocationForm
                       onCancel={handleCancelForm}
-                      onCreate={handleCreateForm}
+                      onCreate={
+                        isCreateSubLocationRoute
+                          ? handleSubLocationCreated
+                          : handleRootLocationCreate
+                      }
                       setSelectedLocation={setSelectedLocation}
                       onSuccess={handleFormSuccess}
+                      fetchLocations={fetchLocations}
                       isEdit={isEditMode}
                       editData={locationToEdit}
                       initialParentId={parentIdFromUrl}
+                      isSubLocation={!!isCreateSubLocationRoute}
                     />
                   ) : selectedLocation ? (
                     <LocationDetails
                       selectedLocation={selectedLocation}
                       onEdit={(v) => navigate(`/vendors/${v.id}/edit`)}
                       handleDeleteLocation={handleDeleteLocation}
+                      handleShowNewSubLocationForm={
+                        handleShowNewSubLocationForm
+                      }
                       user={user}
                     />
                   ) : (
