@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Package } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import toast from "react-hot-toast";
 
 import { AssetNameInput } from "./fields/AssetNameInput";
 import { PicturesUpload } from "./fields/PicturesUpload";
@@ -20,44 +23,44 @@ import { VendorsDropdown } from "./dropdowns/VendorsDropdown";
 import { PartsDropdown } from "./dropdowns/PartsDropdown";
 import { ParentAssetDropdown } from "./dropdowns/ParentAssetDropdown";
 import { FooterActions } from "./FooterActions";
-import { useNavigate } from "react-router-dom";
+
 import {
   createAsset,
   updateAsset,
   type CreateAssetData,
 } from "../../../store/assets";
 import type { AppDispatch, RootState } from "../../../store";
-import { useDispatch, useSelector } from "react-redux";
-import toast from "react-hot-toast";
-import { stat } from "fs";
 
-interface NewAssetFormProps {
-  isEdit?: boolean; // To check if we are in edit mode
-  assetData?: Asset | null;
-  onCreate: (newAsset: Asset) => void;
-  onCancel?: () => void;
-}
+// ✅ Define a reusable type for objects with id and name
+type SelectableItem = {
+  id: number | string;
+  name: string;
+};
 
+// This interface seems correct based on your usage
 interface Asset {
   id: number | string;
   name: string;
-  location: {
-    id: number | string;
-    name: string;
-  };
+  location: SelectableItem;
   criticality?: string;
   description?: string;
   year?: string | number;
   manufacturer?: string;
   model?: string;
   serialNumber?: string;
-  teams?: Array<{ id: number | string; name: string }>;
+  teams?: SelectableItem[];
   qrCode?: string;
   assetType?: string;
-  vendor?: { id: number | string; name: string };
-  parts?: Array<{ id: number | string; name: string }>;
-  parentAsset?: { id: number | string; name: string };
-  // Add other properties as needed
+  vendor?: SelectableItem;
+  parts?: SelectableItem[];
+  parentAsset?: SelectableItem;
+}
+
+interface NewAssetFormProps {
+  isEdit?: boolean;
+  assetData?: Asset | null;
+  onCreate: (newAsset: Asset) => void;
+  onCancel?: () => void;
 }
 
 export function NewAssetForm({
@@ -67,25 +70,34 @@ export function NewAssetForm({
   onCancel,
 }: NewAssetFormProps) {
   const [assetName, setAssetName] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState("");
+  // ✅ Explicitly type your state for single-item selections
+  const [selectedLocation, setSelectedLocation] =
+    useState<SelectableItem | null>(null);
   const [criticality, setCriticality] = useState("");
   const [description, setDescription] = useState("");
   const [year, setYear] = useState("");
   const [selectedManufacture, setSelectedManufacture] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
   const [serialNumber, setSerialNumber] = useState("");
-  const [selectedTeamInCharge, setSelectedTeamInCharge] = useState([]);
+  // ✅ Explicitly type your state for multi-item selections
+  const [selectedTeamInCharge, setSelectedTeamInCharge] = useState<
+    SelectableItem[]
+  >([]);
   const [qrCode, setQrCode] = useState("");
   const [selectedAssetType, setSelectedAssetType] = useState("");
-  const [selectedVendorId, setSelectedvendorId] = useState("");
-  const [selectedParts, setSelectedParts] = useState([]);
-  const [selectedParentAssets, setSelectedParentAssets] = useState("");
+  const [selectedVendorId, setSelectedvendorId] =
+    useState<SelectableItem | null>(null);
+  const [selectedParts, setSelectedParts] = useState<SelectableItem[]>([]);
+  const [selectedParentAssets, setSelectedParentAssets] =
+    useState<SelectableItem | null>(null);
+
   const [locationOpen, setLocationOpen] = useState(false);
   const [partOpen, setPartOpen] = useState(false);
   const [vendorOpen, setVendorOpen] = useState(false);
   const [teamOpen, setTeamsOpen] = useState(false);
   const [parentAssetOpen, setParentAssetOpen] = useState(false);
   const [status, setStatus] = useState("online");
+
   const LocationRef = useRef<HTMLDivElement>(null);
   const teamRef = useRef<HTMLDivElement>(null);
   const partRef = useRef<HTMLDivElement>(null);
@@ -100,100 +112,79 @@ export function NewAssetForm({
   useEffect(() => {
     if (isEdit && assetData) {
       setAssetName(assetData.name || "");
+      // ✅ Ensure the data you set matches the state's type
       setSelectedLocation(assetData.location || null);
       setCriticality(assetData.criticality || "");
       setDescription(assetData.description || "");
       setSerialNumber(assetData.serialNumber || "");
-      setSelectedTeamInCharge(assetData.teams || []); // Adjust based on your data structure
+      setSelectedTeamInCharge(assetData.teams || []);
       setQrCode(assetData.qrCode || "");
       setSelectedAssetType(assetData.assetType || "");
       setSelectedvendorId(assetData.vendor || null);
       setSelectedParts(assetData.parts || []);
+      setSelectedParentAssets(assetData.parentAsset || null);
     }
   }, [isEdit, assetData]);
 
   const handleCreate = () => {
-    // 1. Basic validation for the required field
     if (!assetName.trim()) {
       setError("You need to provide an Asset Name");
       return;
     }
+    setError("");
 
-    // 2. Start building the payload with only the mandatory fields
-    // Using 'Partial' tells TypeScript that we are building the object piece by piece.
     const payload: Partial<CreateAssetData> = {
       organizationId: user?.organizationId,
       name: assetName.trim(),
     };
 
-    // 3. Conditionally add other fields to the payload ONLY if they have a value
-    if (selectedLocation?.id) {
-      payload.locationId = selectedLocation.id;
-    }
-    if (criticality) {
-      payload.criticality = criticality;
-    }
-    if (description.trim()) {
-      payload.description = description;
-    }
-    if (year) {
-      // Assuming year is a string or number
-      payload.year = year;
-    }
-    if (selectedManufacture) {
-      payload.manufacturer = selectedManufacture;
-    }
-    if (selectedModel) {
-      payload.model = selectedModel;
-    }
-    if (serialNumber.trim()) {
-      payload.serialNumber = serialNumber;
-    }
+    if (selectedLocation?.id) payload.locationId = selectedLocation.id;
+    if (criticality) payload.criticality = criticality;
+    if (description.trim()) payload.description = description;
+    if (year) payload.year = year;
+    if (selectedManufacture) payload.manufacturer = selectedManufacture;
+    if (selectedModel) payload.model = selectedModel;
+    if (serialNumber.trim()) payload.serialNumber = serialNumber;
+    if (qrCode.trim()) payload.qrCode = qrCode;
+    if (selectedAssetType) payload.assetTypeId = selectedAssetType;
+    if (selectedVendorId?.id) payload.vendorId = selectedVendorId.id;
+    if (selectedParentAssets?.id)
+      payload.parentAssetId = selectedParentAssets.id;
+    if (status) payload.status = status;
+
+    // ✅ This mapping will now work correctly because the state is properly typed
     if (selectedTeamInCharge?.length > 0) {
-      payload.teamsInCharge = selectedTeamInCharge;
+      payload.teamsInCharge = selectedTeamInCharge.map((team) => team.id);
     }
-    if (qrCode.trim()) {
-      payload.qrCode = qrCode;
-    }
-    if (selectedAssetType) {
-      payload.assetTypeId = selectedAssetType;
-    }
-    if (selectedVendorId?.id) {
-      payload.vendorId = selectedVendorId.id;
-    }
-    // Correctly handle an array of parts by mapping over them
+
     if (selectedParts?.length > 0) {
       payload.partIds = selectedParts.map((part) => part.id);
     }
-    if (selectedParentAssets?.id) {
-      payload.parentAssetId = selectedParentAssets.id;
-    }
 
-    if (status) {
-      payload.status = status;
-    }
+    console.log("Final Payload:", payload);
 
     if (isEdit && assetData?.id) {
-      // We are editing: dispatch the update action
       dispatch(updateAsset({ id: assetData.id, assetData: payload }))
         .unwrap()
         .then((res) => {
-          toast.success("Successfully Update the Asset");
-          onCreate(res); // Call the success callback
+          toast.success("Successfully Updated the Asset");
+          onCreate(res);
         })
         .catch((err) => {
-          setError(err || "Failed to update asset");
-          toast.error(err || "Failed to update asset");
+          const errorMessage = err.message || "Failed to update asset";
+          setError(errorMessage);
+          toast.error(errorMessage);
         });
     } else {
-      dispatch(createAsset(payload as CreateAssetData)) // We cast it back to the full type here
+      dispatch(createAsset(payload as CreateAssetData))
         .unwrap()
         .then((res) => {
-          toast.success("Successfully Create the Asset");
+          toast.success("Successfully Created the Asset");
           onCreate(res);
-          // Reset all form fields
+
+          // Reset form
           setAssetName("");
-          setSelectedLocation(null); // Recommended to reset objects to null
+          setSelectedLocation(null);
           setCriticality("");
           setDescription("");
           setYear("");
@@ -203,22 +194,27 @@ export function NewAssetForm({
           setSelectedTeamInCharge([]);
           setQrCode("");
           setSelectedAssetType("");
-          setSelectedvendorId(null); // Recommended to reset objects to null
+          setSelectedvendorId(null);
           setSelectedParts([]);
-          setSelectedParentAssets(null); // Recommended to reset objects to null
+          setSelectedParentAssets(null);
         })
         .catch((err) => {
-          setError(err || "Failed to create asset");
-          toast.error(err || "Failed to create asset");
+          const errorMessage = err.message || "Failed to create asset";
+          setError(errorMessage);
+          toast.error(errorMessage);
         });
     }
   };
 
+  console.log(selectedParts, "selectedPart");
+
   return (
-    <div className="flex h-full flex-col overflow-hidden  border">
+    <div className="flex h-full flex-col overflow-hidden border">
       {/* Header */}
       <div className="flex-none border-b px-6 py-4">
-        <h2 className="text-xl font-semibold">New Asset</h2>
+        <h2 className="text-xl font-semibold">
+          {isEdit ? "Edit Asset" : "New Asset"}
+        </h2>
       </div>
       {/* Scrollable content */}
       <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-6">

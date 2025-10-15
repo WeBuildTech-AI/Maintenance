@@ -1,4 +1,12 @@
-import { Edit, MoreHorizontal, Link as LinkIcon, Delete } from "lucide-react";
+import {
+  Edit,
+  MoreHorizontal,
+  Link as LinkIcon,
+  Delete,
+  Plus,
+  MapPin,
+  ChevronRight,
+} from "lucide-react";
 import React from "react";
 import toast from "react-hot-toast";
 import { Link, NavLink, useNavigate } from "react-router-dom";
@@ -42,6 +50,7 @@ interface LocationDetailsProps {
     email: string;
   } | null;
   onEdit?: (location: Location) => void;
+  handleShowNewSubLocationForm;
 }
 
 const LocationDetails: React.FC<LocationDetailsProps> = ({
@@ -49,6 +58,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
   handleDeleteLocation,
   user,
   onEdit,
+  handleShowNewSubLocationForm,
 }) => {
   const navigate = useNavigate(); // ✅ Fixed: add parentheses to call the hook
   const [openDeleteModal, setOpenDeleteModal] = React.useState(false);
@@ -155,10 +165,66 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
 
         <hr className="my-4" />
 
-        <div className="mb-6 mt-2">
-          <h3 className="text-sm font-medium text-gray-700">
-            Sub-Locations ({selectedLocation?.children?.length || 0})
-          </h3>
+        <div>
+          {/* Check if there are no sub-locations */}
+          {Array.isArray(selectedLocation?.children) &&
+          selectedLocation.children.length === 0 ? (
+            <div className="mb-6 mt-2">
+              <h3 className="text-sm font-medium text-gray-700">
+                Sub-Locations ({selectedLocation?.children?.length || 0})
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Add sub elements inside this Location
+              </p>
+
+              <button
+                onClick={handleShowNewSubLocationForm}
+                className="mt-2 cursor-pointer text-sm text-orange-600 hover:underline"
+              >
+                Create Sub-Location
+              </button>
+            </div>
+          ) : (
+            <div className="bg-white max-h-48 mt-2 p-">
+              <div className="max-w-4xl">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-sm font-semibold text-gray-900">
+                    Sub-Locations ({selectedLocation?.children?.length || 0})
+                  </h2>
+                  <button
+                    onClick={handleShowNewSubLocationForm}
+                    className="flex items-center gap-2 text-orange-600 text-sm cursor-pointer font-medium transition-colors"
+                  >
+                    <div className="w-4 h-4 rounded-full border-2 border-blue-600 flex items-center justify-center">
+                      <Plus className="w-3 h-3" />
+                    </div>
+                    Create Sub-Location
+                  </button>
+                </div>
+
+                {/* Location List */}
+                <div className="divide-y divide-gray-200 mb-4">
+                  {Array.isArray(selectedLocation?.children) &&
+                    selectedLocation.children.map((location) => (
+                      <button
+                        key={location?.id || Math.random()}
+                        // onClick={() => handleLocationClick(location?.name)}
+                        className="w-full flex items-center justify-between py-2  hover:bg-gray-50 transition-colors group"
+                      >
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-3 h-3 text-orange-600" />
+                          <span className="text-gray-900 text-sm">
+                            {location?.name || "Unnamed Location"}
+                          </span>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                      </button>
+                    ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <hr className="my-4" />

@@ -8,15 +8,9 @@ export function AssetLocation({
   allLocationData?: { name: string }[];
 }) {
   const locationName = Array.isArray(allLocationData)
-    ? allLocationData.find(
-        (loc) => String(loc.id) === String(asset.locationId)
-      )?.name
+    ? allLocationData.find((loc) => String(loc.id) === String(asset.locationId))
+        ?.name
     : null;
-
-  console.log("AssetLocation - locationName:", locationName);
-  console.log(allLocationData , "location Data");
-
-  console.log(asset.locationId , "asset locationId");
 
   return (
     <div>

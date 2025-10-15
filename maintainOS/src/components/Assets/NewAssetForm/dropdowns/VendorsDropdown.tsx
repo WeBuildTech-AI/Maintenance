@@ -90,7 +90,6 @@ export function VendorsDropdown({
                     onClick={() => {
                       setSelectedvendorId(loc);
                       setVendorOpen(false);
-                      alert(loc.id);
                     }}
                   >
                     {loc.name}

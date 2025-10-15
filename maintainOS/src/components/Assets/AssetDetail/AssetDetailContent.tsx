@@ -7,7 +7,7 @@ import { AssetLocation } from "./sections/AssetLocation";
 import { AssetManufacturer } from "./sections/AssetManufacturer";
 // import { AssetModel } from "./sections/AssetModel";
 import { AssetQrCode } from "./sections/AssetQrCode";
-// import { AssetStatusReadings } from "./sections/AssetStatusReadings";
+import { AssetStatusReadings } from "./sections/AssetStatusReadings";
 import { AssetSubAssets } from "./sections/AssetSubAssets";
 import { AssetVendor } from "./sections/AssetVendor";
 // import { AssetWorkOrders } from "./sections/AssetWorkOrders";
@@ -19,7 +19,8 @@ export function AssetDetailContent(
   console.log("AssetDetailContent - allLocationData:", allLocationData);
   return (
     <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-6">
-      {/* <AssetStatusReadings asset={asset} /> */}
+      <AssetStatusReadings asset={asset} />
+      {/* <AssetStatus asset={asset} /> */}
       <AssetLocation asset={asset} allLocationData={allLocationData} />
       <AssetCriticality asset={asset} />
       <AssetManufacturer asset={asset} />

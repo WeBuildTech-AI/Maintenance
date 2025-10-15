@@ -9,6 +9,7 @@ type FooterActionsProps = {
   onCreate: () => void;
   submitLocationFormLoader: boolean; // boolean flag
   isEdit?: boolean; // ✅ new optional prop
+  buttonText: () => void;
 };
 
 export function FooterActions({
@@ -16,6 +17,7 @@ export function FooterActions({
   onCreate,
   submitLocationFormLoader,
   isEdit = false, // ✅ default false
+  buttonText,
 }: FooterActionsProps) {
   const navigate = useNavigate();
 
@@ -26,7 +28,7 @@ export function FooterActions({
           className="gap-2 bg-white cursor-pointer text-orange-600 border border-orange-600 hover:bg-orange-50"
           onClick={() => {
             onCancel();
-            navigate("/meters");
+            navigate("/locations");
           }}
         >
           Cancel
@@ -37,7 +39,7 @@ export function FooterActions({
           onClick={onCreate}
           disabled={submitLocationFormLoader} // disable while submitting
         >
-          {submitLocationFormLoader ? <Loader /> : isEdit ? "Update" : "Create"}
+          {submitLocationFormLoader ? <Loader /> : buttonText}
         </Button>
       </div>
     </div>

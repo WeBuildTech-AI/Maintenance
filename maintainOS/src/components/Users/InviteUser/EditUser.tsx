@@ -80,7 +80,7 @@ const EditUser: React.FC<EditUserProps> = ({
 
             <div>
               <label className="block text-sm font-normal text-gray-900 mb-2">
-                Phone Number{" "}
+                Phone Number
                 <span className="text-gray-500 font-normal">(required)</span>
               </label>
               <input
