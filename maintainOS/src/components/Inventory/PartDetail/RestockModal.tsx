@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { X, MapPin, Camera } from "lucide-react";
 import { createPortal } from "react-dom";
+import { useDispatch } from "react-redux";
+import { AppDispatch } from "../../../store";
+import { restockPart } from "../../../store/parts/parts.thunks";
+
 
 interface RestockModalProps {
   isOpen: boolean;
@@ -15,6 +19,7 @@ export default function RestockModal({ isOpen, onClose, onConfirm, part }: Resto
   const [note, setNote] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
+  const dispatch = useDispatch<AppDispatch>();
 
   // 🟢 Log received part data
   useEffect(() => {
@@ -49,11 +54,41 @@ export default function RestockModal({ isOpen, onClose, onConfirm, part }: Resto
   const increment = () => setQuantity((p) => p + 1);
   const decrement = () => setQuantity((p) => Math.max(0, p - 1));
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     console.log("🧾 Confirm clicked:", { quantity, location, note });
     onConfirm({ quantity, location, note });
-    setQuantity(0);
-    setNote("");
+
+    // ✅ RESTOCK API CALL
+    try {
+      if (!part?.id) {
+        toast.error("No part selected");
+        return;
+      }
+
+      const selectedLoc = part.locations?.find(
+        (loc: any) => loc.name === location || loc.locationName === location
+      );
+      const locationId = selectedLoc?.id || selectedLoc?.locationId;
+      if (!locationId) {
+        toast.error("Location ID not found");
+        return;
+      }
+
+      await dispatch(
+        restockPart({
+          partId: part.id,
+          locationId,
+          addedUnits: quantity,
+        })
+      ).unwrap();
+
+      toast.success(`✅ Successfully restocked ${quantity} units of ${part.name}`);
+      setQuantity(0);
+      setNote("");
+      onClose();
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to restock part");
+    }
   };
 
   if (!isOpen) return null;
@@ -227,8 +262,7 @@ export default function RestockModal({ isOpen, onClose, onConfirm, part }: Resto
               >
                 {(part?.locations?.length
                   ? part.locations
-                  : [{ name: "General" }]
-                ).map((loc: any, i: number) => {
+                  : [{ name: "General" }]).map((loc: any, i: number) => {
                   const locName = loc.name || loc.locationName || "General";
                   return (
                     <div
@@ -294,7 +328,14 @@ export default function RestockModal({ isOpen, onClose, onConfirm, part }: Resto
               cursor: "pointer",
             }}
           >
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
               <div
                 style={{
                   width: "40px",
@@ -308,7 +349,13 @@ export default function RestockModal({ isOpen, onClose, onConfirm, part }: Resto
               >
                 <Camera size={20} color="white" />
               </div>
-              <span style={{ color: "#2563eb", fontWeight: 500, fontSize: "14px" }}>
+              <span
+                style={{
+                  color: "#2563eb",
+                  fontWeight: 500,
+                  fontSize: "14px",
+                }}
+              >
                 Add Pictures/Files
               </span>
             </div>

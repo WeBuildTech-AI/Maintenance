@@ -468,6 +468,7 @@ export function PartDetails({
       {/* Delete Modal */}
       {showDeleteModal && (
         <DeletePartModal
+           isOpen={showDeleteModal}
           onClose={() => setShowDeleteModal(false)}
           onConfirm={handleDeletePart}
         />

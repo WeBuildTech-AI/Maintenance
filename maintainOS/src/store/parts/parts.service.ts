@@ -1,5 +1,4 @@
 import axios from "axios";
-
 import type {
   CreatePartData,
   PartResponse,
@@ -9,20 +8,10 @@ import type {
 const API_URL = import.meta.env.VITE_API_URL;
 
 export const partService = {
-  fetchParts: async (
-    limit: number,
-    page: number,
-    offset: number
-  ): Promise<PartResponse[]> => {
+  fetchParts: async (): Promise<PartResponse[]> => {
     const res = await axios.get(`${API_URL}/parts`, {
-      params: { limit, page, offset },
       headers: { Accept: "application/json" },
     });
-    return res.data;
-  },
-
-  fetchPartsName: async (): Promise<PartResponse[]> => {
-    const res = await axios.get(`${API_URL}/parts/summary`);
     return res.data;
   },
 
@@ -46,5 +35,23 @@ export const partService = {
 
   deletePart: async (id: string): Promise<void> => {
     await axios.delete(`${API_URL}/parts/${id}`);
+  },
+
+  // ✅ RESTOCK PART - ID goes in URL
+  restockPart: async (
+    partId: string,
+    locationId: string,
+    addedUnits: number
+  ): Promise<PartResponse> => {
+    const formData = new FormData();
+    formData.append("locationId", locationId);
+    formData.append("addedUnits", String(addedUnits));
+
+    const res = await axios.post(
+      `${API_URL}/parts/${partId}/restock`,
+      formData,
+      { headers: { Accept: "application/json" } }
+    );
+    return res.data;
   },
 };

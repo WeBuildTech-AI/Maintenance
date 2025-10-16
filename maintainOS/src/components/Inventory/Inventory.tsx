@@ -118,9 +118,9 @@ export function Inventory() {
         viewMode,
         setViewMode,
         "",
-        () => {},
+        () => { },
         () => navigate("/inventory/create"),
-        () => {}
+        () => { }
       )}
 
       {/* 🟩 TABLE VIEW */}
@@ -209,11 +209,10 @@ export function Inventory() {
                               : section.label
                           )
                         }
-                        className={`flex items-center justify-between w-full px-4 py-3 text-sm transition-all rounded-md ${
-                          sortType === section.label
+                        className={`flex items-center justify-between w-full px-4 py-3 text-sm transition-all rounded-md ${sortType === section.label
                             ? "text-yellow-600 font-medium bg-gray-50"
                             : "text-gray-800 hover:bg-gray-50"
-                        }`}
+                          }`}
                       >
                         <span>{section.label}</span>
                         {openSection === section.label ? (
@@ -254,11 +253,10 @@ export function Inventory() {
                                       : "desc"
                                   );
                                 }}
-                                className={`flex items-center justify-between px-6 py-2 text-left text-sm transition rounded-md ${
-                                  isSelected
+                                className={`flex items-center justify-between px-6 py-2 text-left text-sm transition rounded-md ${isSelected
                                     ? "text-yellow-600 bg-white"
                                     : "text-gray-700 hover:text-yellow-500 hover:bg-white"
-                                }`}
+                                  }`}
                               >
                                 {opt}
                                 {isSelected && (
@@ -489,13 +487,15 @@ function RestockRoute({ parts }: { parts: any[] }) {
     <RestockModal
       isOpen={true}
       part={part}
+      location={part.location || part.locations || null}  // ✅ send selected part’s location
       onClose={() => navigate(`/inventory/${id}`)}
       onConfirm={(data) => {
         console.log("✅ Restock confirmed for:", part.name);
-        console.log("📦 Location data:", part.locations);
+        console.log("📦 Location sent:", part.location || part.locations);
         console.log("📥 Restock input:", data);
         navigate(`/inventory/${id}`, { state: { refresh: true } });
       }}
     />
+
   );
 }
