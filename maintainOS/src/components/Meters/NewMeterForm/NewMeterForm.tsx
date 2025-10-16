@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Upload, Lock, RefreshCcw, User } from "lucide-react";
 import { SearchWithDropdown } from "../../Locations/SearchWithDropdown";
-import { createMeter, updateMeter } from "../../../store/meters";
+import { createMeter, meterService, updateMeter } from "../../../store/meters";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "../../../store";
 import { assetService } from "../../../store/assets";
@@ -41,6 +41,7 @@ export function NewMeterForm({
   const [getAssetData, setGetAssestData] = useState([]);
   const [getLocationData, setGetLocationData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [measurementUnitData, setMeasurementUnitData] = useState([]);
   // const combinedValue = `${readingFrequencyValue} ${readingFrequencyUnit}`;
 
   const isEdit = !!editingMeter;
@@ -209,6 +210,11 @@ export function NewMeterForm({
     setReadingFrequencyValue("");
   };
 
+  const fetchMeasrementUnitData = async () => {
+    const res = await meterService.fetchMesurementUnit;
+    setMeasurementUnitData(res);
+  };
+
   const dropdownOptions = ["Liters", "Gallons", "Cubic Meters", "kWh"];
 
   return (
@@ -311,6 +317,7 @@ export function NewMeterForm({
               id="measurement-unit-select"
               name="measurementUnit"
               value={measurementUnit}
+              onClick={fetchMeasrementUnitData}
               onChange={(e) => setMeasurementUnit(e.target.value)}
               style={{
                 height: "40px",
@@ -335,9 +342,12 @@ export function NewMeterForm({
 
               {/* 4. Map over your options to create the <option> tags */}
               {dropdownOptions.map((unit) => (
-                <option key={unit} value={unit}>
-                  {unit}
-                </option>
+                <>
+                  <option key={unit} value={unit}>
+                    {unit}
+                  </option>
+                  {/* <h1>Create</h1> */}
+                </>
               ))}
             </select>
 

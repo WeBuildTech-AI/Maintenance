@@ -22,7 +22,7 @@ export const locationService = {
     return res.data;
   },
   fetchLocationsName: async (): Promise<LocationResponse[]> => {
-    const res = await axios.get(`${API_URL}/locations/summary`);
+    const res = await axios.get(`${API_URL}/locations/summary/parents`);
 
     return res.data;
   },

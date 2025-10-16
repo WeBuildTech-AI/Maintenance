@@ -10,6 +10,7 @@ import { AssetQrCode } from "./sections/AssetQrCode";
 import { AssetStatusReadings } from "./sections/AssetStatusReadings";
 import { AssetSubAssets } from "./sections/AssetSubAssets";
 import { AssetVendor } from "./sections/AssetVendor";
+
 // import { AssetWorkOrders } from "./sections/AssetWorkOrders";
 
 export function AssetDetailContent(

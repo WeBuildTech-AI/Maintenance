@@ -36,6 +36,10 @@ export interface UpdateMeterData {
   photos?: string[];
 }
 
+export interface MeasurementUnit {
+  name?:string;
+}
+
 export interface MetersState {
   meters: MeterResponse[];
   selectedMeter: MeterResponse | null;

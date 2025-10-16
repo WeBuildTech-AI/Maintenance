@@ -1,10 +1,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
 import { meterService } from "./meters.service";
-import type {
-  CreateMeterData,
-  UpdateMeterData,
-} from "./meters.types";
+import type { CreateMeterData, UpdateMeterData } from "./meters.types";
 
 export const fetchMeters = createAsyncThunk(
   "meters/fetchMeters",
@@ -25,6 +22,19 @@ export const fetchMeterById = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     try {
       const meter = await meterService.fetchMeterById(id);
+      return meter;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch meter"
+      );
+    }
+  }
+);
+export const fetchMeasurementUnit = createAsyncThunk(
+  "measurement",
+  async (_, { rejectWithValue }) => {
+    try {
+      const meter = await meterService.fetchMesurementUnit();
       return meter;
     } catch (error: any) {
       return rejectWithValue(
@@ -84,6 +94,3 @@ export const deleteMeter = createAsyncThunk(
     }
   }
 );
-
-
-

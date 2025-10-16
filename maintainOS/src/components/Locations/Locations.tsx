@@ -1,14 +1,8 @@
 "use client";
 
 import {
-  Building,
   ChevronDown,
-  Edit,
-  Link,
   MapPin,
-  MoreHorizontal,
-  Plus,
-  Turtle,
   Check, // NEW: Added icon
   ChevronUp, // NEW: Added icon
 } from "lucide-react";
@@ -49,8 +43,6 @@ export function Locations() {
   >([]);
   // const [sortBy, setSortBy] = useState("Name: Ascending Order"); // REMOVED: Replaced with new state
   const user = useSelector((state: RootState) => state.auth.user);
-  const [modalOpen, setModalOpen] = useState(false);
-
   // --- NEW: State and Refs for the custom sorting dropdown ---
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [sortType, setSortType] = useState("Last Updated"); // e.g., "Name", "Creation Date"

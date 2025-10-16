@@ -26,6 +26,11 @@ export const meterService = {
     return res.data;
   },
 
+  fetchMesurementUnit: async (): Promise<MeterResponse> => {
+    const res = await axios.get(`${API_URL}/measurements`);
+    return res.data;
+  },
+
   createMeter: async (data: CreateMeterData): Promise<MeterResponse> => {
     const res = await axios.post(`${API_URL}/meters`, data);
     return res.data;
