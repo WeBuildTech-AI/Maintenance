@@ -10,7 +10,6 @@ const PartType = ({
   newItem: any;
   setNewItem: React.Dispatch<React.SetStateAction<any>>;
 }) => {
-  // Dummy options
   const DUMMY_PART_TYPES: PartSelectOption[] = [
     { id: "normal", name: "Normal" },
     { id: "critical", name: "Critical" },
@@ -20,25 +19,44 @@ const PartType = ({
   const [typeOptions, setTypeOptions] = React.useState<PartSelectOption[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [activeDropdown, setActiveDropdown] = React.useState<string | null>(null);
+  const [selectedTypeLabel, setSelectedTypeLabel] = React.useState<string>("");
 
-  // Fetch options (simulate async)
   const fetchTypeOptions = React.useCallback(() => {
     if (typeOptions.length > 0) return;
     setLoading(true);
     setTimeout(() => {
-      setTypeOptions(DUMMY_PART_TYPES); // ✅ show all
+      setTypeOptions(DUMMY_PART_TYPES);
       setLoading(false);
+
+      if (newItem.partsType?.length) {
+        const matched = DUMMY_PART_TYPES.find(
+          (opt) => opt.id === newItem.partsType[0]
+        );
+        if (matched) setSelectedTypeLabel(matched.name);
+      }
     }, 400);
-  }, [typeOptions.length]);
+  }, [typeOptions.length, newItem.partsType]);
 
   const handleSelect = (val: string | string[]) => {
     const id = Array.isArray(val) ? val[0] ?? "" : val;
     setNewItem((s: any) => ({ ...s, partsType: id ? [id] : [] }));
+    const matched = typeOptions.find((opt) => opt.id === id);
+    if (matched) setSelectedTypeLabel(matched.name);
   };
 
   const selectedType = Array.isArray(newItem.partsType)
     ? newItem.partsType[0] ?? ""
     : "";
+
+  const mergedTypeOptions = React.useMemo(() => {
+    if (!selectedType || typeOptions.some((opt) => opt.id === selectedType)) {
+      return typeOptions;
+    }
+    return [
+      { id: selectedType, name: selectedTypeLabel || "Selected (Pending)" },
+      ...typeOptions,
+    ];
+  }, [typeOptions, selectedType, selectedTypeLabel]);
 
   return (
     <section className="flex flex-col gap-2 max-w-sm mt-6">
@@ -46,12 +64,12 @@ const PartType = ({
         Part Type
       </label>
       <PartDynamicSelect
-        options={typeOptions}
+        options={mergedTypeOptions}
         value={selectedType}
         onSelect={handleSelect}
         onFetch={fetchTypeOptions}
         loading={loading}
-        placeholder="Select Part Type"
+        placeholder={selectedTypeLabel || "Select Part Type"}
         name="part_type"
         activeDropdown={activeDropdown}
         setActiveDropdown={setActiveDropdown}

@@ -1,12 +1,11 @@
 "use client";
-
 import React from "react";
 import type { NewItem } from "../inventory.types";
 import { PartDynamicSelect, type PartSelectOption } from "./PartDynamicSelect";
-import { FaLock } from "react-icons/fa";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../../store";
 import { fetchLocationsName } from "../../../store/locations/locations.thunks";
+import { LocationFormDialog } from "./LocationFormDialog";
 
 export function PartLocationSection({
   newItem,
@@ -20,7 +19,8 @@ export function PartLocationSection({
   const [loadingLocations, setLoadingLocations] = React.useState(false);
   const [activeDropdown, setActiveDropdown] = React.useState<string | null>(null);
 
-  const selectedLocations = newItem.locationIds ?? [];
+  // 🆕 Hold the selected label locally so it appears even before API loads
+  const [selectedLocationName, setSelectedLocationName] = React.useState<string>("");
 
   const fetchLocations = React.useCallback(async () => {
     if (loadingLocations) {
@@ -39,9 +39,7 @@ export function PartLocationSection({
       else if (Array.isArray(res?.results)) data = res.results;
       else if (Array.isArray(res?.items)) data = res.items;
       else if (Array.isArray(res?.rows)) data = res.rows;
-      else {
-        console.warn("⚠️ Unknown response structure. Full response:", res);
-      }
+      else console.warn("⚠️ Unknown response structure. Full response:", res);
 
       const options = data.map((loc: any, i) => ({
         id: String(loc.id ?? loc.location_id ?? i),
@@ -50,18 +48,47 @@ export function PartLocationSection({
 
       console.log("✅ Final Parsed Options (to render):", options);
       setLocationOptions(options);
+
+      // ✅ After loading, sync label if we already had a selection
+      if (newItem.locationId) {
+        const matched = options.find((opt) => String(opt.id) === String(newItem.locationId));
+        if (matched) setSelectedLocationName(matched.name);
+      }
     } catch (error) {
       console.error("❌ Failed to fetch locations:", error);
     } finally {
       setLoadingLocations(false);
     }
-  }, [dispatch, loadingLocations]);
+  }, [dispatch, loadingLocations, newItem.locationId]);
+
+  // ✅ Pre-fill from edit mode data
+  React.useEffect(() => {
+    if (newItem?.locations?.length > 0 && !selectedLocationName) {
+      const loc = newItem.locations[0];
+      setSelectedLocationName(loc.locationName || loc.name || "");
+    }
+  }, [newItem?.locations, selectedLocationName]);
 
   const handleSelectLocation = (vals: string[] | string) => {
     const ids = Array.isArray(vals) ? vals : [vals];
     console.log("📍 Selected Location IDs:", ids);
-    setNewItem((s) => ({ ...s, locationIds: ids }));
+    setNewItem((s) => ({ ...s, locationId: ids[0] || "" }));
+
+    // update visible label
+    const matched = locationOptions.find((opt) => opt.id === ids[0]);
+    if (matched) setSelectedLocationName(matched.name);
   };
+
+  // ✅ Ensure we show selected label even before API loads
+  const mergedOptions = React.useMemo(() => {
+    if (!newItem.locationId || locationOptions.some((o) => o.id === newItem.locationId)) {
+      return locationOptions;
+    }
+    return [
+      { id: String(newItem.locationId), name: selectedLocationName || "Selected (Pending)" },
+      ...locationOptions,
+    ];
+  }, [locationOptions, newItem.locationId, selectedLocationName]);
 
   React.useEffect(() => {
     console.log("🔁 Location Options Updated:", locationOptions);
@@ -80,18 +107,25 @@ export function PartLocationSection({
       >
         {/* Location */}
         <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-          <label style={{ fontSize: "14px", color: "#111827", fontWeight: 600, marginBottom: "6px" }}>
+          <label
+            style={{
+              fontSize: "14px",
+              color: "#111827",
+              fontWeight: 600,
+              marginBottom: "6px",
+            }}
+          >
             Locations
           </label>
           <div style={{ height: "40px", display: "flex" }}>
             <div style={{ flex: 1 }}>
               <PartDynamicSelect
-                options={locationOptions}
+                options={mergedOptions} // 🟢 merged ensures label visible before API
                 value={newItem.locationId ?? ""}
-                onSelect={(val) => setNewItem((s) => ({ ...s, locationId: val }))}
+                onSelect={handleSelectLocation}
                 onFetch={fetchLocations}
                 loading={loadingLocations}
-                placeholder="Select Location"
+                placeholder={selectedLocationName || "Select Location"} // 🟢 show label
                 ctaText="Add New Location"
                 onCtaClick={() => console.log("Add Location")}
                 name="part_location"
@@ -99,14 +133,20 @@ export function PartLocationSection({
                 setActiveDropdown={setActiveDropdown}
                 isMulti={false} // SINGLE
               />
-
             </div>
           </div>
         </div>
 
         {/* Area */}
         <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-          <label style={{ fontSize: "14px", color: "#111827", fontWeight: 600, marginBottom: "6px" }}>
+          <label
+            style={{
+              fontSize: "14px",
+              color: "#111827",
+              fontWeight: 600,
+              marginBottom: "6px",
+            }}
+          >
             Area
           </label>
           <input
@@ -128,7 +168,14 @@ export function PartLocationSection({
 
         {/* Units in Stock */}
         <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-          <label style={{ fontSize: "14px", color: "#111827", fontWeight: 600, marginBottom: "6px" }}>
+          <label
+            style={{
+              fontSize: "14px",
+              color: "#111827",
+              fontWeight: 600,
+              marginBottom: "6px",
+            }}
+          >
             Units in Stock
           </label>
           <input
@@ -150,7 +197,14 @@ export function PartLocationSection({
 
         {/* Minimum in Stock */}
         <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-          <label style={{ fontSize: "14px", color: "#111827", fontWeight: 600, marginBottom: "6px" }}>
+          <label
+            style={{
+              fontSize: "14px",
+              color: "#111827",
+              fontWeight: 600,
+              marginBottom: "6px",
+            }}
+          >
             Minimum in Stock
           </label>
           <input
@@ -171,27 +225,9 @@ export function PartLocationSection({
         </div>
       </div>
 
-      {/* Add location link */}
+      {/* Add Location Modal */}
       <div>
-        <button
-          type="button"
-          disabled
-          style={{
-            display: "flex",
-            alignItems: "center",
-            fontSize: "14px",
-            fontWeight: 500,
-            color: "#2563EB",
-            opacity: 0.9,
-            cursor: "not-allowed",
-            background: "none",
-            border: "none",
-            padding: 0,
-          }}
-        >
-          <span style={{ marginRight: "6px" }}>+ Add location</span>
-          <FaLock style={{ width: "14px", height: "14px", opacity: 0.8 }} />
-        </button>
+        <LocationFormDialog newItem={newItem} setNewItem={setNewItem} />
       </div>
     </div>
   );

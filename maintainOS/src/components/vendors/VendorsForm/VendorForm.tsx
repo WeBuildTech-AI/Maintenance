@@ -7,11 +7,11 @@ import { useDispatch, useSelector } from "react-redux";
 import type { SelectOption } from "./DynamicSelect";
 import { fetchLocationsName } from "../../../store/locations/locations.thunks";
 import { fetchAssetsName } from "../../../store/assets/assets.thunks";
-import { fetchPartsName } from "../../../store/parts/parts.thunks";
+// import { fetchPartsName } from "../../../store/parts/parts.thunks";
 import { VendorPrimaryDetails } from "./VendorPrimaryDetails";
 import { VendorContactInput } from "./VendorContactInput";
 import { VendorLinkedItems } from "./VendorLinkedItems";
-import toast from "react-hot-toast";
+// import toast from "react-hot-toast";
 import { saveVendor } from "./vendorService"; 
 import { BlobUpload, type BUD } from "../../utils/BlobUpload";
 

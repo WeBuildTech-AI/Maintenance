@@ -8,11 +8,12 @@ import { PartHeader } from "./PartHeader";
 import { PartBasicDetails } from "./PartBasicDetails";
 import { PartQRCodeSection } from "./PartQRCodeSection";
 import { PartLocationSection } from "./PartLocationSection";
-import { PartVendorsSection } from "./PartVendorsSection";
+
 import { PartFilesSection } from "./PartFilesSection";
 import { PartFooter } from "./PartFooter";
 import PartType from "./PartType";
 import toast from "react-hot-toast";
+import PartVendorsSection from "./PartVendorsSection";
 
 export function NewPartForm({
   newItem,

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { X, MapPin, Camera } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useDispatch } from "react-redux";
-import { AppDispatch } from "../../../store";
+import { type AppDispatch } from "../../../store";
 import { restockPart } from "../../../store/parts/parts.thunks";
 
 
