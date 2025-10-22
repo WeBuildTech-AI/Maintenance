@@ -307,22 +307,22 @@ function TeamsTable({ rows }: { rows: TeamRow[] }) {
                         {renderInitials(u.admin.name)}
                       </AvatarFallback>
                     </Avatar> */}
-                    {/* <div>
-                      <Link
+                    <div>
+                      {/* <Link
                         to={`/users/profile/${encodeURIComponent(
                           u.admin.name
                         )}`}
                         className="font-medium hover:underline cursor-pointer"
                       >
-                        {u.admin.name}
-                      </Link>
-                      <div className="font-medium">{u.admin.name}</div>
-                    </div> */}
+                        {u.teammember.}
+                      </Link> */}
+                      <div className="font-medium">{u.members[0].role}</div>
+                    </div>
                   </div>
                 </TableCell>
-                {/* <TableCell className="text-center align-middle text-sm text-muted-background">
-                  {u.membersCount} Member
-                </TableCell> */}
+                <TableCell className="text-center align-middle text-sm text-muted-background">
+                  {u.members.length} Member
+                </TableCell>
                 <TableCell className="w-0 text-right">
                   <RowMenu kind="team" onAction={(a) => console.log(a, u.id)} />
                 </TableCell>

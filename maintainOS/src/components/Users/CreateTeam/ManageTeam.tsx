@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { StepBack, X, Search } from "lucide-react"; // X aur Search icons import karein
+import { StepBack, X, Search, EllipsisVerticalIcon } from "lucide-react"; // X aur Search icons import karein
 import { Button } from "../../ui/button";
 import { useNavigate, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "../../ui/avatar";
 import { teamService } from "../../../store/teams";
 import Loader from "../../Loader/Loader";
 import AddMemberModal from "./AddMemberModal";
+import { renderInitials } from "../../utils/renderInitials";
 
 export default function ManageTeam() {
   const [loading, setLoading] = useState(false);
@@ -99,7 +100,7 @@ export default function ManageTeam() {
               <Avatar className="h-16 w-16 text-white text-xl">
                 <AvatarImage src={team?.avatar || ""} />
                 <AvatarFallback style={{ backgroundColor: team?.color }}>
-                  {team?.name?.[0] || "T"}
+                  {/* {renderInitials(team?.name) || "T"} */}
                 </AvatarFallback>
               </Avatar>
 
@@ -178,9 +179,11 @@ export default function ManageTeam() {
                   <div className="flex items-center gap-2">
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={m.avatar} />
-                      <AvatarFallback>{m.name[0]}</AvatarFallback>
+                      <AvatarFallback>
+                        {renderInitials(m.user.fullName)}
+                      </AvatarFallback>
                     </Avatar>
-                    {m.name}
+                    {m.user.fullName}
                   </div>
                   <div>{m.role}</div>
                   <div>{m.lastVisit}</div>
