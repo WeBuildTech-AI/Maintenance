@@ -1,7 +1,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
 import { locationService } from "./locations.service";
-import type { CreateLocationData, UpdateLocationData } from "./locations.types";
 
 export const fetchLocations = createAsyncThunk(
   "locations/fetchLocations",
@@ -54,10 +53,9 @@ export const fetchLocationById = createAsyncThunk(
 
 export const createLocation = createAsyncThunk(
   "locations/createLocation",
-  async (locationData: CreateLocationData, { rejectWithValue }) => {
+  async (locationData: FormData, { rejectWithValue }) => {
     try {
       const location = await locationService.createLocation(locationData);
-      console.log(locationData, "createdLocation");
       return location;
     } catch (error: any) {
       return rejectWithValue(
@@ -75,13 +73,12 @@ export const updateLocation = createAsyncThunk(
       locationData,
     }: {
       id: string;
-      locationData: UpdateLocationData;
+      locationData: FormData;
     },
     { rejectWithValue }
   ) => {
     try {
       const location = await locationService.updateLocation(id, locationData);
-      console.log(id, locationData, "updatedLocation");
       return location;
     } catch (error: any) {
       return rejectWithValue(

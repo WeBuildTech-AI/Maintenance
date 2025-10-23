@@ -2,14 +2,13 @@ import {
   Edit,
   MoreHorizontal,
   Link as LinkIcon,
-  Delete,
   Plus,
   MapPin,
   ChevronRight,
 } from "lucide-react";
 import React from "react";
 import toast from "react-hot-toast";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,27 +19,12 @@ import { Button } from "../ui/button";
 import QRCode from "react-qr-code";
 import { formatDate } from "../utils/Date";
 import DeleteModal from "./DeleteModal";
+import { LocationImages } from "./LocationImages";
+import { LocationFiles } from "./LocationFiles";
+import type { Location } from "./location.types";
 
-// ✅ Step 1: Define types for nested objects
-interface Photo {
-  id: string;
-  mimetype: string;
-  base64: string;
-}
 
-interface Location {
-  id: string;
-  name: string;
-  address?: string;
-  description?: string;
-  photoUrls?: Photo[];
-  qrCode?: string;
-  children?: Location[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-// ✅ Step 2: Props interface
+// Props interface
 interface LocationDetailsProps {
   selectedLocation: Location;
   handleDeleteLocation: (id: string) => void;
@@ -60,7 +44,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
   onEdit,
   handleShowNewSubLocationForm,
 }) => {
-  const navigate = useNavigate(); // ✅ Fixed: add parentheses to call the hook
+  const navigate = useNavigate(); 
   const [openDeleteModal, setOpenDeleteModal] = React.useState(false);
   const modalRef = React.useRef<HTMLDivElement>(null);
 
@@ -130,20 +114,9 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
           </div>
         )}
 
-        {selectedLocation.photoUrls &&
-          selectedLocation.photoUrls.length > 0 && (
-            <div className="mb-6 flex flex-wrap gap-2">
-              {selectedLocation.photoUrls.map((item) => (
-                <img
-                  key={item.id}
-                  src={`data:${item.mimetype};base64,${item.base64}`}
-                  alt="Location"
-                  className="h-24 w-24 rounded object-cover"
-                />
-              ))}
-              <hr />
-            </div>
-          )}
+        <LocationImages location={selectedLocation} />
+
+        <LocationFiles location={selectedLocation} />
 
         {selectedLocation.qrCode && (
           <div className="mt-6">

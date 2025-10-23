@@ -1,3 +1,5 @@
+import type { BUD } from "../../components/utils/BlobUpload";
+
 export interface LocationResponse {
   id: string;
   organizationId: string;
@@ -12,23 +14,28 @@ export interface LocationResponse {
   updatedAt: string;
   qrCode: string;
   parentLocationId: string;
-  children:[];
-  photoUrls:[];
-  teamsInCharge: [];
-  files: [];
-  vendorIds: [];
+  children: LocationResponse[];
+  locationImages?: BUD[]; 
+  locationDocs?: BUD[]; 
+  teamsInCharge: string[];
+  vendorIds: string[];
+  // Keep old fields for backward compatibility during transition
+  photoUrls?: BUD[];
+  files?: BUD[];
 }
 
 export interface CreateLocationData {
   organizationId: string;
   name: string;
+  createdBy: string; 
   description?: string;
   address?: string;
-  photoUrls: [];
-  teamsInCharge: [];
-  files: [];
-  vendorIds: [];
-  parentLocationId: string;
+  qrCode?: string; 
+  locationImages?: BUD[]; 
+  locationDocs?: BUD[]; 
+  teamsInCharge: string[];
+  vendorIds: string[];
+  parentLocationId?: string; 
 }
 
 export interface fetchLocationData {

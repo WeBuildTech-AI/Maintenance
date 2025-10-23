@@ -4,28 +4,24 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import toast from "react-hot-toast";
-import { PicturesUpload } from "./PicturesUpload";
 import { AddressAndDescription } from "./AddressAndDescription";
 import { QrCodeSection } from "./QrCodeSection";
-import { FilesUpload } from "./FilesUpload";
 import { Dropdowns } from "./Dropdowns";
 import { FooterActions } from "./FooterActions";
+import { BlobUpload, type BUD } from "../../utils/BlobUpload";
 
 import type { RootState, AppDispatch } from "../../../store";
 import { createLocation, updateLocation } from "../../../store/locations";
 import type { LocationResponse } from "../../../store/locations";
 
-// ✅ CHANGE 1: Updated props to be more specific
+// Updated props to be more specific
 type NewLocationFormProps = {
   onCancel: () => void;
-  // This is called when a NEW item (root or sub) is created
   onCreate: (locationData: LocationResponse) => void;
-  // This is called ONLY when an existing item is successfully updated
   onSuccess: (locationData: LocationResponse) => void;
   isEdit?: boolean;
   editData?: LocationResponse | null;
   initialParentId?: string;
-  // ✨ NEW: Prop to identify if the form is for a sub-location
   isSubLocation?: boolean;
   fetchLocations: () => void;
   fetchLocationById: () => void;
@@ -33,17 +29,17 @@ type NewLocationFormProps = {
 
 export function NewLocationForm({
   onCancel,
-  onCreate, // ✅ Use new prop
+  onCreate, 
   onSuccess,
   isEdit = false,
   editData = null,
   initialParentId,
-  isSubLocation = false, // ✅ Use new prop
+  isSubLocation = false, 
   fetchLocations,
   fetchLocationById,
 }: NewLocationFormProps) {
-  const [pictures, setPictures] = useState<File[]>([]);
-  const [attachedDocs, setAttachedDocs] = useState<File[]>([]);
+  const [locationImages, setLocationImages] = useState<BUD[]>([]);
+  const [locationDocs, setLocationDocs] = useState<BUD[]>([]);
   const [name, setName] = useState("");
   const [submitLocationFormLoader, setSubmitLocationFormLoader] =
     useState(false);
@@ -66,7 +62,7 @@ export function NewLocationForm({
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector((state: RootState) => state.auth.user);
 
-  // Pre-fill fields if editing (no changes here)
+  // Pre-fill fields if editing
   useEffect(() => {
     if (isEdit && editData) {
       setName(editData.name);
@@ -75,20 +71,28 @@ export function NewLocationForm({
       setQrCode(editData.qrCode || "");
       setVendorId(editData.vendorIds || []);
       setParentLocationId(editData.parentLocationId || "");
-      // Note: mapping `photoUrls` to `File[]` is complex.
-      // This line might need adjustment if `editData.photoUrls` is not an array of File objects.
-      // setPictures(editData.photoUrls || []);
+
+      // Set existing location images and docs (support both new and old field names)
+      if (editData.locationImages) {
+        setLocationImages(editData.locationImages);
+      } else if (editData.photoUrls) {
+        setLocationImages(editData.photoUrls);
+      }
+
+      if (editData.locationDocs) {
+        setLocationDocs(editData.locationDocs);
+      } else if (editData.files) {
+        setLocationDocs(editData.files);
+      }
     }
   }, [isEdit, editData]);
 
-  // Pre-fill parent ID for sub-locations (no changes here)
   useEffect(() => {
     if (initialParentId && !isEdit) {
       setParentLocationId(initialParentId);
     }
   }, [initialParentId, isEdit]);
 
-  // Click outside handler (no changes here)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (teamRef.current && !teamRef.current.contains(event.target as Node))
@@ -108,30 +112,81 @@ export function NewLocationForm({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const handleBlobChange = (data: { formId: string; buds: BUD[] }) => {
+    if (data.formId === "location_images") {
+      setLocationImages(data.buds);
+    } else if (data.formId === "location_docs") {
+      setLocationDocs(data.buds);
+    }
+  };
+
   const handleSubmitLocation = async () => {
-    if (!user) return;
+    if (!user) {
+      toast.error("User not authenticated.");
+      return;
+    }
+
+    if (!user.id) {
+      toast.error("User ID is missing.");
+      return;
+    }
+
+    if (!user.organizationId) {
+      toast.error("Organization ID is missing.");
+      return;
+    }
+
     if (!name || !name.trim()) {
       toast.error("Location Name is required.");
       return;
     }
 
     setSubmitLocationFormLoader(true);
+
+    console.log("User data:", {
+      organizationId: user.organizationId,
+      userId: user.id,
+      name: name.trim(),
+    });
+
     const formData = new FormData();
 
-    // Append fields logic is correct
-    formData.append("organizationId", user.organizationId || "");
-    formData.append("name", name);
-    if (address) formData.append("address", address);
-    if (description) formData.append("description", description);
-    if (parentLocationId) formData.append("parentLocationId", parentLocationId);
-    if (qrCode) formData.append("qrCode", qrCode);
-    formData.append("createdBy", user.id);
-    if (Array.isArray(vendorId) && vendorId.length > 0) {
-      vendorId.forEach((id) => formData.append("vendorIds[]", id));
+    formData.append("organizationId", String(user.organizationId));
+    formData.append("name", String(name.trim()));
+    formData.append("createdBy", String(user.id));
+
+    if (description) formData.append("description", String(description));
+    if (address) formData.append("address", String(address));
+    if (qrCode) formData.append("qrCode", String(qrCode));
+    if (parentLocationId && parentLocationId.trim()) {
+      formData.append("parentLocationId", String(parentLocationId));
     }
-    if (pictures.length > 0) {
-      pictures.forEach((pic) => formData.append("photos", pic));
+
+    // Add arrays
+    if (teamInCharge && teamInCharge.length > 0) {
+      teamInCharge.forEach((team) => formData.append("teamsInCharge[]", team));
     }
+
+    if (vendorId && vendorId.length > 0) {
+      vendorId.forEach((vendor) => formData.append("vendorIds[]", vendor));
+    }
+
+    // Add location images
+    if (locationImages && locationImages.length > 0) {
+      locationImages.forEach((image, index) => {
+        formData.append(`locationImages[${index}][key]`, image.key);
+        formData.append(`locationImages[${index}][fileName]`, image.fileName);
+      });
+    }
+
+    // Add location documents
+    if (locationDocs && locationDocs.length > 0) {
+      locationDocs.forEach((doc, index) => {
+        formData.append(`locationDocs[${index}][key]`, doc.key);
+        formData.append(`locationDocs[${index}][fileName]`, doc.fileName);
+      });
+    }
+
 
     try {
       let res;
@@ -140,18 +195,22 @@ export function NewLocationForm({
           updateLocation({ id: editData.id, locationData: formData })
         ).unwrap();
         toast.success("Location updated successfully");
-        // ✅ CHANGE 3: Call onSuccess for UPDATES
+        //  Call onSuccess for UPDATES
         onSuccess(res);
       } else {
         res = await dispatch(createLocation(formData)).unwrap();
         toast.success(
           isSubLocation ? "Sub-location added!" : "Location created!"
         );
-        // ✅ CHANGE 3: Call onCreate for CREATION
-        isSubLocation ? fetchLocationById(res?.id) : onCreate(res);
+        //Call onCreate for CREATION
+        isSubLocation ? fetchLocationById() : onCreate(res);
         // fetchLocationById(res?.id);
       }
-      fetchLocations();
+
+      setTimeout(() => {
+        fetchLocations();
+      }, 500);
+
       onCancel();
     } catch (err: any) {
       console.error("Failed to submit location:", err);
@@ -161,7 +220,7 @@ export function NewLocationForm({
     }
   };
 
-  // ✅ CHANGE 2: Dynamic title and button text based on context
+  // Dynamic title and button text based on context
   const title = isEdit
     ? "Update Location Details"
     : isSubLocation
@@ -195,7 +254,12 @@ export function NewLocationForm({
               className="w-full px-0 py-2 p-3 text-gray-400 placeholder-gray-400 bg-transparent border-0 border-b-4 border-blue-500 focus:outline-none"
             />
           </div>
-          <PicturesUpload pictures={pictures} setPictures={setPictures} />
+          <BlobUpload
+            formId="location_images"
+            type="images"
+            initialBuds={locationImages}
+            onChange={handleBlobChange}
+          />
           <AddressAndDescription
             address={address}
             setAddress={setAddress}
@@ -214,9 +278,11 @@ export function NewLocationForm({
             }
           />
           <QrCodeSection qrCode={qrCode} setQrCode={setQrCode} />
-          <FilesUpload
-            attachedDocs={attachedDocs}
-            setAttachedDocs={setAttachedDocs}
+          <BlobUpload
+            formId="location_docs"
+            type="files"
+            initialBuds={locationDocs}
+            onChange={handleBlobChange}
           />
           <Dropdowns
             stage="vendors"
