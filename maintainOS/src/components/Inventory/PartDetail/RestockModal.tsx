@@ -1,34 +1,56 @@
 import { useState, useEffect, useRef } from "react";
-import { X, MapPin, Camera } from "lucide-react";
+import { X, MapPin } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useDispatch } from "react-redux";
 import { type AppDispatch } from "../../../store";
 import { restockPart } from "../../../store/parts/parts.thunks";
-
+import { BlobUpload, type BUD } from "../../utils/BlobUpload";
+import toast from "react-hot-toast";
 
 interface RestockModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (data: { quantity: number; location: string; note: string }) => void;
+  onConfirm: (data: {
+    quantity: number;
+    location: string;
+    note: string;
+  }) => void;
   part?: any; // ✅ Add part as prop
 }
 
-export default function RestockModal({ isOpen, onClose, onConfirm, part }: RestockModalProps) {
+export default function RestockModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  part,
+}: RestockModalProps) {
   const [quantity, setQuantity] = useState(0);
   const [location, setLocation] = useState("General");
   const [note, setNote] = useState("");
+  const [restockImages, setRestockImages] = useState<BUD[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
   const dispatch = useDispatch<AppDispatch>();
+
+  const handleBlobChange = (data: { formId: string; buds: BUD[] }) => {
+    if (data.formId === "restock_images") {
+      setRestockImages(data.buds);
+    }
+  };
 
   // 🟢 Log received part data
   useEffect(() => {
     if (part) {
       console.log("📦 RestockModal received part:", part);
-      console.log("🏬 Available locations:", part.locations || "No locations found");
+      console.log(
+        "🏬 Available locations:",
+        part.locations || "No locations found"
+      );
       // Default first location if available
       if (part.locations?.length) {
-        setLocation(part.locations[0].name || part.locations[0].locationName || "General");
+        setLocation(
+          part.locations[0].name || part.locations[0].locationName || "General"
+        );
       }
     }
   }, [part]);
@@ -37,10 +59,12 @@ export default function RestockModal({ isOpen, onClose, onConfirm, part }: Resto
   useEffect(() => {
     if (!isOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(e.target as Node)) onClose();
+      if (modalRef.current && !modalRef.current.contains(e.target as Node))
+        onClose();
     };
     document.addEventListener("mousedown", handleClickOutside, true);
-    return () => document.removeEventListener("mousedown", handleClickOutside, true);
+    return () =>
+      document.removeEventListener("mousedown", handleClickOutside, true);
   }, [isOpen, onClose]);
 
   // Close modal on ESC
@@ -79,12 +103,17 @@ export default function RestockModal({ isOpen, onClose, onConfirm, part }: Resto
           partId: part.id,
           locationId,
           addedUnits: quantity,
+          notes: note,
+          restockImages: restockImages,
         })
       ).unwrap();
 
-      toast.success(`✅ Successfully restocked ${quantity} units of ${part.name}`);
+      toast.success(
+        `✅ Successfully restocked ${quantity} units of ${part.name}`
+      );
       setQuantity(0);
       setNote("");
+      setRestockImages([]);
       onClose();
     } catch (error: any) {
       toast.error(error?.message || "Failed to restock part");
@@ -143,7 +172,14 @@ export default function RestockModal({ isOpen, onClose, onConfirm, part }: Resto
         </div>
 
         {/* Body */}
-        <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
+        <div
+          style={{
+            padding: "24px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "20px",
+          }}
+        >
           {/* Quantity */}
           <div
             style={{
@@ -262,7 +298,8 @@ export default function RestockModal({ isOpen, onClose, onConfirm, part }: Resto
               >
                 {(part?.locations?.length
                   ? part.locations
-                  : [{ name: "General" }]).map((loc: any, i: number) => {
+                  : [{ name: "General" }]
+                ).map((loc: any, i: number) => {
                   const locName = loc.name || loc.locationName || "General";
                   return (
                     <div
@@ -277,8 +314,7 @@ export default function RestockModal({ isOpen, onClose, onConfirm, part }: Resto
                         fontSize: "14px",
                         backgroundColor:
                           location === locName ? "#eff6ff" : "white",
-                        color:
-                          location === locName ? "#2563eb" : "#111827",
+                        color: location === locName ? "#2563eb" : "#111827",
                       }}
                     >
                       {locName}
@@ -318,7 +354,7 @@ export default function RestockModal({ isOpen, onClose, onConfirm, part }: Resto
           </div>
 
           {/* Upload box */}
-          <div
+          {/* <div
             style={{
               border: "2px dashed #93c5fd",
               borderRadius: "6px",
@@ -359,6 +395,30 @@ export default function RestockModal({ isOpen, onClose, onConfirm, part }: Resto
                 Add Pictures/Files
               </span>
             </div>
+          </div> */}
+
+          {/* Restock Images Upload */}
+          <div
+           style={{
+    padding: "8px", // Reduced padding from default (e.g., 20px) to 8px
+  }}
+          >
+            {/* <h4
+              style={{
+                fontSize: "14px",
+                fontWeight: "500",
+                marginBottom: "2px",
+                color: "#1f2937",
+              }}
+            >
+              Add Restock Images
+            </h4> */}
+            <BlobUpload
+              formId="restock_images"
+              type="images"
+              initialBuds={restockImages}
+              onChange={handleBlobChange}
+            />
           </div>
         </div>
 

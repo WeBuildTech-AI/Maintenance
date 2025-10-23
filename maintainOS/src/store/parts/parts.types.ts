@@ -66,3 +66,11 @@ export interface PartsState {
   loading: boolean;
   error: string | null;
 }
+
+export interface RestockThunkArgs {
+  partId: string;
+  locationId: string;
+  addedUnits: number;
+  notes?: string;
+  restockImages: BUD[]; 
+}

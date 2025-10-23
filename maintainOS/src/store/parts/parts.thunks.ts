@@ -1,5 +1,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { partService } from "./parts.service";
+import type { RestockThunkArgs } from "./parts.types";
 
 export const fetchParts = createAsyncThunk(
   "parts/fetchParts",
@@ -75,18 +76,36 @@ export const deletePart = createAsyncThunk(
 );
 
 // ✅ RESTOCK PART THUNK
+// export const restockPart = createAsyncThunk(
+//   "parts/restockPart",
+//   async (
+//     {
+//       partId,
+//       locationId,
+//       addedUnits,
+//     }: { partId: string; locationId: string; addedUnits: number },
+//     { rejectWithValue }
+//   ) => {
+//     try {
+//       const updated = await partService.restockPart(partId, locationId, addedUnits);
+//       return updated;
+//     } catch (error: any) {
+//       return rejectWithValue(
+//         error.response?.data?.message || "Failed to restock part"
+//       );
+//     }
+//   }
+// );
+
 export const restockPart = createAsyncThunk(
   "parts/restockPart",
   async (
-    {
-      partId,
-      locationId,
-      addedUnits,
-    }: { partId: string; locationId: string; addedUnits: number },
+    payload: RestockThunkArgs, // Pass the whole payload
     { rejectWithValue }
   ) => {
     try {
-      const updated = await partService.restockPart(partId, locationId, addedUnits);
+      // The service now just needs the partId and the payload
+      const updated = await partService.restockPart(payload.partId, payload);
       return updated;
     } catch (error: any) {
       return rejectWithValue(

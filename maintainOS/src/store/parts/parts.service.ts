@@ -1,7 +1,6 @@
 import axios from "axios";
-import type {
-  PartResponse,
-} from "./parts.types";
+import type { PartResponse } from "./parts.types";
+import type { RestockThunkArgs } from "./parts.types";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -23,10 +22,7 @@ export const partService = {
     return res.data;
   },
 
-  updatePart: async (
-    id: string,
-    data: FormData
-  ): Promise<PartResponse> => {
+  updatePart: async (id: string, data: FormData): Promise<PartResponse> => {
     const res = await axios.patch(`${API_URL}/parts/${id}`, data);
     return res.data;
   },
@@ -36,19 +32,43 @@ export const partService = {
   },
 
   // ✅ RESTOCK PART - ID goes in URL
+  // restockPart: async (
+  //   partId: string,
+  //   locationId: string,
+  //   addedUnits: number
+  // ): Promise<PartResponse> => {
+  //   const formData = new FormData();
+  //   formData.append("locationId", locationId);
+  //   formData.append("addedUnits", String(addedUnits));
+
+  //   const res = await axios.post(
+  //     `${API_URL}/parts/${partId}/restock`,
+  //     formData,
+  //     { headers: { Accept: "application/json" } }
+  //   );
+  //   return res.data;
+  // },
   restockPart: async (
     partId: string,
-    locationId: string,
-    addedUnits: number
+    payload: RestockThunkArgs
   ): Promise<PartResponse> => {
     const formData = new FormData();
-    formData.append("locationId", locationId);
-    formData.append("addedUnits", String(addedUnits));
+
+    // Append all the text/number data
+    formData.append("locationId", payload.locationId);
+    formData.append("addedUnits", String(payload.addedUnits));
+    if (payload.notes) {
+      formData.append("notes", payload.notes);
+    }
+
+    // ✅ Append restock images as JSON (similar to part creation)
+    if (payload.restockImages && payload.restockImages.length > 0) {
+      formData.append("restockImages", JSON.stringify(payload.restockImages));
+    }
 
     const res = await axios.post(
       `${API_URL}/parts/${partId}/restock`,
-      formData,
-      { headers: { Accept: "application/json" } }
+      formData
     );
     return res.data;
   },
