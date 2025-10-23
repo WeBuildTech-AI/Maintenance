@@ -1,8 +1,6 @@
 import axios from "axios";
 import type {
-  CreatePartData,
   PartResponse,
-  UpdatePartData,
 } from "./parts.types";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -20,14 +18,14 @@ export const partService = {
     return res.data;
   },
 
-  createPart: async (data: CreatePartData): Promise<PartResponse> => {
+  createPart: async (data: FormData): Promise<PartResponse> => {
     const res = await axios.post(`${API_URL}/parts`, data);
     return res.data;
   },
 
   updatePart: async (
     id: string,
-    data: UpdatePartData
+    data: FormData
   ): Promise<PartResponse> => {
     const res = await axios.patch(`${API_URL}/parts/${id}`, data);
     return res.data;

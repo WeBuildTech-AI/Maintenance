@@ -1,3 +1,6 @@
+import type { BUD } from "../../components/utils/BlobUpload";
+
+
 export interface PartResponse {
   id: string;
   organizationId: string;
@@ -14,6 +17,8 @@ export interface PartResponse {
   files?: string[];
   createdAt: string;
   updatedAt: string;
+  partImages?: BUD[];
+  partDocs?: BUD[];
 }
 
 export interface CreatePartData {
@@ -33,6 +38,9 @@ export interface CreatePartData {
   teamsInCharge?: string[];
   vendorIds?: string[];
   files?: string[];
+
+  partImages?: BUD[];
+  partDocs?: BUD[];
 }
 
 export interface UpdatePartData {
@@ -47,6 +55,9 @@ export interface UpdatePartData {
   teamsInCharge?: string[];
   vendorIds?: string[];
   files?: string[];
+
+  partImages?: BUD[];
+  partDocs?: BUD[];
 }
 
 export interface PartsState {
