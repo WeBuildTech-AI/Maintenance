@@ -100,16 +100,49 @@ export const deletePart = createAsyncThunk(
 export const restockPart = createAsyncThunk(
   "parts/restockPart",
   async (
-    payload: RestockThunkArgs, // Pass the whole payload
+    payload: RestockThunkArgs, 
     { rejectWithValue }
   ) => {
     try {
-      // The service now just needs the partId and the payload
       const updated = await partService.restockPart(payload.partId, payload);
       return updated;
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to restock part"
+      );
+    }
+  }
+);
+
+export const getAllRestockLogs = createAsyncThunk(
+  "parts/getAllRestockLogs",
+  async (
+    { partId }: { partId: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const logs = await partService.getAllRestockLogs(partId);
+      return logs;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch restock logs"
+      );
+    }
+  }
+);
+
+export const getRestockLogById = createAsyncThunk(
+  "parts/getRestockLogById",
+  async (
+    { logId }: { logId: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const log = await partService.getRestockLogById(logId);
+      return log;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch restock log"
       );
     }
   }

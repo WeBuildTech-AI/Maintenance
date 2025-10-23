@@ -1,6 +1,5 @@
 import type { BUD } from "../../components/utils/BlobUpload";
 
-
 export interface PartResponse {
   id: string;
   organizationId: string;
@@ -26,10 +25,10 @@ export interface CreatePartData {
   name: string;
   description?: string;
   unitCost?: number;
-  unitInStock:number;
-  minInStock:number;
-  area:string;
-  locationId:string;
+  unitInStock: number;
+  minInStock: number;
+  area: string;
+  locationId: string;
   qrCode?: string;
   photos?: string[];
   partsType?: string[];
@@ -65,6 +64,28 @@ export interface PartsState {
   selectedPart: PartResponse | null;
   loading: boolean;
   error: string | null;
+  restockLogs: PartRestockLog[]; 
+  selectedRestockLog: PartRestockLog | null;
+}
+
+export interface PartRestockLog {
+  id: string;
+  partId: string;
+  locationId: string;
+  unitsAdded: number;
+  notes: string | null;
+  restockImages: BUD[];
+  createdAt: string;
+
+  location: {
+    id: string;
+    name: string;
+  };
+
+  part?: {
+    id: string;
+    name: string;
+  };
 }
 
 export interface RestockThunkArgs {
@@ -72,5 +93,5 @@ export interface RestockThunkArgs {
   locationId: string;
   addedUnits: number;
   notes?: string;
-  restockImages: BUD[]; 
+  restockImages: BUD[];
 }
