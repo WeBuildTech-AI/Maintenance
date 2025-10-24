@@ -24,7 +24,6 @@ interface AssetDetailProps {
   asset: Asset;
   onEdit: (asset: Asset) => void; // Add this line
   onDelete: (asset: Asset) => void; // Add this line
-  allLocationData?: { name: string }[]; // Optional prop for location data
 }
 
 // 3. Use the defined types in your component.
@@ -32,7 +31,6 @@ export const AssetDetail: FC<AssetDetailProps> = ({
   asset,
   onEdit,
   onDelete,
-  allLocationData,
 }) => {
   const [showHistory, setShowHistory] = useState<boolean>(false);
   const user = useSelector((state: RootState) => state.auth.user);
@@ -44,7 +42,7 @@ export const AssetDetail: FC<AssetDetailProps> = ({
       .join("")
       .toUpperCase();
 
-  console.log("AssetDetail - :", allLocationData);
+  // console.log("AssetDetail - :", allLocationData);
 
   return (
     <div className="h-full border mr-3 flex flex-col min-h-0">
@@ -75,7 +73,7 @@ export const AssetDetail: FC<AssetDetailProps> = ({
             <div className="text-sm text-gray-700 mt-0.5 flex items-center">
               <span>Created the asset at location</span>
               {/* Message */}
-              {asset?.locationId ? (
+              {/* {asset?.locationId ? (
                 <>
                   <MapPin className="w-4 h-4 text-orange-600 mx-1" />
                   <span className="font-medium">
@@ -86,12 +84,12 @@ export const AssetDetail: FC<AssetDetailProps> = ({
                 </>
               ) : (
                 <div className="ml-2"> - Null</div>
-              )}
+              )} */}
             </div>
           </div>
         </div> // This will show when showHistory is true
       ) : (
-        <AssetDetailContent asset={asset} allLocationData={allLocationData} /> // This will show when show-history is false
+        <AssetDetailContent asset={asset}  /> // This will show when show-history is false
       )}
     </div>
   );
