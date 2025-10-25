@@ -38,9 +38,7 @@ export function AssetCard({
               <div className="flex items-start gap-1 mt-1">
                 <MapPin className="h-3 w-3 mt-1 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">
-                  At{" "}
-                  {allLocationData.find((loc) => loc.id === asset.locationId)
-                    ?.name || "No Location"}
+                  At {asset.location && asset.location.name}
                 </span>
               </div>
             </div>

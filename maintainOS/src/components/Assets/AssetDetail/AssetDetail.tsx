@@ -73,23 +73,21 @@ export const AssetDetail: FC<AssetDetailProps> = ({
             <div className="text-sm text-gray-700 mt-0.5 flex items-center">
               <span>Created the asset at location</span>
               {/* Message */}
-              {/* {asset?.locationId ? (
+              {asset?.location ? (
                 <>
                   <MapPin className="w-4 h-4 text-orange-600 mx-1" />
                   <span className="font-medium">
-                    {" "}
-                    {allLocationData.find((loc) => loc.id === asset.locationId)
-                      ?.name || "No Location Found"}
+                    {asset.location && asset.location.name}
                   </span>
                 </>
               ) : (
                 <div className="ml-2"> - Null</div>
-              )} */}
+              )}
             </div>
           </div>
         </div> // This will show when showHistory is true
       ) : (
-        <AssetDetailContent asset={asset}  /> // This will show when show-history is false
+        <AssetDetailContent asset={asset} /> // This will show when show-history is false
       )}
     </div>
   );

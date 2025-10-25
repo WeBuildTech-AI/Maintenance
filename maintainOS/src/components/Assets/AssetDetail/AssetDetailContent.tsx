@@ -21,7 +21,7 @@ export function AssetDetailContent(
     <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-6">
       <AssetStatusReadings asset={asset} />
       {/* <AssetStatus asset={asset} /> */}
-      <AssetLocation asset={asset} allLocationData={allLocationData} />
+      <AssetLocation asset={asset}/>
       <AssetCriticality asset={asset} />
       {/* <AssetManufacturer asset={asset} /> */}
       {/* <div className="pt-4"> */}

@@ -48,6 +48,20 @@ export const createMeter = createAsyncThunk(
   }
 );
 
+export const fetchMeasurementUnit = createAsyncThunk(
+  "measurement",
+  async (_, { rejectWithValue }) => {
+    try {
+      const meter = await meterService.fetchMesurementUnit();
+      return meter;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch meter"
+      );
+    }
+  }
+);
+
 export const updateMeter = createAsyncThunk(
   "meters/updateMeter",
   async (
