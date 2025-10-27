@@ -18,21 +18,33 @@ export const MessageAttachments: React.FC<MessageAttachmentsProps> = ({
 }) => {
   const dispatch = useDispatch<any>();
   const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
+  const [failedKeys, setFailedKeys] = useState<Set<string>>(new Set());
 
-  // Ensure we have arrays and filter out invalid entries
-  const validImages = Array.isArray(messageImages)
-    ? messageImages.filter((img) => img && img.key && img.fileName)
-    : [];
-  const validDocs = Array.isArray(messageDocs)
-    ? messageDocs.filter((doc) => doc && doc.key && doc.fileName)
-    : [];
+  // Ensure we have arrays and filter out invalid entries - memoize to prevent re-renders
+  const validImages = React.useMemo(
+    () =>
+      Array.isArray(messageImages)
+        ? messageImages.filter((img) => img && img.key && img.fileName)
+        : [],
+    [messageImages]
+  );
+  const validDocs = React.useMemo(
+    () =>
+      Array.isArray(messageDocs)
+        ? messageDocs.filter((doc) => doc && doc.key && doc.fileName)
+        : [],
+    [messageDocs]
+  );
 
-  // Fetch thumbnails for images
+  // Fetch thumbnails for images - only once per unique key
   useEffect(() => {
-    const fetchThumbnails = async () => {
-      const imagesToFetch = validImages.filter((img) => !thumbnails[img.key]);
-      if (imagesToFetch.length === 0) return;
+    const imagesToFetch = validImages.filter(
+      (img) => !thumbnails[img.key] && !failedKeys.has(img.key)
+    );
 
+    if (imagesToFetch.length === 0) return;
+
+    const fetchThumbnails = async () => {
       try {
         const results = await Promise.allSettled(
           imagesToFetch.map((img) =>
@@ -41,20 +53,37 @@ export const MessageAttachments: React.FC<MessageAttachmentsProps> = ({
         );
 
         const newThumbnails: Record<string, string> = {};
-        results.forEach((result) => {
+        const newFailedKeys = new Set(failedKeys);
+
+        results.forEach((result, index) => {
+          const key = imagesToFetch[index].key;
           if (result.status === "fulfilled") {
             newThumbnails[result.value.key] = result.value.blobUrl;
+          } else {
+            // Track failed keys to prevent retry loops
+            newFailedKeys.add(key);
+            console.warn(
+              `Failed to fetch thumbnail for ${key}:`,
+              result.reason
+            );
           }
         });
 
-        setThumbnails((prev) => ({ ...prev, ...newThumbnails }));
+        if (Object.keys(newThumbnails).length > 0) {
+          setThumbnails((prev) => ({ ...prev, ...newThumbnails }));
+        }
+
+        if (newFailedKeys.size > failedKeys.size) {
+          setFailedKeys(newFailedKeys);
+        }
       } catch (error) {
         console.error("Failed to fetch thumbnails:", error);
       }
     };
 
     fetchThumbnails();
-  }, [validImages, dispatch, thumbnails]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [validImages]);
 
   // Handle opening file in new window
   const handleOpenFile = async (bud: BUD) => {
@@ -99,8 +128,7 @@ export const MessageAttachments: React.FC<MessageAttachmentsProps> = ({
               )}
 
               {/* Overlay with view icon */}
-              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
-              </div>
+              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center"></div>
 
               {/* File name */}
               <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 truncate">

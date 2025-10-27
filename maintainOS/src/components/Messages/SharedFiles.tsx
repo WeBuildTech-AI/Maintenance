@@ -22,18 +22,31 @@ interface SharedFilesProps {
 export const SharedFiles: React.FC<SharedFilesProps> = ({ messages }) => {
   const dispatch = useDispatch<any>();
   const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
+  const [failedKeys, setFailedKeys] = useState<Set<string>>(new Set());
 
-  // Extract all files from messages
-  const allImages = messages.flatMap((msg) => msg.messageImages || []);
-  const allDocs = messages.flatMap((msg) => msg.messageDocs || []);
-  const allFiles = [...allImages, ...allDocs];
+  // Extract all files from messages - memoize to prevent re-renders
+  const allImages = React.useMemo(
+    () => messages.flatMap((msg) => msg.messageImages || []),
+    [messages]
+  );
+  const allDocs = React.useMemo(
+    () => messages.flatMap((msg) => msg.messageDocs || []),
+    [messages]
+  );
+  const allFiles = React.useMemo(
+    () => [...allImages, ...allDocs],
+    [allImages, allDocs]
+  );
 
-  // Fetch thumbnails for images
+  // Fetch thumbnails for images - only once per unique key
   useEffect(() => {
-    const fetchThumbnails = async () => {
-      const imagesToFetch = allImages.filter((img) => !thumbnails[img.key]);
-      if (imagesToFetch.length === 0) return;
+    const imagesToFetch = allImages.filter(
+      (img) => !thumbnails[img.key] && !failedKeys.has(img.key)
+    );
 
+    if (imagesToFetch.length === 0) return;
+
+    const fetchThumbnails = async () => {
       try {
         const results = await Promise.allSettled(
           imagesToFetch.map((img) =>
@@ -42,20 +55,37 @@ export const SharedFiles: React.FC<SharedFilesProps> = ({ messages }) => {
         );
 
         const newThumbnails: Record<string, string> = {};
-        results.forEach((result) => {
+        const newFailedKeys = new Set(failedKeys);
+
+        results.forEach((result, index) => {
+          const key = imagesToFetch[index].key;
           if (result.status === "fulfilled") {
             newThumbnails[result.value.key] = result.value.blobUrl;
+          } else {
+            // Track failed keys to prevent retry loops
+            newFailedKeys.add(key);
+            console.warn(
+              `Failed to fetch thumbnail for ${key}:`,
+              result.reason
+            );
           }
         });
 
-        setThumbnails((prev) => ({ ...prev, ...newThumbnails }));
+        if (Object.keys(newThumbnails).length > 0) {
+          setThumbnails((prev) => ({ ...prev, ...newThumbnails }));
+        }
+
+        if (newFailedKeys.size > failedKeys.size) {
+          setFailedKeys(newFailedKeys);
+        }
       } catch (error) {
         console.error("Failed to fetch thumbnails:", error);
       }
     };
 
     fetchThumbnails();
-  }, [allImages, dispatch, thumbnails]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allImages]);
 
   // Handle opening file in new window
   const handleOpenFile = async (bud: BUD) => {

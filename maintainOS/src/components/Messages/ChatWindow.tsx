@@ -21,6 +21,7 @@ import { UserSelect } from "./UserSelect";
 import { CreateConversationModal } from "./GroupInfoForm";
 import { MessageAttachments } from "./MessageAttachments";
 import { SharedFiles } from "./SharedFiles";
+import { ChatsInCommon } from "./ChatsInCommon";
 import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "../../store";
 import type { User } from "../../store/messages";
@@ -711,8 +712,16 @@ export function ChatWindow({
           </div>
 
           {showChatsInCommon && (
-            <div className="text-sm text-muted-background">
-              No Chats in Common
+            <div className="max-h-64 overflow-y-auto">
+              <ChatsInCommon
+                currentConversationId={conversationId}
+                otherUserId={
+                  currentConversation?.participants &&
+                  currentConversation.participants.length > 0
+                    ? currentConversation.participants[0].id
+                    : undefined
+                }
+              />
             </div>
           )}
         </div>

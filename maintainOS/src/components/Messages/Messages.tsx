@@ -46,6 +46,7 @@ export function Messages() {
     (state: RootState) => state.messaging.dmsStatus
   );
 
+
   useEffect(() => {
     if (currentUserId && dmsStatus === "idle") {
       dispatch(getDMs(currentUserId));
@@ -140,7 +141,6 @@ export function Messages() {
     setIsCreatingMessage(false);
     navigate("/messages");
   };
-
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       {/* Header */}
@@ -205,8 +205,12 @@ export function Messages() {
                   <p className="font-medium truncate">
                     {item.participants.map((p) => p.name || p.id).join(", ")}
                   </p>
+                  
                   <p className="text-sm text-muted-foreground truncate">
-                    {item.lastMessage?.body || "No messages yet"}
+                    {
+                    item.lastMessage?.body ? item.lastMessage.body : 
+                    "New Attachment"
+                    }
                   </p>
                 </div>
               </div>
