@@ -15,6 +15,7 @@ import type { User } from "../../store/messages";
 import type { AppDispatch } from "../../store";
 import { unwrapResult } from "@reduxjs/toolkit";
 import { createConversation } from "../../store/messages/messages.thunks";
+import { userService } from "../../store/users/users.service";
 import toast from "react-hot-toast";
 
 export function ChatWindow({
@@ -31,6 +32,7 @@ export function ChatWindow({
   const [showChatsInCommon, setShowChatsInCommon] = useState(false);
   const [selectedRecipients, setSelectedRecipients] = useState<User[]>([]);
   const [showGroupModal, setShowGroupModal] = useState(false);
+  const [userDetails, setUserDetails] = useState<any>(null);
 
   const dispatch = useDispatch<AppDispatch>();
 
@@ -41,6 +43,10 @@ export function ChatWindow({
   const lastMessage = useSelector(
     (state: RootState) => state.messaging.activeConversation.messages[0]
   );
+  const dms = useSelector((state: RootState) => state.messaging.dms);
+
+  // Find the current conversation from DMs
+  const currentConversation = dms.find((dm) => dm.id === conversationId);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -49,10 +55,8 @@ export function ChatWindow({
     setSelectedRecipients(selectedUsers);
   }, []);
 
-  // Handle group creation
   const handleCreateGroup = useCallback(
     (_groupName: string) => {
-      // TODO: Implement group creation logic here
       setShowGroupModal(false);
     },
     [selectedRecipients]
@@ -78,6 +82,35 @@ export function ChatWindow({
       });
     }
   }, [conversationId, dispatch]);
+
+  // Fetch user details 
+  useEffect(() => {
+    const fetchUserDetails = async () => {
+      // Try to get user info from conversation participants first
+      if (
+        currentConversation?.participants &&
+        currentConversation.participants.length > 0
+      ) {
+        const participant = currentConversation.participants[0];
+
+        if (participant.id) {
+          try {
+            const details = await userService.fetchUserById(participant.id);
+            setUserDetails(details);
+            return;
+          } catch (error) {
+            setUserDetails({
+              fullName: participant.name,
+              email: "Not available",
+              phoneNumber: "Not available",
+            });
+            return;
+          }
+        }
+      }
+    };
+    fetchUserDetails();
+  }, [currentChatUser, currentConversation]);
 
   const handleSendMessage = async () => {
     if (isCreatingMessage) {
@@ -316,12 +349,16 @@ export function ChatWindow({
 
           <div className="mt-4 border-b flex w-full justify-between pb-3">
             <p className="text-sm">Email</p>
-            <p className="text-sm text-muted-foreground">user@gmail.com</p>
+            <p className="text-sm text-muted-foreground">
+              {userDetails?.email || "Not available"}
+            </p>
           </div>
 
           <div className="mt-4 flex w-full justify-between pb-3">
             <p className="text-sm">Mobile Phone Number</p>
-            <p className="text-sm text-muted-foreground">+91 1234</p>
+            <p className="text-sm text-muted-foreground">
+              {userDetails?.phoneNumber || "Not available"}
+            </p>
           </div>
 
           <div className="mt-6 mb-2 border-b">
