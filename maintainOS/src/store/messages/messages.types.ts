@@ -4,7 +4,7 @@ import type { ViewMode } from "../../components/purchase-orders/po.types";
 // ---------- ENUMS ----------
 export type ConversationType = "org" | "dm" | "group";
 export type MessageType = "text" | "file" | "system";
-
+import type { BUD } from "../../components/utils/BlobUpload";
 // ---------- CORE INTERFACES ----------
 
 export interface Conversation {
@@ -24,7 +24,8 @@ export interface Message {
   senderId: string;
   type: MessageType;
   body?: string;
-  attachments?: Attachment[];
+  messageImages?: BUD[];
+  messageDocs?: BUD[];
   metadata?: Record<string, any>;
   createdAt: string;
   updatedAt: string;
@@ -51,13 +52,13 @@ export interface UserResponse {
   avatarUrl?: string;
 }
 
-export interface Attachment {
-  id: string;
-  url: string;
-  name?: string;
-  mimeType?: string;
-  size?: number;
-}
+// export interface Attachment {
+//   id: string;
+//   url: string;
+//   name?: string;
+//   mimeType?: string;
+//   size?: number;
+// }
 
 // ---------- PAYLOAD TYPES (correspond to your NestJS DTOs) ----------
 
@@ -81,7 +82,8 @@ export interface UpdateConversationPayload {
 export interface SendMessagePayload {
   type: MessageType;
   body?: string;
-  attachmentIds?: string[];
+  messageImages?: BUD[];
+  messageDocs?: BUD[];
   metadata?: Record<string, any>;
 }
 
@@ -118,6 +120,8 @@ export interface ChatWindowProps {
     text: string;
     avatar: string;
     timestamp: string;
+    messageImages?: BUD[];
+    messageDocs?: BUD[];
   }[];
   isCreatingMessage: boolean;
   conversationId?: string; // Add conversationId prop

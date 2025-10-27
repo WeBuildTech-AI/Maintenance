@@ -21,7 +21,6 @@ export function Messages() {
 
   const [viewMode, setViewMode] = useState<ViewMode>("panel");
   const [searchQuery, setSearchQuery] = useState("");
-  const [showSettings, setShowSettings] = useState(false);
   const [isCreatingMessage, setIsCreatingMessage] = useState(false);
 
   const [active, setActive] = useState<"messages" | "threads">("messages");
@@ -62,22 +61,11 @@ export function Messages() {
 
   const items: DMConversation[] = active === "messages" ? oneOnOneDMs : threads;
 
-  const transformMessages = () => {
-    console.log("Current user:", currentUserId);
-    console.log("Active conversation messages:", activeConversation.messages);
+  const transformMessages = (conversation: any) => {
+    if (!conversation || !conversation.messages) return [];
 
-    return [...activeConversation.messages] // Create a copy of the array to avoid mutating Redux state
-      .filter((msg) => msg && msg.id) // Filter out any null/undefined/invalid messages
-      .sort(
-        (a, b) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-      ) // Sort by createdAt ascending (oldest first)
-      .map((msg, index) => {
-        console.log("Transforming message:", msg);
-        console.log("Sender object:", msg.sender);
-        console.log("Sender fullName:", msg.sender?.fullName);
-
-        // Handle both complete sender objects and messages with just senderId
+    return conversation.messages
+      .map((msg: any, index: number) => {
         let senderName = "Unknown User";
         let senderAvatar = "/avatar.png";
 
@@ -108,10 +96,17 @@ export function Messages() {
           text: msg.body || "",
           avatar: senderAvatar,
           timestamp: new Date(msg.createdAt).toLocaleString(),
+          createdAt: msg.createdAt, 
+          messageImages: msg.messageImages || [],
+          messageDocs: msg.messageDocs || [],
         };
 
-        console.log("Final transformed message:", transformedMsg);
         return transformedMsg;
+      })
+      .sort((a: any, b: any) => {
+        return (
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
       });
   };
 
@@ -128,25 +123,16 @@ export function Messages() {
     }
   }, [active, items.length, isCreatingMessage]);
 
-  // Handle conversation creation callback
   const handleConversationCreated = async (newConversationId: string) => {
-    // Switch to the new conversation immediately
     setSelectedId(newConversationId);
 
-    // Fetch chat history for the new conversation
     dispatch(chatHistory(newConversationId));
 
-    // Refresh the DMs list to get the latest conversations
-    // Add a small delay to ensure the backend has processed the conversation creation
     setTimeout(() => {
       if (currentUserId) {
         dispatch(getDMs(currentUserId));
       }
     }, 500);
-
-    // Check if we need to switch to the correct tab based on conversation type
-    // If it's a group conversation (more than 1 other participant), switch to threads tab
-    // This will be determined when the conversation list updates
   };
 
   // Handle exiting create mode
@@ -164,7 +150,6 @@ export function Messages() {
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         setIsCreatingForm={setIsCreatingMessage}
-        setShowSettings={setShowSettings}
       />
 
       <div className="p-6 gap-4 flex flex-1 min-h-0">
@@ -272,7 +257,7 @@ export function Messages() {
               />
             ) : (
               <ChatWindow
-                messages={transformMessages()}
+                messages={transformMessages(activeConversation)}
                 isCreatingMessage={isCreatingMessage}
                 conversationId={selectedId}
                 onConversationCreated={handleConversationCreated}
