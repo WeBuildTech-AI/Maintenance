@@ -1,6 +1,11 @@
 import axios from "axios";
 
-import type { DMConversation, MessageWithSender, User, CreateConversationPayload } from "./messages.types";
+import type {
+  DMConversation,
+  MessageWithSender,
+  User,
+  CreateConversationPayload,
+} from "./messages.types";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -49,8 +54,12 @@ export const messageService = {
   },
 
   // get all chats of a particular coversation ID
-  getChatHistory: async (conversationId: string): Promise<MessageWithSender[]> => {
-    const response = await axios.get(`${API_URL}/messaging/conversations/${conversationId}/messages`);
+  getChatHistory: async (
+    conversationId: string
+  ): Promise<MessageWithSender[]> => {
+    const response = await axios.get(
+      `${API_URL}/messaging/conversations/${conversationId}/messages`
+    );
     const messages = response.data;
 
     if (messages.length > 0) {
@@ -66,6 +75,8 @@ export const messageService = {
         type: msg.type,
         body: msg.body || "",
         attachments: msg.attachments || [],
+        messageImages: msg.messageImages || [], // ✅ Include messageImages
+        messageDocs: msg.messageDocs || [], // ✅ Include messageDocs
         metadata: msg.metadata,
         createdAt: msg.createdAt,
         updatedAt: msg.updatedAt || msg.createdAt,
@@ -74,7 +85,7 @@ export const messageService = {
         sender: {
           id: msg.sender.id,
           fullName: msg.sender.fullName,
-          avatarUrl: msg.sender.avatarUrl || undefined, 
+          avatarUrl: msg.sender.avatarUrl || undefined,
         },
       })
     );
@@ -82,7 +93,6 @@ export const messageService = {
     console.log("Transformed message:", transformedMessages[0]);
     return transformedMessages;
   },
-
 
   createConversation: async (
     payload: CreateConversationPayload & { userId: string }
@@ -93,5 +103,4 @@ export const messageService = {
     );
     return response.data;
   },
-  
 };

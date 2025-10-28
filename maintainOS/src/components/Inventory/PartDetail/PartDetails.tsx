@@ -18,6 +18,8 @@ import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../../store";
 import { deletePart } from "../../../store/parts/parts.thunks";
 import toast from "react-hot-toast";
+import { PartImages } from "./PartImages";
+import { PartFiles } from "./PartFiles";
 
 export function PartDetails({
   item,
@@ -89,12 +91,12 @@ export function PartDetails({
   };
 
   // ✅ Fallback handling for units and part type
-  const availableUnits = item.unitsInStock ?? item.locations?.[0]?.unitsInStock ?? 0;
+  const availableUnits =
+    item.unitsInStock ?? item.locations?.[0]?.unitsInStock ?? 0;
   const minUnits = item.minInStock ?? item.locations?.[0]?.minimumInStock ?? 0;
-  const partType =
-    Array.isArray(item.partsType)
-      ? item.partsType[0]?.name || item.partsType[0] || "N/A"
-      : item.partsType?.name || "N/A";
+  const partType = Array.isArray(item.partsType)
+    ? item.partsType[0]?.name || item.partsType[0] || "N/A"
+    : item.partsType?.name || "N/A";
 
   return (
     <div className="flex flex-col h-full bg-white shadow-sm border relative">
@@ -102,7 +104,9 @@ export function PartDetails({
         <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-50">
           <div className="flex flex-col items-center gap-3">
             <div className="w-10 h-10 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-yellow-600 font-medium text-sm">Opening edit form...</p>
+            <p className="text-yellow-600 font-medium text-sm">
+              Opening edit form...
+            </p>
           </div>
         </div>
       )}
@@ -257,10 +261,14 @@ export function PartDetails({
                 <table className="w-full text-sm text-gray-700">
                   <thead className="bg-gray-50 text-gray-700">
                     <tr>
-                      <th className="py-3 px-4 text-left font-medium">Location</th>
+                      <th className="py-3 px-4 text-left font-medium">
+                        Location
+                      </th>
                       <th className="py-3 px-4 text-left font-medium">Area</th>
                       <th className="py-3 px-4 text-left font-medium">Units</th>
-                      <th className="py-3 px-4 text-left font-medium">Minimum</th>
+                      <th className="py-3 px-4 text-left font-medium">
+                        Minimum
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white">
@@ -275,12 +283,17 @@ export function PartDetails({
                           </td>
                           <td className="py-3 px-4">{loc.area || "-"}</td>
                           <td className="py-3 px-4">{loc.unitsInStock ?? 0}</td>
-                          <td className="py-3 px-4">{loc.minimumInStock ?? 0}</td>
+                          <td className="py-3 px-4">
+                            {loc.minimumInStock ?? 0}
+                          </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={4} className="text-center text-gray-500 py-3">
+                        <td
+                          colSpan={4}
+                          className="text-center text-gray-500 py-3"
+                        >
                           No location data available
                         </td>
                       </tr>
@@ -290,43 +303,11 @@ export function PartDetails({
               </div>
             </div>
 
-            {/* Images */}
-            {item.photos?.length > 0 && (
-              <div className="mb-8">
-                <h4 className="font-medium text-gray-800 mb-3">Part Images</h4>
-                <div
-                  className={`grid gap-3 ${
-                    item.photos.length === 1
-                      ? "grid-cols-1"
-                      : item.photos.length === 2
-                      ? "grid-cols-2"
-                      : "grid-cols-3"
-                  }`}
-                >
-                  {item.photos.map((photo: any, i: number) => (
-                    <div
-                      key={i}
-                      className="border rounded-md overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow"
-                      style={{
-                        width: "120px",
-                        height: "120px",
-                        alignSelf: "start",
-                      }}
-                    >
-                      <img
-                        src={
-                          photo.base64
-                            ? `data:${photo.mimetype};base64,${photo.base64}`
-                            : photo.url
-                        }
-                        alt={`Part ${i + 1}`}
-                        className="object-cover w-full h-full rounded-md"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Part Images*/}
+            <PartImages part={item} />
+
+            {/* Part Files */}
+            <PartFiles part={item} />
 
             <hr className="border-t border-gray-200 my-4" />
 
@@ -368,7 +349,9 @@ export function PartDetails({
                       <div className="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center">
                         <Package2 className="w-5 h-5 text-yellow-500" />
                       </div>
-                      <span className="text-gray-800 font-normal">{a.name}</span>
+                      <span className="text-gray-800 font-normal">
+                        {a.name}
+                      </span>
                     </div>
                   ))
                 ) : (
@@ -404,7 +387,10 @@ export function PartDetails({
               <h4 className="font-medium text-gray-800 mb-3">Teams</h4>
               {item.teams?.length > 0 ? (
                 item.teams.map((t: any, i: number) => (
-                  <div key={i} className="flex items-center gap-2 text-gray-700 mb-1">
+                  <div
+                    key={i}
+                    className="flex items-center gap-2 text-gray-700 mb-1"
+                  >
                     <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium text-sm">
                       {t.name?.charAt(0).toUpperCase()}
                     </div>
@@ -431,7 +417,7 @@ export function PartDetails({
               <div className="flex items-center gap-1 text-sm text-gray-600">
                 <UserCircle2 className="w-4 h-4 text-yellow-500" />
                 <span>Last Updated</span>
-            
+
                 <CalendarDays className="w-4 h-4 text-gray-500 ml-1" />
                 <span>
                   {item.updatedAt
@@ -442,7 +428,9 @@ export function PartDetails({
             </div>
           </>
         ) : (
-          <div className="text-gray-500 italic">History will appear here...</div>
+          <div className="text-gray-500 italic">
+            History will appear here...
+          </div>
         )}
       </div>
 
@@ -468,7 +456,7 @@ export function PartDetails({
       {/* Delete Modal */}
       {showDeleteModal && (
         <DeletePartModal
-           isOpen={showDeleteModal}
+          isOpen={showDeleteModal}
           onClose={() => setShowDeleteModal(false)}
           onConfirm={handleDeletePart}
         />

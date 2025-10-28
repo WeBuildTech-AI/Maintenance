@@ -1,7 +1,6 @@
 "use client";
 import * as React from "react";
 import type { NewItem } from "../inventory.types";
-import { PartPicturesInput } from "./PartPicturesInput";
 
 export function PartBasicDetails({
   newItem,
@@ -21,11 +20,10 @@ export function PartBasicDetails({
         className="w-full border-0 border-b border-gray-300 focus:border-orange-500 focus:ring-0 text-lg text-gray-700 placeholder-gray-400 px-0 py-2 outline-none transition-all"
       />
 
-      {/* Pictures */}
-      <PartPicturesInput
+      {/* <PartPicturesInput
         files={newItem.pictures || []}
         setFiles={(files) => setNewItem((s) => ({ ...s, pictures: files }))}
-      />
+      /> */}
 
 
       {/* Unit Cost */}

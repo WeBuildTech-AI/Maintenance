@@ -1,9 +1,6 @@
 import axios from "axios";
-import type {
-  CreatePartData,
-  PartResponse,
-  UpdatePartData,
-} from "./parts.types";
+import type { PartResponse } from "./parts.types";
+import type { RestockThunkArgs, PartRestockLog } from "./parts.types";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -20,15 +17,12 @@ export const partService = {
     return res.data;
   },
 
-  createPart: async (data: CreatePartData): Promise<PartResponse> => {
+  createPart: async (data: FormData): Promise<PartResponse> => {
     const res = await axios.post(`${API_URL}/parts`, data);
     return res.data;
   },
 
-  updatePart: async (
-    id: string,
-    data: UpdatePartData
-  ): Promise<PartResponse> => {
+  updatePart: async (id: string, data: FormData): Promise<PartResponse> => {
     const res = await axios.patch(`${API_URL}/parts/${id}`, data);
     return res.data;
   },
@@ -37,20 +31,58 @@ export const partService = {
     await axios.delete(`${API_URL}/parts/${id}`);
   },
 
+  // RESTOCK API THUNKS BELOW 
+
   // ✅ RESTOCK PART - ID goes in URL
+  // restockPart: async (
+  //   partId: string,
+  //   locationId: string,
+  //   addedUnits: number
+  // ): Promise<PartResponse> => {
+  //   const formData = new FormData();
+  //   formData.append("locationId", locationId);
+  //   formData.append("addedUnits", String(addedUnits));
+
+  //   const res = await axios.post(
+  //     `${API_URL}/parts/${partId}/restock`,
+  //     formData,
+  //     { headers: { Accept: "application/json" } }
+  //   );
+  //   return res.data;
+  // },
   restockPart: async (
     partId: string,
-    locationId: string,
-    addedUnits: number
+    payload: RestockThunkArgs
   ): Promise<PartResponse> => {
     const formData = new FormData();
-    formData.append("locationId", locationId);
-    formData.append("addedUnits", String(addedUnits));
+
+    formData.append("locationId", payload.locationId);
+    formData.append("addedUnits", String(payload.addedUnits));
+    if (payload.notes) {
+      formData.append("notes", payload.notes);
+    }
+
+    if (payload.restockImages && payload.restockImages.length > 0) {
+      formData.append("restockImages", JSON.stringify(payload.restockImages));
+    }
 
     const res = await axios.post(
       `${API_URL}/parts/${partId}/restock`,
-      formData,
-      { headers: { Accept: "application/json" } }
+      formData
+    );
+    return res.data;
+  },
+
+  getAllRestockLogs: async (partId: string): Promise<PartRestockLog[]> => {
+  const res = await axios.get(
+    `${API_URL}/parts/${partId}/restock-logs`
+  );
+  return res.data;
+  },
+
+  getRestockLogById: async (logId: string): Promise<PartRestockLog> => {
+    const res = await axios.get(
+      `${API_URL}/parts/restock-logs/${logId}`
     );
     return res.data;
   },

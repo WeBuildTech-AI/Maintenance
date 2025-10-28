@@ -7,15 +7,12 @@ import { useDispatch, useSelector } from "react-redux";
 import type { SelectOption } from "./DynamicSelect";
 import { fetchLocationsName } from "../../../store/locations/locations.thunks";
 import { fetchAssetsName } from "../../../store/assets/assets.thunks";
-// import { fetchPartsName } from "../../../store/parts/parts.thunks";
 import { VendorPrimaryDetails } from "./VendorPrimaryDetails";
 import { VendorContactInput } from "./VendorContactInput";
 import { VendorLinkedItems } from "./VendorLinkedItems";
-// import toast from "react-hot-toast";
-import { saveVendor } from "./vendorService"; 
+import { saveVendor } from "./vendorService";
 import { BlobUpload, type BUD } from "../../utils/BlobUpload";
 
-// ✅ Contact interface matching backend ContactDto
 export interface ContactFormData {
   fullName: string;
   role: string;
@@ -52,7 +49,9 @@ export function VendorForm({
   const [contacts, setContacts] = useState<ContactFormData[]>([]);
   const [showInputs, setShowInputs] = useState(false);
 
-  const [availableLocations, setAvailableLocations] = useState<SelectOption[]>([]);
+  const [availableLocations, setAvailableLocations] = useState<SelectOption[]>(
+    []
+  );
   const [locationsLoading, setLocationsLoading] = useState(false);
   const [selectedLocationIds, setSelectedLocationIds] = useState<string[]>([]);
 
@@ -68,7 +67,38 @@ export function VendorForm({
 
   useEffect(() => {
     if (initialData) {
-      setForm((f) => ({ ...f, name: initialData.name || "" }));
+      setForm((f) => ({
+        ...f,
+        name: initialData.name || "",
+        description: initialData.description || "",
+        category: initialData.category || "",
+        services: initialData.services || "",
+        partsSummary: initialData.partsSummary || "",
+        color: initialData.color || "#2563eb",
+        vendorType: initialData.vendorType || "Manufacturer",
+      }));
+
+      // Set existing vendor images and docs
+      if (initialData.vendorImages) {
+        setVendorImages(initialData.vendorImages);
+      }
+      if (initialData.vendorDocs) {
+        setVendorDocs(initialData.vendorDocs);
+      }
+
+      // Set existing contacts
+      if (initialData.contacts) {
+        try {
+          const contactsArray = Array.isArray(initialData.contacts)
+            ? initialData.contacts
+            : typeof initialData.contacts === "string"
+            ? JSON.parse(initialData.contacts)
+            : [initialData.contacts];
+          setContacts(contactsArray);
+        } catch {
+          setContacts([]);
+        }
+      }
     }
   }, [initialData]);
 
@@ -79,7 +109,7 @@ export function VendorForm({
       .unwrap()
       .then((response) => {
         console.log("📦 Raw locations API response:", response);
-        const list =response || [];
+        const list = response || [];
         if (!Array.isArray(list)) {
           console.error("❌ Unexpected locations response format:", list);
           setAvailableLocations([]);
@@ -125,9 +155,10 @@ export function VendorForm({
 
   const handleFetchParts = () => {
     setPartsLoading(true);
+    // TODO: Uncomment when fetchPartsName is available
     dispatch(fetchPartsName())
       .unwrap()
-      .then((response) => {
+      .then((response: any) => {
         console.log("📦 Raw parts API response:", response);
         const list = response || [];
         if (!Array.isArray(list)) {
@@ -141,11 +172,13 @@ export function VendorForm({
         }));
         setAvailableParts(options);
       })
-      .catch((err) => {
+      .catch((err: any) => {
         console.error("🚨 Fetch parts failed:", err);
         setAvailableParts([]);
       })
       .finally(() => setPartsLoading(false));
+
+    setPartsLoading(false);
   };
 
   const handleCtaClick = (path: string) => {
@@ -153,15 +186,15 @@ export function VendorForm({
   };
 
   const handleBlobChange = (data: { formId: string; buds: BUD[] }) => {
-  console.log("Upload complete for:", data.formId);
-  console.table(data.buds);
+    console.log("Upload complete for:", data.formId);
+    console.table(data.buds);
 
-  if (data.formId === "vendor_profile") {
-    setVendorImages(data.buds);
-  } else if (data.formId === "vendor_docs") {
-    setVendorDocs(data.buds);
-  }
-};
+    if (data.formId === "vendor_profile") {
+      setVendorImages(data.buds);
+    } else if (data.formId === "vendor_docs") {
+      setVendorDocs(data.buds);
+    }
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -229,8 +262,14 @@ export function VendorForm({
         formData.append(`contacts[${index}][role]`, contact.role);
         formData.append(`contacts[${index}][email]`, contact.email);
         formData.append(`contacts[${index}][phoneNumber]`, contact.phoneNumber);
-        formData.append(`contacts[${index}][phoneExtension]`, contact.phoneExtension);
-        formData.append(`contacts[${index}][contactColor]`, contact.contactColour);
+        formData.append(
+          `contacts[${index}][phoneExtension]`,
+          contact.phoneExtension
+        );
+        formData.append(
+          `contacts[${index}][contactColor]`,
+          contact.contactColour
+        );
       });
     }
 
@@ -275,16 +314,23 @@ export function VendorForm({
         </h2>
       </div>
 
-      <form className="min-h-0 flex-1 overflow-y-auto space-y-8 py-8" onSubmit={handleSubmit}>
+      <form
+        className="min-h-0 flex-1 overflow-y-auto space-y-8 py-8"
+        onSubmit={handleSubmit}
+      >
         <VendorPrimaryDetails form={form} setForm={setForm} />
 
-      <BlobUpload formId="vendor_profile" type="images" onChange={handleBlobChange} />
+        <BlobUpload
+          formId="vendor_profile"
+          type="images"
+          initialBuds={vendorImages}
+          onChange={handleBlobChange}
+        />
         {/* <VendorPicturesInput
           files={pictures}
           setFiles={setPictures}
           onFilesSelected={handleFilesSelected}
         /> */}
-
 
         <VendorContactInput
           contact={contact}
@@ -294,7 +340,12 @@ export function VendorForm({
           onContactsChange={setContacts}
         />
 
-        <BlobUpload formId="vendor_docs" type="files" onChange={handleBlobChange} />
+        <BlobUpload
+          formId="vendor_docs"
+          type="files"
+          initialBuds={vendorDocs}
+          onChange={handleBlobChange}
+        />
 
         {/* <VendorAttachmentsInput
           attachedDocs={attachedDocs}

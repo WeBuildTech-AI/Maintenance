@@ -1,16 +1,10 @@
 "use client";
 
 import {
-  Building,
   ChevronDown,
-  Edit,
-  Link,
   MapPin,
-  MoreHorizontal,
-  Plus,
-  Turtle,
-  Check, // NEW: Added icon
-  ChevronUp, // NEW: Added icon
+  Check, 
+  ChevronUp, 
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../ui/button";
@@ -24,7 +18,6 @@ import Loader from "../Loader/Loader";
 
 import { LocationTable } from "./LocationTable";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-// import { sortLocations } from "../utils/Sorted"; // REMOVED: No longer needed
 import type { AppDispatch, RootState } from "../../store";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useMatch } from "react-router-dom";
@@ -156,9 +149,6 @@ export function Locations() {
       if (currentPage === 1) {
         const reversedLocations = [...res].reverse();
         setLocations(reversedLocations);
-        // if (reversedLocations.length > 0) {
-        //   setSelectedLocation("");
-        // }
       } else {
         setLocations((prev) => [...prev, ...res]);
       }
@@ -308,13 +298,22 @@ export function Locations() {
       .join("")
       .toUpperCase();
 
-  const fetchLocationById = (id) => {
-    // try {
-    //   const res = locationService.fetchLocationById(id);
-    //   // setSelectedLocation(res);
-    // } catch (err) {
-    //   toast.error("Data is not Fetch Successfully");
-    // }
+  const fetchLocationById = async (id?: string) => {
+    if (!id) {
+      await fetchLocations();
+      return;
+    }
+
+    try {
+      const res = await locationService.fetchLocationById(id);
+      setSelectedLocation(res);
+
+      // Also update the location in the locations array
+      setLocations((prev) => prev.map((loc) => (loc.id === id ? res : loc)));
+    } catch (err) {
+      console.error("Failed to fetch location by ID:", err);
+      toast.error("Failed to refresh location data");
+    }
   };
 
   // -------------------- JSX Rendering --------------------

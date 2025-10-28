@@ -1,10 +1,6 @@
 import axios from "axios";
 
-import type {
-  CreateLocationData,
-  LocationResponse,
-  UpdateLocationData,
-} from "./locations.types";
+import type { LocationResponse } from "./locations.types";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -32,18 +28,14 @@ export const locationService = {
     return res.data;
   },
 
-  createLocation: async (
-    data: CreateLocationData
-  ): Promise<LocationResponse> => {
-    const res = await axios.post(`${API_URL}/locations`, data, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+  createLocation: async (data: FormData): Promise<LocationResponse> => {
+    const res = await axios.post(`${API_URL}/locations`, data);
     return res.data;
   },
 
   updateLocation: async (
     id: string,
-    data: UpdateLocationData
+    data: FormData
   ): Promise<LocationResponse> => {
     const res = await axios.patch(`${API_URL}/locations/${id}`, data);
     return res.data;

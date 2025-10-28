@@ -1,4 +1,5 @@
 import { id } from "./utils";
+import type { BUD } from "../utils/BlobUpload";
 
 /* ------------------------------- Types ------------------------------- */
 export type Vendor = {
@@ -34,6 +35,9 @@ export type Item = {
   createdAt: string;
   updatedBy?: string;
   updatedAt?: string;
+
+  partImages?: BUD[];
+  partDocs?: BUD[];
 };
 
 /* ---------------------------- New Item Form -------------------------- */
