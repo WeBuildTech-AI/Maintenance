@@ -1,3 +1,5 @@
+import type { BUD } from "../../components/utils/BlobUpload";
+
 export interface PartResponse {
   id: string;
   organizationId: string;
@@ -14,6 +16,8 @@ export interface PartResponse {
   files?: string[];
   createdAt: string;
   updatedAt: string;
+  partImages?: BUD[];
+  partDocs?: BUD[];
 }
 
 export interface CreatePartData {
@@ -21,10 +25,10 @@ export interface CreatePartData {
   name: string;
   description?: string;
   unitCost?: number;
-  unitInStock:number;
-  minInStock:number;
-  area:string;
-  locationId:string;
+  unitInStock: number;
+  minInStock: number;
+  area: string;
+  locationId: string;
   qrCode?: string;
   photos?: string[];
   partsType?: string[];
@@ -33,6 +37,9 @@ export interface CreatePartData {
   teamsInCharge?: string[];
   vendorIds?: string[];
   files?: string[];
+
+  partImages?: BUD[];
+  partDocs?: BUD[];
 }
 
 export interface UpdatePartData {
@@ -47,6 +54,9 @@ export interface UpdatePartData {
   teamsInCharge?: string[];
   vendorIds?: string[];
   files?: string[];
+
+  partImages?: BUD[];
+  partDocs?: BUD[];
 }
 
 export interface PartsState {
@@ -54,4 +64,34 @@ export interface PartsState {
   selectedPart: PartResponse | null;
   loading: boolean;
   error: string | null;
+  restockLogs: PartRestockLog[]; 
+  selectedRestockLog: PartRestockLog | null;
+}
+
+export interface PartRestockLog {
+  id: string;
+  partId: string;
+  locationId: string;
+  unitsAdded: number;
+  notes: string | null;
+  restockImages: BUD[];
+  createdAt: string;
+
+  location: {
+    id: string;
+    name: string;
+  };
+
+  part?: {
+    id: string;
+    name: string;
+  };
+}
+
+export interface RestockThunkArgs {
+  partId: string;
+  locationId: string;
+  addedUnits: number;
+  notes?: string;
+  restockImages: BUD[];
 }

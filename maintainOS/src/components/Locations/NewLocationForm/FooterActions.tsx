@@ -7,16 +7,16 @@ import { Button } from "../../ui/button";
 type FooterActionsProps = {
   onCancel: () => void;
   onCreate: () => void;
-  submitLocationFormLoader: boolean; // boolean flag
-  isEdit?: boolean; // ✅ new optional prop
-  buttonText: () => void;
+  submitLocationFormLoader: boolean; 
+  isEdit?: boolean; 
+  buttonText: string;
 };
 
 export function FooterActions({
   onCancel,
   onCreate,
   submitLocationFormLoader,
-  isEdit = false, // ✅ default false
+  isEdit = false, 
   buttonText,
 }: FooterActionsProps) {
   const navigate = useNavigate();

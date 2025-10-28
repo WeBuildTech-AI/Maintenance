@@ -1,15 +1,44 @@
 "use client";
-import { Button } from "../../ui/button";
-import { Paperclip } from "lucide-react";
+import { BlobUpload, type BUD } from "../../utils/BlobUpload";
 
-export function PartFilesSection() {
+interface PartFilesSectionProps {
+  partImages: BUD[];
+  partDocs: BUD[];
+  onBlobChange: (data: { formId: string; buds: BUD[] }) => void;
+}
+
+export function PartFilesSection({
+  partImages,
+  partDocs,
+  onBlobChange,
+}: PartFilesSectionProps) {
   return (
-    <section className="space-y-2 mt-6">
-      <h3 className="text-sm font-semibold text-gray-800">Files</h3>
-      <Button className="gap-2 h-9 bg-white hover:bg-orange-50 text-orange-600 border border-orange-300">
-        <Paperclip className="h-4 w-4" />
-        Attach files
-      </Button>
+    <section className="space-y-6 mt-6">
+      {/* Part Images Section */}
+      <div>
+        <h3 className="text-sm font-semibold text-gray-800 mb-4">
+          Part Images
+        </h3>
+        <BlobUpload
+          formId="part_images"
+          type="images"
+          initialBuds={partImages}
+          onChange={onBlobChange}
+        />
+      </div>
+
+      {/* Part Documents Section */}
+      <div>
+        <h3 className="text-sm font-semibold text-gray-800 mb-4">
+          Part Documents
+        </h3>
+        <BlobUpload
+          formId="part_docs"
+          type="files"
+          initialBuds={partDocs}
+          onChange={onBlobChange}
+        />
+      </div>
     </section>
   );
 }

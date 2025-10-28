@@ -14,6 +14,7 @@ import { PartFooter } from "./PartFooter";
 import PartType from "./PartType";
 import toast from "react-hot-toast";
 import PartVendorsSection from "./PartVendorsSection";
+import type { BUD } from "../../utils/BlobUpload";
 
 export function NewPartForm({
   newItem,
@@ -37,7 +38,26 @@ export function NewPartForm({
     (state: RootState) => state.auth?.user?.organizationId
   );
 
-  // ✅ Prefill ID arrays from nested objects when editing
+  const [partImages, setPartImages] = React.useState<BUD[]>([]);
+  const [partDocs, setPartDocs] = React.useState<BUD[]>([]);
+
+  const handleBlobChange = (data: { formId: string; buds: BUD[] }) => {
+    if (data.formId === "part_images") {
+      setPartImages(data.buds);
+    } else if (data.formId === "part_docs") {
+      setPartDocs(data.buds);
+    }
+  };
+
+  React.useEffect(() => {
+    if (newItem?.partImages) {
+      setPartImages(newItem.partImages);
+    }
+    if (newItem?.partDocs) {
+      setPartDocs(newItem.partDocs);
+    }
+  }, [newItem?.partImages, newItem?.partDocs]);
+
   React.useEffect(() => {
     if (!newItem) return;
     setNewItem((prev: any) => ({
@@ -63,7 +83,7 @@ export function NewPartForm({
           ? [prev.partsType]
           : [],
     }));
-  }, [newItem?.id, setNewItem]); // ✅
+  }, [newItem?.id, setNewItem]); 
 
   const handleSubmitPart = async () => {
     try {
@@ -72,7 +92,6 @@ export function NewPartForm({
       const isEditing = !!newItem.id;
       const original = newItem._original || {}; // keep original fetched data for diff
 
-      // ✅ Helper: append only changed and non-empty fields
       const appendIfChanged = (key: string, newVal: any, oldVal: any) => {
         // Handle serialized JSON case
         if (typeof newVal === "string") {
@@ -97,10 +116,18 @@ export function NewPartForm({
         }
       };
 
-      // ✅ Basic fields
-      appendIfChanged("organizationId", organizationId || "", original.organizationId);
+      //  Basic fields
+      appendIfChanged(
+        "organizationId",
+        organizationId || "",
+        original.organizationId
+      );
       appendIfChanged("name", newItem.name || "", original.name);
-      appendIfChanged("description", newItem.description || "", original.description);
+      appendIfChanged(
+        "description",
+        newItem.description || "",
+        original.description
+      );
       appendIfChanged(
         "unitCost",
         newItem.unitCost ? String(newItem.unitCost) : "",
@@ -108,7 +135,6 @@ export function NewPartForm({
       );
       appendIfChanged("qrCode", newItem.qrCode || "", original.qrCode);
 
-      // ✅ Part Type (JSON) — now correctly skipped if empty
       const partTypeVal = Array.isArray(newItem.partsType)
         ? newItem.partsType
         : [];
@@ -120,7 +146,6 @@ export function NewPartForm({
         );
       }
 
-      // ✅ Locations (only if user actually filled anything)
       const hasLocationValues =
         newItem.locationId ||
         newItem.area ||
@@ -143,7 +168,6 @@ export function NewPartForm({
         );
       }
 
-      // ✅ Arrays (only if non-empty and changed)
       if (Array.isArray(newItem.assetIds) && newItem.assetIds.length > 0) {
         appendIfChanged(
           "assetIds",
@@ -151,7 +175,10 @@ export function NewPartForm({
           JSON.stringify(original.assetIds || [])
         );
       }
-      if (Array.isArray(newItem.teamsInCharge) && newItem.teamsInCharge.length > 0) {
+      if (
+        Array.isArray(newItem.teamsInCharge) &&
+        newItem.teamsInCharge.length > 0
+      ) {
         appendIfChanged(
           "teamsInCharge",
           JSON.stringify(newItem.teamsInCharge),
@@ -166,7 +193,7 @@ export function NewPartForm({
         );
       }
 
-      // ✅ Photos (only if added)
+      //  Photos 
       if (Array.isArray(newItem.pictures) && newItem.pictures.length > 0) {
         newItem.pictures.forEach((file: any) => {
           if (file instanceof File) {
@@ -176,21 +203,30 @@ export function NewPartForm({
             const mimeString = file.split(",")[0].split(":")[1].split(";")[0];
             const ab = new ArrayBuffer(byteString.length);
             const ia = new Uint8Array(ab);
-            for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+            for (let i = 0; i < byteString.length; i++)
+              ia[i] = byteString.charCodeAt(i);
             const blob = new Blob([ab], { type: mimeString });
             formData.append("photos", blob);
           }
         });
       }
 
-      // ✅ Files (only if added)
+      //  Files 
       if (Array.isArray(newItem.files) && newItem.files.length > 0) {
         newItem.files.forEach((file: any) => {
           formData.append("files", file instanceof File ? file : String(file));
         });
       }
 
-      // ✅ Vendors extra mapping (optional)
+      
+      //  Backblaze BUD arrays as JSON strings 
+      const partImagesArray = partImages && partImages.length > 0 ? partImages : [];
+      const partDocsArray = partDocs && partDocs.length > 0 ? partDocs : [];
+      
+      formData.append('partImages', JSON.stringify(partImagesArray));
+      formData.append('partDocs', JSON.stringify(partDocsArray));
+
+      //  Vendors extra mapping (optional)
       if (Array.isArray(newItem.vendors) && newItem.vendors.length > 0) {
         newItem.vendors.forEach((vendor: any, index: number) => {
           formData.append(`vendors[${index}][vendorId]`, vendor.vendorId || "");
@@ -201,13 +237,9 @@ export function NewPartForm({
         });
       }
 
-      // ✅ Debug Log
-      console.log("📦 FormData contents (final to send):");
-      for (let [key, value] of formData.entries()) {
-        console.log(`${key}:`, value);
-      }
+      
 
-      // ✅ Create or Update
+      //  Create or Update
       if (isEditing) {
         await dispatch(
           updatePart({ id: String(newItem.id), partData: formData })
@@ -231,9 +263,16 @@ export function NewPartForm({
       <div className="flex-1 min-h-0 overflow-y-auto">
         <div className="mx-auto w-full max-w-[840px] p-6 space-y-20">
           <PartBasicDetails newItem={newItem} setNewItem={setNewItem} />
+          <PartFilesSection
+            partImages={partImages}
+            partDocs={partDocs}
+            onBlobChange={handleBlobChange}
+          />
           <PartQRCodeSection
             qrCode={newItem.qrCode}
-            setQrCode={(code) => setNewItem((s: any) => ({ ...s, qrCode: code }))}
+            setQrCode={(code) =>
+              setNewItem((s: any) => ({ ...s, qrCode: code }))
+            }
           />
           <PartType newItem={newItem} setNewItem={setNewItem} />
           <PartLocationSection newItem={newItem} setNewItem={setNewItem} />
@@ -243,7 +282,7 @@ export function NewPartForm({
             addVendorRow={addVendorRow}
             removeVendorRow={removeVendorRow}
           />
-          <PartFilesSection />
+          
         </div>
       </div>
       <PartFooter

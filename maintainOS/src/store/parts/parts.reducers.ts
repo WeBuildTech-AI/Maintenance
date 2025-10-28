@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { PartResponse, PartsState } from "./parts.types";
+import type { PartResponse, PartsState, PartRestockLog } from "./parts.types";
 import {
   createPart,
   deletePart,
@@ -7,6 +7,8 @@ import {
   fetchParts,
   updatePart,
   restockPart,
+  getAllRestockLogs,
+  getRestockLogById,
 } from "./parts.thunks";
 
 const initialState: PartsState = {
@@ -14,6 +16,8 @@ const initialState: PartsState = {
   selectedPart: null,
   loading: false,
   error: null,
+  restockLogs: [],
+  selectedRestockLog: null,
 };
 
 const partsSlice = createSlice({
@@ -25,6 +29,12 @@ const partsSlice = createSlice({
     },
     setSelectedPart: (state, action: PayloadAction<PartResponse | null>) => {
       state.selectedPart = action.payload;
+    },
+    clearRestockLogs: (state) => {
+      state.restockLogs = [];
+    },
+    clearSelectedRestockLog: (state) => {
+      state.selectedRestockLog = null;
     },
   },
   extraReducers: (builder) => {
@@ -110,16 +120,14 @@ const partsSlice = createSlice({
         state.error = action.payload as string;
       })
 
-      // ✅ RESTOCK
+      // RESTOCK
       .addCase(restockPart.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(restockPart.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.parts.findIndex(
-          (p) => p.id === action.payload.id
-        );
+        const index = state.parts.findIndex((p) => p.id === action.payload.id);
         if (index !== -1) {
           state.parts[index] = action.payload;
         }
@@ -130,9 +138,46 @@ const partsSlice = createSlice({
       .addCase(restockPart.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+
+      .addCase(getAllRestockLogs.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        getAllRestockLogs.fulfilled,
+        (state, action: PayloadAction<PartRestockLog[]>) => {
+          state.loading = false;
+          state.restockLogs = action.payload;
+        }
+      )
+      .addCase(getAllRestockLogs.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+
+      .addCase(getRestockLogById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        getRestockLogById.fulfilled,
+        (state, action: PayloadAction<PartRestockLog>) => {
+          state.loading = false;
+          state.selectedRestockLog = action.payload;
+        }
+      )
+      .addCase(getRestockLogById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });
 
-export const { clearError, setSelectedPart } = partsSlice.actions;
+export const {
+  clearError,
+  setSelectedPart,
+  clearRestockLogs,
+  clearSelectedRestockLog,
+} = partsSlice.actions;
 export default partsSlice.reducer;

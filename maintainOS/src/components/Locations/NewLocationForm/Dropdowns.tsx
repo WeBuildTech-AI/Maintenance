@@ -18,6 +18,7 @@ type DropdownsProps = {
   navigate: (path: string) => void;
   value: string | string[];
   onSelect: (val: string | string[]) => void;
+  disabled?: boolean;
 };
 
 export function Dropdowns({
@@ -28,6 +29,7 @@ export function Dropdowns({
   navigate,
   value,
   onSelect,
+  disabled = false,
 }: DropdownsProps) {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -66,7 +68,7 @@ export function Dropdowns({
           // Ho sakta hai aapko service method update karna pade.
           let res;
           if (stage === "vendors") {
-            res = await vendorService.fetchVendorName( ); // Example: fetching up to 1000 items
+            res = await vendorService.fetchVendorName(); // Example: fetching up to 1000 items
           } else if (stage === "teams") {
             res = await teamService.fetchTeamsName();
           } else {
