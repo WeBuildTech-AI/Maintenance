@@ -1,5 +1,4 @@
 import axios from "axios";
-
 import type {
   CreateUserData,
   UpdateUserData,
@@ -9,10 +8,11 @@ import type {
 const API_URL = import.meta.env.VITE_API_URL;
 
 export const userService = {
+  // ✅ Fetch paginated users
   fetchUsers: async (
-    limit: number,
-    page: number,
-    offset: number
+    limit?: number,
+    page?: number,
+    offset?: number
   ): Promise<UserResponse[]> => {
     const res = await axios.get(`${API_URL}/users`, {
       params: { limit, page, offset },
@@ -21,16 +21,27 @@ export const userService = {
     return res.data;
   },
 
+  // ✅ Fetch all user names / summary
+  fetchUserSummary: async (): Promise<UserResponse[]> => {
+    const res = await axios.get(`${API_URL}/users/summary`, {
+      headers: { Accept: "application/json" },
+    });
+    return res.data;
+  },
+
+  // ✅ Fetch single user
   fetchUserById: async (id: string): Promise<UserResponse> => {
     const res = await axios.get(`${API_URL}/users/${id}`);
     return res.data;
   },
 
+  // ✅ Create user
   createUser: async (data: CreateUserData): Promise<UserResponse> => {
     const res = await axios.post(`${API_URL}/users`, data);
     return res.data;
   },
 
+  // ✅ Update user
   updateUser: async (
     id: string,
     data: UpdateUserData
@@ -39,6 +50,7 @@ export const userService = {
     return res.data;
   },
 
+  // ✅ Delete user
   deleteUser: async (id: string): Promise<void> => {
     await axios.delete(`${API_URL}/users/${id}`);
   },

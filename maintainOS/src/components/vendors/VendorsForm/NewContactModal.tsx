@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 import { useState, useEffect } from "react";
-import { saveContact } from "./contactService";
+import toast from "react-hot-toast";
+import { vendorService } from "../../../store/vendors/vendors.service";
 
 export interface ContactFormData {
   fullName: string;
@@ -8,14 +9,15 @@ export interface ContactFormData {
   email: string;
   phoneNumber: string;
   phoneExtension: string;
-  contactColour: string;
+  contactColor: string;
 }
 
 interface NewContactModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (contact: ContactFormData) => void;
-  initialData?: any | null; // vendor/contact data
+  initialData?: any | null;
+  vendorId?: string;
 }
 
 const COLORS = [
@@ -34,17 +36,16 @@ export function NewContactModal({
   onClose,
   onSave,
   initialData,
+  vendorId,
 }: NewContactModalProps) {
-  const [contact, setContact] = useState<ContactFormData>(
-    initialData || {
-      fullName: "",
-      role: "",
-      email: "",
-      phoneNumber: "",
-      phoneExtension: "",
-      contactColour: "#EC4899",
-    }
-  );
+  const [contact, setContact] = useState<ContactFormData>({
+    fullName: "",
+    role: "",
+    email: "",
+    phoneNumber: "",
+    phoneExtension: "",
+    contactColor: "#EC4899",
+  });
   const [showExtension, setShowExtension] = useState(false);
 
   useEffect(() => {
@@ -58,67 +59,46 @@ export function NewContactModal({
         email: "",
         phoneNumber: "",
         phoneExtension: "",
-        contactColour: "#EC4899",
+        contactColor: "#EC4899",
       });
       setShowExtension(false);
     }
   }, [initialData, isOpen]);
 
-  const getInitial = () => {
-    return contact.fullName.trim().charAt(0).toUpperCase() || "C";
-  };
+  const getInitial = () => contact.fullName.trim().charAt(0).toUpperCase() || "C";
 
   const handleSave = async () => {
     try {
-      if (initialData?.vendorId) {
-        // ✅ Always use PUT API for both new + existing contacts
-        await saveContact({
-          contact,
-          vendorId: initialData.vendorId,
-          contactId: initialData?.id || initialData?._id,
-        });
+      let response;
+
+      if (vendorId) {
+        // ✅ Save to backend
+        response = await vendorService.createVendorContact(vendorId, contact);
+        toast.success("Contact saved successfully ✅");
+
+        // ✅ Fetch updated vendor & broadcast event
+        const updatedVendor = await vendorService.fetchVendorById(vendorId);
+        window.dispatchEvent(
+          new CustomEvent("vendor-updated", { detail: updatedVendor })
+        );
       } else {
-        console.warn("⚠️ Vendor ID missing — contact will be saved later.");
+        // 🆕 Just store locally if vendor not yet created
+        response = contact;
+        toast.success("Contact added (will save when vendor is created)");
       }
 
-      onSave(contact);
+      onSave(response);
       onClose();
-
-      // Reset fields
-      setContact({
-        fullName: "",
-        role: "",
-        email: "",
-        phoneNumber: "",
-        phoneExtension: "",
-        contactColour: "#EC4899",
-      });
-      setShowExtension(false);
-    } catch (error) {
-      console.error("❌ handleSave error:", error);
+    } catch (err: any) {
+      console.error("❌ Error saving contact:", err);
+      toast.error(err?.message || "Error saving contact");
     }
-  };
-
-  const handleCancel = () => {
-    setContact({
-      fullName: "",
-      role: "",
-      email: "",
-      phoneNumber: "",
-      phoneExtension: "",
-      contactColour: "#EC4899",
-    });
-    setShowExtension(false);
-    onClose();
   };
 
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ backgroundColor: "rgba(0, 0, 0, 0.1)" }}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10">
       <div
         className="w-full bg-white rounded-lg shadow-lg overflow-hidden"
         style={{ maxWidth: "672px", maxHeight: "90vh" }}
@@ -126,195 +106,128 @@ export function NewContactModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <h2 className="text-2xl font-semibold text-gray-700">
-            {initialData?.id ? "Edit Contact" : "New Contact"}
+            {initialData ? "Edit Contact" : "New Contact"}
           </h2>
-          <button
-            onClick={handleCancel}
-            className="text-gray-700 hover:text-gray-700 transition-colors cursor-pointer bg-transparent border-0 p-1 flex items-center justify-center"
-          >
-            <X className="w-6 h-6" />
+          <button onClick={onClose} className="p-1">
+            <X className="w-6 h-6 text-gray-700" />
           </button>
         </div>
 
-        {/* Scrollable Content */}
-        <div className="overflow-y-auto" style={{ maxHeight: "calc(90vh - 140px)" }}>
-          <div className="px-6 py-8">
-            {/* Avatar */}
-            <div className="flex justify-start mb-8">
-              <div
-                className="flex items-center justify-center text-white font-light"
-                style={{
-                  backgroundColor: contact.contactColour,
-                  fontSize: "48px",
-                  width: "128px",
-                  height: "128px",
-                  borderRadius: "50%",
-                }}
-              >
-                {getInitial()}
-              </div>
+        {/* Avatar */}
+        <div className="overflow-y-auto px-6 py-8" style={{ maxHeight: "calc(90vh - 140px)" }}>
+          <div className="flex justify-start mb-8">
+            <div
+              className="flex items-center justify-center text-white font-light"
+              style={{
+                backgroundColor: contact.contactColor,
+                fontSize: "48px",
+                width: "128px",
+                height: "128px",
+                borderRadius: "50%",
+              }}
+            >
+              {getInitial()}
             </div>
+          </div>
 
-            {/* Contact Fields */}
-            <div className="mb-8">
-              <h3 className="text-base font-semibold text-gray-700 mb-4">
-                Contact Info
-              </h3>
-              <div className="grid grid-cols-2 gap-6" style={{ gap: "20px 24px" }}>
-                {/* Full Name */}
-                <div className="flex flex-col">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Name"
-                    value={contact.fullName}
-                    onChange={(e) =>
-                      setContact((prev) => ({ ...prev, fullName: e.target.value }))
-                    }
-                    className="w-full rounded border border-blue-500 px-3 text-sm text-gray-700 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                    style={{ padding: "10px 12px" }}
-                  />
-                </div>
-
-                {/* Role */}
-                <div className="flex flex-col">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Role
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Role"
-                    value={contact.role}
-                    onChange={(e) =>
-                      setContact((prev) => ({ ...prev, role: e.target.value }))
-                    }
-                    className="w-full rounded border border-gray-200 px-3 text-sm text-gray-700 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                    style={{ padding: "10px 12px" }}
-                  />
-                </div>
-
-                {/* Email */}
-                <div className="flex flex-col">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    placeholder="Email"
-                    value={contact.email}
-                    onChange={(e) =>
-                      setContact((prev) => ({ ...prev, email: e.target.value }))
-                    }
-                    className="w-full rounded border border-gray-200 px-3 text-sm text-gray-700 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                    style={{ padding: "10px 12px" }}
-                  />
-                </div>
-
-                {/* Phone */}
-                <div className="flex flex-col">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    placeholder="Enter phone number (e.g., 8750118899)"
-                    value={contact.phoneNumber}
-                    onChange={(e) =>
-                      setContact((prev) => ({ ...prev, phoneNumber: e.target.value }))
-                    }
-                    className="w-full rounded border border-gray-200 px-3 text-sm text-gray-700 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                    style={{ padding: "10px 12px" }}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Format: Country code will be added automatically
-                  </p>
-                </div>
-              </div>
-
-              {/* Add Country Code */}
-              {!showExtension && (
-                <button
-                  type="button"
-                  onClick={() => setShowExtension(true)}
-                  className="mt-4 cursor-pointer border-0 bg-transparent p-0 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
-                >
-                  + Add Country Code
-                </button>
-              )}
-
-              {showExtension && (
-                <div className="mt-4" style={{ width: "calc(50% - 12px)" }}>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Country Code
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g., +91"
-                    value={contact.phoneExtension}
-                    onChange={(e) =>
-                      setContact((prev) => ({ ...prev, phoneExtension: e.target.value }))
-                    }
-                    className="w-full rounded border border-gray-200 px-3 text-sm text-gray-700 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                    style={{ padding: "10px 12px" }}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Include + sign (e.g., +91, +1)
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Contact Color */}
+          {/* Fields */}
+          <div className="grid grid-cols-2 gap-6 mb-8">
             <div>
-              <h3 className="text-base font-semibold text-gray-700 mb-4">
-                Contact Color
-              </h3>
-              <div className="flex gap-3">
-                {COLORS.map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() =>
-                      setContact((prev) => ({ ...prev, contactColour: color }))
-                    }
-                    className="cursor-pointer transition-all"
-                    style={{
-                      backgroundColor: color,
-                      width: "28px",
-                      height: "28px",
-                      borderRadius: "50%",
-                      border:
-                        contact.contactColour === color
-                          ? "2px solid gray"
-                          : "2px solid transparent",
-                      transform:
-                        contact.contactColour === color
-                          ? "scale(1.1)"
-                          : "scale(1)",
-                    }}
-                    aria-label={`Select color ${color}`}
-                  />
-                ))}
-              </div>
+              <label className="text-sm font-medium mb-2 block">Full Name</label>
+              <input
+                type="text"
+                value={contact.fullName}
+                onChange={(e) => setContact({ ...contact, fullName: e.target.value })}
+                className="border rounded px-3 py-2 text-sm w-full"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Role</label>
+              <input
+                type="text"
+                value={contact.role}
+                onChange={(e) => setContact({ ...contact, role: e.target.value })}
+                className="border rounded px-3 py-2 text-sm w-full"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Email</label>
+              <input
+                type="email"
+                value={contact.email}
+                onChange={(e) => setContact({ ...contact, email: e.target.value })}
+                className="border rounded px-3 py-2 text-sm w-full"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Phone Number</label>
+              <input
+                type="tel"
+                value={contact.phoneNumber}
+                onChange={(e) => setContact({ ...contact, phoneNumber: e.target.value })}
+                className="border rounded px-3 py-2 text-sm w-full"
+              />
+            </div>
+          </div>
+
+          {!showExtension && (
+            <button
+              type="button"
+              onClick={() => setShowExtension(true)}
+              className="text-blue-600 text-sm font-medium"
+            >
+              + Add Country Code
+            </button>
+          )}
+
+          {showExtension && (
+            <div className="mt-4 w-1/2">
+              <label className="text-sm font-medium mb-2 block">Country Code</label>
+              <input
+                type="text"
+                placeholder="+91"
+                value={contact.phoneExtension}
+                onChange={(e) => setContact({ ...contact, phoneExtension: e.target.value })}
+                className="border rounded px-3 py-2 text-sm w-full"
+              />
+            </div>
+          )}
+
+          <div className="mt-8">
+            <h3 className="text-base font-semibold mb-4">Contact Color</h3>
+            <div className="flex gap-3">
+              {COLORS.map((color) => (
+                <button
+                  key={color}
+                  onClick={() => setContact({ ...contact, contactColor: color })}
+                  style={{
+                    backgroundColor: color,
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    border:
+                      contact.contactColor === color
+                        ? "2px solid gray"
+                        : "2px solid transparent",
+                    transform: contact.contactColor === color ? "scale(1.1)" : "scale(1)",
+                  }}
+                />
+              ))}
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-white">
-          <button
-            onClick={handleCancel}
-            className="cursor-pointer border-0 bg-transparent px-6 text-sm font-medium text-gray-700 hover:text-gray-700 transition-colors"
-            style={{ padding: "10px 24px" }}
-          >
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-200">
+          <button onClick={onClose} className="px-6 py-2 text-sm text-gray-700">
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="cursor-pointer rounded border-0 bg-blue-600 px-6 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
-            style={{ padding: "10px 24px" }}
+            className="px-6 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             Save
           </button>

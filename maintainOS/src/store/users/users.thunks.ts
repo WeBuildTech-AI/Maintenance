@@ -1,5 +1,4 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-
 import { userService } from "./users.service";
 import type { CreateUserData, UpdateUserData } from "./users.types";
 
@@ -12,6 +11,21 @@ export const fetchUsers = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch users"
+      );
+    }
+  }
+);
+
+// ✅ NEW THUNK → Fetch summary
+export const fetchUserSummary = createAsyncThunk(
+  "users/fetchUserSummary",
+  async (_, { rejectWithValue }) => {
+    try {
+      const users = await userService.fetchUserSummary();
+      return users;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch user summary"
       );
     }
   }

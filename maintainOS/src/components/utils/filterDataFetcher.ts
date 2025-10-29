@@ -5,13 +5,14 @@ import { assetService } from "../../store/assets/assets.service";
 import { vendorService } from "../../store/vendors/vendors.service";
 import { procedureService } from "../../store/procedures/procedures.service";
 import { teamMemberService } from "../../store/teamMembers/teamMembers.service";
+import { userService } from "../../store/users/users.service"; // ✅ Added for users summary
 
 // 🔹 Simple in-memory cache to avoid repeat API calls
 const cache: Record<string, any[]> = {};
 
 /**
  * Universal filter data fetcher.
- * Handles: Locations, Assets, Parts, Vendors, Procedures, Team Members
+ * Handles: Locations, Assets, Parts, Vendors, Procedures, Team Members, Users
  */
 export async function fetchFilterData(filterType: string) {
   const key = filterType.toLowerCase();
@@ -95,6 +96,24 @@ export async function fetchFilterData(filterType: string) {
           image: v.image || null,
         }));
         console.log("🟢 Vendors fetched:", result.length);
+        break;
+      }
+
+      /**
+       * -------------------------------------------------
+       * 👤 USERS (summary)
+       * -------------------------------------------------
+       */
+      case "user":
+      case "users": {
+        // ✅ API: GET /api/v1/users/summary
+        const list = await userService.fetchUserSummary();
+        result = (list || []).map((u: any) => ({
+          id: u.id,
+          name: u.fullName || "Unnamed User",
+          image: null,
+        }));
+        console.log("🟢 Users fetched (summary):", result.length);
         break;
       }
 

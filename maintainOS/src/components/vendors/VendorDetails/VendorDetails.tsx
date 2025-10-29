@@ -110,9 +110,7 @@ export default function VendorDetails({
 
       <div className="min-h-0 flex-1 overflow-y-auto space-y-8 py-8 px-6 bg-white">
         <div>
-          <h3 className="text-sm font-semibold text-gray-800 mb-1">
-            Description
-          </h3>
+          <h3 className="text-sm font-semibold text-gray-800 mb-1">Description</h3>
           <p className="text-sm text-gray-600">
             {vendor.description || "No description available."}
           </p>
@@ -126,37 +124,51 @@ export default function VendorDetails({
         />
 
         <VendorPartsSection vendor={vendor} />
-
         <VendorImages vendor={vendor} />
-
-
         <VendorLocationsSection vendor={vendor} />
-
-        <VendorFiles vendor={vendor}/>
+        <VendorFiles vendor={vendor} />
         <VendorFooter user={user} vendor={vendor} />
       </div>
 
       <VendorFooter.Button />
 
+      {/* ✅ Pass vendor.id here */}
       <NewContactModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         initialData={editingContact}
-        onSave={(newContact) => {
-          if (editingContact) {
-            setContacts((prev) =>
-              prev.map((c) =>
-                c.email === editingContact.email ? newContact : c
-              )
-            );
-            toast.success("Contact updated!");
-          } else {
-            setContacts((prev) => [...prev, newContact]);
-            toast.success("New contact added!");
+        vendorId={vendor.id}
+        onSave={async (newContact) => {
+          try {
+            if (editingContact) {
+              setContacts((prev) =>
+                prev.map((c) => (c.email === editingContact.email ? newContact : c))
+              );
+              toast.success("Contact updated!");
+            } else {
+              setContacts((prev) => [...prev, newContact]);
+              toast.success("New contact added!");
+            }
+
+            // ✅ NEW — refresh vendor details from backend instantly
+            const updatedVendor = await vendorService.fetchVendorById(vendor.id);
+            if (updatedVendor) {
+              // Replace current vendor’s contact list right away
+              vendor.contacts = updatedVendor.contacts;
+              setContacts(
+                Array.isArray(updatedVendor.contacts)
+                  ? updatedVendor.contacts
+                  : [updatedVendor.contacts]
+              );
+            }
+
+            setIsModalOpen(false);
+          } catch (error) {
+            console.error("❌ Error refreshing vendor:", error);
           }
-          setIsModalOpen(false);
         }}
       />
+
 
       {showDeleteConfirm && (
         <DeleteModal
@@ -168,4 +180,3 @@ export default function VendorDetails({
     </div>
   );
 }
-   

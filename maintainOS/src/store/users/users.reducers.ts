@@ -1,5 +1,4 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-
 import type { UserResponse, UsersState } from "./users.types";
 import {
   createUser,
@@ -7,6 +6,7 @@ import {
   fetchUserById,
   fetchUsers,
   updateUser,
+  fetchUserSummary, // ✅ added import
 } from "./users.thunks";
 
 const initialState: UsersState = {
@@ -29,6 +29,7 @@ const usersSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // ✅ Fetch all users
       .addCase(fetchUsers.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -42,6 +43,21 @@ const usersSlice = createSlice({
         state.error = action.payload as string;
       })
 
+      // ✅ Fetch summary users
+      .addCase(fetchUserSummary.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchUserSummary.fulfilled, (state, action) => {
+        state.loading = false;
+        state.users = action.payload;
+      })
+      .addCase(fetchUserSummary.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+
+      // ✅ Fetch single user
       .addCase(fetchUserById.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -55,6 +71,7 @@ const usersSlice = createSlice({
         state.error = action.payload as string;
       })
 
+      // ✅ Create user
       .addCase(createUser.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -68,6 +85,7 @@ const usersSlice = createSlice({
         state.error = action.payload as string;
       })
 
+      // ✅ Update user
       .addCase(updateUser.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -89,6 +107,7 @@ const usersSlice = createSlice({
         state.error = action.payload as string;
       })
 
+      // ✅ Delete user
       .addCase(deleteUser.pending, (state) => {
         state.loading = true;
         state.error = null;

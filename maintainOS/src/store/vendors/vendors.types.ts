@@ -3,16 +3,16 @@ export interface Contact {
   email: string;
   role?: string;
   phoneNumber?: string;
-  contactColour?: string;
+  phoneExtension?: string;
+  contactColor?: string; // ✅ backend expects `contactColor`
 }
 
 export interface VendorResponse {
   id: string;
   organizationId: string;
   name: string;
-  pictureUrl?: string;
-  color?: string;
   description?: string;
+  color?: string;
   contacts?: Contact[];
   files?: string[];
   locations?: string[];
@@ -21,33 +21,6 @@ export interface VendorResponse {
   vendorType?: "manufacturer" | "distributor";
   createdAt: string;
   updatedAt: string;
-}
-
-export interface CreateVendorData {
-  organizationId: string;
-  name: string;
-  pictureUrl?: string;
-  color?: string;
-  description?: string;
-  contacts?: Contact[];
-  files?: string[];
-  locations?: string[];
-  assetIds?: string[];
-  partIds?: string[];
-  vendorType?: "manufacturer" | "distributor";
-}
-
-export interface UpdateVendorData {
-  name?: string;
-  pictureUrl?: string;
-  color?: string;
-  description?: string;
-  contacts?: Contact[];
-  files?: string[];
-  locations?: string[];
-  assetIds?: string[];
-  partIds?: string[];
-  vendorType?: "manufacturer" | "distributor";
 }
 
 export interface VendorsState {

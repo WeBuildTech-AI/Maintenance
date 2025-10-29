@@ -33,7 +33,7 @@ export function Inventory() {
   const refreshParts = async () => {
     try {
       setLoading(true);
-      const res = await partService.fetchParts();
+      const res = await partService.fetchParts(10, 1, 0);
       console.log("📦 Parts API response:", res);
       setParts(res);
     } catch (err: any) {
@@ -131,7 +131,7 @@ export function Inventory() {
           )}
           {error && <p className="text-center text-red-500">{error}</p>}
           {!loading && !error && parts.length === 0 && (
-            <EmptyState variant="list" />
+            <EmptyState variant="table" />
           )}
           {!loading && !error && parts.length > 0 && (
             <PartTable
@@ -487,7 +487,6 @@ function RestockRoute({ parts }: { parts: any[] }) {
     <RestockModal
       isOpen={true}
       part={part}
-      location={part.location || part.locations || null}  // ✅ send selected part’s location
       onClose={() => navigate(`/inventory/${id}`)}
       onConfirm={(data) => {
         console.log("✅ Restock confirmed for:", part.name);
