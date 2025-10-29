@@ -117,7 +117,7 @@ export default function App() {
             <Route path="/" element={<Navigate to="/work-orders" replace />} />
 
             {/* Actual modules */}
-            <Route path="/work-orders" element={<WorkOrders />} />
+            <Route path="/work-orders/*" element={<WorkOrders />} />
             <Route path="/purchase-orders" element={<PurchaseOrders />} />
             <Route path="/reporting" element={<Reporting />} />
             <Route path="/assets" element={<Assets />} />

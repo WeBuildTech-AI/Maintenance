@@ -487,7 +487,6 @@ function RestockRoute({ parts }: { parts: any[] }) {
     <RestockModal
       isOpen={true}
       part={part}
-      location={part.location || part.locations || null}  // ✅ send selected part’s location
       onClose={() => navigate(`/inventory/${id}`)}
       onConfirm={(data) => {
         console.log("✅ Restock confirmed for:", part.name);
