@@ -33,7 +33,7 @@ export function Inventory() {
   const refreshParts = async () => {
     try {
       setLoading(true);
-      const res = await partService.fetchParts(10, 1, 0);
+      const res = await partService.fetchParts();
       console.log("📦 Parts API response:", res);
       setParts(res);
     } catch (err: any) {
@@ -131,7 +131,7 @@ export function Inventory() {
           )}
           {error && <p className="text-center text-red-500">{error}</p>}
           {!loading && !error && parts.length === 0 && (
-            <EmptyState variant="table" />
+            <EmptyState variant="list" />
           )}
           {!loading && !error && parts.length > 0 && (
             <PartTable

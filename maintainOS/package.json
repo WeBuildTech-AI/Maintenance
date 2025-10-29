@@ -4,6 +4,7 @@
       "private": true,
       "dependencies": {
             "@reduxjs/toolkit": "^2.9.0",
+            "@sentry/react": "^10.22.0",
             "axios": "^1.12.2",
             "class-variance-authority": "^0.7.1",
             "clsx": "*",
@@ -24,7 +25,8 @@
             "recharts": "^2.15.2",
             "socket.io-client": "^4.8.1",
             "sonner": "^2.0.3",
-            "tailwind-merge": "*"
+            "tailwind-merge": "*",
+            "web-vitals": "^5.1.0"
       },
       "devDependencies": {
             "@types/node": "^20.10.0",
