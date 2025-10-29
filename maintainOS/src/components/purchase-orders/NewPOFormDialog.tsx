@@ -1,12 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "../ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Plus } from "lucide-react";
 import { NewPOForm } from "./NewPOForm";
@@ -29,7 +24,6 @@ export function NewPOFormDialog({
 }: NewPOFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-
       <DialogContent
         className="sm:max-w-4xl w-[92vw] max-h-[85vh] p-0 flex flex-col bg-card text-card-foreground"
         style={{ width: "min(92vw, 56rem)", maxHeight: "85vh", padding: 0 }}
@@ -48,7 +42,7 @@ export function NewPOFormDialog({
           </Button>
           <Button
             className="gap-2 bg-orange-600 hover:bg-orange-700"
-            onClick={formProps.createPurchaseOrder}
+            onClick={formProps.handleCreatePurchaseOrder}
             disabled={
               !formProps.newPO.vendorId ||
               formProps.newPO.items.every((item) => !item.itemName)

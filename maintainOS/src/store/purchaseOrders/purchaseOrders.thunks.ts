@@ -4,6 +4,8 @@ import { purchaseOrderService } from "./purchaseOrders.service";
 import type {
   CreatePurchaseOrderData,
   UpdatePurchaseOrderData,
+  CreateAddressData,
+  PurchaseOrderResponse,
 } from "./purchaseOrders.types";
 
 export const fetchPurchaseOrders = createAsyncThunk(
@@ -66,6 +68,64 @@ export const deletePurchaseOrder = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     try {
       await purchaseOrderService.deletePurchaseOrder(id);
+      return id;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete purchase order"
+      );
+    }
+  }
+);
+
+export const createAddress = createAsyncThunk<
+  PurchaseOrderResponse,
+  CreateAddressData,
+  { rejectValue: string }
+>(
+  "purchaseOrders/createAddress",
+  async (data: CreateAddressData, { rejectWithValue }) => {
+    try {
+      return await purchaseOrderService.createAddressOrder(data);
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to create address"
+      );
+    }
+  }
+);
+
+export const fetchAddressess = createAsyncThunk(
+  "purchaseOrders/get/addresses",
+  async (_, { rejectWithValue }) => {
+    try {
+      return await purchaseOrderService.fetchAdressess;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch purchase orders"
+      );
+    }
+  }
+);
+
+export const rejectPurchaseOrder = createAsyncThunk(
+  "purchaseOrders/rejectPurchaseOrder",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      await purchaseOrderService.rejectPurchaseOrder(id);
+      return id;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete purchase order"
+      );
+    }
+  }
+);
+
+export const approvePurchaseOrder = createAsyncThunk(
+  "purchaseOrders/approvePurchaseOrder",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      await purchaseOrderService.approvePurchaseOrder(id);
       return id;
     } catch (error: any) {
       return rejectWithValue(

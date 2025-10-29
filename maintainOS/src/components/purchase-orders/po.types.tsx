@@ -1,4 +1,3 @@
-/* --------------------------------- Types --------------------------------- */
 export type ViewMode = "panel" | "table";
 
 export type Address = {
@@ -30,7 +29,10 @@ export type NewPOForm = {
   items: POItem[];
   shippingAddress: Address;
   billingAddress: Address;
+  shippingAddressId?: string;
+  billingAddressId?: string;
   sameShipBill: boolean;
+  phoneOrMail:string;
   dueDate?: string;
   notes?: string;
   extraCosts: number;
@@ -45,23 +47,28 @@ export type NewPOFormProps = {
   newPOTotal: number;
   addNewPOItemRow: () => void;
   removePOItemRow: (id: string) => void;
-  updateItemField: (id: string, field: keyof POItem, value: string | number) => void;
+  updateItemField: (
+    id: string,
+    field: keyof POItem,
+    value: string | number
+  ) => void;
   createPurchaseOrder: () => void;
   onCancel: () => void;
 };
-
 
 export type POStatus = "Draft" | "Approved" | "Sent" | "Received" | "Cancelled";
 
 export type PurchaseOrder = {
   id: string; // internal id
-  title: string
+  title: string;
   number: string; // display “PO Number”
   vendorId: string;
   vendor: string;
   status: POStatus;
   dueDate?: string; // ISO date
   shippingAddress?: Address;
+  shippingAddressId?: string;
+  billingAddressId?: string;
   billingAddress?: Address;
   notes?: string;
   items: POItem[];
@@ -73,7 +80,7 @@ export type PurchaseOrder = {
 // type PurchaseOrder = Record<string, any>;
 
 export type ColumnKey =
-  | "title"     
+  | "title"
   | "id"
   | "vendor"
   | "status"
@@ -107,7 +114,6 @@ export const allColumns: ColumnConfig[] = [
   { key: "createdAt", label: "Created At" },
   { key: "createdBy", label: "Created By" },
 ] as const;
-
 
 /* ------------------------------- Mock Data -------------------------------- */
 export const mockVendors: Vendor[] = [
@@ -164,8 +170,20 @@ export const mockPOsSeed: PurchaseOrder[] = [
     },
     notes: "Urgent delivery requested.",
     items: [
-      { id: "I-1", itemName: "Motor Belt", partNumber: "#MB-123", quantity: 3, unitCost: 45 },
-      { id: "I-2", itemName: "Cable ties (100pc)", partNumber: "#CT-100", quantity: 2, unitCost: 1.08 },
+      {
+        id: "I-1",
+        itemName: "Motor Belt",
+        partNumber: "#MB-123",
+        quantity: 3,
+        unitCost: 45,
+      },
+      {
+        id: "I-2",
+        itemName: "Cable ties (100pc)",
+        partNumber: "#CT-100",
+        quantity: 2,
+        unitCost: 1.08,
+      },
     ],
     extraCosts: 20,
     createdBy: "Ashwini Chauhan",
@@ -195,7 +213,13 @@ export const mockPOsSeed: PurchaseOrder[] = [
     },
     notes: "",
     items: [
-      { id: "I-3", itemName: "Air Filter 20x20x1", partNumber: "#AF-20", quantity: 10, unitCost: 5.5 },
+      {
+        id: "I-3",
+        itemName: "Air Filter 20x20x1",
+        partNumber: "#AF-20",
+        quantity: 10,
+        unitCost: 5.5,
+      },
     ],
     extraCosts: 0,
     createdBy: "Ashwini Chauhan",
@@ -225,8 +249,20 @@ export const mockPOsSeed: PurchaseOrder[] = [
     },
     notes: "Send via express courier.",
     items: [
-      { id: "I-4", itemName: "Ball Bearing 6203", partNumber: "#BRG-6203", quantity: 50, unitCost: 4.8 },
-      { id: "I-5", itemName: "Grease Cartridge", partNumber: "#LUBE-EP2", quantity: 25, unitCost: 3.9 },
+      {
+        id: "I-4",
+        itemName: "Ball Bearing 6203",
+        partNumber: "#BRG-6203",
+        quantity: 50,
+        unitCost: 4.8,
+      },
+      {
+        id: "I-5",
+        itemName: "Grease Cartridge",
+        partNumber: "#LUBE-EP2",
+        quantity: 25,
+        unitCost: 3.9,
+      },
     ],
     extraCosts: 15,
     createdBy: "Ashwini Chauhan",
@@ -256,7 +292,13 @@ export const mockPOsSeed: PurchaseOrder[] = [
     },
     notes: "All items received in good condition.",
     items: [
-      { id: "I-6", itemName: "Hydraulic Pump Seal", partNumber: "#HPS-456", quantity: 5, unitCost: 120 },
+      {
+        id: "I-6",
+        itemName: "Hydraulic Pump Seal",
+        partNumber: "#HPS-456",
+        quantity: 5,
+        unitCost: 120,
+      },
     ],
     extraCosts: 0,
     createdBy: "Ashwini Chauhan",
@@ -286,7 +328,13 @@ export const mockPOsSeed: PurchaseOrder[] = [
     },
     notes: "Order cancelled due to stock availability.",
     items: [
-      { id: "I-7", itemName: "Gearbox Assembly", partNumber: "#GBX-789", quantity: 2, unitCost: 300 },
+      {
+        id: "I-7",
+        itemName: "Gearbox Assembly",
+        partNumber: "#GBX-789",
+        quantity: 2,
+        unitCost: 300,
+      },
     ],
     extraCosts: 0,
     createdBy: "Ashwini Chauhan",
@@ -316,8 +364,20 @@ export const mockPOsSeed: PurchaseOrder[] = [
     },
     notes: "Pack with extra cushioning.",
     items: [
-      { id: "I-8", itemName: "Conveyor Belt", partNumber: "#CVB-100", quantity: 1, unitCost: 750 },
-      { id: "I-9", itemName: "Lubricant Spray", partNumber: "#LUB-SPR", quantity: 12, unitCost: 8 },
+      {
+        id: "I-8",
+        itemName: "Conveyor Belt",
+        partNumber: "#CVB-100",
+        quantity: 1,
+        unitCost: 750,
+      },
+      {
+        id: "I-9",
+        itemName: "Lubricant Spray",
+        partNumber: "#LUB-SPR",
+        quantity: 12,
+        unitCost: 8,
+      },
     ],
     extraCosts: 25,
     createdBy: "Ashwini Chauhan",
@@ -347,7 +407,13 @@ export const mockPOsSeed: PurchaseOrder[] = [
     },
     notes: "",
     items: [
-      { id: "I-10", itemName: "Coolant Pump", partNumber: "#CP-555", quantity: 4, unitCost: 150 },
+      {
+        id: "I-10",
+        itemName: "Coolant Pump",
+        partNumber: "#CP-555",
+        quantity: 4,
+        unitCost: 150,
+      },
     ],
     extraCosts: 12,
     createdBy: "Ashwini Chauhan",
