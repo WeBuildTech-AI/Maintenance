@@ -1,56 +1,22 @@
-import {
-  Calendar,
-  ChevronDown,
-  DollarSign,
-  Paperclip,
-  Plus,
-  Trash2,
-} from "lucide-react";
+import { Calendar, DollarSign, Paperclip, Plus, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 import { formatMoney } from "./helpers";
-import { mockVendors, type NewPOFormProps, type Vendor } from "./po.types";
-import { useState } from "react";
+import { type NewPOFormProps, type Vendor } from "./po.types"; // <-- Vendor type
+import { useState, useRef, useEffect } from "react";
 import { vendorService } from "../../store/vendors";
-
-// --- Mock data for saved addresses ---
-type Address = {
-  id: string;
-  name: string; // e.g., "Main Warehouse" or "Office"
-  line1: string;
-  city: string;
-  state: string;
-  postalCode: string;
-  country: string;
-  contactName: string;
-  contactEmailOrPhone: string;
-};
-
-const mockAddresses: Address[] = [
-  {
-    id: "addr_1",
-    name: "Main Warehouse",
-    line1: "123 Industrial Way",
-    city: "Freighton",
-    state: "CA",
-    postalCode: "90210",
-    country: "USA",
-    contactName: "Warehouse Reception",
-    contactEmailOrPhone: "warehouse@example.com",
-  },
-  {
-    id: "addr_2",
-    name: "Head Office",
-    line1: "456 Corporate Blvd",
-    city: "Businesston",
-    state: "NY",
-    postalCode: "10001",
-    country: "USA",
-    contactName: "Main Office",
-    contactEmailOrPhone: "555-123-4567",
-  },
-];
-// ---------------------------------------------
+import { partService } from "../../store/parts";
+import { purchaseOrderService } from "../../store/purchaseOrders";
+import { id } from "../Inventory/utils";
+// !! NOTE: Maan rahe hain ki aap 'addressService' bana lenge
+// import { addressService } from "../../store/addressService";
 
 export function NewPOForm(props: NewPOFormProps) {
   const {
@@ -61,32 +27,80 @@ export function NewPOForm(props: NewPOFormProps) {
     addNewPOItemRow,
     removePOItemRow,
     updateItemField,
-    createPurchaseOrder, // This prop is now used by the "Create" button
-    onCancel,
+    // --- NEW PROPS ADDED ---
+    isCreating,
+    apiError,
+    attachedFiles,
+    fileInputRef,
+    handleFileAttachClick,
+    handleFileChange,
+    removeAttachedFile,
+    // --- END NEW PROPS ---
   } = props;
 
-  // --- Vendor State ---
+  // --- Form-specific State ---
   const [showCustomPoInput, setShowCustomPoInput] = useState(false);
+
+  // --- Vendor State ---
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [isLoadingVendors, setIsLoadingVendors] = useState(false);
   const [hasFetchedVendors, setHasFetchedVendors] = useState(false);
   const [vendorSearchQuery, setVendorSearchQuery] = useState("");
   const [isVendorSearchFocused, setIsVendorSearchFocused] = useState(false);
 
-  // --- Address State ---
-  const [savedAddresses] = useState<Address[]>(mockAddresses); // Using mock data
-  const [selectedShippingAddressId, setSelectedShippingAddressId] =
-    useState("new");
-  const [selectedBillingAddressId, setSelectedBillingAddressId] =
-    useState("new");
+  // --- Parts State ---
+  const [parts, setPart] = useState<any[]>([]); // 'any' ko specific PartType se badal sakte hain
+  const [isLoadingParts, setIsLoadingParts] = useState(false);
+  const [hasFetchedParts, setHasFetchedParts] = useState(false);
+  const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
 
-  // --- NEW: Search/Focus state for addresses ---
-  const [shippingSearchQuery, setShippingSearchQuery] = useState("");
-  const [isShippingSearchFocused, setIsShippingSearchFocused] = useState(false);
-  const [billingSearchQuery, setBillingSearchQuery] = useState("");
-  const [isBillingSearchFocused, setIsBillingSearchFocused] = useState(false);
+  // --- NEW: Shipping Address State ---
+  const [shippingAddresses, setShippingAddresses] = useState<any[]>([]); // 'any' ko apne Address type se badlein
+  const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
+  const [hasFetchedAddresses, setHasFetchedAddresses] = useState(false);
+  const [addressSearchQuery, setAddressSearchQuery] = useState("");
+  const [isAddressSearchFocused, setIsAddressSearchFocused] = useState(false);
+  const [showNewAddressForm, setShowNewAddressForm] = useState(false);
+  const [isCreatingAddress, setIsCreatingAddress] = useState(false);
+  const [addressApiError, setAddressApiError] = useState<string | null>(null);
 
-  // --- Vendor Fetch Logic ---
+  // State for the new shipping address form fields
+  const [newAddress, setNewAddress] = useState({
+    street: "", // Street
+    city: "",
+    stateProvince: "",
+    ZIP: "", // PIN code
+    country: "IN", // Default
+  });
+
+  // --- NEW: Billing Address State --- // <-- NEW SECTION
+  const [billingAddresses, setBillingAddresses] = useState<any[]>([]);
+  const [isLoadingBillingAddresses, setIsLoadingBillingAddresses] =
+    useState(false);
+  const [hasFetchedBillingAddresses, setHasFetchedBillingAddresses] =
+    useState(false);
+  const [billingAddressSearchQuery, setBillingAddressSearchQuery] =
+    useState("");
+  const [isBillingAddressSearchFocused, setIsBillingAddressSearchFocused] =
+    useState(false);
+  const [showNewBillingAddressForm, setShowNewBillingAddressForm] =
+    useState(false);
+  const [isCreatingBillingAddress, setIsCreatingBillingAddress] =
+    useState(false);
+  const [billingAddressApiError, setBillingAddressApiError] = useState<
+    string | null
+  >(null);
+
+  // State for the new billing address form fields
+  const [newBillingAddress, setNewBillingAddress] = useState({
+    street: "",
+    city: "",
+    stateProvince: "",
+    ZIP: "",
+    country: "IN",
+  });
+
+  // --- Vendor Fetching ---
   const fetchVendors = async () => {
     setIsLoadingVendors(true);
     try {
@@ -96,17 +110,42 @@ export function NewPOForm(props: NewPOFormProps) {
       console.error("Failed to fetch vendors:", error);
     } finally {
       setIsLoadingVendors(false);
-      setHasFetchedVendors(true);
+      setHasFetchedVendors(true); // <-- CHANGED (Aapne pehle fetch par true nahi kiya tha)
     }
   };
 
+  // --- Part Fetching ---
+  const fetchPart = async () => {
+    setIsLoadingParts(true);
+    try {
+      const partData = await partService.fetchParts();
+      setPart(partData);
+    } catch (error) {
+      console.error("Failed to fetch parts:", error);
+    } finally {
+      setIsLoadingParts(false);
+      setHasFetchedParts(true); // <-- CHANGED (Aapne pehle fetch par true nahi kiya tha)
+    }
+  };
+
+  // --- Dropdown Open Handlers ---
   const handleVendorDropdownOpen = (isOpen: boolean) => {
     if (isOpen && !hasFetchedVendors) {
       fetchVendors();
     }
+    // Saath mein parts bhi fetch kar lete hain agar nahi hue hain
+    if (isOpen && !hasFetchedParts) {
+      fetchPart();
+    }
   };
 
-  // --- PO Number Logic ---
+  const handlePartDropdownOpen = () => {
+    if (!hasFetchedParts) {
+      fetchPart();
+    }
+  };
+
+  // --- PO Number Toggle ---
   const handleUseAutoPo = () => {
     setShowCustomPoInput(false);
     setNewPO((s) => ({ ...s, poNumber: "" }));
@@ -116,109 +155,153 @@ export function NewPOForm(props: NewPOFormProps) {
     setShowCustomPoInput(true);
   };
 
-  // --- Address Handlers ---
-  const handleShippingAddressSelect = (address: Address | "new") => {
-    if (address === "new") {
-      setSelectedShippingAddressId("new");
-      // Clear the form fields
-      setNewPO((s) => ({
-        ...s,
-        contactName: "",
-        contactEmailOrPhone: "",
-        shippingAddress: {
-          line1: "",
-          city: "",
-          state: "",
-          postalCode: "",
-          country: "",
-        },
-      }));
-      setShippingSearchQuery("");
-    } else {
-      setSelectedShippingAddressId(address.id);
-      // Populate the form fields from the saved address
-      setNewPO((s) => ({
-        ...s,
-        contactName: address.contactName,
-        contactEmailOrPhone: address.contactEmailOrPhone,
-        shippingAddress: {
-          line1: address.line1,
-          city: address.city,
-          state: address.state,
-          postalCode: address.postalCode,
-          country: address.country,
-        },
-        // Also update billing if 'sameShipBill' is checked
-        ...(s.sameShipBill
-          ? {
-              billingAddress: {
-                line1: address.line1,
-                city: address.city,
-                state: address.state,
-                postalCode: address.postalCode,
-                country: address.country,
-              },
-            }
-          : {}),
-      }));
-      setShippingSearchQuery(address.name); // Show selected name in input
+  // --- NEW: Shipping Address Functions ---
+
+  // 1. Fetch shipping addresses from API
+  const fetchAddresses = async () => {
+    setIsLoadingAddresses(true);
+    try {
+      const res = await purchaseOrderService.fetchAdressess();
+      setShippingAddresses(res);
+    } catch (error) {
+      console.error("Failed to fetch addresses:", error);
+    } finally {
+      setIsLoadingAddresses(false);
+      setHasFetchedAddresses(true);
     }
-    setIsShippingSearchFocused(false); // Hide dropdown
   };
 
-  const handleBillingAddressSelect = (address: Address | "new") => {
-    if (address === "new") {
-      setSelectedBillingAddressId("new");
-      setNewPO((s) => ({
-        ...s,
-        billingAddress: {
-          line1: "",
-          city: "",
-          state: "",
-          postalCode: "",
-          country: "",
-        },
-      }));
-      setBillingSearchQuery("");
-    } else {
-      setSelectedBillingAddressId(address.id);
-      // Populate the billing fields
-      setNewPO((s) => ({
-        ...s,
-        billingAddress: {
-          line1: address.line1,
-          city: address.city,
-          state: address.state,
-          postalCode: address.postalCode,
-          country: address.country,
-        },
-      }));
-      setBillingSearchQuery(address.name); // Show selected name in input
+  // 2. Dropdown khulne par fetch karein
+  const handleAddressDropdownOpen = () => {
+    if (!hasFetchedAddresses) {
+      fetchAddresses();
     }
-    setIsBillingSearchFocused(false); // Hide dropdown
+  }; // 3. Jab user list se shipping address select kare
+
+  const handleSelectAddress = (address: any) => {
+    setAddressSearchQuery(address.name || address.street); // Input mein naam dikhayein
+    setIsAddressSearchFocused(false);
+
+    setNewPO((currentState) => {
+      // 1. Pehle naya state object banayein shipping details ke saath
+      const newState = {
+        ...currentState,
+        shippingAddressId: address.id, // Selected ID ko state mein save karein
+        shippingAddress: address, // Poora object bhi save karein
+      };
+
+      if (currentState.sameShipBill) {
+        // 3. Agar ticked hai, toh billing address ko bhi shipping address se update karein
+        newState.billingAddressId = address.id;
+        newState.billingAddress = address;
+      }
+
+      // 4. Final updated state return karein
+      return newState;
+    });
   };
 
-  // Helper to filter saved addresses based on search query
-  const filteredShippingAddresses = savedAddresses.filter(
-    (a) =>
-      a.name.toLowerCase().includes(shippingSearchQuery.toLowerCase()) ||
-      a.line1.toLowerCase().includes(shippingSearchQuery.toLowerCase())
-  );
+  // 4. Jab user "Create New Address" button par click kare
+  const handleAddNewAddress = async () => {
+    setIsCreatingAddress(true);
+    setAddressApiError(null);
+    try {
+      const createdAddress = await purchaseOrderService.createAddressOrder({
+        ...newAddress,
+      });
 
-  const filteredBillingAddresses = savedAddresses.filter(
-    (a) =>
-      a.name.toLowerCase().includes(billingSearchQuery.toLowerCase()) ||
-      a.line1.toLowerCase().includes(billingSearchQuery.toLowerCase())
-  );
+      console.log("New Address Created:", createdAddress);
 
-  // --- RENDER ---
+      setShippingAddresses((prev) => [createdAddress, ...prev]);
+      handleSelectAddress(createdAddress); // <-- Newly created address ko select karein
+      setShowNewAddressForm(false);
+      setNewAddress({
+        street: "",
+        city: "",
+        stateProvince: "",
+        ZIP: "",
+        country: "IN",
+      }); // Form reset karein
+    } catch (error: any) {
+      console.error("Failed to create address:", error);
+      setAddressApiError(error.message || "Failed to create address");
+    } finally {
+      setIsCreatingAddress(false);
+    }
+  };
+
+  // --- NEW: Billing Address Functions --- // <-- NEW SECTION
+
+  // 1. Fetch billing addresses from API
+  const fetchBillingAddresses = async () => {
+    setIsLoadingBillingAddresses(true);
+    try {
+      // Maan rahe hain ki billing ke liye bhi same service use hogi
+      const res = await purchaseOrderService.fetchAdressess();
+      setBillingAddresses(res);
+    } catch (error) {
+      console.error("Failed to fetch billing addresses:", error);
+    } finally {
+      setIsLoadingBillingAddresses(false);
+      setHasFetchedBillingAddresses(true);
+    }
+  };
+
+  // 2. Dropdown khulne par fetch karein
+  const handleBillingAddressDropdownOpen = () => {
+    if (!hasFetchedBillingAddresses) {
+      fetchBillingAddresses();
+    }
+  };
+
+  // 3. Jab user list se billing address select kare
+  const handleSelectBillingAddress = (address: any) => {
+    setBillingAddressSearchQuery(address.name || address.street);
+    setIsBillingAddressSearchFocused(false);
+    setNewPO((currentState) => ({
+      ...currentState,
+      billingAddressId: address.id, // Selected ID ko state mein save karein
+      billingAddress: address, // Poora object bhi save karein
+    }));
+  };
+
+  // 4. Jab user "Create New Billing Address" button par click kare
+  const handleAddNewBillingAddress = async () => {
+    setIsCreatingBillingAddress(true);
+    setBillingAddressApiError(null);
+    try {
+      const createdAddress = await purchaseOrderService.createAddressOrder({
+        ...newBillingAddress,
+      });
+
+      console.log("New Billing Address Created:", createdAddress);
+
+      setBillingAddresses((prev) => [createdAddress, ...prev]);
+      handleSelectBillingAddress(createdAddress); // Newly created address ko select karein
+      setShowNewBillingAddressForm(false);
+      setNewBillingAddress({
+        street: "",
+        city: "",
+        stateProvince: "",
+        ZIP: "",
+        country: "IN",
+      }); // Form reset karein
+    } catch (error: any) {
+      console.error("Failed to create billing address:", error);
+      setBillingAddressApiError(error.message || "Failed to create address");
+    } finally {
+      setIsCreatingBillingAddress(false);
+    }
+  };
+
+  // --- JSX RENDER ---
   return (
-    <div className="flex-1 flex flex-col min-h-0">
-      {/* Scrollable Form Area */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+    <div className="flex-1 min-h-0 overflow-y-auto">
+      <div>
         <div className="mx-auto w-full max-w-[820px] p-6 space-y-10">
           {/* PO Number Section */}
           <section>
+            {/* ... (PO Number ka code same hai) ... */}
             <div className="text-base font-medium mb-4">
               Purchase Order Number
             </div>
@@ -231,7 +314,7 @@ export function NewPOForm(props: NewPOFormProps) {
                     setNewPO((s) => ({ ...s, poNumber: e.target.value }))
                   }
                   placeholder="Enter Purchase Order Number"
-                  className="h-9 bg-white border-orange-600 text-sm"
+                  className="h-9 text-sm"
                 />
                 <div className="mt-2 text-sm text-muted-foreground">
                   or{" "}
@@ -261,11 +344,11 @@ export function NewPOForm(props: NewPOFormProps) {
 
           {/* Vendor Section */}
           <section>
-            <div className="text-base font-medium mt-4 mb-4">Vendor</div>
+            {/* ... (Vendor ka code same hai) ... */}
+            <div className="text-base font-medium mb-4 mt-4 ">Vendor</div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               {newPO.vendorId &&
               vendors.find((v) => v.id === newPO.vendorId) ? (
-                // --- A) VIEW WHEN VENDOR IS SELECTED ---
                 <div className="flex items-center justify-between h-9 px-3 py-2 text-sm border rounded-md bg-muted/50">
                   <span>
                     {vendors.find((v) => v.id === newPO.vendorId)?.name}
@@ -282,7 +365,6 @@ export function NewPOForm(props: NewPOFormProps) {
                   </Button>
                 </div>
               ) : (
-                // --- B) VIEW FOR SEARCHING A VENDOR ---
                 <div className="relative">
                   <Input
                     placeholder="Search and select a vendor..."
@@ -298,7 +380,7 @@ export function NewPOForm(props: NewPOFormProps) {
                     onChange={(e) => setVendorSearchQuery(e.target.value)}
                   />
                   {isVendorSearchFocused && (
-                    <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                    <div className="absolute z-20 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
                       {isLoadingVendors ? (
                         <div className="p-2 text-sm text-muted-foreground">
                           Loading...
@@ -314,7 +396,8 @@ export function NewPOForm(props: NewPOFormProps) {
                             <div
                               key={v.id}
                               className="p-2 text-sm hover:bg-muted cursor-pointer"
-                              onClick={() => {
+                              onMouseDown={(e) => {
+                                e.preventDefault();
                                 setNewPO((s) => ({ ...s, vendorId: v.id }));
                                 setVendorSearchQuery(v.name);
                                 setIsVendorSearchFocused(false);
@@ -329,12 +412,9 @@ export function NewPOForm(props: NewPOFormProps) {
                 </div>
               )}
             </div>
-          </section>
-
-          {/* Order Items Section */}
-          <section>
+            {/* ... (Order Items ka code same hai) ... */}
             <div className="text-base font-medium mb-3">Order Items</div>
-            <div className="overflow-x-auto border rounded-lg">
+            <div className="overflow border rounded-lg">
               <table className="w-full text-sm table-fixed">
                 <thead className="bg-muted/50">
                   <tr className="text-left">
@@ -350,17 +430,97 @@ export function NewPOForm(props: NewPOFormProps) {
                   {newPO.items.map((it) => {
                     const price =
                       (Number(it.quantity) || 0) * (Number(it.unitCost) || 0);
+
+                    // Filtered parts list
+                    const filteredParts = parts.filter((p) =>
+                      p.name.toLowerCase().includes(it.itemName.toLowerCase())
+                    );
+
                     return (
                       <tr key={it.id} className="border-t">
-                        <td className="p-3">
+                        <td className="p-3 relative">
+                          {/* --- ITEM NAME INPUT (COMBOBOX) --- */}
                           <Input
                             className="h-9 text-sm bg-white border-orange-600"
-                            placeholder="Start typing…"
+                            placeholder="Start typing or select..."
                             value={it.itemName}
-                            onChange={(e) =>
-                              updateItemField(it.id, "itemName", e.target.value)
-                            }
+                            onChange={(e) => {
+                              const newItemName = e.target.value;
+
+                              // 1. Item name ko update karein
+                              updateItemField(it.id, "itemName", newItemName);
+
+                              // 2. Agar user ne input ko clear kar diya hai
+                              if (newItemName === "") {
+                                // 3. Toh Part Number, Unit Cost, aur partId ko reset karein
+                                updateItemField(it.id, "partNumber", "");
+                                updateItemField(it.id, "unitCost", 0);
+                                updateItemField(it.id, "partId", null);
+                              }
+                            }}
+                            onFocus={() => {
+                              handlePartDropdownOpen(); // Data fetch karein
+                              setFocusedItemId(it.id); // Is row ko focused set karein
+                            }}
+                            onBlur={() => {
+                              // Thoda delay dein taaki click register ho sake
+                              setTimeout(() => setFocusedItemId(null), 150);
+                            }}
                           />
+
+                          {/* --- DROPDOWN LOGIC --- */}
+                          {focusedItemId === it.id && (
+                            <div className="absolute z-50 w-[95%] mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                              {isLoadingParts ? (
+                                <div className="p-2 text-sm text-muted-foreground">
+                                  Loading...
+                                </div>
+                              ) : filteredParts.length === 0 && it.itemName ? (
+                                <div className="p-2 text-sm text-muted-foreground">
+                                  No parts found.
+                                </div>
+                              ) : (
+                                filteredParts.map((part) => (
+                                  <div
+                                    key={part.id} // Assume part ke paas ek unique 'id' hai
+                                    className="p-2 z-50 text-sm hover:bg-muted cursor-pointer"
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+
+                                      // 1. INPUT MEIN NAAM DIKHAO
+                                      updateItemField(
+                                        it.id,
+                                        "itemName",
+                                        part.name
+                                      );
+
+                                      // 2. STATE MEIN 'partId' SAVE KARO
+                                      updateItemField(it.id, "partId", part.id);
+
+                                      // 3. Part number bhi update kar dein
+                                      updateItemField(
+                                        it.id,
+                                        "partNumber",
+                                        part.partNumber || ""
+                                      );
+
+                                      // 4. Unit Cost bhi update kar dein (apne 'part.cost' se badlein)
+                                      updateItemField(
+                                        it.id,
+                                        "unitCost",
+                                        part.unitCost || 0 // 'part.unitCost' ya 'part.cost' jo bhi aapke API se aata hai
+                                      );
+
+                                      // 5. Dropdown band kar dein
+                                      setFocusedItemId(null);
+                                    }}
+                                  >
+                                    {part.name}
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          )}
                         </td>
                         <td className="p-3">
                           <Input
@@ -458,6 +618,8 @@ export function NewPOForm(props: NewPOFormProps) {
               </table>
             </div>
 
+            {/* Totals Section */}
+            {/* ... (Totals ka code same hai) ... */}
             <div className="flex items-center justify-end gap-6 mt-4">
               <button
                 className="text-sm text-orange-600"
@@ -494,344 +656,457 @@ export function NewPOForm(props: NewPOFormProps) {
             </div>
           </section>
 
-          {/* --- Shipping Information Section (MODIFIED) --- */}
+          {/* --- NEW Shipping Information Section --- */}
           <section>
             <div className="text-base font-medium mb-4">
               Shipping Information
             </div>
-            <div className="grid grid-cols-1 gap-4 mb-4">
-              {/* --- NEW: Search Input for Shipping --- */}
-              <div className="relative">
-                <Input
-                  placeholder="Search saved addresses or create new..."
-                  className="h-9 text-sm bg-white border-orange-600"
-                  value={shippingSearchQuery}
-                  onFocus={() => setIsShippingSearchFocused(true)}
-                  onBlur={() => {
-                    setTimeout(() => setIsShippingSearchFocused(false), 150);
-                  }}
-                  onChange={(e) => setShippingSearchQuery(e.target.value)}
-                />
-                {isShippingSearchFocused && (
-                  <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
-                    <div
-                      onClick={() => handleShippingAddressSelect("new")}
-                      className="p-2 text-sm hover:bg-muted cursor-pointer text-orange-600 font-medium"
-                    >
-                      + Create New Address
-                    </div>
-                    {filteredShippingAddresses.map((addr) => (
-                      <div
-                        key={addr.id}
-                        onClick={() => handleShippingAddressSelect(addr)}
-                        className="p-2 text-sm hover:bg-muted cursor-pointer"
-                      >
-                        {addr.name}
-                        <div className="text-xs text-muted-foreground">
-                          {addr.line1}, {addr.city}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
 
-              {/* --- Fields only show if "Create New" is selected --- */}
-              {selectedShippingAddressId === "new" && (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <Input
-                      className="h-9 text-sm bg-white border-orange-600"
-                      placeholder="Contact name"
-                      value={newPO.contactName}
-                      onChange={(e) =>
-                        setNewPO((s) => ({
-                          ...s,
-                          contactName: e.target.value,
-                        }))
-                      }
-                    />
-                    <Input
-                      className="h-9 text-sm bg-white border-orange-600"
-                      placeholder="Email or Phone Number"
-                      value={newPO.contactEmailOrPhone}
-                      onChange={(e) =>
-                        setNewPO((s) => ({
-                          ...s,
-                          contactEmailOrPhone: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <Input
-                    className="h-9 text-sm bg-white border-orange-600"
-                    placeholder="Shipping Address (Street)"
-                    value={newPO.shippingAddress.line1}
-                    onChange={(e) =>
+            <div className="grid grid-cols-1 gap-4 mb-4">
+              {/* --- Logic: Address dikhayein, ya search box, ya naya form --- */}
+
+              {/* 1. Jab Address Selected Hai (aur naya form nahi khula) */}
+              {newPO.shippingAddressId && !showNewAddressForm ? ( // <-- CHANGED: Check ID
+                <div className="flex items-center justify-between h-9 px-3 py-2 text-sm border rounded-md bg-muted/50">
+                  <span>
+                    {/* <-- CHANGED: Find by ID or use stored object --> */}
+                    {(
+                      shippingAddresses.find(
+                        (a) => a.id === newPO.shippingAddressId
+                      ) || newPO.shippingAddress
+                    )?.name ||
+                      (
+                        shippingAddresses.find(
+                          (a) => a.id === newPO.shippingAddressId
+                        ) || newPO.shippingAddress
+                      )?.street}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    className="h-auto p-1 text-orange-600 hover:text-orange-700"
+                    onClick={() => {
                       setNewPO((s) => ({
                         ...s,
-                        shippingAddress: {
-                          ...s.shippingAddress,
-                          line1: e.target.value,
-                        },
-                        ...(s.sameShipBill
-                          ? {
-                              billingAddress: {
-                                ...s.billingAddress,
-                                line1: e.target.value,
-                              },
-                            }
-                          : {}),
-                      }))
-                    }
-                  />
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        shippingAddressId: null,
+                        // shippingAddress: {},
+                      }));
+                      setAddressSearchQuery("");
+                    }}
+                  >
+                    Change
+                  </Button>
+                </div>
+              ) : /* 2. Jab Naya Address Form Khula Hai */
+              showNewAddressForm ? (
+                <div className="p-4 border rounded-lg space-y-3">
+                  <div className="text-sm font-medium">Create New Address</div>
+                  {/* New Address Form Fields */}
+                  <div className="flex gap-4">
+                    <Input
+                      className="h-9 text-sm bg-white border-orange-600"
+                      placeholder="Street Address (Line 1)"
+                      value={newAddress.street}
+                      onChange={(e) =>
+                        setNewAddress((s) => ({ ...s, street: e.target.value }))
+                      }
+                    />
                     <Input
                       className="h-9 text-sm bg-white border-orange-600"
                       placeholder="City"
-                      value={newPO.shippingAddress.city}
+                      value={newAddress.city}
                       onChange={(e) =>
-                        setNewPO((s) => ({
+                        setNewAddress((s) => ({ ...s, city: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <div className="flex md:grid-cols-2 gap-3">
+                    <Input
+                      className="h-9 text-sm bg-white border-orange-600"
+                      placeholder="State / Province"
+                      value={newAddress.stateProvince} // <-- CHANGED: Was newAddress.state
+                      onChange={(e) =>
+                        setNewAddress((s) => ({
                           ...s,
-                          shippingAddress: {
-                            ...s.shippingAddress,
-                            city: e.target.value,
-                          },
-                          ...(s.sameShipBill
-                            ? {
-                                billingAddress: {
-                                  ...s.billingAddress,
-                                  city: e.target.value,
-                                },
-                              }
-                            : {}),
+                          stateProvince: e.target.value,
                         }))
                       }
                     />
+
                     <Input
                       className="h-9 text-sm bg-white border-orange-600"
-                      placeholder="State"
-                      value={newPO.shippingAddress.state}
+                      placeholder="PIN Code"
+                      value={newAddress.ZIP}
                       onChange={(e) =>
-                        setNewPO((s) => ({
+                        setNewAddress((s) => ({
                           ...s,
-                          shippingAddress: {
-                            ...s.shippingAddress,
-                            state: e.target.value,
-                          },
-                          ...(s.sameShipBill
-                            ? {
-                                billingAddress: {
-                                  ...s.billingAddress,
-                                  state: e.target.value,
-                                },
-                              }
-                            : {}),
-                        }))
-                      }
-                    />
-                    <Input
-                      className="h-9 text-sm bg-white border-orange-600"
-                      placeholder="PIN"
-                      value={newPO.shippingAddress.postalCode}
-                      onChange={(e) =>
-                        setNewPO((s) => ({
-                          ...s,
-                          shippingAddress: {
-                            ...s.shippingAddress,
-                            postalCode: e.target.value,
-                          },
-                          ...(s.sameShipBill
-                            ? {
-                                billingAddress: {
-                                  ...s.billingAddress,
-                                  postalCode: e.target.value,
-                                },
-                              }
-                            : {}),
+                          ZIP: e.target.value,
                         }))
                       }
                     />
                     <Input
                       className="h-9 text-sm bg-white border-orange-600"
                       placeholder="Country"
-                      value={newPO.shippingAddress.country}
+                      value={newAddress.country}
                       onChange={(e) =>
-                        setNewPO((s) => ({
+                        setNewAddress((s) => ({
                           ...s,
-                          shippingAddress: {
-                            ...s.shippingAddress,
-                            country: e.target.value,
-                          },
-                          ...(s.sameShipBill
-                            ? {
-                                billingAddress: {
-                                  ...s.billingAddress,
-                                  country: e.target.value,
-                                },
-                              }
-                            : {}),
+                          country: e.target.value,
                         }))
                       }
                     />
                   </div>
-                </>
-              )}
-            </div>
 
-            {/* "Same as Shipping" Checkbox */}
-            <label className="flex items-center gap-2 text-sm select-none">
-              <input
-                type="checkbox"
-                checked={newPO.sameShipBill}
-                className="bg-white border-orange-600"
-                onChange={(e) => {
-                  const isChecked = e.target.checked;
-                  setNewPO((s) => ({
-                    ...s,
-                    sameShipBill: isChecked,
-                    ...(isChecked
-                      ? { billingAddress: { ...s.shippingAddress } }
-                      : {}),
-                  }));
-                  // If checking, also sync the selected ID
-                  if (isChecked) {
-                    setSelectedBillingAddressId(selectedShippingAddressId);
-                    setBillingSearchQuery(shippingSearchQuery);
-                  }
-                }}
-              />
-              Use the same Shipping and Billing Address
-            </label>
+                  {addressApiError && (
+                    <div className="text-sm text-red-600">
+                      {addressApiError}
+                    </div>
+                  )}
 
-            {/* --- Billing Information Section (MODIFIED) --- */}
-            {!newPO.sameShipBill && (
-              <div className="mt-6">
-                <div className="text-base font-medium mb-4">
-                  Billing Information
-                </div>
-                <div className="grid grid-cols-1 gap-4 mb-4">
-                  {/* --- NEW: Search Input for Billing --- */}
-                  <div className="relative">
-                    <Input
-                      placeholder="Search saved addresses or create new..."
-                      className="h-9 text-sm bg-white border-orange-600"
-                      value={billingSearchQuery}
-                      onFocus={() => setIsBillingSearchFocused(true)}
-                      onBlur={() => {
-                        setTimeout(() => setIsBillingSearchFocused(false), 150);
-                      }}
-                      onChange={(e) => setBillingSearchQuery(e.target.value)}
-                    />
-                    {isBillingSearchFocused && (
-                      <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
-                        <div
-                          onClick={() => handleBillingAddressSelect("new")}
-                          className="p-2 text-sm hover:bg-muted cursor-pointer text-orange-600 font-medium"
-                        >
-                          + Create New Address
-                        </div>
-                        {filteredBillingAddresses.map((addr) => (
-                          <div
-                            key={addr.id}
-                            onClick={() => handleBillingAddressSelect(addr)}
-                            className="p-2 text-sm hover:bg-muted cursor-pointer"
-                          >
-                            {addr.name}
-                            <div className="text-xs text-muted-foreground">
-                              {addr.line1}, {addr.city}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button
+                      variant="ghost"
+                      onClick={() => setShowNewAddressForm(false)}
+                      disabled={isCreatingAddress}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      className="bg-orange-600 hover:bg-orange-700"
+                      onClick={handleAddNewAddress}
+                      disabled={
+                        isCreatingAddress ||
+                        !newAddress.street ||
+                        !newAddress.city
+                      }
+                    >
+                      {isCreatingAddress ? "Adding..." : "Add Address"}
+                    </Button>
                   </div>
+                </div>
+              ) : (
+                /* 3. Jab Kuch Selected Nahi Hai (Search Combobox) */
+                <div className="relative">
+                  <Input
+                    placeholder="Search shipping address..."
+                    className="h-9 text-sm bg-white border-orange-600"
+                    value={addressSearchQuery}
+                    onFocus={() => {
+                      setIsAddressSearchFocused(true);
+                      handleAddressDropdownOpen();
+                    }}
+                    onBlur={() => {
+                      setTimeout(() => setIsAddressSearchFocused(false), 150);
+                    }}
+                    onChange={(e) => setAddressSearchQuery(e.target.value)}
+                  />
+                  {isAddressSearchFocused && (
+                    <div className="absolute z-20 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      {isLoadingAddresses ? (
+                        <div className="p-2 text-sm text-muted-foreground">
+                          Loading addresses...
+                        </div>
+                      ) : (
+                        <>
+                          {shippingAddresses
+                            .filter((addr) =>
+                              (addr.name || addr.street)
+                                .toLowerCase()
+                                .includes(addressSearchQuery.toLowerCase())
+                            )
+                            .map((addr) => (
+                              <div
+                                key={addr.id}
+                                className="p-2 text-sm hover:bg-muted cursor-pointer"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  handleSelectAddress(addr);
+                                  // newPO.shippingAddressId(addr.id); // <-- REMOVED BUG
+                                }}
+                              >
+                                {addr.name || addr.street} ({addr.city})
+                              </div>
+                            ))}
 
-                  {/* --- Fields only show if "Create New" is selected --- */}
-                  {selectedBillingAddressId === "new" && (
-                    <>
-                      <Input
-                        className="h-9 text-sm bg-white border-orange-600"
-                        placeholder="Billing Address (Street)"
-                        value={newPO.billingAddress.line1}
-                        onChange={(e) =>
+                          {/* --- Create New Address Button --- */}
+                          <div
+                            className="p-2 text-sm text-orange-600 font-medium hover:bg-muted cursor-pointer border-t"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              setShowNewAddressForm(true);
+                              setIsAddressSearchFocused(false);
+                            }}
+                          >
+                            + Create New Address
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* --- Contact Details (Abhi bhi yahi rahenge) --- */}
+              <div className="text-base font-medium mt-4">Contact</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <Input
+                  className="h-9 text-sm bg-white border-orange-600"
+                  placeholder="Contact name"
+                  value={newPO.contactName}
+                  onChange={(e) =>
+                    setNewPO((s) => ({ ...s, contactName: e.target.value }))
+                  }
+                />
+                <Input
+                  className="h-9 text-sm bg-white border-orange-600"
+                  placeholder="Email or Phone Number"
+                  value={newPO.phoneOrMail}
+                  onChange={(e) =>
+                    setNewPO((s) => ({
+                      ...s,
+                      phoneOrMail: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+
+              {/* --- Billing Address Checkbox --- */}
+              <label className="flex items-center gap-2 text-sm select-none">
+                <input
+                  type="checkbox"
+                  checked={newPO.sameShipBill}
+                  className="bg-white border-orange-600"
+                  onChange={(e) => {
+                    const isChecked = e.target.checked;
+                    setNewPO((s) => ({
+                      ...s,
+                      sameShipBill: isChecked,
+                      ...(isChecked
+                        ? {
+                            billingAddressId: s.shippingAddressId,
+                            billingAddress: s.shippingAddress,
+                          }
+                        : {
+                            billingAddressId: null,
+                            // billingAddress: {},
+                          }),
+                    }));
+                  }}
+                />
+                Use the same Shipping and Billing Address
+              </label>
+
+              {/* --- Manual Billing Address Form (Agar checkbox un-checked hai) --- */}
+              {/* // <-- CHANGED: Poora block replace kar diya hai --> */}
+              {!newPO.sameShipBill && (
+                <>
+                  <div className="text-base font-medium mt-4">
+                    Billing Address
+                  </div>
+                  {/* --- Logic: Address dikhayein, ya search box, ya naya form --- */}
+
+                  {/* 1. Jab Billing Address Selected Hai (aur naya form nahi khula) */}
+                  {newPO.billingAddressId && !showNewBillingAddressForm ? (
+                    <div className="flex items-center justify-between h-9 px-3 py-2 text-sm border rounded-md bg-muted/50">
+                      <span>
+                        {(
+                          billingAddresses.find(
+                            (a) => a.id === newPO.billingAddressId
+                          ) || newPO.billingAddress
+                        )?.name ||
+                          (
+                            billingAddresses.find(
+                              (a) => a.id === newPO.billingAddressId
+                            ) || newPO.billingAddress
+                          )?.street}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        className="h-auto p-1 text-orange-600 hover:text-orange-700"
+                        onClick={() => {
                           setNewPO((s) => ({
                             ...s,
-                            billingAddress: {
-                              ...s.billingAddress,
-                              line1: e.target.value,
-                            },
-                          }))
-                        }
-                      />
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            billingAddressId: null,
+                            // billingAddress: {},
+                          }));
+                          setBillingAddressSearchQuery("");
+                        }}
+                      >
+                        Change
+                      </Button>
+                    </div>
+                  ) : /* 2. Jab Naya Billing Address Form Khula Hai */
+                  showNewBillingAddressForm ? (
+                    <div className="p-4 border rounded-lg space-y-3">
+                      <div className="text-sm font-medium">
+                        Create New Billing Address
+                      </div>
+                      {/* New Address Form Fields */}
+                      <div className="flex gap-4">
+                        <Input
+                          className="h-9 text-sm bg-white border-orange-600"
+                          placeholder="Street Address (Line 1)"
+                          value={newBillingAddress.street}
+                          onChange={(e) =>
+                            setNewBillingAddress((s) => ({
+                              ...s,
+                              street: e.target.value,
+                            }))
+                          }
+                        />
                         <Input
                           className="h-9 text-sm bg-white border-orange-600"
                           placeholder="City"
-                          value={newPO.billingAddress.city}
+                          value={newBillingAddress.city}
                           onChange={(e) =>
-                            setNewPO((s) => ({
+                            setNewBillingAddress((s) => ({
                               ...s,
-                              billingAddress: {
-                                ...s.billingAddress,
-                                city: e.target.value,
-                              },
+                              city: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="flex md:grid-cols-2 gap-3">
+                        <Input
+                          className="h-9 text-sm bg-white border-orange-600"
+                          placeholder="State / Province"
+                          value={newBillingAddress.stateProvince}
+                          onChange={(e) =>
+                            setNewBillingAddress((s) => ({
+                              ...s,
+                              stateProvince: e.target.value,
                             }))
                           }
                         />
                         <Input
                           className="h-9 text-sm bg-white border-orange-600"
-                          placeholder="State"
-                          value={newPO.billingAddress.state}
+                          placeholder="PIN Code"
+                          value={newBillingAddress.ZIP}
                           onChange={(e) =>
-                            setNewPO((s) => ({
+                            setNewBillingAddress((s) => ({
                               ...s,
-                              billingAddress: {
-                                ...s.billingAddress,
-                                state: e.target.value,
-                              },
-                            }))
-                          }
-                        />
-                        <Input
-                          className="h-9 text-sm bg-white border-orange-600"
-                          placeholder="PIN"
-                          value={newPO.billingAddress.postalCode}
-                          onChange={(e) =>
-                            setNewPO((s) => ({
-                              ...s,
-                              billingAddress: {
-                                ...s.billingAddress,
-                                postalCode: e.target.value,
-                              },
+                              ZIP: e.target.value,
                             }))
                           }
                         />
                         <Input
                           className="h-9 text-sm bg-white border-orange-600"
                           placeholder="Country"
-                          value={newPO.billingAddress.country}
+                          value={newBillingAddress.country}
                           onChange={(e) =>
-                            setNewPO((s) => ({
+                            setNewBillingAddress((s) => ({
                               ...s,
-                              billingAddress: {
-                                ...s.billingAddress,
-                                country: e.target.value,
-                              },
+                              country: e.target.value,
                             }))
                           }
                         />
                       </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-          </section>
 
-          {/* Details Section */}
+                      {billingAddressApiError && (
+                        <div className="text-sm text-red-600">
+                          {billingAddressApiError}
+                        </div>
+                      )}
+
+                      <div className="flex justify-end gap-2 pt-2">
+                        <Button
+                          variant="ghost"
+                          onClick={() => setShowNewBillingAddressForm(false)}
+                          disabled={isCreatingBillingAddress}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          className="bg-orange-600 hover:bg-orange-700"
+                          onClick={handleAddNewBillingAddress}
+                          disabled={
+                            isCreatingBillingAddress ||
+                            !newBillingAddress.street ||
+                            !newBillingAddress.city
+                          }
+                        >
+                          {isCreatingBillingAddress
+                            ? "Adding..."
+                            : "Add Address"}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* 3. Jab Kuch Selected Nahi Hai (Search Combobox) */
+                    <div className="relative">
+                      <Input
+                        placeholder="Search billing address..."
+                        className="h-9 text-sm bg-white border-orange-600"
+                        value={billingAddressSearchQuery}
+                        onFocus={() => {
+                          setIsBillingAddressSearchFocused(true);
+                          handleBillingAddressDropdownOpen();
+                        }}
+                        onBlur={() => {
+                          setTimeout(
+                            () => setIsBillingAddressSearchFocused(false),
+                            150
+                          );
+                        }}
+                        onChange={(e) =>
+                          setBillingAddressSearchQuery(e.target.value)
+                        }
+                      />
+                      {isBillingAddressSearchFocused && (
+                        <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                          {isLoadingBillingAddresses ? (
+                            <div className="p-2 text-sm text-muted-foreground">
+                              Loading addresses...
+                            </div>
+                          ) : (
+                            <>
+                              {billingAddresses
+                                .filter((addr) =>
+                                  (addr.name || addr.street)
+                                    .toLowerCase()
+                                    .includes(
+                                      billingAddressSearchQuery.toLowerCase()
+                                    )
+                                )
+                                .map((addr) => (
+                                  <div
+                                    key={addr.id}
+                                    className="p-2 text-sm hover:bg-muted cursor-pointer"
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      handleSelectBillingAddress(addr);
+                                    }}
+                                  >
+                                    {addr.name || addr.street} ({addr.city})
+                                  </div>
+                                ))}
+
+                              {/* --- Create New Address Button --- */}
+                              <div
+                                className="p-2 text-sm text-orange-600 font-medium hover:bg-muted cursor-pointer border-t"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  setShowNewBillingAddressForm(true);
+                                  setIsBillingAddressSearchFocused(false);
+                                }}
+                              >
+                                + Create New Address
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </section>
+          {/* --- End of Shipping Information Section --- */}
+
+          {/* Details & Submit Section */}
           <section>
-            <div className="text-base font-medium mb-4">Details</div>
+            {/* ... (Details & Submit ka code same hai) ... */}
+            <div className="text-base font-medium mb-4">Due Date</div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="relative">
                 <Calendar className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
@@ -845,6 +1120,9 @@ export function NewPOForm(props: NewPOFormProps) {
                 />
               </div>
               <div className="md:col-span-2">
+                <div className="text-base font-medium mb-4">
+                  Note
+                </div>
                 <Input
                   className="h-9 text-sm bg-white border-orange-600"
                   placeholder="Add notes"
@@ -856,32 +1134,49 @@ export function NewPOForm(props: NewPOFormProps) {
               </div>
             </div>
 
-            <div className="mt-4">
-              <Button className="gap-2 h-9 text-orange-600">
+            <div className="mt-4 space-y-2">
+              <input
+                type="file"
+                multiple
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              <Button
+                variant="link"
+                className="gap-2 h-9 text-orange-600 p-0"
+                onClick={handleFileAttachClick}
+                disabled={isCreating}
+              >
                 <Paperclip className="h-4 w-4" />
                 Attach files
               </Button>
+              <div className="flex flex-wrap gap-2">
+                {attachedFiles?.map((file) => (
+                  <div
+                    key={file.name}
+                    className="flex items-center gap-2 text-sm bg-muted rounded-full pl-3 pr-2 py-1"
+                  >
+                    <span>{file.name}</span>
+                    <button
+                      onClick={() => removeAttachedFile(file.name)}
+                      className="text-muted-foreground hover:text-destructive"
+                      disabled={isCreating}
+                    >
+                      &times;
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
+            {apiError && (
+              <div className="text-sm text-red-600 mr-auto">
+                Error: {apiError}
+              </div>
+            )}
           </section>
-
-          {/* END of content container */}
         </div>
       </div>
-
-      {/* --- Sticky Footer for Form Submission (UNCOMMENTED) --- */}
-      {/* <div className="p-4 border-t bg-background sticky bottom-0">
-        <div className="mx-auto w-full max-w-[820px] flex justify-end gap-2">
-          <Button variant="ghost" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button
-            onClick={createPurchaseOrder} // Calls the prop to send data
-            className="bg-orange-600 hover:bg-orange-700 text-white" // Added text-white
-          >
-            Create Purchase Order
-          </Button>
-        </div>
-      </div> */}
     </div>
   );
 }

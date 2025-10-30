@@ -60,22 +60,9 @@ export const Assets: FC = () => {
     }
   };
 
-  const FetchAllLocationApi = async () => {
-    setLoading(true);
-    try {
-      const res = await locationService.fetchLocationsName();
-      setAllLocationData(res || []);
-      console.log("Fetched locations:", res);
-    } catch (err) {
-      console.error("Error fetching locations:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     fetchAssetsData();
-    FetchAllLocationApi();
+    // FetchAllLocationApi();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -223,7 +210,7 @@ export const Assets: FC = () => {
                   asset={selectedAsset}
                   onDelete={handleDeleteAsset}
                   onEdit={handleEditAsset}
-                  allLocationData={allLocationData}
+                
                 />
               ) : (
                 <div className="flex items-center justify-center h-full text-center">
