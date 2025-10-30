@@ -31,16 +31,52 @@ import ConfirmationModal from "./ConfirmationModal";
 import toast from "react-hot-toast";
 import PurchaseOrderDetails from "./PurchaseOrderDetails";
 
+// --- NEW HELPER FUNCTION ---
+// Yeh function original aur current form state ko compare karega
+// Aur sirf changed fields ka object return karega
+function getChangedFields(
+  original: NewPOFormType,
+  current: NewPOFormType
+): Partial<NewPOFormType> {
+  const changes: Partial<NewPOFormType> = {};
+
+  // Simple fields ko check karein
+  const keysToCompare: (keyof NewPOFormType)[] = [
+    "poNumber",
+    "vendorId",
+    "contactName",
+    "phoneOrMail",
+    "dueDate",
+    "notes",
+    "extraCosts",
+    "shippingAddressId",
+    "billingAddressId",
+    "sameShipBill",
+  ];
+
+  for (const key of keysToCompare) {
+    if (original[key] !== current[key]) {
+      // @ts-ignore
+      changes[key] = current[key];
+    }
+  }
+
+  // Items array ko check karein (deep compare)
+  if (JSON.stringify(original.items) !== JSON.stringify(current.items)) {
+    changes.items = current.items;
+  }
+
+  return changes;
+}
+
 /* ---------------------------- Purchase Orders UI -------------------------- */
 export function PurchaseOrders() {
-  const [getPurchaseOrderData, setGetPurchaseOrderData] = useState([]);
-  const [purchaseOrders, setPurchaseOrders] =
-    useState<PurchaseOrder[]>(getPurchaseOrderData);
+  const [getPurchaseOrderData, setGetPurchaseOrderData] = useState<
+    PurchaseOrder[]
+  >([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedPOId, setSelectedPOId] = useState<string | null>(
-    purchaseOrders[0]?.id ?? null
-  );
-
+  const [selectedPOId, setSelectedPOId] = useState<string | null>(null);
+  const [approveModal, setApproveModal] = useState(false);
   const [creatingPO, setCreatingPO] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("panel");
   const [selectedColumns, setSelectedColumns] = useState(allColumns);
@@ -52,6 +88,7 @@ export function PurchaseOrders() {
   const topRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState("details");
 
+  // ... (scrollToTop, scrollToComments, handleSend functions same rahenge) ...
   const scrollToTop = () => {
     if (topRef.current) {
       topRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -73,16 +110,23 @@ export function PurchaseOrders() {
     if (comment.trim()) {
       console.log("Comment sent:", comment);
       setComment("");
-      setShowCommentBox(false); // close after send (optional)
+      setShowCommentBox(false);
     }
   };
 
-  // const [showNewPOModal, setShowNewPOModal] = useState(false);
+  const [isEditingPO, setIsEditingPO] = useState(false);
+
+  // --- NEW STATE ---
+  // Original PO state ko store karega jab edit mode shuru hota hai
+  const [originalPOForEdit, setOriginalPOForEdit] =
+    useState<NewPOFormType | null>(null);
 
   const initialPOState: NewPOFormType = {
+    id: null,
     vendorId: "",
     items: [
       {
+        id: cryptoId(),
         partId: null,
         itemName: "",
         partNumber: "",
@@ -90,35 +134,21 @@ export function PurchaseOrders() {
         unitCost: 0,
       },
     ],
-    shippingAddress: {
-      line1: "",
-      city: "",
-      state: "",
-      postalCode: "",
-      country: "IN",
-    },
-    billingAddress: {
-      line1: "",
-      city: "",
-      state: "",
-      postalCode: "",
-      country: "IN",
-    },
     sameShipBill: true,
     shippingAddressId: "",
+    shippingAddress: null,
     billingAddressId: "",
+    billingAddress: null,
     dueDate: "",
     notes: "",
     extraCosts: 0,
     contactName: "",
     phoneOrMail: "",
-    poNumber: "", // Added poNumber to initial state
+    poNumber: "",
   };
 
-  // New PO Form state
   const [newPO, setNewPO] = useState<NewPOFormType>(initialPOState);
 
-  // --- API & FILE STATE (Moved from NewPOForm) ---
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -126,23 +156,22 @@ export function PurchaseOrders() {
   const [modalAction, setModalAction] = useState<
     "reject" | "approve" | "delete" | null
   >(null);
-
-  // --- Get User from Redux (Moved from NewPOForm) ---
   const user = useSelector((state: RootState) => state.auth.user);
 
   const fetchPurchaseOrder = async () => {
-    // setLoading(true);
     try {
       const res = await purchaseOrderService.fetchPurchaseOrders();
       const sortedData = [...res].sort(
-        (a, b) =>
+        (a: PurchaseOrder, b: PurchaseOrder) =>
           new Date(b.updatedAt).valueOf() - new Date(a.updatedAt).valueOf()
       );
       setGetPurchaseOrderData(sortedData);
+
+      if (!selectedPOId && sortedData.length > 0) {
+        setSelectedPOId(sortedData[0].id);
+      }
     } catch (err) {
       console.error(err);
-    } finally {
-      // setLoading(false);s
     }
   };
 
@@ -150,38 +179,60 @@ export function PurchaseOrders() {
     fetchPurchaseOrder();
   }, []);
 
-  const filteredPOs = getPurchaseOrderData.filter((po) => {
-    const vendor = mockVendors.find((v) => v.id === po.vendorId)?.name ?? "";
-    const q = searchQuery.toLowerCase();
-    return (
-      // po.number.toLowerCase().includes(q) ||
-      vendor.toLowerCase().includes(q) || po.status.toLowerCase().includes(q)
-    );
-  });
+  const filteredPOs = useMemo(
+    () =>
+      getPurchaseOrderData.filter((po) => {
+        const vendor = po.vendor?.name ?? "";
+        const q = searchQuery.toLowerCase();
+        return (
+          (po.poNumber && po.poNumber.toLowerCase().includes(q)) ||
+          vendor.toLowerCase().includes(q) ||
+          po.status.toLowerCase().includes(q)
+        );
+      }),
+    [getPurchaseOrderData, searchQuery]
+  );
 
-  const selectedPO =
-    getPurchaseOrderData.find((po) => po.id === selectedPOId) || null;
+  const selectedPO = useMemo(
+    () => getPurchaseOrderData.find((po) => po.id === selectedPOId) || null,
+    [getPurchaseOrderData, selectedPOId]
+  );
 
   const totals = useMemo(() => {
     return Object.fromEntries(
-      purchaseOrders.map((po) => [
-        po.id,
-        po.items.reduce((acc, it) => acc + it.quantity * it.unitCost, 0) +
-          (po.extraCosts ?? 0),
-      ])
-    );
-  }, [purchaseOrders]);
+      getPurchaseOrderData.map((po) => {
+        const totalItemsCost =
+          po.orderItems?.reduce((acc, it) => {
+            const price = Number(it.price) || 0;
+            const unitCost = Number(it.unitCost) || 0;
+            const unitsOrdered = Number(it.unitsOrdered) || 0;
 
-  // Apply pagination (just slicing for demo)
-  const pagedOrders = mockPOsSeed.slice(0, pageSize);
+            // Use price if available, otherwise calculate cost * units
+            return acc + (price || unitCost * unitsOrdered);
+          }, 0) ?? 0;
+
+        return [po.id, totalItemsCost];
+      })
+    );
+  }, [getPurchaseOrderData]);
+
+  const pagedOrders = useMemo(
+    () => filteredPOs.slice(0, pageSize),
+    [filteredPOs, pageSize]
+  );
 
   /* ------------------------------- Handlers ------------------------------- */
+
+  // --- UPDATED: resetNewPO function ---
   const resetNewPO = () => {
     setNewPO(initialPOState);
     setAttachedFiles([]);
     setApiError(null);
+    setIsEditingPO(false);
+    setOriginalPOForEdit(null); // <-- NEW: Original state ko clear karein
   };
 
+  // ... (addNewPOItemRow, removePOItemRow, updateItemField, etc. same rahenge) ...
   const addNewPOItemRow = () =>
     setNewPO((s) => ({
       ...s,
@@ -189,6 +240,7 @@ export function PurchaseOrders() {
         ...s.items,
         {
           id: cryptoId(),
+          partId: null,
           itemName: "",
           partNumber: "",
           quantity: 0,
@@ -203,7 +255,7 @@ export function PurchaseOrders() {
   const updateItemField = (
     id: string,
     field: keyof POItem,
-    value: string | number
+    value: string | number | null
   ) =>
     setNewPO((s) => ({
       ...s,
@@ -218,7 +270,7 @@ export function PurchaseOrders() {
 
   const updateStatus = (status: POStatus) => {
     if (!selectedPO) return;
-    setPurchaseOrders((s) =>
+    setGetPurchaseOrderData((s) =>
       s.map((po) => (po.id === selectedPO.id ? { ...po, status } : po))
     );
   };
@@ -228,7 +280,6 @@ export function PurchaseOrders() {
     setPageSize(size);
   };
 
-  // --- FILE HANDLERS (Moved from NewPOForm) ---
   const handleFileAttachClick = () => {
     fileInputRef.current?.click();
   };
@@ -248,120 +299,268 @@ export function PurchaseOrders() {
     );
   };
 
-  // --- Helper Function (Moved from NewPOForm) ---
-  const isAddressEmpty = (addr: { [key: string]: string }) => {
-    if (!addr || typeof addr !== "object") return true;
-    return Object.values(addr).every((value) => value === "");
+  // --- UPDATED: Edit PO Handler ---
+  const handleEditPO = (poToEdit: PurchaseOrder) => {
+    if (!poToEdit) return;
+
+    console.log("Editing PO:", poToEdit);
+
+    // 1. API data ko form state mein transform karein
+    const formPO: NewPOFormType = {
+      id: poToEdit.id,
+      poNumber: poToEdit.poNumber || "",
+      vendorId: poToEdit.vendor?.id || poToEdit.vendorId || "",
+
+      items:
+        poToEdit.orderItems && poToEdit.orderItems.length > 0
+          ? poToEdit.orderItems.map((item) => ({
+              id: item.id || cryptoId(),
+              partId: item.part?.id || item.partId || null,
+              itemName: item.itemName || item.part?.name || "",
+              partNumber: item.partNumber || item.part?.partNumber || "",
+              quantity: item.unitsOrdered || 0,
+              unitCost: item.unitCost || 0,
+            }))
+          : [initialPOState.items[0]],
+
+      shippingAddressId:
+        poToEdit.shippingAddress?.id || poToEdit.shippingAddressId || "",
+      shippingAddress: poToEdit.shippingAddress || null,
+
+      billingAddressId:
+        poToEdit.billingAddress?.id || poToEdit.billingAddressId || "",
+      billingAddress: poToEdit.billingAddress || null,
+
+      sameShipBill: !!(
+        poToEdit.shippingAddressId &&
+        poToEdit.shippingAddressId === poToEdit.billingAddressId &&
+        poToEdit.shippingAddressId !== null
+      ),
+
+      dueDate: poToEdit.dueDate
+        ? new Date(poToEdit.dueDate).toISOString().split("T")[0]
+        : "",
+
+      notes: poToEdit.notes || "",
+      extraCosts: poToEdit.extraCosts || 0,
+      contactName: poToEdit.contactName || "",
+      phoneOrMail: poToEdit.phoneOrMail || "",
+    };
+
+    // 2. Form state ko set karein
+    setNewPO(formPO);
+
+    // 3. --- NEW --- Original state ko bhi store karein
+    setOriginalPOForEdit(formPO);
+
+    // 4. Modal kholein
+    setIsEditingPO(true);
+    setApiError(null);
+    setAttachedFiles([]);
+    setCreatingPO(true);
   };
 
-  // --- MAIN API SUBMIT FUNCTION (Moved from NewPOForm) ---
-
+  // --- (handleCreatePurchaseOrder function same rahega) ---
   const handleCreatePurchaseOrder = async () => {
     console.log("Create button CLICKED! (from PurchaseOrders.tsx)");
     setIsCreating(true);
     setApiError(null);
 
     try {
-      // --- 1. Prepare the plain JSON object ---
-      const payload: any = {};
+      const payload: any = {}; // Poora payload banayein
 
-      // Simple fields
       if (newPO.poNumber) payload.poNumber = newPO.poNumber;
       if (user?.organizationId) payload.organizationId = user.organizationId;
       if (newPO.vendorId) payload.vendorId = newPO.vendorId;
-      payload.status = "pending"; // default
+      payload.status = "pending";
 
       if (newPO.contactName) payload.contactName = newPO.contactName;
       if (newPO.phoneOrMail) payload.phoneOrMail = newPO.phoneOrMail;
       if (newPO.dueDate) payload.dueDate = newPO.dueDate;
       if (newPO.notes) payload.notes = newPO.notes;
+      if (newPO.extraCosts) payload.extraCosts = Number(newPO.extraCosts);
 
-      // Number fields
-      // if (typeof newPO.extraCosts === "number") {
-      //   // <-- Ise uncomment kar diya
-      //   payload.extraCosts = newPO.extraCosts;
-      // }
-
-      // Boolean
-      // payload.sameShipBill = newPO.sameShipBill;
-
-      // --- BADLAV YAHAN HAI ---
-      // Nested Arrays / Objects
-      // Pehle filter karein (taaki khaali rows na jaayein)
-      // Fir map karein (taaki backend format mein badal jaayein)
       const formattedOrderItems = newPO.items
         .filter((item) => item.itemName && item.itemName.trim() !== "")
         .map((item) => {
-          // Har item ke liye price calculate karein
           const calculatedPrice =
             (Number(item.quantity) || 0) * (Number(item.unitCost) || 0);
 
           return {
-            partId: item.partId, // Yeh 'NewPOForm' se aa raha hai
-            partNumber: item.partNumber, // Yeh bhi auto-fill ho raha hai
-            unitsOrdered: Number(item.quantity), // 'quantity' -> 'unitsOrdered'
+            partId: item.partId,
+            itemName: item.itemName,
+            partNumber: item.partNumber,
+            unitsOrdered: Number(item.quantity),
             unitCost: Number(item.unitCost),
-            price: calculatedPrice, // 'price' ko calculate kiya
+            price: calculatedPrice,
           };
         });
 
       if (formattedOrderItems.length > 0) {
         payload.orderItems = formattedOrderItems;
       }
-      // --- BADLAV KHATAM ---
 
       if (newPO.shippingAddressId) {
-        payload.shippingAddressId = newPO.shippingAddressId; // <-- YEH SIRF ID BHEJEGA
+        payload.shippingAddressId = newPO.shippingAddressId;
       }
-      if (newPO.sameShipBill === false) {
-        if (newPO.billingAddressId) {
-          payload.billingAddressId = newPO.billingAddressId; // <-- YEH SIRF ID BHEJEGA
-        }
+      if (newPO.billingAddressId) {
+        payload.billingAddressId = newPO.billingAddressId;
       }
-      // Files
-      // if (attachedFiles.length > 0) {
-      //   payload.attachments = await Promise.all(
-      //     attachedFiles.map((file) => fileToBase64(file))
-      //   );
-      // }
 
-      // --- 2. API call ---
       if (purchaseOrderService?.createPurchaseOrder) {
-        console.log("Payload:", payload);
+        console.log("Create Payload:", payload);
         const response = await purchaseOrderService.createPurchaseOrder(
           payload
         );
         console.log("Successfully created PO:", response);
 
-        // Success actions
         setCreatingPO(false);
         resetNewPO();
         fetchPurchaseOrder();
+        toast.success("Purchase Order created!");
+
+        if (response && response.id) {
+          setSelectedPOId(response.id);
+        }
       } else {
         console.error(
           "purchaseOrderService ya createPurchaseOrder function nahi mila!"
         );
         setApiError("Client Error: Service not initialized.");
-        setIsCreating(false);
       }
     } catch (error: any) {
       console.error("Error creating PO:", error);
-      setApiError(error.message);
+      setApiError(error.message || "Failed to create PO.");
+    } finally {
       setIsCreating(false);
     }
   };
 
-  const [isLoading, setIsLoading] = useState(false);
+  // --- UPDATED: Update PO Handler ---
+  const handleUpdatePurchaseOrder = async () => {
+    console.log("Update button CLICKED!");
+    if (!newPO.id) {
+      setApiError("Error: Purchase Order ID nahi mila.");
+      return;
+    }
 
-  // Modal band karne ka function
+    // --- NEW: Original state ko check karein
+    if (!originalPOForEdit) {
+      setApiError("Error: Original data not found. Please try again.");
+      return;
+    }
+
+    // --- NEW: Sirf changed fields haasil karein
+    const changedFormFields = getChangedFields(originalPOForEdit, newPO);
+
+    // --- NEW: Agar koi change nahi hai, to API call na karein
+    if (Object.keys(changedFormFields).length === 0) {
+      toast.success("No changes detected.");
+      setCreatingPO(false);
+      resetNewPO();
+      return;
+    }
+
+    setIsCreating(true);
+    setApiError(null);
+
+    try {
+      // --- NEW: Payload sirf changed fields se banayein ---
+      const payload: any = {};
+
+      // Har changed field ko payload mein add karein
+      if (changedFormFields.poNumber !== undefined) {
+        payload.poNumber = changedFormFields.poNumber;
+      }
+      if (changedFormFields.vendorId !== undefined) {
+        payload.vendorId = changedFormFields.vendorId;
+      }
+      if (changedFormFields.contactName !== undefined) {
+        payload.contactName = changedFormFields.contactName;
+      }
+      if (changedFormFields.phoneOrMail !== undefined) {
+        payload.phoneOrMail = changedFormFields.phoneOrMail;
+      }
+      if (changedFormFields.dueDate !== undefined) {
+        payload.dueDate = changedFormFields.dueDate;
+      }
+      if (changedFormFields.notes !== undefined) {
+        payload.notes = changedFormFields.notes;
+      }
+      if (changedFormFields.extraCosts !== undefined) {
+        payload.extraCosts = Number(changedFormFields.extraCosts);
+      }
+      if (changedFormFields.shippingAddressId !== undefined) {
+        payload.shippingAddressId = changedFormFields.shippingAddressId;
+      }
+      if (changedFormFields.billingAddressId !== undefined) {
+        payload.billingAddressId = changedFormFields.billingAddressId;
+      }
+
+      // Agar 'sameShipBill' change hua hai, to billingAddressId ko accordingly set karein
+      // (Yeh logic 'getChangedFields' mein 'billingAddressId' ke through already handle ho jaana chahiye)
+
+      // Agar items change hue hain, to unhein transform karein
+      if (changedFormFields.items) {
+        payload.orderItems = changedFormFields.items
+          .filter((item) => item.itemName && item.itemName.trim() !== "")
+          .map((item) => ({
+            id: item.id && !item.id.startsWith("temp_") ? item.id : undefined,
+            partId: item.partId,
+            itemName: item.itemName,
+            partNumber: item.partNumber,
+            unitsOrdered: Number(item.quantity),
+            unitCost: Number(item.unitCost),
+            price: (Number(item.quantity) || 0) * (Number(item.unitCost) || 0),
+          }));
+      }
+
+      // Kuch zaroori fields jo hamesha bhejni pad sakti hain (optional)
+      // payload.organizationId = user?.organizationId;
+      // (Agar API ko PATCH ke liye bhi iski zaroorat hai, to ise add karein)
+
+      if (purchaseOrderService?.updatePurchaseOrder) {
+        console.log("Update Payload (ID: " + newPO.id + "):", payload); // <-- Ab yeh payload chhota hoga
+
+        const response = await purchaseOrderService.updatePurchaseOrder(
+          newPO.id,
+          payload
+        );
+        console.log("Successfully updated PO:", response);
+
+        toast.success("Purchase Order updated!");
+
+        setCreatingPO(false);
+        resetNewPO();
+        fetchPurchaseOrder();
+        setSelectedPOId(newPO.id);
+      } else {
+        console.error(
+          "purchaseOrderService.updatePurchaseOrder function nahi mila!"
+        );
+        setApiError("Client Error: Update service not initialized.");
+      }
+    } catch (error: any) {
+      console.error("Error updating PO:", error);
+      setApiError(error.message || "Failed to update PO.");
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  // ... (Modal confirmation logic same rahega) ...
+  const [isLoading, setIsLoading] = useState(false);
   const handleCloseModal = () => {
     if (!isLoading) {
       setModalAction(null);
     }
   };
+  const handleConfirm = async (id: string | undefined) => {
+    if (!id) {
+      toast.error("No PO selected for action.");
+      return;
+    }
 
-  // 'Confirm' button dabane par yeh function chalega
-  const handleConfirm = async (id) => {
     setIsLoading(true);
     try {
       if (modalAction === "reject") {
@@ -373,17 +572,17 @@ export function PurchaseOrders() {
       } else if (modalAction === "delete") {
         await purchaseOrderService.deletePurchaseOrder(id);
         toast.success("Deleted Successfully");
+        setSelectedPOId(null);
       }
       fetchPurchaseOrder();
     } catch (error) {
       console.error("Action failed:", error);
+      toast.error("Action failed!");
     } finally {
       setIsLoading(false);
       setModalAction(null);
     }
   };
-
-  // Modal ke liye dynamic content
   const modalContent = {
     reject: {
       title: "Reject Confirmation",
@@ -394,9 +593,9 @@ export function PurchaseOrders() {
     },
     approve: {
       title: "Approve Confirmation",
-      message: "Are you sure you want to approve this?",
+      message: `You have approved Purchase Order successfully! What do you want to do next`,
       confirmButtonText: "Approve",
-      variant: "warning" as const, // Ya "success" agar green chahiye
+      variant: "warning" as const,
     },
     delete: {
       title: "Delete Confirmation",
@@ -405,6 +604,7 @@ export function PurchaseOrders() {
       variant: "warning" as const,
     },
   };
+
   /* --------------------------------- UI ---------------------------------- */
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -414,11 +614,15 @@ export function PurchaseOrders() {
         setViewMode,
         searchQuery,
         setSearchQuery,
-        setCreatingPO,
+        () => {
+          resetNewPO();
+          setCreatingPO(true);
+        },
         setShowSettings
       )}
 
       {viewMode === "table" ? (
+        // ... (Table View same hai) ...
         <div className="flex-1 min-h-0 overflow-auto p-2">
           <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
             <PurchaseOrdersTable
@@ -432,7 +636,7 @@ export function PurchaseOrders() {
         <div className="flex flex-1 min-h-0">
           {/* Left List */}
           <div className="w-96 mr-2 ml-3 mb-2 border border-border flex flex-col min-h-0">
-            {/* List Aggregator + Select button*/}
+            {/* List Aggregator */}
             <div className="p-4 border-b border-border flex-shrink-0">
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">
@@ -443,29 +647,26 @@ export function PurchaseOrders() {
 
             {/* PO List */}
             <div className="flex-1 overflow-y-auto min-h-0 ">
-              {/* <div className="space-y-3"> */}
               {filteredPOs?.map((po) => {
-                // const vendor =
-                //    mockVendors.find((v) => v.id === po.vendorId)?.name ?? "-";
                 return (
                   <Card
                     key={po.id}
-                    className={`cursor-pointer transition-colors ${
+                    className={`cursor-pointer transition-colors rounded-none border-x-0 border-t-0 ${
                       selectedPOId === po.id
-                        ? "border-primary bg-primary/5"
-                        : "hover:bg-muted/50"
+                        ? "border-l-4 border-l-orange-600 bg-orange-50/50 bg-muted/50"
+                        : "hover:bg-muted/50  border-l-4 border-l-transparent"
                     }`}
-                    onClick={() => setSelectedPOId(po.id)} // Yahaan `id` ki jagah `po.id` aayega
+                    onClick={() => setSelectedPOId(po.id)}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-4">
                           <Avatar className="h-8 w-8">
                             <AvatarFallback>
-                              {/* {po.vendorId
-                                .split(" ")
+                              {po.vendor?.name
+                                ?.split(" ")
                                 .map((n) => n[0])
-                                .join("")} */}
+                                .join("") || "V"}
                             </AvatarFallback>
                           </Avatar>
                           <div>
@@ -474,17 +675,16 @@ export function PurchaseOrders() {
                             </span>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                               <Building2 className="h-3 w-3" />
-                              <span>{po.vendorId || "-"}</span>
+                              <span>{po.vendor?.name || "-"}</span>
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              {/* Total Cost: {formatMoney(totals[po.orderItems.price] ?? 0)} */}
-                              {/* {po.orderItems.price} */}
+                              Total Cost: {formatMoney(totals[po.id] ?? 0)}
                             </div>
                           </div>
                         </div>
                         <div className="text-right">
                           <div className="mt-2 capitalize">
-                            <StatusBadge status={po.status} />
+                            <StatusBadge status={po.status as POStatus} />
                           </div>
                         </div>
                       </div>
@@ -504,7 +704,10 @@ export function PurchaseOrders() {
                   <Button
                     variant="link"
                     className="text-primary p-0"
-                    onClick={() => setCreatingPO(true)}
+                    onClick={() => {
+                      resetNewPO();
+                      setCreatingPO(true);
+                    }}
                   >
                     Create your first Purchase Order
                   </Button>
@@ -515,272 +718,25 @@ export function PurchaseOrders() {
 
           {/* Right Details */}
           <div className="flex-1 bg-card mr-3 ml-2 mb-2 border border-border min-h-0 flex flex-col border-border">
-            {selectedPO ? (
-              // <div className="h-full flex flex-col min-h-0">
-              //   {/* Header */}
-              //   <div className="p-3 border-b border-border flex-shrink-0">
-              //     <div className="flex items-center justify-between mb-6">
-              //       <div className="flex items-center gap-2">
-              //         <h1 className="text-xl font-medium">
-              //           Purcharse Order #{selectedPO.poNumber}
-              //         </h1>
-              //         <LinkIcon className="h-4 w-4 text-orange-600" />
-              //       </div>
-              //       <div className="flex items-center gap-2">
-              //         <Button className="gap-2 border cursor-pointer border-orange-600 bg-white text-orange-600 hover:bg-orange-50">
-              //           <Upload className="h-4 w-4" />
-              //           Send to Vendor
-              //         </Button>
-              //         <Button className="gap-2 bg-white cursor-pointer text-orange-600 border border-orange-600 hover:bg-orange-50">
-              //           <Edit className="h-4 w-4" />
-              //           Edit
-              //         </Button>
-              //         <DropdownMenu>
-              //           <DropdownMenuTrigger asChild>
-              //             <Button variant="ghost" size="sm">
-              //               <MoreHorizontal className="h-4 w-4" />
-              //             </Button>
-              //           </DropdownMenuTrigger>
-              //           <DropdownMenuContent align="end">
-              //             <DropdownMenuItem
-              //               onClick={() => updateStatus("Approved")}
-              //             >
-              //               <Check className="h-4 w-4 mr-2" /> Mark as Approved
-              //             </DropdownMenuItem>
-              //             <DropdownMenuItem
-              //               onClick={() => updateStatus("Sent")}
-              //             >
-              //               <Mail className="h-4 w-4 mr-2" /> Mark as Sent
-              //             </DropdownMenuItem>
-              //             <DropdownMenuItem
-              //               onClick={() => updateStatus("Cancelled")}
-              //             >
-              //               <Trash2 className="h-4 w-4 mr-2" /> Cancel
-              //             </DropdownMenuItem>
-              //             <DropdownMenuItem
-              //               onClick={() => {
-              //                 handleConfirm(selectedPO.id);
-              //                 setModalAction("delete");
-              //               }}
-              //             >
-              //               <Trash2 className="h-4 w-4 mr-2" /> Delete
-              //             </DropdownMenuItem>
-              //           </DropdownMenuContent>
-              //         </DropdownMenu>
-              //       </div>
-              //     </div>
-              //   </div>
-
-              //   {/* Content */}
-              //   <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-8 z-50 ">
-              //     <div ref={topRef}>
-              //       <div className="grid grid-cols-2 gap-6">
-              //         <Card className="p-4">
-              //           <div className="flex items-center justify-between">
-              //             <div className="capitalize">
-              //               <div className="text-sm text-muted-foreground mb-1 ">
-              //                 Status
-              //               </div>
-              //               <StatusBadge status={selectedPO.status} />
-              //             </div>
-              //             <div>
-              //               <div className="text-sm text-muted-foreground mb-1">
-              //                 Due Date
-              //               </div>
-              //               {/* <div className="font-medium">
-              //                 {selectedPO.dueDate
-              //                   ? new Date(
-              //                       selectedPO.dueDate
-              //                     ).toLocaleDateString()
-              //                   : "-"}
-              //               </div> */}
-              //             </div>
-              //           </div>
-              //         </Card>
-
-              //         <Card className="p-4">
-              //           <div className="text-sm text-muted-foreground mb-1">
-              //             Vendor
-              //           </div>
-              //           <div className="flex items-center gap-2">
-              //             <VendorPill vendorId={selectedPO.vendorId} />
-              //           </div>
-              //         </Card>
-              //       </div>
-
-              //       <div>
-              //         <h3 className="font-medium mb-3">Order Items</h3>
-              //         <div className="overflow-x-auto border rounded-lg">
-              //           <table className="w-full text-sm">
-              //             <thead className="bg-muted/50">
-              //               <tr className="text-left">
-              //                 <th className="p-3">Item Name</th>
-              //                 <th className="p-3">Part Number</th>
-              //                 <th className="p-3">Units Ordered</th>
-              //                 <th className="p-3">Units Received</th>
-              //                 <th className="p-3">Unit Cost</th>
-              //                 <th className="p-3">Cost of Units Ordered</th>
-              //               </tr>
-              //             </thead>
-              //             <tbody>
-              //               {selectedPO.orderItems?.map((it) => (
-              //                 <tr key={it.id} className="border-t">
-              //                   <td className="p-3">{it.itemName}</td>
-              //                   <td className="p-3">{it.partNumber || "-"}</td>
-              //                   <td className="p-3">{it.unitsOrdered}</td>
-              //                   <td className="p-3">0</td>
-              //                   <td className="p-3">
-              //                     {formatMoney(it.unitCost)}
-              //                   </td>
-              //                   <td className="p-3">
-              //                     {formatMoney(it.unitCost * it.unitsOrdered)}
-              //                   </td>
-              //                 </tr>
-              //               ))}
-              //               <tr className="border-t">
-              //                 <td
-              //                   colSpan={5}
-              //                   className="p-3 text-right font-medium"
-              //                 >
-              //                   Subtotal
-              //                 </td>
-              //                 <td className="p-3">
-              //                   {/* {formatMoney(
-              //                     selectedPO.it.reduce(
-              //                       (a, i) => a + i.unitCost * i.unitsOrdered,
-              //                       0
-              //                     )
-              //                   )} */}
-              //                 </td>
-              //               </tr>
-              //               <tr className="border-t">
-              //                 <td
-              //                   colSpan={5}
-              //                   className="p-3 text-right font-medium"
-              //                 >
-              //                   Taxes &amp; Costs
-              //                 </td>
-              //                 {/* <td className="p-3">
-              //                   {formatMoney(selectedPO.extraCosts ?? 0)}
-              //                 </td> */}
-              //               </tr>
-              //               <tr className="border-t bg-muted/30">
-              //                 <td
-              //                   colSpan={5}
-              //                   className="p-3 text-right font-semibold"
-              //                 >
-              //                   Total
-              //                 </td>
-              //                 <td className="p-3 font-semibold">
-              //                   {/* {formatMoney(
-              //                     selectedPO.items.reduce(
-              //                       (a, i) => a + i.unitCost * i.quantity,
-              //                       0
-              //                     ) + (selectedPO.extraCosts ?? 0)
-              //                   )} */}
-              //                 </td>
-              //               </tr>
-              //             </tbody>
-              //           </table>
-              //         </div>
-              //       </div>
-
-              //       <div className="grid grid-cols-2 gap-6 mt-4">
-              //         <Card className="p-4">
-              //           <div className="text-sm text-muted-foreground mb-2">
-              //             Shipping Info
-              //           </div>
-              //           <div className="flex items-start gap-2">
-              //             <Building2 className="h-4 w-4 text-muted-foreground mt-1" />
-              //             <div>
-              //               {addressToLine(selectedPO.shippingAddressId || "")}
-              //             </div>
-              //           </div>
-              //         </Card>
-              //         <Card className="p-4">
-              //           <div className="text-sm text-muted-foreground mb-2">
-              //             Billing Info
-              //           </div>
-              //           <div className="flex items-start gap-2">
-              //             <Building2 className="h-4 w-4 text-muted-foreground mt-1" />
-              //             <div>
-              //               {addressToLine(selectedPO.billingAddressId || "")}
-              //             </div>
-              //           </div>
-              //         </Card>
-              //       </div>
-              //     </div>
-
-              //     <div ref={commentsRef}>
-              //       <div>
-              //         <h3 className="font-medium mb-3">
-              //           Comments &amp; History
-              //         </h3>
-              //         <div className="border rounded-lg p-4">
-              //           <div className="text-sm text-muted-foreground mb-2">
-              //             {comment.length === 0 ? "No Comments Found" : ""}
-              //           </div>
-              //         </div>
-              //       </div>
-              //     </div>
-              //     <div>
-              //       <Comment
-              //         showCommentBox={showCommentBox}
-              //         comment={comment}
-              //         handleSend={handleSend}
-              //         setShowCommentBox={setShowCommentBox}
-              //         setComment={setComment}
-              //       />
-              //     </div>
-              //   </div>
-
-              //   {/* Footer (fixed at bottom of right pane) */}
-              //   <div className="p-6 border-t flex justify-between flex-none bg-white">
-              //     {selectedPO.status === "pending" ? (
-              //       <>
-              //         <Button
-              //           onClick={() => setModalAction("reject")}
-              //           className="gap-2 text-red-600 bg-white border border-red-600 rounded-md px-4 py-2 text-sm font-medium hover:bg-red-50 cursor-pointer"
-              //         >
-              //           Reject
-              //         </Button>
-              //         <Button
-              //           onClick={() => setModalAction("approve")}
-              //           className="gap-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md px-4 py-2 text-sm font-medium cursor-pointer flex items-center"
-              //         >
-              //           <Upload className="h-4 w-4" />
-              //           Approve
-              //         </Button>
-              //       </>
-              //     ) : (
-              //       <>
-              //         {/* Empty but keeps height + spacing same */}
-              //         <Button
-              //           onClick={() => setModalAction("approve")}
-              //           className="gap-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md px-4 py-2 text-sm font-medium cursor-pointer flex items-center"
-              //         >
-              //           <Upload className="h-4 w-4" />
-              //           Approve
-              //         </Button>
-              //         <div></div>
-              //       </>
-              //     )}
-              //   </div>
-              // </div>
+            {selectedPO && selectedPO ? (
               <PurchaseOrderDetails
-                selectedPO={selectedPO}
+                selectedPO={selectedPO} // <-- Sahi prop pass ho raha hai
                 updateState={updateStatus}
-                handleConfirm={handleConfirm}
+                handleConfirm={() => handleConfirm(selectedPO?.id)}
                 setModalAction={setModalAction}
+                setApproveModal={setApproveModal}
                 topRef={topRef}
                 formatMoney={formatMoney}
                 addressToLine={addressToLine}
                 commentsRef={commentsRef}
+                StatusBadge={StatusBadge}
                 comment={comment}
                 showCommentBox={showCommentBox}
                 handleSend={handleSend}
                 setShowCommentBox={setShowCommentBox}
                 setComment={setComment}
+                handleEditClick={() => handleEditPO(selectedPO)}
+                fetchPurchaseOrder={fetchPurchaseOrder}
               />
             ) : (
               <div className="flex items-center justify-center h-full">
@@ -801,10 +757,15 @@ export function PurchaseOrders() {
         </div>
       )}
 
-      {/* New Purchase Order Modal (custom lightweight) */}
+      {/* New Purchase Order Modal */}
       <NewPOFormDialog
         open={creatingPO}
-        onOpenChange={setCreatingPO}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            resetNewPO();
+          }
+          setCreatingPO(isOpen);
+        }}
         newPO={newPO}
         setNewPO={setNewPO}
         newPOSubtotal={newPOSubtotal}
@@ -812,19 +773,21 @@ export function PurchaseOrders() {
         addNewPOItemRow={addNewPOItemRow}
         removePOItemRow={removePOItemRow}
         updateItemField={updateItemField}
-        // --- UPDATED & NEW PROPS ---
+        isEditing={isEditingPO}
         onCancel={() => {
           setCreatingPO(false);
           resetNewPO();
         }}
-        handleCreatePurchaseOrder={handleCreatePurchaseOrder} // Naya API function
-        isCreating={isCreating} // State pass kiya
-        apiError={apiError} // State pass kiya
-        attachedFiles={attachedFiles} // State pass kiya
-        fileInputRef={fileInputRef} // Ref pass kiya
-        handleFileAttachClick={handleFileAttachClick} // Function pass kiya
-        handleFileChange={handleFileChange} // Function pass kiya
-        removeAttachedFile={removeAttachedFile} // Function pass kiya
+        handleCreatePurchaseOrder={
+          isEditingPO ? handleUpdatePurchaseOrder : handleCreatePurchaseOrder // <-- Dynamic function
+        }
+        isCreating={isCreating}
+        apiError={apiError}
+        attachedFiles={attachedFiles}
+        fileInputRef={fileInputRef}
+        handleFileAttachClick={handleFileAttachClick}
+        handleFileChange={handleFileChange}
+        removeAttachedFile={removeAttachedFile}
       />
 
       {/* Settings Modal */}
@@ -838,14 +801,13 @@ export function PurchaseOrders() {
         />
       )}
 
+      {/* Confirmation Modal */}
       <ConfirmationModal
-        isOpen={modalAction !== null} // Jab modalAction null nahi hoga, tab modal dikhega
+        isOpen={modalAction !== null}
         onClose={handleCloseModal}
-        // onConfirm={handleConfirm}
-        handleConfirm={handleConfirm}
+        handleConfirm={() => handleConfirm(selectedPO?.id)} // <-- ID yahaan pass karein
         isLoading={isLoading}
         selectedPO={selectedPO}
-        // Neeche ka content dynamically set ho raha hai
         title={modalAction ? modalContent[modalAction].title : ""}
         message={modalAction ? modalContent[modalAction].message : ""}
         confirmButtonText={
@@ -860,21 +822,25 @@ export function PurchaseOrders() {
 }
 
 /* --------------------------------- Bits ---------------------------------- */
-function StatusBadge({ status }: { status: POStatus }) {
-  const map: Record<POStatus, string> = {
+
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, string> = {
+    pending: "bg-orange-50 text-orange-700 border-orange-200",
+    approved: "bg-green-50 text-green-700 border-green-200",
+    sent: "bg-blue-50 text-blue-700 border-blue-200",
+    received: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    cancelled: "bg-red-50 text-red-700 border-red-200",
     Draft: "bg-gray-50 text-gray-700 border-gray-200",
-    Approved: "bg-green-50 text-green-700 border-green-200",
-    Sent: "bg-orange-50 text-orange-700 border-orange-200",
-    Received: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    Cancelled: "bg-red-50 text-red-700 border-red-200",
   };
+  const className = map[status] || map["Draft"];
   return (
-    <Badge variant="outline" className={map[status]}>
+    <Badge variant="outline" className={`capitalize ${className}`}>
       {status}
     </Badge>
   );
 }
 
+// ... (VendorPill function same rahega) ...
 function VendorPill({ vendorId }: { vendorId: string }) {
   const vendor = mockVendors.find((v) => v.id === vendorId);
   if (!vendor) return <span>-</span>;
@@ -883,6 +849,7 @@ function VendorPill({ vendorId }: { vendorId: string }) {
       <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-700">
         {vendor.name.slice(0, 1)}
       </div>
+
       <div className="leading-tight">
         <div className="font-medium">{vendor.name}</div>
         <div className="text-xs text-muted-foreground flex items-center gap-2">
@@ -893,6 +860,7 @@ function VendorPill({ vendorId }: { vendorId: string }) {
             </span>
           )}
         </div>
+
         <div className="text-xs text-muted-foreground flex items-center gap-2">
           {vendor.phone && (
             <span className="inline-flex items-center gap-1">

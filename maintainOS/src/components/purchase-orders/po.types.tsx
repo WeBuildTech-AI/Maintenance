@@ -32,7 +32,7 @@ export type NewPOForm = {
   shippingAddressId?: string;
   billingAddressId?: string;
   sameShipBill: boolean;
-  phoneOrMail:string;
+  phoneOrMail: string;
   dueDate?: string;
   notes?: string;
   extraCosts: number;
@@ -54,9 +54,17 @@ export type NewPOFormProps = {
   ) => void;
   createPurchaseOrder: () => void;
   onCancel: () => void;
+  handleCreatePurchaseOrder: () => void;
+  isCreating: boolean;
+  apiError: string;
+  attachedFiles: () => void;
+  fileInputRef: () => void;
+  handleFileAttachClick: () => void;
+  handleFileChange: () => void;
+  removeAttachedFile: () => void;
 };
 
-export type POStatus = "Draft" | "Approved" | "Sent" | "Received" | "Cancelled";
+export type POStatus = "Draft" | "Approved" | "pending" | "Received" | "Cancelled";
 
 export type PurchaseOrder = {
   id: string; // internal id

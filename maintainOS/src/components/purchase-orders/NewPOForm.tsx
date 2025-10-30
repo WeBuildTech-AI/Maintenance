@@ -27,10 +27,7 @@ export function NewPOForm(props: NewPOFormProps) {
     addNewPOItemRow,
     removePOItemRow,
     updateItemField,
-    onCancel,
-
     // --- NEW PROPS ADDED ---
-    handleCreatePurchaseOrder,
     isCreating,
     apiError,
     attachedFiles,
@@ -179,17 +176,29 @@ export function NewPOForm(props: NewPOFormProps) {
     if (!hasFetchedAddresses) {
       fetchAddresses();
     }
-  };
+  }; // 3. Jab user list se shipping address select kare
 
-  // 3. Jab user list se shipping address select kare
   const handleSelectAddress = (address: any) => {
     setAddressSearchQuery(address.name || address.street); // Input mein naam dikhayein
     setIsAddressSearchFocused(false);
-    setNewPO((currentState) => ({
-      ...currentState,
-      shippingAddressId: address.id, // Selected ID ko state mein save karein
-      shippingAddress: address, // <-- CHANGED: Poora object bhi save karein
-    }));
+
+    setNewPO((currentState) => {
+      // 1. Pehle naya state object banayein shipping details ke saath
+      const newState = {
+        ...currentState,
+        shippingAddressId: address.id, // Selected ID ko state mein save karein
+        shippingAddress: address, // Poora object bhi save karein
+      };
+
+      if (currentState.sameShipBill) {
+        // 3. Agar ticked hai, toh billing address ko bhi shipping address se update karein
+        newState.billingAddressId = address.id;
+        newState.billingAddress = address;
+      }
+
+      // 4. Final updated state return karein
+      return newState;
+    });
   };
 
   // 4. Jab user "Create New Address" button par click kare
@@ -850,11 +859,11 @@ export function NewPOForm(props: NewPOFormProps) {
                 <Input
                   className="h-9 text-sm bg-white border-orange-600"
                   placeholder="Email or Phone Number"
-                  value={newPO.contactEmailOrPhone}
+                  value={newPO.phoneOrMail}
                   onChange={(e) =>
                     setNewPO((s) => ({
                       ...s,
-                      contactEmailOrPhone: e.target.value,
+                      phoneOrMail: e.target.value,
                     }))
                   }
                 />
@@ -871,7 +880,6 @@ export function NewPOForm(props: NewPOFormProps) {
                     setNewPO((s) => ({
                       ...s,
                       sameShipBill: isChecked,
-                      // <-- CHANGED: Update ID and Object
                       ...(isChecked
                         ? {
                             billingAddressId: s.shippingAddressId,
@@ -1098,7 +1106,7 @@ export function NewPOForm(props: NewPOFormProps) {
           {/* Details & Submit Section */}
           <section>
             {/* ... (Details & Submit ka code same hai) ... */}
-            <div className="text-base font-medium mb-4">Details</div>
+            <div className="text-base font-medium mb-4">Due Date</div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="relative">
                 <Calendar className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
@@ -1112,6 +1120,9 @@ export function NewPOForm(props: NewPOFormProps) {
                 />
               </div>
               <div className="md:col-span-2">
+                <div className="text-base font-medium mb-4">
+                  Note
+                </div>
                 <Input
                   className="h-9 text-sm bg-white border-orange-600"
                   placeholder="Add notes"
@@ -1141,7 +1152,7 @@ export function NewPOForm(props: NewPOFormProps) {
                 Attach files
               </Button>
               <div className="flex flex-wrap gap-2">
-                {attachedFiles.map((file) => (
+                {attachedFiles?.map((file) => (
                   <div
                     key={file.name}
                     className="flex items-center gap-2 text-sm bg-muted rounded-full pl-3 pr-2 py-1"
@@ -1163,27 +1174,6 @@ export function NewPOForm(props: NewPOFormProps) {
                 Error: {apiError}
               </div>
             )}
-
-            {/* <div className="flex justify-end gap-3 border-t p-6 mt-4">
-              {apiError && (
-                <div className="text-sm text-red-600 mr-auto">
-                  Error: {apiError}
-                </div>
-              )}
-              <Button variant="ghost" onClick={onCancel} disabled={isCreating}>
-                Cancel
-              </Button>
-              <Button
-                className="gap-2 bg-orange-600 hover:bg-orange-700"
-                onClick={handleCreatePurchaseOrder}
-                
-              >
-              
-                <Plus className="h-4 w-4" />
-                Create Purchase Order
-               
-              </Button>
-            </div> */}
           </section>
         </div>
       </div>

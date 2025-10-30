@@ -8,6 +8,7 @@ import {
   MoreHorizontal,
   Trash2,
   Upload,
+  X, // 'Reject' ke liye
 } from "lucide-react";
 import { Button } from "../ui/button";
 import {
@@ -18,6 +19,9 @@ import {
 } from "../ui/dropdown-menu";
 import { Card } from "../ui/card";
 import Comment from "../ui/comment";
+import { formatDateOnly } from "../utils/Date"; // Path check karein
+import { purchaseOrderService } from "../../store/purchaseOrders";
+import toast from "react-hot-toast";
 
 // =========================
 // 🔹 TYPE DEFINITIONS
@@ -25,10 +29,27 @@ import Comment from "../ui/comment";
 
 interface OrderItem {
   id: string;
-  itemName: string;
+  itemName?: string; // Optional
   partNumber?: string;
   unitsOrdered: number;
   unitCost: number;
+  price: number; // Price bhi hai
+  part?: {
+    // Part object bhi nested ho sakta hai
+    id: string;
+    name: string;
+    partNumber?: string;
+  };
+}
+
+interface Address {
+  id: string;
+  name?: string;
+  street: string;
+  city: string;
+  stateProvince: string;
+  ZIP: string;
+  country: string;
 }
 
 interface PurchaseOrder {
@@ -36,34 +57,48 @@ interface PurchaseOrder {
   poNumber: string;
   status: "pending" | "approved" | "sent" | "cancelled";
   vendorId: string;
+  vendor: {
+    // Vendor object nested hai
+    id: string;
+    name: string;
+  };
   shippingAddressId?: string;
+  shippingAddress?: Address; // Address object
   billingAddressId?: string;
+  billingAddress?: Address; // Address object
   orderItems?: OrderItem[];
+  dueDate: string; // Date string
+  notes?: string;
+  extraCosts?: number;
+  contactName?: string;
+  phoneOrMail?: string;
 }
 
 interface PurchaseOrderDetailsProps {
   selectedPO: PurchaseOrder;
-  updateState: (key: string, value: any) => void;
+  updateState: (status: string) => void; // Sirf status update hota hai
   handleConfirm: (id: string) => void;
-  setModalAction: (action: string) => void;
+  setModalAction: (
+    action: "reject" | "approve" | "delete" | "fullfill"
+  ) => void; // Actions restrict kiye
   topRef: React.RefObject<HTMLDivElement>;
   commentsRef: React.RefObject<HTMLDivElement>;
   formatMoney: (amount: number) => string;
-  addressToLine: (id: string) => string;
-  comment: string[];
+  addressToLine: (address: Address | null | undefined) => string; // Helper function type
+  comment: string; // Comment string hai, array nahi (aapke PurchaseOrders.tsx ke hisaab se)
   showCommentBox: boolean;
+  StatusBadge: () => void;
   handleSend: () => void;
+  setApproveModal: () => void;
   setShowCommentBox: (show: boolean) => void;
-  setComment: (comment: string[]) => void;
+  setComment: (comment: string) => void; // string
+  handleEditClick: () => void; // <-- HAMARA NAYA PROP
+  fetchPurchaseOrder: () => void;
 }
-
-// =========================
-// 🔸 MAIN COMPONENT
-// =========================
 
 const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   selectedPO,
-  updateState,
+  updateState, // Yeh ab 'purchaseOrders.tsx' mein 'updateStatus' hai
   handleConfirm,
   setModalAction,
   topRef,
@@ -75,10 +110,23 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   handleSend,
   setShowCommentBox,
   setComment,
+  handleEditClick,
+  setApproveModal,
+  StatusBadge,
+  fetchPurchaseOrder,
 }) => {
-  // 🧩 Helper: Update PO status
-  const updateStatus = (status: string) => {
-    updateState("status", status);
+  // Calculate totals
+  const subtotal =
+    selectedPO.orderItems?.reduce(
+      (acc, it) => acc + (it.price || it.unitCost * it.unitsOrdered),
+      0
+    ) ?? 0;
+  const total = subtotal + (selectedPO.extraCosts ?? 0);
+
+  const handleApprove = async (id) => {
+    await purchaseOrderService.approvePurchaseOrder(id);
+    toast.success("Successfully Approved ");
+    fetchPurchaseOrder();
   };
 
   return (
@@ -99,7 +147,12 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
               <Upload className="h-4 w-4" />
               Send to Vendor
             </Button>
-            <Button className="gap-2 bg-white cursor-pointer text-orange-600 border border-orange-600 hover:bg-orange-50">
+
+            {/* --- EDIT BUTTON CLICK HANDLER --- */}
+            <Button
+              className="gap-2 bg-white cursor-pointer text-orange-600 border border-orange-600 hover:bg-orange-50"
+              onClick={handleEditClick} // <-- YAHAN ADD KIYA
+            >
               <Edit className="h-4 w-4" />
               Edit
             </Button>
@@ -111,20 +164,18 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => updateStatus("approved")}>
+                <DropdownMenuItem onClick={() => setModalAction("approve")}>
                   <Check className="h-4 w-4 mr-2" /> Mark as Approved
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => updateStatus("sent")}>
+                <DropdownMenuItem onClick={() => updateState("sent")}>
                   <Mail className="h-4 w-4 mr-2" /> Mark as Sent
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => updateStatus("cancelled")}>
-                  <Trash2 className="h-4 w-4 mr-2" /> Cancel
+                <DropdownMenuItem onClick={() => updateState("cancelled")}>
+                  <X className="h-4 w-4 mr-2" /> Cancel
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => {
-                    handleConfirm(selectedPO.id);
-                    setModalAction("delete");
-                  }}
+                  className="text-red-600"
+                  onClick={() => setModalAction("delete")}
                 >
                   <Trash2 className="h-4 w-4 mr-2" /> Delete
                 </DropdownMenuItem>
@@ -146,7 +197,16 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                     Status
                   </div>
                   <span className="capitalize text-sm font-medium">
-                    {selectedPO.status}
+                    {/* StatusBadge component use karein */}
+                    <StatusBadge status={selectedPO.status} />
+                  </span>
+                </div>
+                <div className="capitalize">
+                  <div className="text-sm text-muted-foreground mb-1 ">
+                    Due Date
+                  </div>
+                  <span className="capitalize text-sm font-medium">
+                    {formatDateOnly(selectedPO.dueDate)}
                   </span>
                 </div>
               </div>
@@ -155,14 +215,17 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
             <Card className="p-4">
               <div className="text-sm text-muted-foreground mb-1">Vendor</div>
               <div className="flex items-center gap-2">
-                <span>{selectedPO.vendorId}</span>
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">
+                  {selectedPO.vendor?.name || "-"}
+                </span>
               </div>
             </Card>
           </div>
 
           {/* ORDER ITEMS */}
           <div>
-            <h3 className="font-medium mb-3">Order Items</h3>
+            <h3 className="font-medium mb-3 mt-4">Order Items</h3>
             <div className="overflow-x-auto border rounded-lg">
               <table className="w-full text-sm">
                 <thead className="bg-muted/50">
@@ -178,16 +241,41 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                 <tbody>
                   {selectedPO.orderItems?.map((it) => (
                     <tr key={it.id} className="border-t">
-                      <td className="p-3">{it.itemName}</td>
-                      <td className="p-3">{it.partNumber || "-"}</td>
+                      <td className="p-3">
+                        {it.itemName || it.part?.name || "-"}
+                      </td>
+                      <td className="p-3">
+                        {it.partNumber || it.part?.partNumber || "-"}
+                      </td>
                       <td className="p-3">{it.unitsOrdered}</td>
-                      <td className="p-3">0</td>
+                      <td className="p-3">0</td>{" "}
+                      {/* (Yeh value API se aani chahiye) */}
                       <td className="p-3">{formatMoney(it.unitCost)}</td>
                       <td className="p-3">
-                        {formatMoney(it.unitCost * it.unitsOrdered)}
+                        {formatMoney(it.price || it.unitCost * it.unitsOrdered)}
                       </td>
                     </tr>
                   ))}
+                  <tr className="border-t">
+                    <td colSpan={5} className="p-3 text-right font-medium">
+                      Subtotal
+                    </td>
+                    <td className="p-3 font-medium">{formatMoney(subtotal)}</td>
+                  </tr>
+                  <tr className="border-t">
+                    <td colSpan={5} className="p-3 text-right font-medium">
+                      Taxes &amp; Costs
+                    </td>
+                    <td className="p-3 font-medium">
+                      {formatMoney(selectedPO.extraCosts ?? 0)}
+                    </td>
+                  </tr>
+                  <tr className="border-t bg-muted/30">
+                    <td colSpan={5} className="p-3 text-right font-semibold">
+                      Total
+                    </td>
+                    <td className="p-3 font-semibold">{formatMoney(total)}</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -201,16 +289,37 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
               </div>
               <div className="flex items-start gap-2">
                 <Building2 className="h-4 w-4 text-muted-foreground mt-1" />
-                <div>{addressToLine(selectedPO.shippingAddressId || "")}</div>
+                <div className="text-sm">
+                  {/* addressToLine helper use karein */}
+                  {addressToLine(selectedPO.shippingAddress)}
+                </div>
               </div>
             </Card>
+            <Card className="p-4">
+              <div className="text-sm text-muted-foreground mb-2">
+                Shipping Contact
+              </div>
+              <div className="flex items-start gap-2">
+                <div className="text-sm">
+                  {/* addressToLine helper use karein */}
+                  {selectedPO.contactName}
+                </div>
+                <div className="text-sm">{selectedPO.phoneOrMail}</div>
+              </div>
+            </Card>
+          </div>
+          <div className="grid grid-cols-2 gap-6 mt-4">
             <Card className="p-4">
               <div className="text-sm text-muted-foreground mb-2">
                 Billing Info
               </div>
               <div className="flex items-start gap-2">
                 <Building2 className="h-4 w-4 text-muted-foreground mt-1" />
-                <div>{addressToLine(selectedPO.billingAddressId || "")}</div>
+                <div className="text-sm">
+                  {addressToLine(
+                    selectedPO.billingAddress || selectedPO.shippingAddress
+                  )}
+                </div>
               </div>
             </Card>
           </div>
@@ -219,9 +328,11 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
         {/* COMMENTS */}
         <div ref={commentsRef}>
           <h3 className="font-medium mb-3">Comments &amp; History</h3>
-          <div className="border rounded-lg p-4">
+
+          {/* TODO: Yahaan aapko comments ki list render karni chahiye */}
+          <div className="border rounded-lg p-4 mb-4">
             <div className="text-sm text-muted-foreground mb-2">
-              {comment.length === 0 ? "No Comments Found" : ""}
+              No Comments Found
             </div>
           </div>
 
@@ -236,29 +347,42 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
       </div>
 
       {/* FOOTER */}
-      <div className="p-6 border-t flex justify-between flex-none bg-white">
-        {selectedPO.status === "pending" ? (
-          <>
+      {selectedPO.status === "pending" ? (
+        <>
+          <div className="p-6 border-t flex justify-between flex-none bg-white">
             <Button
               onClick={() => setModalAction("reject")}
               className="gap-2 text-red-600 bg-white border border-red-600 rounded-md px-4 py-2 text-sm font-medium hover:bg-red-50 cursor-pointer"
             >
+              <X className="h-4 w-4" />
               Reject
             </Button>
             <Button
-              onClick={() => setModalAction("approve")}
+              onClick={() => {
+                setModalAction("approve");
+                handleApprove(selectedPO.id);
+              }}
+              // onClick={() => handleConfirm(selectedPO.i)}
+              className="gap-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md px-4 py-2 text-sm font-medium cursor-pointer flex items-center"
+            >
+              <Check className="h-4 w-4" /> {/* 'Upload' ki jagah 'Check' */}
+              Approve
+            </Button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="p-6 border-t flex justify-end flex-none bg-white">
+            <Button
+              onClick={() => setModalAction("fullfill")} // 'fullfill' action
               className="gap-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md px-4 py-2 text-sm font-medium cursor-pointer flex items-center"
             >
               <Upload className="h-4 w-4" />
-              Approve
+              Fulfill
             </Button>
-          </>
-        ) : (
-          <>
-          
-          </>
-        )}
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
