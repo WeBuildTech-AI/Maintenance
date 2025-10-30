@@ -98,66 +98,69 @@ export default function ManageTeam() {
             {/* Team info */}
             <div className="flex items-start gap-4">
               <Avatar className="h-16 w-16 text-white text-xl">
-                <AvatarImage src={team?.avatar || ""} />
-                <AvatarFallback style={{ backgroundColor: team?.color }}>
+                {/* <AvatarImage src={team?.avatar || ""} /> */}
+                {/* <AvatarFallback style={{ backgroundColor: team?.color }}> */}
                   {/* {renderInitials(team?.name) || "T"} */}
-                </AvatarFallback>
+                {/* </AvatarFallback> */}
               </Avatar>
 
-              <div className="flex-1">
-                <h2 className="text-xl font-semibold">{team?.name}</h2>
+              <div className="flex justify-between ">
+                <div className="flex-1">
+                  <h2 className="text-xl font-semibold">{team?.name}</h2>
 
-                {/* Description */}
-                <div className="mt-1 relative">
-                  <div className="group relative">
-                    {!isEditingDesc ? (
-                      <>
-                        {description ? (
-                          <p className="text-sm text-muted-foreground">
-                            {description}
-                          </p>
-                        ) : (
-                          <p className="text-sm text-muted-foreground text-blue-600">
-                            No description yet
-                          </p>
-                        )}
+                  {/* Description */}
+                  <div className="mt-1 relative">
+                    <div className="group relative">
+                      {!isEditingDesc ? (
+                        <>
+                          {description ? (
+                            <p className="text-sm text-muted-foreground">
+                              {description}
+                            </p>
+                          ) : (
+                            <p className="text-sm text-muted-foreground text-blue-600">
+                              No description yet
+                            </p>
+                          )}
 
-                        <button
-                          type="button"
-                          className="absolute cursor-pointer top-0 mt-2 right-0 text-xs text-orange-600 opacity-0 group-hover:opacity-100 transition"
-                          onClick={() => setIsEditingDesc(true)}
-                        >
-                          Edit the Description
-                        </button>
-                      </>
-                    ) : (
-                      <div className="mt-2">
-                        <textarea
-                          value={description}
-                          onChange={(e) => setDescription(e.target.value)}
-                          className="w-full border rounded-md p-2 text-sm"
-                          rows={2}
-                        />
-                        <div className="flex gap-4 mt-2">
                           <button
                             type="button"
-                            onClick={() => setIsEditingDesc(false)}
-                            className=" cursor-pointer text-sm text-orange-600"
+                            className="absolute cursor-pointer top-0 mt-2 right-0 text-xs text-orange-600 opacity-0 group-hover:opacity-100 transition"
+                            onClick={() => setIsEditingDesc(true)}
                           >
-                            Cancel
+                            Edit the Description
                           </button>
-                          <Button
-                            size="sm"
-                            className=" cursor-pointer bg-orange-600 text-black"
-                            onClick={handleUpdateDescription}
-                          >
-                            Update
-                          </Button>
+                        </>
+                      ) : (
+                        <div className="mt-2">
+                          <textarea
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            className="w-full border rounded-md p-2 text-sm"
+                            rows={2}
+                          />
+                          <div className="flex gap-4 mt-2">
+                            <button
+                              type="button"
+                              onClick={() => setIsEditingDesc(false)}
+                              className=" cursor-pointer text-sm text-orange-600"
+                            >
+                              Cancel
+                            </button>
+                            <Button
+                              size="sm"
+                              className=" cursor-pointer bg-orange-600 text-black"
+                              onClick={handleUpdateDescription}
+                            >
+                              Update
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
+                <div></div>
               </div>
             </div>
 

@@ -11,6 +11,7 @@ export interface MeterResponse {
   photos?: string[];
   createdAt: string;
   updatedAt: string;
+  MeasurementRes:[]
 }
 
 export interface CreateMeterData {

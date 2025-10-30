@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Upload, Lock, RefreshCcw, User } from "lucide-react";
 import { SearchWithDropdown } from "../../Locations/SearchWithDropdown";
-import { createMeter, updateMeter } from "../../../store/meters";
+import { createMeter, meterService, updateMeter } from "../../../store/meters";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "../../../store";
 import { assetService } from "../../../store/assets";
@@ -40,6 +40,7 @@ export function NewMeterForm({
   const [postMeterDataloading, setPostMeterDataLoading] = useState(false);
   const [getAssetData, setGetAssestData] = useState([]);
   const [getLocationData, setGetLocationData] = useState([]);
+  const [measurementUnitOption, setMeasurementUnitOption] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   // const combinedValue = `${readingFrequencyValue} ${readingFrequencyUnit}`;
 
@@ -118,7 +119,7 @@ export function NewMeterForm({
       // Mandatory Fields
       formData.append("organizationId", user.organizationId);
       formData.append("name", meterName);
-      formData.append("unit", measurementUnit);
+      formData.append("measurementId", measurementUnit);
       formData.append("meterType", meterType);
 
       // Optional Fields
@@ -190,14 +191,33 @@ export function NewMeterForm({
     setLoading(true);
     try {
       // Yahan aap apni location fetch karne wali API call likhein
-      const locationRes = await locationService.fetchLocationsName();
-      setGetLocationData(locationRes || []);
+      const res = await locationService.fetchLocationsName();
+      setGetLocationData(res || []);
     } catch (err) {
       console.error("Failed to fetch location data:", err);
     } finally {
       setLoading(false);
     }
   };
+  const handleGetMesurementUnit = async () => {
+    // Agar location ka data pehle se hai, toh API call nahi hogi.
+    if (measurementUnitOption.length > 0) {
+      return;
+    }
+    setLoading(true);
+    try {
+      // Yahan aap apni location fetch karne wali API call likhein
+      const MeasurementRes = await meterService.fetchMesurementUnit();
+      // console.log(MeasurementRes);
+      setMeasurementUnitOption(MeasurementRes);
+    } catch (err) {
+      console.error("Failed to fetch location data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  console.log(measurementUnitOption, "MeasurementUnit");
 
   const handleReset = () => {
     setMeterName("");
@@ -208,8 +228,6 @@ export function NewMeterForm({
     setReadingFrequencyUnit("none");
     setReadingFrequencyValue("");
   };
-
-  const dropdownOptions = ["Liters", "Gallons", "Cubic Meters", "kWh"];
 
   return (
     <div className="flex h-full mr-2 flex-col overflow-hidden border">
@@ -298,7 +316,7 @@ export function NewMeterForm({
         {/* Measurement Unit (Required) */}
         <div className="px-6 pt-6 pb-2">
           <div className="w-full sm:max-w-md md:max-w-lg">
-            {/* 1. Added a <label> for better accessibility */}
+            {/* Label for accessibility */}
             <label
               htmlFor="measurement-unit-select"
               className="block text-sm font-medium text-gray-700"
@@ -306,42 +324,40 @@ export function NewMeterForm({
               Measurement Unit (Required)
             </label>
 
-            {/* 2. Replaced the custom component with a standard <select> element */}
-            <select
-              id="measurement-unit-select"
-              name="measurementUnit"
-              value={measurementUnit}
-              onChange={(e) => setMeasurementUnit(e.target.value)}
-              style={{
-                height: "40px",
-                width: "100%",
-                border: "1px solid #d1d5db",
-                borderRadius: "6px",
-                padding: "0 32px 0 12px",
-                fontSize: "14px",
-                color: "#374151",
-                backgroundColor: "#fff",
-                appearance: "none",
-                cursor: "pointer",
-                // borderRadius:"5px"
-              }}
-              // Using common TailwindCSS classes for a clean look. Adjust as needed.
-              className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            >
-              {/* 3. The placeholder is now the first, disabled option */}
-              <option value="" disabled>
-                Select a unit...
-              </option>
-
-              {/* 4. Map over your options to create the <option> tags */}
-              {dropdownOptions.map((unit) => (
-                <option key={unit} value={unit}>
-                  {unit}
+            {/* Dropdown */}
+            <div className="relative mt-2">
+              <select
+                id="measurement-unit-select"
+                name="measurementUnit"
+                value={measurementUnit}
+                onClick={handleGetMesurementUnit}
+                onChange={(e) => setMeasurementUnit(e.target.value)} // ✅ Passes ID value
+                className="block appearance-none w-full bg-white border border-gray-300 rounded-md py-2 pl-3 pr-10 text-sm text-gray-700 shadow-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                style={{
+                  height: "40px",
+                  paddingRight: "2.5rem", // leaves room for arrow icon
+                }}
+              >
+                {/* Default placeholder */}
+                <option value="" disabled>
+                  Select a unit...
                 </option>
-              ))}
-            </select>
 
-            {/* Error handling remains the same */}
+                {/* Loading & options */}
+                {loading ? (
+                  <option disabled>Loading...</option>
+                ) : (
+                  Array.isArray(measurementUnitOption) &&
+                  measurementUnitOption.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+
+            {/* Validation error */}
             {error && !measurementUnit && (
               <p className="mt-2 text-sm text-red-600">{error}</p>
             )}

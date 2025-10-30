@@ -1,4 +1,4 @@
-import { MapPin } from "lucide-react";
+import { Factory, MapPin } from "lucide-react";
 import { Badge } from "../../ui/badge";
 import { Card, CardContent } from "../../ui/card";
 
@@ -31,16 +31,14 @@ export function AssetCard({
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
-              <span className="text-lg">{asset.icon}</span>
+              <span className="text-lg">{<Factory/>}</span>
             </div>
             <div>
               <h4 className="font-medium capitalize">{asset.name}</h4>
               <div className="flex items-start gap-1 mt-1">
                 <MapPin className="h-3 w-3 mt-1 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">
-                  At{" "}
-                  {allLocationData.find((loc) => loc.id === asset.locationId)
-                    ?.name || "No Location"}
+                  At {asset.location && asset.location.name}
                 </span>
               </div>
             </div>
