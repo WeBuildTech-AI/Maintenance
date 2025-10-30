@@ -374,7 +374,8 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
         <>
           <div className="p-6 border-t flex justify-end flex-none bg-white">
             <Button
-              onClick={() => setModalAction("fullfill")} // 'fullfill' action
+              // onClick={()
+              // } // 'fullfill' action
               className="gap-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md px-4 py-2 text-sm font-medium cursor-pointer flex items-center"
             >
               <Upload className="h-4 w-4" />
