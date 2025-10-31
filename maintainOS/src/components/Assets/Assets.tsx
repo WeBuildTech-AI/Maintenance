@@ -51,7 +51,7 @@ export const Assets: FC = () => {
           (a, b) =>
             new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
         );
-        setSelectedAsset("");
+        setSelectedAsset(assets[0]);
       }
     } catch (err) {
       console.error("Failed to fetch assets:", err);
@@ -196,6 +196,7 @@ export const Assets: FC = () => {
                     // Baaki logic same rahega
                     setSelectedAsset(updatedOrNewAsset);
                     setShowNewAssetForm(false);
+
                     setEditingAsset(null);
                   }}
                   onCancel={() => {
@@ -204,13 +205,13 @@ export const Assets: FC = () => {
                   }}
                   isEdit={!!editingAsset}
                   assetData={editingAsset}
+                  fetchAssetsData={fetchAssetsData}
                 />
               ) : selectedAsset ? (
                 <AssetDetail
                   asset={selectedAsset}
                   onDelete={handleDeleteAsset}
                   onEdit={handleEditAsset}
-                
                 />
               ) : (
                 <div className="flex items-center justify-center h-full text-center">

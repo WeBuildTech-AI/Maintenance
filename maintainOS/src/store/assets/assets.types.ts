@@ -29,6 +29,11 @@ export interface CreateAssetData {
   serialNumber?: string;
 }
 
+export interface CreateAssetType {
+  organizationId: string;
+  name: string;
+}
+
 export interface UpdateAssetData {
   name?: string;
   description?: string;

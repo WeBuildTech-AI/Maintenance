@@ -10,6 +10,7 @@ import { AssetQrCode } from "./sections/AssetQrCode";
 import { AssetStatusReadings } from "./sections/AssetStatusReadings";
 import { AssetSubAssets } from "./sections/AssetSubAssets";
 import { AssetVendor } from "./sections/AssetVendor";
+import { AssetType } from "./sections/AssetType";
 // import { AssetWorkOrders } from "./sections/AssetWorkOrders";
 
 export function AssetDetailContent(
@@ -21,9 +22,9 @@ export function AssetDetailContent(
     <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-6">
       <AssetStatusReadings asset={asset} />
       {/* <AssetStatus asset={asset} /> */}
-      <AssetLocation asset={asset}/>
+      <AssetLocation asset={asset} />
       <AssetCriticality asset={asset} />
-      {/* <AssetManufacturer asset={asset} /> */}
+      <AssetManufacturer asset={asset} />
       {/* <div className="pt-4"> */}
       {/* Use in New Work Order button already inside AssetStatusReadings (centered one) - preserved below as in original */}
       {/* </div> */}
@@ -31,6 +32,7 @@ export function AssetDetailContent(
       {/* <AssetModel asset={asset} /> */}
       <AssetDescription asset={asset} />
       <AssetQrCode asset={asset} />
+      <AssetType asset={asset} />
       <AssetSubAssets />
       <AssetVendor asset={asset} />
       <AssetAutomations />

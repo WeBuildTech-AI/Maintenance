@@ -47,4 +47,23 @@ export const assetService = {
   deleteAsset: async (id: string): Promise<void> => {
     await axios.delete(`${API_URL}/assets/${id}`);
   },
+
+  fetchAssetType: async (): Promise<AssetResponse> => {
+    const res = await axios.get(`${API_URL}/assets/get/asset-type`);
+    return res.data;
+  },
+  createAssetType: async (data: CreateAssetData): Promise<AssetResponse> => {
+    const res = await axios.post(`${API_URL}/assets/asset-type`, data);
+    return res.data;
+  },
+
+  fetchAssetManufacturer: async (): Promise<AssetResponse> => {
+    const res = await axios.get(`${API_URL}/assets/get/manufacturer`);
+    return res.data;
+  },
+
+  createAssetManufacture: async (data: CreateAssetData): Promise<AssetResponse> => {
+    const res = await axios.post(`${API_URL}/assets/manufacturer`, data);
+    return res.data;
+  },
 };

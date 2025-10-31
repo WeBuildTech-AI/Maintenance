@@ -3,6 +3,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type {
   AssetResponse,
   CreateAssetData,
+  CreateAssetType,
   UpdateAssetData,
 } from "./assets.types";
 import { assetService } from "./assets.service";
@@ -94,6 +95,62 @@ export const deleteAsset = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to delete asset"
+      );
+    }
+  }
+);
+
+export const fetchAssetsType = createAsyncThunk(
+  "assets/get.asset-type",
+  async (_, { rejectWithValue }) => {
+    try {
+      const assetsType = await assetService.fetchAssetType;
+      return assetsType;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch assets"
+      );
+    }
+  }
+);
+
+export const createAssetType = createAsyncThunk(
+  "assets/createAsset",
+  async (assetDataType: CreateAssetType, { rejectWithValue }) => {
+    try {
+      const asset = await assetService.createAssetType(assetDataType);
+      return asset;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to create asset"
+      );
+    }
+  }
+);
+
+export const fetchAssetsManufacturing = createAsyncThunk(
+  "assets/get/manufacturer",
+  async (_, { rejectWithValue }) => {
+    try {
+      const assetsType = await assetService.fetchAssetManufacturer;
+      return assetsType;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch assets"
+      );
+    }
+  }
+);
+
+export const createAssetManufacturing = createAsyncThunk(
+  "assets/createManufacture",
+  async (assetDataType: CreateAssetType, { rejectWithValue }) => {
+    try {
+      const asset = await assetService.createAssetManufacture(assetDataType);
+      return asset;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to create asset"
       );
     }
   }

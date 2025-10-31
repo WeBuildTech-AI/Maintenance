@@ -14,7 +14,7 @@ import { CriticalityDropdown } from "./dropdowns/CriticalityDropdown";
 import { DescriptionField } from "./fields/DescriptionField";
 import { YearInput } from "./fields/YearInput";
 import { ManufacturerDropdown } from "./dropdowns/ManufacturerDropdown";
-import { ModelField } from "./dropdowns/ModelField";
+// import { ModelField } from "./fields/ModelField"; // <-- Import pehle se tha
 import { SerialNumberInput } from "./fields/SerialNumberInput";
 import { TeamsDropdown } from "./dropdowns/TeamsDropdown";
 import { QrCodeInput } from "./fields/QrCodeInput";
@@ -31,13 +31,12 @@ import {
 } from "../../../store/assets";
 import type { AppDispatch, RootState } from "../../../store";
 
-// ✅ Define a reusable type for objects with id and name
 type SelectableItem = {
   id: number | string;
   name: string;
 };
 
-// This interface seems correct based on your usage
+// Interface (Aapke pichle code ke hisaab se update kar diya hai)
 interface Asset {
   id: number | string;
   name: string;
@@ -45,12 +44,12 @@ interface Asset {
   criticality?: string;
   description?: string;
   year?: string | number;
-  manufacturer?: string;
+  manufacturer?: SelectableItem; // <-- Yeh 'SelectableItem' hai
   model?: string;
   serialNumber?: string;
   teams?: SelectableItem[];
   qrCode?: string;
-  assetType?: string;
+  assetTypes?: SelectableItem[];
   vendor?: SelectableItem;
   parts?: SelectableItem[];
   parentAsset?: SelectableItem;
@@ -61,6 +60,7 @@ interface NewAssetFormProps {
   assetData?: Asset | null;
   onCreate: (newAsset: Asset) => void;
   onCancel?: () => void;
+  fetchAssetsData: () => void;
 }
 
 export function NewAssetForm({
@@ -68,23 +68,28 @@ export function NewAssetForm({
   assetData,
   onCreate,
   onCancel,
+  fetchAssetsData,
 }: NewAssetFormProps) {
   const [assetName, setAssetName] = useState("");
-  // ✅ Explicitly type your state for single-item selections
   const [selectedLocation, setSelectedLocation] =
     useState<SelectableItem | null>(null);
   const [criticality, setCriticality] = useState("");
   const [description, setDescription] = useState("");
   const [year, setYear] = useState("");
-  const [selectedManufacture, setSelectedManufacture] = useState("");
+  
+  // State ko 'SelectableItem | null' banaya
+  const [selectedManufacture, setSelectedManufacture] =
+    useState<SelectableItem | null>(null);
+    
   const [selectedModel, setSelectedModel] = useState("");
   const [serialNumber, setSerialNumber] = useState("");
-  // ✅ Explicitly type your state for multi-item selections
   const [selectedTeamInCharge, setSelectedTeamInCharge] = useState<
     SelectableItem[]
   >([]);
   const [qrCode, setQrCode] = useState("");
-  const [selectedAssetType, setSelectedAssetType] = useState("");
+  const [selectedAssetTypeIds, setSelectedAssetTypeIds] = useState<number[]>(
+    []
+  );
   const [selectedVendorId, setSelectedvendorId] =
     useState<SelectableItem | null>(null);
   const [selectedParts, setSelectedParts] = useState<SelectableItem[]>([]);
@@ -112,14 +117,28 @@ export function NewAssetForm({
   useEffect(() => {
     if (isEdit && assetData) {
       setAssetName(assetData.name || "");
-      // ✅ Ensure the data you set matches the state's type
       setSelectedLocation(assetData.location || null);
       setCriticality(assetData.criticality || "");
       setDescription(assetData.description || "");
+      
+      // === FIX: Yeh lines missing thi ===
+      // 'year' ko string mein convert kiya taaki input field mein aa sake
+      setYear(String(assetData.year || "")); 
+      setSelectedManufacture(assetData.manufacturer || null);
+      setSelectedModel(assetData.model || ""); 
+      // === END FIX ===
+
       setSerialNumber(assetData.serialNumber || "");
       setSelectedTeamInCharge(assetData.teams || []);
       setQrCode(assetData.qrCode || "");
-      setSelectedAssetType(assetData.assetType || "");
+
+      if (assetData.assetTypes) {
+        const ids = assetData.assetTypes.map((type) => type.id as number);
+        setSelectedAssetTypeIds(ids);
+      } else {
+        setSelectedAssetTypeIds([]);
+      }
+
       setSelectedvendorId(assetData.vendor || null);
       setSelectedParts(assetData.parts || []);
       setSelectedParentAssets(assetData.parentAsset || null);
@@ -142,17 +161,27 @@ export function NewAssetForm({
     if (criticality) payload.criticality = criticality;
     if (description.trim()) payload.description = description;
     if (year) payload.year = year;
-    if (selectedManufacture) payload.manufacturer = selectedManufacture;
+    
+    // Ab 'manufacturerId' bhej rahe hain
+    if (selectedManufacture?.id) {
+      // Note: Key ka naam 'manufacturerId' maana hai, aap ise apne 'CreateAssetData' ke hisaab se badal lein
+      payload.manufacturerId = selectedManufacture.id; 
+    }
+    
     if (selectedModel) payload.model = selectedModel;
     if (serialNumber.trim()) payload.serialNumber = serialNumber;
     if (qrCode.trim()) payload.qrCode = qrCode;
-    if (selectedAssetType) payload.assetTypeId = selectedAssetType;
+
+    if (selectedAssetTypeIds.length > 0) {
+      payload.assetTypeIds = selectedAssetTypeIds; 
+    }
+
     if (selectedVendorId?.id) payload.vendorId = selectedVendorId.id;
+
     if (selectedParentAssets?.id)
       payload.parentAssetId = selectedParentAssets.id;
     if (status) payload.status = status;
 
-    // ✅ This mapping will now work correctly because the state is properly typed
     if (selectedTeamInCharge?.length > 0) {
       payload.teamsInCharge = selectedTeamInCharge.map((team) => team.id);
     }
@@ -169,10 +198,11 @@ export function NewAssetForm({
         .then((res) => {
           toast.success("Successfully Updated the Asset");
           onCreate(res);
+          fetchAssetsData();
         })
         .catch((err) => {
           const errorMessage = err.message || "Failed to update asset";
-          setError(errorMessage);
+          // setError(errorMessage);
           toast.error(errorMessage);
         });
     } else {
@@ -180,33 +210,31 @@ export function NewAssetForm({
         .unwrap()
         .then((res) => {
           toast.success("Successfully Created the Asset");
-          onCreate(res);
-
+          onCreate(res); // <-- FIX: Ise uncomment kar diya hai
+          fetchAssetsData();
           // Reset form
           setAssetName("");
           setSelectedLocation(null);
           setCriticality("");
           setDescription("");
           setYear("");
-          setSelectedManufacture("");
-          setSelectedModel("");
+          setSelectedManufacture(null); // <-- Reset to null
+          setSelectedModel(""); // <-- Reset add kar diya
           setSerialNumber("");
           setSelectedTeamInCharge([]);
           setQrCode("");
-          setSelectedAssetType("");
+          setSelectedAssetTypeIds([]); 
           setSelectedvendorId(null);
           setSelectedParts([]);
           setSelectedParentAssets(null);
         })
         .catch((err) => {
           const errorMessage = err.message || "Failed to create asset";
-          setError(errorMessage);
+          // setError(errorMessage);
           toast.error(errorMessage);
         });
     }
   };
-
-  console.log(selectedParts, "selectedPart");
 
   return (
     <div className="flex h-full flex-col overflow-hidden border">
@@ -250,8 +278,17 @@ export function NewAssetForm({
           setDescription={setDescription}
         />
         <YearInput year={year} setYear={setYear} />
-        <ManufacturerDropdown />
-        {/* <ModelField /> */}
+        
+        {/* === FIX: ManufacturerDropdown ko props pass kiye === */}
+        <ManufacturerDropdown
+          label="Manufacturer"
+          value={selectedManufacture}
+          onChange={setSelectedManufacture}
+        />
+        
+        {/* === FIX: ModelField ko uncomment kiya aur props pass kiye === */}
+        {/* <ModelField model={selectedModel} setModel={setSelectedModel} /> */}
+        
         <SerialNumberInput
           serialNumber={serialNumber}
           setSerialNumber={setSerialNumber}
@@ -265,7 +302,13 @@ export function NewAssetForm({
           setSelectTeamInCharge={setSelectedTeamInCharge}
         />
         <QrCodeInput qrCode={qrCode} setQrCode={setQrCode} />
-        <AssetTypesDropdown />
+
+        <AssetTypesDropdown
+          label="Asset Types"
+          value={selectedAssetTypeIds}
+          onChange={setSelectedAssetTypeIds}
+        />
+
         <VendorsDropdown
           navigate={navigate}
           vendorOpen={vendorOpen}
