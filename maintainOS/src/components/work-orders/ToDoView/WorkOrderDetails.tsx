@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 
 import {
   AlertTriangle,
@@ -14,8 +13,16 @@ import {
   Repeat,
 } from "lucide-react";
 
-import { useCallback } from "react"; // ✅ added for stable handler
-import { useNavigate } from "react-router-dom"; // ✅ added
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { deleteWorkOrder } from "../../../store/workOrders/workOrders.thunks"; // ✅ adjust import path if needed
+import DeleteWorkOrderModal from "./DeleteWorkOrderModal";
+
+// ✅ New subpanels imports
+import UpdatePartsPanel from "../panels/UpdatePartsPanel";
+import TimeOverviewPanel from "../panels/TimeOverviewPanel";
+import OtherCostsPanel from "../panels/OtherCostsPanel";
 
 export function WorkOrderDetails({
   selectedWorkOrder,
@@ -24,12 +31,23 @@ export function WorkOrderDetails({
   activeStatus,
   setActiveStatus,
   CopyPageU,
-  // ✅ added new optional prop for edit handler
   onEdit,
+  onRefreshWorkOrders, // ✅ added prop
+  activePanel, // ✅ added from ToDoView
+  setActivePanel, // ✅ added from ToDoView
 }: any) {
-  const navigate = useNavigate(); // ✅ added
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
-  // ✅ If parent doesn't handle edit, navigate directly
+  // ✅ Remove local state (already controlled by ToDoView)
+  // const [activePanel, setActivePanel] = useState<"details" | "parts" | "time" | "cost">("details");
+
+  // ✅ Edit
   const handleEdit = useCallback(() => {
     if (onEdit) {
       onEdit(selectedWorkOrder);
@@ -38,10 +56,58 @@ export function WorkOrderDetails({
     }
   }, [navigate, onEdit, selectedWorkOrder]);
 
+  // ✅ Close dropdown when clicked outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(e.target as Node)
+      ) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // ✅ Delete flow
+  const handleDeleteClick = () => {
+    setShowDeleteModal(true);
+    setIsDropdownOpen(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedWorkOrder?.id) return;
+    try {
+      setIsDeleting(true);
+      await dispatch(deleteWorkOrder(selectedWorkOrder.id)).unwrap();
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+      onRefreshWorkOrders?.();
+      navigate("/work-orders");
+    } catch (err: any) {
+      console.error("❌ Failed to delete:", err);
+      setIsDeleting(false);
+    }
+  };
+
+  // ✅ Conditional rendering for subpanels
+  if (activePanel === "parts") {
+    return <UpdatePartsPanel onCancel={() => setActivePanel("details")} />;
+  }
+  if (activePanel === "time") {
+    return <TimeOverviewPanel onCancel={() => setActivePanel("details")} />;
+  }
+  if (activePanel === "cost") {
+    return <OtherCostsPanel onCancel={() => setActivePanel("details")} />;
+  }
+
   return (
     <>
       {/* HEADER */}
-      <div className="p-6 border-b border-border">
+      <div className="p-6 border-b border-border relative">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h2 className="text-lg font-medium">
@@ -49,13 +115,13 @@ export function WorkOrderDetails({
             </h2>
             <CopyPageU />
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-2 relative">
             <button className="inline-flex items-center rounded border px-2 py-1.5 text-sm hover:bg-muted">
               <MessageSquare className="h-4 w-4 mr-2" />
               Comments
             </button>
 
-            {/* ✅ connected Edit button to trigger parent handler or navigate */}
             <button
               className="inline-flex items-center rounded border px-2 py-1.5 text-sm hover:bg-muted"
               onClick={handleEdit}
@@ -64,9 +130,61 @@ export function WorkOrderDetails({
               Edit
             </button>
 
-            <button className="inline-flex items-center rounded p-2 hover:bg-muted">
+            <button
+              ref={buttonRef}
+              onClick={() => setIsDropdownOpen((p) => !p)}
+              className="inline-flex items-center rounded p-2 hover:bg-muted relative"
+            >
               <MoreHorizontal className="h-4 w-4" />
             </button>
+
+            {isDropdownOpen && (
+              <div
+                ref={dropdownRef}
+                className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-56 mt-2"
+                style={{ right: 0, top: "40px" }}
+              >
+                <ul className="text-sm text-gray-700">
+                  <li
+                    onClick={() => alert("Mark as unread")}
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  >
+                    Mark as unread
+                  </li>
+                  <li
+                    onClick={() => alert("Copy to new work order")}
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  >
+                    Copy to New Work Order
+                  </li>
+                  <li
+                    onClick={() => alert("Save as Template")}
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  >
+                    Save as Work Order Template
+                  </li>
+                  <li
+                    onClick={() => alert("Export to PDF")}
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  >
+                    Export to PDF
+                  </li>
+                  <li
+                    onClick={() => alert("Email to Vendors")}
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  >
+                    Email to Vendors
+                  </li>
+                  <hr className="my-1 border-gray-200" />
+                  <li
+                    onClick={handleDeleteClick}
+                    className="px-4 py-2 text-red-600 hover:bg-red-50 cursor-pointer"
+                  >
+                    Delete
+                  </li>
+                </ul>
+              </div>
+            )}
           </div>
         </div>
 
@@ -83,7 +201,14 @@ export function WorkOrderDetails({
         </div>
       </div>
 
-      {/* DELETED WARNING */}
+      {/* Delete Modal */}
+      <DeleteWorkOrderModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleConfirmDelete}
+      />
+
+      {/* Deleted warning */}
       {selectedWorkOrder.wasDeleted && (
         <div className="mx-6 mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
           <div className="flex items-start gap-2">
@@ -124,6 +249,7 @@ export function WorkOrderDetails({
                     type="button"
                     onClick={() => setActiveStatus(key)}
                     aria-pressed={active}
+                    disabled={isDeleting}
                     className={`h-16 w-20 rounded-lg border shadow-md inline-flex flex-col items-center justify-center gap-2 transition-all outline-none focus-visible:ring-[3px] focus-visible:border-ring ${
                       active
                         ? "bg-orange-600 text-white border-orange-600"
@@ -141,7 +267,7 @@ export function WorkOrderDetails({
           </div>
         </div>
 
-        {/* Due Date, Priority and Work Order Id */}
+        {/* DUE DATE / PRIORITY / ID */}
         <div className="flex p-6 justify-between gap-6 border-t pt-6">
           <div>
             <h3 className="text-sm font-medium mb-2">Due Date</h3>
@@ -163,7 +289,7 @@ export function WorkOrderDetails({
           </div>
         </div>
 
-        {/* Assigned To */}
+        {/* ASSIGNED TO */}
         <div className="border-t p-6">
           <h3 className="text-sm font-medium mb-2">Assigned To</h3>
           <div className="flex items-center gap-2">
@@ -185,7 +311,7 @@ export function WorkOrderDetails({
           </div>
         </div>
 
-        {/* Description */}
+        {/* DESCRIPTION */}
         <div className="border-t p-6">
           <h3 className="text-sm font-medium mb-2">Description</h3>
           <p className="text-sm text-muted-foreground">
@@ -193,7 +319,7 @@ export function WorkOrderDetails({
           </p>
         </div>
 
-        {/* Asset & Location & Estimated Time & Work Type */}
+        {/* ASSET / LOCATION / TIME / TYPE */}
         <div className="border-t p-6 grid grid-cols-2 gap-6">
           <div>
             <h3 className="text-sm font-medium mb-2">Asset</h3>
@@ -204,7 +330,6 @@ export function WorkOrderDetails({
               </span>
             </div>
           </div>
-
           <div>
             <h3 className="text-sm font-medium mb-2">Location</h3>
             <div className="flex items-center gap-2">
@@ -216,7 +341,6 @@ export function WorkOrderDetails({
               </span>
             </div>
           </div>
-
           <div>
             <h3 className="text-sm font-medium mb-2">Estimated Time</h3>
             <div className="flex items-center gap-2">
@@ -226,7 +350,6 @@ export function WorkOrderDetails({
               </span>
             </div>
           </div>
-
           <div>
             <h3 className="text-sm font-medium mb-2">Work Type</h3>
             <div className="flex items-center gap-2">
@@ -238,7 +361,7 @@ export function WorkOrderDetails({
           </div>
         </div>
 
-        {/* Schedule conditions */}
+        {/* SCHEDULE CONDITIONS */}
         <div className="border-t p-6">
           <h3 className="text-sm font-medium mb-2">Schedule conditions</h3>
           <div className="flex items-center gap-2 mb-3">
@@ -254,17 +377,27 @@ export function WorkOrderDetails({
           </div>
         </div>
 
-        {/* Time & Cost Tracking */}
+        {/* TIME & COST TRACKING */}
         <div className="border-t p-6">
           <h3 className="text-2xl font-medium mb-2">Time & Cost Tracking</h3>
-
           {["Parts", "Time", "Other Costs"].map((label) => (
             <div
               key={label}
               className="flex justify-between items-center p-3 mb-2 border-b last:border-none"
             >
               <span className="text-sm font-medium ">{label}</span>
-              <button className="flex text-sm text-muted-foreground items-center gap-1">
+              <button
+                className="flex text-sm text-muted-foreground items-center gap-1"
+                onClick={() =>
+                  setActivePanel(
+                    label === "Parts"
+                      ? "parts"
+                      : label === "Time"
+                      ? "time"
+                      : "cost"
+                  )
+                }
+              >
                 Add
                 <ChevronRight className="h-4 w-4 font-muted-foreground" />
               </button>
@@ -272,7 +405,7 @@ export function WorkOrderDetails({
           ))}
         </div>
 
-        {/* Created / Updated */}
+        {/* CREATED / UPDATED */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t p-6">
           <div className="flex items-center text-xs">
             <span>Created By</span>
