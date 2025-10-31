@@ -5,6 +5,7 @@ import type {
   CreateAssetData,
   CreateAssetType,
   UpdateAssetData,
+  UpdateAssetStatus,
 } from "./assets.types";
 import { assetService } from "./assets.service";
 
@@ -151,6 +152,29 @@ export const createAssetManufacturing = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to create asset"
+      );
+    }
+  }
+);
+
+export const updateAssetStatus = createAsyncThunk(
+  "assets/updateAssetStatus",
+  async (
+    {
+      id,
+      assetDataStatus,
+    }: {
+      id: string;
+      assetDataStatus: UpdateAssetStatus;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const asset = await assetService.updateAsset(id, assetDataStatus);
+      return asset;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update asset Status"
       );
     }
   }
