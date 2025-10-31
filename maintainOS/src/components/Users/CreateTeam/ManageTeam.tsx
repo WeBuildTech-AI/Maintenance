@@ -98,10 +98,10 @@ export default function ManageTeam() {
             {/* Team info */}
             <div className="flex items-start gap-4">
               <Avatar className="h-16 w-16 text-white text-xl">
-                <AvatarImage src={team?.avatar || ""} />
-                <AvatarFallback style={{ backgroundColor: team?.color }}>
+                {/* <AvatarImage src={team?.avatar || ""} /> */}
+                {/* <AvatarFallback style={{ backgroundColor: team?.color }}> */}
                   {/* {renderInitials(team?.name) || "T"} */}
-                </AvatarFallback>
+                {/* </AvatarFallback> */}
               </Avatar>
 
               <div className="flex justify-between ">

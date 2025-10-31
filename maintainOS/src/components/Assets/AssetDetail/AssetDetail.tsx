@@ -7,11 +7,12 @@ import { MapPin } from "lucide-react";
 import { formatDate, formatFriendlyDate } from "../../utils/Date";
 
 // 1. Define a clear type for your Asset.
-// You should reuse this from your main Assets component file.
+// (I added createdAt since it's used in your JSX)
 interface Asset {
   id: number | string;
   name: string;
   updatedAt: string;
+  createdAt: string; // <-- Added this
   location: {
     id: number | string;
     name: string;
@@ -22,8 +23,9 @@ interface Asset {
 // 2. Define a type for the component's props.
 interface AssetDetailProps {
   asset: Asset;
-  onEdit: (asset: Asset) => void; // Add this line
-  onDelete: (asset: Asset) => void; // Add this line
+  onEdit: (asset: Asset) => void;
+  onDelete: (id: string | number) => void; 
+  fetchAssetsData: () => void; 
 }
 
 // 3. Use the defined types in your component.
@@ -31,6 +33,7 @@ export const AssetDetail: FC<AssetDetailProps> = ({
   asset,
   onEdit,
   onDelete,
+  fetchAssetsData,
 }) => {
   const [showHistory, setShowHistory] = useState<boolean>(false);
   const user = useSelector((state: RootState) => state.auth.user);
@@ -42,15 +45,13 @@ export const AssetDetail: FC<AssetDetailProps> = ({
       .join("")
       .toUpperCase();
 
-  // console.log("AssetDetail - :", allLocationData);
-
   return (
     <div className="h-full border mr-3 flex flex-col min-h-0">
       <AssetDetailHeader
         asset={asset}
         setShowHistory={setShowHistory}
         onEdit={onEdit}
-        onDelete={onDelete}
+        onDelete={onDelete} // This prop is now passed down correctly
       />
 
       {showHistory ? (
@@ -85,9 +86,9 @@ export const AssetDetail: FC<AssetDetailProps> = ({
               )}
             </div>
           </div>
-        </div> // This will show when showHistory is true
+        </div>
       ) : (
-        <AssetDetailContent asset={asset} /> // This will show when show-history is false
+        <AssetDetailContent fetchAssetsData={fetchAssetsData} asset={asset} />
       )}
     </div>
   );

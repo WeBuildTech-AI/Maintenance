@@ -49,7 +49,12 @@ type DialogProps = {
   children: React.ReactNode;
 };
 
-function Dialog({ open, defaultOpen = false, onOpenChange, children }: DialogProps) {
+function Dialog({
+  open,
+  defaultOpen = false,
+  onOpenChange,
+  children,
+}: DialogProps) {
   const triggerRef = React.useRef<HTMLElement | null>(null);
   const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen);
   const isControlled = open !== undefined;
@@ -62,7 +67,7 @@ function Dialog({ open, defaultOpen = false, onOpenChange, children }: DialogPro
       }
       onOpenChange?.(next);
     },
-    [isControlled, onOpenChange],
+    [isControlled, onOpenChange]
   );
 
   const lastOpenRef = React.useRef(openState);
@@ -75,7 +80,7 @@ function Dialog({ open, defaultOpen = false, onOpenChange, children }: DialogPro
 
   const contextValue = React.useMemo<DialogContextValue>(
     () => ({ open: openState, setOpen, triggerRef }),
-    [openState, setOpen],
+    [openState, setOpen]
   );
 
   return (
@@ -115,7 +120,7 @@ const DialogTrigger = React.forwardRef<HTMLButtonElement, DialogTriggerProps>(
         {props.children}
       </Comp>
     );
-  },
+  }
 );
 
 DialogTrigger.displayName = "DialogTrigger";
@@ -148,7 +153,7 @@ const DialogOverlay = React.forwardRef<
       data-slot="dialog-overlay"
       className={cn(
         "fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity",
-        className,
+        className
       )}
       {...props}
     />
@@ -171,7 +176,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
       style,
       ...props
     },
-    ref,
+    ref
   ) => {
     const { open, setOpen } = useDialogContext("DialogContent");
     const contentRef = React.useRef<HTMLDivElement | null>(null);
@@ -225,7 +230,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
             data-slot="dialog-content"
             className={cn(
               "relative w-full max-w-xl rounded-lg border bg-background p-6 shadow-lg",
-              className,
+              className
             )}
             style={style}
             onClick={(event) => {
@@ -239,8 +244,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
         </div>
       </DialogPortal>
     );
-
-  },
+  }
 );
 
 DialogContent.displayName = "DialogContent";
@@ -271,7 +275,7 @@ const DialogClose = React.forwardRef<HTMLButtonElement, DialogCloseProps>(
         {props.children}
       </Comp>
     );
-  },
+  }
 );
 
 DialogClose.displayName = "DialogClose";
@@ -283,12 +287,15 @@ const DialogHeader = React.forwardRef<
   <div
     ref={ref}
     data-slot="dialog-header"
-    className={cn("flex items-center justify-between border-b pb-3 px-6", className)}
+    className={cn(
+      "flex items-center justify-between border-b pb-3 px-6",
+      className
+    )}
     {...props}
   >
     {children}
-    <DialogClose className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring">
-      <XIcon className="h-5 w-5" />
+    <DialogClose className="rounded-md p-1 cursor-pointer  text-muted-foreground hover:bg-accent hover:text-foreground focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring">
+      <XIcon className="h-7 w-7" />
       {/* <span className="sr-only">Close</span> */}
     </DialogClose>
   </div>
@@ -296,19 +303,20 @@ const DialogHeader = React.forwardRef<
 
 DialogHeader.displayName = "DialogHeader";
 
-const DialogFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div
-      ref={ref}
-      data-slot="dialog-footer"
-      className={cn(
-        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
-        className,
-      )}
-      {...props}
-    />
-  ),
-);
+const DialogFooter = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    data-slot="dialog-footer"
+    className={cn(
+      "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
+      className
+    )}
+    {...props}
+  />
+));
 
 DialogFooter.displayName = "DialogFooter";
 

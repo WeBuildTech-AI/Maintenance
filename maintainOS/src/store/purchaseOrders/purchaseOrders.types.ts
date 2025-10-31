@@ -75,6 +75,23 @@ export interface UpdatePurchaseOrderData {
   files?: string[];
 }
 
+// Data used to create/add an address for a purchase order
+export interface CreateAddressData {
+  purchaseOrderId: string;
+  // address can be a single string or a structured object depending on API
+  address: string | {
+    line1?: string;
+    line2?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+  };
+  // optional type: 'shipping' | 'billing'
+  type?: "shipping" | "billing";
+  contact?: Record<string, any>;
+}
+
 export interface PurchaseOrdersState {
   purchaseOrders: PurchaseOrderResponse[];
   selectedPurchaseOrder: PurchaseOrderResponse | null;

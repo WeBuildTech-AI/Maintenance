@@ -7,7 +7,7 @@ export const formatMoney = (n: number) =>
   );
 
 export const addressToLine = (a?: Address) =>
-  a ? `${a.line1}, ${a.city}, ${a.state}, ${a.postalCode}, ${a.country}` : "-";
+  a ? `${a.street}, ${a.city}, ${a.stateProvince}, ${a.ZIP}, ${a.country}` : "-";
 
 export function cryptoId() {
   // tiny id generator that works in browser/node without extra deps
