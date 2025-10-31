@@ -87,7 +87,7 @@ interface PurchaseOrderDetailsProps {
   addressToLine: (address: Address | null | undefined) => string; // Helper function type
   comment: string; // Comment string hai, array nahi (aapke PurchaseOrders.tsx ke hisaab se)
   showCommentBox: boolean;
-  StatusBadge: () => void;
+  StatusBadge: string;
   handleSend: () => void;
   setApproveModal: () => void;
   setShowCommentBox: (show: boolean) => void;
@@ -114,6 +114,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   setApproveModal,
   StatusBadge,
   fetchPurchaseOrder,
+
 }) => {
   // Calculate totals
   const subtotal =

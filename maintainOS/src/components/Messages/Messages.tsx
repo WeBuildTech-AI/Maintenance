@@ -13,6 +13,7 @@ import type { DMConversation } from "../../store/messages/messages.types";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "../../store";
 import { Toaster } from "react-hot-toast";
+import Loader from "../Loader/Loader";
 
 export function Messages() {
   const navigate = useNavigate();
@@ -45,7 +46,6 @@ export function Messages() {
   const dmsStatus = useSelector(
     (state: RootState) => state.messaging.dmsStatus
   );
-
 
   useEffect(() => {
     if (currentUserId && dmsStatus === "idle") {
@@ -97,7 +97,7 @@ export function Messages() {
           text: msg.body || "",
           avatar: senderAvatar,
           timestamp: new Date(msg.createdAt).toLocaleString(),
-          createdAt: msg.createdAt, 
+          createdAt: msg.createdAt,
           messageImages: msg.messageImages || [],
           messageDocs: msg.messageDocs || [],
         };
@@ -152,15 +152,15 @@ export function Messages() {
         setIsCreatingForm={setIsCreatingMessage}
       />
 
-      <div className="p-6 gap-4 flex flex-1 min-h-0">
+      <div className="p-2 gap-4 flex flex-1 min-h-0">
         {/* Chat List Section */}
-        <div className="w-96 border border-border bg-card flex flex-col min-h-0">
+        <div className="w-96 bg-card flex flex-col min-h-0">
           {/* Chat/Thread Buttons */}
           <div className="border border-border flex w-full">
             <Button
               onClick={() => setActive("messages")}
               className={cn(
-                "w-half mb-2 mt-2 rounded-none bg-white text-black border-b-4 border-transparent",
+                "w-half mb-2 mt-2 cursor-pointer rounded-none bg-white text-black border-b-4 border-transparent",
                 active === "messages" && "text-orange-600 border-orange-600"
               )}
             >
@@ -169,7 +169,7 @@ export function Messages() {
             <Button
               onClick={() => setActive("threads")}
               className={cn(
-                "w-half mb-2 mt-2 rounded-none bg-white text-black border-b-4 border-transparent",
+                "w-half mb-2 mt-2 cursor-pointer rounded-none bg-white text-black border-b-4 border-transparent",
                 active === "threads" && "text-orange-600 border-orange-600"
               )}
             >
@@ -178,12 +178,12 @@ export function Messages() {
           </div>
 
           {/* List */}
-          <div className="flex-1 overflow-y-auto border border-border">
+          <div className="flex-1 overflow-y-auto border  border-border">
             {items.map((item) => (
               <div
                 key={item.id}
                 className={cn(
-                  "flex items-center gap-3 p-3 border-b",
+                  "flex items-center gap-3 p-3 border-b cursor-pointer",
                   selectedId === item.id && "bg-orange-50"
                 )}
                 onClick={() => {
@@ -205,12 +205,11 @@ export function Messages() {
                   <p className="font-medium truncate">
                     {item.participants.map((p) => p.name || p.id).join(", ")}
                   </p>
-                  
+
                   <p className="text-sm text-muted-foreground truncate">
-                    {
-                    item.lastMessage?.body ? item.lastMessage.body : 
-                    "New Attachment"
-                    }
+                    {item.lastMessage?.body
+                      ? item.lastMessage.body
+                      : "New Attachment"}
                   </p>
                 </div>
               </div>
@@ -219,11 +218,11 @@ export function Messages() {
         </div>
 
         {/* Chat Window */}
-        <div className="flex-1 border border-border bg-card min-h-0">
+        <div className="flex-1 border bg-card min-h-0">
           {selectedId ? (
             activeConversation.status === "loading" ? (
               <div className="h-full flex items-center justify-center text-muted-foreground">
-                Loading messages...
+                <Loader />
               </div>
             ) : activeConversation.messages.length === 0 ? (
               <ChatWindow

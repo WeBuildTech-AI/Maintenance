@@ -1,20 +1,14 @@
 import { Calendar, DollarSign, Paperclip, Plus, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
+// Select not used in this component
 import { formatMoney } from "./helpers";
-import { type NewPOFormProps, type Vendor } from "./po.types"; // <-- Vendor type
-import { useState, useRef, useEffect } from "react";
+import { type NewPOFormProps, type Vendor } from "./po.types.tsx"; // <-- Vendor type (explicit .tsx types file)
+import { useState } from "react";
 import { vendorService } from "../../store/vendors";
 import { partService } from "../../store/parts";
 import { purchaseOrderService } from "../../store/purchaseOrders";
-import { id } from "../Inventory/utils";
+// id util not used here
 // !! NOTE: Maan rahe hain ki aap 'addressService' bana lenge
 // import { addressService } from "../../store/addressService";
 
@@ -206,9 +200,18 @@ export function NewPOForm(props: NewPOFormProps) {
     setIsCreatingAddress(true);
     setAddressApiError(null);
     try {
+      // API expects CreateAddressData: { purchaseOrderId, address }
       const createdAddress = await purchaseOrderService.createAddressOrder({
-        ...newAddress,
-      });
+        purchaseOrderId: "", // creating an address before PO exists; API requires a string so pass empty
+        address: {
+          line1: newAddress.street,
+          city: newAddress.city,
+          state: newAddress.stateProvince,
+          postalCode: newAddress.ZIP,
+          country: newAddress.country,
+        },
+        type: "shipping",
+      } as any);
 
       console.log("New Address Created:", createdAddress);
 
@@ -271,8 +274,16 @@ export function NewPOForm(props: NewPOFormProps) {
     setBillingAddressApiError(null);
     try {
       const createdAddress = await purchaseOrderService.createAddressOrder({
-        ...newBillingAddress,
-      });
+        purchaseOrderId: "",
+        address: {
+          line1: newBillingAddress.street,
+          city: newBillingAddress.city,
+          state: newBillingAddress.stateProvince,
+          postalCode: newBillingAddress.ZIP,
+          country: newBillingAddress.country,
+        },
+        type: "billing",
+      } as any);
 
       console.log("New Billing Address Created:", createdAddress);
 
@@ -687,7 +698,7 @@ export function NewPOForm(props: NewPOFormProps) {
                     onClick={() => {
                       setNewPO((s) => ({
                         ...s,
-                        shippingAddressId: null,
+                        shippingAddressId: undefined,
                         // shippingAddress: {},
                       }));
                       setAddressSearchQuery("");
@@ -877,19 +888,19 @@ export function NewPOForm(props: NewPOFormProps) {
                   className="bg-white border-orange-600"
                   onChange={(e) => {
                     const isChecked = e.target.checked;
-                    setNewPO((s) => ({
-                      ...s,
-                      sameShipBill: isChecked,
-                      ...(isChecked
-                        ? {
-                            billingAddressId: s.shippingAddressId,
-                            billingAddress: s.shippingAddress,
-                          }
-                        : {
-                            billingAddressId: null,
-                            // billingAddress: {},
-                          }),
-                    }));
+                          setNewPO((s) => ({
+                            ...s,
+                            sameShipBill: isChecked,
+                            ...(isChecked
+                              ? {
+                                  billingAddressId: s.shippingAddressId,
+                                  billingAddress: s.shippingAddress,
+                                }
+                              : {
+                                  billingAddressId: undefined,
+                                  // billingAddress: {},
+                                }),
+                          }));
                   }}
                 />
                 Use the same Shipping and Billing Address
@@ -925,7 +936,7 @@ export function NewPOForm(props: NewPOFormProps) {
                         onClick={() => {
                           setNewPO((s) => ({
                             ...s,
-                            billingAddressId: null,
+                            billingAddressId: undefined,
                             // billingAddress: {},
                           }));
                           setBillingAddressSearchQuery("");

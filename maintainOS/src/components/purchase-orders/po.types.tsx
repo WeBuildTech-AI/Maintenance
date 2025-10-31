@@ -1,3 +1,5 @@
+import type { RefObject, ChangeEvent } from "react";
+
 export type ViewMode = "panel" | "table";
 
 export type Address = {
@@ -18,6 +20,7 @@ export type Vendor = {
 
 export type POItem = {
   id: string;
+  partId?: string | null;
   itemName: string;
   partNumber?: string;
   quantity: number;
@@ -37,6 +40,7 @@ export type NewPOForm = {
   notes?: string;
   extraCosts: number;
   contactName: string;
+  poNumber?: string;
   contactEmailOrPhone: string;
 };
 
@@ -50,21 +54,21 @@ export type NewPOFormProps = {
   updateItemField: (
     id: string,
     field: keyof POItem,
-    value: string | number
+    value: string | number | null
   ) => void;
   createPurchaseOrder: () => void;
   onCancel: () => void;
   handleCreatePurchaseOrder: () => void;
   isCreating: boolean;
   apiError: string;
-  attachedFiles: () => void;
-  fileInputRef: () => void;
+  attachedFiles?: File[];
+  fileInputRef?: RefObject<HTMLInputElement> | null;
   handleFileAttachClick: () => void;
-  handleFileChange: () => void;
-  removeAttachedFile: () => void;
+  handleFileChange: (e: ChangeEvent<HTMLInputElement>) => void;
+  removeAttachedFile: (fileName: string) => void;
 };
 
-export type POStatus = "Draft" | "Approved" | "pending" | "Received" | "Cancelled";
+export type POStatus = "Draft" | "Approved" | "pending" | "Sent" | "Received" | "Cancelled";
 
 export type PurchaseOrder = {
   id: string; // internal id

@@ -361,11 +361,11 @@ export function ChatWindow({
     <div className="relative flex flex-col h-full">
       {!showInfo ? (
         <>
-          <p className="text-center mt-4">
+          {/* <p className="text-center mt-4">
             <span className="bg-orange-600 px-4 py-1 rounded-full">
               Status: {isConnected ? "🟢 Connected" : "🔴 Disconnected"}
             </span>
-          </p>
+          </p> */}
 
           {/* Header */}
           {isCreatingMessage ? (
@@ -596,7 +596,7 @@ export function ChatWindow({
               createPortal(
                 <div
                   ref={fileDropdownRef}
-                  className="fixed z-[9999] bg-white border border-gray-200 rounded-lg shadow-xl p-1 min-w-[160px]"
+                  className="fixed z-[9999] bg-white border border-gray-200 rounded-lg  p-1 min-w-[160px]"
                   style={{
                     top: fileDropdownPos.top,
                     left: fileDropdownPos.left,
@@ -634,7 +634,7 @@ export function ChatWindow({
         </>
       ) : (
         /* Conversation Info panel */
-        <div className="absolute inset-0 h-full w-full bg-white border-l border-border shadow-lg p-4 flex flex-col">
+        <div className="absolute inset-0 h-full w-full bg-white border-l border-border p-4 flex flex-col">
           <Button
             variant="ghost"
             className="flex-shrink-0 self-start"
