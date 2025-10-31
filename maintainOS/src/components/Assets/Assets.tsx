@@ -42,19 +42,30 @@ export const Assets: FC = () => {
 
   const fetchAssetsData = async () => {
     setLoading(true);
+    setSelectedAsset(null); // 🧹 clear any old selection first
+
     try {
       const assets: Asset[] = await assetService.fetchAssets(10, 1, 0);
-      setAssetData(assets);
 
-      if (assets.length > 0) {
+      if (assets && assets.length > 0) {
+        setAssetData(assets);
+
+        // sort by updatedAt to find most recent
         const mostRecent = [...assets].sort(
           (a, b) =>
             new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
         );
-        setSelectedAsset("");
+
+        // ✅ only set after successful fetch + valid data
+        setSelectedAsset(mostRecent[0]);
+      } else {
+        setAssetData([]);
+        setSelectedAsset(null); // no data, no selection
       }
     } catch (err) {
       console.error("Failed to fetch assets:", err);
+      setAssetData([]);
+      setSelectedAsset(null); // error → clear selection
     } finally {
       setLoading(false);
     }
@@ -196,6 +207,7 @@ export const Assets: FC = () => {
                     // Baaki logic same rahega
                     setSelectedAsset(updatedOrNewAsset);
                     setShowNewAssetForm(false);
+
                     setEditingAsset(null);
                   }}
                   onCancel={() => {
@@ -204,13 +216,14 @@ export const Assets: FC = () => {
                   }}
                   isEdit={!!editingAsset}
                   assetData={editingAsset}
+                  fetchAssetsData={fetchAssetsData}
                 />
               ) : selectedAsset ? (
                 <AssetDetail
                   asset={selectedAsset}
                   onDelete={handleDeleteAsset}
                   onEdit={handleEditAsset}
-                
+                  fetchAssetsData={fetchAssetsData}
                 />
               ) : (
                 <div className="flex items-center justify-center h-full text-center">

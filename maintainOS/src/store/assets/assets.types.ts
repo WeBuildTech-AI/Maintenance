@@ -1,3 +1,4 @@
+
 export interface AssetResponse {
   id: string;
   organizationId: string;
@@ -29,6 +30,11 @@ export interface CreateAssetData {
   serialNumber?: string;
 }
 
+export interface CreateAssetType {
+  organizationId: string;
+  name: string;
+}
+
 export interface UpdateAssetData {
   name?: string;
   description?: string;
@@ -40,6 +46,14 @@ export interface UpdateAssetData {
   manufacturer?: string;
   model?: string;
   serialNumber?: string;
+}
+
+export interface UpdateAssetStatus {
+  status: string;
+  notes: string;
+  since: string;
+  downtimeType: string;
+  userId: string;
 }
 
 export interface AssetsState {
