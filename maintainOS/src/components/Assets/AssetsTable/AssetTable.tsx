@@ -58,26 +58,26 @@ export function AssetTable({
                   </td>
 
                   {/* Status */}
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium ${
-                        asset.status
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
-                    >
+                  <td className="px-4 py-3 capitalize text-muted-foreground">
+                    <span className="flex items-center gap-2">
                       <span
-                        className={`h-2 w-2 rounded-full ${
-                          asset.status ? "bg-green-500" : "bg-red-500"
+                        className={`h-1 w-2 rounded-full ${
+                          asset.status === "online"
+                            ? "bg-green-500"
+                            : asset.status === "offline"
+                            ? "bg-red-500"
+                            : asset.status === "doNotTrack"
+                            ? "bg-yellow-500"
+                            : "bg-gray-300"
                         }`}
-                      />
+                      ></span>
                       {asset.status ?? "—"}
                     </span>
                   </td>
 
                   {/* Location */}
                   <td className="px-4 py-3 text-muted-foreground">
-                    {(asset.location.name) || "-"}
+                    {asset.location.name || "-"}
                   </td>
 
                   {/* Criticality */}

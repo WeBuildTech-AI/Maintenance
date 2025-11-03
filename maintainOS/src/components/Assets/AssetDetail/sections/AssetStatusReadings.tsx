@@ -51,7 +51,7 @@ export function AssetStatusReadings({
   const handleModalSubmit = async (statusData: {
     status: string;
     notes?: string;
-    since?: string; 
+    since?: string;
     to?: string;
     downtimeType?: string;
   }) => {
@@ -67,21 +67,20 @@ export function AssetStatusReadings({
 
     setIsLoading(true);
     try {
-      
       const finalStatusData = {
         ...statusData,
-        userId: user.id, 
+        userId: user.id,
       };
 
-      console.log("Submitting to backend:", finalStatusData); 
+      console.log("Submitting to backend:", finalStatusData);
 
       const res = await assetService.updateAssetStatus(
-        asset.id, 
-        finalStatusData 
-      ); 
+        asset.id,
+        finalStatusData
+      );
       if (typeof fetchAssetsData === "function") {
         fetchAssetsData();
-      } 
+      }
 
       setIsModalOpen(false);
       toast.success("Asset Status Successfully updated ");
@@ -107,10 +106,7 @@ export function AssetStatusReadings({
       )}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-medium">Status</h2>
-        <Button
-          variant="ghost"
-          className="gap-1 cursor-pointer text-orange-600 hover:text-orange-700 hover:bg-orange-50 p-0 h-auto"
-        >
+        <Button className="gap-1 bg-white p-2 cursor-pointer text-orange-600 hover:text-orange-600 hover:bg-orange-50  h-auto">
           See More
           <ChevronRight className="h-4 w-4" />
         </Button>
@@ -123,7 +119,7 @@ export function AssetStatusReadings({
           >
             <div className="flex items-center gap-3">
               <div
-                className={`w-2 h-2 ${getStatusColor(
+                className={`w-3 h-3 ${getStatusColor(
                   assetStatus
                 )} rounded-full`}
               ></div>
@@ -146,7 +142,8 @@ export function AssetStatusReadings({
                   onClick={() => handleStatusSelection(status.value)}
                   className="w-full flex cursor-pointer items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
                 >
-                  <div className={`w-2 h-1 ${status.color} rounded-full`}></div>
+                  <div className={`w-3 h-3 ${status.color} rounded-full`}></div>
+
                   <span className="text-gray-700">{status.name}</span>
                 </button>
               ))}
@@ -519,7 +516,7 @@ export function UpdateAssetStatusModal({
                         className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50"
                       >
                         <div
-                          className={`w-2 h-1 ${status.color} rounded-full`}
+                          className={`w-3 h-3 ${status.color} rounded-full`}
                         ></div>
                         <span className="text-gray-700">{status.name}</span>
                       </button>

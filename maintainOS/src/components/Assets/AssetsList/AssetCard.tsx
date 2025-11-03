@@ -31,7 +31,7 @@ export function AssetCard({
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
-              <span className="text-lg">{<Factory/>}</span>
+              <span className="text-lg">{<Factory />}</span>
             </div>
             <div>
               <h4 className="font-medium capitalize">{asset.name}</h4>
@@ -46,11 +46,11 @@ export function AssetCard({
           <div className="flex flex-col items-end gap-2">
             <Badge
               variant="outline"
-              className={`gap-1 ${
+              className={`gap-1 capitalize ${
                 asset.status === "online"
                   ? "bg-green-50 text-green-700 border-green-200"
                   : asset.status === "offline"
-                  ? "bg-red-50 text-red-700 border-red-200" 
+                  ? "bg-red-50 text-red-700 border-red-200"
                   : "bg-yellow-50 text-yellow-700 border-yellow-200"
               }`}
             >
