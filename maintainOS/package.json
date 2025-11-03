@@ -9,6 +9,7 @@
             "class-variance-authority": "^0.7.1",
             "clsx": "*",
             "embla-carousel-react": "^8.6.0",
+            "firebase": "^12.5.0",
             "html2canvas": "^1.4.1",
             "html2pdf.js": "^0.12.1",
             "input-otp": "^1.4.2",

@@ -8,6 +8,7 @@ import { login, logout } from "./store/userSlice";
 import { lazyImport } from "./utils/lazyImport";
 import InviteUsers from "./components/Users/InviteUser/InviteUser";
 import CreateTeamForm from "./components/Users/CreateTeam/CreateTeam";
+import NotificationProvider from "./components/Notification/NotificationProvider";
 
 // ✅ Lazy imports
 const Login = lazyImport(() => import("./components/Login"), "Login");
@@ -111,6 +112,7 @@ export default function App() {
   return (
     <>
       <MainLayout user={user} onLogout={handleLogout}>
+        <NotificationProvider />
         <Suspense fallback={<div className="p-4">Loading...</div>}>
           <Routes>
             {/* Redirect root to /work-orders */}
