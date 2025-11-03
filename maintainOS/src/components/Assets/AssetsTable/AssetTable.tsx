@@ -29,7 +29,7 @@ export function AssetTable({
                 <th className="w-[14%] px-4 py-3 text-left">Location</th>
                 <th className="w-[12%] px-4 py-3 text-left">Criticality</th>
                 <th className="w-[12%] px-4 py-3 text-left">Manufacturer</th>
-                {/* <th className="w-[12%] px-4 py-3 text-left">Model</th> */}
+                <th className="w-[12%] px-4 py-3 text-left">Asset Type</th>
               </tr>
             </thead>
             <tbody>
@@ -90,10 +90,21 @@ export function AssetTable({
                     {asset.manufacturer.name || "-"}
                   </td>
 
-                  {/* Model */}
-                  {/* <td className="px-4 py-3 text-muted-foreground">
-                    {asset.model || "-"}
-                  </td> */}
+                  {/* Asset Type */}
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {asset.assetTypes?.length > 0 ? (
+                      <>
+                        {asset.assetTypes[0]?.name}
+                        {asset.assetTypes.length > 1 && (
+                          <span className="text-gray-500 ml-1">
+                            +{asset.assetTypes.length - 1}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      "-"
+                    )}
+                  </td>
                 </tr>
               ))}
               {assets.length === 0 && (
