@@ -33,7 +33,9 @@ export function AssetCard({
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
               {/* <span className="text-lg">{<Factory />}</span> */}
-              <span className="text-lg">{renderInitials(asset.name)}</span>
+              <span className="text-lg">
+                {renderInitials(asset.name) || <Factory />}
+              </span>
             </div>
             <div>
               <h4 className="font-medium capitalize">{asset.name}</h4>
