@@ -1,6 +1,7 @@
 import { Factory, MapPin } from "lucide-react";
 import { Badge } from "../../ui/badge";
 import { Card, CardContent } from "../../ui/card";
+import { renderInitials } from "../../utils/renderInitials";
 
 export function AssetCard({
   asset,
@@ -31,7 +32,8 @@ export function AssetCard({
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
-              <span className="text-lg">{<Factory />}</span>
+              {/* <span className="text-lg">{<Factory />}</span> */}
+              <span className="text-lg">{renderInitials(asset.name)}</span>
             </div>
             <div>
               <h4 className="font-medium capitalize">{asset.name}</h4>
