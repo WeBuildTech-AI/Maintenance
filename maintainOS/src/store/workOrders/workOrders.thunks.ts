@@ -5,6 +5,7 @@ import type {
   AssignWorkOrderData,
   CreateWorkOrderData,
   UpdateWorkOrderData,
+  CreateOtherCostData,
 } from "./workOrders.types";
 
 export const fetchWorkOrders = createAsyncThunk(
@@ -34,10 +35,10 @@ export const fetchWorkOrderById = createAsyncThunk(
 );
 
 export const createWorkOrder = createAsyncThunk(
-  "workOrders/createWorkOrder",
-  async (workOrderData: CreateWorkOrderData, { rejectWithValue }) => {
+  "workOrders/create",
+  async (data: CreateWorkOrderData, { rejectWithValue }) => {
     try {
-      return await workOrderService.createWorkOrder(workOrderData);
+      return await workOrderService.createWorkOrder(data);
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to create work order"
@@ -46,15 +47,19 @@ export const createWorkOrder = createAsyncThunk(
   }
 );
 
-// ✅ PATCH call using FormData
+// ✅ UPDATED: includes authorId parameter in URL
 export const updateWorkOrder = createAsyncThunk(
-  "workOrders/updateWorkOrder",
+  "workOrders/update",
   async (
-    { id, data }: { id: string; data: UpdateWorkOrderData },
+    {
+      id,
+      authorId,
+      data,
+    }: { id: string; authorId: string; data: UpdateWorkOrderData },
     { rejectWithValue }
   ) => {
     try {
-      return await workOrderService.updateWorkOrder(id, data);
+      return await workOrderService.updateWorkOrder(id, authorId, data);
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to update work order"
@@ -64,11 +69,10 @@ export const updateWorkOrder = createAsyncThunk(
 );
 
 export const deleteWorkOrder = createAsyncThunk(
-  "workOrders/deleteWorkOrder",
+  "workOrders/delete",
   async (id: string, { rejectWithValue }) => {
     try {
-      await workOrderService.deleteWorkOrder(id);
-      return id;
+      return await workOrderService.deleteWorkOrder(id);
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to delete work order"
@@ -78,7 +82,7 @@ export const deleteWorkOrder = createAsyncThunk(
 );
 
 export const assignWorkOrder = createAsyncThunk(
-  "workOrders/assignWorkOrder",
+  "workOrders/assign",
   async (
     { id, data }: { id: string; data: AssignWorkOrderData },
     { rejectWithValue }
@@ -100,7 +104,7 @@ export const addWorkOrderComment = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      return await workOrderService.addComment(id, data);
+      return await workOrderService.addWorkOrderComment(id, data);
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to add comment"
@@ -132,6 +136,36 @@ export const markWorkOrderInProgress = createAsyncThunk(
       return rejectWithValue(
         error.response?.data?.message ||
           "Failed to mark work order as in progress"
+      );
+    }
+  }
+);
+
+export const addOtherCost = createAsyncThunk(
+  "workOrders/addOtherCost",
+  async (
+    { id, data }: { id: string; data: CreateOtherCostData },
+    { rejectWithValue }
+  ) => {
+    try {
+      return await workOrderService.addOtherCost(id, data);
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to add other cost"
+      );
+    }
+  }
+);
+
+export const deleteOtherCost = createAsyncThunk(
+  "workOrders/deleteOtherCost",
+  async ({ id, costId }: { id: string; costId: string }, { rejectWithValue }) => {
+    try {
+      await workOrderService.deleteOtherCost(id, costId);
+      return { id, costId };
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete other cost"
       );
     }
   }

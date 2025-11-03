@@ -47,18 +47,18 @@ export function AssetCard({
             <Badge
               variant="outline"
               className={`gap-1 ${
-                asset.status === "Online"
+                asset.status === "online"
                   ? "bg-green-50 text-green-700 border-green-200"
-                  : asset.status === "Offline"
-                  ? "bg-red-50 text-red-700 border-red-200"
+                  : asset.status === "offline"
+                  ? "bg-red-50 text-red-700 border-red-200" 
                   : "bg-yellow-50 text-yellow-700 border-yellow-200"
               }`}
             >
               <div
-                className={`w-2 h-2 rounded-full ${
-                  asset.status === "Online"
+                className={`w-2 h-1 rounded-full ${
+                  asset.status === "online"
                     ? "bg-green-500"
-                    : asset.status === "Offline"
+                    : asset.status === "offline"
                     ? "bg-red-500"
                     : "bg-yellow-500"
                 }`}

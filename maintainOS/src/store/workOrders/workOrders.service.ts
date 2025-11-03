@@ -5,6 +5,7 @@ import type {
   CreateWorkOrderData,
   UpdateWorkOrderData,
   WorkOrderResponse,
+  CreateOtherCostData,
 } from "./workOrders.types";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -16,7 +17,7 @@ export const workOrderService = {
     return res.data;
   },
 
-  // ✅ Fetch single (old route)
+  // ✅ Fetch by id (old route)
   fetchWorkOrderById: async (id: string): Promise<WorkOrderResponse> => {
     const res = await axios.get(`${API_URL}/work-orders/${id}`);
     return res.data;
@@ -26,32 +27,24 @@ export const workOrderService = {
   createWorkOrder: async (
     data: CreateWorkOrderData
   ): Promise<WorkOrderResponse> => {
-    const res = await axios.post(`${API_URL}/work-orders`, data, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const res = await axios.post(`${API_URL}/work-orders`, data);
     return res.data;
   },
 
-  // ✅ Update (new route — only PATCH uses /api/v1)
+  // ✅ Update (NEW route using authorId)
   updateWorkOrder: async (
     id: string,
+    authorId: string,
     data: UpdateWorkOrderData
   ): Promise<WorkOrderResponse> => {
-    const res = await axios.request({
-      method: "PATCH",
-      url: `${API_URL}/work-orders/${id}`,
-      data,
-      headers: {
-        "Content-Type": "multipart/form-data",
-        Accept: "application/json",
-      },
-    });
+    const res = await axios.patch(`${API_URL}/work-orders/${id}/${authorId}`, data);
     return res.data;
   },
 
   // ✅ Delete (old route)
-  deleteWorkOrder: async (id: string): Promise<void> => {
-    await axios.delete(`${API_URL}/work-orders/${id}`);
+  deleteWorkOrder: async (id: string): Promise<{ success: boolean }> => {
+    const res = await axios.delete(`${API_URL}/work-orders/${id}`);
+    return res.data;
   },
 
   // ✅ Assign (old route)
@@ -63,8 +56,8 @@ export const workOrderService = {
     return res.data;
   },
 
-  // ✅ Comment (old route)
-  addComment: async (
+  // ✅ Add comment (old route)
+  addWorkOrderComment: async (
     id: string,
     data: AddWorkOrderCommentData
   ): Promise<WorkOrderResponse> => {
@@ -81,6 +74,18 @@ export const workOrderService = {
   // ✅ Mark in progress (old route)
   markInProgress: async (id: string): Promise<WorkOrderResponse> => {
     const res = await axios.post(`${API_URL}/work-orders/${id}/in-progress`);
+    return res.data;
+  },
+
+  // ✅ Other Costs — Add
+  addOtherCost: async (id: string, data: CreateOtherCostData) => {
+    const res = await axios.post(`${API_URL}/work-orders/${id}/other-costs`, data);
+    return res.data;
+  },
+
+  // ✅ Other Costs — Delete
+  deleteOtherCost: async (id: string, costId: string) => {
+    const res = await axios.delete(`${API_URL}/work-orders/${id}/other-costs/${costId}`);
     return res.data;
   },
 };

@@ -29,7 +29,7 @@ export function AssetTable({
                 <th className="w-[14%] px-4 py-3 text-left">Location</th>
                 <th className="w-[12%] px-4 py-3 text-left">Criticality</th>
                 <th className="w-[12%] px-4 py-3 text-left">Manufacturer</th>
-                <th className="w-[12%] px-4 py-3 text-left">Model</th>
+                {/* <th className="w-[12%] px-4 py-3 text-left">Model</th> */}
               </tr>
             </thead>
             <tbody>
@@ -77,23 +77,23 @@ export function AssetTable({
 
                   {/* Location */}
                   <td className="px-4 py-3 text-muted-foreground">
-                    {(asset.location && asset.location.name) || "-"}
+                    {(asset.location.name) || "-"}
                   </td>
 
                   {/* Criticality */}
-                  <td className="px-4 py-3 cursor-pointer text-muted-foreground">
+                  <td className="px-4 py-3 cursor-pointer capitalize text-muted-foreground">
                     {asset.criticality || "-"}
                   </td>
 
                   {/* Manufacturer */}
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {asset.manufacturer || "-"}
+                  <td className="px-4 py-3 text-muted-foreground cursor-capitalize">
+                    {asset.manufacturer.name || "-"}
                   </td>
 
                   {/* Model */}
-                  <td className="px-4 py-3 text-muted-foreground">
+                  {/* <td className="px-4 py-3 text-muted-foreground">
                     {asset.model || "-"}
-                  </td>
+                  </td> */}
                 </tr>
               ))}
               {assets.length === 0 && (
