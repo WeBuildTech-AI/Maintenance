@@ -6,7 +6,8 @@ import { formatFriendlyDate } from "../../../utils/Date";
 import { useState, useEffect } from "react";
 import { Button } from "../../../ui/button";
 // Make sure this path to your thunk is correct
-import { updateAssetStatus } from "../../../../store/assets";
+import { assetService, updateAssetStatus } from "../../../../store/assets";
+import toast from "react-hot-toast";
 
 // --- Main Component ---
 export function AssetStatusReadings({
@@ -17,7 +18,6 @@ export function AssetStatusReadings({
   fetchAssetsData?: () => void;
 }) {
   const user = useSelector((state: RootState) => state.auth.user);
-  const dispatch = useDispatch<AppDispatch>();
 
   const [assetStatus, setAssetStatus] = useState(asset?.status || "online");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -32,7 +32,7 @@ export function AssetStatusReadings({
   const statuses = [
     { name: "Online", value: "online", color: "bg-green-500" },
     { name: "Offline", value: "offline", color: "bg-red-500" },
-    { name: "Do Not Track", value: "doNotTrack", color: "bg-gray-500" },
+    { name: "Do Not Track", value: "doNotTrack", color: "bg-orange-500" },
   ];
 
   const getStatusColor = (statusValue: string) => {
@@ -48,50 +48,53 @@ export function AssetStatusReadings({
     }
   };
 
-  // --- (Unchanged) handleModalSubmit handles the data correctly ---
   const handleModalSubmit = async (statusData: {
     status: string;
     notes?: string;
-    offlineSince?: string;
-    offlineFrom?: string;
-    offlineTo?: string;
-    downtimeType?: string; // This will now receive "Planned" or "Unplanned"
+    since?: string; 
+    to?: string;
+    downtimeType?: string;
   }) => {
     if (!asset?.id) {
       console.error("Asset ID not found!");
       return;
     }
 
+    if (!user?.id) {
+      console.error("User ID not found in user object!", user);
+      return;
+    }
+
     setIsLoading(true);
     try {
-      // Step 1: Dispatch the update
-      if (!user?.id) {
-        console.error("DEBUG: User ID not found in user object!", user);
-        return;
-      }
-      await dispatch(
-        updateAssetStatus({
-          id: user?.id,
-          // 'statusData' now contains all fields from the modal
-          assetDataStatus: statusData,
-        })
-      ).unwrap();
+      
+      const finalStatusData = {
+        ...statusData,
+        userId: user.id, 
+      };
 
-      // Step 2: Call fetchAssetsData (if provided)
+      console.log("Submitting to backend:", finalStatusData); 
+
+      const res = await assetService.updateAssetStatus(
+        asset.id, 
+        finalStatusData 
+      ); 
       if (typeof fetchAssetsData === "function") {
         fetchAssetsData();
-      }
+      } 
 
-      // Step 3: Close the modal
       setIsModalOpen(false);
+      toast.success("Asset Status Successfully updated ");
     } catch (error) {
       console.error("Failed to update asset status:", error);
+      setIsModalOpen(false);
+      toast.error(error.message || "Failed to update Asset Status");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // ... (The rest of your AssetStatusReadings JSX remains unchanged) ...
+  // ... (Baaki ka JSX code same rahega) ...
   return (
     <div>
       {isModalOpen && statusToUpdate && (
@@ -143,7 +146,7 @@ export function AssetStatusReadings({
                   onClick={() => handleStatusSelection(status.value)}
                   className="w-full flex cursor-pointer items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
                 >
-                  <div className={`w-2 h-2 ${status.color} rounded-full`}></div>
+                  <div className={`w-2 h-1 ${status.color} rounded-full`}></div>
                   <span className="text-gray-700">{status.name}</span>
                 </button>
               ))}
@@ -151,8 +154,11 @@ export function AssetStatusReadings({
           )}
         </div>
         <p className="text-sm text-muted-foreground">
-          Last updated: <span className="font-medium">MaintainOS</span>,{" "}
-          {formatFriendlyDate(asset?.updatedAt)}
+          Last updated :{" "}
+          <span className="font-medium text-orange-600 capitalize">
+            {user?.fullName}
+          </span>{" "}
+          , {formatFriendlyDate(asset?.updatedAt)}
         </p>
       </div>
     </div>
@@ -171,7 +177,6 @@ const NotesSection = ({
   notes: string;
   setNotes: (value: string) => void;
 }) => {
-  // ... (This component remains unchanged)
   if (!isNotesVisible) {
     return (
       <button
@@ -212,7 +217,6 @@ const OfflineSinceDropdown = ({
   setOfflineSinceDropdown: (value: boolean) => void;
   offlineSinceOptions: string[];
 }) => {
-  // ... (This component remains unchanged)
   return (
     <div>
       <label className="block text-sm font-medium text-gray-900 mb-2">
@@ -253,7 +257,6 @@ const OfflineSinceDropdown = ({
   );
 };
 
-// --- (Unchanged) NEW HELPER COMPONENT ---
 const CustomDateRangePicker = ({
   fromDate,
   setFromDate,
@@ -286,14 +289,14 @@ const CustomDateRangePicker = ({
             value={fromDate}
             onChange={(e) => setFromDate(e.target.value)}
             className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            required // Make required if custom date is chosen
+            required
           />
           <input
             type="time"
             value={fromTime}
             onChange={(e) => setFromTime(e.target.value)}
             className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            required // Make required if custom date is chosen
+            required
           />
         </div>
       </div>
@@ -309,14 +312,14 @@ const CustomDateRangePicker = ({
             value={toDate}
             onChange={(e) => setToDate(e.target.value)}
             className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            required // Make required if custom date is chosen
+            required
           />
           <input
             type="time"
             value={toTime}
             onChange={(e) => setToTime(e.target.value)}
             className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            required // Make required if custom date is chosen
+            required
           />
         </div>
       </div>
@@ -338,8 +341,8 @@ export function UpdateAssetStatusModal({
   isLoading: boolean;
 }) {
   const [selectedStatus, setSelectedStatus] = useState(initialStatus);
-  const [downtimeType, setDowntimeType] = useState(""); // This will store "Planned" or "Unplanned"
-  const [offlineSince, setOfflineSince] = useState("Now");
+  const [downtimeType, setDowntimeType] = useState("");
+  const [offlineSince, setOfflineSince] = useState("Now"); // UI state
   const [notes, setNotes] = useState("");
   const [isNotesVisible, setIsNotesVisible] = useState(false);
 
@@ -355,47 +358,42 @@ export function UpdateAssetStatusModal({
   const statuses = [
     { name: "Online", value: "online", color: "bg-green-500" },
     { name: "Offline", value: "offline", color: "bg-red-500" },
-    { name: "Do Not Track", value: "doNotTrack", color: "bg-gray-500" },
+    { name: "Do Not Track", value: "doNotTrack", color: "bg-orange-500" },
   ];
 
-  // --- MODIFIED: Changed from string[] to object[] ---
+  // --- +++++++ YAHAN BADLAAV KIYA GAYA HAI +++++++ ---
   const downtimeTypes = [
     {
       name: "Planned Mark Status at a plan if it's due to expected maintaince  inspections etc  ",
-      value: "planned",
+      value: "planned", // Lowercase "p" (jaisa curl mein hai)
     },
     {
       name: "Unplanned Unplanned status update can be related to unexpected breakdowns etc ",
-      value: "Unplanned",
+      value: "unplanned", // <-- MODIFIED: Lowercase "u"
     },
   ];
+  // --- +++++++ BADLAAV KHATM +++++++ ---
 
   const offlineSinceOptions = [
     "Now",
     "1 hour ago",
     "2 hours ago",
     "1 day ago",
-    "Custom date", // This value triggers the new UI
+    "Custom date",
   ];
 
-  // --- MODIFIED: Form validity now checks for downtimeType ---
   const isFormValid = () => {
     if (!selectedStatus) return false;
-
-    // Check downtimeType if status is offline
     if (selectedStatus === "offline" && !downtimeType) {
       return false;
     }
-
-    // Check custom date if selected
     if (offlineSince === "Custom date") {
       return fromDate && fromTime && toDate && toTime;
     }
-
-    return true; // Form is valid otherwise
+    return true;
   };
 
-  // --- (Unchanged) Form Submit Handler (already correctly sends downtimeType) ---
+  // --- `handleFormSubmit` `since` key bhejega (Unchanged from last time) ---
   const handleFormSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!isFormValid() || isLoading) return;
@@ -409,18 +407,44 @@ export function UpdateAssetStatusModal({
     }
 
     if (selectedStatus !== "online") {
-      submitData.offlineSince = offlineSince;
-
       if (selectedStatus === "offline") {
-        submitData.downtimeType = downtimeType; // Sends "Planned" or "Unplanned"
+        submitData.downtimeType = downtimeType; // "planned" ya "unplanned"
       }
 
-      if (offlineSince === "Custom date") {
-        submitData.offlineFrom = `${fromDate}T${fromTime}`;
-        submitData.offlineTo = `${toDate}T${toTime}`;
+      const now = new Date();
+
+      switch (offlineSince) {
+        case "Now":
+          submitData.since = now.toISOString();
+          break;
+        case "1 hour ago":
+          now.setHours(now.getHours() - 1);
+          submitData.since = now.toISOString();
+          break;
+        case "2 hours ago":
+          now.setHours(now.getHours() - 2);
+          submitData.since = now.toISOString();
+          break;
+        case "1 day ago":
+          now.setDate(now.getDate() - 1);
+          submitData.since = now.toISOString();
+          break;
+        case "Custom date":
+          if (fromDate && fromTime) {
+            submitData.since = new Date(
+              `${fromDate}T${fromTime}`
+            ).toISOString();
+          }
+          if (toDate && toTime) {
+            submitData.to = new Date(`${toDate}T${toTime}`).toISOString();
+          }
+          break;
+        default:
+          submitData.since = now.toISOString();
       }
     }
 
+    // `onSubmit` ko data bhejें
     onSubmit(submitData);
   };
 
@@ -442,7 +466,7 @@ export function UpdateAssetStatusModal({
           <button
             onClick={onClose}
             disabled={isLoading}
-            className="text-gray-400 hover:text-gray-600 transition disabled:opacity-50"
+            className="text-gray-400 cursor-pointer hover:text-gray-600 transition disabled:opacity-50"
           >
             <X className="w-5 h-5" />
           </button>
@@ -483,7 +507,7 @@ export function UpdateAssetStatusModal({
                   />
                 </button>
                 {statusDropdown && (
-                  <div className="absolute w-full bg-white cursor-pointer border border-gray-200 rounded-md shadow-lg mt-1 z-30">
+                  <div className="absolute w-full z-50 bg-white cursor-pointer border border-gray-200 rounded-md shadow-lg mt-1 z-30">
                     {statuses.map((status) => (
                       <button
                         type="button"
@@ -495,7 +519,7 @@ export function UpdateAssetStatusModal({
                         className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50"
                       >
                         <div
-                          className={`w-2 h-2 ${status.color} rounded-full`}
+                          className={`w-2 h-1 ${status.color} rounded-full`}
                         ></div>
                         <span className="text-gray-700">{status.name}</span>
                       </button>
@@ -513,12 +537,10 @@ export function UpdateAssetStatusModal({
               setNotes={setNotes}
             />
 
-            {/* --- MODIFIED: Conditional Fields --- */}
+            {/* --- Conditional Fields (Unchanged) --- */}
 
-            {/* Show Downtime Type only if status is "offline" */}
             {selectedStatus === "offline" && (
               <div>
-                {/* --- MODIFIED: Updated required text --- */}
                 <label className="block text-sm font-medium text-gray-900 mb-2">
                   Downtime Type <span className="text-red-500">(required)</span>
                 </label>
@@ -526,12 +548,11 @@ export function UpdateAssetStatusModal({
                   <button
                     type="button"
                     onClick={() => setDowntimeDropdown(!downtimeDropdown)}
-                    className="w-full flex cursor-pointer items-center justify-between px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                    className="w-full capitalize flex cursor-pointer items-center justify-between px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
                   >
-                    {/* --- MODIFIED: Find name from object array --- */}
                     <span>
                       {downtimeTypes.find((t) => t.value === downtimeType)
-                        ?.name || "Select downtime type"}
+                        ?.value || "Select downtime type"}
                     </span>
                     <ChevronDown
                       className={`w-5 h-5 text-gray-500 transition-transform ${
@@ -541,18 +562,17 @@ export function UpdateAssetStatusModal({
                   </button>
                   {downtimeDropdown && (
                     <div className="absolute z-50  w-full bg-white cursor-pointer border border-gray-200 rounded-md shadow-lg mt-1 z-30">
-                      {/* --- MODIFIED: Map over object array --- */}
                       {downtimeTypes.map((type) => (
                         <button
                           type="button"
-                          key={type.value} // Use value for key
+                          key={type.value}
                           onClick={() => {
-                            setDowntimeType(type.value); // Set value to state
+                            setDowntimeType(type.value); // Yeh ab "planned" ya "unplanned" set karega
                             setDowntimeDropdown(false);
                           }}
                           className="w-full px-3 py-2 text-left hover:bg-gray-50"
                         >
-                          {type.name} {/* Show name in UI */}
+                          {type.name}
                         </button>
                       ))}
                     </div>
@@ -561,39 +581,32 @@ export function UpdateAssetStatusModal({
               </div>
             )}
 
-            {/* Show "Offline Since" logic only if status is NOT "online" */}
-            {selectedStatus !== "online" && (
-              <>
-                <OfflineSinceDropdown
-                  offlineSince={offlineSince}
-                  setOfflineSince={setOfflineSince}
-                  offlineSinceDropdown={offlineSinceDropdown}
-                  setOfflineSinceDropdown={setOfflineSinceDropdown}
-                  offlineSinceOptions={offlineSinceOptions}
-                />
+            <OfflineSinceDropdown
+              offlineSince={offlineSince}
+              setOfflineSince={setOfflineSince}
+              offlineSinceDropdown={offlineSinceDropdown}
+              setOfflineSinceDropdown={setOfflineSinceDropdown}
+              offlineSinceOptions={offlineSinceOptions}
+            />
 
-                {/* --- (Unchanged) Conditionally render CustomDateRangePicker --- */}
-                {offlineSince === "Custom date" && (
-                  <CustomDateRangePicker
-                    fromDate={fromDate}
-                    setFromDate={setFromDate}
-                    fromTime={fromTime}
-                    setFromTime={setFromTime}
-                    toDate={toDate}
-                    setToDate={setToDate}
-                    toTime={toTime}
-                    setToTime={setToTime}
-                  />
-                )}
-              </>
+            {offlineSince === "Custom date" && (
+              <CustomDateRangePicker
+                fromDate={fromDate}
+                setFromDate={setFromDate}
+                fromTime={fromTime}
+                setFromTime={setFromTime}
+                toDate={toDate}
+                setToDate={setToDate}
+                toTime={toTime}
+                setToTime={setToTime}
+              />
             )}
-            {/* --- END MODIFIED: Conditional Fields --- */}
           </div>
 
           {/* Footer (Unchanged) */}
           <div className="flex items-center justify-between cursor-pointer px-6 py-4 bg-gray-50 border-t border-gray-200">
             <Button
-              variant="ghost"
+              className="cursor-pointer bg-gray-50 text-black  border border-orange-600"
               onClick={onClose}
               disabled={isLoading}
               type="button"
@@ -602,8 +615,8 @@ export function UpdateAssetStatusModal({
             </Button>
             <Button
               type="submit"
-              disabled={!isFormValid() || isLoading} // This correctly uses the updated isFormValid
-              className="px-6 py-2 rounded-md bg-orange-600 font-medium text-white disabled:bg-orange-300"
+              disabled={!isFormValid() || isLoading}
+              className="px-6 py-2 cursor-pointer rounded-md bg-orange-600 font-medium text-white disabled:bg-orange-300"
             >
               {isLoading ? "Updating..." : "Update Status"}
             </Button>
