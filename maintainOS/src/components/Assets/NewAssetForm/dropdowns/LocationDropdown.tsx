@@ -1,18 +1,26 @@
 import { ChevronDown, Search } from "lucide-react";
-import { RefObject, useRef, useState, useEffect } from "react";
+import type { RefObject, Dispatch, SetStateAction } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Loader from "../../../Loader/Loader";
 import { locationService } from "../../../../store/locations";
 
+interface SelectableItem {
+  id: number | string;
+  name: string;
+}
+
 interface LocationDropdownProps {
   locationOpen: boolean;
   setLocationOpen: (open: boolean) => void;
-  LocationRef: RefObject<HTMLDivElement>;
-  selectedLocation: string;
-  setSelectedLocation: (val: string) => void;
+  // accept nullable ref types to match parent useRef<HTMLDivElement>(null)
+  LocationRef: RefObject<HTMLDivElement | null>;
+  selectedLocation: SelectableItem | null;
+  setSelectedLocation: Dispatch<SetStateAction<SelectableItem | null>>;
 }
 
 interface LocationItem {
+  id: number | string;
   name: string; // adjust if API differs
 }
 
@@ -23,7 +31,6 @@ export function LocationDropdown({
   selectedLocation,
   setSelectedLocation,
 }: LocationDropdownProps) {
-  const hasFetched = useRef(false);
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
@@ -90,12 +97,13 @@ export function LocationDropdown({
           ) : (
             <ul className="max-h-32 overflow-y-auto">
               {locationData.length > 0 ? (
-                locationData.map((loc, index) => (
+                locationData.map((loc) => (
                   <li
-                    key={index}
+                    key={loc.id}
                     className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                     onClick={() => {
-                      setSelectedLocation(loc); // 👈 store whole object
+                      // store the whole object to keep shape consistent with parent
+                      setSelectedLocation({ id: loc.id, name: loc.name });
                       setLocationOpen(false);
                       console.log("Send ID to backend:", loc.id);
                     }}

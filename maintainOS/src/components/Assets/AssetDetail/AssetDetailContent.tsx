@@ -11,6 +11,8 @@ import { AssetStatusReadings } from "./sections/AssetStatusReadings";
 import { AssetSubAssets } from "./sections/AssetSubAssets";
 import { AssetVendor } from "./sections/AssetVendor";
 import { AssetType } from "./sections/AssetType";
+import { AssetPart } from "./sections/AssetPart";
+import { AssetTeams } from "./sections/AssetTeams";
 // import { AssetWorkOrders } from "./sections/AssetWorkOrders";
 
 // You should import this interface from a shared types file
@@ -30,7 +32,7 @@ interface Asset {
 interface AssetDetailContentProps {
   asset: Asset; // Use your specific Asset type
   fetchAssetsData: () => void;
-  setSeeMoreAssetStatus:boolean
+  setSeeMoreAssetStatus: boolean;
 }
 
 export function AssetDetailContent({
@@ -41,16 +43,22 @@ export function AssetDetailContent({
   return (
     <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-6">
       {/* 3. Now the prop can be passed down successfully */}
-      <AssetStatusReadings asset={asset} fetchAssetsData={fetchAssetsData} setSeeMoreAssetStatus={setSeeMoreAssetStatus}/>
+      <AssetStatusReadings
+        asset={asset}
+        fetchAssetsData={fetchAssetsData}
+        setSeeMoreAssetStatus={setSeeMoreAssetStatus}
+      />
 
       <AssetLocation asset={asset} />
       <AssetCriticality asset={asset} />
       <AssetManufacturer asset={asset} />
       <AssetDescription asset={asset} />
       <AssetQrCode asset={asset} />
+      <AssetTeams asset={asset}/>
       <AssetType asset={asset} />
       <AssetSubAssets />
       <AssetVendor asset={asset} />
+      <AssetPart asset={asset} />
       <AssetAutomations />
       <AssetCreatedUpdated asset={asset} />
     </div>

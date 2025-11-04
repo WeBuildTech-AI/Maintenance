@@ -31,6 +31,13 @@ export const partService = {
     await axios.delete(`${API_URL}/parts/${id}`);
   },
 
+  fetchPartsName: async (): Promise<PartResponse[]> => {
+    const res = await axios.get(`${API_URL}/parts/summary`, {
+      headers: { Accept: "application/json" },
+    });
+    return res.data;
+  },
+
   // RESTOCK API THUNKS BELOW 
 
   // ✅ RESTOCK PART - ID goes in URL
