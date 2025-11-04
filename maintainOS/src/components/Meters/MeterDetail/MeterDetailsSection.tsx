@@ -11,7 +11,7 @@ export function MeterDetailsSection({ selectedMeter }: any) {
           <h3 className="text-sm font-medium text-muted-foreground mb-2">Measurement Unit</h3>
           <div className="flex items-center gap-2">
             <Tag className="h-4 w-4 text-muted-foreground" />
-            <span className="text-base">{selectedMeter.unit}</span>
+            <span className="text-base">{selectedMeter.measurement.name}</span>
           </div>
         </div>
 
