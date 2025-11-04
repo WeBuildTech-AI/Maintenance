@@ -1,6 +1,7 @@
 import { Factory, MapPin } from "lucide-react";
 import { Badge } from "../../ui/badge";
 import { Card, CardContent } from "../../ui/card";
+import { renderInitials } from "../../utils/renderInitials";
 
 export function AssetCard({
   asset,
@@ -31,34 +32,39 @@ export function AssetCard({
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
-              <span className="text-lg">{<Factory/>}</span>
+              {/* <span className="text-lg">{<Factory />}</span> */}
+              <span className="text-lg">
+                {renderInitials(asset.name) || <Factory />}
+              </span>
             </div>
             <div>
               <h4 className="font-medium capitalize">{asset.name}</h4>
-              <div className="flex items-start gap-1 mt-1">
-                <MapPin className="h-3 w-3 mt-1 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">
-                  At {asset.location && asset.location.name}
-                </span>
-              </div>
+              {asset.location && (
+                <div className="flex items-start gap-1 mt-1">
+                  <MapPin className="h-3 w-3 mt-1 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
+                    At {asset.location && asset.location.name}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
             <Badge
               variant="outline"
-              className={`gap-1 ${
-                asset.status === "Online"
+              className={`gap-1 capitalize ${
+                asset.status === "online"
                   ? "bg-green-50 text-green-700 border-green-200"
-                  : asset.status === "Offline"
+                  : asset.status === "offline"
                   ? "bg-red-50 text-red-700 border-red-200"
                   : "bg-yellow-50 text-yellow-700 border-yellow-200"
               }`}
             >
               <div
-                className={`w-2 h-2 rounded-full ${
-                  asset.status === "Online"
+                className={`w-2 h-1 rounded-full ${
+                  asset.status === "online"
                     ? "bg-green-500"
-                    : asset.status === "Offline"
+                    : asset.status === "offline"
                     ? "bg-red-500"
                     : "bg-yellow-500"
                 }`}

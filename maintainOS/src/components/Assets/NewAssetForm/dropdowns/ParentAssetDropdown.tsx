@@ -1,18 +1,25 @@
 import { ChevronDown, Search } from "lucide-react";
-import { RefObject, useEffect, useRef, useState } from "react";
+import type { RefObject, Dispatch, SetStateAction } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { assetService } from "../../../../store/assets";
 import Loader from "../../../Loader/Loader";
 
+interface SelectableItem {
+  id: number | string;
+  name: string;
+}
+
 interface LocationDropdownProps {
   parentAssetOpen: boolean;
   setParentAssetOpen: (open: boolean) => void;
-  parentAssetRef: RefObject<HTMLDivElement>;
-  selectedParentAssets: string;
-  setSelectedParentAssets: (val: string) => void;
+  parentAssetRef: RefObject<HTMLDivElement | null>;
+  selectedParentAssets: SelectableItem | null;
+  setSelectedParentAssets: Dispatch<SetStateAction<SelectableItem | null>>;
 }
 
 interface parentAssetItem {
+  id: number | string;
   name: string; // adjust if API differs
 }
 
@@ -26,7 +33,6 @@ export function ParentAssetDropdown({
   const navigate = useNavigate(); // ✅ Use React Router's hook
   const [parentAssetData, setParentAssetData] = useState<parentAssetItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const hasFetched = useRef(false);
 
   const handleFetchApi = async () => {
     setLoading(true);
@@ -69,8 +75,8 @@ export function ParentAssetDropdown({
           handleFetchApi();
         }}
       >
-        <Search className="h-4 w-4 text-gray-400" />
-        <span className="flex-1 text-gray-600">Select...</span>
+  <Search className="h-4 w-4 text-gray-400" />
+  <span className="flex-1 text-gray-600">{selectedParentAssets?.name || "Select..."}</span>
         <ChevronDown className="h-5 w-5 text-gray-400" />
       </div>
 
@@ -83,12 +89,12 @@ export function ParentAssetDropdown({
           ) : (
             <ul className="max-h-32 overflow-y-auto">
               {parentAssetData.length > 0 ? (
-                parentAssetData.map((loc, index) => (
+                parentAssetData.map((loc) => (
                   <li
-                    key={index}
+                    key={loc.id}
                     className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                     onClick={() => {
-                      setSelectedParentAssets(loc); // 👈 store whole object
+                      setSelectedParentAssets({ id: loc.id, name: loc.name }); // store whole object
                       setParentAssetOpen(false);
                       //  console.log("Send ID to backend:", loc.id);
                     }}

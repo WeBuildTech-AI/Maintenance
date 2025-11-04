@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp, Check } from "lucide-react";
 import { Button } from "../../ui/button";
 import { AssetCard } from "./AssetCard";
 import Loader from "../../Loader/Loader";
-import {type Asset } from "../Assets"; // Import the Asset type
+import type { Asset } from "../Assets"; // Import the Asset type
 
 // Define props for the component
 interface AssetsListProps {

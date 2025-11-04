@@ -1,10 +1,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
 import { meterService } from "./meters.service";
-import type {
-  CreateMeterData,
-  UpdateMeterData,
-} from "./meters.types";
+import type { CreateMeterData, UpdateMeterData, UpdateMeterReading } from "./meters.types";
 
 export const fetchMeters = createAsyncThunk(
   "meters/fetchMeters",
@@ -99,5 +96,25 @@ export const deleteMeter = createAsyncThunk(
   }
 );
 
-
-
+export const updateMeterReading = createAsyncThunk(
+  "meters/updateMeter",
+  async (
+    {
+      id,
+      meterData,
+    }: {
+      id: string;
+      meterData: UpdateMeterReading;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const meter = await meterService.updateMeterReading(id, meterData);
+      return meter;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update meter"
+      );
+    }
+  }
+);

@@ -11,7 +11,7 @@ export interface MeterResponse {
   photos?: string[];
   createdAt: string;
   updatedAt: string;
-  MeasurementRes:[]
+  MeasurementRes: [];
 }
 
 export interface CreateMeterData {
@@ -35,6 +35,10 @@ export interface UpdateMeterData {
   locationId?: string;
   readingFrequency?: Record<string, any>;
   photos?: string[];
+}
+export interface UpdateMeterReading {
+  value: number; // Convertir el valor del input (string) a número
+  meterId: string;
 }
 
 export interface MetersState {
