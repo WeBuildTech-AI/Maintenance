@@ -2,8 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
+import { useAppDispatch } from "../../../store/hooks";
 import { ArrowLeft, ChevronRight, ChevronLeft } from "lucide-react";
 import AddCostModal from "../ToDoView/AddCostModal";
+import {
+  addOtherCost,
+  deleteOtherCost,
+} from "../../../store/workOrders/workOrders.thunks";
+import toast from "react-hot-toast";
 
 // helper
 const timeAgo = (timestamp: string | number) => {
@@ -29,13 +35,11 @@ export default function OtherCostsPanel({
   workOrderId,
   selectedWorkOrder,
 }: Props) {
+  const dispatch = useAppDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalInitial, setModalInitial] = useState<any>(null);
-  const [viewCategory, setViewCategory] = useState<string | null>(null);
   const [viewUser, setViewUser] = useState<string | null>(null);
   const [costs, setCosts] = useState<any[]>([]);
-
-  // get current user from Redux
   const user = useSelector((state: any) => state.auth?.user);
 
   // init from work order
@@ -62,17 +66,67 @@ export default function OtherCostsPanel({
     for (const c of costs) {
       const cat = (c.category || "other").toLowerCase();
       const title = cat.charAt(0).toUpperCase() + cat.slice(1);
-      if (!map[cat])
-        map[cat] = { title, items: [], total: 0, users: {} };
+      if (!map[cat]) map[cat] = { title, items: [], total: 0, users: {} };
       map[cat].items.push(c);
       map[cat].total += Number(c.amount ?? c.cost ?? 0) || 0;
-
       const userName = c.user?.fullName || "Unknown";
       if (!map[cat].users[userName]) map[cat].users[userName] = [];
       map[cat].users[userName].push(c);
     }
     return map;
   }, [costs]);
+
+  // local handlers
+  const addLocal = (c: any) => setCosts((p) => [...p, c]);
+  const updateLocal = (c: any) =>
+    setCosts((p) => p.map((x) => (x.id === c.id ? { ...x, ...c } : x)));
+  const deleteLocal = (id: string) =>
+    setCosts((p) => p.filter((x) => x.id !== id));
+
+  // ✅ API Handlers
+  const handleAdd = async (data: any) => {
+    try {
+      const userId =
+        typeof data.userId === "object" ? data.userId.id : data.userId;
+
+      const payload = {
+        items: [
+          {
+            userId, // ✅ only ID string goes
+            amount: Number(data.amount || 0),
+            description: data.description || "",
+            category: data.category || "other",
+          },
+        ],
+      };
+
+      const res = await dispatch(addOtherCost({ id: workOrderId!, data: payload })).unwrap();
+      toast.success("✅ Cost added successfully");
+
+      const assignee =
+        selectedWorkOrder?.assignees?.find((a: any) => a.id === userId);
+
+      addLocal({
+        ...payload.items[0],
+        id: res.id || crypto.randomUUID?.() || String(Math.random()),
+        user: { fullName: assignee?.fullName || "Unknown" },
+        createdAt: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to add cost");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this cost entry?")) return;
+    try {
+      await dispatch(deleteOtherCost({ id: workOrderId!, costId: id })).unwrap();
+      toast.success("🗑️ Cost deleted successfully");
+      deleteLocal(id);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to delete cost");
+    }
+  };
 
   // header
   const Header = ({ title, onBack }: any) => (
@@ -100,7 +154,6 @@ export default function OtherCostsPanel({
   const OverviewView = () => (
     <div className="flex-1 flex flex-col overflow-y-auto bg-white">
       <div className="flex flex-col items-center justify-center py-10">
-        {/* total block */}
         <div
           className="flex items-center justify-center w-full max-w-3xl px-10"
           style={{ gap: "4rem" }}
@@ -129,7 +182,6 @@ export default function OtherCostsPanel({
           </div>
         </div>
 
-        {/* category sections */}
         <div className="w-full max-w-3xl mt-10">
           {Object.keys(grouped).map((cat) => {
             const catData = grouped[cat];
@@ -176,14 +228,6 @@ export default function OtherCostsPanel({
                     </div>
                   );
                 })}
-
-                <div className="flex justify-end items-center text-sm text-gray-900 pr-2 mt-2">
-                  <span className="mr-3">
-                    1 – {catData.items.length} of {catData.items.length}
-                  </span>
-                  <ChevronLeft className="h-4 w-4 text-gray-300 mr-1" />
-                  <ChevronRight className="h-4 w-4 text-gray-300" />
-                </div>
               </div>
             );
           })}
@@ -192,7 +236,7 @@ export default function OtherCostsPanel({
     </div>
   );
 
-  // User View (across all categories)
+  // User View
   const UserView = ({ userName }: { userName: string }) => {
     const entries = costs.filter(
       (c) => c.user?.fullName?.toLowerCase() === userName.toLowerCase()
@@ -252,13 +296,6 @@ export default function OtherCostsPanel({
     );
   };
 
-  // handlers
-  const addLocal = (c: any) => setCosts((p) => [...p, c]);
-  const updateLocal = (c: any) =>
-    setCosts((p) => p.map((x) => (x.id === c.id ? { ...x, ...c } : x)));
-  const deleteLocal = (id: string) =>
-    setCosts((p) => p.filter((x) => x.id !== id));
-
   return (
     <div
       className="flex flex-col bg-white border-gray-200 rounded-md shadow-sm"
@@ -282,16 +319,9 @@ export default function OtherCostsPanel({
           workOrderId={workOrderId}
           selectedWorkOrder={selectedWorkOrder}
           initialCost={modalInitial}
-          onAdd={(newCost) => {
-            const costWithTime = {
-              ...newCost,
-              id: crypto.randomUUID?.() || String(Math.random()),
-              createdAt: new Date().toISOString(),
-            };
-            addLocal(costWithTime);
-          }}
+          onAdd={handleAdd}
           onUpdate={(upd) => updateLocal(upd)}
-          onDelete={(id) => deleteLocal(id)}
+          onDelete={handleDelete}
         />
       )}
     </div>
