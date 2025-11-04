@@ -26,6 +26,7 @@ interface AssetDetailProps {
   onEdit: (asset: Asset) => void;
   onDelete: (id: string | number) => void; 
   fetchAssetsData: () => void; 
+  setSeeMoreAssetStatus: boolean
 }
 
 // 3. Use the defined types in your component.
@@ -34,6 +35,7 @@ export const AssetDetail: FC<AssetDetailProps> = ({
   onEdit,
   onDelete,
   fetchAssetsData,
+  setSeeMoreAssetStatus
 }) => {
   const [showHistory, setShowHistory] = useState<boolean>(false);
   const user = useSelector((state: RootState) => state.auth.user);
@@ -88,7 +90,7 @@ export const AssetDetail: FC<AssetDetailProps> = ({
           </div>
         </div>
       ) : (
-        <AssetDetailContent fetchAssetsData={fetchAssetsData} asset={asset} />
+        <AssetDetailContent fetchAssetsData={fetchAssetsData} asset={asset}  setSeeMoreAssetStatus={setSeeMoreAssetStatus}/>
       )}
     </div>
   );

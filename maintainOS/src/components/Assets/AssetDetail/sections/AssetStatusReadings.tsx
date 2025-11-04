@@ -13,9 +13,13 @@ import toast from "react-hot-toast";
 export function AssetStatusReadings({
   asset,
   fetchAssetsData,
+  setSeeMoreAssetStatus,
+  seeMoreFlag,
 }: {
   asset: any;
   fetchAssetsData?: () => void;
+  setSeeMoreAssetStatus: boolean;
+  seeMoreFlag: boolean;
 }) {
   const user = useSelector((state: RootState) => state.auth.user);
 
@@ -106,10 +110,15 @@ export function AssetStatusReadings({
       )}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-medium">Status</h2>
-        <Button className="gap-1 bg-white p-2 cursor-pointer text-orange-600 hover:text-orange-600 hover:bg-orange-50  h-auto">
-          See More
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+        {seeMoreFlag === false ? null : (
+          <Button
+            onClick={() => setSeeMoreAssetStatus?.()}
+            className="gap-1 bg-white p-2 cursor-pointer text-orange-600 hover:text-orange-600 hover:bg-orange-50  h-auto"
+          >
+            See More
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        )}
       </div>
       <div className="space-y-4">
         <div className="relative w-48">
@@ -135,7 +144,7 @@ export function AssetStatusReadings({
             )}
           </button>
           {isDropdownOpen && (
-            <div className="absolute w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
+            <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
               {statuses.map((status) => (
                 <button
                   key={status.value}
@@ -150,13 +159,16 @@ export function AssetStatusReadings({
             </div>
           )}
         </div>
-        <p className="text-sm text-muted-foreground">
-          Last updated :{" "}
-          <span className="font-medium text-orange-600 capitalize">
-            {user?.fullName}
-          </span>{" "}
-          , {formatFriendlyDate(asset?.updatedAt)}
-        </p>
+
+        {seeMoreFlag === false ? null : (
+          <p className="text-sm text-muted-foreground">
+            Last updated :{" "}
+            <span className="font-medium text-orange-600 capitalize">
+              {user?.fullName}
+            </span>{" "}
+            , {formatFriendlyDate(asset?.updatedAt)}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -513,7 +525,7 @@ export function UpdateAssetStatusModal({
                           setSelectedStatus(status.value);
                           setStatusDropdown(false);
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50"
+                        className="w-full flex z-50 items-center gap-3 px-4 py-3 text-left hover:bg-gray-50"
                       >
                         <div
                           className={`w-3 h-3 ${status.color} rounded-full`}

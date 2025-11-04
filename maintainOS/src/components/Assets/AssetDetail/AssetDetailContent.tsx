@@ -30,16 +30,18 @@ interface Asset {
 interface AssetDetailContentProps {
   asset: Asset; // Use your specific Asset type
   fetchAssetsData: () => void;
+  setSeeMoreAssetStatus:boolean
 }
 
 export function AssetDetailContent({
   asset,
   fetchAssetsData,
+  setSeeMoreAssetStatus,
 }: AssetDetailContentProps) {
   return (
     <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-6">
       {/* 3. Now the prop can be passed down successfully */}
-      <AssetStatusReadings asset={asset} fetchAssetsData={fetchAssetsData} />
+      <AssetStatusReadings asset={asset} fetchAssetsData={fetchAssetsData} setSeeMoreAssetStatus={setSeeMoreAssetStatus}/>
 
       <AssetLocation asset={asset} />
       <AssetCriticality asset={asset} />
