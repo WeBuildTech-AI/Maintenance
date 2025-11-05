@@ -27,13 +27,13 @@ import { useSelector } from "react-redux";
 import MeterDeleteModal from "../MeterDeleteModal";
 import RecordReadingModal from "./RecordReadingModal"; // 👈 Naya modal import karein
 
-export function MeterDetail({ selectedMeter, handleDeleteMeter , fetchMeters }: any) {
+export function MeterDetail({ selectedMeter, handleDeleteMeter , fetchMeters , setShowReadingMeter , setIsRecordModalOpen }: any) {
   const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
 
   // Modals ke liye state
   const [openMeterDeleteModal, setOpenMeterDeleteModal] = useState(false);
-  const [isRecordModalOpen, setIsRecordModalOpen] = useState(false); // 👈 Modal ke liye state add karein
+  // const [isRecordModalOpen, setIsRecordModalOpen] = useState(false); // 👈 Modal ke liye state add karein
 
   const modalRef = React.useRef<HTMLDivElement>(null);
 
@@ -117,7 +117,7 @@ export function MeterDetail({ selectedMeter, handleDeleteMeter , fetchMeters }: 
 
       {/* Content */}
       <div className="flex-1 p-6 space-y-8 overflow-auto">
-        <MeterReadings selectedMeter={selectedMeter} />
+        <MeterReadings selectedMeter={selectedMeter} setShowReadingMeter={setShowReadingMeter} />
         <MeterDetailsSection selectedMeter={selectedMeter} />
         <MeterAutomations />
         <MeterWorkOrders selectedMeter={selectedMeter} />
@@ -162,7 +162,7 @@ export function MeterDetail({ selectedMeter, handleDeleteMeter , fetchMeters }: 
           />
         )}
       </div>
-      {isRecordModalOpen && (
+      {/* {isRecordModalOpen && (
         <RecordReadingModal
           modalRef={modalRef}
           selectedMeter={selectedMeter}
@@ -170,7 +170,7 @@ export function MeterDetail({ selectedMeter, handleDeleteMeter , fetchMeters }: 
           fetchMeters={fetchMeters}
           // onConfirm={handleRecordReadingConfirm}
         />
-      )}
+      )} */}
     </div>
   );
 }

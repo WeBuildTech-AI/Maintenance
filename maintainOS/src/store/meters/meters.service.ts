@@ -53,7 +53,7 @@ export const meterService = {
     id: string,
     data: UpdateMeterReading
   ): Promise<MeterResponse> => {
-    const res = await axios.post(`${API_URL}/meters/${id}/readings`, data);
+    const res = await api.post(`/meters/${id}/readings`, data);
     return res.data;
   },
 };

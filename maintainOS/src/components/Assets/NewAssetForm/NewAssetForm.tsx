@@ -76,11 +76,11 @@ export function NewAssetForm({
   const [criticality, setCriticality] = useState("");
   const [description, setDescription] = useState("");
   const [year, setYear] = useState("");
-  
+
   // State ko 'SelectableItem | null' banaya
   const [selectedManufacture, setSelectedManufacture] =
     useState<SelectableItem | null>(null);
-    
+
   const [selectedModel, setSelectedModel] = useState("");
   const [serialNumber, setSerialNumber] = useState("");
   const [selectedTeamInCharge, setSelectedTeamInCharge] = useState<
@@ -120,17 +120,19 @@ export function NewAssetForm({
       setSelectedLocation(assetData.location || null);
       setCriticality(assetData.criticality || "");
       setDescription(assetData.description || "");
-      
+
       // === FIX: Yeh lines missing thi ===
       // 'year' ko string mein convert kiya taaki input field mein aa sake
-      setYear(String(assetData.year || "")); 
+      setYear(String(assetData.year || ""));
       setSelectedManufacture(assetData.manufacturer || null);
-      setSelectedModel(assetData.model || ""); 
+      setSelectedModel(assetData.model || "");
       // === END FIX ===
 
       setSerialNumber(assetData.serialNumber || "");
       setSelectedTeamInCharge(assetData.teams || []);
-      setQrCode(assetData.qrCode || "");
+      setQrCode(
+        assetData?.qrCode ? assetData.qrCode.split("/").pop() || "" : ""
+      );
 
       if (assetData.assetTypes) {
         const ids = assetData.assetTypes.map((type) => type.id as number);
@@ -161,19 +163,19 @@ export function NewAssetForm({
     if (criticality) payload.criticality = criticality;
     if (description.trim()) payload.description = description;
     if (year) payload.year = year;
-    
+
     // Ab 'manufacturerId' bhej rahe hain
     if (selectedManufacture?.id) {
       // Note: Key ka naam 'manufacturerId' maana hai, aap ise apne 'CreateAssetData' ke hisaab se badal lein
-      payload.manufacturerId = selectedManufacture.id; 
+      payload.manufacturerId = selectedManufacture.id;
     }
-    
+
     if (selectedModel) payload.model = selectedModel;
     if (serialNumber.trim()) payload.serialNumber = serialNumber;
-    if (qrCode.trim()) payload.qrCode = qrCode;
+    if (qrCode.trim()) payload.qrCode = `asset/${qrCode.trim()}`;
 
     if (selectedAssetTypeIds.length > 0) {
-      payload.assetTypeIds = selectedAssetTypeIds; 
+      payload.assetTypeIds = selectedAssetTypeIds;
     }
 
     if (selectedVendorId?.id) payload.vendorId = selectedVendorId.id;
@@ -223,7 +225,7 @@ export function NewAssetForm({
           setSerialNumber("");
           setSelectedTeamInCharge([]);
           setQrCode("");
-          setSelectedAssetTypeIds([]); 
+          setSelectedAssetTypeIds([]);
           setSelectedvendorId(null);
           setSelectedParts([]);
           setSelectedParentAssets(null);
@@ -277,17 +279,17 @@ export function NewAssetForm({
           setDescription={setDescription}
         />
         <YearInput year={year} setYear={setYear} />
-        
+
         {/* === FIX: ManufacturerDropdown ko props pass kiye === */}
         <ManufacturerDropdown
           label="Manufacturer"
           value={selectedManufacture}
           onChange={setSelectedManufacture}
         />
-        
+
         {/* === FIX: ModelField ko uncomment kiya aur props pass kiye === */}
         {/* <ModelField model={selectedModel} setModel={setSelectedModel} /> */}
-        
+
         <SerialNumberInput
           serialNumber={serialNumber}
           setSerialNumber={setSerialNumber}

@@ -73,7 +73,7 @@ export function AssetStatusReadings({
     try {
       const finalStatusData = {
         ...statusData,
-        userId: user.id,
+        // userId: user.id,
       };
 
       console.log("Submitting to backend:", finalStatusData);

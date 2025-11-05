@@ -75,7 +75,7 @@ export const assetService = {
     id: string,
     data: UpdateAssetStatus
   ): Promise<AssetResponse> => {
-    const res = await axios.patch(`${API_URL}/assets/${id}/status`, data);
+    const res = await api.patch(`/assets/${id}/status`, data);
     return res.data;
   },
 };

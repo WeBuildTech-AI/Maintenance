@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { X, Camera, ChevronDown } from "lucide-react";
 import { meterService } from "../../../store/meters";
+import toast from "react-hot-toast";
 
 // Definiendo una interfaz para el objeto 'selectedMeter' para un mejor tipado
 interface Meter {
@@ -68,10 +69,12 @@ export default function RecordReadingModal({
       if (response) {
         fetchMeters();
         console.log("Reading submitted successfully:", data);
+        toast.success("Successfully Update the Meter Reading");
         onClose(); // Cerrar el modal si la solicitud fue exitosa
       } else {
         // Manejar respuestas de error del servidor
         const errorData = await response.json();
+        toast.error("Failed to updated the Meter Reading");
         console.error("Failed to submit reading:", response.status, errorData);
         setError(
           errorData.message || "Failed to submit reading. Please try again."
