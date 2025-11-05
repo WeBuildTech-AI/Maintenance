@@ -370,7 +370,7 @@ export function PurchaseOrders() {
       const payload: any = {}; // Poora payload banayein
 
       if (newPO.poNumber) payload.poNumber = newPO.poNumber;
-      if (user?.organizationId) payload.organizationId = user.organizationId;
+      // if (user?.organizationId) payload.organizationId = user.organizationId;
       if (newPO.vendorId) payload.vendorId = newPO.vendorId;
       payload.status = "pending";
 

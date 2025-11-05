@@ -214,7 +214,7 @@ export function VendorForm({
       }
     };
 
-    appendIfPresent("organizationId", user.organizationId);
+    // appendIfPresent("organizationId", user.organizationId);
     appendIfPresent("name", form.name.trim());
     appendIfPresent("description", form.description);
     appendIfPresent("color", form.color);
