@@ -117,7 +117,7 @@ export function NewMeterForm({
 
       // --- FormData Population (Ismein koi badlav nahi hai) ---
       // Mandatory Fields
-      formData.append("organizationId", user.organizationId);
+      // formData.append("organizationId", user.organizationId);
       formData.append("name", meterName);
       formData.append("measurementId", measurementUnit);
       formData.append("meterType", meterType);

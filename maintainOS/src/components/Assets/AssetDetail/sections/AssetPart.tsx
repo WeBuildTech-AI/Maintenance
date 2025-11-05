@@ -1,11 +1,5 @@
 import { MapPin } from "lucide-react";
 
-// interface AssetTypeProps {
-//   asset: {
-//     parts?: { id: string; name: string }[];
-//   };
-// }
-
 export function AssetPart({ asset }: { asset: any }) {
   return (
     <div>

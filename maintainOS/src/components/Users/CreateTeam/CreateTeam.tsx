@@ -35,7 +35,7 @@ export default function CreateTeamForm() {
     setLoading(true);
     try {
       await teamService.createTeam({
-        organizationId: user?.organizationId,
+        // organizationId: user?.organizationId,
         name: teamName,
         description,
         color: teamColor,

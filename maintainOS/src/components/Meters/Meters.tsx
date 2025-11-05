@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { MeterDetail } from "./MeterDetail/MeterDetail";
 import { MetersEmptyState } from "./MetersEmptyState";
 import { MetersHeaderComponent } from "./MetersHeader";
 import { MetersList } from "./MetersList/MetersList";
-import { mockMeters } from "./mockData";
 import { NewMeterForm } from "./NewMeterForm/NewMeterForm";
 import { MeterTable } from "./MeterTable";
 import {
@@ -18,6 +17,8 @@ import toast, { Toaster } from "react-hot-toast";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store";
 import Loader from "../Loader/Loader";
+import { ReadingHistory } from "./MeterDetail/ReadingHistory";
+import RecordReadingModal from "./MeterDetail/RecordReadingModal";
 
 export function Meters() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -28,17 +29,19 @@ export function Meters() {
   const [viewMode, setViewMode] = useState<ViewMode>("panel");
   const [meterData, setMeterData] = useState<MeterResponse[]>([]);
   const [loading, setLoading] = useState(false);
-
+  const [showReadingMeter, setShowReadingMeter] = useState(false);
+  const modalRef = React.useRef<HTMLDivElement>(null);
   const [selectedMeter, setSelectedMeter] = useState<
     (typeof meterData)[0] | null
   >(null);
+  const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [sortType, setSortType] = useState("Name"); // "Name", "Status", or "Last Reading"
   const [sortOrder, setSortOrder] = useState("asc"); // "asc" or "desc"
   const [openSection, setOpenSection] = useState("Name");
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const headerRef = useRef(null);
-  const modalRef = useRef(null);
+  // const modalRef = useRef(null);
 
   const dispatch = useDispatch<AppDispatch>();
 
@@ -205,6 +208,7 @@ export function Meters() {
                 handleShowNewMeterForm={handleShowNewMeterForm}
                 handleCreateForm={handleCreateForm}
                 handleCancelForm={handleCancelForm}
+                setShowReadingMeter={setShowReadingMeter}
               />
 
               <div className="flex-1 bg-card">
@@ -221,17 +225,36 @@ export function Meters() {
                       <Loader />
                     </div>
                   ) : selectedMeter ? (
-                    <MeterDetail
-                      selectedMeter={selectedMeter}
-                      fetchMeters={fetchMeters}
-                      handleDeleteMeter={handleDeleteMeter}
-                    />
+                    showReadingMeter === true ? (
+                      <ReadingHistory
+                        selectedMeter={selectedMeter || []}
+                        onBack={() => setShowReadingMeter(!showReadingMeter)}
+                        setIsRecordModalOpen={setIsRecordModalOpen}
+                      />
+                    ) : (
+                      <MeterDetail
+                        selectedMeter={selectedMeter}
+                        fetchMeters={fetchMeters}
+                        handleDeleteMeter={handleDeleteMeter}
+                        setShowReadingMeter={setShowReadingMeter}
+                        setIsRecordModalOpen={setIsRecordModalOpen}
+                      />
+                    )
                   ) : null
                 ) : (
                   <MetersEmptyState />
                 )}
               </div>
             </div>
+            {isRecordModalOpen && (
+              <RecordReadingModal
+                modalRef={modalRef}
+                selectedMeter={selectedMeter}
+                onClose={() => setIsRecordModalOpen(false)}
+                fetchMeters={fetchMeters}
+                // onConfirm={handleRecordReadingConfirm}
+              />
+            )}
           </>
         )}
       </div>

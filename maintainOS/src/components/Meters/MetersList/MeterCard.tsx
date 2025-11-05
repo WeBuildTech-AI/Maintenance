@@ -9,6 +9,7 @@ export function MeterCard({
   selectedMeter,
   setSelectedMeter,
   handleCancelForm,
+  setShowReadingMeter,
 }: any) {
   const renderInitials = (text: string) =>
     text
@@ -30,6 +31,7 @@ export function MeterCard({
       onClick={() => {
         setSelectedMeter(meter);
         navigate(`/meters/${meter.id}`);
+        setShowReadingMeter(false);
       }}
     >
       <CardContent className="p-4">

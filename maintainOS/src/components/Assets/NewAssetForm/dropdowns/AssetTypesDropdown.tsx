@@ -34,7 +34,7 @@ async function createAssetInAPI(assetName: string, user: any): Promise<Asset> {
 
   const payload = {
     name: assetName,
-    organizationId: user.organizationId, // ✅ correct spelling
+    // organizationId: user.organizationId, // ✅ correct spelling
   };
 
   const newAsset = await assetService.createAssetType(payload);
