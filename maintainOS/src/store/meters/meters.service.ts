@@ -4,6 +4,7 @@ import type {
   CreateMeterData,
   MeterResponse,
   UpdateMeterData,
+  UpdateMeterReading,
 } from "./meters.types";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -46,5 +47,13 @@ export const meterService = {
 
   deleteMeter: async (id: string): Promise<void> => {
     await api.delete(`/meters/${id}`);
+  },
+
+  updateMeterReading: async (
+    id: string,
+    data: UpdateMeterReading
+  ): Promise<MeterResponse> => {
+    const res = await axios.post(`${API_URL}/meters/${id}/readings`, data);
+    return res.data;
   },
 };

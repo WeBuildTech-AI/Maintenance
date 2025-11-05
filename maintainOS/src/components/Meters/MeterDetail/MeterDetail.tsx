@@ -27,7 +27,7 @@ import { useSelector } from "react-redux";
 import MeterDeleteModal from "../MeterDeleteModal";
 import RecordReadingModal from "./RecordReadingModal"; // 👈 Naya modal import karein
 
-export function MeterDetail({ selectedMeter, handleDeleteMeter }: any) {
+export function MeterDetail({ selectedMeter, handleDeleteMeter , fetchMeters }: any) {
   const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
 
@@ -165,7 +165,9 @@ export function MeterDetail({ selectedMeter, handleDeleteMeter }: any) {
       {isRecordModalOpen && (
         <RecordReadingModal
           modalRef={modalRef}
+          selectedMeter={selectedMeter}
           onClose={() => setIsRecordModalOpen(false)}
+          fetchMeters={fetchMeters}
           // onConfirm={handleRecordReadingConfirm}
         />
       )}

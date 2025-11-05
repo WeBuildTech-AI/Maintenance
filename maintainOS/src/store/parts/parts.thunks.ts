@@ -75,6 +75,20 @@ export const deletePart = createAsyncThunk(
   }
 );
 
+export const fetchPartsName = createAsyncThunk(
+  "parts/fetchParts",
+  async (_, { rejectWithValue }) => {
+    try {
+      const parts = await partService.fetchPartsName;
+      return parts;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch parts"
+      );
+    }
+  }
+);
+
 // ✅ RESTOCK PART THUNK
 // export const restockPart = createAsyncThunk(
 //   "parts/restockPart",

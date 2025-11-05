@@ -1,15 +1,21 @@
 import { ChevronDown, Search } from "lucide-react";
-import { RefObject, useEffect, useRef, useState } from "react";
+import type { RefObject, Dispatch, SetStateAction } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { vendorService, type VendorResponse } from "../../../../store/vendors";
 import Loader from "../../../Loader/Loader";
 
+interface SelectableItem {
+  id: number | string;
+  name: string;
+}
+
 interface VendorDropdownProps {
   vendorOpen: boolean;
   setVendorOpen: (open: boolean) => void;
-  vendorRef: RefObject<HTMLDivElement>;
-  selectedVendorId: string;
-  setSelectedvendorId: (val: string) => void;
+  vendorRef: RefObject<HTMLDivElement | null>;
+  selectedVendorId: SelectableItem | null;
+  setSelectedvendorId: Dispatch<SetStateAction<SelectableItem | null>>;
 }
 
 export function VendorsDropdown({

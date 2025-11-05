@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Package } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import toast from "react-hot-toast";
 
@@ -58,7 +57,8 @@ interface Asset {
 interface NewAssetFormProps {
   isEdit?: boolean;
   assetData?: Asset | null;
-  onCreate: (newAsset: Asset) => void;
+  // accept any response from API to avoid type mismatch with store types
+  onCreate: (newAsset: any) => void;
   onCancel?: () => void;
   fetchAssetsData: () => void;
 }
@@ -101,16 +101,16 @@ export function NewAssetForm({
   const [vendorOpen, setVendorOpen] = useState(false);
   const [teamOpen, setTeamsOpen] = useState(false);
   const [parentAssetOpen, setParentAssetOpen] = useState(false);
-  const [status, setStatus] = useState("online");
+  const [status] = useState("online");
 
-  const LocationRef = useRef<HTMLDivElement>(null);
-  const teamRef = useRef<HTMLDivElement>(null);
-  const partRef = useRef<HTMLDivElement>(null);
-  const vendorRef = useRef<HTMLDivElement>(null);
-  const parentAssetRef = useRef<HTMLDivElement>(null);
+  const LocationRef = useRef<HTMLDivElement | null>(null);
+  const teamRef = useRef<HTMLDivElement | null>(null);
+  const partRef = useRef<HTMLDivElement | null>(null);
+  const vendorRef = useRef<HTMLDivElement | null>(null);
+  const parentAssetRef = useRef<HTMLDivElement | null>(null);
 
   const [error, setError] = useState("");
-  const navigate = useNavigate();
+  // navigation hook not needed here because dropdowns handle their own navigation
   const user = useSelector((state: RootState) => state.auth.user);
   const dispatch = useDispatch<AppDispatch>();
 
@@ -193,7 +193,7 @@ export function NewAssetForm({
     console.log("Final Payload:", payload);
 
     if (isEdit && assetData?.id) {
-      dispatch(updateAsset({ id: assetData.id, assetData: payload }))
+      dispatch(updateAsset({ id: String(assetData.id), assetData: payload }))
         .unwrap()
         .then((res) => {
           toast.success("Successfully Updated the Asset");
@@ -262,7 +262,6 @@ export function NewAssetForm({
         <PicturesUpload />
         <FilesUpload />
         <LocationDropdown
-          naviagte={navigate}
           locationOpen={locationOpen}
           setLocationOpen={setLocationOpen}
           LocationRef={LocationRef}
@@ -294,7 +293,6 @@ export function NewAssetForm({
           setSerialNumber={setSerialNumber}
         />
         <TeamsDropdown
-          navigate={navigate}
           teamOpen={teamOpen}
           setteamsOpen={setTeamsOpen}
           teamRef={teamRef}
@@ -310,7 +308,6 @@ export function NewAssetForm({
         />
 
         <VendorsDropdown
-          navigate={navigate}
           vendorOpen={vendorOpen}
           setVendorOpen={setVendorOpen}
           vendorRef={vendorRef}
@@ -318,7 +315,6 @@ export function NewAssetForm({
           setSelectedvendorId={setSelectedvendorId}
         />
         <PartsDropdown
-          navigate={navigate}
           partOpen={partOpen}
           setPartOpen={setPartOpen}
           partRef={partRef}
@@ -326,7 +322,6 @@ export function NewAssetForm({
           setSelectedParts={setSelectedParts}
         />
         <ParentAssetDropdown
-          navigate={navigate}
           parentAssetOpen={parentAssetOpen}
           setParentAssetOpen={setParentAssetOpen}
           parentAssetRef={parentAssetRef}

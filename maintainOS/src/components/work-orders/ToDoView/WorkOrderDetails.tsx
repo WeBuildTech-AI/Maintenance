@@ -95,13 +95,33 @@ export function WorkOrderDetails({
 
   // ✅ Conditional rendering for subpanels
   if (activePanel === "parts") {
-    return <UpdatePartsPanel onCancel={() => setActivePanel("details")} />;
+    return (
+      <UpdatePartsPanel
+        onCancel={() => setActivePanel("details")}
+        workOrderId={selectedWorkOrder?.id} // ✅ pass ID
+        selectedWorkOrder={selectedWorkOrder} // optional full object
+      />
+    );
   }
+
   if (activePanel === "time") {
-    return <TimeOverviewPanel onCancel={() => setActivePanel("details")} />;
+    return (
+      <TimeOverviewPanel
+        onCancel={() => setActivePanel("details")}
+        workOrderId={selectedWorkOrder?.id} // ✅ pass ID
+        selectedWorkOrder={selectedWorkOrder}
+      />
+    );
   }
+
   if (activePanel === "cost") {
-    return <OtherCostsPanel onCancel={() => setActivePanel("details")} />;
+    return (
+      <OtherCostsPanel
+        onCancel={() => setActivePanel("details")}
+        workOrderId={selectedWorkOrder?.id} // ✅ pass ID
+        selectedWorkOrder={selectedWorkOrder}
+      />
+    );
   }
 
   return (
@@ -250,11 +270,10 @@ export function WorkOrderDetails({
                     onClick={() => setActiveStatus(key)}
                     aria-pressed={active}
                     disabled={isDeleting}
-                    className={`h-16 w-20 rounded-lg border shadow-md inline-flex flex-col items-center justify-center gap-2 transition-all outline-none focus-visible:ring-[3px] focus-visible:border-ring ${
-                      active
+                    className={`h-16 w-20 rounded-lg border shadow-md inline-flex flex-col items-center justify-center gap-2 transition-all outline-none focus-visible:ring-[3px] focus-visible:border-ring ${active
                         ? "bg-orange-600 text-white border-orange-600"
                         : "bg-orange-50 text-sidebar-foreground border-gray-200 hover:bg-orange-100"
-                    }`}
+                      }`}
                   >
                     <Icon className="h-4 w-4" />
                     <span className="text-xs font-medium leading-none text-center px-2 truncate">
@@ -380,29 +399,74 @@ export function WorkOrderDetails({
         {/* TIME & COST TRACKING */}
         <div className="border-t p-6">
           <h3 className="text-2xl font-medium mb-2">Time & Cost Tracking</h3>
-          {["Parts", "Time", "Other Costs"].map((label) => (
-            <div
-              key={label}
-              className="flex justify-between items-center p-3 mb-2 border-b last:border-none"
-            >
-              <span className="text-sm font-medium ">{label}</span>
-              <button
-                className="flex text-sm text-muted-foreground items-center gap-1"
-                onClick={() =>
-                  setActivePanel(
-                    label === "Parts"
-                      ? "parts"
-                      : label === "Time"
-                      ? "time"
-                      : "cost"
-                  )
-                }
+          {["Parts", "Time", "Other Costs"].map((label) => {
+            const isOtherCosts = label === "Other Costs";
+            const otherCosts = selectedWorkOrder?.otherCosts || [];
+            const totalEntries = otherCosts.length;
+            const totalAmount = otherCosts.reduce(
+              (sum, c) => sum + (Number(c.amount ?? c.cost ?? 0) || 0),
+              0
+            );
+
+            return (
+              <div
+                key={label}
+                className="flex justify-between items-center p-3 mb-2 border-b last:border-none"
               >
-                Add
-                <ChevronRight className="h-4 w-4 font-muted-foreground" />
-              </button>
-            </div>
-          ))}
+                <span className="text-sm font-medium">{label}</span>
+
+                {/* --- Regular Add Button --- */}
+                {!isOtherCosts || totalEntries === 0 ? (
+                  <button
+                    className="flex text-sm text-muted-foreground items-center gap-1"
+                    onClick={() =>
+                      setActivePanel(
+                        label === "Parts"
+                          ? "parts"
+                          : label === "Time"
+                            ? "time"
+                            : "cost"
+                      )
+                    }
+                  >
+                    Add
+                    <ChevronRight className="h-4 w-4 font-muted-foreground" />
+                  </button>
+                ) : (
+                  /* --- When Other Costs have data --- */
+                  <div className="flex flex-col items-end justify-end leading-tight">
+                    <div className="flex items-end gap-1">
+                      <button
+                        className="flex items-end text-blue-600 text-sm font-medium gap-1"
+                        onClick={() => setActivePanel("cost")}
+                      >
+                        <span className="relative" style={{ top: "1px" }}>
+                          {totalEntries} entries
+                        </span>
+                        <ChevronRight
+                          className="h-4 w-4 text-blue-600"
+                          style={{
+                            position: "relative",
+                            top: "2px",
+                            marginLeft: "4px",
+                          }}
+                        />
+                      </button>
+                    </div>
+                    <p
+                      className="text-sm font-semibold text-gray-900"
+                      style={{
+                        lineHeight: "1.1",
+                        marginTop: "5px",
+                      }}
+                    >
+                      ${totalAmount.toFixed(2)}
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* CREATED / UPDATED */}

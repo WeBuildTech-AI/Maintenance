@@ -125,7 +125,7 @@ export default function App() {
             <Route path="/messages/new" element={<Messages />} />
             <Route path="/categories" element={<Categories />} />
             <Route path="/inventory/*" element={<Inventory />} />
-            <Route path="/library" element={<Library />} />
+            <Route path="/library/*" element={<Library />} />
             <Route path="/vendors/*" element={<Vendors />} />
             <Route path="/meters/*" element={<Meters />} />
             <Route path="/automations" element={<Automations />} />

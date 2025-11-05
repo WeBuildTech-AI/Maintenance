@@ -194,8 +194,21 @@ export function NewWorkOrderForm({
       if (isoDue) formData.append("dueDate", isoDue);
       if (isoStart) formData.append("startDate", isoStart);
 
+      // ✅ Use Redux user ID as authorId
+      const authorId = authUser?.id;
+      if (!authorId) {
+        toast.error("User information missing. Please re-login.");
+        return;
+      }
+
       if (isEditMode && id) {
-        await (dispatch as any)(updateWorkOrder({ id, data: formData as any })).unwrap();
+        await (dispatch as any)(
+          updateWorkOrder({
+            id,
+            authorId, // 👈 added for PATCH /{id}/{authorId}
+            data: formData as any,
+          })
+        ).unwrap();
         toast.success("✅ Work order updated successfully");
       } else {
         await (dispatch as any)(createWorkOrder(formData as any)).unwrap();

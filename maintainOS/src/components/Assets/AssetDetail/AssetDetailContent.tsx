@@ -11,33 +11,56 @@ import { AssetStatusReadings } from "./sections/AssetStatusReadings";
 import { AssetSubAssets } from "./sections/AssetSubAssets";
 import { AssetVendor } from "./sections/AssetVendor";
 import { AssetType } from "./sections/AssetType";
+import { AssetPart } from "./sections/AssetPart";
+import { AssetTeams } from "./sections/AssetTeams";
 // import { AssetWorkOrders } from "./sections/AssetWorkOrders";
 
-export function AssetDetailContent(
-  { asset }: { asset: any },
-  allLocationData?: { name: string }[]
-) {
-  console.log("AssetDetailContent - allLocationData:", allLocationData);
+// You should import this interface from a shared types file
+// or from your main Assets.tsx component if you export it there.
+interface Asset {
+  id: number | string;
+  name: string;
+  updatedAt: string;
+  createdAt: string;
+  location: {
+    id: number | string;
+    name: string;
+  };
+  // ... any other properties your asset has
+}
+
+interface AssetDetailContentProps {
+  asset: Asset; // Use your specific Asset type
+  fetchAssetsData: () => void;
+  setSeeMoreAssetStatus: boolean;
+}
+
+export function AssetDetailContent({
+  asset,
+  fetchAssetsData,
+  setSeeMoreAssetStatus,
+}: AssetDetailContentProps) {
   return (
     <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-6">
-      <AssetStatusReadings asset={asset} />
-      {/* <AssetStatus asset={asset} /> */}
+      {/* 3. Now the prop can be passed down successfully */}
+      <AssetStatusReadings
+        asset={asset}
+        fetchAssetsData={fetchAssetsData}
+        setSeeMoreAssetStatus={setSeeMoreAssetStatus}
+      />
+
       <AssetLocation asset={asset} />
       <AssetCriticality asset={asset} />
       <AssetManufacturer asset={asset} />
-      {/* <div className="pt-4"> */}
-      {/* Use in New Work Order button already inside AssetStatusReadings (centered one) - preserved below as in original */}
-      {/* </div> */}
-
-      {/* <AssetModel asset={asset} /> */}
       <AssetDescription asset={asset} />
       <AssetQrCode asset={asset} />
+      <AssetTeams asset={asset}/>
       <AssetType asset={asset} />
       <AssetSubAssets />
       <AssetVendor asset={asset} />
+      <AssetPart asset={asset} />
       <AssetAutomations />
       <AssetCreatedUpdated asset={asset} />
-      {/* <AssetWorkOrders /> */}
     </div>
   );
 }

@@ -29,7 +29,7 @@ export function AssetTable({
                 <th className="w-[14%] px-4 py-3 text-left">Location</th>
                 <th className="w-[12%] px-4 py-3 text-left">Criticality</th>
                 <th className="w-[12%] px-4 py-3 text-left">Manufacturer</th>
-                <th className="w-[12%] px-4 py-3 text-left">Model</th>
+                <th className="w-[12%] px-4 py-3 text-left">Asset Type</th>
               </tr>
             </thead>
             <tbody>
@@ -48,7 +48,9 @@ export function AssetTable({
                           {asset.icon || renderInitials(asset.name)}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="font-medium">{asset.name}</span>
+                      {asset.name && (
+                        <span className="font-medium">{asset.name}</span>
+                      )}
                     </div>
                   </td>
 
@@ -58,20 +60,20 @@ export function AssetTable({
                   </td>
 
                   {/* Status */}
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium ${
-                        asset.status
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
-                    >
+                  <td className="px-4 py-3 capitalize text-muted-foreground">
+                    <span className="flex items-center gap-2">
                       <span
-                        className={`h-2 w-2 rounded-full ${
-                          asset.status ? "bg-green-500" : "bg-red-500"
+                        className={`h-1 w-2 rounded-full ${
+                          asset.status === "online"
+                            ? "bg-green-500"
+                            : asset.status === "offline"
+                            ? "bg-red-500"
+                            : asset.status === "doNotTrack"
+                            ? "bg-yellow-500"
+                            : "bg-gray-300"
                         }`}
-                      />
-                      {asset.status ?? "—"}
+                      ></span>
+                      {(asset.status && asset.status) ?? "—"}
                     </span>
                   </td>
 
@@ -81,18 +83,29 @@ export function AssetTable({
                   </td>
 
                   {/* Criticality */}
-                  <td className="px-4 py-3 cursor-pointer text-muted-foreground">
+                  <td className="px-4 py-3 cursor-pointer capitalize text-muted-foreground">
                     {asset.criticality || "-"}
                   </td>
 
                   {/* Manufacturer */}
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {asset.manufacturer || "-"}
+                  <td className="px-4 py-3 text-muted-foreground cursor-capitalize">
+                    {(asset.manufacturer && asset.manufacturer.name) || "-"}
                   </td>
 
-                  {/* Model */}
+                  {/* Asset Type */}
                   <td className="px-4 py-3 text-muted-foreground">
-                    {asset.model || "-"}
+                    {asset.assetTypes?.length > 0 ? (
+                      <>
+                        {asset.assetTypes[0]?.name}
+                        {asset.assetTypes.length > 1 && (
+                          <span className="text-gray-500 ml-1">
+                            +{asset.assetTypes.length - 1}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      "-"
+                    )}
                   </td>
                 </tr>
               ))}

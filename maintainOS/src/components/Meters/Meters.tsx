@@ -17,6 +17,7 @@ import { useNavigate, useMatch } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store";
+import Loader from "../Loader/Loader";
 
 export function Meters() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -80,11 +81,18 @@ export function Meters() {
     setLoading(true);
     try {
       const res = await meterService.fetchMeters(10, 1, 0);
+
       const sortedData = [...res].sort(
         (a, b) =>
           new Date(b.updatedAt).valueOf() - new Date(a.updatedAt).valueOf()
       );
+
       setMeterData(sortedData);
+
+      // ✅ Only set selectedMeter AFTER data is fetched successfully
+      if (sortedData.length > 0) {
+        setSelectedMeter(sortedData[0]); // or whatever default you want
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -208,10 +216,17 @@ export function Meters() {
                     editingMeter={meterToEdit}
                   />
                 ) : selectedMeter ? (
-                  <MeterDetail
-                    selectedMeter={selectedMeter}
-                    handleDeleteMeter={handleDeleteMeter}
-                  />
+                  loading ? (
+                    <div className="flex justify-center item-center h-full">
+                      <Loader />
+                    </div>
+                  ) : selectedMeter ? (
+                    <MeterDetail
+                      selectedMeter={selectedMeter}
+                      fetchMeters={fetchMeters}
+                      handleDeleteMeter={handleDeleteMeter}
+                    />
+                  ) : null
                 ) : (
                   <MetersEmptyState />
                 )}

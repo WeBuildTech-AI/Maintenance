@@ -32,6 +32,13 @@ export const partService = {
     await api.delete(`/parts/${id}`);
   },
 
+  fetchPartsName: async (): Promise<PartResponse[]> => {
+    const res = await api.get(`/parts/summary`, {
+      headers: { Accept: "application/json" },
+    });
+    return res.data;
+  },
+
   // RESTOCK API THUNKS BELOW
 
   // ✅ RESTOCK PART - ID goes in URL
@@ -67,20 +74,20 @@ export const partService = {
       formData.append("restockImages", JSON.stringify(payload.restockImages));
     }
 
-    const res = await axios.post(
-      `${API_URL}/parts/${partId}/restock`,
+    const res = await api.post(
+      `/parts/${partId}/restock`,
       formData
     );
     return res.data;
   },
 
   getAllRestockLogs: async (partId: string): Promise<PartRestockLog[]> => {
-    const res = await axios.get(`${API_URL}/parts/${partId}/restock-logs`);
+    const res = await api.get(`/parts/${partId}/restock-logs`);
     return res.data;
   },
 
   getRestockLogById: async (logId: string): Promise<PartRestockLog> => {
-    const res = await axios.get(`${API_URL}/parts/restock-logs/${logId}`);
+    const res = await api.get(`/parts/restock-logs/${logId}`);
     return res.data;
   },
 };

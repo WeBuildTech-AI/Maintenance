@@ -1,25 +1,91 @@
 import { useState } from "react";
 import { X, Camera, ChevronDown } from "lucide-react";
+import { meterService } from "../../../store/meters";
+
+// Definiendo una interfaz para el objeto 'selectedMeter' para un mejor tipado
+interface Meter {
+  id: string; // Se usará para meterId
+  measurement: {
+    name: string; // p.ej., "Kilometers"
+  };
+  lastReading?: {
+    // Para el placeholder dinámico
+    value: number;
+  };
+}
 
 interface RecordReadingModalProps {
   modalRef: React.RefObject<HTMLDivElement>;
   onClose: () => void;
-  //   onConfirm: (readingData: { value: string; date: string }) => void;
+  selectedMeter: Meter; // Tipo corregido de '() => void' a 'Meter'
+  // onConfirm: (readingData: { value: string; date: string }) => void;
+  fetchMeters: () => void;
 }
 
 export default function RecordReadingModal({
-  //   onConfirm,
+  // onConfirm,
   modalRef,
   onClose,
+  selectedMeter,
+  fetchMeters,
 }: RecordReadingModalProps) {
   const [meterValue, setMeterValue] = useState("");
-  const [unit, setUnit] = useState("Kilometers");
+  const [unit, setUnit] = useState(selectedMeter.measurement.name); // Inicializar con la unidad del medidor
   const [showUnitDropdown, setShowUnitDropdown] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // Estado de carga
+  const [error, setError] = useState<string | null>(null); // Estado de error
 
   const units = ["Kilometers", "Meters", "Miles", "Liters", "Cubic Meters"];
 
-  const handleSubmit = () => {
-    console.log("Submitting:", { meterValue, unit });
+  // Placeholder dinámico
+  const lastReadingValue = selectedMeter.lastReading?.value;
+  const placeholderText = lastReadingValue
+    ? `Last Reading: ${lastReadingValue} ${selectedMeter.measurement.name}`
+    : "Enter new reading";
+
+  const handleSubmit = async () => {
+    // Validar que los datos necesarios estén presentes
+    if (!meterValue || !selectedMeter?.id) {
+      setError("Meter value and ID are required.");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null); // Limpiar errores previos
+
+    // Crear el payload que quieres enviar
+    const data = {
+      value: parseFloat(meterValue), // Convertir el valor del input (string) a número
+      meterId: selectedMeter.id, // Usar el ID del medidor seleccionado
+    };
+
+    try {
+      const response = await meterService.updateMeterReading(
+        selectedMeter.id,
+        data
+      );
+
+      if (response) {
+        fetchMeters();
+        console.log("Reading submitted successfully:", data);
+        onClose(); // Cerrar el modal si la solicitud fue exitosa
+      } else {
+        // Manejar respuestas de error del servidor
+        const errorData = await response.json();
+        console.error("Failed to submit reading:", response.status, errorData);
+        setError(
+          errorData.message || "Failed to submit reading. Please try again."
+        );
+      }
+    } catch (err) {
+      // Manejar errores de red
+      console.error("Network error:", err);
+      setError(
+        "A network error occurred. Please check your connection and try again."
+      );
+    } finally {
+      setIsLoading(false); // Re-habilitar el botón
+    }
   };
 
   return (
@@ -50,7 +116,7 @@ export default function RecordReadingModal({
           <div className="relative flex items-center border-2 border-blue-500 rounded-md overflow-hidden mb-6">
             <input
               type="number"
-              placeholder="Last Reading: 23 Kilometers"
+              placeholder={placeholderText}
               value={meterValue}
               onChange={(e) => setMeterValue(e.target.value)}
               className="flex-1 px-3 py-2 outline-none text-gray-700 placeholder-gray-400"
@@ -62,7 +128,7 @@ export default function RecordReadingModal({
                 onClick={() => setShowUnitDropdown(!showUnitDropdown)}
                 className="flex items-center gap-2 px-4 py-3 text-gray-700 hover:bg-gray-50 border-l border-gray-300"
               >
-                {unit}
+                {unit} {/* Mostrar la unidad seleccionada del estado */}
                 <ChevronDown size={16} className="text-gray-500" />
               </button>
 
@@ -72,7 +138,7 @@ export default function RecordReadingModal({
                     <button
                       key={u}
                       onClick={() => {
-                        setUnit(u);
+                        setUnit(u); // Actualizar la unidad seleccionada
                         setShowUnitDropdown(false);
                       }}
                       className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700"
@@ -86,16 +152,22 @@ export default function RecordReadingModal({
           </div>
 
           {/* Add Pictures/Files */}
-          <div className="border-2 border-dashed border-orange-600 rounded-md p-6 flex flex-col items-center justify-center bg-blue-50 bg-opacity-30">
+          <div className="border-2 border-dashed border-orange-600 rounded-md p-6 flex flex-col items-center justify-center bg-blue-50/30">
+            {" "}
+            {/* Corregido bg-opacity */}
             <div className="mb-3">
               <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
-                <Camera size={24} className="text-orange-600" />
+                <Camera size={24} className="text-white" />{" "}
+                {/* Cambiado a blanco para contraste */}
               </div>
             </div>
             <button className="text-orange-600 font-medium text-sm">
               Add Pictures/Files
             </button>
           </div>
+
+          {/* Mensaje de Error */}
+          {error && <p className="text-red-600 text-sm mt-4">{error}</p>}
         </div>
 
         {/* Footer */}
@@ -103,15 +175,16 @@ export default function RecordReadingModal({
           <button
             onClick={onClose}
             className="px-6 py-2 cursor-pointer text-orange-600 font-medium transition-colors"
+            disabled={isLoading} // Deshabilitar mientras carga
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
-            className="px-6 py-2 bg-orange-600 cursor-pointer text-black rounded-md hover:bg-gray-400 font-medium transition-colors disabled:opacity-50"
-            disabled={!meterValue}
+            className="px-6 py-2 bg-orange-600 cursor-pointer text-black rounded-md hover:bg-gray-400 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!meterValue || isLoading} // Deshabilitar si no hay valor o si está cargando
           >
-            Submit
+            {isLoading ? "Submitting..." : "Submit"}
           </button>
         </div>
       </div>

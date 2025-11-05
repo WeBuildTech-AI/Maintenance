@@ -5,6 +5,9 @@ import type {
   CreateWorkOrderData,
   UpdateWorkOrderData,
   WorkOrderResponse,
+  CreateOtherCostData,
+  CreateTimeEntryData, // ✅ added
+  WorkOrderTimeEntry, // ✅ added
 } from "./workOrders.types";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -17,7 +20,7 @@ export const workOrderService = {
     return res.data;
   },
 
-  // ✅ Fetch single (old route)
+  // ✅ Fetch by id (old route)
   fetchWorkOrderById: async (id: string): Promise<WorkOrderResponse> => {
     const res = await api.get(`/work-orders/${id}`);
     return res.data;
@@ -33,9 +36,10 @@ export const workOrderService = {
     return res.data;
   },
 
-  // ✅ Update (new route — only PATCH uses /api/v1)
+  // ✅ Update (NEW route using authorId)
   updateWorkOrder: async (
     id: string,
+    authorId: string,
     data: UpdateWorkOrderData
   ): Promise<WorkOrderResponse> => {
     const res = await api.request({
@@ -64,8 +68,8 @@ export const workOrderService = {
     return res.data;
   },
 
-  // ✅ Comment (old route)
-  addComment: async (
+  // ✅ Add comment (old route)
+  addWorkOrderComment: async (
     id: string,
     data: AddWorkOrderCommentData
   ): Promise<WorkOrderResponse> => {
@@ -82,6 +86,36 @@ export const workOrderService = {
   // ✅ Mark in progress (old route)
   markInProgress: async (id: string): Promise<WorkOrderResponse> => {
     const res = await api.post(`/work-orders/${id}/in-progress`);
+    return res.data;
+  },
+
+  // ✅ Other Costs — Add
+  addOtherCost: async (id: string, data: CreateOtherCostData) => {
+    const res = await api.post(`/work-orders/${id}/other-costs`, data);
+    return res.data;
+  },
+
+  // ✅ Other Costs — Delete
+  deleteOtherCost: async (id: string, costId: string) => {
+    const res = await api.delete(`/work-orders/${id}/other-costs/${costId}`);
+    return res.data;
+  },
+
+  // ✅ TIME TRACKING — Add entry
+  addTimeEntry: async (
+    id: string,
+    data: CreateTimeEntryData
+  ): Promise<WorkOrderTimeEntry> => {
+    const res = await api.post(`/work-orders/${id}/time`, data);
+    return res.data;
+  },
+
+  // ✅ TIME TRACKING — Delete entry
+  deleteTimeEntry: async (
+    id: string,
+    entryId: string
+  ): Promise<{ success: boolean }> => {
+    const res = await api.delete(`/work-orders/${id}/time/${entryId}`);
     return res.data;
   },
 };

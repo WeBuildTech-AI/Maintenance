@@ -5,6 +5,7 @@ import type {
   AssetResponse,
   CreateAssetData,
   UpdateAssetData,
+  UpdateAssetStatus,
 } from "./assets.types";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -67,6 +68,14 @@ export const assetService = {
     data: CreateAssetData
   ): Promise<AssetResponse> => {
     const res = await api.post(`/assets/manufacturer`, data);
+    return res.data;
+  },
+
+  updateAssetStatus: async (
+    id: string,
+    data: UpdateAssetStatus
+  ): Promise<AssetResponse> => {
+    const res = await axios.patch(`${API_URL}/assets/${id}/status`, data);
     return res.data;
   },
 };

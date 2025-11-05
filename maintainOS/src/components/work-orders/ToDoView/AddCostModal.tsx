@@ -4,116 +4,105 @@ import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { DynamicSelect } from "../NewWorkOrderForm/DynamicSelect";
 
-type AddTimeModalProps = {
+type AddCostModalProps = {
   onClose: () => void;
-  onAdd?: (time: any) => void;
-  onUpdate?: (time: any) => void;
-  onDelete?: (id: string) => void;
+  onAdd?: (cost: any) => void;            // create flow
+  onUpdate?: (cost: any) => void;         // edit flow
+  onDelete?: (id: string) => void;        // delete flow
   workOrderId?: string;
   selectedWorkOrder?: any;
-  initialTime?: any | null;
+  initialCost?: any | null;               // if present => edit mode
 };
 
-export default function AddTimeModal({
+export default function AddCostModal({
   onClose,
   onAdd,
   onUpdate,
   onDelete,
   workOrderId,
   selectedWorkOrder,
-  initialTime = null,
-}: AddTimeModalProps) {
-  const isEdit = !!initialTime;
+  initialCost = null,
+}: AddCostModalProps) {
+  const isEdit = !!initialCost;
 
   const [form, setForm] = useState({
-    userId: initialTime?.userId || initialTime?.user?.id || "",
+    userId: initialCost?.userId || "",
     userName:
-      initialTime?.user?.fullName ||
-      initialTime?.userName ||
+      initialCost?.user?.fullName ||
+      initialCost?.userName ||
       (selectedWorkOrder?.assignees?.[0]?.fullName ?? ""),
-    hours:
-      typeof initialTime?.hours !== "undefined"
-        ? String(initialTime.hours)
+    amount:
+      typeof initialCost?.amount !== "undefined"
+        ? String(initialCost?.amount)
         : "",
-    minutes:
-      typeof initialTime?.minutes !== "undefined"
-        ? String(initialTime.minutes)
-        : "",
-    entryType:
-      (initialTime?.entryType &&
-        (initialTime.entryType[0].toUpperCase() + initialTime.entryType.slice(1))) ||
-      "Work",
-    rate:
-      typeof initialTime?.rate !== "undefined"
-        ? String(initialTime.rate)
-        : "",
+    description: initialCost?.description || "",
+    category:
+      (initialCost?.category &&
+        (initialCost.category[0].toUpperCase() +
+          initialCost.category.slice(1))) ||
+      "Labor",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
-  // ✅ Dropdown options (same as AddCostModal)
+  // Users/Assignees for dropdown (keep it simple & flat to preserve design)
   const userOptions = useMemo(() => {
     const opts =
       selectedWorkOrder?.assignees?.map((a: any) => ({
         id: a.id,
         name: a.fullName,
       })) || [];
-
-    if (initialTime?.userId && !opts.some((o: any) => o.id === initialTime.userId)) {
+    // Ensure currently selected (for edit) exists even if not in assignees
+    if (
+      initialCost?.userId &&
+      !opts.some((o: any) => o.id === initialCost.userId)
+    ) {
       opts.unshift({
-        id: initialTime.userId,
+        id: initialCost.userId,
         name:
-          initialTime?.user?.fullName ||
-          initialTime?.userName ||
+          initialCost?.user?.fullName ||
+          initialCost?.userName ||
           "Unknown User",
       });
     }
     return opts.length ? opts : [{ id: "unknown", name: "Unknown User" }];
-  }, [selectedWorkOrder, initialTime]);
+  }, [selectedWorkOrder, initialCost]);
 
-  const typeOptions = [
-    { id: "Work", name: "Work" },
-    { id: "Travel", name: "Travel" },
-    { id: "Meeting", name: "Meeting" },
+  const categoryOptions = [
+    { id: "Labor", name: "Labor" },
+    { id: "Material", name: "Material" },
+    { id: "Equipment", name: "Equipment" },
+    { id: "Other", name: "Other" },
   ];
 
   useEffect(() => {
+    // Try to default user if empty
     if (!form.userId && userOptions.length) {
-      setForm((f) => ({
-        ...f,
-        userId: userOptions[0].id,
-        userName: userOptions[0].name,
-      }));
+      setForm((f) => ({ ...f, userId: userOptions[0].id, userName: userOptions[0].name }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userOptions.length]);
 
-  // ✅ Add / Update
   const handlePrimary = async () => {
-    if (!form.userId) {
-      alert("Please select a user");
+    if (!form.amount || Number(form.amount) <= 0) {
+      alert("Please enter a valid amount");
       return;
     }
-
-    const totalMinutes =
-      Number(form.hours || 0) * 60 + Number(form.minutes || 0);
-    if (totalMinutes <= 0) {
-      alert("Please enter valid hours or minutes");
+    if (!form.userId) {
+      alert("Please select a user");
       return;
     }
 
     setIsSubmitting(true);
     try {
       const payload = {
-        id: initialTime?.id,
+        id: initialCost?.id, // present only in edit
         userId: form.userId,
-        totalMinutes,
-        hours: Number(form.hours || 0),
-        minutes: Number(form.minutes || 0),
-        entryType: form.entryType.toLowerCase(),
-        rate: Number(form.rate || 0),
-        createdAt: initialTime?.createdAt || new Date().toISOString(),
+        amount: Number(form.amount),
+        description: form.description?.trim() || "",
+        category: form.category?.toLowerCase(),
+        createdAt: initialCost?.createdAt || new Date().toISOString(),
         user: { id: form.userId, fullName: form.userName || "Unknown User" },
       };
 
@@ -131,11 +120,10 @@ export default function AddTimeModal({
     }
   };
 
-  // ✅ Delete
   const handleDelete = () => {
-    if (!initialTime?.id) return;
-    if (confirm("Delete this time entry? This cannot be undone.")) {
-      onDelete?.(initialTime.id);
+    if (!initialCost?.id) return;
+    if (confirm("Delete this cost entry? This cannot be undone.")) {
+      onDelete?.(initialCost.id);
       onClose();
     }
   };
@@ -154,7 +142,7 @@ export default function AddTimeModal({
         {/* Header */}
         <div className="flex items-center justify-between bg-blue-600 text-white px-6 py-3 rounded-t-md">
           <h2 className="text-base font-semibold">
-            {isEdit ? "Edit Time Entry" : "Add Time"}
+            {isEdit ? "Edit Cost" : "Add Cost"}
           </h2>
           <button
             onClick={onClose}
@@ -166,7 +154,7 @@ export default function AddTimeModal({
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* User Dropdown */}
+          {/* User */}
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-1">
               User
@@ -190,65 +178,55 @@ export default function AddTimeModal({
             />
           </div>
 
-          {/* Hours & Minutes */}
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="text-sm font-medium text-gray-700 block mb-1">
-                Hours
-              </label>
-              <input
-                type="number"
-                value={form.hours}
-                onChange={(e) => setForm({ ...form, hours: e.target.value })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm outline-none focus-visible:border-blue-400 transition"
-              />
-            </div>
-            <div className="flex-1">
-              <label className="text-sm font-medium text-gray-700 block mb-1">
-                Minutes
-              </label>
-              <input
-                type="number"
-                value={form.minutes}
-                onChange={(e) => setForm({ ...form, minutes: e.target.value })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm outline-none focus-visible:border-blue-400 transition"
-              />
-            </div>
-          </div>
-
-          {/* Entry Type Dropdown */}
+          {/* Amount */}
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-1">
-              Entry Type
-            </label>
-            <DynamicSelect
-              options={typeOptions}
-              value={form.entryType}
-              onSelect={(val) => setForm({ ...form, entryType: val as string })}
-              onFetch={() => {}}
-              loading={false}
-              placeholder="Select Entry Type"
-              name="entryType"
-              activeDropdown={activeDropdown}
-              setActiveDropdown={setActiveDropdown}
-            />
-          </div>
-
-          {/* Rate */}
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">
-              Hourly Rate (Optional)
+              Amount
             </label>
             <div className="flex items-center border border-gray-300 rounded-md px-3">
               <span className="text-gray-500 mr-2">$</span>
               <input
                 type="number"
-                value={form.rate}
-                onChange={(e) => setForm({ ...form, rate: e.target.value })}
+                value={form.amount}
+                onChange={(e) => setForm({ ...form, amount: e.target.value })}
                 className="flex-1 py-2 text-sm outline-none bg-transparent"
                 placeholder="0.00"
               />
             </div>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1">
+              Description (Optional)
+            </label>
+            <textarea
+              value={form.description}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
+              placeholder="Add a description"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm resize-none outline-none focus-visible:border-blue-400 transition"
+              rows={3}
+            />
+          </div>
+
+          {/* Category */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1">
+              Cost Category
+            </label>
+            <DynamicSelect
+              options={categoryOptions}
+              value={form.category}
+              onSelect={(val) => setForm({ ...form, category: val as string })}
+              onFetch={() => {}}
+              loading={false}
+              placeholder="Select Category"
+              name="category"
+              activeDropdown={activeDropdown}
+              setActiveDropdown={setActiveDropdown}
+            />
           </div>
         </div>
 
@@ -281,13 +259,7 @@ export default function AddTimeModal({
                   : "bg-blue-600 hover:bg-blue-700"
               }`}
             >
-              {isSubmitting
-                ? isEdit
-                  ? "Updating..."
-                  : "Adding..."
-                : isEdit
-                ? "Update"
-                : "Add"}
+              {isSubmitting ? (isEdit ? "Updating..." : "Adding...") : isEdit ? "Update" : "Add"}
             </button>
           </div>
         </div>
