@@ -1,5 +1,5 @@
 import axios from "axios";
-
+import api from "../auth/auth.service"; 
 import type { LocationResponse } from "./locations.types";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -8,9 +8,9 @@ export const locationService = {
   fetchLocations: async (
     limit: number,
     page: number,
-    offset: number
+    offset: number 
   ): Promise<LocationResponse[]> => {
-    const res = await axios.get(`${API_URL}/locations`, {
+    const res = await api.get("/locations", {
       params: { limit, page, offset },
       headers: { Accept: "application/json" },
     });
@@ -18,18 +18,18 @@ export const locationService = {
     return res.data;
   },
   fetchLocationsName: async (): Promise<LocationResponse[]> => {
-    const res = await axios.get(`${API_URL}/locations/summary`);
+    const res = await api.get("/locations/summary");
 
     return res.data;
   },
 
   fetchLocationById: async (id: string): Promise<LocationResponse> => {
-    const res = await axios.get(`${API_URL}/locations/${id}`);
+    const res = await api.get(`/locations/${id}`);
     return res.data;
   },
 
   createLocation: async (data: FormData): Promise<LocationResponse> => {
-    const res = await axios.post(`${API_URL}/locations`, data);
+    const res = await api.post("/locations", data);
     return res.data;
   },
 
@@ -37,11 +37,11 @@ export const locationService = {
     id: string,
     data: FormData
   ): Promise<LocationResponse> => {
-    const res = await axios.patch(`${API_URL}/locations/${id}`, data);
+    const res = await api.patch(`/locations/${id}`, data);
     return res.data;
   },
 
   deleteLocation: async (id: string): Promise<void> => {
-    await axios.delete(`${API_URL}/locations/${id}`);
+    await api.delete(`/locations/${id}`);
   },
 };

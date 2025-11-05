@@ -8,11 +8,12 @@ import type {
 } from "./workOrders.types";
 
 const API_URL = import.meta.env.VITE_API_URL;
+import api from "../auth/auth.service"; 
 
 export const workOrderService = {
   // ✅ Fetch all (old route)
   fetchWorkOrders: async (): Promise<WorkOrderResponse[]> => {
-    const res = await axios.get(`${API_URL}/work-orders`);
+    const res = await api.get("/work-orders");
     return res.data;
   },
 
