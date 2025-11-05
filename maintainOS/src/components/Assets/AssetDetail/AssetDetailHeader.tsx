@@ -12,11 +12,8 @@ import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../../store";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-<<<<<<< Updated upstream
 import React, { useState } from "react";
 import DeleteAssetModal from "./DeleteAssetModal";
-=======
->>>>>>> Stashed changes
 
 // Define a type for the asset object for type safety
 interface Asset {
@@ -39,14 +36,9 @@ export function AssetDetailHeader({
   onEdit,
   onDelete,
 }: AssetDetailHeaderProps) {
-<<<<<<< Updated upstream
   const navigate = useNavigate();
   const [openAssetDeleteModal, setOpenAssetDeleteModal] = useState(false);
   const modalRef = React.useRef<HTMLDivElement>(null);
-=======
-  
-  const navigate = useNavigate();
->>>>>>> Stashed changes
   return (
     <div className="p-6 border-b border-border flex-shrink-0">
       <div className="flex items-center justify-between mb-6">
@@ -77,11 +69,7 @@ export function AssetDetailHeader({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-<<<<<<< Updated upstream
               <DropdownMenuItem onClick={() => setOpenAssetDeleteModal(true)}>
-=======
-              <DropdownMenuItem onClick={() => onDelete(asset.id)}>
->>>>>>> Stashed changes
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>

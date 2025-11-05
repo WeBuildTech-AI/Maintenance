@@ -249,7 +249,6 @@ export function Locations() {
     };
   }, [modalRef]);
   const handleDeleteLocation = (id: string) => {
-<<<<<<< Updated upstream
     // Step 1: Find the index of the item in the VISIBLE list (filteredLocations)
     const currentVisibleIndex = filteredLocations.findIndex(
       (loc) => loc.id === id
@@ -288,7 +287,7 @@ export function Locations() {
         console.error("Delete failed:", error);
         toast.error("Failed to delete the location.");
       });
-=======
+
     // Step 1: Find the index of the item being deleted from the currently visible list
     const currentIndex = locations.findIndex((loc) => loc.id === id);
 
@@ -325,7 +324,6 @@ export function Locations() {
           toast.error("Failed to delete the location.");
         });
     }
->>>>>>> Stashed changes
   };
 
   const renderInitials = (text: string) =>

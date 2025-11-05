@@ -30,19 +30,10 @@ import {
 } from "../../../store/assets";
 import type { AppDispatch, RootState } from "../../../store";
 
-<<<<<<< Updated upstream
 type SelectableItem = {
   id: number | string;
   name: string;
 };
-=======
-interface NewAssetFormProps {
-  isEdit?: boolean; // To check if we are in edit mode
-  assetData?: Asset | null;
-  onCreate: (newAsset: Asset) => void;
-  onCancel?: () => void;
-}
->>>>>>> Stashed changes
 
 // Interface (Aapke pichle code ke hisaab se update kar diya hai)
 interface Asset {
@@ -203,7 +194,6 @@ export function NewAssetForm({
     console.log("Final Payload:", payload);
 
     if (isEdit && assetData?.id) {
-<<<<<<< Updated upstream
       dispatch(updateAsset({ id: String(assetData.id), assetData: payload }))
         .unwrap()
         .then((res) => {
@@ -224,27 +214,6 @@ export function NewAssetForm({
           onCreate(res); // <-- FIX: Ise uncomment kar diya hai
           fetchAssetsData();
           // Reset form
-=======
-      // We are editing: dispatch the update action
-      dispatch(updateAsset({ id: assetData.id, assetData: payload }))
-        .unwrap()
-        .then((res) => {
-          toast.success("Asset updated successfully");
-          toast.success("Successfully Update the Asset");
-          onCreate(res); // Call the success callback
-        })
-        .catch((err) => {
-          setError(err || "Failed to update asset");
-          toast.error(err || "Failed to update asset");
-        });
-    } else {
-      dispatch(createAsset(payload as CreateAssetData)) // We cast it back to the full type here
-        .unwrap()
-        .then((res) => {
-          toast.success("Successfully Create the Asset");
-          onCreate(res);
-          // Reset all form fields
->>>>>>> Stashed changes
           setAssetName("");
           setSelectedLocation(null);
           setCriticality("");

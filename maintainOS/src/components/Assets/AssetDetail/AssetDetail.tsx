@@ -23,7 +23,6 @@ interface Asset {
 // 2. Define a type for the component's props.
 interface AssetDetailProps {
   asset: Asset;
-<<<<<<< Updated upstream
   onEdit: (asset: Asset) => void;
   onDelete: (id: string | number) => void; 
   fetchAssetsData: () => void; 
@@ -38,14 +37,6 @@ export const AssetDetail: FC<AssetDetailProps> = ({
   fetchAssetsData,
   setSeeMoreAssetStatus
 }) => {
-=======
-  onEdit: (asset: Asset) => void; // Add this line
-  onDelete: (asset: Asset) => void; // Add this line
-}
-
-// 3. Use the defined types in your component.
-export const AssetDetail: FC<AssetDetailProps> = ({ asset , onEdit , onDelete }) => {
->>>>>>> Stashed changes
   const [showHistory, setShowHistory] = useState<boolean>(false);
   const user = useSelector((state: RootState) => state.auth.user);
   const renderInitials = (text: string) =>
@@ -58,16 +49,12 @@ export const AssetDetail: FC<AssetDetailProps> = ({ asset , onEdit , onDelete })
 
   return (
     <div className="h-full border mr-3 flex flex-col min-h-0">
-<<<<<<< Updated upstream
       <AssetDetailHeader
         asset={asset}
         setShowHistory={setShowHistory}
         onEdit={onEdit}
         onDelete={onDelete} // This prop is now passed down correctly
       />
-=======
-      <AssetDetailHeader asset={asset} setShowHistory={setShowHistory} onEdit={onEdit} onDelete={onDelete} />
->>>>>>> Stashed changes
 
       {showHistory ? (
         <div className="flex items-start gap-3 p-3 border-b border-gray-100">
