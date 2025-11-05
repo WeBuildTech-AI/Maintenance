@@ -48,7 +48,9 @@ export function AssetTable({
                           {asset.icon || renderInitials(asset.name)}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="font-medium">{asset.name}</span>
+                      {asset.name && (
+                        <span className="font-medium">{asset.name}</span>
+                      )}
                     </div>
                   </td>
 
@@ -71,13 +73,13 @@ export function AssetTable({
                             : "bg-gray-300"
                         }`}
                       ></span>
-                      {asset.status ?? "—"}
+                      {(asset.status && asset.status) ?? "—"}
                     </span>
                   </td>
 
                   {/* Location */}
                   <td className="px-4 py-3 text-muted-foreground">
-                    {asset.location.name || "-"}
+                    {(asset.location && asset.location.name) || "-"}
                   </td>
 
                   {/* Criticality */}
@@ -87,7 +89,7 @@ export function AssetTable({
 
                   {/* Manufacturer */}
                   <td className="px-4 py-3 text-muted-foreground cursor-capitalize">
-                    {asset.manufacturer.name || "-"}
+                    {(asset.manufacturer && asset.manufacturer.name) || "-"}
                   </td>
 
                   {/* Asset Type */}
