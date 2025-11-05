@@ -1,5 +1,5 @@
 import axios from "axios";
-
+import api from "../auth/auth.service";
 import type {
   CreateMeterData,
   MeterResponse,
@@ -14,7 +14,7 @@ export const meterService = {
     page: number,
     offset: number
   ): Promise<MeterResponse[]> => {
-    const res = await axios.get(`${API_URL}/meters`, {
+    const res = await api.get(`/meters`, {
       params: { limit, page, offset },
       headers: { Accept: "application/json" },
     });
@@ -22,17 +22,17 @@ export const meterService = {
   },
 
   fetchMeterById: async (id: string): Promise<MeterResponse> => {
-    const res = await axios.get(`${API_URL}/meters/${id}`);
+    const res = await api.get(`/meters/${id}`);
     return res.data;
   },
 
   createMeter: async (data: CreateMeterData): Promise<MeterResponse> => {
-    const res = await axios.post(`${API_URL}/meters`, data);
+    const res = await api.post(`/meters`, data);
     return res.data;
   },
   
   fetchMesurementUnit: async (): Promise<MeterResponse> => {
-    const res = await axios.get(`${API_URL}/measurements`);
+    const res = await api.get(`/measurements`);
     return res.data;
   },
 
@@ -40,11 +40,11 @@ export const meterService = {
     id: string,
     data: UpdateMeterData
   ): Promise<MeterResponse> => {
-    const res = await axios.patch(`${API_URL}/meters/${id}`, data);
+    const res = await api.patch(`/meters/${id}`, data);
     return res.data;
   },
 
   deleteMeter: async (id: string): Promise<void> => {
-    await axios.delete(`${API_URL}/meters/${id}`);
+    await api.delete(`/meters/${id}`);
   },
 };

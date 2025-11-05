@@ -6,13 +6,13 @@ import type {
   PurchaseOrderResponse,
   UpdatePurchaseOrderData,
 } from "./purchaseOrders.types";
-
+import api from "../auth/auth.service";
 const API_URL = import.meta.env.VITE_API_URL;
 
 export const purchaseOrderService = {
   // 🔹 Fetch all purchase orders
   fetchPurchaseOrders: async (): Promise<PurchaseOrderResponse[]> => {
-    const res = await axios.get(`${API_URL}/purchase-orders`);
+    const res = await api.get(`/purchase-orders`);
     return res.data;
   },
 
@@ -20,7 +20,7 @@ export const purchaseOrderService = {
   fetchPurchaseOrderById: async (
     id: string
   ): Promise<PurchaseOrderResponse> => {
-    const res = await axios.get(`${API_URL}/purchase-orders/${id}`);
+    const res = await api.get(`/purchase-orders/${id}`);
     return res.data;
   },
 
@@ -28,7 +28,7 @@ export const purchaseOrderService = {
   createPurchaseOrder: async (
     data: CreatePurchaseOrderData
   ): Promise<PurchaseOrderResponse> => {
-    const res = await axios.post(`${API_URL}/purchase-orders`, data);
+    const res = await api.post(`/purchase-orders`, data);
     return res.data;
   },
 
@@ -37,32 +37,32 @@ export const purchaseOrderService = {
     id: string,
     data: UpdatePurchaseOrderData
   ): Promise<PurchaseOrderResponse> => {
-    const res = await axios.patch(`${API_URL}/purchase-orders/${id}`, data);
+    const res = await api.patch(`/purchase-orders/${id}`, data);
     return res.data;
   },
 
   // 🔹 Delete a purchase order
   deletePurchaseOrder: async (id: string): Promise<void> => {
-    await axios.delete(`${API_URL}/purchase-orders/${id}`);
+    await api.delete(`/purchase-orders/${id}`);
   },
 
   // 🔹 Create or add an address for a purchase order
   createAddressOrder: async (
     data: CreateAddressData
   ): Promise<PurchaseOrderResponse> => {
-    const res = await axios.post(`${API_URL}/purchase-orders/addresses`, data);
+    const res = await api.post(`/purchase-orders/addresses`, data);
     return res.data;
   },
 
   fetchAdressess: async (): Promise<PurchaseOrderResponse[]> => {
-    const res = await axios.get(`${API_URL}/purchase-orders/get/addresses`);
+    const res = await api.get(`/purchase-orders/get/addresses`);
     return res.data;
   },
 
   rejectPurchaseOrder: async (id: string): Promise<void> => {
-    await axios.patch(`${API_URL}/purchase-orders/${id}/reject`);
+    await api.patch(`/purchase-orders/${id}/reject`);
   },
   approvePurchaseOrder: async (id: string): Promise<void> => {
-    await axios.patch(`${API_URL}/purchase-orders/${id}/approve`);
+    await api.patch(`/purchase-orders/${id}/approve`);
   },
 };

@@ -1,4 +1,5 @@
 import axios from "axios";
+import api from "../auth/auth.service";
 
 import type {
   AssetResponse,
@@ -14,7 +15,7 @@ export const assetService = {
     page: number,
     offset: number
   ): Promise<AssetResponse[]> => {
-    const res = await axios.get(`${API_URL}/assets`, {
+    const res = await api.get(`/assets`, {
       params: { limit, page, offset },
       headers: { Accept: "application/json" },
     });
@@ -22,17 +23,17 @@ export const assetService = {
   },
 
   fetchAssetsName: async (): Promise<AssetResponse[]> => {
-    const res = await axios.get(`${API_URL}/assets/summary`);
+    const res = await api.get(`/assets/summary`);
     return res.data;
   },
 
   fetchAssetById: async (id: string): Promise<AssetResponse> => {
-    const res = await axios.get(`${API_URL}/assets/${id}`);
+    const res = await api.get(`/assets/${id}`);
     return res.data;
   },
 
   createAsset: async (data: CreateAssetData): Promise<AssetResponse> => {
-    const res = await axios.post(`${API_URL}/assets`, data);
+    const res = await api.post(`/assets`, data);
     return res.data;
   },
 
@@ -40,30 +41,32 @@ export const assetService = {
     id: string,
     data: UpdateAssetData
   ): Promise<AssetResponse> => {
-    const res = await axios.patch(`${API_URL}/assets/${id}`, data);
+    const res = await api.patch(`/assets/${id}`, data);
     return res.data;
   },
 
   deleteAsset: async (id: string): Promise<void> => {
-    await axios.delete(`${API_URL}/assets/${id}`);
+    await api.delete(`/assets/${id}`);
   },
 
   fetchAssetType: async (): Promise<AssetResponse> => {
-    const res = await axios.get(`${API_URL}/assets/get/asset-type`);
+    const res = await api.get(`/assets/get/asset-type`);
     return res.data;
   },
   createAssetType: async (data: CreateAssetData): Promise<AssetResponse> => {
-    const res = await axios.post(`${API_URL}/assets/asset-type`, data);
+    const res = await api.post(`/assets/asset-type`, data);
     return res.data;
   },
 
   fetchAssetManufacturer: async (): Promise<AssetResponse> => {
-    const res = await axios.get(`${API_URL}/assets/get/manufacturer`);
+    const res = await api.get(`/assets/get/manufacturer`);
     return res.data;
   },
 
-  createAssetManufacture: async (data: CreateAssetData): Promise<AssetResponse> => {
-    const res = await axios.post(`${API_URL}/assets/manufacturer`, data);
+  createAssetManufacture: async (
+    data: CreateAssetData
+  ): Promise<AssetResponse> => {
+    const res = await api.post(`/assets/manufacturer`, data);
     return res.data;
   },
 };

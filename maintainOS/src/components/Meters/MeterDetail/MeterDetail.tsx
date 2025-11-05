@@ -1,7 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { Building2, Edit, MapPin, MoreHorizontal, Plus } from "lucide-react";
+import {
+  Building2,
+  Edit,
+  FastForward,
+  MapPin,
+  MoreHorizontal,
+  Plus,
+} from "lucide-react";
 import { Button } from "../../ui/button";
 import { MeterAutomations } from "./MeterAutomations";
 import { MeterDetailsSection } from "./MeterDetailsSection";
@@ -100,7 +107,9 @@ export function MeterDetail({ selectedMeter, handleDeleteMeter }: any) {
           {selectedMeter?.locationId && (
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
-              <span>{selectedMeter.location && selectedMeter.location.name}</span>
+              <span>
+                {selectedMeter.location && selectedMeter.location.name}
+              </span>
             </div>
           )}
         </div>
@@ -146,7 +155,10 @@ export function MeterDetail({ selectedMeter, handleDeleteMeter }: any) {
           <MeterDeleteModal
             modalRef={modalRef}
             onClose={() => setOpenMeterDeleteModal(false)}
-            onConfirm={() => handleDeleteMeter(selectedMeter?.id)}
+            onConfirm={() => {
+              handleDeleteMeter(selectedMeter?.id);
+              setOpenMeterDeleteModal(false);
+            }}
           />
         )}
       </div>

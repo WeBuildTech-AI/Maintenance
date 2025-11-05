@@ -6,13 +6,13 @@ import type {
   User,
   CreateConversationPayload,
 } from "./messages.types";
-
+import api from "../auth/auth.service";
 const API_URL = import.meta.env.VITE_API_URL;
 
 export const messageService = {
   searchUsers: async (currentUserId: string): Promise<User[]> => {
     // Get all users and filter out the current user on the frontend
-    const response = await axios.get(`${API_URL}/users`);
+    const response = await api.get(`/users`);
 
     const allUsers = response.data;
     const filteredUsers = allUsers.filter(
@@ -29,8 +29,8 @@ export const messageService = {
   },
 
   userDMs: async (userId: string): Promise<DMConversation[]> => {
-    const response = await axios.get(
-      `${API_URL}/messaging/conversations/allconvo/${userId}`
+    const response =  api.get(
+      `/messaging/conversations/allconvo/${userId}`
     );
     const conversations = response.data;
 
@@ -57,8 +57,8 @@ export const messageService = {
   getChatHistory: async (
     conversationId: string
   ): Promise<MessageWithSender[]> => {
-    const response = await axios.get(
-      `${API_URL}/messaging/conversations/${conversationId}/messages`
+    const response = await api.get(
+      `/messaging/conversations/${conversationId}/messages`
     );
     const messages = response.data;
 
@@ -97,8 +97,8 @@ export const messageService = {
   createConversation: async (
     payload: CreateConversationPayload & { userId: string }
   ): Promise<DMConversation> => {
-    const response = await axios.post(
-      `${API_URL}/messaging/conversations`,
+    const response = await api.post(
+      `/messaging/conversations`,
       payload
     );
     return response.data;

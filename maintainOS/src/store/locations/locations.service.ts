@@ -12,7 +12,7 @@ export const locationService = {
   ): Promise<LocationResponse[]> => {
     const res = await api.get("/locations", {
       params: { limit, page, offset },
-      headers: { Accept: "application/json" },
+      // headers: { Accept: "application/json" },
     });
 
     return res.data;

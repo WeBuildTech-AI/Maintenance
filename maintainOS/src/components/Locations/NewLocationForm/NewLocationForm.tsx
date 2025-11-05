@@ -151,7 +151,7 @@ export function NewLocationForm({
 
     const formData = new FormData();
 
-    formData.append("organizationId", String(user.organizationId));
+    // formData.append("organizationId", String(user.organizationId));
     formData.append("name", String(name.trim()));
     formData.append("createdBy", String(user.id));
 
