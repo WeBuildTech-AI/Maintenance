@@ -144,7 +144,7 @@ export function NewLocationForm({
     setSubmitLocationFormLoader(true);
 
     console.log("User data:", {
-      organizationId: user.organizationId,
+      // organizationId: user.organizationId,
       userId: user.id,
       name: name.trim(),
     });

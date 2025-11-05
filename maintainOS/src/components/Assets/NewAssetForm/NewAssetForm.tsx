@@ -153,7 +153,7 @@ export function NewAssetForm({
     setError("");
 
     const payload: Partial<CreateAssetData> = {
-      organizationId: user?.organizationId,
+      // organizationId: user?.organizationId,
       name: assetName.trim(),
     };
 

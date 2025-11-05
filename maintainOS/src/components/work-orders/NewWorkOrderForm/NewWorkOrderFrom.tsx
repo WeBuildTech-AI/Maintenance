@@ -165,7 +165,7 @@ export function NewWorkOrderForm({
       }
 
       const formData = new FormData();
-      formData.append("organizationId", authUser?.organizationId || "");
+      // formData.append("organizationId", authUser?.organizationId || "");
       formData.append("title", workOrderName);
       formData.append("description", description || "");
       formData.append("status", "open");
