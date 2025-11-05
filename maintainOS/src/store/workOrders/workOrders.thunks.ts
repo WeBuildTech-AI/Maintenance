@@ -6,6 +6,7 @@ import type {
   CreateWorkOrderData,
   UpdateWorkOrderData,
   CreateOtherCostData,
+  CreateTimeEntryData, // ✅ added
 } from "./workOrders.types";
 
 export const fetchWorkOrders = createAsyncThunk(
@@ -159,13 +160,57 @@ export const addOtherCost = createAsyncThunk(
 
 export const deleteOtherCost = createAsyncThunk(
   "workOrders/deleteOtherCost",
-  async ({ id, costId }: { id: string; costId: string }, { rejectWithValue }) => {
+  async (
+    { id, costId }: { id: string; costId: string },
+    { rejectWithValue }
+  ) => {
     try {
       await workOrderService.deleteOtherCost(id, costId);
       return { id, costId };
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to delete other cost"
+      );
+    }
+  }
+);
+
+// ✅ ADD TIME ENTRY
+export const addTimeEntry = createAsyncThunk(
+  "workOrders/addTimeEntry",
+  async ({ id, data }: { id: string; data: any }, { rejectWithValue }) => {
+    try {
+      const payload = {
+        items: [
+          {
+            userId: data.userId,
+            totalMinutes: data.totalMinutes,
+            entryType: data.entryType?.toLowerCase() || "work", // ✅ FIXED HERE
+            rate: Number(data.rate || 0),
+          },
+        ],
+      };
+      const res = await workOrdersService.addTimeEntry(id, payload);
+      return res;
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+// ✅ DELETE TIME ENTRY
+export const deleteTimeEntry = createAsyncThunk(
+  "workOrders/deleteTimeEntry",
+  async (
+    { id, entryId }: { id: string; entryId: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      await workOrderService.deleteTimeEntry(id, entryId);
+      return { id, entryId };
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete time entry"
       );
     }
   }

@@ -6,6 +6,8 @@ import type {
   UpdateWorkOrderData,
   WorkOrderResponse,
   CreateOtherCostData,
+  CreateTimeEntryData, // ✅ added
+  WorkOrderTimeEntry, // ✅ added
 } from "./workOrders.types";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -86,6 +88,24 @@ export const workOrderService = {
   // ✅ Other Costs — Delete
   deleteOtherCost: async (id: string, costId: string) => {
     const res = await axios.delete(`${API_URL}/work-orders/${id}/other-costs/${costId}`);
+    return res.data;
+  },
+
+  // ✅ TIME TRACKING — Add entry
+  addTimeEntry: async (
+    id: string,
+    data: CreateTimeEntryData
+  ): Promise<WorkOrderTimeEntry> => {
+    const res = await axios.post(`${API_URL}/work-orders/${id}/time`, data);
+    return res.data;
+  },
+
+  // ✅ TIME TRACKING — Delete entry
+  deleteTimeEntry: async (
+    id: string,
+    entryId: string
+  ): Promise<{ success: boolean }> => {
+    const res = await axios.delete(`${API_URL}/work-orders/${id}/time/${entryId}`);
     return res.data;
   },
 };
