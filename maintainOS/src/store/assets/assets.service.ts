@@ -78,4 +78,12 @@ export const assetService = {
     const res = await api.patch(`/assets/${id}/status`, data);
     return res.data;
   },
+
+  fetchAssetStatusLog: async (id:string): Promise<AssetResponse> => {
+    const res = await api.get(`/assets/${id}/logs`);
+    return res.data;
+  },
+
+  
+
 };
