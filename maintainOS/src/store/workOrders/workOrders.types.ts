@@ -18,6 +18,24 @@ export interface CreateOtherCostData {
   [key: string]: any;
 }
 
+// ✅ NEW — Work Order Time Entry structure
+export interface WorkOrderTimeEntry {
+  id: string;
+  workOrderId: string;
+  description: string;
+  hours: number;
+  createdBy: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+// ✅ NEW — Data type for creating time entry
+export interface CreateTimeEntryData {
+  description: string;
+  hours: number;
+  createdBy: string;
+}
+
 export interface WorkOrderResponse {
   id: string;
   organizationId: string;
@@ -28,6 +46,8 @@ export interface WorkOrderResponse {
   dueDate?: string;
   assigneeIds?: string[];
   otherCosts?: OtherCost[];
+  // ✅ Added — resolves TS error
+  timeEntries?: WorkOrderTimeEntry[];
 }
 
 export interface CreateWorkOrderData {
@@ -64,7 +84,7 @@ export interface AddWorkOrderCommentData {
  */
 export interface WorkOrdersState {
   workOrders: WorkOrderResponse[];
-  selectedWorkOrder: WorkOrderResponse; // ✅ no longer nullable
+  selectedWorkOrder: WorkOrderResponse | null;
   loading: boolean;
   error: string | null;
 }

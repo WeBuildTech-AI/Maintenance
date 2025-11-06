@@ -1,12 +1,7 @@
 import { MapPin } from "lucide-react";
 
-interface AssetTypeProps {
-  asset: {
-    assetTypes?: { id: string; name: string }[];
-  };
-}
 
-export function AssetType({ asset }: AssetTypeProps) {
+export function AssetType({ asset }: { asset: any }) {
   return (
     <div>
       {asset?.assetTypes && asset.assetTypes.length > 0 && (

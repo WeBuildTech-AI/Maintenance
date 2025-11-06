@@ -1,7 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { Building2, Edit, MapPin, MoreHorizontal, Plus } from "lucide-react";
+import {
+  Building2,
+  Edit,
+  FastForward,
+  MapPin,
+  MoreHorizontal,
+  Plus,
+} from "lucide-react";
 import { Button } from "../../ui/button";
 import { MeterAutomations } from "./MeterAutomations";
 import { MeterDetailsSection } from "./MeterDetailsSection";
@@ -20,13 +27,13 @@ import { useSelector } from "react-redux";
 import MeterDeleteModal from "../MeterDeleteModal";
 import RecordReadingModal from "./RecordReadingModal"; // 👈 Naya modal import karein
 
-export function MeterDetail({ selectedMeter, handleDeleteMeter }: any) {
+export function MeterDetail({ selectedMeter, handleDeleteMeter , fetchMeters , setShowReadingMeter , setIsRecordModalOpen }: any) {
   const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
 
   // Modals ke liye state
   const [openMeterDeleteModal, setOpenMeterDeleteModal] = useState(false);
-  const [isRecordModalOpen, setIsRecordModalOpen] = useState(false); // 👈 Modal ke liye state add karein
+  // const [isRecordModalOpen, setIsRecordModalOpen] = useState(false); // 👈 Modal ke liye state add karein
 
   const modalRef = React.useRef<HTMLDivElement>(null);
 
@@ -100,7 +107,9 @@ export function MeterDetail({ selectedMeter, handleDeleteMeter }: any) {
           {selectedMeter?.locationId && (
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
-              <span>{selectedMeter.location && selectedMeter.location.name}</span>
+              <span>
+                {selectedMeter.location && selectedMeter.location.name}
+              </span>
             </div>
           )}
         </div>
@@ -108,7 +117,7 @@ export function MeterDetail({ selectedMeter, handleDeleteMeter }: any) {
 
       {/* Content */}
       <div className="flex-1 p-6 space-y-8 overflow-auto">
-        <MeterReadings selectedMeter={selectedMeter} />
+        <MeterReadings selectedMeter={selectedMeter} setShowReadingMeter={setShowReadingMeter} />
         <MeterDetailsSection selectedMeter={selectedMeter} />
         <MeterAutomations />
         <MeterWorkOrders selectedMeter={selectedMeter} />
@@ -146,17 +155,22 @@ export function MeterDetail({ selectedMeter, handleDeleteMeter }: any) {
           <MeterDeleteModal
             modalRef={modalRef}
             onClose={() => setOpenMeterDeleteModal(false)}
-            onConfirm={() => handleDeleteMeter(selectedMeter?.id)}
+            onConfirm={() => {
+              handleDeleteMeter(selectedMeter?.id);
+              setOpenMeterDeleteModal(false);
+            }}
           />
         )}
       </div>
-      {isRecordModalOpen && (
+      {/* {isRecordModalOpen && (
         <RecordReadingModal
           modalRef={modalRef}
+          selectedMeter={selectedMeter}
           onClose={() => setIsRecordModalOpen(false)}
+          fetchMeters={fetchMeters}
           // onConfirm={handleRecordReadingConfirm}
         />
-      )}
+      )} */}
     </div>
   );
 }

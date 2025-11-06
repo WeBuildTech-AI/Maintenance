@@ -36,7 +36,7 @@ async function fetchManufacturersFromAPI(): Promise<SelectableItem[]> {
 async function createManufacturerInAPI(name: string , user: any): Promise<SelectableItem> {
   const payload = {
     name: name,
-    organizationId: user.organizationId,
+    // organizationId: user.organizationId,
   };
 
   const newManufacturer = await assetService.createAssetManufacture(payload);

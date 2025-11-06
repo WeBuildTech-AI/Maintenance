@@ -14,13 +14,14 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const messaging = getMessaging(app);
 
-const BACKEND_URL = "https://thin-plaza-finishing-manitoba.trycloudflare.com";
+const BACKEND_URL =
+  "https://evanescence-army-enrolled-sections.trycloudflare.com";
 
 export const requestNotificationPermission = async (userId: string) => {
   try {
     const permission = await Notification.requestPermission();
     if (permission !== "granted") {
-      console.warn("❌ Notification permission denied");
+      console.warn("Notification permission denied");
       return null;
     }
 

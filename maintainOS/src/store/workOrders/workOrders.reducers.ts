@@ -12,6 +12,8 @@ import {
   updateWorkOrder,
   addOtherCost,
   deleteOtherCost,
+  addTimeEntry,   // ✅ new import
+  deleteTimeEntry // ✅ new import
 } from "./workOrders.thunks";
 
 const initialState: WorkOrdersState = {
@@ -298,6 +300,62 @@ const workOrdersSlice = createSlice({
         }
       })
       .addCase(deleteOtherCost.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+
+      // ✅ ADD TIME ENTRY
+      .addCase(addTimeEntry.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(addTimeEntry.fulfilled, (state, action) => {
+        state.loading = false;
+        const created = action.payload as any;
+        const workOrderId = (action.meta as any)?.arg?.id;
+        const wo = state.workOrders.find((w) => w.id === workOrderId);
+        if (wo) {
+          wo.timeEntries = [...(wo.timeEntries || []), created];
+        }
+        if (
+          state.selectedWorkOrder &&
+          state.selectedWorkOrder.id === workOrderId
+        ) {
+          state.selectedWorkOrder.timeEntries = [
+            ...(state.selectedWorkOrder.timeEntries || []),
+            created,
+          ];
+        }
+      })
+      .addCase(addTimeEntry.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+
+      // ✅ DELETE TIME ENTRY
+      .addCase(deleteTimeEntry.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteTimeEntry.fulfilled, (state, action) => {
+        state.loading = false;
+        const { id, entryId } = action.payload as any;
+        const wo = state.workOrders.find((w) => w.id === id);
+        if (wo && wo.timeEntries) {
+          wo.timeEntries = wo.timeEntries.filter((t: any) => t.id !== entryId);
+        }
+        if (
+          state.selectedWorkOrder &&
+          state.selectedWorkOrder.id === id &&
+          state.selectedWorkOrder.timeEntries
+        ) {
+          state.selectedWorkOrder.timeEntries =
+            state.selectedWorkOrder.timeEntries.filter(
+              (t: any) => t.id !== entryId
+            );
+        }
+      })
+      .addCase(deleteTimeEntry.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

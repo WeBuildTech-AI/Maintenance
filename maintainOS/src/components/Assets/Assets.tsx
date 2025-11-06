@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useState, FC, useMemo } from "react";
 import { AssetDetail } from "./AssetDetail/AssetDetail";
 import { AssetsList } from "./AssetsList/AssetsList";
@@ -12,6 +11,7 @@ import toast, { Toaster } from "react-hot-toast";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store";
 import { locationService } from "../../store/locations";
+import AssetStatusMoreDetails from "./AssetDetail/sections/AssetStatusMoreDetails";
 
 export interface Asset {
   id: number | string;
@@ -26,6 +26,7 @@ export interface Asset {
 
 export const Assets: FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [seeMoreAssetStatus, setSeeMoreAssetStatus] = useState(false);
   const [showNewAssetForm, setShowNewAssetForm] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
@@ -149,99 +150,113 @@ export const Assets: FC = () => {
     <>
       <Toaster />
       <div className="flex h-full flex-col">
-        {AssetHeaderComponent(
-          viewMode,
-          setViewMode,
-          searchQuery,
-          setSearchQuery,
-          setShowNewAssetForm,
-          setShowSettings,
-          setSelectedAsset
-        )}
+        {seeMoreAssetStatus === false ? (
+          <>
+            {AssetHeaderComponent(
+              viewMode,
+              setViewMode,
+              searchQuery,
+              setSearchQuery,
+              setShowNewAssetForm,
+              setShowSettings,
+              setSelectedAsset
+            )}
 
-        {viewMode === "table" ? (
-          <AssetTable
-            assets={sortedAndFilteredAssets}
-            selectedAsset={selectedAsset}
-          />
-        ) : (
-          <div className="flex flex-1 min-h-0">
-            <AssetsList
-              assets={sortedAndFilteredAssets}
-              selectedAsset={selectedAsset}
-              setSelectedAsset={setSelectedAsset}
-              setShowNewAssetForm={setShowNewAssetForm}
-              loading={loading}
-              sortType={sortType}
-              setSortType={setSortType}
-              sortOrder={sortOrder}
-              setSortOrder={setSortOrder}
-              allLocationData={allLocationData}
-            />
-
-            <div className="flex-1 bg-card min-h-0 flex flex-col">
-              {showNewAssetForm ? (
-                <NewAssetForm
-                  onCreate={(updatedOrNewAsset) => {
-                    if (editingAsset) {
-                      // Edit Mode: Purane asset ko naye, merged data se replace karein
-                      setAssetData((prevAssets) =>
-                        prevAssets.map((asset) => {
-                          if (asset.id === updatedOrNewAsset.id) {
-                            // Yahan hum purane asset (...asset) aur API se aaye naye data
-                            // (...updatedOrNewAsset) ko merge kar rahe hain.
-                            // Isse 'createdAt' jaisi properties bani rehti hain.
-                            return { ...asset, ...updatedOrNewAsset };
-                          }
-                          return asset;
-                        })
-                      );
-                    } else {
-                      // Create Mode: List ke shuru mein naya asset add karein
-                      setAssetData((prevAssets) => [
-                        updatedOrNewAsset as Asset,
-                        ...prevAssets,
-                      ]);
-                    }
-
-                    // Baaki logic same rahega
-                    setSelectedAsset(updatedOrNewAsset);
-                    setShowNewAssetForm(false);
-
-                    setEditingAsset(null);
-                  }}
-                  onCancel={() => {
-                    setShowNewAssetForm(false);
-                    setEditingAsset(null);
-                  }}
-                  isEdit={!!editingAsset}
-                  assetData={editingAsset}
-                  fetchAssetsData={fetchAssetsData}
+            {viewMode === "table" ? (
+              <AssetTable
+                assets={sortedAndFilteredAssets}
+                selectedAsset={selectedAsset}
+              />
+            ) : (
+              <div className="flex flex-1 min-h-0">
+                <AssetsList
+                  assets={sortedAndFilteredAssets}
+                  selectedAsset={selectedAsset}
+                  setSelectedAsset={setSelectedAsset}
+                  setShowNewAssetForm={setShowNewAssetForm}
+                  loading={loading}
+                  sortType={sortType}
+                  setSortType={setSortType}
+                  sortOrder={sortOrder}
+                  setSortOrder={setSortOrder}
+                  allLocationData={allLocationData}
                 />
-              ) : selectedAsset ? (
-                <AssetDetail
-                  asset={selectedAsset}
-                  onDelete={handleDeleteAsset}
-                  onEdit={handleEditAsset}
-                  fetchAssetsData={fetchAssetsData}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full text-center">
-                  <div>
-                    <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
-                      <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed"></div>
+
+                <div className="flex-1 bg-card min-h-0 flex flex-col">
+                  {showNewAssetForm ? (
+                    <NewAssetForm
+                      onCreate={(updatedOrNewAsset) => {
+                        if (editingAsset) {
+                          // Edit Mode: Purane asset ko naye, merged data se replace karein
+                          setAssetData((prevAssets) =>
+                            prevAssets.map((asset) => {
+                              if (asset.id === updatedOrNewAsset.id) {
+                                // Yahan hum purane asset (...asset) aur API se aaye naye data
+                                // (...updatedOrNewAsset) ko merge kar rahe hain.
+                                // Isse 'createdAt' jaisi properties bani rehti hain.
+                                return { ...asset, ...updatedOrNewAsset };
+                              }
+                              return asset;
+                            })
+                          );
+                        } else {
+                          // Create Mode: List ke shuru mein naya asset add karein
+                          setAssetData((prevAssets) => [
+                            updatedOrNewAsset as Asset,
+                            ...prevAssets,
+                          ]);
+                        }
+
+                        // Baaki logic same rahega
+                        setSelectedAsset(updatedOrNewAsset);
+                        setShowNewAssetForm(false);
+
+                        setEditingAsset(null);
+                      }}
+                      onCancel={() => {
+                        setShowNewAssetForm(false);
+                        setEditingAsset(null);
+                      }}
+                      isEdit={!!editingAsset}
+                      assetData={editingAsset}
+                      fetchAssetsData={fetchAssetsData}
+                    />
+                  ) : selectedAsset ? (
+                    <AssetDetail
+                      asset={selectedAsset}
+                      onDelete={handleDeleteAsset}
+                      onEdit={handleEditAsset}
+                      fetchAssetsData={fetchAssetsData}
+                      setSeeMoreAssetStatus={setSeeMoreAssetStatus}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-center">
+                      <div>
+                        <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
+                          <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed"></div>
+                        </div>
+                        <p className="text-muted-foreground mb-2">
+                          Select an asset to view details
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          or create a new asset to get started
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-muted-foreground mb-2">
-                      Select an asset to view details
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      or create a new asset to get started
-                    </p>
-                  </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            {
+              <AssetStatusMoreDetails
+                setSeeMoreAssetStatus={setSeeMoreAssetStatus}
+                asset={selectedAsset}
+              />
+            }
+          </>
         )}
       </div>
     </>

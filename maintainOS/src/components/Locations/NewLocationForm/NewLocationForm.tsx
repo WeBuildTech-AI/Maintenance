@@ -144,14 +144,14 @@ export function NewLocationForm({
     setSubmitLocationFormLoader(true);
 
     console.log("User data:", {
-      organizationId: user.organizationId,
+      // organizationId: user.organizationId,
       userId: user.id,
       name: name.trim(),
     });
 
     const formData = new FormData();
 
-    formData.append("organizationId", String(user.organizationId));
+    // formData.append("organizationId", String(user.organizationId));
     formData.append("name", String(name.trim()));
     formData.append("createdBy", String(user.id));
 

@@ -39,12 +39,14 @@ export function AssetCard({
             </div>
             <div>
               <h4 className="font-medium capitalize">{asset.name}</h4>
-              <div className="flex items-start gap-1 mt-1">
-                <MapPin className="h-3 w-3 mt-1 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">
-                  At {asset.location && asset.location.name}
-                </span>
-              </div>
+              {asset.location && (
+                <div className="flex items-start gap-1 mt-1">
+                  <MapPin className="h-3 w-3 mt-1 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
+                    At {asset.location && asset.location.name}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">

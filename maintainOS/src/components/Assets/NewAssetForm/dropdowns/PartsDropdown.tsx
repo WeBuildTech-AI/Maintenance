@@ -1,5 +1,6 @@
-import { ChevronDown, Search, X } from "lucide-react";
-import { RefObject, useEffect, useRef, useState } from "react";
+import { ChevronDown, Search } from "lucide-react";
+import type { RefObject } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { partService } from "../../../../store/parts";
 import Loader from "../../../Loader/Loader";
@@ -14,7 +15,7 @@ interface SelectableItem {
 interface PartsDropdownProps {
   partOpen: boolean;
   setPartOpen: (open: boolean) => void;
-  partRef: RefObject<HTMLDivElement>;
+  partRef: RefObject<HTMLDivElement | null>;
   // 👇 Major Change: Ab ye ek array of objects lega
   setSelectedParts: (parts: SelectableItem[]) => void;
   selectedParts: SelectableItem[];
@@ -36,7 +37,7 @@ export function PartsDropdown({
     setLoading(true);
     try {
       const res = await partService.fetchPartsName();
-      setPartData(res || []);
+      setPartData(res);
     } catch (err) {
       console.error("Error fetching parts:", err);
     } finally {
@@ -100,7 +101,7 @@ export function PartsDropdown({
               <Loader />
             </div>
           ) : (
-            <ul className="max-h-48 overflow-y-auto">
+            <ul className="max-h-32 overflow-y-auto">
               {partData.length > 0 ? (
                 partData.map((part) => (
                   <li

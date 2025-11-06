@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { StepBack, X, Search, EllipsisVerticalIcon } from "lucide-react"; // X aur Search icons import karein
+
+import { useState, useEffect, useRef } from "react"; // useRef import kiya gaya hai
+import { StepBack, X, Search, EllipsisVerticalIcon } from "lucide-react";
 import { Button } from "../../ui/button";
 import { useNavigate, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "../../ui/avatar";
@@ -15,13 +16,37 @@ export default function ManageTeam() {
   const [isEditingDesc, setIsEditingDesc] = useState(false);
   const [description, setDescription] = useState("");
   const [dropdownModalOpen, setDropDownModalOpen] = useState(false);
-
-  // Step 1: Modal ke liye states add karein
   const [isAddMemberModelOpen, setIsAddMemberModelOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Dropdown ke liye naya state
+  const [isActionsDropdownOpen, setIsActionsDropdownOpen] = useState(false);
+
+  // Dropdown ke liye Ref
+  const actionsDropdownRef = useRef<HTMLDivElement>(null);
+
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+
+  // Dropdown ke naye functions
+  const toggleActionsDropdown = () => {
+    setIsActionsDropdownOpen((prev) => !prev);
+  };
+
+  const handleEditTeam = () => {
+    console.log("Edit team clicked");
+    // Yahan aap edit page par navigate kar sakte hain ya edit modal open kar sakte hain
+    setIsActionsDropdownOpen(false); // Dropdown band karein
+  };
+
+  const handleDeleteTeam = () => {
+    console.log("Delete team clicked");
+    // Yahan delete logic aur confirmation modal add karein
+    if (window.confirm("Are you sure you want to delete this team?")) {
+      // Yahan delete API call karein
+    }
+    setIsActionsDropdownOpen(false); // Dropdown band karein
+  };
 
   // Fetch team data
   const fetchTeam = async () => {
@@ -43,6 +68,24 @@ export default function ManageTeam() {
     fetchTeam();
   }, [id]);
 
+  // Dropdown ke bahar click karne par use band karne ke liye useEffect
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        actionsDropdownRef.current &&
+        !actionsDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsActionsDropdownOpen(false);
+      }
+    };
+    // Event listener add karein
+    document.addEventListener("mousedown", handleClickOutside);
+    // Cleanup function
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [actionsDropdownRef]);
+
   // Update description
   const handleUpdateDescription = async () => {
     if (!id) return;
@@ -59,11 +102,10 @@ export default function ManageTeam() {
     }
   };
 
-  // Step 2: Modal ko open aur close karne ke liye functions banayein
   const handleOpenModal = () => setIsAddMemberModelOpen(true);
   const handleCloseModal = () => {
     setIsAddMemberModelOpen(false);
-    setSearchQuery(""); // Modal band hone par search query reset karein
+    setSearchQuery("");
   };
 
   const handleOpenDropdownModal = () => {
@@ -79,7 +121,9 @@ export default function ManageTeam() {
   return (
     <>
       {loading && !team ? (
-        <Loader />
+        <div className="flex justify-center items-center h-full">
+          <Loader />
+        </div>
       ) : (
         <div className="flex flex-col h-screen">
           {/* Header */}
@@ -93,74 +137,111 @@ export default function ManageTeam() {
             </div>
           </header>
 
-          {/* Body */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {/* Team info */}
-            <div className="flex items-start gap-4">
-              <Avatar className="h-16 w-16 text-white text-xl">
-                {/* <AvatarImage src={team?.avatar || ""} /> */}
-                {/* <AvatarFallback style={{ backgroundColor: team?.color }}> */}
-                  {/* {renderInitials(team?.name) || "T"} */}
-                {/* </AvatarFallback> */}
-              </Avatar>
-
-              <div className="flex justify-between ">
-                <div className="flex-1">
-                  <h2 className="text-xl font-semibold">{team?.name}</h2>
-
-                  {/* Description */}
-                  <div className="mt-1 relative">
-                    <div className="group relative">
-                      {!isEditingDesc ? (
-                        <>
-                          {description ? (
-                            <p className="text-sm text-muted-foreground">
-                              {description}
-                            </p>
-                          ) : (
-                            <p className="text-sm text-muted-foreground text-blue-600">
-                              No description yet
-                            </p>
-                          )}
-
-                          <button
-                            type="button"
-                            className="absolute cursor-pointer top-0 mt-2 right-0 text-xs text-orange-600 opacity-0 group-hover:opacity-100 transition"
-                            onClick={() => setIsEditingDesc(true)}
-                          >
-                            Edit the Description
-                          </button>
-                        </>
-                      ) : (
-                        <div className="mt-2">
-                          <textarea
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            className="w-full border rounded-md p-2 text-sm"
-                            rows={2}
-                          />
-                          <div className="flex gap-4 mt-2">
-                            <button
-                              type="button"
-                              onClick={() => setIsEditingDesc(false)}
-                              className=" cursor-pointer text-sm text-orange-600"
-                            >
-                              Cancel
-                            </button>
-                            <Button
-                              size="sm"
-                              className=" cursor-pointer bg-orange-600 text-black"
-                              onClick={handleUpdateDescription}
-                            >
-                              Update
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+            <div className="flex items-start justify-between w-full">
+              {/* Left Section - Avatar and Description */}
+              <div className="flex items-start gap-4 flex-1">
+                {/* Avatar */}
+                <div className="flex-shrink-0">
+                  <div
+                    className="h-16 w-16 flex items-center justify-center rounded-full text-white text-3xl font-semibold"
+                    style={{ backgroundColor: team?.color || "#f59e0b" }}
+                  >
+                    {team?.name?.charAt(0).toUpperCase() || "S"}
                   </div>
                 </div>
-                <div></div>
+
+                {/* Content */}
+                <div className="flex-1">
+                  <h2 className="text-lg font-semibold">
+                    {team?.name || "Team Name"}
+                  </h2>
+
+                  {/* Description Section */}
+                  <div className="mt-1 relative">
+                    {!isEditingDesc ? (
+                      <>
+                        <p
+                          className={`text-sm ${
+                            description ? "text-gray-700" : "text-blue-600"
+                          }`}
+                        >
+                          {description || "No description yet"}
+                        </p>
+                        <button
+                          type="button"
+                          className="text-sm text-blue-600 mt-1 hover:underline"
+                          onClick={() => setIsEditingDesc(true)}
+                        >
+                          Edit Description
+                        </button>
+                      </>
+                    ) : (
+                      <div className="mt-2 w-full">
+                        <textarea
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                          className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-orange-500 outline-none resize-none"
+                          rows={3}
+                        />
+                        <div className="flex gap-3 mt-2">
+                          <button
+                            type="button"
+                            onClick={() => setIsEditingDesc(false)}
+                            className="text-sm text-gray-500 hover:text-gray-700"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleUpdateDescription}
+                            className="px-3 py-1 bg-orange-500 text-white text-sm rounded hover:bg-orange-600"
+                          >
+                            Update
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Section - Three Dots (Updated with dropdown) */}
+              <div
+                ref={actionsDropdownRef}
+                className="relative flex items-start"
+              >
+                <button
+                  onClick={toggleActionsDropdown}
+                  className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100"
+                >
+                  <EllipsisVerticalIcon />
+                </button>
+
+                {/* Conditional dropdown (left-aligned) */}
+                {isActionsDropdownOpen && (
+                  <div className="absolute left-100 mt-8 w-48 bg-white border rounded-md shadow-lg z-50">
+                    <ul className="py-1">
+                      <li>
+                        <button
+                          onClick={handleEditTeam}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          Edit
+                        </button>
+                      </li>
+                      <li>
+                        <button
+                          onClick={handleDeleteTeam}
+                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                        >
+                          Delete
+                        </button>
+                      </li>
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -174,24 +255,26 @@ export default function ManageTeam() {
                 <span>Role</span>
                 <span>Last Visit</span>
               </div>
-              {team?.members?.map((m: any) => (
-                <div
-                  key={m.id}
-                  className="grid grid-cols-3 items-center text-sm py-2 border-b last:border-none"
-                >
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={m.avatar} />
-                      <AvatarFallback>
-                        {renderInitials(m.user.fullName)}
-                      </AvatarFallback>
-                    </Avatar>
-                    {m.user.fullName}
+              <div className="h-64 overflow-x-auto">
+                {team?.members?.map((m: any) => (
+                  <div
+                    key={m.id}
+                    className="grid grid-cols-3 items-center text-sm py-2 border-b last:border-none"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={m.avatar} />
+                        <AvatarFallback>
+                          {renderInitials(m.user.fullName)}
+                        </AvatarFallback>
+                      </Avatar>
+                      {m.user.fullName}
+                    </div>
+                    <div>{m.role}</div>
+                    <div>{m.lastVisit}</div>
                   </div>
-                  <div>{m.role}</div>
-                  <div>{m.lastVisit}</div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
             {/* Info Card */}
@@ -201,7 +284,6 @@ export default function ManageTeam() {
                 <p className="text-sm text-muted-foreground">
                   Invite people to join the Team and organize your workflows.
                 </p>
-                {/* Step 3: Button par onClick handler lagayein */}
                 <Button
                   className=" cursor-pointer bg-orange-600 text-black"
                   onClick={handleOpenModal}
@@ -243,6 +325,7 @@ export default function ManageTeam() {
         </div>
       )}
 
+      {/* Add Member Modal */}
       {isAddMemberModelOpen && (
         <AddMemberModal
           handleCloseModal={handleCloseModal}
@@ -251,6 +334,7 @@ export default function ManageTeam() {
         />
       )}
 
+      {/* Assign Location Modal */}
       {dropdownModalOpen && (
         <div
           role="dialog"
@@ -272,67 +356,12 @@ export default function ManageTeam() {
               </button>
             </div>
 
-            {/* Step 4: Dropdown ka UI banayein */}
+            {/* Body */}
             <div className="p-6">
               <div className="relative">
-                {/* Input aur selected user tags ke liye container */}
                 <div className="flex flex-wrap items-center gap-2 p-2 border rounded-md min-h-[48px] focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-500/50">
-                  {/* Selected Users ke Tags */}
-                  {/* {selectedUsers.map((user) => (
-                    <span
-                      key={user.id}
-                      className="flex items-center gap-2 bg-orange-100 text-orange-800 text-sm font-medium px-2 py-1 rounded"
-                    >
-                      {user.name}
-                      <button
-                        onClick={() => handleRemoveUser(user.id)}
-                        className="text-orange-600 hover:text-orange-800"
-                      >
-                        <X size={14} />
-                      </button>
-                    </span>
-                  ))} */}
-
-                  {/* Search Input */}
-                  {/* <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onFocus={() => setIsDropdownVisible(true)}
-                    onBlur={() =>
-                      setTimeout(() => setIsDropdownVisible(false), 150)
-                    } // Click handle karne ke liye thoda delay
-                    placeholder="Search by name..."
-                    className="flex-1 min-w-[120px] bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
-                  /> */}
+                  {/* Yahan aapka search/dropdown logic aayega */}
                 </div>
-
-                {/* Search Results Dropdown */}
-                {/* {isDropdownVisible && searchResults.length > 0 && (
-                  <div className="absolute top-full left-0 w-full mt-2 bg-card border rounded-md shadow-lg z-10 max-h-56 overflow-y-auto">
-                    <ul>
-                      {searchResults.map((user) => (
-                        <li
-                          key={user.id}
-                          onClick={() => handleSelectUser(user)}
-                          className="px-4 py-3 cursor-pointer hover:bg-muted/50 text-foreground"
-                        >
-                          <p className="font-medium">{user.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {user.email}
-                          </p>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )} */}
-                {/* {isDropdownVisible &&
-                  searchQuery &&
-                  searchResults.length === 0 && (
-                    <div className="absolute top-full left-0 w-full mt-2 bg-card border rounded-md shadow-lg p-4 text-center text-muted-foreground">
-                      No user found.
-                    </div>
-                  )} */}
               </div>
             </div>
 

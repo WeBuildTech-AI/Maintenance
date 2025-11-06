@@ -1,37 +1,45 @@
 import axios from "axios";
 import type { PartResponse } from "./parts.types";
 import type { RestockThunkArgs, PartRestockLog } from "./parts.types";
+import api from "../auth/auth.service";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 export const partService = {
   fetchParts: async (): Promise<PartResponse[]> => {
-    const res = await axios.get(`${API_URL}/parts`, {
+    const res = await api.get(`/parts`, {
       headers: { Accept: "application/json" },
     });
     return res.data;
   },
 
   fetchPartById: async (id: string): Promise<PartResponse> => {
-    const res = await axios.get(`${API_URL}/parts/${id}`);
+    const res = await api.get(`/parts/${id}`);
     return res.data;
   },
 
   createPart: async (data: FormData): Promise<PartResponse> => {
-    const res = await axios.post(`${API_URL}/parts`, data);
+    const res = await api.post(`/parts`, data);
     return res.data;
   },
 
   updatePart: async (id: string, data: FormData): Promise<PartResponse> => {
-    const res = await axios.patch(`${API_URL}/parts/${id}`, data);
+    const res = await api.patch(`/parts/${id}`, data);
     return res.data;
   },
 
   deletePart: async (id: string): Promise<void> => {
-    await axios.delete(`${API_URL}/parts/${id}`);
+    await api.delete(`/parts/${id}`);
   },
 
-  // RESTOCK API THUNKS BELOW 
+  fetchPartsName: async (): Promise<PartResponse[]> => {
+    const res = await api.get(`/parts/summary`, {
+      headers: { Accept: "application/json" },
+    });
+    return res.data;
+  },
+
+  // RESTOCK API THUNKS BELOW
 
   // ✅ RESTOCK PART - ID goes in URL
   // restockPart: async (
@@ -66,24 +74,20 @@ export const partService = {
       formData.append("restockImages", JSON.stringify(payload.restockImages));
     }
 
-    const res = await axios.post(
-      `${API_URL}/parts/${partId}/restock`,
+    const res = await api.post(
+      `/parts/${partId}/restock`,
       formData
     );
     return res.data;
   },
 
   getAllRestockLogs: async (partId: string): Promise<PartRestockLog[]> => {
-  const res = await axios.get(
-    `${API_URL}/parts/${partId}/restock-logs`
-  );
-  return res.data;
+    const res = await api.get(`/parts/${partId}/restock-logs`);
+    return res.data;
   },
 
   getRestockLogById: async (logId: string): Promise<PartRestockLog> => {
-    const res = await axios.get(
-      `${API_URL}/parts/restock-logs/${logId}`
-    );
+    const res = await api.get(`/parts/restock-logs/${logId}`);
     return res.data;
   },
 };

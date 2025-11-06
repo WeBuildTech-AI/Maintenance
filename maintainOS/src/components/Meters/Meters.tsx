@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { MeterDetail } from "./MeterDetail/MeterDetail";
 import { MetersEmptyState } from "./MetersEmptyState";
 import { MetersHeaderComponent } from "./MetersHeader";
 import { MetersList } from "./MetersList/MetersList";
-import { mockMeters } from "./mockData";
 import { NewMeterForm } from "./NewMeterForm/NewMeterForm";
 import { MeterTable } from "./MeterTable";
 import {
@@ -17,6 +16,9 @@ import { useNavigate, useMatch } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store";
+import Loader from "../Loader/Loader";
+import { ReadingHistory } from "./MeterDetail/ReadingHistory";
+import RecordReadingModal from "./MeterDetail/RecordReadingModal";
 
 export function Meters() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -27,17 +29,19 @@ export function Meters() {
   const [viewMode, setViewMode] = useState<ViewMode>("panel");
   const [meterData, setMeterData] = useState<MeterResponse[]>([]);
   const [loading, setLoading] = useState(false);
-
+  const [showReadingMeter, setShowReadingMeter] = useState(false);
+  const modalRef = React.useRef<HTMLDivElement>(null);
   const [selectedMeter, setSelectedMeter] = useState<
     (typeof meterData)[0] | null
   >(null);
+  const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [sortType, setSortType] = useState("Name"); // "Name", "Status", or "Last Reading"
   const [sortOrder, setSortOrder] = useState("asc"); // "asc" or "desc"
   const [openSection, setOpenSection] = useState("Name");
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const headerRef = useRef(null);
-  const modalRef = useRef(null);
+  // const modalRef = useRef(null);
 
   const dispatch = useDispatch<AppDispatch>();
 
@@ -80,11 +84,18 @@ export function Meters() {
     setLoading(true);
     try {
       const res = await meterService.fetchMeters(10, 1, 0);
+
       const sortedData = [...res].sort(
         (a, b) =>
           new Date(b.updatedAt).valueOf() - new Date(a.updatedAt).valueOf()
       );
+
       setMeterData(sortedData);
+
+      // ✅ Only set selectedMeter AFTER data is fetched successfully
+      if (sortedData.length > 0) {
+        setSelectedMeter(sortedData[0]); // or whatever default you want
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -197,6 +208,7 @@ export function Meters() {
                 handleShowNewMeterForm={handleShowNewMeterForm}
                 handleCreateForm={handleCreateForm}
                 handleCancelForm={handleCancelForm}
+                setShowReadingMeter={setShowReadingMeter}
               />
 
               <div className="flex-1 bg-card">
@@ -208,15 +220,41 @@ export function Meters() {
                     editingMeter={meterToEdit}
                   />
                 ) : selectedMeter ? (
-                  <MeterDetail
-                    selectedMeter={selectedMeter}
-                    handleDeleteMeter={handleDeleteMeter}
-                  />
+                  loading ? (
+                    <div className="flex justify-center item-center h-full">
+                      <Loader />
+                    </div>
+                  ) : selectedMeter ? (
+                    showReadingMeter === true ? (
+                      <ReadingHistory
+                        selectedMeter={selectedMeter || []}
+                        onBack={() => setShowReadingMeter(!showReadingMeter)}
+                        setIsRecordModalOpen={setIsRecordModalOpen}
+                      />
+                    ) : (
+                      <MeterDetail
+                        selectedMeter={selectedMeter}
+                        fetchMeters={fetchMeters}
+                        handleDeleteMeter={handleDeleteMeter}
+                        setShowReadingMeter={setShowReadingMeter}
+                        setIsRecordModalOpen={setIsRecordModalOpen}
+                      />
+                    )
+                  ) : null
                 ) : (
                   <MetersEmptyState />
                 )}
               </div>
             </div>
+            {isRecordModalOpen && (
+              <RecordReadingModal
+                modalRef={modalRef}
+                selectedMeter={selectedMeter}
+                onClose={() => setIsRecordModalOpen(false)}
+                fetchMeters={fetchMeters}
+                // onConfirm={handleRecordReadingConfirm}
+              />
+            )}
           </>
         )}
       </div>
