@@ -120,7 +120,7 @@ api.interceptors.response.use(
       if (!refreshToken) {
         // No refresh token, immediate logout
         isRefreshing = false; // Reset flag
-        window.location.href = '/login';
+        window.location.href = '/work-orders';
         return Promise.reject(error);
       }
 
