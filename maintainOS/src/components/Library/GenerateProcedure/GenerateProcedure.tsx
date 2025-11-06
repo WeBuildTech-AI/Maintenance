@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Plus, Rocket } from "lucide-react";
 import CreateProcedureModal from "./CreateProcedureModal";
 import ProcedureBuilder from "./ProcedureBuilder";
+import { ProcedureBuilderProvider } from "./ProcedureBuilderContext"; 
 
 export default function GenerateProcedure() {
   const [openModal, setOpenModal] = useState(false);
@@ -16,11 +17,17 @@ export default function GenerateProcedure() {
 
   if (builderData) {
     return (
-      <ProcedureBuilder
+      // --- UPDATED: Pass name and description to the Provider ---
+      <ProcedureBuilderProvider
         name={builderData.name}
         description={builderData.desc}
-        onBack={() => setBuilderData(null)}
-      />
+      >
+        <ProcedureBuilder
+          name={builderData.name}
+          description={builderData.desc}
+          onBack={() => setBuilderData(null)}
+        />
+      </ProcedureBuilderProvider>
     );
   }
 

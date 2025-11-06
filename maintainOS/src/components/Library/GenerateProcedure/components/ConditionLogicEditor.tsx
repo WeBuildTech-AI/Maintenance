@@ -2,6 +2,10 @@ import { Share2, ChevronRight, MoreVertical, ChevronDown } from "lucide-react";
 import { useProcedureBuilder } from "../ProcedureBuilderContext";
 import { FieldData, ConditionData, logicConditionTypes } from "../types";
 import { ProcedureBlock } from "./ProcedureBlock";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 
 export function ConditionLogicEditor({ field }: { field: FieldData }) {
   const {
@@ -56,17 +60,26 @@ function ConditionBlock({
     conditionOpPanelRefs,
     conditionMenuButtonRefs,
     conditionMenuPanelRefs,
+    setActiveContainerId, 
+    activeField, 
+    overContainerId, 
   } = useProcedureBuilder();
 
   const parentField = findFieldRecursive(fields, parentFieldId);
   if (!parentField) return null; // Safety check
+
+  // --- LOGIC for highlighting drop zone ---
+  const isDragging = !!activeField;
+  const isOverThisCondition = overContainerId === `condition-${condition.id}`;
+  const canDropOnCondition = isDragging && activeField?.blockType !== 'section';
+  // --- END LOGIC ---
 
   const operators = logicConditionTypes[parentField.selectedType] || [];
 
   const commonSelectClass =
     "border border-yellow-500 rounded-md px-2 py-1 text-sm bg-white focus:outline-none";
   const commonInputClass =
-    "border-b border-gray-400 bg-transparent px-1 py-0.5 text-sm w-24 focus:outline-none focus:ring-0 focus:border-blue-500";
+    "border-b border-gray-400 bg-transparent px-1 py-0.5 text-sm w-24 focus:outline-none focus:ring-0 focus:border-blue-500"; 
 
   const handleValueChange = (val: string) =>
     handleConditionChange(parentFieldId, condition.id, "conditionValue", val);
@@ -170,23 +183,26 @@ function ConditionBlock({
   return (
     <div
       key={condition.id}
-      // --- MODIFIED: Added inline style for z-index ---
       style={{
         position: "relative",
         zIndex:
           conditionOperatorDropdownOpen === condition.id ||
           conditionMenuOpen === condition.id
             ? 30
-            : 10, // Set z-index higher when dropdowns are open
+            : 10, 
       }}
       className="pl-10 mb-6"
-      onClick={(e) => e.stopPropagation()}
+      onClick={(e) => {
+        e.stopPropagation();
+        setActiveContainerId(condition.id);
+      }}
     >
       <div className="absolute left-3.5 top-2 h-full w-0.5 bg-blue-100 z-0"></div>
       <button
-        onClick={() =>
+        onClick={(e) => {
+          e.stopPropagation();
           handleToggleConditionCollapse(parentFieldId, condition.id)
-        }
+        }}
         className="absolute left-0 top-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600 z-20"
       >
         {condition.isCollapsed ? (
@@ -196,16 +212,13 @@ function ConditionBlock({
         )}
       </button>
 
-      {/* --- MODIFIED: This is the parent row --- */}
       <div className="flex items-center justify-between gap-2 mb-4 relative z-20">
-        
-        {/* --- MODIFIED: This wrapper holds all left-side items --- */}
-        <div className="flex items-center gap-2 flex-wrap min-w-0">
+        <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
           <span className="text-gray-700 font-medium whitespace-nowrap">
             If answer is
           </span>
 
-          <div className="relative">
+          <div className="relative z-30">
             <button
               ref={(el) => (conditionOpButtonRefs.current[condition.id] = el)}
               onClick={(e) => {
@@ -235,18 +248,17 @@ function ConditionBlock({
             {conditionOperatorDropdownOpen === condition.id && (
               <div
                 ref={(el) => (conditionOpPanelRefs.current[condition.id] = el)}
-                // --- MODIFIED: Inline CSS for z-index ---
                 style={{
                   position: "absolute",
                   left: 0,
                   top: "100%",
                   marginTop: "0.25rem",
-                  width: "9rem", // w-36
+                  width: "9rem", 
                   backgroundColor: "#fff",
                   border: "1px solid #e5e7eb",
                   borderRadius: "0.375rem",
                   boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)",
-                  zIndex: 9999, // High z-index
+                  zIndex: 9999,
                 }}
               >
                 {operators.map((op) => (
@@ -272,8 +284,7 @@ function ConditionBlock({
           {renderValueInput()}
         </div>
 
-        {/* --- MODIFIED: This is the 3-dot menu --- */}
-        <div className="relative">
+        <div className="relative z-30">
           <button
             ref={(el) => (conditionMenuButtonRefs.current[condition.id] = el)}
             onClick={(e) => {
@@ -289,18 +300,17 @@ function ConditionBlock({
           {conditionMenuOpen === condition.id && (
             <div
               ref={(el) => (conditionMenuPanelRefs.current[condition.id] = el)}
-              // --- MODIFIED: Inline CSS for z-index and position ---
               style={{
                 position: "absolute",
-                right: 0,
+                right: 0, // This fixes the overflow
                 top: "100%",
                 marginTop: "0.25rem",
-                width: "7rem", // w-28
+                width: "7rem",
                 backgroundColor: "#fff",
                 border: "1px solid #e5e7eb",
                 borderRadius: "0.375rem",
                 boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)",
-                zIndex: 9999, // High z-index
+                zIndex: 9999,
               }}
             >
               <button
@@ -319,16 +329,24 @@ function ConditionBlock({
 
       {!condition.isCollapsed && (
         <>
-          <div className="space-y-4 relative z-10">
-            {condition.fields.map((subField, index) => (
-              <ProcedureBlock
-                key={subField.id}
-                field={subField}
-                index={index}
-                isNested={true}
-              />
-            ))}
-          </div>
+          <SortableContext
+            id={`condition-${condition.id}`} 
+            items={condition.fields.map((f) => f.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className={`space-y-4 relative z-10 transition-colors ${
+              canDropOnCondition && isOverThisCondition ? 'bg-yellow-50 rounded-md' : ''
+            }`}>
+              {condition.fields.map((subField, index) => (
+                <ProcedureBlock
+                  key={subField.id}
+                  field={subField}
+                  index={index}
+                  isNested={true}
+                />
+              ))}
+            </div>
+          </SortableContext>
 
           <button
             onClick={() =>

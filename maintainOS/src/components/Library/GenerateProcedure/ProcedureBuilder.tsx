@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { ChevronLeft, Eye } from "lucide-react";
 import ProcedureBody from "./ProcedureBody";
-// ADD: 'MainLayout' se banaya gaya 'useLayout' hook import kiya
+import ProcedureSettings from "./ProcedureSettings"; // <-- 1. IMPORT SETTINGS
 import { useLayout } from "../../MainLayout";
+import { useProcedureBuilder } from "./ProcedureBuilderContext"; 
+import { convertStateToJSON } from "./utils/conversion"; 
 
 interface BuilderProps {
   name: string;
@@ -15,18 +17,24 @@ export default function ProcedureBuilder({
   description,
   onBack,
 }: BuilderProps) {
-  const [fieldCount] = useState(1);
   const [scoring, setScoring] = useState(false);
+  // --- 2. ADD STATE FOR TAB ---
+  const [activeTab, setActiveTab] = useState<'fields' | 'settings'>('fields');
+  
+  const { totalFieldCount, fields, settings } = useProcedureBuilder(); // <-- 3. GET SETTINGS
 
-  // ADD: 'useLayout' hook se current 'sidebarWidth' ko access kiya
-  // Yeh width ab 256px ya 64px hogi, jo bhi 'MainLayout' ka state hai.
   const { sidebarWidth } = useLayout();
-
-  // REMOVE: Purani hardcoded width ki ab zaroorat nahi hai
-  // const SIDEBAR_WIDTH = 260; 
 
   const HEADER_HEIGHT = 70;
   const FOOTER_HEIGHT = 60;
+
+  const handleContinue = () => {
+    // --- 4. PASS SETTINGS TO CONVERTER ---
+    const finalJSON = convertStateToJSON(fields, settings, name, description);
+    
+    console.log("--- FINAL 'CONTINUE' CLICK JSON ---");
+    console.log(JSON.stringify(finalJSON, null, 2));
+  };
 
   return (
     <div className="flex flex-col bg-gray-50" style={{ height: "100vh" }}>
@@ -35,7 +43,6 @@ export default function ProcedureBuilder({
         style={{
           position: "fixed",
           top: 0,
-          // UPDATE: 'left' style ko 'sidebarWidth' se dynamic banaya
           left: `${sidebarWidth}px`,
           right: 0,
           zIndex: 50,
@@ -46,11 +53,9 @@ export default function ProcedureBuilder({
           alignItems: "center",
           justifyContent: "space-between",
           padding: "12px 32px",
-          // ADD: Smooth animation ke liye transition add kiya
           transition: "left 0.3s ease-in-out",
         }}
       >
-        {/* Baaki sab header code same hai... */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <button
             onClick={onBack}
@@ -76,17 +81,31 @@ export default function ProcedureBuilder({
             color: "#374151",
           }}
         >
+          {/* --- 5. MAKE TABS CLICKABLE AND DYNAMIC --- */}
           <span
             style={{
-              color: "#2563eb",
-              borderBottom: "2px solid #2563eb",
+              color: activeTab === 'fields' ? "#2563eb" : "#374151",
+              borderBottom: activeTab === 'fields' ? "2px solid #2563eb" : "2px solid transparent",
               paddingBottom: "2px",
               cursor: "pointer",
             }}
+            onClick={() => setActiveTab('fields')}
           >
             Procedure Fields
           </span>
-          <span style={{ cursor: "pointer" }}>Settings</span>
+          <span 
+            style={{
+              color: activeTab === 'settings' ? "#2563eb" : "#374151",
+              borderBottom: activeTab === 'settings' ? "2px solid #2563eb" : "2px solid transparent",
+              paddingBottom: "2px",
+              cursor: "pointer",
+            }}
+            onClick={() => setActiveTab('settings')}
+          >
+            Settings
+          </span>
+          {/* --- END TAB UPDATE --- */}
+
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <span style={{ cursor: "pointer" }}>Scoring</span>
             <label
@@ -151,6 +170,7 @@ export default function ProcedureBuilder({
             <span>Preview</span>
           </div>
           <button
+            onClick={handleContinue}
             style={{
               backgroundColor: "#2563eb",
               color: "#fff",
@@ -174,9 +194,15 @@ export default function ProcedureBuilder({
           marginBottom: `${FOOTER_HEIGHT}px`,
           overflowY: "auto",
           height: `calc(100vh - ${HEADER_HEIGHT + FOOTER_HEIGHT}px)`,
+          padding: "32px 0",
         }}
       >
-        <ProcedureBody name={name} description={description} />
+        {/* --- 6. ADD CONDITIONAL RENDER --- */}
+        {activeTab === 'fields' ? (
+          <ProcedureBody name={name} description={description} />
+        ) : (
+          <ProcedureSettings />
+        )}
       </main>
 
       {/* 🔹 Fixed Footer */}
@@ -184,7 +210,6 @@ export default function ProcedureBuilder({
         style={{
           position: "fixed",
           bottom: 0,
-          // UPDATE: 'left' style ko 'sidebarWidth' se dynamic banaya
           left: `${sidebarWidth}px`,
           right: 0,
           backgroundColor: "#fff",
@@ -197,11 +222,10 @@ export default function ProcedureBuilder({
           fontWeight: 500,
           height: `${FOOTER_HEIGHT}px`,
           zIndex: 50,
-          // ADD: Smooth animation ke liye transition add kiya
           transition: "left 0.3s ease-in-out",
         }}
       >
-        ℹ Fields count: {fieldCount} / 350
+        ℹ Fields count: {totalFieldCount} / 350
       </footer>
     </div>
   );

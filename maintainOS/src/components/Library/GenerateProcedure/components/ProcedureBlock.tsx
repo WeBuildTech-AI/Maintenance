@@ -16,15 +16,16 @@ export function ProcedureBlock({
   parentSectionId,
   isNested,
 }: ProcedureBlockProps) {
+
+  // --- Pass isNested to all blocks ---
   if (field.blockType === "heading") {
-    return <HeadingBlock field={field} />;
+    return <HeadingBlock field={field} isNested={isNested} />;
   }
 
   if (field.blockType === "section") {
-    return <SectionBlock field={field} />;
+    return <SectionBlock field={field} isNested={isNested} />;
   }
 
-  // Default is 'field'
   return (
     <FieldBlock
       field={field}

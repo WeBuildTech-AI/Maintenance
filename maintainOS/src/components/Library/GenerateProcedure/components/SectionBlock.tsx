@@ -1,10 +1,14 @@
-import { ChevronDown, Pencil, MoreVertical } from "lucide-react";
+import { ChevronDown, Pencil, MoreVertical, Layout } from "lucide-react"; 
 import { useProcedureBuilder } from "../ProcedureBuilderContext";
 import { FieldData } from "../types";
 import { ProcedureBlock } from "./ProcedureBlock";
 import { FieldContentRenderer } from "./FieldContentRenderer";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 
-export function SectionBlock({ field }: { field: FieldData }) {
+export function SectionBlock({ field, isNested }: { field: FieldData, isNested?: boolean }) {
   const {
     editingSectionId,
     setEditingSectionId,
@@ -16,21 +20,35 @@ export function SectionBlock({ field }: { field: FieldData }) {
     toggleCollapse,
     handleFieldPropChange,
     handleDeleteField,
-    handleAddFieldInsideSection,
+    // handleAddFieldInsideSection, // No longer used
     sectionBlockRefs,
     sectionMenuButtonRefs,
     sectionMenuPopoverRefs,
-    setIsReorderModalOpen, // <-- ADDED
+    setIsReorderModalOpen,
+    setActiveContainerId, 
+    activeField, 
+    overContainerId, 
   } = useProcedureBuilder();
 
   const isSectionEditing = editingSectionId === field.id;
   const isCollapsed = !!collapsed[field.id];
+
+  // --- LOGIC for highlighting drop zone ---
+  const isDragging = !!activeField;
+  const isOverThisSection = overContainerId === `section-${field.id}`;
+  // A Section cannot be dropped inside another Section
+  const canDropOnSection = isDragging && activeField?.blockType !== 'section';
+  // --- END LOGIC ---
 
   return (
     <div
       key={field.id}
       ref={(el) => (sectionBlockRefs.current[field.id] = el)}
       className="relative mb-8"
+      onClick={(e) => {
+        e.stopPropagation();
+        setActiveContainerId(field.id);
+      }}
     >
       <div className="ml-0">
         <div
@@ -39,6 +57,10 @@ export function SectionBlock({ field }: { field: FieldData }) {
           }`}
         >
           <div className="flex items-center gap-2 group">
+            <span className="text-gray-400">
+              <Layout size={20} />
+            </span>
+
             {isSectionEditing ? (
               <input
                 type="text"
@@ -73,7 +95,8 @@ export function SectionBlock({ field }: { field: FieldData }) {
                   <Pencil
                     size={16}
                     className="text-gray-400 group-hover:text-blue-500 transition-opacity opacity-0 group-hover:opacity-100 cursor-pointer"
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setEditingSectionId(field.id);
                       setEditingFieldId(null);
                     }}
@@ -86,11 +109,12 @@ export function SectionBlock({ field }: { field: FieldData }) {
           <div style={{ position: "relative" }}>
             <button
               ref={(el) => (sectionMenuButtonRefs.current[field.id] = el)}
-              onClick={() =>
+              onClick={(e) => {
+                e.stopPropagation();
                 setSectionMenuOpen(
                   sectionMenuOpen === field.id ? null : field.id
                 )
-              }
+              }}
               className="text-gray-500 hover:text-gray-700"
             >
               <MoreVertical size={20} />
@@ -111,9 +135,9 @@ export function SectionBlock({ field }: { field: FieldData }) {
                   zIndex: 50,
                 }}
               >
-                {/* --- MODIFIED --- */}
                 <button 
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setIsReorderModalOpen(true);
                     setSectionMenuOpen(null);
                   }}
@@ -121,11 +145,17 @@ export function SectionBlock({ field }: { field: FieldData }) {
                 >
                   Reorder
                 </button>
-                <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                <button 
+                  onClick={(e) => e.stopPropagation()}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
                   Duplicate
                 </button>
                 <button
-                  onClick={() => handleDeleteField(field.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteField(field.id);
+                  }}
                   className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
                 >
                   Delete
@@ -138,7 +168,7 @@ export function SectionBlock({ field }: { field: FieldData }) {
         {!isCollapsed ? (
           <>
             {isSectionEditing && (
-              <div className="mb-4">
+              <div className="mb-4 pl-10">
                 <textarea
                   placeholder="Add a description"
                   value={field.description || ""}
@@ -153,44 +183,52 @@ export function SectionBlock({ field }: { field: FieldData }) {
                 />
               </div>
             )}
+            
+            <div className={`relative pl-10 transition-colors ${
+              canDropOnSection && isOverThisSection ? 'bg-yellow-50 rounded-md' : ''
+            }`}>
+              <div className="absolute left-3.5 top-4 h-[calc(100%-2rem)] w-0.5 bg-gray-200 z-0"></div>
 
-            {field.fields?.map((subField, subIndex) => {
-              if (isSectionEditing) {
-                return (
-                  <div
-                    key={subField.id}
-                    className="border border-gray-200 bg-gray-50 rounded-lg p-4 mb-6 relative"
-                  >
-                    <p className="font-medium text-gray-800 mb-2">
-                      {subField.label || "Field Name"}
-                    </p>
-                    <FieldContentRenderer
-                      field={subField}
-                      isEditing={false}
-                      parentSectionId={field.id}
-                    />
-                  </div>
-                );
-              } else {
-                return (
-                  <div key={subField.id} className="ml-0">
-                    <ProcedureBlock
-                      field={subField}
-                      index={subIndex}
-                      parentSectionId={field.id}
-                      isNested={true}
-                    />
-                  </div>
-                );
-              }
-            })}
-
-            <button
-              onClick={() => handleAddFieldInsideSection(field.id)}
-              className="text-blue-600 text-sm font-medium"
-            >
-              + Add Field
-            </button>
+              <SortableContext
+                id={`section-${field.id}`}
+                items={field.fields?.map((f) => f.id) || []}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="relative z-10 space-y-4">
+                  {field.fields?.map((subField, subIndex) => {
+                    if (isSectionEditing) {
+                      return (
+                        <div
+                          key={subField.id}
+                          className="border border-gray-200 bg-gray-50 rounded-lg p-4 relative"
+                        >
+                          <p className="font-medium text-gray-800 mb-2">
+                            {subField.label || "Field Name"}
+                          </p>
+                          <FieldContentRenderer
+                            field={subField}
+                            isEditing={false}
+                            parentSectionId={field.id}
+                          />
+                        </div>
+                      );
+                    } else {
+                      return (
+                          <ProcedureBlock
+                            key={subField.id} 
+                            field={subField}
+                            index={subIndex}
+                            parentSectionId={field.id}
+                            isNested={true} 
+                          />
+                      );
+                    }
+                  })}
+                </div>
+              </SortableContext>
+            </div>
+            
+            {/* --- BUTTON REMOVED --- */}
           </>
         ) : (
           <div className="mt-1 text-gray-500 text-sm">

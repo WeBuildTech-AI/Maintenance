@@ -13,9 +13,14 @@ export function ProcedureSidebar() {
     <div
       ref={sidebarRef}
       style={{
-        position: "fixed",
-        right: "24px",
-        bottom: "88px",
+        position: "sticky",
+        // This matches the 32px padding-top of the <main> element
+        top: "32px", 
+        
+        marginRight: "24px",
+        marginLeft: "24px",
+        
+        // --- Original styles below ---
         backgroundColor: "#fff",
         borderRadius: "12px",
         boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
@@ -26,6 +31,7 @@ export function ProcedureSidebar() {
         gap: "12px",
         width: "85px",
         zIndex: 40,
+        alignSelf: "flex-start", 
       }}
     >
       <p className="text-gray-700 font-medium text-sm mb-1">New Item</p>

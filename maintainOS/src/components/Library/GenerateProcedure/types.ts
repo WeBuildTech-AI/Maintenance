@@ -19,8 +19,8 @@ export interface FieldData {
   meterUnit?: string;
   selectedMeter?: string;
   description?: string;
-  hasDescription?: boolean; // <-- ADDED
-  isRequired?: boolean; // <-- ADDED
+  hasDescription?: boolean; 
+  isRequired?: boolean; 
   conditions?: ConditionData[];
 }
 
@@ -28,6 +28,16 @@ export interface ProcedureBodyProps {
   name: string;
   description: string;
 }
+
+// --- ADDED THIS INTERFACE ---
+export interface ProcedureSettingsState {
+  categories: string[]; // In a real app, these might be objects with IDs
+  assets: string[];
+  locations: string[];
+  teamsInCharge: string[];
+  visibility: 'private' | 'public';
+}
+// --- END ADDITION ---
 
 export const logicConditionTypes: Record<string, string[]> = {
   "Number Field": [

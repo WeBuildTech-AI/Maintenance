@@ -5,8 +5,10 @@ import {
   createContext,
   useContext,
   ReactNode,
+  useMemo, 
 } from "react";
-import { FieldData, ConditionData, logicConditionTypes } from "./types";
+// --- ADDED ProcedureSettingsState ---
+import { FieldData, ConditionData, logicConditionTypes, ProcedureSettingsState } from "./types";
 import {
   Link2,
   Trash2,
@@ -30,17 +32,27 @@ import {
   Share2,
   Pencil,
   ChevronRight,
+  Copy,
 } from "lucide-react";
-// --- NEW IMPORTS ---
-import { DragEndEvent } from "@dnd-kit/core";
+import { DragEndEvent, DragOverEvent, DragStartEvent } from "@dnd-kit/core"; 
 import { arrayMove } from "@dnd-kit/sortable";
+import { convertStateToJSON } from "./utils/conversion";
 
 // --- 1. Define the Context Type (all state and handlers) ---
 interface ProcedureBuilderContextType {
   fields: FieldData[];
   setFields: React.Dispatch<React.SetStateAction<FieldData[]>>;
+  // --- ADDED SETTINGS STATE ---
+  settings: ProcedureSettingsState;
+  setSettings: React.Dispatch<React.SetStateAction<ProcedureSettingsState>>;
+  // --- END ADDITION ---
+  activeField: FieldData | null; 
   editingFieldId: number | null;
   setEditingFieldId: React.Dispatch<React.SetStateAction<number | null>>;
+  activeContainerId: number | 'root';
+  setActiveContainerId: React.Dispatch<React.SetStateAction<number | 'root'>>;
+  overContainerId: string | number | null;
+  setOverContainerId: React.Dispatch<React.SetStateAction<string | number | null>>;
   dropdownOpen: number | null;
   setDropdownOpen: React.Dispatch<React.SetStateAction<number | null>>;
   editingSectionId: number | null;
@@ -57,13 +69,14 @@ interface ProcedureBuilderContextType {
   setConditionMenuOpen: React.Dispatch<React.SetStateAction<number | null>>;
   fieldMenuOpen: number | null;
   setFieldMenuOpen: React.Dispatch<React.SetStateAction<number | null>>;
-  isReorderModalOpen: boolean; // <-- ADDED
-  setIsReorderModalOpen: React.Dispatch<React.SetStateAction<boolean>>; // <-- ADDED
+  isReorderModalOpen: boolean;
+  setIsReorderModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
   dropdownWidths: Record<number, number>;
   setDropdownWidths: React.Dispatch<React.SetStateAction<Record<number, number>>>;
   collapsed: Record<number, boolean>;
   toggleCollapse: (id: number) => void;
   fieldTypes: { label: string; icon: ReactNode }[];
+  totalFieldCount: number; 
 
   // --- Refs ---
   dropdownRefs: React.MutableRefObject<Record<number, HTMLDivElement | null>>;
@@ -143,7 +156,10 @@ interface ProcedureBuilderContextType {
   handleToggleRequired: (fieldId: number, isChecked: boolean) => void;
   handleToggleDescription: (fieldId: number) => void;
   handleDuplicateField: (fieldId: number) => void;
-  handleDragEnd: (event: DragEndEvent) => void; // <-- ADDED
+  handleDragEnd: (event: DragEndEvent) => void;
+  handleFieldDragStart: (event: DragStartEvent) => void;
+  handleFieldDragOver: (event: DragOverEvent) => void;
+  handleFieldDragEnd: (event: DragEndEvent) => void;
 }
 
 // --- 2. Create Context ---
@@ -151,39 +167,128 @@ const ProcedureBuilderContext = createContext<
   ProcedureBuilderContextType | undefined
 >(undefined);
 
-// --- 3. Create Provider Component ---
-export function ProcedureBuilderProvider({ children }: { children: ReactNode }) {
-  const [fields, setFields] = useState<FieldData[]>([
-    {
-      id: 1,
-      selectedType: "Text Field",
-      blockType: "field",
-      label: "Field Name",
-      selectedMeter: "fdxghjbkl;",
-      meterUnit: "Feet",
-      conditions: [],
-      isRequired: false,
-      hasDescription: false,
-    },
-    {
-      id: 2,
-      blockType: "section",
-      label: "Section #1",
-      description: "",
-      fields: [
-        {
-          id: 3,
-          selectedType: "Text Field",
-          blockType: "field",
-          label: "New Field",
-          conditions: [],
-          isRequired: false,
-          hasDescription: false,
-        },
-      ],
-    },
-  ]);
+// --- Helper: Find any field and its parent array ---
+type ParentArray = FieldData[] | ConditionData["fields"];
+interface FieldLocation {
+  field: FieldData;
+  parent: ParentArray;
+  index: number;
+}
+function findFieldAndParent(
+  arr: ParentArray,
+  id: number
+): FieldLocation | null {
+  for (let i = 0; i < arr.length; i++) {
+    const field = arr[i];
+    if (field.id === id) {
+      return { field, parent: arr, index: i };
+    }
+    if (field.fields) {
+      const found = findFieldAndParent(field.fields, id);
+      if (found) return found;
+    }
+    if (field.conditions) {
+      for (const c of field.conditions) {
+        const found = findFieldAndParent(c.fields, id);
+        if (found) return found;
+      }
+    }
+  }
+  return null;
+}
 
+// --- NEW HELPER: Recursively find a container and add an item to it ---
+const findAndAddRecursive = (
+  fieldsList: FieldData[],
+  containerId: number | 'root',
+  newItem: FieldData
+): FieldData[] => {
+  // This function is only for nested adds.
+  
+  return fieldsList.map((field) => {
+    // Check if the current field is the container
+    if (field.id === containerId && field.blockType === 'section') {
+      return {
+        ...field,
+        fields: [...(field.fields || []), newItem]
+      };
+    }
+
+    // Recurse into section fields
+    if (field.fields) {
+      field.fields = findAndAddRecursive(field.fields, containerId, newItem);
+    }
+
+    // Recurse into condition fields
+    if (field.conditions) {
+      field.conditions = field.conditions.map(c => {
+        if (c.id === containerId) {
+          return {
+            ...c,
+            fields: [...c.fields, newItem]
+          };
+        }
+        // Recurse into this condition's fields
+        return {
+          ...c,
+          fields: findAndAddRecursive(c.fields, containerId, newItem)
+        };
+      });
+    }
+
+    return field;
+  });
+};
+
+// --- NEW HELPER: Recursively count fields ---
+const countFieldsRecursive = (fieldsList: FieldData[]): number => {
+  let count = 0;
+  for (const field of fieldsList) {
+    if (field.blockType === "field") {
+      count += 1;
+    }
+
+    if (field.fields) {
+      count += countFieldsRecursive(field.fields);
+    }
+
+    if (field.conditions) {
+      for (const c of field.conditions) {
+        count += countFieldsRecursive(c.fields);
+      }
+    }
+  }
+  return count;
+};
+
+// --- ADDED PROPS FOR PROVIDER ---
+interface ProcedureBuilderProviderProps {
+  children: ReactNode;
+  name: string;
+  description: string;
+}
+
+// --- 3. Create Provider Component ---
+export function ProcedureBuilderProvider({ 
+  children, 
+  name, 
+  description 
+}: ProcedureBuilderProviderProps) { 
+  const [fields, setFields] = useState<FieldData[]>([]); // Start empty
+
+  // --- ADDED SETTINGS STATE & DEFAULT ---
+  const [settings, setSettings] = useState<ProcedureSettingsState>({
+    categories: [],
+    assets: [],
+    locations: [],
+    teamsInCharge: [],
+    visibility: "private"
+  });
+  // --- END ADDITION ---
+
+  const [activeContainerId, setActiveContainerId] = useState<number | 'root'>('root'); 
+  const [activeField, setActiveField] = useState<FieldData | null>(null); 
+  const [overContainerId, setOverContainerId] = useState<string | number | null>(null);
   const [editingFieldId, setEditingFieldId] = useState<number | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState<number | null>(null);
   const [editingSectionId, setEditingSectionId] = useState<number | null>(null);
@@ -195,7 +300,7 @@ export function ProcedureBuilderProvider({ children }: { children: ReactNode }) 
     null
   );
   const [fieldMenuOpen, setFieldMenuOpen] = useState<number | null>(null);
-  const [isReorderModalOpen, setIsReorderModalOpen] = useState(false); // <-- ADDED
+  const [isReorderModalOpen, setIsReorderModalOpen] = useState(false);
   const [dropdownWidths, setDropdownWidths] = useState<Record<number, number>>(
     {}
   );
@@ -425,6 +530,19 @@ export function ProcedureBuilderProvider({ children }: { children: ReactNode }) 
     fieldMenuOpen,
   ]);
 
+  const totalFieldCount = useMemo(() => {
+    return countFieldsRecursive(fields);
+  }, [fields]);
+
+  // --- UPDATED: LOG JSON ON EVERY CHANGE (fields OR settings) ---
+  useEffect(() => {
+    const finalJSON = convertStateToJSON(fields, settings, name, description);
+    console.clear(); 
+    console.log("--- LIVE PROCEDURE JSON (Updates on change) ---");
+    console.log(JSON.stringify(finalJSON, null, 2));
+  }, [fields, settings, name, description]); // <-- ADDED settings
+  // --- END NEW ---
+
   // --- Helper function to recursively update fields ---
   const updateFieldsRecursive = (
     fieldsList: FieldData[],
@@ -472,36 +590,44 @@ export function ProcedureBuilderProvider({ children }: { children: ReactNode }) 
     return undefined;
   };
 
-  // --- HANDLERS ---
+  // --- HANDLERS (MODIFIED) ---
 
   const handleAddField = () => {
     const newId = Date.now();
-    setFields([
-      ...fields,
-      {
-        id: newId,
-        selectedType: "Text Field",
-        blockType: "field",
-        label: "New Field",
-        isRequired: false,
-        hasDescription: false,
-      },
-    ]);
+    const newField: FieldData = {
+      id: newId,
+      selectedType: "Text Field",
+      blockType: "field",
+      label: "New Field",
+      isRequired: false,
+      hasDescription: false,
+    };
+    
+    if (activeContainerId === 'root') {
+      setFields((prev) => [...prev, newField]);
+    } else {
+      setFields((prev) => findAndAddRecursive(prev, activeContainerId, newField));
+    }
+
     setEditingFieldId(newId);
     setDropdownOpen(null);
   };
 
   const handleAddHeading = () => {
     const newId = Date.now();
-    setFields([
-      ...fields,
-      {
-        id: newId,
-        selectedType: "Heading",
-        blockType: "heading",
-        label: "New Heading",
-      },
-    ]);
+    const newHeading: FieldData = {
+      id: newId,
+      selectedType: "Heading",
+      blockType: "heading",
+      label: "New Heading",
+    };
+
+    if (activeContainerId === 'root') {
+      setFields((prev) => [...prev, newHeading]);
+    } else {
+      setFields((prev) => findAndAddRecursive(prev, activeContainerId, newHeading));
+    }
+    
     setEditingFieldId(newId);
     setDropdownOpen(null);
   };
@@ -511,25 +637,30 @@ export function ProcedureBuilderProvider({ children }: { children: ReactNode }) 
     const newSubFieldId = newId + 1;
     const sectionNumber =
       fields.filter((f) => f.blockType === "section").length + 1;
-    setFields([
-      ...fields,
-      {
-        id: newId,
-        blockType: "section",
-        label: `Section #${sectionNumber}`,
-        description: "",
-        fields: [
-          {
-            id: newSubFieldId,
-            selectedType: "Text Field",
-            blockType: "field",
-            label: "New Field",
-            isRequired: false,
-            hasDescription: false,
-          },
-        ],
-      },
-    ]);
+    
+    const newSection: FieldData = {
+      id: newId,
+      blockType: "section",
+      label: `Section #${sectionNumber}`,
+      description: "",
+      fields: [
+        {
+          id: newSubFieldId,
+          selectedType: "Text Field",
+          blockType: "field",
+          label: "New Field",
+          isRequired: false,
+          hasDescription: false,
+        },
+      ],
+    };
+    
+    if (activeContainerId === 'root') {
+      setFields((prev) => [...prev, newSection]);
+    } else {
+      setFields((prev) => findAndAddRecursive(prev, activeContainerId, newSection));
+    }
+    
     setEditingSectionId(newId);
     setEditingFieldId(null);
     setDropdownOpen(null);
@@ -860,7 +991,6 @@ export function ProcedureBuilderProvider({ children }: { children: ReactNode }) 
     setFieldMenuOpen(null);
   };
 
-  // --- NEW: DND-Kit Drag Handler ---
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -930,13 +1060,109 @@ export function ProcedureBuilderProvider({ children }: { children: ReactNode }) 
     setFieldMenuOpen(null);
   };
 
+  // --- NEW: Field Drag-n-Drop Handlers ---
+  const handleFieldDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    const field = findFieldRecursive(fields, active.id as number);
+    if (field) {
+      setActiveField(field);
+    }
+  };
+
+  const handleFieldDragOver = (event: DragOverEvent) => {
+    const { over } = event;
+    if (over) {
+      const containerId = over.data?.current?.sortable?.containerId || null;
+      setOverContainerId(containerId);
+    } else {
+      setOverContainerId(null);
+    }
+  };
+
+  const handleFieldDragEnd = (event: DragEndEvent) => {
+    setActiveField(null);
+    setOverContainerId(null); 
+    
+    const { active, over } = event;
+    if (!over) return;
+    if (active.id === over.id) return;
+
+    setFields((prevFields) => {
+        const newFields = JSON.parse(JSON.stringify(prevFields)) as FieldData[];
+        const activeLocation = findFieldAndParent(newFields, active.id as number);
+        let overLocation = findFieldAndParent(newFields, over.id as number);
+        
+        if (!activeLocation) return prevFields;
+
+        if (!overLocation) {
+          // Dropped on a container, not an item
+          const overContainerId = over.data?.current?.sortable?.containerId;
+          
+          let targetContainer: ParentArray | undefined;
+          if (overContainerId === "root") {
+            targetContainer = newFields;
+          } else if (overContainerId.startsWith("section-")) {
+            const id = Number(overContainerId.split("-")[1]);
+            targetContainer = findFieldRecursive(newFields, id)?.fields;
+          } else if (overContainerId.startsWith("condition-")) {
+             const id = Number(overContainerId.split("-")[1]);
+             const findCond = (arr: FieldData[]): ConditionData | undefined => {
+               for (const f of arr) {
+                 if (f.conditions) {
+                   const cond = f.conditions.find(c => c.id === id);
+                   if (cond) return cond;
+                 }
+                 if(f.fields) {
+                   const cond = findCond(f.fields);
+                   if (cond) return cond;
+                 }
+               }
+             }
+             targetContainer = findCond(newFields)?.fields;
+          }
+
+          if (targetContainer && targetContainer !== activeLocation.parent) {
+            const [movedItem] = activeLocation.parent.splice(activeLocation.index, 1);
+            targetContainer.push(movedItem);
+            return newFields;
+          }
+          return prevFields; // No valid drop
+        }
+
+        // Dropped on an item
+        if (activeLocation.parent === overLocation.parent) {
+          // Same container reorder
+          const reordered = arrayMove(activeLocation.parent, activeLocation.index, overLocation.index);
+          
+          if(activeLocation.parent === newFields) {
+            return reordered;
+          }
+          
+          activeLocation.parent.splice(0, activeLocation.parent.length, ...reordered);
+          return newFields;
+          
+        } else {
+          // Move between containers
+          const [movedItem] = activeLocation.parent.splice(activeLocation.index, 1);
+          overLocation.parent.splice(overLocation.index, 0, movedItem);
+          return newFields;
+        }
+    });
+  };
 
   // --- 5. Provide Context Value ---
   const contextValue: ProcedureBuilderContextType = {
     fields,
     setFields,
+    settings, // <-- ADDED
+    setSettings, // <-- ADDED
+    activeField, 
     editingFieldId,
     setEditingFieldId,
+    activeContainerId,
+    setActiveContainerId,
+    overContainerId, 
+    setOverContainerId, 
     dropdownOpen,
     setDropdownOpen,
     editingSectionId,
@@ -951,13 +1177,14 @@ export function ProcedureBuilderProvider({ children }: { children: ReactNode }) 
     setConditionMenuOpen,
     fieldMenuOpen,
     setFieldMenuOpen,
-    isReorderModalOpen, // <-- ADDED
-    setIsReorderModalOpen, // <-- ADDED
+    isReorderModalOpen,
+    setIsReorderModalOpen,
     dropdownWidths,
     setDropdownWidths,
     collapsed,
     toggleCollapse,
     fieldTypes,
+    totalFieldCount, 
     dropdownRefs,
     buttonRefs,
     fieldBlockRefs,
@@ -995,7 +1222,10 @@ export function ProcedureBuilderProvider({ children }: { children: ReactNode }) 
     handleToggleRequired,
     handleToggleDescription,
     handleDuplicateField,
-    handleDragEnd, // <-- ADDED
+    handleDragEnd,
+    handleFieldDragStart,
+    handleFieldDragOver,
+    handleFieldDragEnd,
   };
 
   return (

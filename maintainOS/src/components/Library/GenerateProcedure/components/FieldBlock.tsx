@@ -12,8 +12,11 @@ import { useProcedureBuilder } from "../ProcedureBuilderContext";
 import { FieldData } from "../types";
 import { FieldContentRenderer } from "./FieldContentRenderer";
 import { ConditionLogicEditor } from "./ConditionLogicEditor";
-import { ConditionLogicDisplay } from "./ConditionLogicDisplay";
+// --- REMOVED: No longer using the read-only display ---
+// import { ConditionLogicDisplay } from "./ConditionLogicDisplay";
 import { useState } from "react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 export function FieldBlock({
   field,
@@ -42,7 +45,6 @@ export function FieldBlock({
     handleDeleteField,
     logicEditorButtonRefs,
     logicEnabledFieldTypes,
-    // --- ADDED ---
     fieldMenuOpen,
     setFieldMenuOpen,
     fieldMenuButtonRefs,
@@ -58,39 +60,61 @@ export function FieldBlock({
   const setIsRequired = (isChecked: boolean) => {
     handleToggleRequired(field.id, isChecked);
   };
+  
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging, 
+  } = useSortable({ id: field.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1, 
+  };
 
   return (
     <div
-      className="flex gap-2 items-start"
-      ref={(el) => (fieldBlockRefs.current[field.id] = el)}
+      ref={setNodeRef} 
+      style={style} 
+      className="flex gap-2 items-start group"
     >
-      {!isEditing && !isNested && (
-        <div className="text-gray-400 cursor-grab pt-6">
+      {/* --- Handle for ALL fields --- */}
+      {!isEditing && (
+        <div
+          {...attributes} 
+          {...listeners} 
+          className="text-gray-400 cursor-grab active:cursor-grabbing pt-4 opacity-0 group-hover:opacity-100 transition-opacity"
+        >
           <GripVertical size={20} />
         </div>
       )}
 
-      <div className="flex-1 mb-6">
+      <div className={`flex-1 mb-6 ${isEditing ? 'ml-[-28px]' : ''}`}>
         <div
           key={field.id}
+          ref={(el) => (fieldBlockRefs.current[field.id] = el)}
           className={`flex-1 border ${
             isEditing
               ? "border-blue-400 bg-white"
               : "border-gray-200 bg-gray-50 hover:bg-white"
-          } rounded-lg p-4 relative cursor-pointer ${
-            isNested && !isEditing ? "flex gap-2 items-start" : ""
-          }`}
-          onClick={() => {
-            !isEditing && setEditingFieldId(field.id);
-            setEditingSectionId(null);
-            setDropdownOpen(null);
+          } rounded-lg p-4 relative cursor-pointer`}
+          onClick={() => { 
+            if (!isEditing) {
+              setEditingFieldId(field.id);
+              setEditingSectionId(null);
+              setDropdownOpen(null);
+              // --- ADDED THIS ---
+              // When we click to edit, ALSO set the logic editor to open
+              if (logicEnabledFieldTypes.includes(field.selectedType)) {
+                setLogicEditorOpen(field.id);
+              }
+            }
           }}
         >
-          {isNested && !isEditing && (
-            <div className="text-gray-400 cursor-grab pt-2">
-              <MoreVertical size={20} />
-            </div>
-          )}
 
           <div className="flex-1">
             {isEditing ? (
@@ -173,7 +197,7 @@ export function FieldBlock({
                           </div>
                           <span>{type.label}</span>
                         </div>
-                      ))}
+))}
                     </div>
                   )}
                 </div>
@@ -196,7 +220,9 @@ export function FieldBlock({
               />
             )}
 
-            <div onClick={(e) => isEditing && e.stopPropagation()}>
+            <div 
+              onClick={(e) => isEditing && e.stopPropagation()}
+            >
               <FieldContentRenderer
                 field={field}
                 isEditing={isEditing}
@@ -294,8 +320,7 @@ export function FieldBlock({
                     ></div>
                   </label>
                   
-                  {/* --- MODIFIED: 3-dot menu --- */}
-                  <div style={{ position: "relative" }}> {/* MODIFIED: Added position: relative */}
+                  <div style={{ position: "relative" }}>
                     <button
                       ref={(el) => (fieldMenuButtonRefs.current[field.id] = el)}
                       onClick={(e) => {
@@ -309,18 +334,17 @@ export function FieldBlock({
                     {fieldMenuOpen === field.id && (
                        <div
                         ref={(el) => (fieldMenuPanelRefs.current[field.id] = el)}
-                        // --- THIS IS THE FIX ---
                         style={{
                           position: "absolute",
-                          right: 0, // Align to the right of the icon
-                          bottom: "100%", // Position above the icon
-                          marginBottom: "0.25rem", // 4px margin
-                          width: "12rem", // w-48
+                          right: 0,
+                          bottom: "100%",
+                          marginBottom: "0.25rem",
+                          width: "12rem",
                           backgroundColor: "#fff",
-                          border: "1px solid #e5e7eb", // border-gray-200
-                          borderRadius: "0.375rem", // rounded-md
-                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)", // shadow-lg
-                          zIndex: 50, // z-50
+                          border: "1px solid #e5e7eb",
+                          borderRadius: "0.375rem",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)",
+                          zIndex: 50,
                         }}
                       >
                         <button
@@ -340,7 +364,6 @@ export function FieldBlock({
                       </div>
                     )}
                   </div>
-                  {/* --- END OF MODIFICATION --- */}
 
                 </div>
               </div>
@@ -348,23 +371,31 @@ export function FieldBlock({
           </div>
         </div>
 
-        {/* --- LOGIC DISPLAY (Show when logic is NOT open) --- */}
-        {logicEditorOpen !== field.id &&
+        {/* --- THIS BLOCK IS FOR VIEW MODE (NOT EDITING) --- */}
+        {/* --- UPDATED: Replaced ConditionLogicDisplay with ConditionLogicEditor --- */}
+        {!isEditing &&
           field.conditions &&
-          field.conditions.length > 0 && (
-            <div className="mt-6">
-              {field.conditions.map((condition) => (
-                <ConditionLogicDisplay
-                  key={condition.id}
-                  condition={condition}
-                  parentFieldId={field.id}
-                />
-              ))}
+          field.conditions.length > 0 &&
+          logicEnabledFieldTypes.includes(field.selectedType) && (
+            <div
+              className="mt-6 relative z-20"
+              onClick={(e) => {
+                e.stopPropagation();
+                // This makes the "view mode" logic block clickable
+                // It opens the main field editor AND the logic editor
+                setEditingFieldId(field.id);
+                setEditingSectionId(null);
+                setDropdownOpen(null);
+                setLogicEditorOpen(field.id);
+              }}
+            >
+              <ConditionLogicEditor field={field} />
             </div>
           )}
 
-        {/* --- LOGIC EDITOR (Show when logic IS open) --- */}
-        {logicEditorOpen === field.id &&
+        {/* --- THIS BLOCK IS FOR EDIT MODE --- */}
+        {isEditing &&
+          logicEditorOpen === field.id &&
           logicEnabledFieldTypes.includes(field.selectedType) && (
             <div
               className="mt-6 relative z-20"
