@@ -41,6 +41,7 @@ export function ReadingHistory({
         {selectedMeter?.readings?.length === 0 ? (
           <div className="text-center text-gray-500 mt-8">No readings yet.</div>
         ) : (
+          selectedMeter.readings &&
           selectedMeter.readings
             .sort(
               (a: any, b: any) =>

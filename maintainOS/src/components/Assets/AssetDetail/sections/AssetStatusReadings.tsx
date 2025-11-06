@@ -15,11 +15,13 @@ export function AssetStatusReadings({
   fetchAssetsData,
   setSeeMoreAssetStatus,
   seeMoreFlag,
+  getAssetStatusLog,
 }: {
   asset: any;
   fetchAssetsData?: () => void;
   setSeeMoreAssetStatus: boolean;
   seeMoreFlag: boolean;
+  getAssetStatusLog?: () => void;
 }) {
   const user = useSelector((state: RootState) => state.auth.user);
 
@@ -85,8 +87,12 @@ export function AssetStatusReadings({
       if (typeof fetchAssetsData === "function") {
         fetchAssetsData();
       }
+      if (typeof getAssetStatusLog === "function") {
+        getAssetStatusLog();
+      }
 
       setIsModalOpen(false);
+      // getAssetStatusLog();
       toast.success("Asset Status Successfully updated ");
     } catch (error) {
       console.error("Failed to update asset status:", error);

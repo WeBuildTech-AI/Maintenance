@@ -248,7 +248,6 @@ export function Locations() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [modalRef]);
-
   const handleDeleteLocation = (id: string) => {
     // Step 1: Find the index of the item in the VISIBLE list (filteredLocations)
     const currentVisibleIndex = filteredLocations.findIndex(
@@ -288,6 +287,43 @@ export function Locations() {
         console.error("Delete failed:", error);
         toast.error("Failed to delete the location.");
       });
+
+    // Step 1: Find the index of the item being deleted from the currently visible list
+    const currentIndex = locations.findIndex((loc) => loc.id === id);
+
+    if (window.confirm("Are you sure you want to delete this location?")) {
+      dispatch(deleteLocation(id))
+        .unwrap()
+        .then(() => {
+          // Step 2: Create a new list without the deleted item
+          const newLocationList = locations.filter((loc) => loc.id !== id);
+
+          // Step 3: Update local state immediately
+          setLocations(newLocationList);
+
+          // Step 4: Handle selection logic
+          if (newLocationList.length === 0) {
+            // If the list becomes empty, deselect everything
+            setSelectedLocation(null);
+          } else {
+            // Make sure we don’t go out of range (especially if deleting last element)
+            const newIndexToSelect = Math.min(
+              currentIndex,
+              newLocationList.length - 1
+            );
+
+            const newSortedList = locations.filter((a) => a.id !== id);
+            // Step 5: Select the next valid item from the updated list
+            setSelectedLocation(newSortedList[newIndexToSelect]);
+          }
+
+          toast.success("Location deleted successfully!");
+        })
+        .catch((error) => {
+          console.error("Delete failed:", error);
+          toast.error("Failed to delete the location.");
+        });
+    }
   };
 
   const renderInitials = (text: string) =>

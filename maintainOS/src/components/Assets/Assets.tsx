@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useState, FC, useMemo } from "react";
 import { AssetDetail } from "./AssetDetail/AssetDetail";
 import { AssetsList } from "./AssetsList/AssetsList";
@@ -255,6 +254,7 @@ export const Assets: FC = () => {
               <AssetStatusMoreDetails
                 setSeeMoreAssetStatus={setSeeMoreAssetStatus}
                 asset={selectedAsset}
+                fetchAssetsData={fetchAssetsData}
               />
             }
           </>

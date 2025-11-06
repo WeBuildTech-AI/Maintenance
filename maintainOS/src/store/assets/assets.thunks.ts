@@ -179,3 +179,17 @@ export const updateAssetStatus = createAsyncThunk(
     }
   }
 );
+
+export const fetchAssetStatusLog = createAsyncThunk(
+  "assets/statusLog",
+  async (_, { rejectWithValue }) => {
+    try {
+      const assetsType = await assetService.fetchAssetStatusLog;
+      return assetsType;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch assets"
+      );
+    }
+  }
+);
