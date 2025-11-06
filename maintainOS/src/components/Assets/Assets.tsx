@@ -254,6 +254,7 @@ export const Assets: FC = () => {
               <AssetStatusMoreDetails
                 setSeeMoreAssetStatus={setSeeMoreAssetStatus}
                 asset={selectedAsset}
+                fetchAssetsData={fetchAssetsData}
               />
             }
           </>

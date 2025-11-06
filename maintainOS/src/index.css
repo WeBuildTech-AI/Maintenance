@@ -1405,6 +1405,9 @@
   .max-h-32 {
   max-height: 8rem; /* same as max-h-32 */
 }
+  .max-h-64 {
+  max-height: 15rem; /* same as max-h-32 */
+}
 
   .bg-orange-100 {
     background-color: var(--color-orange-100);
