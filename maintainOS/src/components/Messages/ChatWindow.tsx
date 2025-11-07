@@ -361,11 +361,11 @@ export function ChatWindow({
     <div className="relative flex flex-col h-full">
       {!showInfo ? (
         <>
-          <p className="text-center mt-4">
+          {/* <p className="text-center mt-4">
             <span className="bg-orange-600 px-4 py-1 rounded-full">
               Status: {isConnected ? "🟢 Connected" : "🔴 Disconnected"}
             </span>
-          </p>
+          </p> */}
 
           {/* Header */}
           {isCreatingMessage ? (
@@ -442,7 +442,7 @@ export function ChatWindow({
               {messages.map((msg) => (
                 <div key={msg.id} className="flex gap-3">
                   {/* Avatar */}
-                  <Avatar className="w-9 h-9">
+                  <Avatar className="w-8 h-8">
                     <AvatarImage src={msg.avatar} />
                     <AvatarFallback>
                       {msg.sender
@@ -454,19 +454,19 @@ export function ChatWindow({
 
                   {/* Message block */}
                   <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold">{msg.sender}</p>
-                      <span className="text-xs text-muted-foreground">
-                        {msg.timestamp}
-                      </span>
-                    </div>
-                    <div className="mt-1 space-y-1">
+                    <div className=" space-y-1">
                       {msg.text &&
                         msg.text.split("\n").map((line, i) => (
                           <p key={i} className="text-sm">
                             {line}
                           </p>
                         ))}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {/* <p className="font-semibold">{msg.sender}</p> */}
+                      <span className="text-xs text-muted-foreground">
+                        {msg.timestamp}
+                      </span>
                     </div>
 
                     {/* Message Attachments */}
@@ -683,7 +683,7 @@ export function ChatWindow({
             </p>
           </div>
 
-          <div className="mt-6 mb-2 border-b">
+          <div className="mt-6 mb-2">
             <Button
               variant="ghost"
               className="flex-shrink-0 self-start text-sm"
@@ -700,7 +700,7 @@ export function ChatWindow({
             </div>
           )}
 
-          <div className="mt-6 mb-2 border-b">
+          <div className="mt-6">
             <Button
               variant="ghost"
               className="flex-shrink-0 self-start text-sm"

@@ -1,7 +1,10 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { DMConversation, CreateConversationPayload } from "./messages.types";
+import type {
+  DMConversation,
+  CreateConversationPayload,
+} from "./messages.types";
 import { messageService } from "./messages.service";
-import type { RootState } from "../index"; 
+import type { RootState } from "../index";
 
 export const searchUsers = createAsyncThunk(
   "messaging/searchUsers",
@@ -47,10 +50,7 @@ export const chatHistory = createAsyncThunk(
 
 export const createConversation = createAsyncThunk(
   "messaging/createConversation",
-  async (
-    payload: CreateConversationPayload,
-    { getState, rejectWithValue }
-  ) => {
+  async (payload: CreateConversationPayload, { getState, rejectWithValue }) => {
     try {
       const state = getState() as RootState;
       // Extract the current user's ID from the auth slice
@@ -60,14 +60,14 @@ export const createConversation = createAsyncThunk(
         return rejectWithValue("User not found. Please log in.");
       }
 
-      const fullPayload = {
-        ...payload,
-        userId,
-      };
+      // const fullPayload = {
+      //   ...payload,
+      //   userId,
+      // };
 
-      const newConversation = await messageService.createConversation(
-        fullPayload
-      );
+      const body = payload;
+
+      const newConversation = await messageService.createConversation(body);
       return newConversation;
     } catch (error: any) {
       return rejectWithValue(

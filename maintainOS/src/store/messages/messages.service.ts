@@ -29,17 +29,19 @@ export const messageService = {
   },
 
   userDMs: async (userId: string): Promise<DMConversation[]> => {
-    const response =  api.get(
+    const response = await api.get(
+      // ✅ FIXED: Added 'await'
       `/messaging/conversations/allconvo/${userId}`
     );
-    const conversations = response.data;
+    const conversations = response.data; // This will now work correctly
 
     const transformed: DMConversation[] = conversations.map((convo: any) => {
+      // ... rest of your function
       const otherUsers = convo.participants
-        .filter((p: any) => p.userId !== userId) // Exclude current user
+        .filter((p: any) => p.userId !== userId)
         .map((p: any) => ({
           id: p.userId,
-          name: p.user?.fullName || p.userId, // Get fullName from backend user object
+          name: p.user?.fullName || p.userId,
           avatarUrl: p.user?.avatarUrl,
         }));
 
@@ -97,10 +99,7 @@ export const messageService = {
   createConversation: async (
     payload: CreateConversationPayload & { userId: string }
   ): Promise<DMConversation> => {
-    const response = await api.post(
-      `/messaging/conversations`,
-      payload
-    );
+    const response = await api.post(`/messaging/conversations`, payload);
     return response.data;
   },
 };
