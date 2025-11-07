@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { ChevronLeft, Eye } from "lucide-react";
 import ProcedureBody from "./ProcedureBody";
-import ProcedureSettings from "./ProcedureSettings"; // <-- 1. IMPORT SETTINGS
+import ProcedureSettings from "./ProcedureSettings";
 import { useLayout } from "../../MainLayout";
-import { useProcedureBuilder } from "./ProcedureBuilderContext"; 
-import { convertStateToJSON } from "./utils/conversion"; 
+import { useProcedureBuilder } from "./ProcedureBuilderContext";
+import { convertStateToJSON } from "./utils/conversion";
+import { ProcedurePreviewModal } from "./components/ProcedurePreviewModal"; // <-- 1. MODAL KO IMPORT KAREIN
 
 interface BuilderProps {
   name: string;
@@ -18,10 +19,10 @@ export default function ProcedureBuilder({
   onBack,
 }: BuilderProps) {
   const [scoring, setScoring] = useState(false);
-  // --- 2. ADD STATE FOR TAB ---
-  const [activeTab, setActiveTab] = useState<'fields' | 'settings'>('fields');
-  
-  const { totalFieldCount, fields, settings } = useProcedureBuilder(); // <-- 3. GET SETTINGS
+  const [activeTab, setActiveTab] = useState<"fields" | "settings">("fields");
+  const [showPreview, setShowPreview] = useState(false); // <-- 2. MODAL STATE ADD KAREIN
+
+  const { totalFieldCount, fields, settings } = useProcedureBuilder();
 
   const { sidebarWidth } = useLayout();
 
@@ -29,9 +30,8 @@ export default function ProcedureBuilder({
   const FOOTER_HEIGHT = 60;
 
   const handleContinue = () => {
-    // --- 4. PASS SETTINGS TO CONVERTER ---
     const finalJSON = convertStateToJSON(fields, settings, name, description);
-    
+
     console.log("--- FINAL 'CONTINUE' CLICK JSON ---");
     console.log(JSON.stringify(finalJSON, null, 2));
   };
@@ -81,31 +81,35 @@ export default function ProcedureBuilder({
             color: "#374151",
           }}
         >
-          {/* --- 5. MAKE TABS CLICKABLE AND DYNAMIC --- */}
+          {/* ... (Tabs aur Scoring ka code same rahega) ... */}
           <span
             style={{
-              color: activeTab === 'fields' ? "#2563eb" : "#374151",
-              borderBottom: activeTab === 'fields' ? "2px solid #2563eb" : "2px solid transparent",
+              color: activeTab === "fields" ? "#2563eb" : "#374151",
+              borderBottom:
+                activeTab === "fields"
+                  ? "2px solid #2563eb"
+                  : "2px solid transparent",
               paddingBottom: "2px",
               cursor: "pointer",
             }}
-            onClick={() => setActiveTab('fields')}
+            onClick={() => setActiveTab("fields")}
           >
             Procedure Fields
           </span>
-          <span 
+          <span
             style={{
-              color: activeTab === 'settings' ? "#2563eb" : "#374151",
-              borderBottom: activeTab === 'settings' ? "2px solid #2563eb" : "2px solid transparent",
+              color: activeTab === "settings" ? "#2563eb" : "#374151",
+              borderBottom:
+                activeTab === "settings"
+                  ? "2px solid #2563eb"
+                  : "2px solid transparent",
               paddingBottom: "2px",
               cursor: "pointer",
             }}
-            onClick={() => setActiveTab('settings')}
+            onClick={() => setActiveTab("settings")}
           >
             Settings
           </span>
-          {/* --- END TAB UPDATE --- */}
-
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <span style={{ cursor: "pointer" }}>Scoring</span>
             <label
@@ -156,7 +160,9 @@ export default function ProcedureBuilder({
               backgroundColor: "#d1d5db",
             }}
           ></div>
-          <div
+          {/* --- 3. PREVIEW BUTTON CLICK HANDLER ADD KAREIN --- */}
+          <button
+            onClick={() => setShowPreview(true)} // <-- YEH BUTTON MODAL KHOLEGA
             style={{
               display: "flex",
               alignItems: "center",
@@ -164,11 +170,13 @@ export default function ProcedureBuilder({
               color: "#2563eb",
               fontWeight: 500,
               cursor: "pointer",
+              background: "none",
+              border: "none",
             }}
           >
             <Eye size={18} />
             <span>Preview</span>
-          </div>
+          </button>
           <button
             onClick={handleContinue}
             style={{
@@ -197,8 +205,7 @@ export default function ProcedureBuilder({
           padding: "32px 0",
         }}
       >
-        {/* --- 6. ADD CONDITIONAL RENDER --- */}
-        {activeTab === 'fields' ? (
+        {activeTab === "fields" ? (
           <ProcedureBody name={name} description={description} />
         ) : (
           <ProcedureSettings />
@@ -227,6 +234,12 @@ export default function ProcedureBuilder({
       >
         ℹ Fields count: {totalFieldCount} / 350
       </footer>
+
+      {/* --- 4. MODAL KO RENDER KAREIN --- */}
+      <ProcedurePreviewModal
+        isOpen={showPreview}
+        onClose={() => setShowPreview(false)}
+      />
     </div>
   );
 }

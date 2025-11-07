@@ -5,10 +5,15 @@ import {
   createContext,
   useContext,
   ReactNode,
-  useMemo, 
+  useMemo,
 } from "react";
-// --- ADDED ProcedureSettingsState ---
-import { FieldData, ConditionData, logicConditionTypes, ProcedureSettingsState } from "./types";
+// --- UPDATED: Added ProcedureSettingsState ---
+import {
+  FieldData,
+  ConditionData,
+  logicConditionTypes,
+  ProcedureSettingsState,
+} from "./types";
 import {
   Link2,
   Trash2,
@@ -34,8 +39,9 @@ import {
   ChevronRight,
   Copy,
 } from "lucide-react";
-import { DragEndEvent, DragOverEvent, DragStartEvent } from "@dnd-kit/core"; 
+import { DragEndEvent, DragOverEvent, DragStartEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
+// --- IMPORT THE CONVERSION FUNCTION ---
 import { convertStateToJSON } from "./utils/conversion";
 
 // --- 1. Define the Context Type (all state and handlers) ---
@@ -46,13 +52,15 @@ interface ProcedureBuilderContextType {
   settings: ProcedureSettingsState;
   setSettings: React.Dispatch<React.SetStateAction<ProcedureSettingsState>>;
   // --- END ADDITION ---
-  activeField: FieldData | null; 
+  activeField: FieldData | null;
   editingFieldId: number | null;
   setEditingFieldId: React.Dispatch<React.SetStateAction<number | null>>;
-  activeContainerId: number | 'root';
-  setActiveContainerId: React.Dispatch<React.SetStateAction<number | 'root'>>;
+  activeContainerId: number | "root";
+  setActiveContainerId: React.Dispatch<React.SetStateAction<number | "root">>;
   overContainerId: string | number | null;
-  setOverContainerId: React.Dispatch<React.SetStateAction<string | number | null>>;
+  setOverContainerId: React.Dispatch<
+    React.SetStateAction<string | number | null>
+  >;
   dropdownOpen: number | null;
   setDropdownOpen: React.Dispatch<React.SetStateAction<number | null>>;
   editingSectionId: number | null;
@@ -72,18 +80,22 @@ interface ProcedureBuilderContextType {
   isReorderModalOpen: boolean;
   setIsReorderModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
   dropdownWidths: Record<number, number>;
-  setDropdownWidths: React.Dispatch<React.SetStateAction<Record<number, number>>>;
+  setDropdownWidths: React.Dispatch<
+    React.SetStateAction<Record<number, number>>
+  >;
   collapsed: Record<number, boolean>;
   toggleCollapse: (id: number) => void;
   fieldTypes: { label: string; icon: ReactNode }[];
-  totalFieldCount: number; 
+  totalFieldCount: number;
 
   // --- Refs ---
   dropdownRefs: React.MutableRefObject<Record<number, HTMLDivElement | null>>;
   buttonRefs: React.MutableRefObject<Record<number, HTMLDivElement | null>>;
   fieldBlockRefs: React.MutableRefObject<Record<number, HTMLDivElement | null>>;
   sidebarRef: React.RefObject<HTMLDivElement>;
-  sectionBlockRefs: React.MutableRefObject<Record<number, HTMLDivElement | null>>;
+  sectionBlockRefs: React.MutableRefObject<
+    Record<number, HTMLDivElement | null>
+  >;
   sectionMenuButtonRefs: React.MutableRefObject<
     Record<number, HTMLDivElement | null>
   >;
@@ -200,17 +212,17 @@ function findFieldAndParent(
 // --- NEW HELPER: Recursively find a container and add an item to it ---
 const findAndAddRecursive = (
   fieldsList: FieldData[],
-  containerId: number | 'root',
+  containerId: number | "root",
   newItem: FieldData
 ): FieldData[] => {
   // This function is only for nested adds.
-  
+
   return fieldsList.map((field) => {
     // Check if the current field is the container
-    if (field.id === containerId && field.blockType === 'section') {
+    if (field.id === containerId && field.blockType === "section") {
       return {
         ...field,
-        fields: [...(field.fields || []), newItem]
+        fields: [...(field.fields || []), newItem],
       };
     }
 
@@ -221,17 +233,17 @@ const findAndAddRecursive = (
 
     // Recurse into condition fields
     if (field.conditions) {
-      field.conditions = field.conditions.map(c => {
+      field.conditions = field.conditions.map((c) => {
         if (c.id === containerId) {
           return {
             ...c,
-            fields: [...c.fields, newItem]
+            fields: [...c.fields, newItem],
           };
         }
         // Recurse into this condition's fields
         return {
           ...c,
-          fields: findAndAddRecursive(c.fields, containerId, newItem)
+          fields: findAndAddRecursive(c.fields, containerId, newItem),
         };
       });
     }
@@ -269,11 +281,11 @@ interface ProcedureBuilderProviderProps {
 }
 
 // --- 3. Create Provider Component ---
-export function ProcedureBuilderProvider({ 
-  children, 
-  name, 
-  description 
-}: ProcedureBuilderProviderProps) { 
+export function ProcedureBuilderProvider({
+  children,
+  name,
+  description,
+}: ProcedureBuilderProviderProps) {
   const [fields, setFields] = useState<FieldData[]>([]); // Start empty
 
   // --- ADDED SETTINGS STATE & DEFAULT ---
@@ -282,13 +294,17 @@ export function ProcedureBuilderProvider({
     assets: [],
     locations: [],
     teamsInCharge: [],
-    visibility: "private"
+    visibility: "private",
   });
   // --- END ADDITION ---
 
-  const [activeContainerId, setActiveContainerId] = useState<number | 'root'>('root'); 
-  const [activeField, setActiveField] = useState<FieldData | null>(null); 
-  const [overContainerId, setOverContainerId] = useState<string | number | null>(null);
+  const [activeContainerId, setActiveContainerId] = useState<number | "root">(
+    "root"
+  );
+  const [activeField, setActiveField] = useState<FieldData | null>(null);
+  const [overContainerId, setOverContainerId] = useState<
+    string | number | null
+  >(null);
   const [editingFieldId, setEditingFieldId] = useState<number | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState<number | null>(null);
   const [editingSectionId, setEditingSectionId] = useState<number | null>(null);
@@ -328,9 +344,9 @@ export function ProcedureBuilderProvider({
   const conditionMenuButtonRefs = useRef<
     Record<number, HTMLButtonElement | null>
   >({});
-  const conditionMenuPanelRefs = useRef<Record<number, HTMLDivElement | null>>(
-    {}
-  );
+  const conditionMenuPanelRefs = useRef<
+    Record<number, HTMLDivElement | null>
+  >({});
   const fieldMenuButtonRefs = useRef<Record<number, HTMLButtonElement | null>>(
     {}
   );
@@ -530,14 +546,16 @@ export function ProcedureBuilderProvider({
     fieldMenuOpen,
   ]);
 
+  // --- NEW: Calculate total field count ---
   const totalFieldCount = useMemo(() => {
     return countFieldsRecursive(fields);
   }, [fields]);
+  // --- END NEW ---
 
   // --- UPDATED: LOG JSON ON EVERY CHANGE (fields OR settings) ---
   useEffect(() => {
     const finalJSON = convertStateToJSON(fields, settings, name, description);
-    console.clear(); 
+    console.clear();
     console.log("--- LIVE PROCEDURE JSON (Updates on change) ---");
     console.log(JSON.stringify(finalJSON, null, 2));
   }, [fields, settings, name, description]); // <-- ADDED settings
@@ -602,11 +620,13 @@ export function ProcedureBuilderProvider({
       isRequired: false,
       hasDescription: false,
     };
-    
-    if (activeContainerId === 'root') {
+
+    if (activeContainerId === "root") {
       setFields((prev) => [...prev, newField]);
     } else {
-      setFields((prev) => findAndAddRecursive(prev, activeContainerId, newField));
+      setFields((prev) =>
+        findAndAddRecursive(prev, activeContainerId, newField)
+      );
     }
 
     setEditingFieldId(newId);
@@ -622,12 +642,14 @@ export function ProcedureBuilderProvider({
       label: "New Heading",
     };
 
-    if (activeContainerId === 'root') {
+    if (activeContainerId === "root") {
       setFields((prev) => [...prev, newHeading]);
     } else {
-      setFields((prev) => findAndAddRecursive(prev, activeContainerId, newHeading));
+      setFields((prev) =>
+        findAndAddRecursive(prev, activeContainerId, newHeading)
+      );
     }
-    
+
     setEditingFieldId(newId);
     setDropdownOpen(null);
   };
@@ -637,7 +659,7 @@ export function ProcedureBuilderProvider({
     const newSubFieldId = newId + 1;
     const sectionNumber =
       fields.filter((f) => f.blockType === "section").length + 1;
-    
+
     const newSection: FieldData = {
       id: newId,
       blockType: "section",
@@ -654,13 +676,11 @@ export function ProcedureBuilderProvider({
         },
       ],
     };
-    
-    if (activeContainerId === 'root') {
-      setFields((prev) => [...prev, newSection]);
-    } else {
-      setFields((prev) => findAndAddRecursive(prev, activeContainerId, newSection));
-    }
-    
+
+    // --- 💡 FIX: Sections are *always* added to the root. ---
+    // We ignore the activeContainerId for sections.
+    setFields((prev) => [...prev, newSection]);
+
     setEditingSectionId(newId);
     setEditingFieldId(null);
     setDropdownOpen(null);
@@ -712,7 +732,7 @@ export function ProcedureBuilderProvider({
       delete conditionMenuButtonRefs.current[id];
     if (conditionMenuPanelRefs.current[id])
       delete conditionMenuPanelRefs.current[id];
-      
+
     if (fieldMenuButtonRefs.current[id])
       delete fieldMenuButtonRefs.current[id];
     if (fieldMenuPanelRefs.current[id])
@@ -1081,72 +1101,97 @@ export function ProcedureBuilderProvider({
 
   const handleFieldDragEnd = (event: DragEndEvent) => {
     setActiveField(null);
-    setOverContainerId(null); 
-    
+    setOverContainerId(null);
+
     const { active, over } = event;
     if (!over) return;
     if (active.id === over.id) return;
 
     setFields((prevFields) => {
-        const newFields = JSON.parse(JSON.stringify(prevFields)) as FieldData[];
-        const activeLocation = findFieldAndParent(newFields, active.id as number);
-        let overLocation = findFieldAndParent(newFields, over.id as number);
-        
-        if (!activeLocation) return prevFields;
+      const newFields = JSON.parse(JSON.stringify(prevFields)) as FieldData[];
+      const activeLocation = findFieldAndParent(
+        newFields,
+        active.id as number
+      );
+      let overLocation = findFieldAndParent(newFields, over.id as number);
 
-        if (!overLocation) {
-          // Dropped on a container, not an item
-          const overContainerId = over.data?.current?.sortable?.containerId;
-          
-          let targetContainer: ParentArray | undefined;
-          if (overContainerId === "root") {
-            targetContainer = newFields;
-          } else if (overContainerId.startsWith("section-")) {
-            const id = Number(overContainerId.split("-")[1]);
-            targetContainer = findFieldRecursive(newFields, id)?.fields;
-          } else if (overContainerId.startsWith("condition-")) {
-             const id = Number(overContainerId.split("-")[1]);
-             const findCond = (arr: FieldData[]): ConditionData | undefined => {
-               for (const f of arr) {
-                 if (f.conditions) {
-                   const cond = f.conditions.find(c => c.id === id);
-                   if (cond) return cond;
-                 }
-                 if(f.fields) {
-                   const cond = findCond(f.fields);
-                   if (cond) return cond;
-                 }
-               }
-             }
-             targetContainer = findCond(newFields)?.fields;
-          }
+      if (!activeLocation) return prevFields;
 
-          if (targetContainer && targetContainer !== activeLocation.parent) {
-            const [movedItem] = activeLocation.parent.splice(activeLocation.index, 1);
-            targetContainer.push(movedItem);
-            return newFields;
-          }
-          return prevFields; // No valid drop
+      if (!overLocation) {
+        // --- Case 1: Dropped on a container, not an item ---
+        const overContainerId = over.data?.current?.sortable?.containerId;
+
+        let targetContainer: ParentArray | undefined;
+        if (overContainerId === "root") {
+          targetContainer = newFields;
+        } else if (overContainerId.startsWith("section-")) {
+          const id = Number(overContainerId.split("-")[1]);
+          targetContainer = findFieldRecursive(newFields, id)?.fields;
+        } else if (overContainerId.startsWith("condition-")) {
+          const id = Number(overContainerId.split("-")[1]);
+          const findCond = (arr: FieldData[]): ConditionData | undefined => {
+            for (const f of arr) {
+              if (f.conditions) {
+                const cond = f.conditions.find((c) => c.id === id);
+                if (cond) return cond;
+              }
+              if (f.fields) {
+                const cond = findCond(f.fields);
+                if (cond) return cond;
+              }
+            }
+          };
+          targetContainer = findCond(newFields)?.fields;
         }
 
-        // Dropped on an item
-        if (activeLocation.parent === overLocation.parent) {
-          // Same container reorder
-          const reordered = arrayMove(activeLocation.parent, activeLocation.index, overLocation.index);
-          
-          if(activeLocation.parent === newFields) {
-            return reordered;
+        if (targetContainer && targetContainer !== activeLocation.parent) {
+          // --- 💡 FIX: Enforce "No Nested Sections" rule ---
+          if (activeLocation.field.blockType === "section") {
+            return prevFields; // Abort drop
           }
-          
-          activeLocation.parent.splice(0, activeLocation.parent.length, ...reordered);
-          return newFields;
-          
-        } else {
-          // Move between containers
-          const [movedItem] = activeLocation.parent.splice(activeLocation.index, 1);
-          overLocation.parent.splice(overLocation.index, 0, movedItem);
+          const [movedItem] = activeLocation.parent.splice(
+            activeLocation.index,
+            1
+          );
+          targetContainer.push(movedItem);
           return newFields;
         }
+        return prevFields; // No valid drop
+      }
+
+      // --- Case 2: Dropped on an item ---
+      if (activeLocation.parent === overLocation.parent) {
+        // --- Subcase 2a: Same container reorder ---
+        const reordered = arrayMove(
+          activeLocation.parent,
+          activeLocation.index,
+          overLocation.index
+        );
+
+        if (activeLocation.parent === newFields) {
+          return reordered;
+        }
+
+        activeLocation.parent.splice(
+          0,
+          activeLocation.parent.length,
+          ...reordered
+        );
+        return newFields;
+      } else {
+        // --- Subcase 2b: Move between containers ---
+
+        // --- 💡 FIX: Enforce "No Nested Sections" rule ---
+        if (activeLocation.field.blockType === "section") {
+          return prevFields; // Abort drop
+        }
+        const [movedItem] = activeLocation.parent.splice(
+          activeLocation.index,
+          1
+        );
+        overLocation.parent.splice(overLocation.index, 0, movedItem);
+        return newFields;
+      }
     });
   };
 
@@ -1156,13 +1201,13 @@ export function ProcedureBuilderProvider({
     setFields,
     settings, // <-- ADDED
     setSettings, // <-- ADDED
-    activeField, 
+    activeField,
     editingFieldId,
     setEditingFieldId,
     activeContainerId,
     setActiveContainerId,
-    overContainerId, 
-    setOverContainerId, 
+    overContainerId,
+    setOverContainerId,
     dropdownOpen,
     setDropdownOpen,
     editingSectionId,
@@ -1184,7 +1229,7 @@ export function ProcedureBuilderProvider({
     collapsed,
     toggleCollapse,
     fieldTypes,
-    totalFieldCount, 
+    totalFieldCount,
     dropdownRefs,
     buttonRefs,
     fieldBlockRefs,

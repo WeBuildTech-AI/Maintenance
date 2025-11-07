@@ -1,6 +1,6 @@
 import { Share2, ChevronRight, MoreVertical, ChevronDown } from "lucide-react";
 import { useProcedureBuilder } from "../ProcedureBuilderContext";
-import { FieldData, ConditionData, logicConditionTypes } from "../types";
+import {type FieldData, type ConditionData, logicConditionTypes } from "../types";
 import { ProcedureBlock } from "./ProcedureBlock";
 import {
   SortableContext,

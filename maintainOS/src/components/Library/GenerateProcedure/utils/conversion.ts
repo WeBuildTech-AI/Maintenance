@@ -15,7 +15,9 @@ function mapFieldType(type: string): string {
     "Signature Block": "signature_block",
     Date: "date_field",
   };
-  return map[type] || type.toLowerCase(); // Fallback
+  // FIX: Added optional chaining and a nullish coalescing operator for safety
+  // This prevents the 'toLowerCase' crash if type is undefined or null.
+  return map[type] || type?.toLowerCase() || "unknown";
 }
 
 // --- Helper: Maps UI condition to backend condition format ---
@@ -88,14 +90,28 @@ function transformField(field: FieldData, order: number): any {
     targetField.children = [];
     
     field.conditions.forEach(condition => {
-      condition.fields.forEach((conditionalField, conditionalIndex) => {
-        // Transform the nested field
-        const targetChildField = transformField(conditionalField, conditionalIndex + 1);
+      // --- 💡 FIX: This loop now correctly handles different block types ---
+      // It no longer assumes every child is a 'field' block.
+      let conditionalOrder = 1;
+      condition.fields.forEach((conditionalItem) => {
         
-        // Add the condition logic to it
-        targetChildField.condition = mapCondition(condition, field.selectedType);
-        
-        targetField.children.push(targetChildField);
+        if (conditionalItem.blockType === "field") {
+          // Process nested fields
+          const targetChildField = transformField(conditionalItem, conditionalOrder++);
+          targetChildField.condition = mapCondition(condition, field.selectedType);
+          targetField.children.push(targetChildField);
+
+        } else if (conditionalItem.blockType === "heading") {
+          // Process nested headings
+          targetField.children.push({
+            fieldName: conditionalItem.label,
+            fieldType: "heading",
+            required: false,
+            order: conditionalOrder++,
+            condition: mapCondition(condition, field.selectedType),
+          });
+        }
+        // Nested 'section' blocks are not processed, preventing the crash.
       });
     });
   }
@@ -154,6 +170,7 @@ export function convertStateToJSON(
               order: fieldOrder++,
             });
           }
+          // This logic correctly ignores nested sections, preventing a crash.
         });
       }
       sectionsList.push(newSection);
