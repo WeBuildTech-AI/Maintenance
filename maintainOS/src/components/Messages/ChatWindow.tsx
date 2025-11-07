@@ -474,7 +474,7 @@ export function ChatWindow({
                       msg.text.split("\n").map((line, i) => (
                         <p
                           key={i}
-                          className={`text-sm leading-relaxed ${
+                          className={`text-md leading-relaxed ${
                             msg.isSelf
                               ? "text-gray-800 text-left"
                               : "text-gray-800 text-left"
