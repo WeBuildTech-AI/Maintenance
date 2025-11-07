@@ -1712,6 +1712,10 @@
     vertical-align: text-bottom;
   }
 
+  .text-1{
+    font-size:9px
+  }
+
   .text-2xl {
     font-size: var(--text-2xl);
     line-height: var(--tw-leading, var(--text-2xl--line-height));
