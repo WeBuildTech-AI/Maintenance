@@ -358,15 +358,9 @@ export function ChatWindow({
   };
 
   return (
-    <div className="relative flex flex-col h-full">
+    <div className="relative flex flex-col h-full overflow-y-auto">
       {!showInfo ? (
         <>
-          <p className="text-center mt-4">
-            <span className="bg-orange-600 px-4 py-1 rounded-full">
-              Status: {isConnected ? "🟢 Connected" : "🔴 Disconnected"}
-            </span>
-          </p>
-
           {/* Header */}
           {isCreatingMessage ? (
             <div className="flex items-center justify-between border-b border-border p-4 bg-white w-full">
@@ -438,45 +432,98 @@ export function ChatWindow({
               )}
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-card">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-card">
               {messages.map((msg) => (
-                <div key={msg.id} className="flex gap-3">
-                  {/* Avatar */}
-                  <Avatar className="w-9 h-9">
-                    <AvatarImage src={msg.avatar} />
-                    <AvatarFallback>
-                      {msg.sender
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </AvatarFallback>
-                  </Avatar>
+                <div
+                  key={msg.id}
+                  className={`flex items-center gap-3 mb-3 ${
+                    msg.isSelf ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  {/* Avatar (Receiver side) */}
+                  {!msg.isSelf && (
+                    <Avatar className="w-8 h-8 flex-shrink-0">
+                      {" "}
+                      <AvatarImage src={msg.avatar} />{" "}
+                      <AvatarFallback className="text-1">
+                        {" "}
+                        {msg.sender
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}{" "}
+                      </AvatarFallback>{" "}
+                    </Avatar>
+                  )}
 
-                  {/* Message block */}
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold">{msg.sender}</p>
-                      <span className="text-xs text-muted-foreground">
-                        {msg.timestamp}
-                      </span>
-                    </div>
-                    <div className="mt-1 space-y-1">
-                      {msg.text &&
-                        msg.text.split("\n").map((line, i) => (
-                          <p key={i} className="text-sm">
-                            {line}
-                          </p>
-                        ))}
-                    </div>
+                  {/* Message bubble */}
+                  <div
+                    className={`relative rounded-2xl shadow-sm ${
+                      msg.isSelf
+                        ? "bg-gray-100 text-gray-800 rounded-br-none"
+                        : "bg-gray-100 text-gray-800 rounded-bl-none"
+                    }`}
+                    style={{
+                      maxWidth: "300px",
+                      wordBreak: "break-word",
+                      overflowWrap: "break-word",
+                      whiteSpace: "pre-wrap",
+                    }}
+                  >
+                    {/* Text */}
+                    {msg.text &&
+                      msg.text.split("\n").map((line, i) => (
+                        <p
+                          key={i}
+                          className={`text-md leading-relaxed ${
+                            msg.isSelf
+                              ? "text-gray-800 text-left"
+                              : "text-gray-800 text-left"
+                          }`}
+                        >
+                          {line}
+                        </p>
+                      ))}
 
-                    {/* Message Attachments */}
-                    <MessageAttachments
-                      messageImages={msg.messageImages}
-                      messageDocs={msg.messageDocs}
-                    />
+                    {/* Attachments */}
+                    {(msg.messageDocs?.length > 0 ||
+                      msg.messageImages?.length > 0) && (
+                      <div className="mt-2">
+                        <MessageAttachments
+                          messageImages={msg.messageImages}
+                          messageDocs={msg.messageDocs}
+                        />
+                      </div>
+                    )}
+
+                    {/* Timestamp */}
+                    <div
+                      className={`text-1 mt-1 ${
+                        msg.isSelf
+                          ? "text-orange-100 text-right"
+                          : "text-gray-500 text-left"
+                      }`}
+                    >
+                      {msg.timestamp}
+                    </div>
                   </div>
+
+                  {/* Avatar (Sender side) */}
+                  {msg.isSelf && (
+                    <Avatar className="w-8 h-8 flex-shrink-0">
+                      {" "}
+                      <AvatarImage src={msg.avatar} />{" "}
+                      <AvatarFallback className="text-1 capitalize">
+                        {" "}
+                        {msg.sender
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}{" "}
+                      </AvatarFallback>{" "}
+                    </Avatar>
+                  )}
                 </div>
               ))}
+
               <div ref={messagesEndRef} />
             </div>
           )}
@@ -634,7 +681,7 @@ export function ChatWindow({
         </>
       ) : (
         /* Conversation Info panel */
-        <div className="absolute inset-0 h-full w-full bg-white border-l border-border shadow-lg p-4 flex flex-col">
+        <div className="absolute inset-0 h-full w-full bg-white border-l border-border shadow-lg p-4 flex flex-col ">
           <Button
             variant="ghost"
             className="flex-shrink-0 self-start"
@@ -683,7 +730,7 @@ export function ChatWindow({
             </p>
           </div>
 
-          <div className="mt-6 mb-2 border-b">
+          <div className="mt-6 mb-2">
             <Button
               variant="ghost"
               className="flex-shrink-0 self-start text-sm"
@@ -695,12 +742,12 @@ export function ChatWindow({
           </div>
 
           {showSharedFiles && (
-            <div className="py-2 max-h-64 overflow-y-auto">
+            <div className="py-2 m">
               <SharedFiles messages={messages} />
             </div>
           )}
 
-          <div className="mt-6 mb-2 border-b">
+          <div className="mt-6">
             <Button
               variant="ghost"
               className="flex-shrink-0 self-start text-sm"
