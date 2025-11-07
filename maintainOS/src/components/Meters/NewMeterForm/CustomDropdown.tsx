@@ -126,7 +126,7 @@ export function CustomDropdown({
         />
 
         {isOpen && (
-          <div className="absolute z-50 p-2 max-h-60 w-full overflow-y-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+          <div className="absolute z-50 p-2 max-h-64 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
             {/* Loading state */}
             {loading && (
               <div className="cursor-default select-none px-4 py-2 text-gray-500">
@@ -141,20 +141,25 @@ export function CustomDropdown({
               </div>
             )}
 
-            {/* No options state (after filtering) */}
             {!loading && filteredOptions.length === 0 && (
               <>
                 <div className="cursor-default select-none px-4 py-2 text-gray-500">
                   No options found
                 </div>
-                <div className="flex justify-center item-center">
-                  <button
-                    onClick={() => Navigate(navigateTo)}
-                    className="text-center"
-                  >
-                    Create
-                  </button>
-                </div>
+
+                {/* Yeh create button ka logic yahan nahi, 
+                  'showCreateOption' waale logic mein hona chahiye 
+                  jo maine pichle code mein diya tha.
+              */}
+
+                {/* <div className="flex justify-center item-center">
+                <button
+                  onClick={() => Navigate(navigateTo)}
+                  className="text-center"
+                >
+                  Create
+                </button>
+              </div> */}
               </>
             )}
 
