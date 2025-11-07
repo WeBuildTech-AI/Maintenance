@@ -51,6 +51,49 @@ export function Messages() {
   const items: DMConversation[] = active === "messages" ? oneOnOneDMs : threads;
 
   // transform messages helper
+  // const transformMessages = (conversation: any) => {
+  //   if (!conversation || !conversation.messages) return [];
+
+  //   return conversation.messages
+  //     .map((msg: any, index: number) => {
+  //       let senderName = "Unknown User";
+  //       let senderAvatar = "/avatar.png";
+
+  //       if (msg.sender?.fullName) {
+  //         senderName = msg.sender.fullName;
+  //         senderAvatar = msg.sender.avatarUrl || "/avatar.png";
+  //       } else if (msg.senderId === currentUserId) {
+  //         senderName = "You";
+  //       } else {
+  //         const selectedConversation = items.find(
+  //           (item) => item.id === selectedId
+  //         );
+  //         const participant = selectedConversation?.participants.find(
+  //           (p) => p.id === msg.senderId
+  //         );
+  //         if (participant) {
+  //           senderName = participant.name;
+  //           senderAvatar = participant.avatarUrl || "/avatar.png";
+  //         }
+  //       }
+
+  //       return {
+  //         id: parseInt(msg.id) || index,
+  //         sender: senderName,
+  //         text: msg.body || "",
+  //         avatar: senderAvatar,
+  //         timestamp: new Date(msg.createdAt).toLocaleString(),
+  //         createdAt: msg.createdAt,
+  //         messageImages: msg.messageImages || [],
+  //         messageDocs: msg.messageDocs || [],
+  //       };
+  //     })
+  //     .sort(
+  //       (a: any, b: any) =>
+  //         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  //     );
+  // };
+
   const transformMessages = (conversation: any) => {
     if (!conversation || !conversation.messages) return [];
 
@@ -58,13 +101,21 @@ export function Messages() {
       .map((msg: any, index: number) => {
         let senderName = "Unknown User";
         let senderAvatar = "/avatar.png";
+        let isSelf = false; // 👈 new flag for sender alignment
 
         if (msg.sender?.fullName) {
+          // Full sender info from API
           senderName = msg.sender.fullName;
           senderAvatar = msg.sender.avatarUrl || "/avatar.png";
+          if (msg.sender.id === currentUserId) {
+            isSelf = true; // 👈 user sent this message
+          }
         } else if (msg.senderId === currentUserId) {
+          // If senderId matches current user
           senderName = "You";
+          isSelf = true;
         } else {
+          // Otherwise, find in participants
           const selectedConversation = items.find(
             (item) => item.id === selectedId
           );
@@ -82,10 +133,14 @@ export function Messages() {
           sender: senderName,
           text: msg.body || "",
           avatar: senderAvatar,
-          timestamp: new Date(msg.createdAt).toLocaleString(),
+          timestamp: new Date(msg.createdAt).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
           createdAt: msg.createdAt,
           messageImages: msg.messageImages || [],
           messageDocs: msg.messageDocs || [],
+          isSelf, // 👈 now we have left/right alignment info
         };
       })
       .sort(

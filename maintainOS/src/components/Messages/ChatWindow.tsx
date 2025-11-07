@@ -438,45 +438,83 @@ export function ChatWindow({
               )}
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-card">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-card">
               {messages.map((msg) => (
-                <div key={msg.id} className="flex gap-3">
-                  {/* Avatar */}
-                  <Avatar className="w-8 h-8">
-                    <AvatarImage src={msg.avatar} />
-                    <AvatarFallback>
-                      {msg.sender
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </AvatarFallback>
-                  </Avatar>
+                <div
+                  key={msg.id}
+                  className={`flex items-end gap-3 ${
+                    msg.isSelf ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  {/* Avatar (only for receiver) */}
+                  {!msg.isSelf && (
+                    <Avatar className="w-8 h-8 flex-shrink-0">
+                      <AvatarImage src={msg.avatar} />
+                      <AvatarFallback className="text-sm">
+                        {msg.sender
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
 
-                  {/* Message block */}
-                  <div>
-                    <div className=" space-y-1">
-                      {msg.text &&
-                        msg.text.split("\n").map((line, i) => (
-                          <p key={i} className="text-sm">
-                            {line}
-                          </p>
-                        ))}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {/* <p className="font-semibold">{msg.sender}</p> */}
-                      <span className="text-xs text-muted-foreground">
-                        {msg.timestamp}
-                      </span>
-                    </div>
+                  {/* Message bubble */}
+                  <div
+                    className={`max-w-[70%] mt-6${
+                      msg.isSelf
+                        ? "bg-gray-100  text-gray-800 rounded-br-none"
+                        : "bg-gray-100 text-gray-800 rounded-bl-none"
+                    }`}
+                  >
+                    {/* Message Text */}
+                    {msg.text &&
+                      msg.text.split("\n").map((line, i) => (
+                        <p
+                          key={i}
+                          className="text-sm leading-relaxed whitespace-pre-line"
+                        >
+                          {line}
+                        </p>
+                      ))}
 
                     {/* Message Attachments */}
-                    <MessageAttachments
-                      messageImages={msg.messageImages}
-                      messageDocs={msg.messageDocs}
-                    />
+                    {msg.messageDocs?.length > 0 ? (
+                      <div className="mt-2">
+                        <MessageAttachments
+                          messageImages={msg.messageImages}
+                          messageDocs={msg.messageDocs}
+                        />
+                      </div>
+                    ) : null}
+
+                    {/* Timestamp */}
+                    <div
+                      className={`text-xs mt-1 ${
+                        msg.isSelf
+                          ? "text-orange-200 text-right"
+                          : "text-gray-500 text-left"
+                      }`}
+                    >
+                      {msg.timestamp}
+                    </div>
                   </div>
+
+                  {/* Avatar (only for sender) */}
+                  {msg.isSelf && (
+                    <Avatar className="w-8 h-8 flex-shrink-0">
+                      <AvatarImage src={msg.avatar} />
+                      <AvatarFallback className="text-sm">
+                        {msg.sender
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
                 </div>
               ))}
+
               <div ref={messagesEndRef} />
             </div>
           )}
