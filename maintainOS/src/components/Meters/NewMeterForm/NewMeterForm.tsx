@@ -2,21 +2,31 @@
 
 import { useEffect, useState } from "react";
 import { Upload, Lock, RefreshCcw, User } from "lucide-react";
-import { SearchWithDropdown } from "../../Locations/SearchWithDropdown";
 import { createMeter, meterService, updateMeter } from "../../../store/meters";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "../../../store";
 import { assetService } from "../../../store/assets";
 import { locationService } from "../../../store/locations";
-import Loader from "../../Loader/Loader";
 import toast from "react-hot-toast";
+
+// YAHAN IMPORT KAREIN (PATH SAHI KAR LEIN)
+import { CustomDropdown } from "./CustomDropdown"; // Adjust the path as needed
 
 interface NewMeterFormProps {
   onCreate: (data: any) => void;
   onCancel: (data: any) => void;
-  editingMeter?: any; //  ye naya prop add karo
-  editingMeter?: any; //  ye naya prop add karo
+  editingMeter?: any;
 }
+
+// Reading Frequency ke options
+const readingFrequencyOptions = [
+  { id: "none", name: "None" },
+  { id: "hours", name: "Hours" },
+  { id: "days", name: "Days" },
+  { id: "weeks", name: "Weeks" },
+  { id: "months", name: "Months" },
+  { id: "years", name: "Years" },
+];
 
 export function NewMeterForm({
   onCreate,
@@ -31,7 +41,7 @@ export function NewMeterForm({
   const [asset, setAsset] = useState("");
   const [location, setLocation] = useState("");
   const [readingFrequencyValue, setReadingFrequencyValue] = useState("");
-  const [readingFrequencyUnit, setReadingFrequencyUnit] = useState("");
+  const [readingFrequencyUnit, setReadingFrequencyUnit] = useState("none"); // Default "none"
   const [files, setFiles] = useState<File[]>([]);
   const [docs, setDocs] = useState<File[]>([]);
   const [error, setError] = useState("");
@@ -41,8 +51,11 @@ export function NewMeterForm({
   const [getAssetData, setGetAssestData] = useState([]);
   const [getLocationData, setGetLocationData] = useState([]);
   const [measurementUnitOption, setMeasurementUnitOption] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  // const combinedValue = `${readingFrequencyValue} ${readingFrequencyUnit}`;
+
+  // Har dropdown ke liye alag loading state
+  const [assetLoading, setAssetLoading] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [measurementLoading, setMeasurementLoading] = useState(false);
 
   const isEdit = !!editingMeter;
   useEffect(() => {
@@ -50,7 +63,8 @@ export function NewMeterForm({
       setMeterType(editingMeter.meterType || "manual");
       setMeterName(editingMeter.name || "");
       setDescription(editingMeter.description || "");
-      setMeasurementUnit(editingMeter.unit || "");
+      // measurementId se set karein (assuming 'unit' was old)
+      setMeasurementUnit(editingMeter.measurementId || "");
       setAsset(editingMeter.assetId || "");
       setLocation(editingMeter.locationId || "");
       setReadingFrequencyValue(editingMeter.readingFrequency?.time || "");
@@ -96,11 +110,8 @@ export function NewMeterForm({
   };
 
   // create New Meter Function
-
   const handleCreateMeter = async () => {
-    // Yeh function ab async hai
     try {
-      // --- Validation (Aapka validation logic aesa hi rahega) ---
       if (!meterName.trim()) {
         setError("You need to provide a Meter Name");
         return;
@@ -115,19 +126,15 @@ export function NewMeterForm({
 
       const formData = new FormData();
 
-      // --- FormData Population (Ismein koi badlav nahi hai) ---
-      // Mandatory Fields
       // formData.append("organizationId", user.organizationId);
       formData.append("name", meterName);
       formData.append("measurementId", measurementUnit);
       formData.append("meterType", meterType);
 
-      // Optional Fields
       if (description.trim()) formData.append("description", description);
       if (asset) formData.append("assetId", asset);
       if (location) formData.append("locationId", location);
 
-      // Reading Frequency
       const freqUnit = readingFrequencyUnit;
       const freqValue = String(readingFrequencyValue || "").trim();
       if (freqUnit && freqUnit !== "none" && freqValue) {
@@ -141,90 +148,69 @@ export function NewMeterForm({
         );
       }
 
-      // --- Dispatch API (Yahan par main badlav kiya gaya hai) ---
       if (isEdit && editingMeter?.id) {
-        // EDIT MODE
         await dispatch(
           updateMeter({ id: editingMeter.id, meterData: formData })
         ).unwrap();
         toast.success("Meter updated successfully");
       } else {
-        // CREATE MODE: Agar isEdit false hai
         await dispatch(createMeter(formData)).unwrap();
         toast.success("Successfully added the Meter");
       }
 
-      // Dono cases mein common success logic
-      onCreate();
-    } catch (err) {
-      // Error handling ab ek hi jagah par hai
+      onCreate(true); // Pass true to indicate success
+    } catch (err: any) {
       console.error("❌ Meter save failed:", err);
       toast.error(err.message || "Meter save failed. Please try again.");
     } finally {
-      // Loading state ko false set karna
       setPostMeterDataLoading(false);
     }
   };
 
   const handleGetAssetData = async () => {
-    // Fetch only if the data is not already loaded
-    if (getAssetData.length > 0) {
-      return;
-    }
-    setLoading(true);
+    if (getAssetData.length > 0) return;
+    setAssetLoading(true);
     try {
       const assetsRes = await assetService.fetchAssetsName();
       setGetAssestData(assetsRes || []);
     } catch (err) {
       console.error("Failed to fetch asset data:", err);
     } finally {
-      setLoading(false);
+      setAssetLoading(false);
     }
   };
 
   const handleGetLocationData = async () => {
-    // Agar location ka data pehle se hai, toh API call nahi hogi.
-    if (getLocationData.length > 0) {
-      return;
-    }
-
-    setLoading(true);
+    if (getLocationData.length > 0) return;
+    setLocationLoading(true);
     try {
-      // Yahan aap apni location fetch karne wali API call likhein
       const res = await locationService.fetchLocationsName();
       setGetLocationData(res || []);
     } catch (err) {
       console.error("Failed to fetch location data:", err);
     } finally {
-      setLoading(false);
+      setLocationLoading(false);
     }
   };
   const handleGetMesurementUnit = async () => {
-    // Agar location ka data pehle se hai, toh API call nahi hogi.
-    if (measurementUnitOption.length > 0) {
-      return;
-    }
-    setLoading(true);
+    if (measurementUnitOption.length > 0) return;
+    setMeasurementLoading(true);
     try {
-      // Yahan aap apni location fetch karne wali API call likhein
       const MeasurementRes = await meterService.fetchMesurementUnit();
-      // console.log(MeasurementRes);
       setMeasurementUnitOption(MeasurementRes);
     } catch (err) {
-      console.error("Failed to fetch location data:", err);
+      console.error("Failed to fetch measurement data:", err);
     } finally {
-      setLoading(false);
+      setMeasurementLoading(false);
     }
   };
-
-  console.log(measurementUnitOption, "MeasurementUnit");
 
   const handleReset = () => {
     setMeterName("");
     setDescription("");
-    setAsset("none");
-    setLocation("none");
-    setMeasurementUnit("none");
+    setAsset("");
+    setLocation("");
+    setMeasurementUnit("");
     setReadingFrequencyUnit("none");
     setReadingFrequencyValue("");
   };
@@ -316,51 +302,19 @@ export function NewMeterForm({
         {/* Measurement Unit (Required) */}
         <div className="px-6 pt-6 pb-2">
           <div className="w-full sm:max-w-md md:max-w-lg">
-            {/* Label for accessibility */}
-            <label
-              htmlFor="measurement-unit-select"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Measurement Unit (Required)
-            </label>
-
-            {/* Dropdown */}
-            <div className="relative mt-2">
-              <select
-                id="measurement-unit-select"
-                name="measurementUnit"
-                value={measurementUnit}
-                onClick={handleGetMesurementUnit}
-                onChange={(e) => setMeasurementUnit(e.target.value)} // ✅ Passes ID value
-                className="block appearance-none w-full bg-white border border-gray-300 rounded-md py-2 pl-3 pr-10 text-sm text-gray-700 shadow-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                style={{
-                  height: "40px",
-                  paddingRight: "2.5rem", // leaves room for arrow icon
-                }}
-              >
-                {/* Default placeholder */}
-                <option value="" disabled>
-                  Select a unit...
-                </option>
-
-                {/* Loading & options */}
-                {loading ? (
-                  <option disabled>Loading...</option>
-                ) : (
-                  Array.isArray(measurementUnitOption) &&
-                  measurementUnitOption.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
-
-            {/* Validation error */}
-            {error && !measurementUnit && (
-              <p className="mt-2 text-sm text-red-600">{error}</p>
-            )}
+            <CustomDropdown
+              id="measurement-unit"
+              label="Measurement Unit (Required)"
+              value={measurementUnit}
+              onChange={setMeasurementUnit}
+              options={measurementUnitOption}
+              onOpen={handleGetMesurementUnit}
+              loading={measurementLoading}
+              placeholder="Select a unit..."
+              errorText={
+                error && !measurementUnit ? "Please select a unit" : undefined
+              }
+            />
           </div>
         </div>
 
@@ -368,76 +322,30 @@ export function NewMeterForm({
         <div className="flex gap-6 px-6 pb-6 pt-6">
           {/* Asset */}
           <div className="flex-1">
-            <label
-              htmlFor="asset-select"
-              className="block mb-1.5 text-sm font-medium text-gray-900"
-            >
-              Asset
-            </label>
-
-            <div className="relative w-full">
-              <select
-                id="asset-select"
-                value={asset}
-                onChange={(e) => setAsset(e.target.value)}
-                // JAISE HI USER CLICK KAREGA, YEH FUNCTION CALL HOGA
-                onClick={handleGetAssetData}
-                className="w-full h-10 pl-3 pr-8 text-sm bg-white border border-gray-300 rounded-md appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="" disabled>
-                  Select an Asset
-                </option>
-
-                {/* Loading state waise hi kaam karega jab API call hogi */}
-                {loading ? (
-                  <option disabled>Loading...</option>
-                ) : (
-                  getAssetData?.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
+            <CustomDropdown
+              id="asset"
+              label="Asset"
+              value={asset}
+              onChange={setAsset}
+              options={getAssetData}
+              onOpen={handleGetAssetData}
+              loading={assetLoading}
+              placeholder="Select an Asset"
+            />
           </div>
 
           {/* Location */}
           <div className="flex-1">
-            {/* Label ko behtar accessibility ke liye update kiya gaya hai */}
-            <label
-              htmlFor="location-select"
-              className="block mb-1.5 text-sm font-medium text-gray-900"
-            >
-              Location
-            </label>
-
-            <div className="relative w-full">
-              <select
-                id="location-select"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                // onClick event ko yahan select par lagaya gaya hai
-                onClick={handleGetLocationData}
-                className="w-full h-10 pl-3 pr-8 text-sm bg-white border border-gray-300 rounded-md appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                {/* Ek permanent, disabled placeholder */}
-                <option value="" disabled>
-                  Select a Location
-                </option>
-
-                {/* Loading state ko sahi tarike se handle kiya gaya hai */}
-                {loading ? (
-                  <option disabled>Loading...</option>
-                ) : (
-                  getLocationData?.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
+            <CustomDropdown
+              id="location"
+              label="Location"
+              value={location}
+              onChange={setLocation}
+              options={getLocationData}
+              onOpen={handleGetLocationData}
+              loading={locationLoading}
+              placeholder="Select a Location"
+            />
           </div>
         </div>
 
@@ -462,14 +370,14 @@ export function NewMeterForm({
 
             <input
               type="number"
-              value={0 || readingFrequencyValue}
-              onChange={(e) => setReadingFrequencyValue(Number(e.target.value))}
+              value={readingFrequencyValue || ""}
+              onChange={(e) => setReadingFrequencyValue(e.target.value)}
               style={{
                 height: "40px",
                 width: "70px",
                 border: "1px solid #e5e7eb",
                 borderRadius: "6px",
-                backgroundColor: "#fff", // allow typing
+                backgroundColor: "#fff",
                 textAlign: "center",
                 color: "#374151",
                 fontSize: "14px",
@@ -477,52 +385,16 @@ export function NewMeterForm({
             />
 
             <div style={{ position: "relative", width: "180px" }}>
-              <select
-                defaultValue="none"
-                onChange={(e) => setReadingFrequencyUnit(e.target.value)}
-                style={{
-                  height: "40px",
-                  width: "100%",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "6px",
-                  padding: "0 32px 0 12px",
-                  fontSize: "14px",
-                  color: "#374151",
-                  backgroundColor: "#fff",
-                  appearance: "none",
-                  cursor: "pointer",
-                }}
-              >
-                <option value="none">None</option>
-                <option value="hours">Hours</option>
-                <option value="days">Days</option>
-                <option value="weeks">Weeks</option>
-                <option value="months">Months</option>
-                <option value="years">Years</option>
-              </select>
-
-              {/* Chevron icon */}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{
-                  position: "absolute",
-                  right: "10px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  width: "16px",
-                  height: "16px",
-                  color: "#4b5563",
-                  pointerEvents: "none",
-                }}
-              >
-                <path d="M6 9l6 6 6-6" />
-              </svg>
+              <CustomDropdown
+                id="reading-frequency"
+                label="" // No label needed here
+                value={readingFrequencyUnit}
+                onChange={setReadingFrequencyUnit}
+                options={readingFrequencyOptions}
+                onOpen={() => {}} // No data to fetch
+                loading={false}
+                placeholder="Select unit"
+              />
             </div>
           </div>
         </div>
@@ -634,7 +506,7 @@ export function NewMeterForm({
       <div className="sticky bottom-0 mt-6 flex items-center jusitfy-end border-t bg-white px-6 py-4">
         {onCancel && (
           <button
-            onClick={onCancel}
+            onClick={() => onCancel(false)} // Pass false
             className="h-10 rounded-md border px-4 text-sm font-medium text-orange-600 hover:bg-gray-50"
           >
             Cancel

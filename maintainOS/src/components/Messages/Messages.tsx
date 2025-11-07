@@ -311,7 +311,7 @@ export function Messages() {
                       <AvatarImage
                         src={item.participants[0]?.avatarUrl || "/avatar.png"}
                       />
-                      <AvatarFallback>
+                      <AvatarFallback className="capitalize">
                         {item.participants[0]?.name?.[0] || "U"}
                       </AvatarFallback>
                     </Avatar>
