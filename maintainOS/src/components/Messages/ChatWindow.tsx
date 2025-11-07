@@ -358,15 +358,9 @@ export function ChatWindow({
   };
 
   return (
-    <div className="relative flex flex-col h-full">
+    <div className="relative flex flex-col h-full overflow-y-auto">
       {!showInfo ? (
         <>
-          {/* <p className="text-center mt-4">
-            <span className="bg-orange-600 px-4 py-1 rounded-full">
-              Status: {isConnected ? "🟢 Connected" : "🔴 Disconnected"}
-            </span>
-          </p> */}
-
           {/* Header */}
           {isCreatingMessage ? (
             <div className="flex items-center justify-between border-b border-border p-4 bg-white w-full">
@@ -461,38 +455,47 @@ export function ChatWindow({
 
                   {/* Message bubble */}
                   <div
-                    className={`max-w-[70%] mt-6${
+                    className={`mt-8 break-words  rounded-2xl shadow-sm ${
                       msg.isSelf
-                        ? "bg-gray-100  text-gray-800 rounded-br-none"
-                        : "bg-gray-100 text-gray-800 rounded-bl-none"
+                        ? "bg-gray-100 text-gray-800 text-right rounded-br-none ml-auto"
+                        : "bg-gray-100 text-gray-800 text-left  rounded-bl-none mr-auto"
                     }`}
+                    style={{
+                      maxWidth: "300px", // 👈 controls bubble width
+                      wordBreak: "break-word",
+                      overflowWrap: "break-word",
+                      whiteSpace: "pre-wrap",
+                    }}
                   >
                     {/* Message Text */}
                     {msg.text &&
                       msg.text.split("\n").map((line, i) => (
                         <p
                           key={i}
-                          className="text-sm leading-relaxed whitespace-pre-line"
+                          className={`text-sm leading-relaxed break-words whitespace-pre-wrap ${
+                            msg.isSelf ? "text-left" : "text-left"
+                          }`}
                         >
                           {line}
                         </p>
                       ))}
 
                     {/* Message Attachments */}
-                    {msg.messageDocs?.length > 0 ? (
+                    {(msg.messageDocs?.length > 0 ||
+                      msg.messageImages?.length > 0) && (
                       <div className="mt-2">
                         <MessageAttachments
                           messageImages={msg.messageImages}
                           messageDocs={msg.messageDocs}
                         />
                       </div>
-                    ) : null}
+                    )}
 
                     {/* Timestamp */}
                     <div
                       className={`text-xs mt-1 ${
                         msg.isSelf
-                          ? "text-orange-200 text-right"
+                          ? "text-orange-100 text-right"
                           : "text-gray-500 text-left"
                       }`}
                     >
@@ -672,7 +675,7 @@ export function ChatWindow({
         </>
       ) : (
         /* Conversation Info panel */
-        <div className="absolute inset-0 h-full w-full bg-white border-l border-border shadow-lg p-4 flex flex-col">
+        <div className="absolute inset-0 h-full w-full bg-white border-l border-border shadow-lg p-4 flex flex-col ">
           <Button
             variant="ghost"
             className="flex-shrink-0 self-start"
@@ -733,7 +736,7 @@ export function ChatWindow({
           </div>
 
           {showSharedFiles && (
-            <div className="py-2 max-h-64 overflow-y-auto">
+            <div className="py-2 m">
               <SharedFiles messages={messages} />
             </div>
           )}

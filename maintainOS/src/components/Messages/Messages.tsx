@@ -50,50 +50,6 @@ export function Messages() {
   );
   const items: DMConversation[] = active === "messages" ? oneOnOneDMs : threads;
 
-  // transform messages helper
-  // const transformMessages = (conversation: any) => {
-  //   if (!conversation || !conversation.messages) return [];
-
-  //   return conversation.messages
-  //     .map((msg: any, index: number) => {
-  //       let senderName = "Unknown User";
-  //       let senderAvatar = "/avatar.png";
-
-  //       if (msg.sender?.fullName) {
-  //         senderName = msg.sender.fullName;
-  //         senderAvatar = msg.sender.avatarUrl || "/avatar.png";
-  //       } else if (msg.senderId === currentUserId) {
-  //         senderName = "You";
-  //       } else {
-  //         const selectedConversation = items.find(
-  //           (item) => item.id === selectedId
-  //         );
-  //         const participant = selectedConversation?.participants.find(
-  //           (p) => p.id === msg.senderId
-  //         );
-  //         if (participant) {
-  //           senderName = participant.name;
-  //           senderAvatar = participant.avatarUrl || "/avatar.png";
-  //         }
-  //       }
-
-  //       return {
-  //         id: parseInt(msg.id) || index,
-  //         sender: senderName,
-  //         text: msg.body || "",
-  //         avatar: senderAvatar,
-  //         timestamp: new Date(msg.createdAt).toLocaleString(),
-  //         createdAt: msg.createdAt,
-  //         messageImages: msg.messageImages || [],
-  //         messageDocs: msg.messageDocs || [],
-  //       };
-  //     })
-  //     .sort(
-  //       (a: any, b: any) =>
-  //         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-  //     );
-  // };
-
   const transformMessages = (conversation: any) => {
     if (!conversation || !conversation.messages) return [];
 
@@ -296,9 +252,9 @@ export function Messages() {
         setIsCreatingForm={setIsCreatingMessage}
       />
 
-      <div className="p-6 gap-4 flex flex-1 min-h-0">
+      <div className="ml-3 ml-2 gap-4 flex flex-1 min-h-0">
         {/* Chat List Section */}
-        <div className="w-96 border border-border bg-card flex flex-col min-h-0">
+        <div className="w-96 border border-border bg-card flex flex-col ">
           {/* Chat/Thread Buttons */}
           <div className="border border-border flex w-full">
             <Button
@@ -338,7 +294,7 @@ export function Messages() {
                 <div
                   key={item.id}
                   className={cn(
-                    "flex items-center gap-3 p-3 border-b cursor-pointer",
+                    "flex items-center justify-between p-3 border-b cursor-pointer hover:bg-orange-50 transition-colors",
                     selectedId === item.id && "bg-orange-50"
                   )}
                   onClick={() => {
@@ -349,26 +305,35 @@ export function Messages() {
                     }
                   }}
                 >
-                  <Avatar>
-                    <AvatarImage
-                      src={item.participants[0]?.avatarUrl || "/avatar.png"}
-                    />
-                    <AvatarFallback>
-                      {item.participants[0]?.name?.[0] || "U"}
-                    </AvatarFallback>
-                  </Avatar>
+                  {/* Left section: Avatar + Info */}
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <Avatar>
+                      <AvatarImage
+                        src={item.participants[0]?.avatarUrl || "/avatar.png"}
+                      />
+                      <AvatarFallback>
+                        {item.participants[0]?.name?.[0] || "U"}
+                      </AvatarFallback>
+                    </Avatar>
 
-                  <div className="truncate">
-                    <p className="font-medium truncate">
-                      {item.participants.map((p) => p.name || p.id).join(", ")}
-                    </p>
-
-                    <p className="text-sm text-muted-foreground truncate">
-                      {item.lastMessage?.body
-                        ? item.lastMessage.body
-                        : "New Attachment"}
-                    </p>
+                    <div className="truncate max-w-[180px]">
+                      <p className="font-medium truncate">
+                        {item.participants
+                          .map((p) => p.name || p.id)
+                          .join(", ")}
+                      </p>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {item.lastMessage?.body || "New Attachment"}
+                      </p>
+                    </div>
                   </div>
+
+                  {/* Right section: Unread badge */}
+                  {item.unreadCount > 0 && (
+                    <span className="ml-auto bg-orange-600 text-white text-xs font-medium px-2 py-1 rounded-full min-w-[22px] text-center">
+                      {item.unreadCount}
+                    </span>
+                  )}
                 </div>
               ))
             )}
@@ -376,7 +341,7 @@ export function Messages() {
         </div>
 
         {/* Chat Window */}
-        <div className="flex-1 border border-border bg-card min-h-0">
+        <div className="flex-1 w-full border border-border bg-card mr-3">
           {isChatLoading || isSendingMessage ? (
             <div className="h-full flex items-center justify-center text-muted-foreground">
               <Loader />
@@ -420,7 +385,12 @@ export function Messages() {
               />
             ) : (
               <ChatWindow
-                messages={transformMessages(activeConversation)}
+                messages={transformMessages({
+                  ...activeConversation,
+                  messages: activeConversation.messages.filter(
+                    (msg: any) => msg.conversationId === selectedId
+                  ),
+                })}
                 isCreatingMessage={isCreatingMessage}
                 conversationId={selectedId}
                 onConversationCreated={handleConversationCreated}
