@@ -66,20 +66,28 @@ export default function ProcedureBody({ name, description }: ProcedureBodyProps)
             <h2 className="text-2xl font-semibold mb-1">{name}</h2>
             <p className="text-gray-500 mb-6">{description}</p>
 
-            <SortableContext
-              id="root" 
-              items={fields.map((f) => f.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              {fields.map((field, index) => (
-                <ProcedureBlock
-                  key={field.id}
-                  field={field}
-                  index={index}
-                  isNested={false}
-                />
-              ))}
-            </SortableContext>
+            {/* --- UPDATED: Added empty state check --- */}
+            {fields.length === 0 ? (
+              <div className="text-center py-20 text-gray-500">
+                Select new items from the toolbar to start adding to your Procedure
+              </div>
+            ) : (
+              <SortableContext
+                id="root" 
+                items={fields.map((f) => f.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {fields.map((field, index) => (
+                  <ProcedureBlock
+                    key={field.id}
+                    field={field}
+                    index={index}
+                    isNested={false}
+                  />
+                ))}
+              </SortableContext>
+            )}
+            {/* --- END UPDATE --- */}
           </div>
         </div>
 

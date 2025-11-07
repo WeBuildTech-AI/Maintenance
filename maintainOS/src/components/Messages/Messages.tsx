@@ -191,7 +191,6 @@ export function Messages() {
     }
   };
 
-  // When user clicks Threads tab: activate and open first thread immediately (if available)
   const handleClickThreadsTab = () => {
     setActive("threads");
     setIsCreatingMessage(false);
@@ -206,7 +205,6 @@ export function Messages() {
     }
   };
 
-  // Called when a new conversation is created (e.g., user sends message in new chat)
   const handleConversationCreated = async (newConversationId: string) => {
     setIsSendingMessage(true);
     try {

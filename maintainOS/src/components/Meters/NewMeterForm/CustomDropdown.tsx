@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronDown } from "lucide-react"; // Using lucide-react like your other icons
 import Loader from "../../Loader/Loader";
+import { Navigate, useNavigate } from "react-router-dom";
 
 interface DropdownOption {
   id: string;
@@ -19,6 +20,7 @@ interface CustomDropdownProps {
   loading: boolean;
   placeholder: string;
   errorText?: string;
+  naigateTo?: string;
 }
 
 export function CustomDropdown({
@@ -31,12 +33,13 @@ export function CustomDropdown({
   loading,
   placeholder,
   errorText,
+  navigateTo,
 }: CustomDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   // This state holds what the user is typing
   const [inputValue, setInputValue] = useState("");
-
+  const navigate = useNavigate();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Jab 'value' (selected ID) badalta hai, toh input field ko update karo
@@ -107,26 +110,21 @@ export function CustomDropdown({
         </label>
       )}
 
-      {/* This 'ref' is for the click-outside handler */}
       <div className={label ? "relative mt-2" : "relative"} ref={dropdownRef}>
-        {/* === The Input (replaces <button>) === */}
         <input
           type="text"
           id={id}
-          value={inputValue} // Yahan 'inputValue' state use hoga
-          onChange={handleInputChange} // Typing handle karega
-          onClick={handleInputClick} // Click par open karega
+          value={inputValue}
+          onChange={handleInputChange}
+          onClick={handleInputClick}
           placeholder={placeholder}
           className="relative block w-full pl-2 cursor-default rounded-md bg-white py-2 pl-3 pr-10 text-left text-sm text-gray-700 shadow-sm border border-gray-300 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
           style={{ height: "40px" }}
           aria-expanded={isOpen}
           aria-labelledby={`${id}-label`}
-          autoComplete="off" // Browser ka autocomplete band karo
+          autoComplete="off"
         />
 
-        {/* Icon (Input ke upar) */}
-
-        {/* === The Dropdown Panel (replaces <option>) === */}
         {isOpen && (
           <div className="absolute z-50 p-2 max-h-60 w-full overflow-y-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
             {/* Loading state */}
@@ -145,12 +143,21 @@ export function CustomDropdown({
 
             {/* No options state (after filtering) */}
             {!loading && filteredOptions.length === 0 && (
-              <div className="cursor-default select-none px-4 py-2 text-gray-500">
-                No options found
-              </div>
+              <>
+                <div className="cursor-default select-none px-4 py-2 text-gray-500">
+                  No options found
+                </div>
+                <div className="flex justify-center item-center">
+                  <button
+                    onClick={() => Navigate(navigateTo)}
+                    className="text-center"
+                  >
+                    Create
+                  </button>
+                </div>
+              </>
             )}
 
-            {/* Data state (using filteredOptions) */}
             {!loading &&
               filteredOptions.map((item) => (
                 <div
@@ -167,9 +174,7 @@ export function CustomDropdown({
                 >
                   <span className="block truncate">{item.name}</span>
                   {value === item.id && (
-                    <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-indigo-600">
-                      {/* Check icon yahan laga sakte hain */}
-                    </span>
+                    <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-indigo-600"></span>
                   )}
                 </div>
               ))}

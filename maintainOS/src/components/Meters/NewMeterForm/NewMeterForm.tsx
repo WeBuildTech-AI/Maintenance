@@ -8,9 +8,7 @@ import type { RootState, AppDispatch } from "../../../store";
 import { assetService } from "../../../store/assets";
 import { locationService } from "../../../store/locations";
 import toast from "react-hot-toast";
-
-// YAHAN IMPORT KAREIN (PATH SAHI KAR LEIN)
-import { CustomDropdown } from "./CustomDropdown"; // Adjust the path as needed
+import { CustomDropdown } from "./CustomDropdown";
 
 interface NewMeterFormProps {
   onCreate: (data: any) => void;
@@ -41,7 +39,7 @@ export function NewMeterForm({
   const [asset, setAsset] = useState("");
   const [location, setLocation] = useState("");
   const [readingFrequencyValue, setReadingFrequencyValue] = useState("");
-  const [readingFrequencyUnit, setReadingFrequencyUnit] = useState("none"); // Default "none"
+  const [readingFrequencyUnit, setReadingFrequencyUnit] = useState("none");
   const [files, setFiles] = useState<File[]>([]);
   const [docs, setDocs] = useState<File[]>([]);
   const [error, setError] = useState("");
@@ -59,11 +57,16 @@ export function NewMeterForm({
 
   const isEdit = !!editingMeter;
   useEffect(() => {
+    handleGetMesurementUnit();
+    handleGetAssetData();
+    handleGetLocationData();
+  }, []);
+
+  useEffect(() => {
     if (editingMeter) {
       setMeterType(editingMeter.meterType || "manual");
       setMeterName(editingMeter.name || "");
       setDescription(editingMeter.description || "");
-      // measurementId se set karein (assuming 'unit' was old)
       setMeasurementUnit(editingMeter.measurementId || "");
       setAsset(editingMeter.assetId || "");
       setLocation(editingMeter.locationId || "");
@@ -168,7 +171,7 @@ export function NewMeterForm({
   };
 
   const handleGetAssetData = async () => {
-    if (getAssetData.length > 0) return;
+    if (getAssetData.length > 0) return; // Guard: Pehle se hai toh fetch mat karo
     setAssetLoading(true);
     try {
       const assetsRes = await assetService.fetchAssetsName();
@@ -181,7 +184,7 @@ export function NewMeterForm({
   };
 
   const handleGetLocationData = async () => {
-    if (getLocationData.length > 0) return;
+    if (getLocationData.length > 0) return; // Guard
     setLocationLoading(true);
     try {
       const res = await locationService.fetchLocationsName();
@@ -193,7 +196,7 @@ export function NewMeterForm({
     }
   };
   const handleGetMesurementUnit = async () => {
-    if (measurementUnitOption.length > 0) return;
+    if (measurementUnitOption.length > 0) return; // Guard
     setMeasurementLoading(true);
     try {
       const MeasurementRes = await meterService.fetchMesurementUnit();
@@ -331,6 +334,7 @@ export function NewMeterForm({
               onOpen={handleGetAssetData}
               loading={assetLoading}
               placeholder="Select an Asset"
+              navigateTo="/assets"
             />
           </div>
 
@@ -345,6 +349,7 @@ export function NewMeterForm({
               onOpen={handleGetLocationData}
               loading={locationLoading}
               placeholder="Select a Location"
+              navigateTo="/locations"
             />
           </div>
         </div>
@@ -390,8 +395,8 @@ export function NewMeterForm({
                 label="" // No label needed here
                 value={readingFrequencyUnit}
                 onChange={setReadingFrequencyUnit}
-                options={readingFrequencyOptions}
-                onOpen={() => {}} // No data to fetch
+                options={readingFrequencyOptions} // Yeh static options use karega
+                onOpen={() => {}} // Kuch fetch nahi karna
                 loading={false}
                 placeholder="Select unit"
               />
