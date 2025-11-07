@@ -436,51 +436,55 @@ export function ChatWindow({
               {messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`flex items-end gap-3 ${
+                  className={`flex items-center gap-3 mb-3 ${
                     msg.isSelf ? "justify-end" : "justify-start"
                   }`}
                 >
-                  {/* Avatar (only for receiver) */}
+                  {/* Avatar (Receiver side) */}
                   {!msg.isSelf && (
                     <Avatar className="w-8 h-8 flex-shrink-0">
-                      <AvatarImage src={msg.avatar} />
-                      <AvatarFallback className="text-sm">
+                      {" "}
+                      <AvatarImage src={msg.avatar} />{" "}
+                      <AvatarFallback className="text-1">
+                        {" "}
                         {msg.sender
                           .split(" ")
                           .map((n) => n[0])
-                          .join("")}
-                      </AvatarFallback>
+                          .join("")}{" "}
+                      </AvatarFallback>{" "}
                     </Avatar>
                   )}
 
                   {/* Message bubble */}
                   <div
-                    className={`mt-8 break-words  rounded-2xl shadow-sm ${
+                    className={`relative rounded-2xl shadow-sm ${
                       msg.isSelf
-                        ? "bg-gray-100 text-gray-800 text-right rounded-br-none ml-auto"
-                        : "bg-gray-100 text-gray-800 text-left  rounded-bl-none mr-auto"
+                        ? "bg-gray-100 text-gray-800 rounded-br-none"
+                        : "bg-gray-100 text-gray-800 rounded-bl-none"
                     }`}
                     style={{
-                      maxWidth: "300px", // 👈 controls bubble width
+                      maxWidth: "300px",
                       wordBreak: "break-word",
                       overflowWrap: "break-word",
                       whiteSpace: "pre-wrap",
                     }}
                   >
-                    {/* Message Text */}
+                    {/* Text */}
                     {msg.text &&
                       msg.text.split("\n").map((line, i) => (
                         <p
                           key={i}
-                          className={`text-sm leading-relaxed break-words whitespace-pre-wrap ${
-                            msg.isSelf ? "text-left" : "text-left"
+                          className={`text-sm leading-relaxed ${
+                            msg.isSelf
+                              ? "text-gray-800 text-left"
+                              : "text-gray-800 text-left"
                           }`}
                         >
                           {line}
                         </p>
                       ))}
 
-                    {/* Message Attachments */}
+                    {/* Attachments */}
                     {(msg.messageDocs?.length > 0 ||
                       msg.messageImages?.length > 0) && (
                       <div className="mt-2">
@@ -493,7 +497,7 @@ export function ChatWindow({
 
                     {/* Timestamp */}
                     <div
-                      className={`text-xs mt-1 ${
+                      className={`text-1 mt-1 ${
                         msg.isSelf
                           ? "text-orange-100 text-right"
                           : "text-gray-500 text-left"
@@ -503,16 +507,18 @@ export function ChatWindow({
                     </div>
                   </div>
 
-                  {/* Avatar (only for sender) */}
+                  {/* Avatar (Sender side) */}
                   {msg.isSelf && (
                     <Avatar className="w-8 h-8 flex-shrink-0">
-                      <AvatarImage src={msg.avatar} />
-                      <AvatarFallback className="text-sm">
+                      {" "}
+                      <AvatarImage src={msg.avatar} />{" "}
+                      <AvatarFallback className="text-1 capitalize">
+                        {" "}
                         {msg.sender
                           .split(" ")
                           .map((n) => n[0])
-                          .join("")}
-                      </AvatarFallback>
+                          .join("")}{" "}
+                      </AvatarFallback>{" "}
                     </Avatar>
                   )}
                 </div>

@@ -260,7 +260,7 @@ export function Messages() {
             <Button
               onClick={handleClickMessagesTab}
               className={cn(
-                "w-half mb-2 mt-2 rounded-none bg-white text-black border-b-4 border-transparent",
+                "w-half mb-2 mt-2 cursor-pointer rounded-none bg-white text-black border-b-4 border-transparent",
                 active === "messages" && "text-orange-600 border-orange-600"
               )}
               disabled={isDMsLoading || isSendingMessage}
@@ -270,7 +270,7 @@ export function Messages() {
             <Button
               onClick={handleClickThreadsTab}
               className={cn(
-                "w-half mb-2 mt-2 rounded-none bg-white text-black border-b-4 border-transparent",
+                "w-half mb-2 mt-2  cursor-pointer rounded-none bg-white text-black border-b-4 border-transparent",
                 active === "threads" && "text-orange-600 border-orange-600"
               )}
               disabled={isDMsLoading || isSendingMessage}
