@@ -29,7 +29,11 @@ export function AssetTable({
                 <th className="w-[14%] px-4 py-3 text-left">Location</th>
                 <th className="w-[12%] px-4 py-3 text-left">Criticality</th>
                 <th className="w-[12%] px-4 py-3 text-left">Manufacturer</th>
-                <th className="w-[12%] px-4 py-3 text-left">Asset Type</th>
+                <th className="w-[12%] px-4 py-3 text-left">Type</th>
+                <th className="w-[12%] px-4 py-3 text-left">QrCode</th>
+                <th className="w-[12%] px-4 py-3 text-left">Meter</th>
+                <th className="w-[12%] px-4 py-3 text-left">Part</th>
+                <th className="w-[12%] px-4 py-3 text-left">Team</th>
               </tr>
             </thead>
             <tbody>
@@ -107,12 +111,57 @@ export function AssetTable({
                       "-"
                     )}
                   </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {(asset.qrCode && asset.qrCode.split("/").pop()) || "-"}
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {asset.meters?.length > 0 ? (
+                      <>
+                        {asset.meters[0]?.name}
+                        {asset.meters.length > 1 && (
+                          <span className="text-gray-500 ml-1">
+                            +{asset.meters.length - 1}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      "-"
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {asset.parts?.length > 0 ? (
+                      <>
+                        {asset.parts[0]?.name}
+                        {asset.parts.length > 1 && (
+                          <span className="text-gray-500 ml-1">
+                            +{asset.parts.length - 1}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      "-"
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {asset.teams?.length > 0 ? (
+                      <>
+                        {asset.teams[0]?.name}
+                        {asset.teams.length > 1 && (
+                          <span className="text-gray-500 ml-1">
+                            +{asset.teams.length - 1}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      "-"
+                    )}
+                  </td>
                 </tr>
               ))}
               {assets.length === 0 && (
                 <tr>
                   <td
-                    className="px-4 py-6 text-center text-muted-foreground"
+                    className="px-4 py-4 text-center text-muted-foreground"
                     colSpan={7}
                   >
                     No assets found.

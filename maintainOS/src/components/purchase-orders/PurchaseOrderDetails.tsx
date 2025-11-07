@@ -22,10 +22,7 @@ import Comment from "../ui/comment";
 import { formatDateOnly } from "../utils/Date"; // Path check karein
 import { purchaseOrderService } from "../../store/purchaseOrders";
 import toast from "react-hot-toast";
-
-// =========================
-// 🔹 TYPE DEFINITIONS
-// =========================
+import PurchaseStockUI from "./PurchaseStockUI";
 
 interface OrderItem {
   id: string;
@@ -122,9 +119,10 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
       0
     ) ?? 0;
   const total = subtotal + (selectedPO.extraCosts ?? 0);
-
+  const [fullFillModal, setFullFillModal] = React.useState(false);
   const handleApprove = async (id) => {
     await purchaseOrderService.approvePurchaseOrder(id);
+    setModalAction("approve");
     toast.success("Successfully Approved ");
     fetchPurchaseOrder();
   };
@@ -359,7 +357,6 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
             </Button>
             <Button
               onClick={() => {
-                setModalAction("approve");
                 handleApprove(selectedPO.id);
               }}
               // onClick={() => handleConfirm(selectedPO.i)}
@@ -374,14 +371,22 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
         <>
           <div className="p-6 border-t flex justify-end flex-none bg-white">
             <Button
-              // onClick={()
-              // } // 'fullfill' action
+              onClick={() => setFullFillModal(true)} // 'fullfill' action
               className="gap-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md px-4 py-2 text-sm font-medium cursor-pointer flex items-center"
             >
               <Upload className="h-4 w-4" />
               Fulfill
             </Button>
           </div>
+        </>
+      )}
+
+      {fullFillModal && (
+        <>
+          <PurchaseStockUI
+            setFullFillModal={setFullFillModal}
+            selectedPO={selectedPO}
+          />
         </>
       )}
     </div>
