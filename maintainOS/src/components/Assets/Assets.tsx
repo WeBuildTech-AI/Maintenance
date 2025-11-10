@@ -139,6 +139,7 @@ export const Assets: FC = () => {
         }
 
         toast.success("Asset deleted successfully!");
+        fetchAssetsData();
       })
       .catch((error) => {
         console.error("Delete failed:", error);
@@ -166,6 +167,7 @@ export const Assets: FC = () => {
               <AssetTable
                 assets={sortedAndFilteredAssets}
                 selectedAsset={selectedAsset}
+                handleDeleteAsset={handleDeleteAsset}
               />
             ) : (
               <div className="flex flex-1 min-h-0">
