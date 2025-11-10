@@ -5,7 +5,7 @@ import { Edit, Trash2 } from "lucide-react";
 import { formatDateOnly } from "../../utils/Date";
 import { UpdateAssetStatusModal } from "../AssetDetail/sections/AssetStatusReadings";
 import { assetService } from "../../../store/assets";
-import { Tooltip } from "../../ui/Tooltip";
+import { Tooltip } from "../../ui/tooltip";
 
 export function AssetTable({
   assets,
