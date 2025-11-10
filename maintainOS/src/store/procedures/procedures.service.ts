@@ -1,28 +1,26 @@
-import axios from "axios";
-
+import api from "../auth/auth.service";
 import type {
   CreateProcedureData,
   ProcedureResponse,
   UpdateProcedureData,
 } from "./procedures.types";
 
-const API_URL = import.meta.env.VITE_API_URL;
 
 export const procedureService = {
   fetchProcedures: async (): Promise<ProcedureResponse[]> => {
-    const res = await axios.get(`${API_URL}/procedures`);
+    const res = await api.get(`procedures`);
     return res.data;
   },
 
   fetchProcedureById: async (id: string): Promise<ProcedureResponse> => {
-    const res = await axios.get(`${API_URL}/procedures/${id}`);
+    const res = await api.get(`procedures/${id}`);
     return res.data;
   },
 
   createProcedure: async (
     data: CreateProcedureData
   ): Promise<ProcedureResponse> => {
-    const res = await axios.post(`${API_URL}/procedures`, data);
+    const res = await api.post(`procedures`, data);
     return res.data;
   },
 
@@ -30,11 +28,11 @@ export const procedureService = {
     id: string,
     data: UpdateProcedureData
   ): Promise<ProcedureResponse> => {
-    const res = await axios.patch(`${API_URL}/procedures/${id}`, data);
+    const res = await api.patch(`procedures/${id}`, data);
     return res.data;
   },
 
   deleteProcedure: async (id: string): Promise<void> => {
-    await axios.delete(`${API_URL}/procedures/${id}`);
+    await api.delete(`procedures/${id}`);
   },
 };

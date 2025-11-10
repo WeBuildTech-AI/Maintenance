@@ -46,12 +46,15 @@ import { convertStateToJSON } from "./utils/conversion";
 
 // --- 1. Define the Context Type (all state and handlers) ---
 interface ProcedureBuilderContextType {
+  // --- 💡 ADDED: name and description ---
+  name: string;
+  description: string;
+  // --- END ADDITION ---
+
   fields: FieldData[];
   setFields: React.Dispatch<React.SetStateAction<FieldData[]>>;
-  // --- ADDED SETTINGS STATE ---
   settings: ProcedureSettingsState;
   setSettings: React.Dispatch<React.SetStateAction<ProcedureSettingsState>>;
-  // --- END ADDITION ---
   activeField: FieldData | null;
   editingFieldId: number | null;
   setEditingFieldId: React.Dispatch<React.SetStateAction<number | null>>;
@@ -1197,10 +1200,14 @@ export function ProcedureBuilderProvider({
 
   // --- 5. Provide Context Value ---
   const contextValue: ProcedureBuilderContextType = {
+    // --- 💡 FIX: Pass name and description into context ---
+    name,
+    description,
+    // --- END FIX ---
     fields,
     setFields,
-    settings, // <-- ADDED
-    setSettings, // <-- ADDED
+    settings,
+    setSettings,
     activeField,
     editingFieldId,
     setEditingFieldId,

@@ -1,4 +1,4 @@
-import type { FieldData, ConditionData, ProcedureSettingsState } from "../types"; // <-- 1. IMPORT SETTINGS TYPE
+import type { FieldData, ConditionData, ProcedureSettingsState } from "../types";
 
 // --- Helper: Maps UI field types to backend field types ---
 function mapFieldType(type: string): string {
@@ -15,8 +15,6 @@ function mapFieldType(type: string): string {
     "Signature Block": "signature_block",
     Date: "date_field",
   };
-  // FIX: Added optional chaining and a nullish coalescing operator for safety
-  // This prevents the 'toLowerCase' crash if type is undefined or null.
   return map[type] || type?.toLowerCase() || "unknown";
 }
 
@@ -38,6 +36,9 @@ function mapCondition(condition: ConditionData, parentType: string): any {
   };
 
   targetCondition.type = operatorMap[condition.conditionOperator || ""] || "unknown";
+  
+  // --- 💡 ADDED: Pass condition ID ---
+  targetCondition.id = condition.id;
 
   if (["one_of", "not_one_of", "contains"].includes(targetCondition.type)) {
     targetCondition.values = [condition.conditionValue];
@@ -47,7 +48,6 @@ function mapCondition(condition: ConditionData, parentType: string): any {
   } else if (["is_checked", "is_not_checked"].includes(targetCondition.type)) {
     // No value needed
   } else if (condition.conditionValue) {
-    // For higher_than, lower_than, equal_to, etc.
     const numericValue = Number(condition.conditionValue);
     if (!isNaN(numericValue)) {
       targetCondition.value = numericValue;
@@ -62,6 +62,7 @@ function mapCondition(condition: ConditionData, parentType: string): any {
 // --- Helper: Transforms a single UI field to the target JSON field ---
 function transformField(field: FieldData, order: number): any {
   const targetField: any = {
+    id: field.id, // <-- 💡 FIX: Pass the original ID
     fieldName: field.label,
     fieldType: mapFieldType(field.selectedType),
     required: !!field.isRequired,
@@ -78,8 +79,10 @@ function transformField(field: FieldData, order: number): any {
     config.options = field.options;
   }
   if (field.selectedMeter) {
-    // In a real app, you might map this name to an ID
     config.meterId = field.selectedMeter; 
+  }
+  if (field.meterUnit) { // <-- 💡 ADDED: Pass meterUnit
+    config.meterUnit = field.meterUnit;
   }
   if (Object.keys(config).length > 0) {
     targetField.config = config;
@@ -90,20 +93,17 @@ function transformField(field: FieldData, order: number): any {
     targetField.children = [];
     
     field.conditions.forEach(condition => {
-      // --- 💡 FIX: This loop now correctly handles different block types ---
-      // It no longer assumes every child is a 'field' block.
       let conditionalOrder = 1;
       condition.fields.forEach((conditionalItem) => {
         
         if (conditionalItem.blockType === "field") {
-          // Process nested fields
           const targetChildField = transformField(conditionalItem, conditionalOrder++);
           targetChildField.condition = mapCondition(condition, field.selectedType);
           targetField.children.push(targetChildField);
 
         } else if (conditionalItem.blockType === "heading") {
-          // Process nested headings
           targetField.children.push({
+            id: conditionalItem.id, // <-- 💡 FIX: Pass the original ID
             fieldName: conditionalItem.label,
             fieldType: "heading",
             required: false,
@@ -111,7 +111,6 @@ function transformField(field: FieldData, order: number): any {
             condition: mapCondition(condition, field.selectedType),
           });
         }
-        // Nested 'section' blocks are not processed, preventing the crash.
       });
     });
   }
@@ -123,22 +122,19 @@ function transformField(field: FieldData, order: number): any {
 // --- Main Export Function ---
 export function convertStateToJSON(
   fieldsState: FieldData[], 
-  settings: ProcedureSettingsState, // <-- 2. ADD SETTINGS PARAM
+  settings: ProcedureSettingsState,
   procedureName: string, 
   procedureDescription: string
 ) {
   const result: any = {
     title: procedureName,
     description: procedureDescription,
-    organizationId: "60f16350-3552-47e1-81eb-a77cd43f9a81", // Placeholder
-    
+        
     // --- 3. MAP SETTINGS TO JSON ---
     assetIds: settings.assets, 
     teamsInCharge: settings.teamsInCharge, 
     locationIds: settings.locations, 
     visibility: settings.visibility,
-    // categories: settings.categories, // Add this if your target JSON needs it
-    // --- END SETTINGS ---
 
     rootFields: [],
     sections: []
@@ -151,6 +147,7 @@ export function convertStateToJSON(
     if (item.blockType === "section") {
       // --- Handle Section ---
       const newSection: any = {
+        id: item.id, // <-- 💡 FIX: Pass the original ID
         sectionName: item.label,
         order: sectionsList.length + 1,
         fields: []
@@ -159,18 +156,17 @@ export function convertStateToJSON(
       if (item.fields) {
         let fieldOrder = 1;
         item.fields.forEach((sectionItem) => {
-          // Handle fields OR headings inside a section
           if (sectionItem.blockType === "field") {
             newSection.fields.push(transformField(sectionItem, fieldOrder++));
           } else if (sectionItem.blockType === "heading") {
             newSection.fields.push({
+              id: sectionItem.id, // <-- 💡 FIX: Pass the original ID
               fieldName: sectionItem.label,
-              fieldType: "heading", // Custom type
+              fieldType: "heading",
               required: false,
               order: fieldOrder++,
             });
           }
-          // This logic correctly ignores nested sections, preventing a crash.
         });
       }
       sectionsList.push(newSection);
@@ -181,8 +177,9 @@ export function convertStateToJSON(
     } else if (item.blockType === "heading") {
       // --- Handle Root Heading ---
       rootItems.push({
+        id: item.id, // <-- 💡 FIX: Pass the original ID
         fieldName: item.label,
-        fieldType: "heading", // Custom type
+        fieldType: "heading",
         required: false,
         order: rootItems.length + 1
       });
@@ -192,5 +189,41 @@ export function convertStateToJSON(
   result.rootFields = rootItems;
   result.sections = sectionsList;
   
+  // --- Re-organize children to match API structure ---
+  // This logic moves conditional fields from 'children' to the correct 'fields' array
+  
+  const allFields: any[] = [...result.rootFields];
+  result.sections.forEach((s: any) => allFields.push(...s.fields));
+
+  const childFields: any[] = [];
+
+  allFields.forEach(f => {
+    if (f.children) {
+      f.children.forEach((child: any) => {
+        child.parentId = f.id; // Set parentId
+        childFields.push(child);
+      });
+      delete f.children; // Remove children array
+    }
+  });
+
+  // Add child-fields back into the correct list (rootFields or section.fields)
+  childFields.forEach(child => {
+    const parent = allFields.find(f => f.id === child.parentId);
+    if (parent) {
+      if (parent.sectionId) {
+        // Parent is in a section
+        const section = result.sections.find((s: any) => s.id === parent.sectionId);
+        if (section) {
+          child.sectionId = section.id;
+          section.fields.push(child);
+        }
+      } else {
+        // Parent is in rootFields
+        result.rootFields.push(child);
+      }
+    }
+  });
+
   return result;
 }

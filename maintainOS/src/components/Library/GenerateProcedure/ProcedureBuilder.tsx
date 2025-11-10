@@ -1,11 +1,18 @@
 import { useState } from "react";
-import { ChevronLeft, Eye } from "lucide-react";
+import { ChevronLeft, Eye, Loader2 } from "lucide-react";
 import ProcedureBody from "./ProcedureBody";
 import ProcedureSettings from "./ProcedureSettings";
 import { useLayout } from "../../MainLayout";
 import { useProcedureBuilder } from "./ProcedureBuilderContext";
 import { convertStateToJSON } from "./utils/conversion";
-import { ProcedurePreviewModal } from "./components/ProcedurePreviewModal"; // <-- 1. MODAL KO IMPORT KAREIN
+import { ProcedurePreviewModal } from "./components/ProcedurePreviewModal";
+
+// --- 💡 1. REDUX IMPORTS ---
+import { useDispatch } from "react-redux";
+// import { useSelector } from "react-redux"; 
+import { type RootState, type AppDispatch } from "../../../store"; 
+import { createProcedure } from "../../../store/procedures/procedures.thunks";
+
 
 interface BuilderProps {
   name: string;
@@ -20,8 +27,12 @@ export default function ProcedureBuilder({
 }: BuilderProps) {
   const [scoring, setScoring] = useState(false);
   const [activeTab, setActiveTab] = useState<"fields" | "settings">("fields");
-  const [showPreview, setShowPreview] = useState(false); // <-- 2. MODAL STATE ADD KAREIN
+  const [showPreview, setShowPreview] = useState(false);
 
+  // --- 💡 2. REDUX HOOKS ---
+  const [isSaving, setIsSaving] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
+  
   const { totalFieldCount, fields, settings } = useProcedureBuilder();
 
   const { sidebarWidth } = useLayout();
@@ -29,11 +40,67 @@ export default function ProcedureBuilder({
   const HEADER_HEIGHT = 70;
   const FOOTER_HEIGHT = 60;
 
-  const handleContinue = () => {
-    const finalJSON = convertStateToJSON(fields, settings, name, description);
+  // --- 💡 3. 'SAVE TEMPLATE' LOGIC (UPDATED) ---
+  const handleSaveTemplate = async () => {
+    
+    setIsSaving(true);
+    
+    // 1. Get the JSON data *with* IDs (for the preview)
+    const previewJSON = convertStateToJSON(fields, settings, name, description);
+    
+    // 2. --- FIX: Create API payload *without* IDs ---
+    // Helper function to remove 'id' from an object
+    const removeId = (obj: any) => {
+      // This strips 'id' and any other non-API props
+      const { 
+        id, 
+        condition,
+        parentId,
+        // --- Add any other frontend-only props here ---
+        ...rest 
+      } = obj;
+      
+      // Re-map children recursively if they exist
+      if (rest.children) {
+        rest.children = rest.children.map(removeId);
+      }
+      // Re-map section fields recursively
+      if (rest.fields) {
+        rest.fields = rest.fields.map(removeId);
+      }
+      
+      return rest;
+    };
+    
+    const apiPayload = {
+      ...previewJSON,
+      rootFields: previewJSON.rootFields.map(removeId), // Remove ID from root fields
+      sections: previewJSON.sections.map((section: any) => ({
+        ...removeId(section), // Remove ID from the section itself
+        fields: section.fields.map(removeId) // Remove ID from fields within the section
+      }))
+    };
+    // --- END FIX ---
 
-    console.log("--- FINAL 'CONTINUE' CLICK JSON ---");
-    console.log(JSON.stringify(finalJSON, null, 2));
+
+    console.log("--- FINAL PAYLOAD TO API (IDs Removed) ---");
+    console.log(JSON.stringify(apiPayload, null, 2));
+
+    try {
+      // 3. Dispatch the payload WITHOUT IDs
+      await dispatch(createProcedure(apiPayload)).unwrap();
+      
+      // Success
+      setIsSaving(false);
+      alert("Template Saved Successfully!");
+      onBack(); // Wapas Library screen par bhej diya
+      
+    } catch (error: any) {
+      // Error
+      setIsSaving(false);
+      console.error("Failed to save template:", error);
+      alert(`Error: ${error.message || "Failed to save template"}`);
+    }
   };
 
   return (
@@ -160,9 +227,9 @@ export default function ProcedureBuilder({
               backgroundColor: "#d1d5db",
             }}
           ></div>
-          {/* --- 3. PREVIEW BUTTON CLICK HANDLER ADD KAREIN --- */}
+          {/* --- PREVIEW BUTTON --- */}
           <button
-            onClick={() => setShowPreview(true)} // <-- YEH BUTTON MODAL KHOLEGA
+            onClick={() => setShowPreview(true)}
             style={{
               display: "flex",
               alignItems: "center",
@@ -177,20 +244,49 @@ export default function ProcedureBuilder({
             <Eye size={18} />
             <span>Preview</span>
           </button>
-          <button
-            onClick={handleContinue}
-            style={{
-              backgroundColor: "#2563eb",
-              color: "#fff",
-              border: "none",
-              borderRadius: "6px",
-              padding: "8px 16px",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Continue
-          </button>
+
+          {/* --- 💡 4. DYNAMIC BUTTON LOGIC (No change here) --- */}
+          {activeTab === "fields" ? (
+            <button
+              onClick={() => setActiveTab("settings")} 
+              style={{
+                backgroundColor: "#2563eb",
+                color: "#fff",
+                border: "none",
+                borderRadius: "6px",
+                padding: "8px 16px",
+                fontWeight: 600,
+                cursor: "pointer",
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              Continue
+            </button>
+          ) : (
+            <button
+              onClick={handleSaveTemplate} // API call karega
+              disabled={isSaving}
+              style={{
+                backgroundColor: isSaving ? "#d1d5db" : "#2563eb", // Disable color
+                color: isSaving ? "#6b7280" : "#fff",
+                border: "none",
+                borderRadius: "6px",
+                padding: "8px 16px",
+                fontWeight: 600,
+                cursor: isSaving ? "not-allowed" : "pointer",
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              {isSaving && (
+                <Loader2 size={16} className="animate-spin" />
+              )}
+              {isSaving ? "Saving..." : "Save Template"}
+            </button>
+          )}
         </div>
       </header>
 
@@ -235,7 +331,6 @@ export default function ProcedureBuilder({
         ℹ Fields count: {totalFieldCount} / 350
       </footer>
 
-      {/* --- 4. MODAL KO RENDER KAREIN --- */}
       <ProcedurePreviewModal
         isOpen={showPreview}
         onClose={() => setShowPreview(false)}
