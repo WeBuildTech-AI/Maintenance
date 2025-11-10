@@ -5,6 +5,7 @@ import { LibraryHeaderComponent } from "./LibraryHeader";
 import type { ViewMode } from "../purchase-orders/po.types";
 import GenerateProcedure from "./GenerateProcedure/GenerateProcedure";
 import { ChevronDown } from "lucide-react";
+import SettingsModal from "../utils/SettingsModal"; // ✅ imported SettingsModal
 
 // --- NYE COMPONENTS IMPORT ---
 import { LibraryCard } from "./LibraryCard";
@@ -163,9 +164,8 @@ export function Library() {
     // Yeh ab sirf Panel View ke sort button ke liye hai
     if (sortType === "Last Updated")
       return sortOrder === "asc" ? "Least Recent First" : "Most Recent First";
-    if (sortType === "Title")
-      return sortOrder === "asc" ? "A-Z" : "Z-A";
-    
+    if (sortType === "Title") return sortOrder === "asc" ? "A-Z" : "Z-A";
+
     // Fallback
     return sortType;
   };
@@ -283,6 +283,17 @@ export function Library() {
         currentSort={sortType}
         currentOrder={sortOrder}
         anchorRef={sortButtonRef}
+      />
+
+      {/* ✅ --- SETTINGS MODAL ADDED HERE --- */}
+      <SettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        onApply={(settings) => {
+          console.log("Settings applied:", settings);
+          setShowSettings(false);
+          // Optional: filter, sort, or re-fetch logic
+        }}
       />
     </div>
   );
