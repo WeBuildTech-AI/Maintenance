@@ -168,6 +168,7 @@ export const Assets: FC = () => {
                 assets={sortedAndFilteredAssets}
                 selectedAsset={selectedAsset}
                 handleDeleteAsset={handleDeleteAsset}
+                fetchAssetsData={fetchAssetsData}
               />
             ) : (
               <div className="flex flex-1 min-h-0">
