@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Settings, X, MapPin, ChevronDown } from "lucide-react";
+import { Settings, X, MapPin, ChevronDown, Loader2 } from "lucide-react"; // Added Loader2
+import { purchaseOrderService } from "../../store/purchaseOrders";
 
 type Props = {
   setFullFillModal: (v: boolean) => void;
@@ -19,6 +20,11 @@ export default function PurchaseStockUI({
   setFullFillModal,
   selectedPO,
 }: Props) {
+  // State for loading
+  const [isLoading, setIsLoading] = useState(false);
+  // State for API errors
+  const [error, setError] = useState<string | null>(null);
+
   // Initialize state for each order item dynamically
   const [itemsState, setItemsState] = useState<ItemState[]>(
     selectedPO?.orderItems?.map(
@@ -32,29 +38,24 @@ export default function PurchaseStockUI({
     ) || []
   );
 
-  // === UPDATED IMMUTABLE HANDLECHANGE FUNCTION ===
+  // === IMMUTABLE HANDLECHANGE FUNCTION ===
   const handleChange = (
     index: number,
     key: keyof ItemState, // Use keyof to ensure key is valid
     value: any
   ) => {
     setItemsState((prevState) =>
-      // Map over the previous state to create a new array
       prevState.map((item, i) => {
-        // If this is the item we want to update...
         if (i === index) {
-          // ...return a new object with the updated value
           return {
             ...item,
             [key]: value,
           };
         }
-        // Otherwise, return the item as-is
         return item;
       })
     );
   };
-  // === END OF UPDATE ===
 
   // Calculate total ordered and total received
   const totalOrdered = itemsState.reduce(
@@ -65,6 +66,71 @@ export default function PurchaseStockUI({
     (sum, item) => sum + item.unitCost * item.unitsReceived,
     0
   );
+
+  // === UPDATED API HANDLER ===
+  const handleOrderUpdate = async () => {
+    setIsLoading(true);
+    setError(null); // Clear previous errors
+
+    const poId = selectedPO?.id;
+    if (!poId) {
+      setError("Purchase Order ID is missing.");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // Create an array of API call promises
+      const apiCalls = itemsState.map((itemState, index) => {
+        const originalItem = selectedPO.orderItems[index];
+        const itemId = itemState.id; // This is the order-item-id
+
+        // Construct the full data payload as requested
+        const updatedItemData = {
+          // Identifying info from original item
+          partId: originalItem.part?.id || originalItem.partId,
+          partNumber: originalItem.partNumber,
+
+          // Data from our component's state
+          unitCost: itemState.unitCost,
+          unitsOrdered: itemState.unitsOrdered,
+          unitsReceived: itemState.unitsReceived,
+          location: itemState.location,
+
+          // Recalculated price based on updated cost and *ordered* units
+          price: itemState.unitCost * itemState.unitsOrdered,
+        };
+
+        // Log data being sent for debugging
+        console.log(`Sending data for item ${itemId}:`, updatedItemData);
+        const response = purchaseOrderService.updateItemOrder(poId, itemId, updatedItemData  );
+        }).then(async (response) => {
+          if (!response.ok) {
+            // Handle HTTP errors
+            const errorData = await response.json().catch(() => ({})); // Try to parse error
+            console.error(`Error updating item ${itemId}:`, errorData);
+            throw new Error(
+              `Failed to update item ${originalItem.partNumber}: ${response.statusText}`
+            );
+          }
+          return response.json();
+        });
+      });
+
+      // Wait for all API calls to complete
+      const results = await Promise.all(apiCalls);
+      console.log("All items updated successfully:", results);
+
+      // If all successful, close the modal
+      setFullFillModal(false);
+    } catch (err: any) {
+      console.error("An error occurred during update:", err);
+      setError(err.message || "An unknown error occurred.");
+    } finally {
+      // Stop loading regardless of success or error
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div
@@ -89,12 +155,8 @@ export default function PurchaseStockUI({
 
           {/* Map through order items */}
           {selectedPO?.orderItems?.map((item: any, index: number) => {
-            // Get the state for this specific item
             const state = itemsState[index];
-            
-            // If state doesn't exist for some reason, don't render
-            if (!state) return null; 
-
+            if (!state) return null;
             const itemTotal = state.unitCost * state.unitsOrdered;
 
             return (
@@ -131,6 +193,7 @@ export default function PurchaseStockUI({
                           min={0}
                           step="0.01"
                           value={state.unitCost}
+                          disabled={isLoading} // Disable when loading
                           onChange={(e) =>
                             handleChange(
                               index,
@@ -138,7 +201,7 @@ export default function PurchaseStockUI({
                               Math.max(0, parseFloat(e.target.value) || 0)
                             )
                           }
-                          className="w-16 text-right text-sm outline-none ml-1"
+                          className="w-16 text-right text-sm outline-none ml-1 bg-transparent"
                         />
                       </div>
                     </div>
@@ -154,6 +217,7 @@ export default function PurchaseStockUI({
                           max={state.unitsOrdered}
                           step="1"
                           value={state.unitsReceived}
+                          disabled={isLoading} // Disable when loading
                           onChange={(e) =>
                             handleChange(
                               index,
@@ -161,7 +225,7 @@ export default function PurchaseStockUI({
                               Math.max(0, parseInt(e.target.value || "0"))
                             )
                           }
-                          className="w-16 text-right text-sm outline-none"
+                          className="w-16 text-right text-sm outline-none bg-transparent"
                         />
                       </div>
                     </div>
@@ -174,9 +238,6 @@ export default function PurchaseStockUI({
                     </div>
                   </div>
                 </div>
-
-                {/* Commented out Locations row */}
-                {/* ... */}
               </div>
             );
           })}
@@ -184,6 +245,13 @@ export default function PurchaseStockUI({
 
         {/* Footer */}
         <div className="border-t bg-white px-2 py-2">
+          {/* Error Message */}
+          {error && (
+            <div className="text-red-600 text-sm px-4 pb-2 text-center">
+              Error: {error}
+            </div>
+          )}
+
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-600 w-64 max-w-md">
               By fulfilling this Purchase Order we will update your parts
@@ -204,13 +272,24 @@ export default function PurchaseStockUI({
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setFullFillModal(false)}
-                  className="text-sm text-blue-600 px-6 py-2 rounded hover:bg-blue-50"
+                  disabled={isLoading} // Disable when loading
+                  className="text-sm text-blue-600 px-6 py-2 rounded hover:bg-blue-50 disabled:opacity-50"
                 >
                   Cancel
                 </button>
-                <button className="px-6 py-2 bg-blue-600 text-white rounded text-sm flex items-center gap-2 hover:bg-blue-700">
-                  <span>✓</span>
-                  <span>Confirm and Fulfill</span>
+                <button
+                  onClick={handleOrderUpdate}
+                  disabled={isLoading} // Disable when loading
+                  className="px-6 py-2 bg-blue-600 text-white rounded text-sm flex items-center gap-2 hover:bg-blue-700 disabled:bg-blue-400"
+                >
+                  {isLoading ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <span>✓</span>
+                  )}
+                  <span>
+                    {isLoading ? "Fulfilling..." : "Confirm and Fulfill"}
+                  </span>
                 </button>
               </div>
             </div>
