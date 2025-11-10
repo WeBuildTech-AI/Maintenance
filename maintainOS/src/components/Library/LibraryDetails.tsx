@@ -13,12 +13,13 @@ import { ProcedureForm } from "./GenerateProcedure/components/ProcedureForm";
 function formatDisplayDate(dateString: string) {
   if (!dateString) return "N/A";
   try {
-    return new Intl.DateTimeFormat('en-US', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: 'numeric',
-      minute: '2-digit',
+    // Format: 11/07/2025, 5:32 PM
+    return new Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "numeric",
+      minute: "2-digit",
       hour12: true,
     }).format(new Date(dateString));
   } catch (error) {
@@ -26,48 +27,49 @@ function formatDisplayDate(dateString: string) {
   }
 }
 
-// --- New component for the "Details" tab content ---
+// --- New component for the "Details" tab content (FIXED STYLES) ---
 const DetailsTabContent = ({ procedure }: { procedure: any }) => {
   // --- Format dates from the procedure object ---
   const createdDate = formatDisplayDate(procedure.createdAt);
   const updatedDate = formatDisplayDate(procedure.updatedAt);
-  
-  // --- Extract a short ID (e.g., last 7 chars of UUID) ---
-  const shortId = procedure.id ? procedure.id.split('-').pop() || procedure.id : "N/A";
+
+  // --- 💡 FIX: Use the full ID ---
+  const procedureId = procedure.id || "N/A";
 
   return (
     <div className="p-6 space-y-6">
-      <div className="space-y-4">
+      <div className="space-y-3">
         {/* Created By */}
-        <div className="flex items-center gap-3 text-gray-700">
-          <span className="text-gray-400">
-            <User size={20} />
-          </span>
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <User size={16} className="text-blue-600" />
           <span>
             Created By{" "}
-            <span className="font-medium text-gray-900">sumit sahani</span> on{" "}
+            <span className="font-semibold text-gray-900">sumit sahani</span> on{" "}
             {createdDate}
           </span>
         </div>
-        
-        {/* Last Updated */}
-        <div className="flex items-center gap-3 text-gray-700">
-          <span className="text-gray-400 w-5"></span> {/* Spacer */}
-          <span>
-            Last updated on {updatedDate}
-          </span>
+
+        {/* Last Updated (Indented to match text) */}
+        <div className="flex items-center text-sm text-gray-600 pl-8">
+          {/* This pl-8 aligns with the text, assuming 16px icon + 16px gap = 32px (pl-8) */}
+          <span>Last updated on {updatedDate}</span>
         </div>
       </div>
-      
-      {/* Procedure ID */}
+
+      {/* --- Procedure ID (STYLED AS CHIP with FULL ID) --- */}
       <div className="pt-6 border-t border-gray-200">
-        <p className="text-sm text-gray-500 mb-1">Procedure ID</p>
-        <p className="font-medium text-gray-900">#{shortId}</p>
+        <p className="text-sm text-gray-500 mb-2">Procedure ID</p>
+        {/* 💡 FIX: Use full ID and add truncation */}
+        <span
+          title={procedureId} // Show full ID on hover
+          className="inline-block max-w-full bg-gray-100 text-gray-800 text-sm font-medium px-3 py-1 rounded-full truncate"
+        >
+          #{procedureId}
+        </span>
       </div>
     </div>
   );
 };
-
 
 // --- Main LibraryDetails Component ---
 export function LibraryDetails({
@@ -76,13 +78,14 @@ export function LibraryDetails({
   selectedProcedure: any;
 }) {
   // --- 1. Add state for active tab ---
-  const [activeTab, setActiveTab] = useState<'fields' | 'details' | 'history'>('fields');
+  const [activeTab, setActiveTab] = useState<"fields" | "details" | "history">(
+    "fields"
+  );
 
   // --- 2. Reset to 'fields' tab when procedure changes ---
   useEffect(() => {
-    setActiveTab('fields');
+    setActiveTab("fields");
   }, [selectedProcedure]);
-
 
   if (!selectedProcedure) {
     return (
@@ -128,31 +131,31 @@ export function LibraryDetails({
         <div className="border-b pt-2 border-gray-200">
           <nav className="flex" aria-label="Tabs">
             <button
-              onClick={() => setActiveTab('fields')}
+              onClick={() => setActiveTab("fields")}
               className={`flex-1 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-center ${
-                activeTab === 'fields'
-                  ? 'text-blue-600 border-blue-600'
-                  : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+                activeTab === "fields"
+                  ? "text-blue-600 border-blue-600"
+                  : "text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300"
               }`}
             >
               Fields
             </button>
             <button
-              onClick={() => setActiveTab('details')}
+              onClick={() => setActiveTab("details")}
               className={`flex-1 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-center ${
-                activeTab === 'details'
-                  ? 'text-blue-600 border-blue-600'
-                  : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+                activeTab === "details"
+                  ? "text-blue-600 border-blue-600"
+                  : "text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300"
               }`}
             >
               Details
             </button>
             <button
-              onClick={() => setActiveTab('history')}
+              onClick={() => setActiveTab("history")}
               className={`flex-1 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-center ${
-                activeTab === 'history'
-                  ? 'text-blue-600 border-blue-600'
-                  : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+                activeTab === "history"
+                  ? "text-blue-600 border-blue-600"
+                  : "text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300"
               }`}
             >
               History
@@ -166,7 +169,7 @@ export function LibraryDetails({
         className="flex-1 overflow-y-auto"
         style={{ background: "#f9fafb" }}
       >
-        {activeTab === 'fields' && (
+        {activeTab === "fields" && (
           <div className="p-6">
             <ProcedureForm
               rootFields={rootFields}
@@ -175,14 +178,14 @@ export function LibraryDetails({
             />
           </div>
         )}
-        
-        {activeTab === 'details' && (
+
+        {activeTab === "details" && (
           <DetailsTabContent procedure={selectedProcedure} />
         )}
-        
-        {activeTab === 'history' && (
+
+        {activeTab === "history" && (
           <div className="p-6 text-center text-gray-500">
-            History tab content goes here.
+           Loading
           </div>
         )}
 

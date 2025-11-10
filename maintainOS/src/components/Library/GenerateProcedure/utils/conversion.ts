@@ -1,19 +1,20 @@
 import type { FieldData, ConditionData, ProcedureSettingsState } from "../types";
 
-// --- Helper: Maps UI field types to backend field types ---
+// --- Helper: Maps UI field types to backend field types (FIXED) ---
 function mapFieldType(type: string): string {
   const map: Record<string, string> = {
     "Text Field": "text_field",
     "Number Field": "number_field",
-    "Amount ($)": "amount_field",
+    "Amount ($)": "amount", // <-- FIX: Was 'amount_field'
     "Yes, No, N/A": "yes_no_NA",
     "Inspection Check": "inspection_check",
     Checklist: "checklist",
-    "Multiple Choice": "multiple_choice",
+    "Multiple Choice": "mulitple_choice", // <-- FIX: Match API typo
     "Meter Reading": "meter_reading",
     "Picture/File Field": "picture_file",
     "Signature Block": "signature_block",
-    Date: "date_field",
+    Date: "Date", // <-- FIX: Was 'date_field'
+    Checkbox: "checkbox", // <-- Added for clarity
   };
   return map[type] || type?.toLowerCase() || "unknown";
 }
@@ -37,7 +38,7 @@ function mapCondition(condition: ConditionData, parentType: string): any {
 
   targetCondition.type = operatorMap[condition.conditionOperator || ""] || "unknown";
   
-  // --- 💡 ADDED: Pass condition ID ---
+  // --- Pass condition ID (for preview) ---
   targetCondition.id = condition.id;
 
   if (["one_of", "not_one_of", "contains"].includes(targetCondition.type)) {
@@ -62,9 +63,9 @@ function mapCondition(condition: ConditionData, parentType: string): any {
 // --- Helper: Transforms a single UI field to the target JSON field ---
 function transformField(field: FieldData, order: number): any {
   const targetField: any = {
-    id: field.id, // <-- 💡 FIX: Pass the original ID
+    id: field.id, // <-- Pass the original ID (for preview)
     fieldName: field.label,
-    fieldType: mapFieldType(field.selectedType),
+    fieldType: mapFieldType(field.selectedType), // <-- Uses FIXED map
     required: !!field.isRequired,
     order: order,
   };
@@ -81,7 +82,7 @@ function transformField(field: FieldData, order: number): any {
   if (field.selectedMeter) {
     config.meterId = field.selectedMeter; 
   }
-  if (field.meterUnit) { // <-- 💡 ADDED: Pass meterUnit
+  if (field.meterUnit) {
     config.meterUnit = field.meterUnit;
   }
   if (Object.keys(config).length > 0) {
@@ -103,7 +104,7 @@ function transformField(field: FieldData, order: number): any {
 
         } else if (conditionalItem.blockType === "heading") {
           targetField.children.push({
-            id: conditionalItem.id, // <-- 💡 FIX: Pass the original ID
+            id: conditionalItem.id, // <-- Pass the original ID (for preview)
             fieldName: conditionalItem.label,
             fieldType: "heading",
             required: false,
@@ -147,7 +148,7 @@ export function convertStateToJSON(
     if (item.blockType === "section") {
       // --- Handle Section ---
       const newSection: any = {
-        id: item.id, // <-- 💡 FIX: Pass the original ID
+        id: item.id, // <-- Pass the original ID (for preview)
         sectionName: item.label,
         order: sectionsList.length + 1,
         fields: []
@@ -160,7 +161,7 @@ export function convertStateToJSON(
             newSection.fields.push(transformField(sectionItem, fieldOrder++));
           } else if (sectionItem.blockType === "heading") {
             newSection.fields.push({
-              id: sectionItem.id, // <-- 💡 FIX: Pass the original ID
+              id: sectionItem.id, // <-- Pass the original ID (for preview)
               fieldName: sectionItem.label,
               fieldType: "heading",
               required: false,
@@ -177,7 +178,7 @@ export function convertStateToJSON(
     } else if (item.blockType === "heading") {
       // --- Handle Root Heading ---
       rootItems.push({
-        id: item.id, // <-- 💡 FIX: Pass the original ID
+        id: item.id, // <-- Pass the original ID (for preview)
         fieldName: item.label,
         fieldType: "heading",
         required: false,

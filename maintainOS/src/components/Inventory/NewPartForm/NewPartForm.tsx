@@ -83,7 +83,7 @@ export function NewPartForm({
           ? [prev.partsType]
           : [],
     }));
-  }, [newItem?.id, setNewItem]); 
+  }, [newItem?.id, setNewItem]);
 
   const handleSubmitPart = async () => {
     try {
@@ -133,7 +133,11 @@ export function NewPartForm({
         newItem.unitCost ? String(newItem.unitCost) : "",
         original.unitCost ? String(original.unitCost) : ""
       );
-      appendIfChanged("qrCode", newItem.qrCode || "", original.qrCode);
+      appendIfChanged(
+        "qrCode",
+        `part/${String(newItem.qrCode)}` || "",
+        `part/${String(original.qrCode)}`
+      );
 
       const partTypeVal = Array.isArray(newItem.partsType)
         ? newItem.partsType
@@ -193,7 +197,7 @@ export function NewPartForm({
         );
       }
 
-      //  Photos 
+      //  Photos
       if (Array.isArray(newItem.pictures) && newItem.pictures.length > 0) {
         newItem.pictures.forEach((file: any) => {
           if (file instanceof File) {
@@ -211,20 +215,20 @@ export function NewPartForm({
         });
       }
 
-      //  Files 
+      //  Files
       if (Array.isArray(newItem.files) && newItem.files.length > 0) {
         newItem.files.forEach((file: any) => {
           formData.append("files", file instanceof File ? file : String(file));
         });
       }
 
-      
-      //  Backblaze BUD arrays as JSON strings 
-      const partImagesArray = partImages && partImages.length > 0 ? partImages : [];
+      //  Backblaze BUD arrays as JSON strings
+      const partImagesArray =
+        partImages && partImages.length > 0 ? partImages : [];
       const partDocsArray = partDocs && partDocs.length > 0 ? partDocs : [];
-      
-      formData.append('partImages', JSON.stringify(partImagesArray));
-      formData.append('partDocs', JSON.stringify(partDocsArray));
+
+      formData.append("partImages", JSON.stringify(partImagesArray));
+      formData.append("partDocs", JSON.stringify(partDocsArray));
 
       //  Vendors extra mapping (optional)
       if (Array.isArray(newItem.vendors) && newItem.vendors.length > 0) {
@@ -236,8 +240,6 @@ export function NewPartForm({
           );
         });
       }
-
-      
 
       //  Create or Update
       if (isEditing) {
@@ -269,7 +271,7 @@ export function NewPartForm({
             onBlobChange={handleBlobChange}
           />
           <PartQRCodeSection
-            qrCode={newItem.qrCode}
+            qrCode={(newItem.qrCode && newItem.qrCode.split("/").pop()) || ""}
             setQrCode={(code) =>
               setNewItem((s: any) => ({ ...s, qrCode: code }))
             }
@@ -282,7 +284,6 @@ export function NewPartForm({
             addVendorRow={addVendorRow}
             removeVendorRow={removeVendorRow}
           />
-          
         </div>
       </div>
       <PartFooter

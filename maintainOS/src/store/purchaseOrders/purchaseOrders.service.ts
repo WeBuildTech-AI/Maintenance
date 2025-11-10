@@ -65,4 +65,16 @@ export const purchaseOrderService = {
   approvePurchaseOrder: async (id: string): Promise<void> => {
     await api.patch(`/purchase-orders/${id}/approve`);
   },
+
+  updateItemOrder: async (
+    poId: string,
+    itemId: string,
+    data: UpdatePurchaseOrderData
+  ): Promise<PurchaseOrderResponse> => {
+    const res = await api.patch(
+      `/purchase-orders/${poId}/order-items/${itemId}`,
+      data
+    );
+    return res.data;
+  },
 };

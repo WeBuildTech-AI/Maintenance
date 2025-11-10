@@ -141,6 +141,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
 
           {/* HEADER ACTIONS */}
           <div className="flex items-center gap-2">
+            
             <Button className="gap-2 border cursor-pointer border-orange-600 bg-white text-orange-600 hover:bg-orange-50">
               <Upload className="h-4 w-4" />
               Send to Vendor
@@ -371,7 +372,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
         <>
           <div className="p-6 border-t flex justify-end flex-none bg-white">
             <Button
-              onClick={() => setFullFillModal(true)} // 'fullfill' action
+              onClick={() => setFullFillModal(true)}
               className="gap-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md px-4 py-2 text-sm font-medium cursor-pointer flex items-center"
             >
               <Upload className="h-4 w-4" />
