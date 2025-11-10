@@ -31,7 +31,9 @@ export default function RecordReadingModal({
   fetchMeters,
 }: RecordReadingModalProps) {
   const [meterValue, setMeterValue] = useState("");
-  const [unit, setUnit] = useState(selectedMeter.measurement.name); // Inicializar con la unidad del medidor
+  const [unit, setUnit] = useState(
+    selectedMeter.measurement && selectedMeter.measurement.name
+  ); // Inicializar con la unidad del medidor
   const [showUnitDropdown, setShowUnitDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(false); // Estado de carga
   const [error, setError] = useState<string | null>(null); // Estado de error

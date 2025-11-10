@@ -134,3 +134,23 @@ export const approvePurchaseOrder = createAsyncThunk(
     }
   }
 );
+
+export const updateItemOrder = createAsyncThunk(
+  "purchaseOrders/updatePurchaseOrder",
+  async (
+    {
+      poId,
+      orderItem,
+      data,
+    }: { poId: string; orderItem: string; data: UpdatePurchaseOrderData },
+    { rejectWithValue }
+  ) => {
+    try {
+      return await purchaseOrderService.updateItemOrder(poId, orderItem, data);
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update purchase order"
+      );
+    }
+  }
+);

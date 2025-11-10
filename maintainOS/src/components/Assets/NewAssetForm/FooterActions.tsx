@@ -1,9 +1,14 @@
 interface FooterActionsProps {
   onCreate: () => void;
   onCancel?: () => void;
+  isEdit?: boolean;
 }
 
-export function FooterActions({ onCreate, onCancel }: FooterActionsProps) {
+export function FooterActions({
+  onCreate,
+  onCancel,
+  isEdit,
+}: FooterActionsProps) {
   return (
     <div className="sticky bottom-0 mt-6 flex items-center border-t bg-white px-6 py-4">
       {onCancel && (
@@ -23,7 +28,7 @@ export function FooterActions({ onCreate, onCancel }: FooterActionsProps) {
         }}
         className="h-10 rounded-md bg-orange-600 text-sm font-medium text-white shadow hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
-        Create
+        {isEdit ? "Udpate" : "Create"}
       </button>
     </div>
   );

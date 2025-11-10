@@ -21,7 +21,8 @@ import {
   allColumns,
 } from "./po.types";
 import { addressToLine, cryptoId, formatMoney } from "./helpers";
-import PurchaseOrdersTable from "./POTableView";
+// --- FIX 1: Corrected import path ---
+import PurchaseOrdersTable from "./POTableView"; // Was "./POTableView"
 import SettingsModal from "./SettingsModal";
 import { NewPOFormDialog } from "./NewPOFormDialog";
 import { Avatar, AvatarFallback } from "../ui/avatar";
@@ -31,9 +32,7 @@ import ConfirmationModal from "./ConfirmationModal";
 import toast from "react-hot-toast";
 import PurchaseOrderDetails from "./PurchaseOrderDetails";
 
-// --- NEW HELPER FUNCTION ---
-// Yeh function original aur current form state ko compare karega
-// Aur sirf changed fields ka object return karega
+// ... (getChangedFields function remains the same) ...
 function getChangedFields(
   original: NewPOFormType,
   current: NewPOFormType
@@ -216,10 +215,12 @@ export function PurchaseOrders() {
     );
   }, [getPurchaseOrderData]);
 
-  const pagedOrders = useMemo(
-    () => filteredPOs.slice(0, pageSize),
-    [filteredPOs, pageSize]
-  );
+  // --- REMOVED pagedOrders ---
+  // const pagedOrders = useMemo(
+  //   () => filteredPOs.slice(0, pageSize),
+  //   [filteredPOs, pageSize]
+  // );
+  // This was incorrect as PurchaseOrdersTable does its own pagination.
 
   /* ------------------------------- Handlers ------------------------------- */
 
@@ -515,10 +516,6 @@ export function PurchaseOrders() {
           }));
       }
 
-      // Kuch zaroori fields jo hamesha bhejni pad sakti hain (optional)
-      // payload.organizationId = user?.organizationId;
-      // (Agar API ko PATCH ke liye bhi iski zaroorat hai, to ise add karein)
-
       if (purchaseOrderService?.updatePurchaseOrder) {
         console.log("Update Payload (ID: " + newPO.id + "):", payload); // <-- Ab yeh payload chhota hoga
 
@@ -626,7 +623,8 @@ export function PurchaseOrders() {
         <div className="flex-1 min-h-0 overflow-auto p-2">
           <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
             <PurchaseOrdersTable
-              orders={pagedOrders}
+              // --- FIX 2: Pass the full filtered list ---
+              orders={filteredPOs} // Was pagedOrders
               columns={selectedColumns}
               pageSize={pageSize}
             />
@@ -718,7 +716,8 @@ export function PurchaseOrders() {
 
           {/* Right Details */}
           <div className="flex-1 bg-card mr-3 ml-2 mb-2 border border-border min-h-0 flex flex-col border-border">
-            {selectedPO && selectedPO ? (
+            {/* --- CLEANUP: Simplified conditional check --- */}
+            {selectedPO ? (
               <PurchaseOrderDetails
                 selectedPO={selectedPO} // <-- Sahi prop pass ho raha hai
                 updateState={updateStatus}

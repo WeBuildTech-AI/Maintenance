@@ -914,6 +914,9 @@
   .w-130 {
     width: calc(var(--spacing) * 130);
   }
+  .w-200 {
+    width: calc(var(--spacing) * 200);
+  }
 
   .w-\[50px\] {
     width: 50px;
@@ -1402,6 +1405,9 @@
     outline: none;
   }
 
+  .max-h-16 {
+  max-height: 5rem; /* same as max-h-32 */
+}
   .max-h-32 {
   max-height: 8rem; /* same as max-h-32 */
 }

@@ -326,7 +326,7 @@ export function PartDetails({
               <div>
                 <h4 className="font-medium text-gray-900 mb-3">QR Code</h4>
                 <p className="text-sm text-gray-700 mb-3">
-                  {item.qrCode || "N/A"}
+                  {(item.qrCode && item.qrCode.split("/").pop()) || "N/A"}
                 </p>
                 <div className="bg-white rounded-md shadow-sm flex items-center">
                   <img
