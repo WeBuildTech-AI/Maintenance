@@ -4,7 +4,8 @@ import CreateProcedureModal from "./CreateProcedureModal";
 import ProcedureBuilder from "./ProcedureBuilder";
 import { ProcedureBuilderProvider } from "./ProcedureBuilderContext"; 
 
-export default function GenerateProcedure() {
+// --- 💡 1. 'onBack' prop ko yahan accept karein ---
+export default function GenerateProcedure({ onBack }: { onBack: () => void }) {
   const [openModal, setOpenModal] = useState(false);
   const [builderData, setBuilderData] = useState<{ name: string; desc: string } | null>(null);
 
@@ -17,7 +18,6 @@ export default function GenerateProcedure() {
 
   if (builderData) {
     return (
-      // --- UPDATED: Pass name and description to the Provider ---
       <ProcedureBuilderProvider
         name={builderData.name}
         description={builderData.desc}
@@ -25,7 +25,13 @@ export default function GenerateProcedure() {
         <ProcedureBuilder
           name={builderData.name}
           description={builderData.desc}
-          onBack={() => setBuilderData(null)}
+          // --- 💡 2. 'onBack' ko chain karein ---
+          // Ab yeh pehle local state (builderData) ko reset karega,
+          // phir parent (Library.tsx) ka 'onBack' function call karega
+          onBack={() => {
+            setBuilderData(null); 
+            onBack(); 
+          }}
         />
       </ProcedureBuilderProvider>
     );

@@ -3,17 +3,27 @@ import {
   ClipboardList,
   MoreVertical,
   Pencil,
-  User, // <-- Import User icon
+  User,
 } from "lucide-react";
 import { Button } from "../ui/button";
-import React, { useState, useEffect } from "react"; // <-- Import useState and useEffect
+// --- 💡 1. 'useState' ko import kiya ---
+import React, { useState, useEffect } from "react";
 import { ProcedureForm } from "./GenerateProcedure/components/ProcedureForm";
+import { MoreActionsMenu } from "./GenerateProcedure/components/MoreActionsMenu";
+
+// --- 1. IMPORTS ADD KIYE ---
+import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { deleteProcedure } from "../../store/procedures/procedures.thunks"; // Path check kar lein
+import { AppDispatch } from "../../store"; // Path check kar lein
+
+// --- 💡 2. ConfirmationModal ko import kiya ---
+import { ConfirmationModal } from "./GenerateProcedure/components/ConfirmationModal";
 
 // --- Helper function to format dates ---
 function formatDisplayDate(dateString: string) {
   if (!dateString) return "N/A";
   try {
-    // Format: 11/07/2025, 5:32 PM
     return new Intl.DateTimeFormat("en-US", {
       year: "numeric",
       month: "2-digit",
@@ -27,19 +37,15 @@ function formatDisplayDate(dateString: string) {
   }
 }
 
-// --- New component for the "Details" tab content (FIXED STYLES) ---
+// --- DetailsTabContent component (koi change nahi) ---
 const DetailsTabContent = ({ procedure }: { procedure: any }) => {
-  // --- Format dates from the procedure object ---
   const createdDate = formatDisplayDate(procedure.createdAt);
   const updatedDate = formatDisplayDate(procedure.updatedAt);
-
-  // --- 💡 FIX: Use the full ID ---
   const procedureId = procedure.id || "N/A";
 
   return (
     <div className="p-6 space-y-6">
       <div className="space-y-3">
-        {/* Created By */}
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <User size={16} className="text-blue-600" />
           <span>
@@ -48,20 +54,14 @@ const DetailsTabContent = ({ procedure }: { procedure: any }) => {
             {createdDate}
           </span>
         </div>
-
-        {/* Last Updated (Indented to match text) */}
         <div className="flex items-center text-sm text-gray-600 pl-8">
-          {/* This pl-8 aligns with the text, assuming 16px icon + 16px gap = 32px (pl-8) */}
           <span>Last updated on {updatedDate}</span>
         </div>
       </div>
-
-      {/* --- Procedure ID (STYLED AS CHIP with FULL ID) --- */}
       <div className="pt-6 border-t border-gray-200">
         <p className="text-sm text-gray-500 mb-2">Procedure ID</p>
-        {/* 💡 FIX: Use full ID and add truncation */}
         <span
-          title={procedureId} // Show full ID on hover
+          title={procedureId}
           className="inline-block max-w-full bg-gray-100 text-gray-800 text-sm font-medium px-3 py-1 rounded-full truncate"
         >
           #{procedureId}
@@ -74,18 +74,52 @@ const DetailsTabContent = ({ procedure }: { procedure: any }) => {
 // --- Main LibraryDetails Component ---
 export function LibraryDetails({
   selectedProcedure,
+  onRefresh, // <-- 2. REFRESH PROP ACCEPT KIYA
 }: {
   selectedProcedure: any;
+  onRefresh: () => void; // <-- 2. TYPE DEFINE KIYA
 }) {
-  // --- 1. Add state for active tab ---
   const [activeTab, setActiveTab] = useState<"fields" | "details" | "history">(
     "fields"
   );
+  // --- 💡 3. Modal ko control karne ke liye state add ki ---
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  // --- 2. Reset to 'fields' tab when procedure changes ---
+  // --- 3. HOOKS KO INITIALIZE KIYA ---
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
+
   useEffect(() => {
     setActiveTab("fields");
   }, [selectedProcedure]);
+
+  // --- 💡 4. Is function ko 'handleConfirmDelete' rename kiya ---
+  // Yeh ab 'Confirm' button dabane par hi chalega
+  const handleConfirmDelete = async () => {
+    if (!selectedProcedure) return;
+
+    // --- 'window.confirm' aur 'if (isConfirmed)' ko hata diya ---
+    try {
+      // Thunk ko dispatch kiya
+      await dispatch(deleteProcedure(selectedProcedure.id)).unwrap();
+      // List ko refresh kiya
+      onRefresh();
+      // User ko main library page par bhej diya
+      navigate("/library");
+    } catch (error) {
+      console.error("Failed to delete procedure:", error);
+      alert("Failed to delete procedure.");
+    } finally {
+      // --- Modal ko band kiya (chahe success ho ya error) ---
+      setIsDeleteModalOpen(false);
+    }
+  };
+
+  // --- 💡 5. Yeh naya function sirf modal ko kholeta hai ---
+  const handleDeleteClick = () => {
+    if (!selectedProcedure) return;
+    setIsDeleteModalOpen(true);
+  };
 
   if (!selectedProcedure) {
     return (
@@ -95,14 +129,12 @@ export function LibraryDetails({
     );
   }
 
-  // Prepare props for the ProcedureForm
   const rootFields = selectedProcedure.fields || [];
   const sections = selectedProcedure.sections || [];
 
   return (
-    // Make container relative and full height
     <div className="flex flex-col h-full relative bg-transparent">
-      {/* --- HEADER (Blue Theme) --- */}
+      {/* --- HEADER --- */}
       <div className="pt-6 border-b border-border relative px-6">
         <div className="flex items-center justify-between">
           {/* Title */}
@@ -115,19 +147,22 @@ export function LibraryDetails({
             </h2>
           </div>
 
-          {/* Buttons (Blue Theme) */}
+          {/* Buttons */}
           <div className="flex items-center gap-2 relative">
             <button className="inline-flex items-center rounded border border-blue-500 text-blue-600 px-4 py-1.5 text-sm font-medium hover:bg-blue-50">
               <Pencil className="h-4 w-4 mr-2" />
               Edit
             </button>
-            <button className="inline-flex items-center rounded p-2 text-blue-600 hover:text-blue-700 relative">
-              <MoreVertical className="h-4 w-4" />
-            </button>
+            {/* --- 💡 6. 'onDelete' prop ab 'handleDeleteClick' ko call karega --- */}
+            <MoreActionsMenu onDelete={handleDeleteClick}>
+              <button className="inline-flex items-center rounded p-2 text-blue-600 hover:text-blue-700 relative">
+                <MoreVertical className="h-4 w-4" />
+              </button>
+            </MoreActionsMenu>
           </div>
         </div>
 
-        {/* --- 3. TABS (State-aware) --- */}
+        {/* --- TABS --- */}
         <div className="border-b pt-2 border-gray-200">
           <nav className="flex" aria-label="Tabs">
             <button
@@ -164,7 +199,7 @@ export function LibraryDetails({
         </div>
       </div>
 
-      {/* --- 4. CONDITIONAL CONTENT (Dynamic) --- */}
+      {/* --- CONDITIONAL CONTENT --- */}
       <div
         className="flex-1 overflow-y-auto"
         style={{ background: "#f9fafb" }}
@@ -174,7 +209,7 @@ export function LibraryDetails({
             <ProcedureForm
               rootFields={rootFields}
               sections={sections}
-              resetKey={selectedProcedure.id} // Pass procedure ID as key
+              resetKey={selectedProcedure.id}
             />
           </div>
         )}
@@ -185,16 +220,14 @@ export function LibraryDetails({
 
         {activeTab === "history" && (
           <div className="p-6 text-center text-gray-500">
-           Loading
+            Loading
           </div>
         )}
 
-        {/* extra spacing at bottom */}
         <div style={{ height: 96 }} />
       </div>
 
-      {/* --- FLOATING "Use in New Work Order" BUTTON --- */}
-      {/* This button is outside the tab content and always visible */}
+      {/* --- FLOATING BUTTON --- */}
       <div
         style={{
           position: "absolute",
@@ -212,6 +245,15 @@ export function LibraryDetails({
           Use in New Work Order
         </Button>
       </div>
+
+      {/* --- 💡 7. Modal component ko yahan render kiya --- */}
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Procedure" // Title text (component ke andar ignore ho raha hai, par prop pass karna acchi practice hai)
+        message={`Are you sure you want to delete "${selectedProcedure?.title}"?`}
+      />
     </div>
   );
 }

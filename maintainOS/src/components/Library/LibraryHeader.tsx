@@ -1,23 +1,10 @@
 import type { Dispatch, SetStateAction } from "react";
 import type { ViewMode } from "../purchase-orders/po.types";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
-import {
-  ChevronDown,
-  PanelTop,
-  Plus,
-  Search,
-  Settings, // Settings icon ko rakha hai (for Table view)
-  Table,
-} from "lucide-react";
+import { ChevronDown, PanelTop, Plus, Search, Settings, Table } from "lucide-react";
 import { Input } from "../ui/input";
-// LibraryFilterBar.tsx ko Library.tsx se move karke yahan la rahe hain
-import LibraryFilterBar from "./LibraryFilterBar"; 
+import LibraryFilterBar from "./LibraryFilterBar";
 
 interface LibraryHeaderProps {
   viewMode: ViewMode;
@@ -41,28 +28,23 @@ export function LibraryHeaderComponent({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-6">
-            <h1 className="text-2xl font-semibold">Procedure Library</h1>
+            <h1 className="text-2xl font-semibold">Library</h1>
             <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-2"
-                  >
+                  <Button variant="outline" size="sm" className="flex items-center gap-2">
                     {viewMode === "panel" ? (
                       <PanelTop className="h-4 w-4" />
                     ) : (
                       <Table className="h-4 w-4" />
                     )}
-                    {/* Hum "panel" ko "To-Do View" jaisa treat karenge */}
-                    {viewMode === "panel" ? "To-Do View" : "Table View"}
+                    {viewMode === "panel" ? "Panel View" : "Table View"}
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
                   <DropdownMenuItem onClick={() => setViewMode("panel")}>
-                    <PanelTop className="mr-2 h-4 w-4" /> To-Do View
+                    <PanelTop className="mr-2 h-4 w-4" /> Panel View
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setViewMode("table")}>
                     <Table className="mr-2 h-4 w-4" /> Table View
@@ -74,34 +56,30 @@ export function LibraryHeaderComponent({
         </div>
 
         <div className="flex items-center gap-3">
-          {/* --- 1. SEARCH BAR UPDATED (ORANGE) --- */}
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-orange-600" />
             <Input
-              placeholder="Search Procedure Templates"
-              className="w-96 pl-9 bg-white border-orange-600 focus-visible:ring-orange-500"
+              placeholder="Search Procedures"
+              className="w-96 pl-9 bg-white border-orange-600"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          {/* --- 2. BUTTON UPDATED (ORANGE) --- */}
           <Button
-            className="gap-2 cursor-pointer bg-orange-600 text-white font-medium hover:bg-orange-700"
+            className="gap-2 cursor-pointer bg-orange-600 hover:outline-none"
             onClick={() => {
               setIsCreatingForm(true);
+              setViewMode("panel");
             }}
           >
             <Plus className="mr-2 h-4 w-4" />
-            New Procedure Template
+            New Procedure
           </Button>
         </div>
       </div>
 
-      {/* --- 3. FILTER BAR (WorkOrderHeader jaisa) --- */}
       <div className="flex items-center mt-4 p-1 h-10 justify-between">
         <LibraryFilterBar />
-        
-        {/* Settings button sirf "Table View" (list) mein dikhega */}
         {viewMode === "table" && (
           <button
             onClick={() => setShowSettings(true)}

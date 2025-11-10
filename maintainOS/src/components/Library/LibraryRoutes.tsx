@@ -1,6 +1,6 @@
-import { Routes, Route } from "react-router-dom";
-import { Library } from "./Library";
+import { Route, Routes } from "react-router-dom";
 import GenerateProcedure from "./GenerateProcedure/GenerateProcedure";
+import { Library } from "./Library";
 
 export default function LibraryRoutes() {
   return (

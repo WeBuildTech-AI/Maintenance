@@ -8,32 +8,35 @@ function checkCondition(
   condition: ConditionData,
   parentAnswer: any
 ): boolean {
+  // --- 💡 1. NORMALIZE operator for easier checks ---
+  const op = condition.conditionOperator || condition.type;
+
   if (
     parentAnswer === undefined ||
     parentAnswer === null ||
-    parentAnswer === "" ||
-    !condition.conditionOperator
+    parentAnswer === ""
   ) {
-    if (condition.conditionOperator === "is not checked") return true;
-    // Handle API format
-    if (condition.type === "is_not_checked") return true;
+    // --- 💡 2. FIX: Handle "is not checked" for both UI and API formats ---
+    if (op === "is not checked" || op === "is_not_checked") {
+      return true;
+    }
     return false;
   }
-  
-  // Handle both Builder and API formats
-  const op = condition.conditionOperator || condition.type;
+
+  // --- 💡 3. Operator is already defined, proceed with original logic ---
   const val = condition.conditionValue || condition.value;
   const val2 = condition.conditionValue2;
   const values = condition.values; // API format for 'one_of'
 
   if (op === "is") return parentAnswer === val;
   if (op === "one_of") return values?.includes(parentAnswer); // API
-  
+
   if (op === "is not") return parentAnswer !== val;
   if (op === "not_one_of") return !values?.includes(parentAnswer); // API
 
   if (op === "is checked" || op === "is_checked") return parentAnswer === true;
-  if (op === "is not checked" || op === "is_not_checked") return parentAnswer === false;
+  if (op === "is not checked" || op === "is_not_checked")
+    return parentAnswer === false;
 
   if (op === "contains") {
     return Array.isArray(parentAnswer) && parentAnswer.includes(val);
@@ -41,17 +44,17 @@ function checkCondition(
   if (op === "does not contain") {
     return !Array.isArray(parentAnswer) || !parentAnswer.includes(val);
   }
-  
+
   const numAnswer = parseFloat(parentAnswer);
   const numVal = parseFloat(val || "");
   const numVal2 = parseFloat(val2 || "");
   if (isNaN(numAnswer)) return false;
-  
+
   if (op === "higher than" || op === "higher_than") return numAnswer > numVal;
   if (op === "lower than" || op === "lower_than") return numAnswer < numVal;
   if (op === "equal to" || op === "equal_to") return numAnswer === numVal;
   if (op === "not equal to" || op === "not_equal_to") return numAnswer !== numVal;
-  
+
   if (op === "between") {
     if (isNaN(numVal) || isNaN(numVal2)) return false;
     const min = Math.min(numVal, numVal2);
@@ -79,7 +82,6 @@ const PreviewField = memo(function PreviewField({
   answers,
   updateAnswer,
 }: Omit<RenderItemProps, "renderAllItems" | "allFieldsInScope">) {
-  
   // --- Normalize Builder vs API props ---
   const fieldId = field.id.toString(); // Use string ID for answers map
   const currentValue = answers[fieldId];
@@ -102,6 +104,7 @@ const PreviewField = memo(function PreviewField({
   };
 
   const renderFieldInput = () => {
+    // --- 💡 FIX: This switch now handles BOTH UI names and API names ---
     switch (fieldType) {
       case "number_field":
       case "Number Field":
@@ -140,8 +143,8 @@ const PreviewField = memo(function PreviewField({
           />
         );
 
-      case "amount_field":
-      case "Amount ($)":
+      case "amount": // <-- API name
+      case "Amount ($)": // <-- UI name
         return (
           <div style={{ position: "relative" }}>
             <span
@@ -173,8 +176,7 @@ const PreviewField = memo(function PreviewField({
           </div>
         );
 
-      case "date_field":
-      case "Date":
+      case "Date": // <-- API name AND UI name
         return (
           <div style={{ position: "relative" }}>
             <input
@@ -251,7 +253,8 @@ const PreviewField = memo(function PreviewField({
           </div>
         );
 
-      case "Checkbox": // Builder type
+      case "checkbox": // <-- API name
+      case "Checkbox": // <-- UI name
         return (
           <label
             style={{
@@ -325,6 +328,7 @@ const PreviewField = memo(function PreviewField({
               alignItems: "center",
               justifyContent: "center",
               gap: "10px",
+      
               cursor: "pointer",
             }}
           >
@@ -432,8 +436,8 @@ const PreviewField = memo(function PreviewField({
           </div>
         );
 
-      case "multiple_choice":
-      case "Multiple Choice":
+      case "mulitple_choice": // <-- API name (with typo)
+      case "Multiple Choice": // <-- UI name
         return (
           <div
             style={{ display: "flex", flexDirection: "column", gap: "8px" }}
@@ -514,7 +518,7 @@ const PreviewField = memo(function PreviewField({
         padding: "16px",
       }}
     >
-      {fieldType === "Checkbox" ? (
+      {fieldType === "Checkbox" || fieldType === "checkbox" ? (
         <div style={{ padding: "0px" }}>{renderFieldInput()}</div>
       ) : (
         <>
@@ -629,7 +633,7 @@ const RenderPreviewItem = memo(function RenderPreviewItem(
   props: RenderItemProps
 ) {
   const { item } = props;
-  
+
   // Normalize blockType
   let blockType = item.blockType;
   if (!blockType) {
@@ -667,7 +671,7 @@ interface ProcedureFormProps {
   rootFields: any[];
   sections: any[];
   // A unique key (like procedure.id) to reset state when the procedure changes
-  resetKey: string; 
+  resetKey: string;
 }
 
 export function ProcedureForm({
