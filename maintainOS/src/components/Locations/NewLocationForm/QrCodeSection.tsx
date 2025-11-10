@@ -49,7 +49,7 @@ export function QrCodeSection({ qrCode, setQrCode }) {
         <div className="mt-6 flex justify-start">
           <div className="bg-white shadow-md rounded-lg p-2 w-fit border border-gray-200">
             <div className="flex justify-center mb-1 ro">
-              <QRCode value={qrCode} size={120} />
+              <QRCode value={qrCode.split("/").pop() || ""} size={120} />
             </div>
           </div>
         </div>

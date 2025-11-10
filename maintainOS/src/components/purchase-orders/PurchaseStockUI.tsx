@@ -1,6 +1,10 @@
 import React, { useState } from "react";
-import { Settings, X, MapPin, ChevronDown, Loader2 } from "lucide-react"; // Added Loader2
-import { purchaseOrderService } from "../../store/purchaseOrders";
+import { Settings, X, MapPin, ChevronDown, Loader2 } from "lucide-react";
+
+// --- ADDED ---
+// PLEASE UPDATE THIS PATH to point to your actual service file
+import { purchaseOrderService } from "../../store/purchaseOrders/purchaseOrders.service";
+// -----------
 
 type Props = {
   setFullFillModal: (v: boolean) => void;
@@ -67,12 +71,12 @@ export default function PurchaseStockUI({
     0
   );
 
-  // === UPDATED API HANDLER ===
+  // === UPDATED AND FIXED API HANDLER ===
   const handleOrderUpdate = async () => {
     setIsLoading(true);
     setError(null); // Clear previous errors
 
-    const poId = selectedPO?.id;
+    const poId = selectedPO?.poNumber;
     if (!poId) {
       setError("Purchase Order ID is missing.");
       setIsLoading(false);
@@ -95,7 +99,7 @@ export default function PurchaseStockUI({
           unitCost: itemState.unitCost,
           unitsOrdered: itemState.unitsOrdered,
           unitsReceived: itemState.unitsReceived,
-          location: itemState.location,
+          // location: itemState.location,
 
           // Recalculated price based on updated cost and *ordered* units
           price: itemState.unitCost * itemState.unitsOrdered,
@@ -103,18 +107,32 @@ export default function PurchaseStockUI({
 
         // Log data being sent for debugging
         console.log(`Sending data for item ${itemId}:`, updatedItemData);
-        const response = purchaseOrderService.updateItemOrder(poId, itemId, updatedItemData  );
-        }).then(async (response) => {
-          if (!response.ok) {
-            // Handle HTTP errors
-            const errorData = await response.json().catch(() => ({})); // Try to parse error
-            console.error(`Error updating item ${itemId}:`, errorData);
+
+        return purchaseOrderService
+          .updateItemOrder(poId, itemId, updatedItemData)
+          .then(async (response: any) => {
+            if (!response.ok) {
+              // Handle HTTP errors
+              const errorData = await response.json().catch(() => ({})); // Try to parse error
+              console.error(`Error updating item ${itemId}:`, errorData);
+              throw new Error(
+                `Failed to update item ${
+                  originalItem.partNumber
+                }: ${response.statusText}`
+              );
+            }
+            // If response.ok, try to parse JSON
+            return response.json();
+          })
+          .catch((err: any) => {
+            // Handle errors from the individual API call
+            console.error(`Error in updateItemOrder for ${itemId}:`, err);
+            // Re-throw the error to make Promise.all fail
             throw new Error(
-              `Failed to update item ${originalItem.partNumber}: ${response.statusText}`
+              `Failed to update ${originalItem.partNumber}: ${err.message}`
             );
-          }
-          return response.json();
-        });
+          });
+        // --- END OF FIX ---
       });
 
       // Wait for all API calls to complete
@@ -124,6 +142,7 @@ export default function PurchaseStockUI({
       // If all successful, close the modal
       setFullFillModal(false);
     } catch (err: any) {
+      // This catch block handles errors from Promise.all (if any promise failed)
       console.error("An error occurred during update:", err);
       setError(err.message || "An unknown error occurred.");
     } finally {
@@ -142,7 +161,7 @@ export default function PurchaseStockUI({
         {/* Header */}
         <div className="bg-orange-600 flex items-center justify-center px-1 py-2 relative rounded-t-lg">
           <div className="text-black text-center font-medium">
-            Purchase Order #{selectedPO?.id?.slice(0, 6) || "—"} - Approved
+            Purchase Order #{selectedPO?.poNumber?.slice(0,6) || "—"} - Approved
           </div>
         </div>
 
@@ -273,14 +292,14 @@ export default function PurchaseStockUI({
                 <button
                   onClick={() => setFullFillModal(false)}
                   disabled={isLoading} // Disable when loading
-                  className="text-sm text-blue-600 px-6 py-2 rounded hover:bg-blue-50 disabled:opacity-50"
+                  className="text-sm text-orange-600 px-6 py-2 rounded cursor-pointer hover:bg-orange-50 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleOrderUpdate}
                   disabled={isLoading} // Disable when loading
-                  className="px-6 py-2 bg-blue-600 text-white rounded text-sm flex items-center gap-2 hover:bg-blue-700 disabled:bg-blue-400"
+                  className="px-6 py-2 bg-orange-600 text-white cursor-pointer rounded text-sm flex items-center gap-2 hover:bg-orange-600 disabled:bg-blue-400"
                 >
                   {isLoading ? (
                     <Loader2 size={16} className="animate-spin" />

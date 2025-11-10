@@ -124,7 +124,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
               QR Code/Barcode
             </h3>
             <h4 className="mt-2 text-sm text-gray-700">
-              {selectedLocation.qrCode}
+              {selectedLocation.qrCode.split("/").pop() }
             </h4>
             <div className="mb-3 mt-2 flex justify-start">
               <div className="w-fit rounded-lg border border-gray-200 bg-white p-2 shadow-md">
