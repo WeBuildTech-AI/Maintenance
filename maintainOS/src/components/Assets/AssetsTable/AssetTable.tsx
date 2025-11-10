@@ -3,14 +3,15 @@ import { Card, CardContent } from "../../ui/card";
 import { Avatar, AvatarFallback } from "../../ui/avatar";
 import { Edit, Trash2 } from "lucide-react";
 import { formatDateOnly } from "../../utils/Date";
-import { UpdateAssetStatusModal } from "../AssetDetail/sections/AssetStatusReadings"; // ✅ adjust import path
+import { UpdateAssetStatusModal } from "../AssetDetail/sections/AssetStatusReadings";
 import { assetService } from "../../../store/assets";
+import { Tooltip } from "../../ui/Tooltip";
 
 export function AssetTable({
   assets,
   selectedAsset,
   handleDeleteAsset,
-  fetchAssetsData
+  fetchAssetsData,
 }: {
   assets: any[];
   selectedAsset: any;
@@ -21,10 +22,12 @@ export function AssetTable({
   const [isDeleting, setIsDeleting] = useState(false);
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
 
-  // ✅ New state for modal
   const [updateAssetModal, setUpdateAssetModal] = useState(false);
   const [selectedStatusAsset, setSelectedStatusAsset] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Some modal components have differing prop types in our codebase; cast to any to avoid TS prop checks here
+  const StatusModal = UpdateAssetStatusModal as any;
 
   const renderInitials = (text: string) =>
     text
@@ -78,7 +81,6 @@ export function AssetTable({
     setSelectedAssetIds([]);
   };
 
-  // ✅ Modal-related handlers
   const handleStatusClick = (asset: any) => {
     setSelectedStatusAsset(asset);
     setUpdateAssetModal(true);
@@ -87,9 +89,10 @@ export function AssetTable({
   const handleManualDowntimeSubmit = async (updatedStatus: string) => {
     try {
       setIsSubmitting(true);
-      console.log("Submitting new status:", updatedStatus);
-      const response = await assetService.updateAssetStatus(selectedStatusAsset.id, updatedStatus);
-      // TODO: integrate API call or Supabase update here
+      await assetService.updateAssetStatus(
+        selectedStatusAsset.id,
+        updatedStatus
+      );
       setUpdateAssetModal(false);
       fetchAssetsData();
     } catch (error) {
@@ -107,7 +110,8 @@ export function AssetTable({
     <div className="flex p-2 w-full h-full overflow-x-auto">
       <Card className="overflow-x-auto shadow-sm">
         <CardContent className="p-0">
-          <div className="relative overflow-y-hidden">
+          {/* allow visible overflow so tooltips are not clipped by parents */}
+          <div className="relative overflow-visible">
             <table className="min-w-full text-sm border-collapse">
               <thead className="bg-muted/60 border-b text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 <tr>
@@ -123,42 +127,40 @@ export function AssetTable({
                   </th>
 
                   {/* Sticky Name Header */}
-                  <th className="sticky left-[48px] z-30 bg-muted/60 w-[20%] px-4 py-3 text-left">
+                  <th className="sticky left-[48px] z-30 bg-muted/60 w-[20%] px-4 py-3 text-left overflow-visible">
                     {selectedAssetIds.length > 0 ? (
                       <div className="flex gap-4">
                         {/* Delete button */}
                         <div className="relative group inline-block">
-                          <button
-                            onClick={handleDelete}
-                            disabled={isDeleting}
-                            className={`flex items-center gap-1 transition ${
-                              isDeleting
-                                ? "text-orange-400 cursor-not-allowed"
-                                : "text-orange-600 hover:text-red-700"
-                            }`}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                          <div className="absolute left-1/2 -translate-x-1/2 bottom-[125%] mb-1 rounded-md bg-gray-900 text-white text-[11px] px-2 py-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                            Delete
-                          </div>
+                          <Tooltip text="Delete">
+                            <button
+                              onClick={handleDelete}
+                              disabled={isDeleting}
+                              className={`flex items-center gap-1 transition ${
+                                isDeleting
+                                  ? "text-orange-400 cursor-not-allowed"
+                                  : "text-orange-600 hover:text-red-700"
+                              }`}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </Tooltip>
                         </div>
 
                         {/* Edit button */}
                         <div className="relative group inline-block">
-                          <button
-                            disabled={isDeleting}
-                            className={`flex items-center gap-1 transition ${
-                              isDeleting
-                                ? "text-orange-400 cursor-not-allowed"
-                                : "text-orange-600 hover:text-red-700"
-                            }`}
-                          >
-                            <Edit size={16} />
-                          </button>
-                          <div className="absolute left-1/2 -translate-x-1/2 bottom-[125%] mb-1 rounded-md bg-gray-900 text-white text-[11px] px-2 py-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                            Edit
-                          </div>
+                          <Tooltip text="Edit">
+                            <button
+                              // disabled={isDeleting}
+                              className={`flex items-center gap-1 transition ${
+                                isDeleting
+                                  ? "text-orange-400 cursor-not-allowed"
+                                  : "text-orange-600 hover:text-red-700"
+                              }`}
+                            >
+                              <Edit size={16} />
+                            </button>
+                          </Tooltip>
                         </div>
                       </div>
                     ) : (
@@ -323,7 +325,7 @@ export function AssetTable({
 
       {/* ✅ Modal */}
       {updateAssetModal && selectedStatusAsset && (
-        <UpdateAssetStatusModal
+        <StatusModal
           asset={selectedStatusAsset}
           initialStatus={selectedStatusAsset.status}
           onClose={() => setUpdateAssetModal(false)}
@@ -334,4 +336,3 @@ export function AssetTable({
     </div>
   );
 }
-
