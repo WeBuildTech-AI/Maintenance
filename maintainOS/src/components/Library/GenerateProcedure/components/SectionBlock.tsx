@@ -33,7 +33,7 @@ export function SectionBlock({
     setActiveContainerId,
     activeField,
     overContainerId,
-    handleAddField, // <-- 💡 1. YEH FUNCTION ADD KAREIN
+    handleAddField, // <-- 💡 1. YEH FUNCTION ADD KAREIN (This was already here)
   } = useProcedureBuilder();
 
   const isSectionEditing = editingSectionId === field.id;
@@ -244,8 +244,9 @@ export function SectionBlock({
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          setActiveContainerId(field.id); // Is section ko target set karein
-                          handleAddField(); // Naya field add karein
+                          // --- 💡 FIX: Set active container ID FIRST ---
+                          setActiveContainerId(field.id);
+                          handleAddField(); // Then add the field
                         }}
                         className="text-sm font-medium text-blue-600 hover:text-blue-800"
                       >
@@ -255,7 +256,9 @@ export function SectionBlock({
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          alert("Logic for 'Add Procedure' not yet implemented.");
+                          alert(
+                            "Logic for 'Add Procedure' not yet implemented."
+                          );
                         }}
                         className="text-sm font-medium text-blue-600 hover:text-blue-800"
                       >

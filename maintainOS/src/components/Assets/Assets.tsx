@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, FC, useMemo } from "react";
-import { AssetDetail } from "./AssetDetail/AssetDetail";
+import { AssetDetail } from "./AssetDetail/AssetDetail"
 import { AssetsList } from "./AssetsList/AssetsList";
 import { NewAssetForm } from "./NewAssetForm/NewAssetForm";
 import { AssetTable } from "./AssetsTable/AssetTable";
@@ -168,6 +168,7 @@ export const Assets: FC = () => {
                 assets={sortedAndFilteredAssets}
                 selectedAsset={selectedAsset}
                 handleDeleteAsset={handleDeleteAsset}
+                fetchAssetsData={fetchAssetsData}
               />
             ) : (
               <div className="flex flex-1 min-h-0">

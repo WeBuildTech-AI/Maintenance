@@ -319,7 +319,7 @@ export default function AssetStatusMoreDetails({
                 <div className="text-sm text-gray-600">Unplanned Downtime</div>
               </div>
               <div>
-                <div className="text-2xl font-semibold text-blue-600">
+                <div className="text-2xl font-semibold text-black">
                   {plannedDowntime}h
                 </div>
                 <div className="text-sm text-gray-600">Planned Downtime</div>
