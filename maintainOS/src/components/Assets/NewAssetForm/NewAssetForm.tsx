@@ -333,7 +333,7 @@ export function NewAssetForm({
       </div>
 
       {/* Footer */}
-      <FooterActions onCreate={handleCreate} onCancel={onCancel} />
+      <FooterActions onCreate={handleCreate} onCancel={onCancel} isEdit ={isEdit} />
     </div>
   );
 }

@@ -68,7 +68,7 @@ export function NewLocationForm({
       setName(editData.name);
       setAddress(editData.address || "");
       setDescription(editData.description || "");
-      setQrCode(editData.qrCode || "");
+      setQrCode(editData.qrCode?.split("/").pop() || "");
       setVendorId(editData.vendorIds || []);
       setParentLocationId(editData.parentLocationId || "");
 
@@ -157,7 +157,8 @@ export function NewLocationForm({
 
     if (description) formData.append("description", String(description));
     if (address) formData.append("address", String(address));
-    if (qrCode) formData.append("qrCode", String(qrCode));
+    // if (qrCode) formData.append("qrCode", String(qrCode));
+    if (qrCode) formData.append("qrCode", `location/${String(qrCode)}`);
     if (parentLocationId && parentLocationId.trim()) {
       formData.append("parentLocationId", String(parentLocationId));
     }
