@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, FC, useMemo } from "react";
-import { AssetDetail } from "./AssetDetail/AssetDetail";
+import { AssetDetail } from "./AssetDetail/AssetDetail"
 import { AssetsList } from "./AssetsList/AssetsList";
 import { NewAssetForm } from "./NewAssetForm/NewAssetForm";
 import { AssetTable } from "./AssetsTable/AssetTable";
