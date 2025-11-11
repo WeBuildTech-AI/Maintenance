@@ -6,8 +6,8 @@ import {
   User,
 } from "lucide-react";
 import { Button } from "../ui/button";
-// --- 💡 1. 'useState' ko import kiya ---
-import React, { useState, useEffect } from "react";
+// --- 庁 1. 'useState' ko import kiya ---
+import { useState, useEffect } from "react";
 import { ProcedureForm } from "./GenerateProcedure/components/ProcedureForm";
 import { MoreActionsMenu } from "./GenerateProcedure/components/MoreActionsMenu";
 
@@ -17,7 +17,7 @@ import { useNavigate } from "react-router-dom";
 import { deleteProcedure } from "../../store/procedures/procedures.thunks"; // Path check kar lein
 import { AppDispatch } from "../../store"; // Path check kar lein
 
-// --- 💡 2. ConfirmationModal ko import kiya ---
+// --- 庁 2. ConfirmationModal ko import kiya ---
 import { ConfirmationModal } from "./GenerateProcedure/components/ConfirmationModal";
 
 // --- Helper function to format dates ---
@@ -82,18 +82,18 @@ export function LibraryDetails({
   const [activeTab, setActiveTab] = useState<"fields" | "details" | "history">(
     "fields"
   );
-  // --- 💡 3. Modal ko control karne ke liye state add ki ---
+  // --- 庁 3. Modal ko control karne ke liye state add ki ---
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   // --- 3. HOOKS KO INITIALIZE KIYA ---
   const dispatch = useDispatch<AppDispatch>();
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // ✅ navigate hook (pehlese imported hai)
 
   useEffect(() => {
     setActiveTab("fields");
   }, [selectedProcedure]);
 
-  // --- 💡 4. Is function ko 'handleConfirmDelete' rename kiya ---
+  // --- 庁 4. Is function ko 'handleConfirmDelete' rename kiya ---
   // Yeh ab 'Confirm' button dabane par hi chalega
   const handleConfirmDelete = async () => {
     if (!selectedProcedure) return;
@@ -115,10 +115,17 @@ export function LibraryDetails({
     }
   };
 
-  // --- 💡 5. Yeh naya function sirf modal ko kholeta hai ---
+  // --- 庁 5. Yeh naya function sirf modal ko kholeta hai ---
   const handleDeleteClick = () => {
     if (!selectedProcedure) return;
     setIsDeleteModalOpen(true);
+  };
+
+  // --- (NEW) "Use in Work Order" button ke liye handler ---
+  const handleUseInWorkOrder = () => {
+    if (!selectedProcedure) return;
+    // User ko /work-orders/create par bhejega aur URL mein procedureId daal dega
+    navigate(`/work-orders/create?procedureId=${selectedProcedure.id}`);
   };
 
   if (!selectedProcedure) {
@@ -153,7 +160,7 @@ export function LibraryDetails({
               <Pencil className="h-4 w-4 mr-2" />
               Edit
             </button>
-            {/* --- 💡 6. 'onDelete' prop ab 'handleDeleteClick' ko call karega --- */}
+            {/* --- 庁 6. 'onDelete' prop ab 'handleDeleteClick' ko call karega --- */}
             <MoreActionsMenu onDelete={handleDeleteClick}>
               <button className="inline-flex items-center rounded p-2 text-blue-600 hover:text-blue-700 relative">
                 <MoreVertical className="h-4 w-4" />
@@ -239,6 +246,8 @@ export function LibraryDetails({
       >
         <Button
           variant="outline"
+          // --- (NEW) onClick handler add kiya ---
+          onClick={handleUseInWorkOrder}
           className="text-yellow-600 border-2 border-yellow-400 hover:bg-yellow-50 px-8 py-3 rounded-full shadow-lg bg-white font-medium whitespace-nowrap"
         >
           <Building2 className="w-5 h-5 mr-2" />
@@ -246,7 +255,7 @@ export function LibraryDetails({
         </Button>
       </div>
 
-      {/* --- 💡 7. Modal component ko yahan render kiya --- */}
+      {/* --- 庁 7. Modal component ko yahan render kiya --- */}
       <ConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}

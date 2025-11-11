@@ -10,6 +10,7 @@ import { WorkOrderDetails } from "./WorkOrderDetails";
 import { CommentsSection } from "./CommentsSection";
 import { NewWorkOrderForm } from "../NewWorkOrderForm/NewWorkOrderFrom";
 import { useNavigate, useMatch } from "react-router-dom";
+import { LinkedProcedurePreview } from "./LinkedProcedurePreview"; // ✅ 1. IMPORTED NEW COMPONENT
 
 export type StatusKey = "open" | "on_hold" | "in_progress" | "done";
 
@@ -286,6 +287,9 @@ export function ToDoView({
               activePanel={activePanel}
               setActivePanel={setActivePanel}
             />
+
+            {/* ✅ 2. RENDER NEW COMPONENT (it will only show if a procedure exists) */}
+            <LinkedProcedurePreview selectedWorkOrder={selectedWorkOrder} />
 
             {/* ✅ CommentsSection will show only when activePanel === "details" */}
             {activePanel === "details" && (

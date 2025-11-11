@@ -41,7 +41,7 @@ export function CriticalityDropdown({
           {options.map((option) => (
             <li
               key={option}
-              className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+              className="px-4 capitalize py-2 hover:bg-gray-100 cursor-pointer"
               onClick={() => handleSelect(option)}
             >
               {option}

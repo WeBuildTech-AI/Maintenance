@@ -120,6 +120,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
     ) ?? 0;
   const total = subtotal + (selectedPO.extraCosts ?? 0);
   const [fullFillModal, setFullFillModal] = React.useState(false);
+  
   const handleApprove = async (id) => {
     await purchaseOrderService.approvePurchaseOrder(id);
     setModalAction("approve");

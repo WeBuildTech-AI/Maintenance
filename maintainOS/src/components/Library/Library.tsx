@@ -5,19 +5,20 @@ import { LibraryHeaderComponent } from "./LibraryHeader";
 import type { ViewMode } from "../purchase-orders/po.types";
 import GenerateProcedure from "./GenerateProcedure/GenerateProcedure";
 import { ChevronDown } from "lucide-react";
+import SettingsModal from "../utils/SettingsModal"; 
 
 // --- NYE COMPONENTS IMPORT ---
 import { LibraryCard } from "./LibraryCard";
 import { LibraryDetails } from "./LibraryDetails";
-import SortModal from "./SortModal"; // <-- SortModal import kiya
-// --- 1. IMPORT EmptyState (using correct path) ---
+import SortModal from "./SortModal"; 
 import EmptyState from "./components/EmptyState";
-// --- 💡 1. LibraryTable component import karein ---
 import { LibraryTable } from "./GenerateProcedure/LibraryTable";
+// --- (NEW) Naya modal import karein (path check kar lein) ---
+import { ProcedureDetailModal } from "./GenerateProcedure/components/ProcedureDetailModal"; 
 
 // --- 💡 2. Priority sort helper ---
 const priorityToValue = (priority: string | null | undefined): number => {
-  if (!priority) return 4; // "—" ya null/undefined
+  if (!priority) return 4; 
   switch (priority.toLowerCase()) {
     case "high":
       return 1;
@@ -26,29 +27,34 @@ const priorityToValue = (priority: string | null | undefined): number => {
     case "low":
       return 3;
     default:
-      return 4; // Baki sab
+      return 4;
   }
 };
 
+const allToggleableColumns = ["Last updated", "Category", "Created At"];
+
 export function Library() {
-  const [viewMode, setViewMode] = useState<ViewMode>("panel"); // 'panel' matlab ToDo jaisa view
+  const [viewMode, setViewMode] = useState<ViewMode>("panel"); 
   const [searchQuery, setSearchQuery] = useState("");
   const [showSettings, setShowSettings] = useState(false);
-  const [showForm, setShowForm] = useState(false); // Yeh "New Procedure" form control karega
+  const [showForm, setShowForm] = useState(false); 
 
   const [selectedProcedure, setSelectedProcedure] = useState<any>(null);
   const [procedures, setProcedures] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // --- (NEW) Table view mein modal ke liye state ---
+  const [modalProcedure, setModalProcedure] = useState<any>(null);
+
   // --- SORT MODAL KE LIYE STATE ---
   const [isSortModalOpen, setIsSortModalOpen] = useState(false);
-  // --- 💡 3. Default sort ko 'Title' kiya ---
   const [sortType, setSortType] = useState("Title");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const sortButtonRef = useRef<HTMLDivElement>(null); // Ref ko DIV banaya
+  const sortButtonRef = useRef<HTMLDivElement>(null); 
 
-  // --- Router hooks HATA DIYE GAYE ---
+  const [visibleColumns, setVisibleColumns] =
+    useState<string[]>(allToggleableColumns);
 
   // --- 2. WRAPPED fetchData in a memoized function ---
   const fetchData = useMemo(() => {
@@ -59,13 +65,11 @@ export function Library() {
         const res = await procedureService.fetchProcedures();
         console.log("🌐 API response (procedures):", res);
 
-        // Handle both array and nested object format
         const data = Array.isArray(res)
           ? res
           : res?.data || res?.data?.data || [];
 
         setProcedures(data);
-        // Selected procedure ab neeche sorting ke baad set hoga
       } catch (err: any) {
         console.error("❌ Error fetching procedures:", err);
         setError(err.message || "Failed to fetch procedures");
@@ -73,17 +77,16 @@ export function Library() {
         setLoading(false);
       }
     };
-  }, []); // Empty dependency array, function is created once
+  }, []); 
 
   // --- 3. API CALL (ACTIVE) ---
   useEffect(() => {
     console.log("Using Live API");
     fetchData();
-  }, [fetchData]); // Yeh sirf ek baar run hoga
+  }, [fetchData]); 
 
   // --- 💡 4. SORTING LOGIC (Updated for Priority) ---
   const sortedProcedures = useMemo(() => {
-    // localeCompare string sorting ke liye behtar hai
     const compareStrings = (a: string, b: string) => {
       return (a || "").localeCompare(b || "", undefined, { numeric: true });
     };
@@ -101,7 +104,7 @@ export function Library() {
             : compareStrings(valB, valA);
 
         case "Category":
-          valA = a.categories?.[0] || ""; // API response ke hisaab se
+          valA = a.categories?.[0] || ""; 
           valB = b.categories?.[0] || "";
           return sortOrder === "asc"
             ? compareStrings(valA, valB)
@@ -112,19 +115,18 @@ export function Library() {
           valB = new Date(b.createdAt || 0).getTime();
           break;
 
-        case "Last updated": // Table header se
-        case "Last Updated": // SortModal se
+        case "Last updated": 
+        case "Last Updated": 
           valA = new Date(a.updatedAt || 0).getTime();
           valB = new Date(b.updatedAt || 0).getTime();
           break;
 
         case "Priority":
-          valA = priorityToValue(a.priority); // API mein priority nahi hai, par logic rakhi hai
+          valA = priorityToValue(a.priority); 
           valB = priorityToValue(b.priority);
           break;
 
         default:
-          // Default sorting (Title)
           valA = a.title || "";
           valB = b.title || "";
           return sortOrder === "asc"
@@ -132,45 +134,44 @@ export function Library() {
             : compareStrings(valB, valA);
       }
 
-      // Number (Date & Priority) comparison
       return sortOrder === "asc" ? valA - valB : valB - valA;
     });
   }, [procedures, sortType, sortOrder]);
 
   // --- INITIAL SELECTION LOGIC (Reverted) ---
   useEffect(() => {
-    if (!selectedProcedure && sortedProcedures.length > 0) {
+    if (viewMode === 'panel' && !selectedProcedure && sortedProcedures.length > 0) {
       setSelectedProcedure(sortedProcedures[0]);
     }
-    // FIX: Handle case where selected item is deleted
     else if (
+      viewMode === 'panel' &&
       selectedProcedure &&
       !sortedProcedures.find((p) => p.id === selectedProcedure.id)
     ) {
       setSelectedProcedure(sortedProcedures[0] || null);
     }
-  }, [sortedProcedures, selectedProcedure]);
+  }, [sortedProcedures, selectedProcedure, viewMode]); // (NEW) viewMode par depend karega
 
   // --- SORT HANDLER ---
   const handleSortChange = (type: string, order: "asc" | "desc") => {
     setSortType(type);
     setSortOrder(order);
-    setIsSortModalOpen(false); // Modal band karein
+    setIsSortModalOpen(false); 
   };
 
-  // Helper function to get sort order text for button
   const getSortOrderText = () => {
-    // Yeh ab sirf Panel View ke sort button ke liye hai
     if (sortType === "Last Updated")
       return sortOrder === "asc" ? "Least Recent First" : "Most Recent First";
-    if (sortType === "Title")
-      return sortOrder === "asc" ? "A-Z" : "Z-A";
-    
-    // Fallback
+    if (sortType === "Title") return sortOrder === "asc" ? "A-Z" : "Z-A";
     return sortType;
   };
 
-  // --- LAYOUT KO "h-screen" AUR "overflow-hidden" BANAYEIN ---
+  // --- (NEW) Refresh function for the modal ---
+  const handleModalRefresh = () => {
+    fetchData(); // List ko refresh karega
+    setModalProcedure(null); // Modal ko band karega
+  }
+
   return (
     <div className="flex flex-col bg-white w-full h-screen overflow-hidden">
       {/* Header (Fixed) */}
@@ -193,7 +194,7 @@ export function Library() {
             <GenerateProcedure
               onBack={() => {
                 setShowForm(false);
-                fetchData(); // Refresh list after creating
+                fetchData(); 
               }}
             />
           </div>
@@ -254,10 +255,9 @@ export function Library() {
 
                 {/* Right Panel (Flexible + Scroll) */}
                 <div className="flex-1 bg-card mr-3 ml-2 mb-2 border border-border min-h-0 flex flex-col">
-                  {/* --- FIX: Pass onRefresh prop --- */}
                   <LibraryDetails
                     selectedProcedure={selectedProcedure}
-                    onRefresh={fetchData}
+                    onRefresh={fetchData} // Panel view puraani refresh logic use karega
                   />
                 </div>
               </div>
@@ -268,7 +268,10 @@ export function Library() {
                 sortType={sortType}
                 sortOrder={sortOrder}
                 onSortChange={handleSortChange}
-                onRefresh={fetchData} // <-- Yeh naya prop add kiya
+                onRefresh={fetchData} 
+                visibleColumns={visibleColumns}
+                // --- (NEW) Naya prop pass karein ---
+                onViewProcedure={(proc) => setModalProcedure(proc)}
               />
             )}
           </>
@@ -284,6 +287,32 @@ export function Library() {
         currentOrder={sortOrder}
         anchorRef={sortButtonRef}
       />
+
+      {/* --- SETTINGS MODAL (No Change) --- */}
+      <SettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        allToggleableColumns={allToggleableColumns}
+        currentVisibleColumns={visibleColumns}
+        onApply={(settings) => {
+          console.log("Settings applied:", settings);
+          setVisibleColumns(settings.visibleColumns);
+          setShowSettings(false);
+        }}
+      />
+
+      {/* --- (NEW) PROCEDURE DETAIL MODAL --- */}
+      {/* Yeh modal LibraryDetails component ko render karega */}
+      <ProcedureDetailModal
+        isOpen={!!modalProcedure}
+        onClose={() => setModalProcedure(null)}
+        title={modalProcedure?.title || "Procedure Details"}
+      >
+        <LibraryDetails
+          selectedProcedure={modalProcedure}
+          onRefresh={handleModalRefresh} // Modal band karne ke liye naya handler
+        />
+      </ProcedureDetailModal>
     </div>
   );
 }

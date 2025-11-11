@@ -255,7 +255,7 @@ export default function ProcedureSettings() {
                 <div style={radioTitle}>Make Public</div>
                 <div style={radioDesc}>
                   Publish this Procedure to the Procedure Hub for everyone in the
-                  MaintainX Community to see.
+                  MaintainOS Community to see.
                 </div>
               </div>
             </label>

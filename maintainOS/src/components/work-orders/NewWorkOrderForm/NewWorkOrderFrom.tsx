@@ -19,6 +19,15 @@ import {
 } from "../../../store/workOrders/workOrders.thunks";
 import { fetchFilterData } from "../../utils/filterDataFetcher";
 
+// --- (NEW) Procedure service ko Library feature se import karein ---
+// (Path ko apne project ke hisaab se adjust karein)
+import { procedureService } from "../../../store/procedures/procedures.service"; 
+// --- (NEW) Naye Modals import karein ---
+import { LinkedProcedurePreviewModal } from "./LinkedProcedurePreviewModal";
+// (Path ko apne project ke hisaab se adjust karein)
+import AddProcedureModal from "../WorkloadView/Modal/AddProcedureModal"; 
+
+
 function parseDateInputToISO(input?: string): string | undefined {
   if (!input) return undefined;
   const v = input.trim();
@@ -89,6 +98,13 @@ export function NewWorkOrderForm({
   const [vendorIds, setVendorIds] = useState<string[]>([]);
   const [vendorOptions, setVendorOptions] = useState<SelectOption[]>([]);
 
+  // --- (NEW) Linked Procedure ke liye state ---
+  const [linkedProcedure, setLinkedProcedure] = useState<any>(null);
+  const [isProcedureLoading, setIsProcedureLoading] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isAddProcModalOpen, setIsAddProcModalOpen] = useState(false);
+  // --- (End of NEW state) ---
+
   const handleFetch = async (type: string, setOptions: (val: SelectOption[]) => void) => {
     try {
       const { data } = await fetchFilterData(type);
@@ -97,6 +113,38 @@ export function NewWorkOrderForm({
       console.error(`Failed fetching ${type}`, e);
     }
   };
+
+  // --- (NEW) URL se Procedure ID read karne ke liye Effect ---
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const procedureId = params.get("procedureId");
+
+    // Check karein ki procedure pehle se linked na ho
+    if (procedureId && !linkedProcedure) {
+      const fetchProcedure = async () => {
+        setIsProcedureLoading(true);
+        try {
+          // Hum assume kar rahe hain service mein fetchProcedures hai
+          const allProcs = await procedureService.fetchProcedures();
+          const foundProc = allProcs.find((p: any) => p.id === procedureId);
+          
+          if (foundProc) {
+            setLinkedProcedure(foundProc);
+            // URL se param hata dein (taaki refresh par dobara load na ho)
+            navigate(location.pathname, { replace: true });
+          } else {
+            toast.error("Could not find the selected procedure.");
+          }
+        } catch (err) {
+          toast.error("Failed to load procedure.");
+        } finally {
+          setIsProcedureLoading(false);
+        }
+      };
+      fetchProcedure();
+    }
+  }, [location.search, linkedProcedure, navigate, location.pathname]);
+
 
   useEffect(() => {
     const fillFields = (data: any) => {
@@ -117,6 +165,11 @@ export function NewWorkOrderForm({
       setCategoryIds(data.categoryIds || []);
       setPartIds(data.partIds || []);
       setVendorIds(data.vendorIds || []);
+      
+      // --- (NEW) Edit mode mein linked procedure ko load karein ---
+      if (data.procedure) {
+        setLinkedProcedure(data.procedure);
+      }
     };
 
     const loadWorkOrder = async () => {
@@ -139,7 +192,8 @@ export function NewWorkOrderForm({
   }, [dispatch, id, existingWorkOrder, isEditMode]);
 
   useEffect(() => {
-    if (location.pathname.endsWith("/create")) {
+    // (NEW) check karein ki procedureId param na ho reset karte waqt
+    if (location.pathname.endsWith("/create") && !location.search.includes("procedureId")) {
       setWorkOrderName("");
       setDescription("");
       setLocationId("");
@@ -154,8 +208,9 @@ export function NewWorkOrderForm({
       setCategoryIds([]);
       setPartIds([]);
       setVendorIds([]);
+      setLinkedProcedure(null); // (NEW) Procedure ko reset karein
     }
-  }, [location.pathname]);
+  }, [location.pathname, location.search]);
 
   const handleSubmit = async () => {
     try {
@@ -181,7 +236,6 @@ export function NewWorkOrderForm({
 
       if (locationId) formData.append("locationId", locationId);
 
-      // ✅ Send all array fields as repeated FormData entries
       assetIds.forEach((i) => i && formData.append("assetIds[]", i));
       vendorIds.forEach((i) => i && formData.append("vendorIds[]", i));
       partIds.forEach((i) => i && formData.append("partIds[]", i));
@@ -189,12 +243,16 @@ export function NewWorkOrderForm({
       categoryIds.forEach((i) => i && formData.append("categoryIds[]", i));
       selectedUsers.forEach((i) => i && formData.append("assigneeIds[]", i));
 
+      // --- 🟢 FIX: 'procedureId' ko 'procedureIds[]' (Array) se replace kiya ---
+      if (linkedProcedure) {
+        formData.append("procedureIds[]", linkedProcedure.id);
+      }
+
       const isoDue = parseDateInputToISO(dueDate);
       const isoStart = parseDateInputToISO(startDate);
       if (isoDue) formData.append("dueDate", isoDue);
       if (isoStart) formData.append("startDate", isoStart);
 
-      // ✅ Use Redux user ID as authorId
       const authorId = authUser?.id;
       if (!authorId) {
         toast.error("User information missing. Please re-login.");
@@ -205,7 +263,7 @@ export function NewWorkOrderForm({
         await (dispatch as any)(
           updateWorkOrder({
             id,
-            authorId, // 👈 added for PATCH /{id}/{authorId}
+            authorId, 
             data: formData as any,
           })
         ).unwrap();
@@ -224,114 +282,133 @@ export function NewWorkOrderForm({
     }
   };
 
-  if (loading)
+  if (loading || isProcedureLoading) // (NEW) Procedure loading check
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-gray-600 text-sm">Loading work order...</p>
+        <p className="text-gray-600 text-sm">Loading...</p>
       </div>
     );
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-lg border bg-white">
-      {/* Header */}
-      <div className="flex-none border-b px-6 py-4 flex items-center justify-between">
-        <h2 className="text-xl font-semibold">
-          {isEditMode ? "Edit Work Order" : "New Work Order"}
-        </h2>
+    <>
+      <div className="flex h-full flex-col overflow-hidden rounded-lg border bg-white">
+        {/* Header */}
+        <div className="flex-none border-b px-6 py-4 flex items-center justify-between">
+          <h2 className="text-xl font-semibold">
+            {isEditMode ? "Edit Work Order" : "New Work Order"}
+          </h2>
+        </div>
+
+        {/* Body */}
+        <div className="min-h-0 flex-1 overflow-y-auto p-6">
+          <WorkOrderDetails
+            name={workOrderName}
+            onNameChange={setWorkOrderName}
+            description={description}
+            onDescriptionChange={setDescription}
+            locationId={locationId}
+            onLocationSelect={(val) => setLocationId(val as string)}
+            locationOptions={locationOptions}
+            isLocationsLoading={false}
+            onFetchLocations={() => handleFetch("locations", setLocationOptions)}
+            onCreateLocation={() => toast("Open Create Location Modal")}
+            activeDropdown={activeDropdown}
+            setActiveDropdown={setActiveDropdown}
+          />
+
+          <AssetsAndProcedures
+            assetIds={assetIds}
+            onAssetSelect={(val) => setAssetIds(val as string[])}
+            assetOptions={assetOptions}
+            isAssetsLoading={false}
+            onFetchAssets={() => handleFetch("assets", setAssetOptions)}
+            onCreateAsset={() => toast("Open Create Asset Modal")}
+            activeDropdown={activeDropdown}
+            setActiveDropdown={setActiveDropdown}
+            // --- (NEW) Procedure props pass karein ---
+            linkedProcedure={linkedProcedure}
+            onRemoveProcedure={() => setLinkedProcedure(null)}
+            onPreviewProcedure={() => setIsPreviewOpen(true)}
+            onOpenProcedureModal={() => setIsAddProcModalOpen(true)}
+          />
+
+          <AssignmentAndScheduling
+            selectedUsers={selectedUsers}
+            setSelectedUsers={setSelectedUsers}
+            dueDate={dueDate}
+            setDueDate={setDueDate}
+            startDate={startDate}
+            setStartDate={setStartDate}
+            selectedWorkType={selectedWorkType}
+            setSelectedWorkType={setSelectedWorkType}
+            onOpenInviteModal={() => toast("Invite modal open")}
+          />
+
+          <WorkOrderClassificationAndLinks
+            selectedPriority={selectedPriority}
+            onPriorityChange={setSelectedPriority}
+            qrCodeValue={qrCodeValue}
+            onQrCodeChange={setQrCodeValue}
+            teamIds={teamIds}
+            onTeamSelect={(val) => setTeamIds(val as string[])}
+            teamOptions={teamOptions}
+            isTeamsLoading={false}
+            onFetchTeams={() => handleFetch("team-members", setTeamOptions)}
+            onCreateTeam={() => toast("Open Create Team Modal")}
+            categoryIds={categoryIds}
+            onCategorySelect={(val) => setCategoryIds(val as string[])}
+            categoryOptions={categoryOptions}
+            isCategoriesLoading={false}
+            onFetchCategories={() => handleFetch("categories", setCategoryOptions)}
+            onCreateCategory={() => toast("Open Create Category Modal")}
+            partIds={partIds}
+            onPartSelect={(val) => setPartIds(val as string[])}
+            partOptions={partOptions}
+            isPartsLoading={false}
+            onFetchParts={() => handleFetch("parts", setPartOptions)}
+            onCreatePart={() => toast("Open Create Part Modal")}
+            vendorIds={vendorIds}
+            onVendorSelect={(val) => setVendorIds(val as string[])}
+            vendorOptions={vendorOptions}
+            isVendorsLoading={false}
+            onFetchVendors={() => handleFetch("vendors", setVendorOptions)}
+            onCreateVendor={() => toast("Open Create Vendor Modal")}
+            activeDropdown={activeDropdown}
+            setActiveDropdown={setActiveDropdown}
+          />
+        </div>
+
+        {/* Footer */}
+        <div className="sticky bottom-0 flex items-center justify-end gap-3 border-t bg-white px-6 py-4">
+          <button
+            onClick={() => {
+              if (onCancel) onCancel();
+              else navigate("/work-orders");
+            }}
+            className="rounded-md border border-gray-300 px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="rounded-md border border-orange-600 bg-orange-600 px-6 py-2 text-sm font-medium text-white hover:bg-orange-700 transition-colors"
+          >
+            {isEditMode ? "Update" : "Create"}
+          </button>
+        </div>
       </div>
-
-      {/* Body */}
-      <div className="min-h-0 flex-1 overflow-y-auto p-6">
-        <WorkOrderDetails
-          name={workOrderName}
-          onNameChange={setWorkOrderName}
-          description={description}
-          onDescriptionChange={setDescription}
-          locationId={locationId}
-          onLocationSelect={(val) => setLocationId(val as string)}
-          locationOptions={locationOptions}
-          isLocationsLoading={false}
-          onFetchLocations={() => handleFetch("locations", setLocationOptions)}
-          onCreateLocation={() => toast("Open Create Location Modal")}
-          activeDropdown={activeDropdown}
-          setActiveDropdown={setActiveDropdown}
-        />
-
-        <AssetsAndProcedures
-          assetIds={assetIds}
-          onAssetSelect={(val) => setAssetIds(val as string[])}
-          assetOptions={assetOptions}
-          isAssetsLoading={false}
-          onFetchAssets={() => handleFetch("assets", setAssetOptions)}
-          onCreateAsset={() => toast("Open Create Asset Modal")}
-          activeDropdown={activeDropdown}
-          setActiveDropdown={setActiveDropdown}
-        />
-
-        <AssignmentAndScheduling
-          selectedUsers={selectedUsers}
-          setSelectedUsers={setSelectedUsers}
-          dueDate={dueDate}
-          setDueDate={setDueDate}
-          startDate={startDate}
-          setStartDate={setStartDate}
-          selectedWorkType={selectedWorkType}
-          setSelectedWorkType={setSelectedWorkType}
-          onOpenInviteModal={() => toast("Invite modal open")}
-        />
-
-        <WorkOrderClassificationAndLinks
-          selectedPriority={selectedPriority}
-          onPriorityChange={setSelectedPriority}
-          qrCodeValue={qrCodeValue}
-          onQrCodeChange={setQrCodeValue}
-          teamIds={teamIds}
-          onTeamSelect={(val) => setTeamIds(val as string[])}
-          teamOptions={teamOptions}
-          isTeamsLoading={false}
-          onFetchTeams={() => handleFetch("team-members", setTeamOptions)}
-          onCreateTeam={() => toast("Open Create Team Modal")}
-          categoryIds={categoryIds}
-          onCategorySelect={(val) => setCategoryIds(val as string[])}
-          categoryOptions={categoryOptions}
-          isCategoriesLoading={false}
-          onFetchCategories={() => handleFetch("categories", setCategoryOptions)}
-          onCreateCategory={() => toast("Open Create Category Modal")}
-          partIds={partIds}
-          onPartSelect={(val) => setPartIds(val as string[])}
-          partOptions={partOptions}
-          isPartsLoading={false}
-          onFetchParts={() => handleFetch("parts", setPartOptions)}
-          onCreatePart={() => toast("Open Create Part Modal")}
-          vendorIds={vendorIds}
-          onVendorSelect={(val) => setVendorIds(val as string[])}
-          vendorOptions={vendorOptions}
-          isVendorsLoading={false}
-          onFetchVendors={() => handleFetch("vendors", setVendorOptions)}
-          onCreateVendor={() => toast("Open Create Vendor Modal")}
-          activeDropdown={activeDropdown}
-          setActiveDropdown={setActiveDropdown}
-        />
-      </div>
-
-      {/* Footer */}
-      <div className="sticky bottom-0 flex items-center justify-end gap-3 border-t bg-white px-6 py-4">
-        <button
-          onClick={() => {
-            if (onCancel) onCancel();
-            else navigate("/work-orders");
-          }}
-          className="rounded-md border border-gray-300 px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleSubmit}
-          className="rounded-md border border-orange-600 bg-orange-600 px-6 py-2 text-sm font-medium text-white hover:bg-orange-700 transition-colors"
-        >
-          {isEditMode ? "Update" : "Create"}
-        </button>
-      </div>
-    </div>
+      
+      {/* --- (NEW) Preview Modal Render Karein --- */}
+      <LinkedProcedurePreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        procedure={linkedProcedure}
+      />
+      {/* --- (NEW) "Add Procedure" Modal Render Karein --- */}
+      <AddProcedureModal
+        isOpen={isAddProcModalOpen}
+        onClose={() => setIsAddProcModalOpen(false)}
+      />
+    </>
   );
 }
