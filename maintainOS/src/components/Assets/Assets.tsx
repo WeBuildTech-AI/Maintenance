@@ -39,6 +39,7 @@ export const Assets: FC = () => {
     []
   );
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
 
   const fetchAssetsData = async () => {
@@ -160,7 +161,8 @@ export const Assets: FC = () => {
               setSearchQuery,
               setShowNewAssetForm,
               setShowSettings,
-              setSelectedAsset
+              setSelectedAsset,
+              setIsSettingsModalOpen
             )}
 
             {viewMode === "table" ? (
@@ -169,6 +171,8 @@ export const Assets: FC = () => {
                 selectedAsset={selectedAsset}
                 handleDeleteAsset={handleDeleteAsset}
                 fetchAssetsData={fetchAssetsData}
+                setIsSettingsModalOpen={setIsSettingsModalOpen}
+                isSettingsModalOpen={isSettingsModalOpen}
               />
             ) : (
               <div className="flex flex-1 min-h-0">
