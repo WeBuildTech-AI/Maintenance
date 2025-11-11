@@ -8,9 +8,10 @@ import {
   ClipboardList,
   ChevronDown,
   ChevronsUpDown,
+  Trash2,
 } from "lucide-react";
-// --- 💡 1. useState aur naye components import kiye ---
-import React, { useState } from "react";
+// --- (NEW) Imports updated ---
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { MoreActionsMenu } from "../GenerateProcedure/components/MoreActionsMenu";
 import { ConfirmationModal } from "../GenerateProcedure/components/ConfirmationModal";
 import { useDispatch } from "react-redux";
@@ -18,7 +19,6 @@ import { useNavigate } from "react-router-dom";
 import { deleteProcedure } from "../../../store/procedures/procedures.thunks";
 import { AppDispatch } from "../../../store";
 
-// Date helper function
 function formatTableDate(dateString: string) {
   if (!dateString) return "—";
   try {
@@ -27,34 +27,82 @@ function formatTableDate(dateString: string) {
       month: "2-digit",
       day: "2-digit",
     });
-  } catch (error) {
+  } catch {
     return "N/A";
   }
 }
 
-// 💡 2. Naye props add kiye
 interface LibraryTableProps {
   procedures: any[];
   sortType: string;
   sortOrder: "asc" | "desc";
   onSortChange: (type: string, order: "asc" | "desc") => void;
-  onRefresh: () => void; // Delete ke baad refresh karne ke liye
+  onRefresh: () => void;
+  visibleColumns: string[];
 }
+
+const RenderTableCell = ({
+  proc,
+  columnName,
+}: {
+  proc: any;
+  columnName: string;
+}) => {
+  switch (columnName) {
+    case "Last updated":
+      return <>{formatTableDate(proc.updatedAt)}</>;
+    case "Category":
+      return <>{proc.categories?.[0] ?? "—"}</>;
+    case "Created At":
+      return <>{formatTableDate(proc.createdAt)}</>;
+    default:
+      return null;
+  }
+};
 
 export function LibraryTable({
   procedures,
   sortType,
   sortOrder,
   onSortChange,
-  onRefresh, // 💡 3. Prop ko receive kiya
+  onRefresh,
+  visibleColumns,
 }: LibraryTableProps) {
-  
-  // 💡 4. Modal state aur Redux logic (LibraryDetails.tsx se copy ki)
   const [modalProc, setModalProc] = useState<any | null>(null);
+  const [selectedProcedures, setSelectedProcedures] = useState<string[]>([]);
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+
+  // --- "Select All" Logic ---
+  const headerCheckboxRef = useRef<HTMLInputElement>(null);
+  const allProcedureIds = useMemo(
+    () => procedures.map((p) => p.id),
+    [procedures]
+  );
   
-  // Helper function naye column par click karne ke liye
+  const selectedCount = selectedProcedures.length;
+  // --- (FIX) 'isEditing' ab 'selectedCount' par depend karta hai ---
+  const isEditing = selectedCount > 0; 
+  const areAllSelected =
+    allProcedureIds.length > 0 && selectedCount === allProcedureIds.length;
+  const isIndeterminate = selectedCount > 0 && !areAllSelected;
+
+  // Indeterminate state ko handle karne ke liye
+  useEffect(() => {
+    if (headerCheckboxRef.current) {
+      headerCheckboxRef.current.indeterminate = isIndeterminate;
+    }
+  }, [isIndeterminate, isEditing]); // (FIX) isEditing par bhi depend karega
+
+  // Header checkbox toggle logic
+  const handleSelectAllToggle = () => {
+    if (areAllSelected) {
+      setSelectedProcedures([]); // Deselect all
+    } else {
+      setSelectedProcedures(allProcedureIds); // Select all
+    }
+  };
+
   const handleHeaderClick = (columnName: string) => {
     if (sortType === columnName) {
       onSortChange(columnName, sortOrder === "asc" ? "desc" : "asc");
@@ -63,140 +111,206 @@ export function LibraryTable({
     }
   };
 
-  // Helper component icon dikhane ke liye (FIXED)
   const SortIcon = ({ column }: { column: string }) => {
-    if (sortType !== column) {
+    if (sortType !== column)
       return <ChevronsUpDown size={14} className="text-gray-400" />;
-    }
     return sortOrder === "asc" ? (
       <ChevronUp size={14} className="text-blue-600" />
     ) : (
       <ChevronDown size={14} className="text-blue-600" />
     );
   };
-  
-  // 💡 5. Delete logic (LibraryDetails.tsx se copy ki)
-  const handleDeleteClick = (proc: any) => {
-    setModalProc(proc);
+
+  const toggleRowSelection = (id: string) => {
+    setSelectedProcedures((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
   };
 
-  // --- 💡 6. DELETE LOGIC (Updated) ---
+  const handleDeleteClick = (proc: any) => setModalProc(proc);
   const handleConfirmDelete = async () => {
     if (!modalProc) return;
     try {
-      // Delete karne ki koshish karein
       await dispatch(deleteProcedure(modalProc.id)).unwrap();
     } catch (error: any) {
-      console.error("Failed to delete procedure:", error);
-      // Agar 404 error hai (Not Found), toh alert mat dikhao
-      // Kyunki iska matlab item pehle se hi deleted hai.
-      if (error?.statusCode !== 404) {
-        alert("Failed to delete procedure.");
-      }
-      // Agar 404 hai, toh hum chup-chaap refresh kar denge.
+      if (error?.statusCode !== 404) alert("Failed to delete procedure.");
     } finally {
-      // Hamesha modal band karein aur list ko refresh karein
       setModalProc(null);
       onRefresh();
+      setSelectedProcedures([]); 
     }
   };
-  
+
+  const getColumnWidth = (columnName: string): string => {
+    switch (columnName) {
+      case "Last updated":
+        return "20%";
+      case "Category":
+        return "15%";
+      case "Created At":
+        return "15%";
+      default:
+        return "auto";
+    }
+  };
+
+  const totalColumns = visibleColumns.length + 2;
+
   return (
-    // Root div (Exactly VendorTable jaisa)
-    <div className="flex-1 overflow-auto p-2 flex flex-col">
-      <Card className="overflow-hidden shadow-sm">
+    <div className="flex-1 overflow-auto p-3 flex flex-col">
+      <Card className="overflow-hidden shadow-sm border border-gray-200">
         <CardContent className="p-0">
           <table className="w-full table-fixed text-sm">
-            {/* Thead (Exactly VendorTable jaisa) */}
-            <thead className="bg-muted/60 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {/* Header */}
+            <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500 border-b">
               <tr>
+                {/* --- (UPDATED) Title Column --- */}
                 <th className="w-[35%] px-4 py-3 text-left">
-                  <button
-                    onClick={() => handleHeaderClick("Title")}
-                    className="flex items-center gap-1"
-                  >
-                    Title <SortIcon column="Title" />
-                  </button>
+                  {/* --- (FIX) Yahi hai main logic --- */}
+                  {!isEditing ? (
+                    // --- State 1: No selection ---
+                    // Sirf Title aur Sort icon dikhega
+                    <button
+                      onClick={() => handleHeaderClick("Title")}
+                      className="flex items-center gap-1 text-gray-600"
+                    >
+                      Title <SortIcon column="Title" />
+                    </button>
+                  ) : (
+                    // --- State 2: Selection active ---
+                    // "Edit" UI dikhega
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        ref={headerCheckboxRef} // Ref yahan move ho gaya
+                        checked={areAllSelected}
+                        onChange={handleSelectAllToggle}
+                        className="h-4 w-4 accent-blue-600 cursor-pointer"
+                      />
+
+                      {/* Edit text */}
+                      <span className="text-sm font-medium text-gray-900">
+                        Edit {selectedCount}{" "}
+                        {selectedCount === 1 ? "Procedure" : "Procedures"}
+                      </span>
+
+                      {/* Trash icon */}
+                      <button
+                        onClick={() => {
+                          const first = procedures.find(
+                            (p) => p.id === selectedProcedures[0]
+                          );
+                          if (first) handleDeleteClick(first);
+                        }}
+                        className="ml-1 text-gray-600 hover:text-red-600 transition"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  )}
                 </th>
-                <th className="w-[20%] px-4 py-3 text-left">
-                  <button
-                    onClick={() => handleHeaderClick("Category")}
-                    className="flex items-center gap-1"
+
+                {/* Dynamic Columns */}
+                {visibleColumns.map((colName) => (
+                  <th
+                    key={colName}
+                    className="px-4 py-3 text-left"
+                    style={{ width: getColumnWidth(colName) }}
                   >
-                    Category <SortIcon column="Category" />
-                  </button>
-                </th>
-                <th className="w-[15%] px-4 py-3 text-left">
-                  <button
-                    onClick={() => handleHeaderClick("Created At")}
-                    className="flex items-center gap-1"
-                  >
-                    Created At <SortIcon column="Created At" />
-                  </button>
-                </th>
-                <th className="w-[15%] px-4 py-3 text-left">
-                  <button
-                    onClick={() => handleHeaderClick("Last updated")}
-                    className="flex items-center gap-1"
-                  >
-                    Last updated <SortIcon column="Last updated" />
-                  </button>
-                </th>
+                    <button
+                      onClick={() => handleHeaderClick(colName)}
+                      className="flex items-center gap-1 text-gray-600"
+                    >
+                      {colName} <SortIcon column={colName} />
+                    </button>
+                  </th>
+                ))}
+
+                {/* Actions Column */}
                 <th className="w-[15%] px-4 py-3 text-right"></th>
               </tr>
             </thead>
+
+            {/* Body */}
             <tbody>
-              {procedures.map((proc) => (
-                <tr
-                  key={proc.id}
-                  className="border-b border-border transition hover:bg-muted/40"
-                >
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="bg-blue-50 text-blue-400">
-                          <ClipboardList size={18} />
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="font-medium">
-                        {proc.title || "Untitled Procedure"}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {proc.categories?.[0] ?? "—"}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {formatTableDate(proc.createdAt)}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {formatTableDate(proc.updatedAt)}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    <div className="flex items-center justify-end gap-4 text-gray-500">
-                      <button className="hover:text-blue-600">
-                        <Pencil size={18} />
-                      </button>
-                      <button className="hover:text-blue-600">
-                        <Copy size={18} />
-                      </button>
-                      
-                      {/* 💡 7. Button ko 'MoreActionsMenu' se wrap kiya */}
-                      <MoreActionsMenu onDelete={() => handleDeleteClick(proc)}>
+              {procedures.map((proc) => {
+                const isSelected = selectedProcedures.includes(proc.id);
+                return (
+                  <tr
+                    key={proc.id}
+                    className={`border-b border-gray-200 transition hover:bg-gray-50 ${
+                      isSelected ? "bg-blue-50/70" : "bg-white"
+                    }`}
+                  >
+                    {/* Title Cell */}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        
+                        {/* --- (FIX) Avatar/Checkbox logic --- */}
+                        <div
+                          className="flex items-center justify-center h-8 w-8 cursor-pointer transition-all duration-200"
+                          onClick={() => toggleRowSelection(proc.id)}
+                        >
+                          {!isEditing ? (
+                            // State 1: No selection, Avatar dikhao
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback className="bg-blue-50 text-blue-500">
+                                <ClipboardList size={18} />
+                              </AvatarFallback>
+                            </Avatar>
+                          ) : (
+                            // State 2: Selection active, Checkbox dikhao
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => {}} // onClick parent div par hai
+                              readOnly // state parent se control ho raha hai
+                              className={`h-5 w-5 accent-blue-600 cursor-pointer ${isSelected ? "transition-transform duration-150 scale-110" : ""}`}
+                            />
+                          )}
+                        </div>
+
+                        {/* Title */}
+                        <span className="font-medium text-gray-800 select-none">
+                          {proc.title || "Untitled Procedure"}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* Dynamic Cells */}
+                    {visibleColumns.map((colName) => (
+                      <td key={colName} className="px-4 py-3 text-gray-600">
+                        <RenderTableCell proc={proc} columnName={colName} />
+                      </td>
+                    ))}
+
+                    {/* Actions Cell */}
+                    <td className="px-4 py-3 text-gray-600">
+                      <div className="flex items-center justify-end gap-4">
                         <button className="hover:text-blue-600">
-                          <MoreVertical size={18} />
+                          <Pencil size={18} />
                         </button>
-                      </MoreActionsMenu>
-                      
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        <button className="hover:text-blue-600">
+                          <Copy size={18} />
+                        </button>
+                        <MoreActionsMenu
+                          onDelete={() => handleDeleteClick(proc)}
+                        >
+                          <button className="hover:text-blue-600">
+                            <MoreVertical size={18} />
+                          </button>
+                        </MoreActionsMenu>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+
               {procedures.length === 0 && (
                 <tr>
                   <td
-                    className="px-4 py-6 text-center text-muted-foreground"
-                    colSpan={5} // 5 columns
+                    colSpan={totalColumns}
+                    className="text-center text-gray-500 py-6 italic"
                   >
                     No procedures found.
                   </td>
@@ -207,7 +321,7 @@ export function LibraryTable({
         </CardContent>
       </Card>
 
-      {/* Pagination (Exactly VendorTable jaisa, Card ke bahar) */}
+      {/* Pagination */}
       <div className="flex items-center justify-end pt-4">
         <div className="inline-flex items-center gap-4 rounded-md border bg-white p-2 shadow-sm">
           <span className="text-sm text-gray-600">
@@ -245,8 +359,8 @@ export function LibraryTable({
           </button>
         </div>
       </div>
-      
-      {/* 💡 8. Modal ko render kiya */}
+
+      {/* Delete Modal */}
       <ConfirmationModal
         isOpen={!!modalProc}
         onClose={() => setModalProc(null)}

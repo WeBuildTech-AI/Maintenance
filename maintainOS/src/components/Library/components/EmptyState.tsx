@@ -38,7 +38,7 @@ export default function EmptyState() {
         <h2 className="mb-3 text-2xl md:text-3xl font-semibold text-gray-900">
           Start adding Procedures to{" "}
           <span className="text-blue-600">webuildtech</span> on{" "}
-          <span className="text-blue-600">MaintainX</span>
+          <span className="text-blue-600">MaintainOS</span>
         </h2>
 
         <p className="mx-auto max-w-2xl text-base md:text-lg leading-relaxed text-gray-600">

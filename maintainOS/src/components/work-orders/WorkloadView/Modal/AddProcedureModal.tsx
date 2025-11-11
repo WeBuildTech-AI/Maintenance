@@ -112,7 +112,7 @@ export default function AddProcedureModal({ isOpen, onClose }: AddProcedureModal
             </div>
 
             <h3 className="text-3xl font-bold text-gray-900 mb-4 max-w-3xl">
-              Start adding Procedures to webuildtech on MaintainX
+              Start adding Procedures to webuildtech on MaintainOS
             </h3>
             <p className="text-base text-gray-600 max-w-2xl leading-relaxed">
               Press{" "}

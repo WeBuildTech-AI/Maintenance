@@ -31,6 +31,9 @@ const priorityToValue = (priority: string | null | undefined): number => {
   }
 };
 
+// --- 💡 (NEW) All columns jo user toggle kar sakta hai ---
+const allToggleableColumns = ["Last updated", "Category", "Created At"];
+
 export function Library() {
   const [viewMode, setViewMode] = useState<ViewMode>("panel"); // 'panel' matlab ToDo jaisa view
   const [searchQuery, setSearchQuery] = useState("");
@@ -44,10 +47,13 @@ export function Library() {
 
   // --- SORT MODAL KE LIYE STATE ---
   const [isSortModalOpen, setIsSortModalOpen] = useState(false);
-  // --- 💡 3. Default sort ko 'Title' kiya ---
   const [sortType, setSortType] = useState("Title");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const sortButtonRef = useRef<HTMLDivElement>(null); // Ref ko DIV banaya
+
+  // --- 💡 (NEW) Table columns ke liye state ---
+  const [visibleColumns, setVisibleColumns] =
+    useState<string[]>(allToggleableColumns);
 
   // --- Router hooks HATA DIYE GAYE ---
 
@@ -268,7 +274,8 @@ export function Library() {
                 sortType={sortType}
                 sortOrder={sortOrder}
                 onSortChange={handleSortChange}
-                onRefresh={fetchData} // <-- Yeh naya prop add kiya
+                onRefresh={fetchData}
+                visibleColumns={visibleColumns} // <-- (NEW) Pass state
               />
             )}
           </>
@@ -285,12 +292,17 @@ export function Library() {
         anchorRef={sortButtonRef}
       />
 
-      {/* ✅ --- SETTINGS MODAL ADDED HERE --- */}
+      {/* ✅ --- SETTINGS MODAL ADDED HERE (Updated) --- */}
       <SettingsModal
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
+        // --- (NEW) Naye props pass karein ---
+        allToggleableColumns={allToggleableColumns}
+        currentVisibleColumns={visibleColumns}
         onApply={(settings) => {
           console.log("Settings applied:", settings);
+          // --- (NEW) visibleColumns state ko update karein ---
+          setVisibleColumns(settings.visibleColumns);
           setShowSettings(false);
           // Optional: filter, sort, or re-fetch logic
         }}
