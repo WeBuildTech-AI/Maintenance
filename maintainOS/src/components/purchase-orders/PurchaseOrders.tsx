@@ -306,23 +306,21 @@ export function PurchaseOrders() {
 
     console.log("Editing PO:", poToEdit);
 
-    // 1. API data ko form state mein transform karein
     const formPO: NewPOFormType = {
       id: poToEdit.id,
       poNumber: poToEdit.poNumber || "",
       vendorId: poToEdit.vendor?.id || poToEdit.vendorId || "",
-
       items:
         poToEdit.orderItems && poToEdit.orderItems.length > 0
           ? poToEdit.orderItems.map((item) => ({
-              id: item.id || cryptoId(),
+              id: item.id ? item.id : `temp_${crypto.randomUUID()}`,
               partId: item.part?.id || item.partId || null,
               itemName: item.itemName || item.part?.name || "",
               partNumber: item.partNumber || item.part?.partNumber || "",
               quantity: item.unitsOrdered || 0,
               unitCost: item.unitCost || 0,
             }))
-          : [initialPOState.items[0]],
+          : [{ ...initialPOState.items[0], id: `temp_${crypto.randomUUID()}` }],
 
       shippingAddressId:
         poToEdit.shippingAddress?.id || poToEdit.shippingAddressId || "",
@@ -348,13 +346,8 @@ export function PurchaseOrders() {
       phoneOrMail: poToEdit.phoneOrMail || "",
     };
 
-    // 2. Form state ko set karein
     setNewPO(formPO);
-
-    // 3. --- NEW --- Original state ko bhi store karein
     setOriginalPOForEdit(formPO);
-
-    // 4. Modal kholein
     setIsEditingPO(true);
     setApiError(null);
     setAttachedFiles([]);
@@ -506,7 +499,7 @@ export function PurchaseOrders() {
         payload.orderItems = changedFormFields.items
           .filter((item) => item.itemName && item.itemName.trim() !== "")
           .map((item) => ({
-            id: item.id && !item.id.startsWith("temp_") ? item.id : undefined,
+            // id: item.id && !item.id.startsWith("temp_") ? item.id : undefined,
             partId: item.partId,
             itemName: item.itemName,
             partNumber: item.partNumber,

@@ -18,6 +18,7 @@ export interface AssetResponse {
 
 export interface CreateAssetData {
   organizationId: string;
+  year:number;
   name: string;
   description?: string;
   status?: string;

@@ -26,7 +26,8 @@ export function AssetHeaderComponent(
   setSearchQuery: Dispatch<SetStateAction<string>>,
   setShowNewAssetForm: Dispatch<SetStateAction<boolean>>,
   setShowSettings: Dispatch<SetStateAction<boolean>>,
-  setSelectedAsset: Dispatch<SetStateAction<boolean>>
+  setSelectedAsset: Dispatch<SetStateAction<boolean>>,
+  setIsSettingsModalOpen: Dispatch<SetStateAction<boolean>>
 ) {
   return (
     <header className=" border-border bg-card px-6 py-4">
@@ -93,8 +94,8 @@ export function AssetHeaderComponent(
         {/* Right: Settings button (only for table view) */}
         {viewMode === "table" && (
           <button
-            onClick={() => setShowSettings(true)}
-            className="p-2 rounded-md border hover:bg-gray-100 transition"
+           onClick={() => setIsSettingsModalOpen(true)}
+            className="p-2 cursor-pointer rounded-md border hover:bg-gray-100 transition"
           >
             <Settings className="h-5 w-5 text-orange-600" />
           </button>

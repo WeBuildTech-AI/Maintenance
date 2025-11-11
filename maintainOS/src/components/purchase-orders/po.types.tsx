@@ -25,6 +25,7 @@ export type POItem = {
 };
 
 export type NewPOForm = {
+  poNumber: string;
   vendorId: string;
   items: POItem[];
   shippingAddress: Address;

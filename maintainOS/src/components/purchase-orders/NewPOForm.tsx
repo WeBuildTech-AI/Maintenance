@@ -621,7 +621,7 @@ export function NewPOForm(props: NewPOFormProps) {
             {/* Totals Section */}
             {/* ... (Totals ka code same hai) ... */}
             <div className="flex items-center justify-end gap-6 mt-4">
-              {/* <button
+              <button
                 className="text-sm text-orange-600"
                 onClick={() =>
                   setNewPO((s) => ({
@@ -631,7 +631,7 @@ export function NewPOForm(props: NewPOFormProps) {
                 }
               >
                 + Add Taxes &amp; Costs
-              </button> */}
+              </button>
               <div className="flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
                 <Input
