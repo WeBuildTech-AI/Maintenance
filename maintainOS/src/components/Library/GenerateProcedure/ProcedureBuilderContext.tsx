@@ -39,14 +39,15 @@ import {
   ChevronRight,
   Copy,
 } from "lucide-react";
-import { DragEndEvent, DragOverEvent, DragStartEvent } from "@dnd-kit/core";
+// ✅ FIX: Yeh 'import' ab 'import type' hai
+import type { DragEndEvent, DragOverEvent, DragStartEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 // --- IMPORT THE CONVERSION FUNCTION ---
 import { convertStateToJSON } from "./utils/conversion";
 
 // --- 1. Define the Context Type (all state and handlers) ---
 interface ProcedureBuilderContextType {
-  // --- 💡 ADDED: name and description ---
+  // --- 庁 ADDED: name and description ---
   name: string;
   description: string;
   // --- END ADDITION ---
@@ -680,7 +681,7 @@ export function ProcedureBuilderProvider({
       ],
     };
 
-    // --- 💡 FIX: Sections are *always* added to the root. ---
+    // --- 庁 FIX: Sections are *always* added to the root. ---
     // We ignore the activeContainerId for sections.
     setFields((prev) => [...prev, newSection]);
 
@@ -1148,7 +1149,7 @@ export function ProcedureBuilderProvider({
         }
 
         if (targetContainer && targetContainer !== activeLocation.parent) {
-          // --- 💡 FIX: Enforce "No Nested Sections" rule ---
+          // --- 庁 FIX: Enforce "No Nested Sections" rule ---
           if (activeLocation.field.blockType === "section") {
             return prevFields; // Abort drop
           }
@@ -1184,7 +1185,7 @@ export function ProcedureBuilderProvider({
       } else {
         // --- Subcase 2b: Move between containers ---
 
-        // --- 💡 FIX: Enforce "No Nested Sections" rule ---
+        // --- 庁 FIX: Enforce "No Nested Sections" rule ---
         if (activeLocation.field.blockType === "section") {
           return prevFields; // Abort drop
         }
@@ -1200,7 +1201,7 @@ export function ProcedureBuilderProvider({
 
   // --- 5. Provide Context Value ---
   const contextValue: ProcedureBuilderContextType = {
-    // --- 💡 FIX: Pass name and description into context ---
+    // --- 庁 FIX: Pass name and description into context ---
     name,
     description,
     // --- END FIX ---

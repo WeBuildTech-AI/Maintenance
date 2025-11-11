@@ -15,7 +15,7 @@ import { MoreActionsMenu } from "./GenerateProcedure/components/MoreActionsMenu"
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { deleteProcedure } from "../../store/procedures/procedures.thunks"; // Path check kar lein
-import { AppDispatch } from "../../store"; // Path check kar lein
+import type { AppDispatch } from "../../store"; // ✅ FIX: 'import' ko 'import type' se badal diya
 
 // --- 庁 2. ConfirmationModal ko import kiya ---
 import { ConfirmationModal } from "./GenerateProcedure/components/ConfirmationModal";

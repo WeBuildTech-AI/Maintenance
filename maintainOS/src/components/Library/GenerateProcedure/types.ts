@@ -19,8 +19,8 @@ export interface FieldData {
   meterUnit?: string;
   selectedMeter?: string;
   description?: string;
-  hasDescription?: boolean; 
-  isRequired?: boolean; 
+  hasDescription?: boolean;
+  isRequired?: boolean;
   conditions?: ConditionData[];
 }
 
@@ -35,7 +35,7 @@ export interface ProcedureSettingsState {
   assets: string[];
   locations: string[];
   teamsInCharge: string[];
-  visibility: 'private' | 'public';
+  visibility: "private" | "public";
 }
 // --- END ADDITION ---
 

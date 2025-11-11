@@ -16,7 +16,7 @@ import { ConfirmationModal } from "../GenerateProcedure/components/ConfirmationM
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { deleteProcedure } from "../../../store/procedures/procedures.thunks";
-import { AppDispatch } from "../../../store";
+import type { AppDispatch } from "../../../store"; // ✅ FIX: 'import' ko 'import type' se badal diya
 
 function formatTableDate(dateString: string) {
   if (!dateString) return "—";
@@ -81,7 +81,7 @@ export function LibraryTable({
   );
   
   const selectedCount = selectedProcedures.length;
-  const isEditing = selectedCount > 0; 
+  const isEditing = selectedCount > 0;
   const areAllSelected =
     allProcedureIds.length > 0 && selectedCount === allProcedureIds.length;
   const isIndeterminate = selectedCount > 0 && !areAllSelected;
@@ -94,9 +94,9 @@ export function LibraryTable({
 
   const handleSelectAllToggle = () => {
     if (areAllSelected) {
-      setSelectedProcedures([]); 
+      setSelectedProcedures([]);
     } else {
-      setSelectedProcedures(allProcedureIds); 
+      setSelectedProcedures(allProcedureIds);
     }
   };
 
@@ -134,7 +134,7 @@ export function LibraryTable({
     } finally {
       setModalProc(null);
       onRefresh();
-      setSelectedProcedures([]); 
+      setSelectedProcedures([]);
     }
   };
 
@@ -173,7 +173,7 @@ export function LibraryTable({
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        ref={headerCheckboxRef} 
+                        ref={headerCheckboxRef}
                         checked={areAllSelected}
                         onChange={handleSelectAllToggle}
                         className="h-4 w-4 accent-blue-600 cursor-pointer"
@@ -232,7 +232,6 @@ export function LibraryTable({
                     {/* Title Cell */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        
                         <div
                           className="flex items-center justify-center h-8 w-8 cursor-pointer transition-all duration-200"
                           onClick={() => toggleRowSelection(proc.id)}
@@ -247,16 +246,20 @@ export function LibraryTable({
                             <input
                               type="checkbox"
                               checked={isSelected}
-                              onChange={() => {}} 
+                              onChange={() => {}}
                               readOnly
-                              className={`h-5 w-5 accent-blue-600 cursor-pointer ${isSelected ? "transition-transform duration-150 scale-110" : ""}`}
+                              className={`h-5 w-5 accent-blue-600 cursor-pointer ${
+                                isSelected
+                                  ? "transition-transform duration-150 scale-110"
+                                  : ""
+                              }`}
                             />
                           )}
                         </div>
 
                         {/* --- (UPDATED) Title --- */}
                         {/* Ab yeh clickable hai aur modal kholega */}
-                        <span 
+                        <span
                           className="font-medium text-gray-800 select-none cursor-pointer hover:text-blue-600 hover:underline"
                           onClick={() => onViewProcedure(proc)} // <-- (NEW) Click handler
                         >
