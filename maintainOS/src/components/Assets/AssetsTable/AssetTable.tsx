@@ -1,11 +1,21 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Card, CardContent } from "../../ui/card";
 import { Avatar, AvatarFallback } from "../../ui/avatar";
-import { Edit, Trash2 } from "lucide-react";
+// NEW: Import Loader2 for the loading spinner
+import {
+  CircleCheck,
+  Edit,
+  MapPin,
+  MessageCircleWarning,
+  Trash2,
+  Loader2,
+} from "lucide-react";
 import { formatDateOnly } from "../../utils/Date";
 import { UpdateAssetStatusModal } from "../AssetDetail/sections/AssetStatusReadings";
 import { assetService } from "../../../store/assets";
 import { Tooltip } from "../../ui/Tooltip";
+import toast from "react-hot-toast";
+// NEW: All 'Popover' and 'toast' imports have been removed.
 
 export function AssetTable({
   assets,
@@ -26,8 +36,46 @@ export function AssetTable({
   const [selectedStatusAsset, setSelectedStatusAsset] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // NEW: State for the custom popover
+  const [isCriticalityPopoverOpen, setIsCriticalityPopoverOpen] =
+    useState(false);
+  const [selectedCriticality, setSelectedCriticality] = useState("");
+  const [includeSubAssets, setIncludeSubAssets] = useState(false);
+  const [isUpdatingCriticality, setIsUpdatingCriticality] = useState(false);
+
+  // NEW: Refs to detect outside clicks
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
   // Some modal components have differing prop types in our codebase; cast to any to avoid TS prop checks here
   const StatusModal = UpdateAssetStatusModal as any;
+
+  // NEW: Click-outside-to-close logic for the custom popover
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // If the popover is open
+      if (
+        isCriticalityPopoverOpen &&
+        popoverRef.current &&
+        triggerRef.current
+      ) {
+        // And the click is NOT inside the popover
+        if (
+          !popoverRef.current.contains(event.target as Node) &&
+          // And the click is NOT on the trigger button
+          !triggerRef.current.contains(event.target as Node)
+        ) {
+          setIsCriticalityPopoverOpen(false);
+        }
+      }
+    };
+    // Add event listener
+    document.addEventListener("mousedown", handleClickOutside);
+    // Cleanup
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isCriticalityPopoverOpen]); // Only re-run if the popover's open state changes
 
   const renderInitials = (text: string) =>
     text
@@ -102,6 +150,48 @@ export function AssetTable({
     }
   };
 
+  // NEW: Handler function to apply criticality changes (uses alert() instead of toast)
+  const handleApplyCriticalityChanges = async () => {
+    if (!selectedCriticality || selectedAssetIds.length === 0) {
+      // Using alert() as a no-library notification
+      alert("Please select a criticality level.");
+      return;
+    }
+
+    setIsUpdatingCriticality(true);
+    try {
+      // --- API CALL ---
+      // Replace this with your actual API call, e.g.,
+      // await assetService.updateAssetsCriticality({ ... })
+      console.log("Updating assets:", {
+        ids: selectedAssetIds,
+        criticality: selectedCriticality,
+        includeSubAssets: includeSubAssets,
+      });
+
+      const payload = { criticality: selectedCriticality };
+
+      // Simulating network delay
+      await assetService.updateAsset(selectedAssetIds.toString(), payload);
+
+      // Using alert() as a no-library notification
+      toast.success(`${selectedAssetIds.length} asset(s) updated successfully!`);
+
+      // Reset state and fetch new data
+      fetchAssetsData();
+      setSelectedAssetIds([]);
+      setIsCriticalityPopoverOpen(false);
+      setSelectedCriticality("");
+      setIncludeSubAssets(false);
+
+    } catch (error) {
+      console.error("Failed to update criticality:", error);
+      toast.error("Failed to update asset criticality.");
+    } finally {
+      setIsUpdatingCriticality(false);
+    }
+  };
+
   const isAllSelected =
     assets.length > 0 &&
     assets.every((asset) => selectedAssetIds.includes(asset.id));
@@ -126,15 +216,49 @@ export function AssetTable({
                     />
                   </th>
 
-                  {/* Sticky Name Header */}
+                  {/* Sticky Name Header with actions */}
                   <th className="sticky left-[48px] z-30 bg-muted/60 w-[20%] px-4 py-3 text-left overflow-visible">
                     {selectedAssetIds.length > 0 ? (
                       <div className="flex gap-4">
                         {/* Delete button */}
-                        <div className="relative group inline-block">
-                          <Tooltip text="Delete">
+                        <Tooltip text="Delete">
+                          <button
+                            onClick={handleDelete}
+                            disabled={isDeleting}
+                            className={`flex items-center gap-1 transition ${
+                              isDeleting
+                                ? "text-orange-400 cursor-not-allowed"
+                                : "text-orange-600 hover:text-red-700"
+                            }`}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </Tooltip>
+
+                        {/* Edit Location button */}
+                        <Tooltip text="Edit Location">
+                          <button
+                            disabled={isDeleting}
+                            className={`flex items-center gap-1 transition ${
+                              isDeleting
+                                ? "text-orange-400 cursor-not-allowed"
+                                : "text-orange-600 hover:text-red-700"
+                            }`}
+                          >
+                            <MapPin size={16} />
+                          </button>
+                        </Tooltip>
+
+                        {/* NEW: Custom Criticality Popover */}
+                        <div className="relative">
+                          {" "}
+                          {/* NEW: Wrapper for positioning */}
+                          <Tooltip text="Edit Criticality">
                             <button
-                              onClick={handleDelete}
+                              ref={triggerRef} // NEW: Assign ref to trigger button
+                              onClick={() =>
+                                setIsCriticalityPopoverOpen((prev) => !prev)
+                              } // NEW: Toggle popover
                               disabled={isDeleting}
                               className={`flex items-center gap-1 transition ${
                                 isDeleting
@@ -142,26 +266,116 @@ export function AssetTable({
                                   : "text-orange-600 hover:text-red-700"
                               }`}
                             >
-                              <Trash2 size={16} />
+                              <MessageCircleWarning size={16} />
                             </button>
                           </Tooltip>
+                          {/* NEW: Custom Popover Content */}
+                          {isCriticalityPopoverOpen && (
+                            <div
+                              ref={popoverRef} // NEW: Assign ref to popover content
+                              // NEW: Styling to make it look like the image.
+                              className="absolute top-full left-0 z-50 w-48 p-4 mt-2 bg-card border border-border rounded-md shadow-lg"
+                            >
+                              <div className="flex flex-col gap-4">
+                                <h4 className="font-semibold text-sm text-foreground">
+                                  Edit Criticality
+                                </h4>
+                                <div className="grid gap-2 text-sm text-foreground">
+                                  {" "}
+                                  {/* NEW: Added text-foreground */}
+                                  <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                      type="radio"
+                                      name="low"
+                                      value="low"
+                                      checked={selectedCriticality === "low"}
+                                      onChange={(e) =>
+                                        setSelectedCriticality(e.target.value)
+                                      }
+                                      className="accent-orange-600"
+                                    />
+                                    Low
+                                  </label>
+                                  <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                      type="radio"
+                                      name="high"
+                                      value="high"
+                                      checked={selectedCriticality === "high"}
+                                      onChange={(e) =>
+                                        setSelectedCriticality(e.target.value)
+                                      }
+                                      className="accent-orange-600"
+                                    />
+                                    high
+                                  </label>
+                                  <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                      type="radio"
+                                      name="medium"
+                                      value="medium"
+                                      checked={selectedCriticality === "medium"}
+                                      onChange={(e) =>
+                                        setSelectedCriticality(e.target.value)
+                                      }
+                                      className="accent-orange-600"
+                                    />
+                                    Normal
+                                  </label>
+                                </div>
+                                <div className="border-t border-border -mx-4"></div>
+                                <div className="flex items-start gap-2 text-sm text-foreground">
+                                  {" "}
+                                  {/* NEW: Added text-foreground */}
+                                  <input
+                                    type="checkbox"
+                                    id="sub-assets"
+                                    checked={includeSubAssets}
+                                    onChange={(e) =>
+                                      setIncludeSubAssets(e.target.checked)
+                                    }
+                                    className="mt-1 cursor-pointer accent-orange-600"
+                                  />
+                                  <label
+                                    htmlFor="sub-assets"
+                                    className="cursor-pointer"
+                                  >
+                                    Edit Sub-Asset criticality as well
+                                  </label>
+                                </div>
+
+                                <button
+                                  onClick={handleApplyCriticalityChanges}
+                                  disabled={
+                                    !selectedCriticality ||
+                                    isUpdatingCriticality
+                                  }
+                                  className="w-full bg-orange-600 text-white px-3 py-1.5 text-sm rounded-md hover:bg-orange-700 disabled:bg-orange-300 disabled:cursor-not-allowed flex items-center justify-center"
+                                >
+                                  {isUpdatingCriticality ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    "Apply Changes"
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
-                        {/* Edit button */}
-                        <div className="relative group inline-block">
-                          <Tooltip text="Edit">
-                            <button
-                              // disabled={isDeleting}
-                              className={`flex items-center gap-1 transition ${
-                                isDeleting
-                                  ? "text-orange-400 cursor-not-allowed"
-                                  : "text-orange-600 hover:text-red-700"
-                              }`}
-                            >
-                              <Edit size={16} />
-                            </button>
-                          </Tooltip>
-                        </div>
+                        {/* Edit Status button */}
+                        <Tooltip text="Edit Status">
+                          <button
+                            disabled={isDeleting}
+                            className={`flex items-center gap-1 transition ${
+                              isDeleting
+                                ? "text-orange-400 cursor-not-allowed"
+                                : "text-orange-600 hover:text-red-700"
+                            }`}
+                          >
+                            <CircleCheck size={16} />
+                          </button>
+                        </Tooltip>
                       </div>
                     ) : (
                       "Name"
@@ -236,7 +450,7 @@ export function AssetTable({
                     >
                       <span className="flex items-center gap-2">
                         <span
-                          className={`h-1 w-2 rounded-full ${
+                          className={`h-2 w-2 rounded-full ${
                             asset.status === "online"
                               ? "bg-green-500"
                               : asset.status === "offline"
@@ -311,7 +525,7 @@ export function AssetTable({
                   <tr>
                     <td
                       className="px-4 py-4 text-center text-muted-foreground"
-                      colSpan={12}
+                      colSpan={14} // NEW: Updated colSpan to 14
                     >
                       No assets found.
                     </td>
@@ -323,7 +537,7 @@ export function AssetTable({
         </CardContent>
       </Card>
 
-      {/* ✅ Modal */}
+      {/* ✅ Modal (This component is still here, unmodified) */}
       {updateAssetModal && selectedStatusAsset && (
         <StatusModal
           asset={selectedStatusAsset}
