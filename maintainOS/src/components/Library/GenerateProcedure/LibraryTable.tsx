@@ -10,7 +10,6 @@ import {
   ChevronsUpDown,
   Trash2,
 } from "lucide-react";
-// --- (NEW) Imports updated ---
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { MoreActionsMenu } from "../GenerateProcedure/components/MoreActionsMenu";
 import { ConfirmationModal } from "../GenerateProcedure/components/ConfirmationModal";
@@ -39,6 +38,7 @@ interface LibraryTableProps {
   onSortChange: (type: string, order: "asc" | "desc") => void;
   onRefresh: () => void;
   visibleColumns: string[];
+  onViewProcedure: (procedure: any) => void; // <-- (NEW) Yeh prop add karein
 }
 
 const RenderTableCell = ({
@@ -67,13 +67,13 @@ export function LibraryTable({
   onSortChange,
   onRefresh,
   visibleColumns,
+  onViewProcedure, // <-- (NEW) Prop receive karein
 }: LibraryTableProps) {
   const [modalProc, setModalProc] = useState<any | null>(null);
   const [selectedProcedures, setSelectedProcedures] = useState<string[]>([]);
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
-  // --- "Select All" Logic ---
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
   const allProcedureIds = useMemo(
     () => procedures.map((p) => p.id),
@@ -81,25 +81,22 @@ export function LibraryTable({
   );
   
   const selectedCount = selectedProcedures.length;
-  // --- (FIX) 'isEditing' ab 'selectedCount' par depend karta hai ---
   const isEditing = selectedCount > 0; 
   const areAllSelected =
     allProcedureIds.length > 0 && selectedCount === allProcedureIds.length;
   const isIndeterminate = selectedCount > 0 && !areAllSelected;
 
-  // Indeterminate state ko handle karne ke liye
   useEffect(() => {
     if (headerCheckboxRef.current) {
       headerCheckboxRef.current.indeterminate = isIndeterminate;
     }
-  }, [isIndeterminate, isEditing]); // (FIX) isEditing par bhi depend karega
+  }, [isIndeterminate, isEditing]);
 
-  // Header checkbox toggle logic
   const handleSelectAllToggle = () => {
     if (areAllSelected) {
-      setSelectedProcedures([]); // Deselect all
+      setSelectedProcedures([]); 
     } else {
-      setSelectedProcedures(allProcedureIds); // Select all
+      setSelectedProcedures(allProcedureIds); 
     }
   };
 
@@ -164,12 +161,8 @@ export function LibraryTable({
             {/* Header */}
             <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500 border-b">
               <tr>
-                {/* --- (UPDATED) Title Column --- */}
                 <th className="w-[35%] px-4 py-3 text-left">
-                  {/* --- (FIX) Yahi hai main logic --- */}
                   {!isEditing ? (
-                    // --- State 1: No selection ---
-                    // Sirf Title aur Sort icon dikhega
                     <button
                       onClick={() => handleHeaderClick("Title")}
                       className="flex items-center gap-1 text-gray-600"
@@ -177,24 +170,18 @@ export function LibraryTable({
                       Title <SortIcon column="Title" />
                     </button>
                   ) : (
-                    // --- State 2: Selection active ---
-                    // "Edit" UI dikhega
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        ref={headerCheckboxRef} // Ref yahan move ho gaya
+                        ref={headerCheckboxRef} 
                         checked={areAllSelected}
                         onChange={handleSelectAllToggle}
                         className="h-4 w-4 accent-blue-600 cursor-pointer"
                       />
-
-                      {/* Edit text */}
                       <span className="text-sm font-medium text-gray-900">
                         Edit {selectedCount}{" "}
                         {selectedCount === 1 ? "Procedure" : "Procedures"}
                       </span>
-
-                      {/* Trash icon */}
                       <button
                         onClick={() => {
                           const first = procedures.find(
@@ -246,32 +233,33 @@ export function LibraryTable({
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         
-                        {/* --- (FIX) Avatar/Checkbox logic --- */}
                         <div
                           className="flex items-center justify-center h-8 w-8 cursor-pointer transition-all duration-200"
                           onClick={() => toggleRowSelection(proc.id)}
                         >
                           {!isEditing ? (
-                            // State 1: No selection, Avatar dikhao
                             <Avatar className="h-8 w-8">
                               <AvatarFallback className="bg-blue-50 text-blue-500">
                                 <ClipboardList size={18} />
                               </AvatarFallback>
                             </Avatar>
                           ) : (
-                            // State 2: Selection active, Checkbox dikhao
                             <input
                               type="checkbox"
                               checked={isSelected}
-                              onChange={() => {}} // onClick parent div par hai
-                              readOnly // state parent se control ho raha hai
+                              onChange={() => {}} 
+                              readOnly
                               className={`h-5 w-5 accent-blue-600 cursor-pointer ${isSelected ? "transition-transform duration-150 scale-110" : ""}`}
                             />
                           )}
                         </div>
 
-                        {/* Title */}
-                        <span className="font-medium text-gray-800 select-none">
+                        {/* --- (UPDATED) Title --- */}
+                        {/* Ab yeh clickable hai aur modal kholega */}
+                        <span 
+                          className="font-medium text-gray-800 select-none cursor-pointer hover:text-blue-600 hover:underline"
+                          onClick={() => onViewProcedure(proc)} // <-- (NEW) Click handler
+                        >
                           {proc.title || "Untitled Procedure"}
                         </span>
                       </div>
