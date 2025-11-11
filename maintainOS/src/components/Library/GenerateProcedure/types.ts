@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 
+// ✅ FIX: Added 'export'
 export interface ConditionData {
   id: number;
   conditionOperator: string | null; // e.g., 'is', 'higher than', 'between'
@@ -9,6 +10,7 @@ export interface ConditionData {
   isCollapsed?: boolean;
 }
 
+// ✅ FIX: Added 'export'
 export interface FieldData {
   id: number;
   selectedType: string;
@@ -24,12 +26,14 @@ export interface FieldData {
   conditions?: ConditionData[];
 }
 
+// ✅ FIX: Added 'export'
 export interface ProcedureBodyProps {
   name: string;
   description: string;
 }
 
 // --- ADDED THIS INTERFACE ---
+// ✅ FIX: Added 'export'
 export interface ProcedureSettingsState {
   categories: string[]; // In a real app, these might be objects with IDs
   assets: string[];
@@ -39,6 +43,7 @@ export interface ProcedureSettingsState {
 }
 // --- END ADDITION ---
 
+// ✅ FIX: Added 'export'
 export const logicConditionTypes: Record<string, string[]> = {
   "Number Field": [
     "higher than",
