@@ -668,7 +668,7 @@ export function PurchaseOrders() {
                                 </AvatarFallback>
                               </Avatar>
                               <div>
-                                <span className="font-medium">
+                                <span className="font-medium ">
                                   Purchase Order #{po.poNumber || "-"}
                                 </span>
                                 <div className="flex items-center gap-2 text-sm text-muted-foreground">

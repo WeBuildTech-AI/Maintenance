@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Building2,
   Check,
@@ -27,6 +27,7 @@ import toast from "react-hot-toast";
 import PurchaseStockUI from "./PurchaseStockUI";
 import ContinueModal from "./ContinueModal";
 import { Tooltip } from "../ui/tooltip";
+import   Loader from "../Loader/Loader";
 
 interface OrderItem {
   id: string;
@@ -129,6 +130,8 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
 }) => {
   const [fullFillModal, setFullFillModal] = React.useState(false);
   const [continueModal, setContinueModal] = React.useState(false);
+  const [commentData, setCommentData] = React.useState([]);
+  const [isLoading, setIsLoading] = React.useState(false);
   const [comment, setComment] = React.useState("");
   const modalRef = React.useRef<HTMLDivElement>(null);
 
@@ -153,6 +156,24 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
       toast.error("Failed to Complete");
     }
   };
+
+  const fetchPurchaseOrderComments = async () => {
+    try {
+      setIsLoading(true);
+      const res = await purchaseOrderService.FetchPurchaseOrderComment(
+        selectedPO.id
+      );
+      setCommentData(res);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPurchaseOrderComments();
+  }, [selectedPO.id]);
 
   const subtotal =
     selectedPO.orderItems?.reduce((acc, item) => {
@@ -193,6 +214,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
       toast.success("Comment added successfully!");
       setComment("");
       setShowCommentBox(false);
+      fetchPurchaseOrderComments();
       await fetchPurchaseOrder();
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Failed to add comment.");
@@ -262,9 +284,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                 </DropdownMenuItem>
                 {(selectedPO.status === "approved" ||
                   selectedPO.status === "pending") && (
-                  <DropdownMenuItem
-                    onClick={() => setModalAction("cancelled")}
-                  >
+                  <DropdownMenuItem onClick={() => setModalAction("cancelled")}>
                     <X className="h-4 w-4 mr-2" /> Cancel
                   </DropdownMenuItem>
                 )}
@@ -285,7 +305,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
         <div ref={topRef}>
           {/* STATUS + VENDOR */}
           <div className="grid grid-cols-2 gap-6">
-            <Card className="p-4">
+            <Card className="p-4 rounded-lg">
               <div className="flex items-center justify-between">
                 <div className="capitalize">
                   <div className="text-sm text-muted-foreground mb-1 ">
@@ -304,7 +324,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
               </div>
             </Card>
 
-            <Card className="p-4">
+            <Card className="p-4 rounded-lg">
               <div className="text-sm text-muted-foreground mb-1">Vendor</div>
               <div className="flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-muted-foreground" />
@@ -400,9 +420,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                     <td colSpan={5} className="p-3 text-right font-semibold">
                       Total
                     </td>
-                    <td className="p-3 font-semibold">
-                      {formatMoney(total)}
-                    </td>
+                    <td className="p-3 font-semibold">{formatMoney(total)}</td>
                   </tr>
                 </tbody>
               </table>
@@ -411,7 +429,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
 
           {/* ADDRESSES */}
           <div className="grid grid-cols-2 gap-6 mt-4">
-            <Card className="p-4">
+            <Card className="p-4 rounded-lg">
               <div className="text-sm text-muted-foreground mb-2">
                 Shipping Info
               </div>
@@ -422,7 +440,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                 </div>
               </div>
             </Card>
-            <Card className="p-4">
+            <Card className="p-4 rounded-lg">
               <div className="text-sm text-muted-foreground mb-2">
                 Shipping Contact
               </div>
@@ -437,7 +455,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
           </div>
 
           <div className="grid grid-cols-2 gap-6 mt-4">
-            <Card className="p-4">
+            <Card className="p-4 rounded-lg">
               <div className="text-sm text-muted-foreground mb-2">
                 Billing Info
               </div>
@@ -457,10 +475,57 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
         <div ref={commentsRef}>
           <h3 className="font-medium mb-3">Comments &amp; History</h3>
 
-          <div className="border rounded-lg p-4 mb-4">
-            <div className="text-sm text-muted-foreground mb-2">
-              No Comments Found
-            </div>
+          <div className="border rounded-lg p-4 mb-4 max-h-64 overflow-y-auto">
+            {isLoading ? (
+              <Loader />
+            ) : (
+              <>
+                {commentData?.length === 0 ? (
+                  <div className="text-sm text-muted-foreground mb-2">
+                    No Comments Found
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {commentData.map((item: any) => {
+                      const initials = item?.author?.email
+                        ? item.author.email
+                            .split("@")[0]
+                            .split(".")
+                            .map((n: string) => n[0]?.toUpperCase())
+                            .join("")
+                        : "?";
+
+                      const formattedDate = new Date(
+                        item.createdAt
+                      ).toLocaleString();
+
+                      return (
+                        <div
+                          key={item.id}
+                          className="flex items-start gap-3 border-b pb-3 last:border-b-0"
+                        >
+                          {/* Avatar Circle */}
+                          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-orange-100 text-orange-700 font-semibold">
+                            {initials}
+                          </div>
+
+                          {/* Comment Content */}
+                          <div className="flex-1">
+                            <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                              <span>{item.author?.email || "Unknown User"}</span>
+                              <span>{formattedDate}</span>
+                            </div>
+                            <p className="text-sm text-gray-800">
+                              {item.message}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           <Comment

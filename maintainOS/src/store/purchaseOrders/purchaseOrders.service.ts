@@ -95,4 +95,12 @@ export const purchaseOrderService = {
     const res = await api.post(`/purchase-orders/${id}/comment`, data);
     return res.data;
   },
+
+  FetchPurchaseOrderComment: async (
+    id: string
+  ): Promise<PurchaseOrderResponse> => {
+    const res = await api.get(`/purchase-orders/${id}/comments`);
+    return res.data;
+  },
+
 };
