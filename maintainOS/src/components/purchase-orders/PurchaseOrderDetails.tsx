@@ -83,7 +83,7 @@ interface PurchaseOrder {
 }
 
 interface PurchaseOrderDetailsProps {
-  selectedPO: PurchaseOrder;
+  selectedPO: string;
   updateState: (status: string) => void; // Sirf status update hota hai
   handleConfirm: (id: string) => void;
   setModalAction: (
