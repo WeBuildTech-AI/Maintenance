@@ -487,8 +487,8 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                 ) : (
                   <div className="space-y-4">
                     {commentData.map((item: any) => {
-                      const initials = item?.author?.email
-                        ? item.author.email
+                      const initials = item?.author?.name
+                        ? item.author.name
                             .split("@")[0]
                             .split(".")
                             .map((n: string) => n[0]?.toUpperCase())
@@ -503,7 +503,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                         <div
                           key={item.id}
                           className="flex items-start gap-3 border-b pb-3 last:border-b-0"
-                        >
+                        > 
                           {/* Avatar Circle */}
                           <div className="flex items-center justify-center w-10 h-10 rounded-full bg-orange-100 text-orange-700 font-semibold">
                             {initials}
@@ -512,7 +512,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                           {/* Comment Content */}
                           <div className="flex-1">
                             <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                              <span>{item.author?.email || "Unknown User"}</span>
+                              <span>{item.author?.name || "Unknown User"}</span>
                               <span>{formattedDate}</span>
                             </div>
                             <p className="text-sm text-gray-800">
