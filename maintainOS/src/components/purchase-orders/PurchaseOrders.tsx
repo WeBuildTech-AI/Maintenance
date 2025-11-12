@@ -300,17 +300,13 @@ export function PurchaseOrders() {
     if (!poToEdit) return;
 
     console.log("Editing PO:", poToEdit);
-
-    // Map Backend taxesAndCosts -> Frontend taxLines
-    // Backend: taxLabel, taxValue, taxCategory, isTaxable
-    // Frontend: label, value, type, isTaxable, id
     const mappedTaxLines = poToEdit.taxesAndCosts 
       ? poToEdit.taxesAndCosts.map((t: any) => ({
           id: cryptoId(), // Generate temp ID for React keys
           label: t.taxLabel,
           value: t.taxValue,
           // Convert "PERCENT" -> "percentage", "FIXED" -> "fixed"
-          type: t.taxCategory === 'PERCENT' ? 'percentage' : 'fixed', 
+          type: t.taxCategory === 'PERCENT' ? 'PERCENTAGE' : 'DOLLAR', 
           isTaxable: t.isTaxable
         }))
       : [];
@@ -374,7 +370,7 @@ export function PurchaseOrders() {
       taxValue: Number(tax.value),
       // Frontend "percentage" -> Backend "PERCENT"
       // Frontend "fixed" -> Backend "FIXED" (Assuming default if not percent)
-      taxCategory: tax.type === 'percentage' ? 'PERCENT' : 'FIXED',
+      taxCategory: tax.type === 'percentage' ? 'PERCENTAGE' : 'DOLLAR',
       isTaxable: !!tax.isTaxable
     }));
   };
