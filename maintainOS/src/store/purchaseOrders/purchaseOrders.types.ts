@@ -98,3 +98,8 @@ export interface PurchaseOrdersState {
   loading: boolean;
   error: string | null;
 }
+
+
+export interface CreatePurchaseOrderComment{
+  message:string
+}

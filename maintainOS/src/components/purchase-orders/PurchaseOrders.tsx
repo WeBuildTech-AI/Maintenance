@@ -82,7 +82,6 @@ export function PurchaseOrders() {
   const [pageSize, setPageSize] = useState(25);
   const [showSettings, setShowSettings] = useState(false);
   const [showCommentBox, setShowCommentBox] = useState(false);
-  const [comment, setComment] = useState("");
   const commentsRef = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState("details");
@@ -105,13 +104,6 @@ export function PurchaseOrders() {
     }
   };
 
-  const handleSend = () => {
-    if (comment.trim()) {
-      console.log("Comment sent:", comment);
-      setComment("");
-      setShowCommentBox(false);
-    }
-  };
 
   const [isEditingPO, setIsEditingPO] = useState(false);
 
@@ -563,6 +555,8 @@ export function PurchaseOrders() {
         await purchaseOrderService.deletePurchaseOrder(id);
         toast.success("Deleted Successfully");
         setSelectedPOId(null);
+      } else if (modalAction === "cancelled") {
+        await purchaseOrderService.cancelPurchaseOrder(id);
       }
       fetchPurchaseOrder();
     } catch (error) {
@@ -591,6 +585,12 @@ export function PurchaseOrders() {
       title: "Delete Confirmation",
       message: "Are you sure you want to Delete this?",
       confirmButtonText: "Delete",
+      variant: "warning" as const,
+    },
+    cancelled: {
+      title: "Cancelled Confirmation",
+      message: "Are you sure you want to Cancel this?",
+      confirmButtonText: "Cancel",
       variant: "warning" as const,
     },
   };
@@ -722,11 +722,8 @@ export function PurchaseOrders() {
                 addressToLine={addressToLine}
                 commentsRef={commentsRef}
                 StatusBadge={StatusBadge}
-                comment={comment}
                 showCommentBox={showCommentBox}
-                handleSend={handleSend}
                 setShowCommentBox={setShowCommentBox}
-                setComment={setComment}
                 handleEditClick={() => handleEditPO(selectedPO)}
                 fetchPurchaseOrder={fetchPurchaseOrder}
               />
@@ -819,10 +816,11 @@ function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
     pending: "bg-orange-50 text-orange-700 border-orange-200",
     approved: "bg-green-50 text-green-700 border-green-200",
-    sent: "bg-blue-50 text-blue-700 border-blue-200",
+    partially_fulfilled: "bg-blue-50 text-blue-700 border-blue-200",
     received: "bg-emerald-50 text-emerald-700 border-emerald-200",
     cancelled: "bg-red-50 text-red-700 border-red-200",
     Draft: "bg-gray-50 text-gray-700 border-gray-200",
+    completed:"bg-orange-50 text-orange-600 border-orange-600"
   };
   const className = map[status] || map["Draft"];
   return (

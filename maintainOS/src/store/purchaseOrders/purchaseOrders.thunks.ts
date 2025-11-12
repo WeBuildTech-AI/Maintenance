@@ -6,6 +6,7 @@ import type {
   UpdatePurchaseOrderData,
   CreateAddressData,
   PurchaseOrderResponse,
+  CreatePurchaseOrderComment,
 } from "./purchaseOrders.types";
 
 export const fetchPurchaseOrders = createAsyncThunk(
@@ -115,7 +116,7 @@ export const rejectPurchaseOrder = createAsyncThunk(
       return id;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to delete purchase order"
+        error.response?.data?.message || "Failed to reject purchase order"
       );
     }
   }
@@ -129,7 +130,47 @@ export const approvePurchaseOrder = createAsyncThunk(
       return id;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to delete purchase order"
+        error.response?.data?.message || "Failed to approve purchase order"
+      );
+    }
+  }
+);
+
+export const fullfillPurchaseOrder = createAsyncThunk(
+  "purchaseOrders/fulfillPurchaseOrder",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      await purchaseOrderService.fullfillPurchaseOrder(id);
+      return id;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fullfill purchase order"
+      );
+    }
+  }
+);
+export const completePurchaseOrder = createAsyncThunk(
+  "purchaseOrders/completePurchaseOrder",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      await purchaseOrderService.completePurchaseOrder(id);
+      return id;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to complete purchase order"
+      );
+    }
+  }
+);
+export const cancelPurchaseOrder = createAsyncThunk(
+  "purchaseOrders/cancelPurchaseOrder",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      await purchaseOrderService.cancelPurchaseOrder(id);
+      return id;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to cancel purchase order"
       );
     }
   }
@@ -150,6 +191,23 @@ export const updateItemOrder = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to update purchase order"
+      );
+    }
+  }
+);
+
+
+export const createPurchaseOrderComment = createAsyncThunk(
+  "purchaseOrders/createPurchaseOrderComment",
+  async (
+    { id, data }: { id: string; data: CreatePurchaseOrderComment },
+    { rejectWithValue }
+  ) => {
+    try {
+      return await purchaseOrderService.updatePurchaseOrder(id, data);
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to create the comment in purchase order"
       );
     }
   }
