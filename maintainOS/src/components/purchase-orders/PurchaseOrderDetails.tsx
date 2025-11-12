@@ -27,7 +27,7 @@ import toast from "react-hot-toast";
 import PurchaseStockUI from "./PurchaseStockUI";
 import ContinueModal from "./ContinueModal";
 import { Tooltip } from "../ui/tooltip";
-import   Loader from "../Loader/Loader";
+import Loader from "../Loader/Loader";
 
 interface OrderItem {
   id: string;
@@ -314,12 +314,34 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                   <StatusBadge status={selectedPO.status} />
                 </div>
                 <div className="capitalize">
-                  <div className="text-sm text-muted-foreground mb-1 ">
+                  <div className="text-sm text-muted-foreground mb-1">
                     Due Date
                   </div>
-                  <span className="capitalize text-sm font-medium">
-                    {formatDateOnly(selectedPO.dueDate)}
-                  </span>
+
+                  {(() => {
+                    const dueDate = new Date(selectedPO?.dueDate);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    const isOverdue = dueDate < today;
+
+                    return (
+                      <span
+                        className={`capitalize text-sm font-medium ${
+                          isOverdue ? "text-red-600 font-semibold" : ""
+                        }`}
+                      >
+                        {isOverdue ? (
+                          <div className="">
+                            <span>{formatDateOnly(selectedPO.dueDate)}</span>
+                            <p>Overdue</p>
+                          </div>
+                        ) : (
+                          formatDateOnly(selectedPO.dueDate)
+                        )}
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
             </Card>
@@ -360,8 +382,12 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                         {it.partNumber || it.part?.partNumber || "-"}
                       </td>
                       <td className="p-3 text-center">{it.unitsOrdered}</td>
-                      <td className="p-3 text-center">{it.unitsReceived || 0}</td>
-                      <td className="p-3 text-right">{formatMoney(it.unitCost)}</td>
+                      <td className="p-3 text-center">
+                        {it.unitsReceived || 0}
+                      </td>
+                      <td className="p-3 text-right">
+                        {formatMoney(it.unitCost)}
+                      </td>
                       <td className="p-3 text-right">
                         {formatMoney(
                           it.price
@@ -377,7 +403,9 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                     <td colSpan={5} className="p-3 text-right font-medium">
                       Subtotal
                     </td>
-                    <td className="p-3 text-right font-medium">{formatMoney(subtotal)}</td>
+                    <td className="p-3 text-right font-medium">
+                      {formatMoney(subtotal)}
+                    </td>
                   </tr>
 
                   {/* Taxes and Costs */}
@@ -420,7 +448,9 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                     <td colSpan={5} className="p-3 text-right font-semibold">
                       Total
                     </td>
-                    <td className="p-3 font-semibold text-right">{formatMoney(total)}</td>
+                    <td className="p-3 font-semibold text-right">
+                      {formatMoney(total)}
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -486,7 +516,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {commentData.map((item: any) => {
+                    {[...commentData].reverse().map((item: any) => {
                       const initials = item?.author?.name
                         ? item.author.name
                             .split("@")[0]
@@ -503,7 +533,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                         <div
                           key={item.id}
                           className="flex items-start gap-3 border-b pb-3 last:border-b-0"
-                        > 
+                        >
                           {/* Avatar Circle */}
                           <div className="flex items-center justify-center w-10 h-10 rounded-full bg-orange-100 text-orange-700 font-semibold">
                             {initials}
