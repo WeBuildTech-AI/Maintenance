@@ -5,6 +5,7 @@ import {
   Building2,
   Edit,
   FastForward,
+  LinkIcon,
   MapPin,
   MoreHorizontal,
   Plus,
@@ -26,8 +27,16 @@ import type { AppDispatch, RootState } from "../../../store";
 import { useSelector } from "react-redux";
 import MeterDeleteModal from "../MeterDeleteModal";
 import RecordReadingModal from "./RecordReadingModal"; // 👈 Naya modal import karein
+import toast from "react-hot-toast";
+import { Tooltip } from "../../ui/tooltip";
 
-export function MeterDetail({ selectedMeter, handleDeleteMeter , fetchMeters , setShowReadingMeter , setIsRecordModalOpen }: any) {
+export function MeterDetail({
+  selectedMeter,
+  handleDeleteMeter,
+  fetchMeters,
+  setShowReadingMeter,
+  setIsRecordModalOpen,
+}: any) {
   const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
 
@@ -60,6 +69,19 @@ export function MeterDetail({ selectedMeter, handleDeleteMeter , fetchMeters , s
           </h1>
           <div className="flex items-center gap-2">
             {/* ▼ Button pr onClick event add karein */}
+            <Tooltip text="Copy Link">
+              <button
+                title="Copy Link"
+                onClick={() => {
+                  const url = `${window.location.origin}/meters/${selectedMeter.id}`;
+                  navigator.clipboard.writeText(url);
+                  toast.success("Meter link copied!");
+                }}
+                className="cursor-pointer rounded-md p-2 text-orange-600"
+              >
+                <LinkIcon size={18} />
+              </button>
+            </Tooltip>
             <Button
               className="gap-2 bg-orange-600 hover:bg-orange-700"
               onClick={() => setIsRecordModalOpen(true)} // 👈 Modal open karne ke liye state update karein
@@ -117,7 +139,10 @@ export function MeterDetail({ selectedMeter, handleDeleteMeter , fetchMeters , s
 
       {/* Content */}
       <div className="flex-1 p-6 space-y-8 overflow-auto">
-        <MeterReadings selectedMeter={selectedMeter} setShowReadingMeter={setShowReadingMeter} />
+        <MeterReadings
+          selectedMeter={selectedMeter}
+          setShowReadingMeter={setShowReadingMeter}
+        />
         <MeterDetailsSection selectedMeter={selectedMeter} />
         <MeterAutomations />
         <MeterWorkOrders selectedMeter={selectedMeter} />

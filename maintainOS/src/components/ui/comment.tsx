@@ -1,7 +1,5 @@
-import { Send, X, XIcon } from "lucide-react"; // Send icon add kiya
+import { Send, X, } from "lucide-react"; // Send icon add kiya
 import React from "react";
-import purchaseOrderService from "./purchaseOrderService"; // Service import karein
-import { toast } from "react-hot-toast"; // Toast import karein
 
 type CommentProps = {
   showCommentBox: boolean;

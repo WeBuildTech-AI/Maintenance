@@ -11,6 +11,7 @@ import { useProcedureBuilder } from "../ProcedureBuilderContext";
 import type { FieldData } from "../types";
 import { FieldContentRenderer } from "./FieldContentRenderer";
 import { ConditionLogicEditor } from "./ConditionLogicEditor";
+import { Tooltip } from "../../../ui/tooltip";
 
 interface FieldEditorProps {
   field: FieldData;
@@ -99,9 +100,8 @@ export function FieldEditor({
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center">
                         {
-                          fieldTypes.find(
-                            (f) => f.label === field.selectedType
-                          )?.icon
+                          fieldTypes.find((f) => f.label === field.selectedType)
+                            ?.icon
                         }
                       </div>
                       <span>{field.selectedType}</span>
@@ -180,35 +180,43 @@ export function FieldEditor({
             >
               <div className="flex gap-4">
                 {logicEnabledFieldTypes.includes(field.selectedType) && (
-                  <button
-                    ref={(el) =>
-                      (logicEditorButtonRefs.current[field.id] = el)
-                    }
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setLogicEditorOpen(
-                        logicEditorOpen === field.id ? null : field.id
-                      );
-                    }}
-                    className={`hover:text-blue-600 ${
-                      logicEditorOpen === field.id ? "text-blue-600" : ""
-                    }`}
-                  >
-                    <Share2 size={18} />
-                  </button>
+                  <Tooltip text="Share">
+                    <button
+                      ref={(el) =>
+                        (logicEditorButtonRefs.current[field.id] = el)
+                      }
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setLogicEditorOpen(
+                          logicEditorOpen === field.id ? null : field.id
+                        );
+                      }}
+                      className={`hover:text-blue-600 ${
+                        logicEditorOpen === field.id ? "text-blue-600" : ""
+                      }`}
+                    >
+                      <Share2 size={18} />
+                    </button>
+                  </Tooltip>
                 )}
-                <button className="hover:text-blue-600">
-                  <Link2 size={18} />
-                </button>
-                <button className="hover:text-blue-600">
-                  <FileText size={18} />
-                </button>
-                <button
-                  onClick={() => handleDeleteField(field.id)}
-                  className="hover:text-red-500"
-                >
-                  <Trash2 size={18} />
-                </button>
+                <Tooltip text="Copy Link">
+                  <button className="hover:text-blue-600">
+                    <Link2 size={18} />
+                  </button>
+                </Tooltip>
+                <Tooltip text="File">
+                  <button className="hover:text-blue-600">
+                    <FileText size={18} />
+                  </button>
+                </Tooltip>
+                <Tooltip text="Delete">
+                  <button
+                    onClick={() => handleDeleteField(field.id)}
+                    className="hover:text-red-500"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </Tooltip>
               </div>
 
               <div className="flex items-center gap-2">

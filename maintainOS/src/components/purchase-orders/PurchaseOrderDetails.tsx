@@ -179,29 +179,21 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
       toast.error("Purchase Order ID is missing.");
       return;
     }
-
-    // setIsCommentLoading(true);
-
     try {
-      // 2. Payload
       const payload = {
         message: comment,
       };
-
-      // 3. SERVICE CALL (YAHAN API IMPLEMENT HO RAHI HAI)
       await purchaseOrderService.createPurchaseOrderComment(poId, payload);
 
-      // 4. Success Handling
       toast.success("Comment added successfully!");
-      setComment(""); // Text clear karein
-      setShowCommentBox(false); // Box band karein
-
-      // 5. Data Refresh
+      setComment("");
+      setShowCommentBox(false);
       if (fetchPurchaseOrder) {
         await fetchPurchaseOrder();
       }
     } catch (error: any) {
       // 6. Error Handling
+      toast.error("Failed to add comment.");
       toast.error(error?.response?.data?.message || "Failed to add comment.");
     } finally {
       // 7. Loading state reset

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Copy, MoreHorizontal } from "lucide-react";
+import { Copy, Link, MoreHorizontal } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { Button } from "../../ui/button";
 import {
@@ -10,7 +10,7 @@ import {
 } from "../../ui/dropdown-menu";
 import { type Vendor } from "../vendors.types";
 import DeleteModal from "./DeleteModal";
-
+import { Tooltip } from "../../ui/tooltip";
 
 interface VendorHeaderProps {
   vendor: Vendor;
@@ -29,7 +29,11 @@ export default function VendorHeader({
   // ✅ Close modal on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (showDeleteModal && modalRef.current && !modalRef.current.contains(e.target as Node)) {
+      if (
+        showDeleteModal &&
+        modalRef.current &&
+        !modalRef.current.contains(e.target as Node)
+      ) {
         setShowDeleteModal(false);
       }
     };
@@ -63,18 +67,20 @@ export default function VendorHeader({
           {/* Action Buttons */}
           <div className="flex items-center gap-2 text-blue-600">
             {/* Copy Vendor Link */}
-            <button
-              type="button"
-              onClick={() => {
-                const url = `${window.location.origin}/vendors/${vendor.id}`;
-                navigator.clipboard.writeText(url);
-                toast.success("Vendor link copied!"); // ✅ Added toast here too
-              }}
-              className="p-2 hover:text-blue-800 flex items-center justify-center"
-              title="Copy Vendor Link"
-            >
-              <Copy className="w-3 h-3" />
-            </button>
+            <Tooltip text="Copy Link">
+              <button
+                type="button"
+                onClick={() => {
+                  const url = `${window.location.origin}/vendors/${vendor.id}`;
+                  navigator.clipboard.writeText(url);
+                  toast.success("Vendor link copied!"); // ✅ Added toast here too
+                }}
+                className="p-2 hover:text-blue-800 flex items-center justify-center"
+                title="Copy Vendor Link"
+              >
+                <Link className="w-3 h-3" />
+              </button>
+            </Tooltip>
 
             {/* New Purchase Order */}
             <button className="flex items-center gap-1 border border-blue-600 text-blue-600 rounded-md px-3 py-1.5 text-sm font-medium hover:bg-blue-50">
