@@ -1,12 +1,16 @@
 import {
   Search,
   ChevronDown,
-  Link2,
   FileText,
-  Trash2,
   MoreVertical,
   Share2,
+  Link2,
+  Trash2,
+  X,
+  Trash,
+  File, // File icon import
 } from "lucide-react";
+import { useRef } from "react";
 import { useProcedureBuilder } from "../ProcedureBuilderContext";
 import type { FieldData } from "../types";
 import { FieldContentRenderer } from "./FieldContentRenderer";
@@ -46,17 +50,64 @@ export function FieldEditor({
     handleToggleDescription,
     handleDuplicateField,
     handleFieldPropChange,
+    setIsLinkModalOpen,
+    handleAddCondition,
   } = useProcedureBuilder();
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isRequired = field.isRequired || false;
   const setIsRequired = (isChecked: boolean) => {
     handleToggleRequired(field.id, isChecked);
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      const url = loadEvent.target?.result as string;
+      if (url) {
+        const newAttachment = {
+          id: Date.now().toString(),
+          name: file.name,
+          url: url,
+          type: file.type,
+        };
+        const newAttachments = [...(field.attachments || []), newAttachment];
+        handleFieldPropChange(field.id, "attachments", newAttachments);
+      }
+    };
+    reader.readAsDataURL(file);
+
+    if (e.target) e.target.value = "";
+  };
+
+  const deleteAttachment = (idToDelete: string) => {
+    const newAttachments = field.attachments?.filter(
+      (a) => a.id !== idToDelete
+    );
+    handleFieldPropChange(field.id, "attachments", newAttachments);
+  };
+
+  const deleteLink = (idToDelete: string) => {
+    const newLinks = field.links?.filter((l) => l.id !== idToDelete);
+    handleFieldPropChange(field.id, "links", newLinks);
+  };
+
   return (
     // --- Drag Handle (Hidden, for spacing) ---
     <div className="flex gap-2 items-start">
       <div className="w-[20px]"></div>
+
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        style={{ display: "none" }}
+        accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt"
+      />
 
       {/* --- Expanded Field Body --- */}
       <div className="flex-1 mb-6 ml-[-28px]">
@@ -164,6 +215,121 @@ export function FieldEditor({
               />
             )}
 
+            {/* --- Links Display --- */}
+            {field.links && field.links.length > 0 && (
+              <div className="mb-3 space-y-2">
+                {field.links.map((link) => (
+                  <div
+                    key={link.id}
+                    className="p-2 bg-blue-50 rounded border border-blue-200 flex items-center"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-center gap-2 text-blue-600 min-w-0">
+                      <Link2 size={16} className="flex-shrink-0" />
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-medium hover:underline truncate"
+                        title={link.text || link.url}
+                      >
+                        {link.text || link.url}
+                      </a>
+                    </div>
+                    <button
+                      onClick={() => deleteLink(link.id)}
+                      className="text-gray-400 hover:text-red-500 ml-auto flex-shrink-0"
+                    >
+                      <Trash size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* --- Attachments Display --- */}
+            {field.attachments && field.attachments.length > 0 && (
+              <div className="mb-3 space-y-3">
+                {field.attachments.map((attachment) => (
+                  <div
+                    key={attachment.id}
+                    className="relative"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {attachment.type.startsWith("image/") ? (
+                      // --- IMAGE PREVIEW (Opens in new tab) ---
+                      <div className="relative w-fit">
+                        <a
+                          href={attachment.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <img
+                            src={attachment.url}
+                            alt={attachment.name}
+                            className="object-cover rounded-md border border-gray-300"
+                            style={{ width: "9.5rem", height: "9.5rem" }}
+                          />
+                        </a>
+                        <button
+                          onClick={() => deleteAttachment(attachment.id)}
+                          style={{
+                            position: "absolute",
+                            top: "-0.5rem",
+                            right: "-0.5rem",
+                            background: "rgba(0, 0, 0, 0.75)",
+                            color: "white",
+                            borderRadius: "9999px",
+                            padding: "0.125rem",
+                            zIndex: 10,
+                            cursor: "pointer",
+                            border: "none",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      // --- FILE PREVIEW (Triggers download) ---
+                      <div className="relative flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-md w-full sm:w-2/3">
+                        {/* --- 🐞 YEH HAI AAPKA FIX --- */}
+                        <a
+                          href={attachment.url}
+                          download={attachment.name} // <-- YEH FILE KO DOWNLOAD KARWAYEGA
+                          className="flex items-center gap-3 min-w-0"
+                        >
+                          <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-white text-gray-500 rounded-lg border border-gray-200">
+                            <span className="text-xs font-bold">
+                              {attachment.name
+                                .split(".")
+                                .pop()
+                                ?.toUpperCase() || "FILE"}
+                            </span>
+                          </div>
+                          <span
+                            className="text-sm text-gray-800 truncate"
+                            title={attachment.name}
+                          >
+                            {attachment.name}
+                          </span>
+                        </a>
+                        {/* --- END FIX --- */}
+                        <button
+                          onClick={() => deleteAttachment(attachment.id)}
+                          className="text-gray-400 hover:text-gray-600 flex-shrink-0 ml-2"
+                        >
+                          <X size={20} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* --- Field Content (Switch statement) --- */}
             <div onClick={(e) => e.stopPropagation()}>
               <FieldContentRenderer
@@ -178,7 +344,73 @@ export function FieldEditor({
               className="flex justify-between items-center mt-4 text-gray-500"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex gap-4">
+              {/* Left Side */}
+              <div className="flex items-center gap-4">
+                {field.selectedType === "Date" && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <label
+                      style={{
+                        position: "relative",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={!!field.includeTime}
+                        onChange={(e) =>
+                          handleFieldPropChange(
+                            field.id,
+                            "includeTime",
+                            e.target.checked
+                          )
+                        }
+                        style={{
+                          position: "absolute",
+                          width: "1px",
+                          height: "1px",
+                          margin: "-1px",
+                          padding: "0",
+                          overflow: "hidden",
+                          clip: "rect(0, 0, 0, 0)",
+                          whiteSpace: "nowrap",
+                          borderWidth: "0",
+                        }}
+                      />
+                      <div
+                        style={{
+                          width: "2.25rem",
+                          height: "1.25rem",
+                          backgroundColor: field.includeTime
+                            ? "#2563eb"
+                            : "#d1d5db",
+                          borderRadius: "9999px",
+                          transition: "background-color 0.2s ease-in-out",
+                        }}
+                      ></div>
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: "2px",
+                          top: "2px",
+                          backgroundColor: "#ffffff",
+                          width: "1rem",
+                          height: "1rem",
+                          borderRadius: "50%",
+                          transition: "transform 0.2s ease-in-out",
+                          transform: field.includeTime
+                            ? "translateX(1rem)"
+                            : "translateX(0)",
+                        }}
+                      ></div>
+                    </label>
+                    <span className="text-sm text-gray-700">
+                      Include Time Field
+                    </span>
+                  </label>
+                )}
+
                 {logicEnabledFieldTypes.includes(field.selectedType) && (
                   <button
                     ref={(el) =>
@@ -189,6 +421,9 @@ export function FieldEditor({
                       setLogicEditorOpen(
                         logicEditorOpen === field.id ? null : field.id
                       );
+                      if (!field.conditions || field.conditions.length === 0) {
+                        handleAddCondition(field.id);
+                      }
                     }}
                     className={`hover:text-blue-600 ${
                       logicEditorOpen === field.id ? "text-blue-600" : ""
@@ -197,12 +432,24 @@ export function FieldEditor({
                     <Share2 size={18} />
                   </button>
                 )}
-                <button className="hover:text-blue-600">
+                <button
+                  onClick={() => setIsLinkModalOpen({ fieldId: field.id })}
+                  className="hover:text-blue-600"
+                >
                   <Link2 size={18} />
                 </button>
-                <button className="hover:text-blue-600">
+
+                <button
+                  className="hover:text-blue-600"
+                  title="Add Pictures/Files"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    fileInputRef.current?.click();
+                  }}
+                >
                   <FileText size={18} />
                 </button>
+
                 <button
                   onClick={() => handleDeleteField(field.id)}
                   className="hover:text-red-500"
@@ -211,6 +458,7 @@ export function FieldEditor({
                 </button>
               </div>
 
+              {/* Right Side */}
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-700">Required</span>
                 <label
@@ -315,7 +563,7 @@ export function FieldEditor({
           </div>
         </div>
 
-        {/* --- Logic Editor --- */}
+        {/* --- Logic Editor (No change) --- */}
         {logicEditorOpen === field.id &&
           logicEnabledFieldTypes.includes(field.selectedType) && (
             <div

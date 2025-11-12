@@ -13,7 +13,6 @@ export function ConfirmationModal({
   isOpen,
   onClose,
   onConfirm,
-  title, // Prop receive kiya
   message,
 }: ConfirmationModalProps) {
   if (!isOpen) {
@@ -53,14 +52,14 @@ export function ConfirmationModal({
     color: "#6b7280",
   };
 
-  // Title style (ab use nahi ho raha)
-  const titleStyle: React.CSSProperties = {
-    fontSize: "1.25rem",
-    fontWeight: 600,
-    color: "#111827",
-    textAlign: "center",
-    marginBottom: "24px",
-  };
+  // // Title style (ab use nahi ho raha)
+  // const titleStyle: React.CSSProperties = {
+  //   fontSize: "1.25rem",
+  //   fontWeight: 600,
+  //   color: "#111827",
+  //   textAlign: "center",
+  //   marginBottom: "24px",
+  // };
 
   const messageStyle: React.CSSProperties = {
     fontSize: "1rem",

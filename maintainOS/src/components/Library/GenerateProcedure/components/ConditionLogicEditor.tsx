@@ -1,6 +1,10 @@
 import { Share2, ChevronRight, MoreVertical, ChevronDown } from "lucide-react";
 import { useProcedureBuilder } from "../ProcedureBuilderContext";
-import {type FieldData, type ConditionData, logicConditionTypes } from "../types";
+import {
+  type FieldData,
+  type ConditionData,
+  logicConditionTypes,
+} from "../types";
 import { ProcedureBlock } from "./ProcedureBlock";
 import {
   SortableContext,
@@ -8,10 +12,7 @@ import {
 } from "@dnd-kit/sortable";
 
 export function ConditionLogicEditor({ field }: { field: FieldData }) {
-  const {
-    logicEditorPanelRefs,
-    handleAddCondition,
-  } = useProcedureBuilder();
+  const { logicEditorPanelRefs, handleAddCondition } = useProcedureBuilder();
 
   return (
     <div
@@ -60,26 +61,24 @@ function ConditionBlock({
     conditionOpPanelRefs,
     conditionMenuButtonRefs,
     conditionMenuPanelRefs,
-    setActiveContainerId, 
-    activeField, 
-    overContainerId, 
+    setActiveContainerId,
+    activeField,
+    overContainerId,
   } = useProcedureBuilder();
 
   const parentField = findFieldRecursive(fields, parentFieldId);
   if (!parentField) return null; // Safety check
 
-  // --- LOGIC for highlighting drop zone ---
   const isDragging = !!activeField;
   const isOverThisCondition = overContainerId === `condition-${condition.id}`;
-  const canDropOnCondition = isDragging && activeField?.blockType !== 'section';
-  // --- END LOGIC ---
+  const canDropOnCondition = isDragging && activeField?.blockType !== "section";
 
   const operators = logicConditionTypes[parentField.selectedType] || [];
 
   const commonSelectClass =
     "border border-yellow-500 rounded-md px-2 py-1 text-sm bg-white focus:outline-none";
   const commonInputClass =
-    "border-b border-gray-400 bg-transparent px-1 py-0.5 text-sm w-24 focus:outline-none focus:ring-0 focus:border-blue-500"; 
+    "border-b border-gray-400 bg-transparent px-1 py-0.5 text-sm w-24 focus:outline-none focus:ring-0 focus:border-blue-500";
 
   const handleValueChange = (val: string) =>
     handleConditionChange(parentFieldId, condition.id, "conditionValue", val);
@@ -189,7 +188,7 @@ function ConditionBlock({
           conditionOperatorDropdownOpen === condition.id ||
           conditionMenuOpen === condition.id
             ? 30
-            : 10, 
+            : 10,
       }}
       className="pl-10 mb-6"
       onClick={(e) => {
@@ -201,7 +200,7 @@ function ConditionBlock({
       <button
         onClick={(e) => {
           e.stopPropagation();
-          handleToggleConditionCollapse(parentFieldId, condition.id)
+          handleToggleConditionCollapse(parentFieldId, condition.id);
         }}
         className="absolute left-0 top-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600 z-20"
       >
@@ -229,11 +228,13 @@ function ConditionBlock({
                     : condition.id
                 );
               }}
+              // --- 🐞 YEH HAI AAPKA FIX ---
               className={`flex items-center justify-between border ${
                 conditionOperatorDropdownOpen === condition.id
                   ? "border-blue-400"
-                  : "border-gray-300"
+                  : "border-gray-300" // <-- ':' Yahaan add kiya hai
               } rounded-md px-2 py-1 text-sm bg-white w-36`}
+              // --- END FIX ---
             >
               <span>{condition.conditionOperator || "Select..."}</span>
               <ChevronDown
@@ -253,11 +254,12 @@ function ConditionBlock({
                   left: 0,
                   top: "100%",
                   marginTop: "0.25rem",
-                  width: "9rem", 
+                  width: "9rem",
                   backgroundColor: "#fff",
                   border: "1px solid #e5e7eb",
                   borderRadius: "0.375rem",
-                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)",
+                  boxShadow:
+                    "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)",
                   zIndex: 9999,
                 }}
               >
@@ -302,14 +304,15 @@ function ConditionBlock({
               ref={(el) => (conditionMenuPanelRefs.current[condition.id] = el)}
               style={{
                 position: "absolute",
-                right: 0, // This fixes the overflow
+                right: 0,
                 top: "100%",
                 marginTop: "0.25rem",
                 width: "7rem",
                 backgroundColor: "#fff",
                 border: "1px solid #e5e7eb",
                 borderRadius: "0.375rem",
-                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)",
+                boxShadow:
+                  "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)",
                 zIndex: 9999,
               }}
             >
@@ -330,19 +333,24 @@ function ConditionBlock({
       {!condition.isCollapsed && (
         <>
           <SortableContext
-            id={`condition-${condition.id}`} 
+            id={`condition-${condition.id}`}
             items={condition.fields.map((f) => f.id)}
             strategy={verticalListSortingStrategy}
           >
-            <div className={`space-y-4 relative z-10 transition-colors ${
-              canDropOnCondition && isOverThisCondition ? 'bg-yellow-50 rounded-md' : ''
-            }`}>
+            <div
+              className={`space-y-4 relative z-10 transition-colors ${
+                canDropOnCondition && isOverThisCondition
+                  ? "bg-yellow-50 rounded-md"
+                  : ""
+              }`}
+            >
               {condition.fields.map((subField, index) => (
                 <ProcedureBlock
                   key={subField.id}
                   field={subField}
                   index={index}
                   isNested={true}
+                  containerId={condition.id}
                 />
               ))}
             </div>

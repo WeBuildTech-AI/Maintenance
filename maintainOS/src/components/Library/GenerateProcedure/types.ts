@@ -1,5 +1,3 @@
-import { ReactNode } from "react";
-
 // ✅ FIX: Added 'export'
 export interface ConditionData {
   id: number;
@@ -10,7 +8,7 @@ export interface ConditionData {
   isCollapsed?: boolean;
 }
 
-// ✅ FIX: Added 'export'
+// --- 🐞 YEH INTERFACE UPDATE KIYA GAYA HAI ---
 export interface FieldData {
   id: number;
   selectedType: string;
@@ -24,7 +22,24 @@ export interface FieldData {
   hasDescription?: boolean;
   isRequired?: boolean;
   conditions?: ConditionData[];
+  includeTime?: boolean;
+
+  // --- "link" ko "links" (array) bana diya ---
+  links?: {
+    id: string;
+    url: string;
+    text: string;
+  }[];
+  
+  // --- "attachment" ko "attachments" (array) bana diya ---
+  attachments?: {
+    id: string;
+    name: string;
+    url: string; // dataURL for preview
+    type: string;
+  }[];
 }
+// --- END UPDATE ---
 
 // ✅ FIX: Added 'export'
 export interface ProcedureBodyProps {

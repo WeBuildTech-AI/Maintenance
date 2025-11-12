@@ -1,4 +1,4 @@
-import { Trash2, GripVertical, Copy } from "lucide-react"; 
+import { Trash2, GripVertical, Copy } from "lucide-react";
 import { useProcedureBuilder } from "../ProcedureBuilderContext";
 import { FieldData } from "../types";
 import { useSortable } from "@dnd-kit/sortable";
@@ -6,10 +6,14 @@ import { CSS } from "@dnd-kit/utilities";
 
 export function HeadingBlock({
   field,
-  isNested, 
+  isNested,
+  // --- 🐞 YEH HAI FIX: Naya prop accept karein ---
+  containerId,
 }: {
   field: FieldData;
   isNested?: boolean;
+  containerId?: number | "root";
+  // --- END FIX ---
 }) {
   const {
     editingFieldId,
@@ -18,8 +22,11 @@ export function HeadingBlock({
     setDropdownOpen,
     handleLabelChange,
     handleDeleteField,
-    handleDuplicateField, 
+    handleDuplicateField,
     fieldBlockRefs,
+    // --- 🐞 YEH HAI FIX: Naya function import karein ---
+    setActiveContainerId,
+    // --- END FIX ---
   } = useProcedureBuilder();
 
   const isEditing = editingFieldId === field.id;
@@ -56,18 +63,22 @@ export function HeadingBlock({
           <GripVertical size={20} />
         </div>
       )}
-      
-      
+
       <div
         ref={(el) => (fieldBlockRefs.current[field.id] = el)}
-        className={`flex-1 ${isEditing ? 'ml-[-28px]' : ''}`}
-        onClick={() => { 
+        className={`flex-1 ${isEditing ? "ml-[-28px]" : ""}`}
+        // --- 🐞 YEH HAI FIX: onClick handler ko update karein ---
+        onClick={() => {
           if (!isEditing) {
+            if (containerId) {
+              setActiveContainerId(containerId);
+            }
             setEditingFieldId(field.id);
             setEditingSectionId(null);
             setDropdownOpen(null);
           }
         }}
+        // --- END FIX ---
       >
         {isEditing ? (
           // --- EDITING STATE ---
@@ -79,10 +90,10 @@ export function HeadingBlock({
               onChange={(e) => handleLabelChange(field.id, e.target.value)}
               autoFocus
               className="flex-1 bg-white border border-blue-400 text-gray-700 text-lg font-medium placeholder-gray-400 outline-none py-2 px-2 rounded-md"
-              onClick={(e) => e.stopPropagation()} 
+              onClick={(e) => e.stopPropagation()}
             />
             <div className="flex items-center gap-3 text-gray-500">
-               <button
+              <button
                 onClick={(e) => {
                   e.stopPropagation();
                   handleDuplicateField(field.id);
@@ -93,8 +104,8 @@ export function HeadingBlock({
               </button>
               <button
                 onClick={(e) => {
-                   e.stopPropagation();
-                   handleDeleteField(field.id);
+                  e.stopPropagation();
+                  handleDeleteField(field.id);
                 }}
                 className="hover:text-red-500"
               >
@@ -105,15 +116,13 @@ export function HeadingBlock({
         ) : (
           // --- VIEW STATE ---
           <div className="flex items-center justify-between">
-            <h3 
-              className="text-gray-800 text-lg font-semibold cursor-pointer py-2 border-b border-transparent"
-            >
+            <h3 className="text-gray-800 text-lg font-semibold cursor-pointer py-2 border-b border-transparent">
               {field.label || "Heading Title"}
             </h3>
             <div className="flex items-center gap-3 text-gray-500">
               <button
                 onClick={(e) => {
-                  e.stopPropagation(); 
+                  e.stopPropagation();
                   handleDuplicateField(field.id);
                 }}
                 className="hover:text-blue-600"
@@ -122,7 +131,7 @@ export function HeadingBlock({
               </button>
               <button
                 onClick={(e) => {
-                  e.stopPropagation(); 
+                  e.stopPropagation();
                   handleDeleteField(field.id);
                 }}
                 className="hover:text-red-500"

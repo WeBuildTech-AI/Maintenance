@@ -4,40 +4,25 @@ import {
   useEffect,
   createContext,
   useContext,
-  ReactNode,
+  type ReactNode,
   useMemo,
 } from "react";
 // --- UPDATED: Added ProcedureSettingsState ---
 import {
-  FieldData,
-  ConditionData,
-  logicConditionTypes,
-  ProcedureSettingsState,
+  type FieldData,
+  type ConditionData,
+  type ProcedureSettingsState,
 } from "./types";
 import {
-  Link2,
-  Trash2,
-  Plus,
-  Type,
-  Layout,
   FileText,
-  Search,
-  ChevronDown,
   Calendar,
   CheckSquare,
   Hash,
   DollarSign,
   ListChecks,
   Eye,
-  MoreVertical,
   Radio,
-  GripVertical,
   Gauge,
-  X,
-  Share2,
-  Pencil,
-  ChevronRight,
-  Copy,
 } from "lucide-react";
 // ✅ FIX: Yeh 'import' ab 'import type' hai
 import type { DragEndEvent, DragOverEvent, DragStartEvent } from "@dnd-kit/core";
@@ -83,6 +68,10 @@ interface ProcedureBuilderContextType {
   setFieldMenuOpen: React.Dispatch<React.SetStateAction<number | null>>;
   isReorderModalOpen: boolean;
   setIsReorderModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  isLinkModalOpen: { fieldId: number | null };
+  setIsLinkModalOpen: React.Dispatch<
+    React.SetStateAction<{ fieldId: number | null }>
+  >;
   dropdownWidths: Record<number, number>;
   setDropdownWidths: React.Dispatch<
     React.SetStateAction<Record<number, number>>
@@ -130,6 +119,7 @@ interface ProcedureBuilderContextType {
   fieldMenuPanelRefs: React.MutableRefObject<
     Record<number, HTMLDivElement | null>
   >;
+  linkModalRef: React.RefObject<HTMLDivElement | null>;
 
   // --- Handlers ---
   findFieldRecursive: (
@@ -183,6 +173,7 @@ const ProcedureBuilderContext = createContext<
   ProcedureBuilderContextType | undefined
 >(undefined);
 
+// ... (All helper functions like findFieldAndParent, findAndAddRecursive, countFieldsRecursive) ...
 // --- Helper: Find any field and its parent array ---
 type ParentArray = FieldData[] | ConditionData["fields"];
 interface FieldLocation {
@@ -324,6 +315,9 @@ export function ProcedureBuilderProvider({
   const [dropdownWidths, setDropdownWidths] = useState<Record<number, number>>(
     {}
   );
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState<{
+    fieldId: number | null;
+  }>({ fieldId: null });
   const [collapsed, setCollapsed] = useState<Record<number, boolean>>({});
 
   const dropdownRefs = useRef<Record<number, HTMLDivElement | null>>({});
@@ -355,6 +349,7 @@ export function ProcedureBuilderProvider({
     {}
   );
   const fieldMenuPanelRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const linkModalRef = useRef<HTMLDivElement | null>(null);
 
   const toggleCollapse = (id: number) => {
     setCollapsed((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -399,6 +394,7 @@ export function ProcedureBuilderProvider({
     }
   }, [dropdownOpen]);
 
+  // --- 🐞 YEH HAI AAPKA FIX ---
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       // 1. Close Field Dropdowns
@@ -477,8 +473,17 @@ export function ProcedureBuilderProvider({
             }
           });
 
-          if (!clickInsideLogicPanel && !clickOnLogicButton) {
+          const clickInsideLinkModal =
+            linkModalRef.current &&
+            linkModalRef.current.contains(event.target as Node);
+
+          if (
+            !clickInsideLogicPanel &&
+            !clickOnLogicButton &&
+            !clickInsideLinkModal
+          ) {
             setEditingFieldId(null);
+            setActiveContainerId("root"); // <-- YEH LINE ADD KI HAI
           }
         }
       }
@@ -492,6 +497,7 @@ export function ProcedureBuilderProvider({
           !sidebarClicked
         ) {
           setEditingSectionId(null);
+          setActiveContainerId("root"); // <-- YEH LINE ADD KI HAI
         }
       }
 
@@ -549,6 +555,7 @@ export function ProcedureBuilderProvider({
     conditionMenuOpen,
     fieldMenuOpen,
   ]);
+  // --- END FIX ---
 
   // --- NEW: Calculate total field count ---
   const totalFieldCount = useMemo(() => {
@@ -681,12 +688,10 @@ export function ProcedureBuilderProvider({
       ],
     };
 
-    // --- 庁 FIX: Sections are *always* added to the root. ---
-    // We ignore the activeContainerId for sections.
     setFields((prev) => [...prev, newSection]);
 
     setEditingSectionId(newId);
-    setEditingFieldId(null);
+    setEditingFieldId(newSubFieldId);
     setDropdownOpen(null);
   };
 
@@ -844,10 +849,19 @@ export function ProcedureBuilderProvider({
     setFields((prev) =>
       updateFieldsRecursive(prev, (field) => {
         if (field.id === id) {
+          let defaultOptions: string[] = [];
+          if (newType === "Multiple Choice" || newType === "Checklist") {
+            if (!field.options || field.options.length === 0) {
+              defaultOptions = ["Option 1"];
+            } else {
+              defaultOptions = field.options;
+            }
+          }
+
           return {
             ...field,
             selectedType: newType,
-            options: [],
+            options: defaultOptions,
             meterUnit: undefined,
             selectedMeter: undefined,
             description: undefined,
@@ -1232,6 +1246,8 @@ export function ProcedureBuilderProvider({
     setFieldMenuOpen,
     isReorderModalOpen,
     setIsReorderModalOpen,
+    isLinkModalOpen,
+    setIsLinkModalOpen,
     dropdownWidths,
     setDropdownWidths,
     collapsed,
@@ -1253,6 +1269,7 @@ export function ProcedureBuilderProvider({
     conditionMenuPanelRefs,
     fieldMenuButtonRefs,
     fieldMenuPanelRefs,
+    linkModalRef,
     findFieldRecursive,
     updateFieldsRecursive,
     handleAddField,

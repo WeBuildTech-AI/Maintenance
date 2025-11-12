@@ -8,6 +8,27 @@ import {
 } from "lucide-react";
 import { useProcedureBuilder } from "../ProcedureBuilderContext";
 import { FieldData } from "../types";
+// import { useState } from "react"; // --- REMOVED ---
+
+// --- ADDED: A clock icon ---
+const ClockIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="text-gray-400"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
+  </svg>
+);
+// --- END ADDED ---
 
 interface FieldContentRendererProps {
   field: FieldData;
@@ -117,6 +138,7 @@ export function FieldContentRenderer({
                     onChange={(e) =>
                       handleOptionChange(field.id, index, e.target.value)
                     }
+                    onClick={(e) => e.stopPropagation()}
                     className="flex-1 border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
                   />
                   <button
@@ -147,12 +169,16 @@ export function FieldContentRenderer({
             </div>
           ))}
           {isEditing && (
-            <button
-              onClick={() => handleAddOption(field.id)}
-              className="text-blue-600 text-sm font-medium mt-1"
-            >
-              + Add Option
-            </button>
+            <>
+              <button
+                onClick={() => handleAddOption(field.id)}
+                className="text-blue-600 text-sm font-medium mt-1"
+              >
+                + Add Option
+              </button>
+
+              {/* --- REMOVED "Add multiple options" feature --- */}
+            </>
           )}
         </div>
       );
@@ -206,18 +232,35 @@ export function FieldContentRenderer({
       );
 
     case "Date":
+      const inputBaseStyle =
+        "flex-1 w-full bg-gray-50 text-sm text-gray-600 placeholder-gray-400 outline-none";
+      const pillStyle =
+        "flex items-center gap-2 flex-1 border border-gray-200 rounded-md px-3 py-3 bg-gray-50 cursor-not-allowed";
+
       return (
-        <div className="relative mt-3">
-          <input
-            type="text"
-            placeholder="mm/dd/yyyy"
-            disabled
-            className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-gray-50 cursor-not-allowed"
-          />
-          <Calendar
-            size={16}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-          />
+        <div className="mt-3 flex flex-col sm:flex-row gap-3">
+          {/* Date Input */}
+          <div className={pillStyle}>
+            <Calendar size={16} className="text-gray-400" />
+            <input
+              type="text"
+              placeholder="mm/dd/yyyy"
+              disabled
+              className={inputBaseStyle}
+            />
+          </div>
+          {/* Time Input (conditionally) */}
+          {field.includeTime && (
+            <div className={pillStyle}>
+              <ClockIcon />
+              <input
+                type="text"
+                placeholder="-- : -- --"
+                disabled
+                className={inputBaseStyle}
+              />
+            </div>
+          )}
         </div>
       );
 

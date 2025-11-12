@@ -1,4 +1,3 @@
-import React from "react";
 import { X } from "lucide-react";
 import { useProcedureBuilder } from "../ProcedureBuilderContext";
 import { convertStateToJSON } from "../utils/conversion"; // Import the converter

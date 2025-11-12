@@ -1,6 +1,6 @@
 export default function EmptyState() {
   return (
-    <div className="w-full rounded-md border border-gray-200 bg-white shadow-sm">
+    <div className="w-full rounded-md  border-gray-200 bg-white shadow-sm">
       <div className="flex flex-col items-center justify-center px-6 sm:px-10 md:px-16 py-16 md:py-20 text-center">
         {/* Illustration */}
         <svg

@@ -10,11 +10,10 @@ import {
   ChevronsUpDown,
   Trash2,
 } from "lucide-react";
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { MoreActionsMenu } from "../GenerateProcedure/components/MoreActionsMenu";
 import { ConfirmationModal } from "../GenerateProcedure/components/ConfirmationModal";
 import { useDispatch } from "react-redux";
-import { useNavigate } from "react-router-dom";
 import { deleteProcedure } from "../../../store/procedures/procedures.thunks";
 import type { AppDispatch } from "../../../store"; // ✅ FIX: 'import' ko 'import type' se badal diya
 
@@ -72,7 +71,7 @@ export function LibraryTable({
   const [modalProc, setModalProc] = useState<any | null>(null);
   const [selectedProcedures, setSelectedProcedures] = useState<string[]>([]);
   const dispatch = useDispatch<AppDispatch>();
-  const navigate = useNavigate();
+
 
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
   const allProcedureIds = useMemo(
