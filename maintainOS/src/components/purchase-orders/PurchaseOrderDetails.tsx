@@ -29,6 +29,7 @@ interface OrderItem {
   itemName?: string; // Optional
   partNumber?: string;
   unitsOrdered: number;
+  unitsReceived: number;
   unitCost: number;
   price: number; // Price bhi hai
   part?: {
@@ -248,7 +249,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                         {it.partNumber || it.part?.partNumber || "-"}
                       </td>
                       <td className="p-3">{it.unitsOrdered}</td>
-                      <td className="p-3">0</td>{" "}
+                      <td className="p-3">{it.unitsReceived}</td>{" "}
                       {/* (Yeh value API se aani chahiye) */}
                       <td className="p-3">{formatMoney(it.unitCost)}</td>
                       <td className="p-3">

@@ -4,6 +4,7 @@ import { Settings, X, MapPin, ChevronDown, Loader2 } from "lucide-react";
 // --- ADDED ---
 // PLEASE UPDATE THIS PATH to point to your actual service file
 import { purchaseOrderService } from "../../store/purchaseOrders/purchaseOrders.service";
+import toast from "react-hot-toast";
 // -----------
 
 type Props = {
@@ -108,42 +109,19 @@ export default function PurchaseStockUI({
         // Log data being sent for debugging
         console.log(`Sending data for item ${itemId}:`, updatedItemData);
 
-        return purchaseOrderService
-          .updateItemOrder(poId, itemId, updatedItemData)
-          .then(async (response: any) => {
-            if (!response.ok) {
-              // Handle HTTP errors
-              const errorData = await response.json().catch(() => ({})); // Try to parse error
-              console.error(`Error updating item ${itemId}:`, errorData);
-              throw new Error(
-                `Failed to update item ${
-                  originalItem.partNumber
-                }: ${response.statusText}`
-              );
-            }
-            // If response.ok, try to parse JSON
-            return response.json();
-          })
-          .catch((err: any) => {
-            // Handle errors from the individual API call
-            console.error(`Error in updateItemOrder for ${itemId}:`, err);
-            // Re-throw the error to make Promise.all fail
-            throw new Error(
-              `Failed to update ${originalItem.partNumber}: ${err.message}`
-            );
-          });
-        // --- END OF FIX ---
+        return purchaseOrderService.updateItemOrder(
+          selectedPO.id,
+          itemId,
+          updatedItemData
+        );
       });
 
       // Wait for all API calls to complete
-      const results = await Promise.all(apiCalls);
-      console.log("All items updated successfully:", results);
-
-      // If all successful, close the modal
+      toast.success("Udpate the Order Itme Successfully");
       setFullFillModal(false);
     } catch (err: any) {
-      // This catch block handles errors from Promise.all (if any promise failed)
-      console.error("An error occurred during update:", err);
+      
+      toast.error("An error occurred during update:", err);
       setError(err.message || "An unknown error occurred.");
     } finally {
       // Stop loading regardless of success or error
@@ -161,7 +139,8 @@ export default function PurchaseStockUI({
         {/* Header */}
         <div className="bg-orange-600 flex items-center justify-center px-1 py-2 relative rounded-t-lg">
           <div className="text-black text-center font-medium">
-            Purchase Order #{selectedPO?.poNumber?.slice(0,6) || "—"} - Approved
+            Purchase Order #{selectedPO?.poNumber?.slice(0, 6) || "—"} -
+            Approved
           </div>
         </div>
 
