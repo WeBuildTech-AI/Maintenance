@@ -129,7 +129,7 @@ export function PurchaseOrders() {
       },
     ],
     // @ts-ignore - Assuming interface updated
-    taxLines: [], 
+    taxLines: [],
     sameShipBill: true,
     shippingAddressId: "",
     shippingAddress: null,
@@ -210,9 +210,9 @@ export function PurchaseOrders() {
             return acc + (price || unitCost * unitsOrdered);
           }, 0) ?? 0;
 
-        // Note: If you want the total in the list to include taxes, 
+        // Note: If you want the total in the list to include taxes,
         // you would need to sum up po.taxesAndCosts here too.
-        
+
         return [po.id, totalItemsCost];
       })
     );
@@ -296,18 +296,19 @@ export function PurchaseOrders() {
   };
 
   // --- CHANGE 3: Handle Edit (Map Backend -> Frontend) ---
-  const handleEditPO = (poToEdit: any) => { // Type 'any' or update PurchaseOrder type
+  const handleEditPO = (poToEdit: any) => {
+    // Type 'any' or update PurchaseOrder type
     if (!poToEdit) return;
 
     console.log("Editing PO:", poToEdit);
-    const mappedTaxLines = poToEdit.taxesAndCosts 
+    const mappedTaxLines = poToEdit.taxesAndCosts
       ? poToEdit.taxesAndCosts.map((t: any) => ({
           id: cryptoId(), // Generate temp ID for React keys
           label: t.taxLabel,
           value: t.taxValue,
           // Convert "PERCENT" -> "percentage", "FIXED" -> "fixed"
-          type: t.taxCategory === 'PERCENT' ? 'PERCENTAGE' : 'DOLLAR', 
-          isTaxable: t.isTaxable
+          type: t.taxCategory === "PERCENT" ? "PERCENTAGE" : "DOLLAR",
+          isTaxable: t.isTaxable,
         }))
       : [];
 
@@ -326,7 +327,7 @@ export function PurchaseOrders() {
               unitCost: item.unitCost || 0,
             }))
           : [{ ...initialPOState.items[0], id: `temp_${crypto.randomUUID()}` }],
-      
+
       // @ts-ignore
       taxLines: mappedTaxLines,
 
@@ -365,13 +366,13 @@ export function PurchaseOrders() {
   // --- Helper to format Taxes for Backend ---
   const formatTaxesForPayload = (taxLines: any[]) => {
     if (!taxLines || taxLines.length === 0) return undefined;
-    return taxLines.map(tax => ({
+    return taxLines.map((tax) => ({
       taxLabel: tax.label,
       taxValue: Number(tax.value),
       // Frontend "percentage" -> Backend "PERCENT"
       // Frontend "fixed" -> Backend "FIXED" (Assuming default if not percent)
-      taxCategory: tax.type === 'percentage' ? 'PERCENTAGE' : 'DOLLAR',
-      isTaxable: !!tax.isTaxable
+      taxCategory: tax.type === "percentage" ? "PERCENTAGE" : "DOLLAR",
+      isTaxable: !!tax.isTaxable,
     }));
   };
 
@@ -482,16 +483,25 @@ export function PurchaseOrders() {
     try {
       const payload: any = {};
 
-      if (changedFormFields.poNumber !== undefined) payload.poNumber = changedFormFields.poNumber;
-      if (changedFormFields.vendorId !== undefined) payload.vendorId = changedFormFields.vendorId;
-      if (changedFormFields.contactName !== undefined) payload.contactName = changedFormFields.contactName;
-      if (changedFormFields.phoneOrMail !== undefined) payload.phoneOrMail = changedFormFields.phoneOrMail;
-      if (changedFormFields.dueDate !== undefined) payload.dueDate = changedFormFields.dueDate;
-      if (changedFormFields.notes !== undefined) payload.notes = changedFormFields.notes;
-      if (changedFormFields.extraCosts !== undefined) payload.extraCosts = Number(changedFormFields.extraCosts);
-      if (changedFormFields.shippingAddressId !== undefined) payload.shippingAddressId = changedFormFields.shippingAddressId;
-      if (changedFormFields.billingAddressId !== undefined) payload.billingAddressId = changedFormFields.billingAddressId;
-      
+      if (changedFormFields.poNumber !== undefined)
+        payload.poNumber = changedFormFields.poNumber;
+      if (changedFormFields.vendorId !== undefined)
+        payload.vendorId = changedFormFields.vendorId;
+      if (changedFormFields.contactName !== undefined)
+        payload.contactName = changedFormFields.contactName;
+      if (changedFormFields.phoneOrMail !== undefined)
+        payload.phoneOrMail = changedFormFields.phoneOrMail;
+      if (changedFormFields.dueDate !== undefined)
+        payload.dueDate = changedFormFields.dueDate;
+      if (changedFormFields.notes !== undefined)
+        payload.notes = changedFormFields.notes;
+      if (changedFormFields.extraCosts !== undefined)
+        payload.extraCosts = Number(changedFormFields.extraCosts);
+      if (changedFormFields.shippingAddressId !== undefined)
+        payload.shippingAddressId = changedFormFields.shippingAddressId;
+      if (changedFormFields.billingAddressId !== undefined)
+        payload.billingAddressId = changedFormFields.billingAddressId;
+
       if (changedFormFields.items) {
         payload.orderItems = changedFormFields.items
           .filter((item) => item.itemName && item.itemName.trim() !== "")
@@ -508,8 +518,10 @@ export function PurchaseOrders() {
       // --- CHANGE 5: Handle Tax Updates ---
       // @ts-ignore
       if (changedFormFields.taxLines) {
-         // @ts-ignore
-         payload.taxesAndCosts = formatTaxesForPayload(changedFormFields.taxLines);
+        // @ts-ignore
+        payload.taxesAndCosts = formatTaxesForPayload(
+          changedFormFields.taxLines
+        );
       }
 
       if (purchaseOrderService?.updatePurchaseOrder) {
@@ -543,7 +555,7 @@ export function PurchaseOrders() {
       setModalAction(null);
     }
   };
-  
+
   const handleConfirm = async (id: string | undefined) => {
     if (!id) {
       toast.error("No PO selected for action.");
@@ -564,6 +576,7 @@ export function PurchaseOrders() {
         setSelectedPOId(null);
       } else if (modalAction === "cancelled") {
         await purchaseOrderService.cancelPurchaseOrder(id);
+        toast.success("Cancelled Successfully");
       }
       fetchPurchaseOrder();
     } catch (error) {
@@ -574,7 +587,7 @@ export function PurchaseOrders() {
       setModalAction(null);
     }
   };
-  
+
   const modalContent = {
     reject: {
       title: "Reject Confirmation",
