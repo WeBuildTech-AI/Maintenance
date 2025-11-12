@@ -598,14 +598,14 @@ export function NewPOForm(props: NewPOFormProps) {
                          <button
                            type="button"
                            onClick={() => handleUpdateTaxLine(tax.id, 'type', 'fixed')}
-                           className={`px-2 h-full flex items-center justify-center text-xs font-medium transition-colors ${tax.type === 'fixed' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+                           className={`px-2 h-full flex items-center justify-center text-xs font-medium transition-colors ${tax.type === 'fixed' ? 'bg-orange-600 text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
                          >
                            <DollarSign className="h-3 w-3" />
                          </button>
                          <button
                            type="button"
                            onClick={() => handleUpdateTaxLine(tax.id, 'type', 'percentage')}
-                           className={`px-2 h-full flex items-center justify-center text-xs font-medium transition-colors ${tax.type === 'percentage' ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+                           className={`px-2 h-full flex items-center justify-center text-xs font-medium transition-colors ${tax.type === 'percentage' ? 'bg-orange-600 text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
                          >
                             <Percent className="h-3 w-3" />
                          </button>
@@ -616,7 +616,7 @@ export function NewPOForm(props: NewPOFormProps) {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-9 w-9 p-0 text-blue-500 hover:text-red-600 hover:bg-transparent"
+                      className="h-9 w-9 p-0 text-orange-600 hover:text-red-600 hover:bg-transparent"
                       onClick={() => handleRemoveTaxLine(tax.id)}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -640,7 +640,7 @@ export function NewPOForm(props: NewPOFormProps) {
               {/* Add Button & Final Total */}
               <div className="flex items-center justify-end w-full gap-6">
                 <button
-                  className="text-sm text-blue-600 font-medium hover:underline"
+                  className="text-sm text-orange-600 font-medium hover:underline"
                   onClick={handleAddTaxLine}
                 >
                   + Add Taxes &amp; Costs

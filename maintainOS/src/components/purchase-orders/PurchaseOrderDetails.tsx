@@ -359,10 +359,10 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                       <td className="p-3">
                         {it.partNumber || it.part?.partNumber || "-"}
                       </td>
-                      <td className="p-3">{it.unitsOrdered}</td>
-                      <td className="p-3">{it.unitsReceived || 0}</td>
-                      <td className="p-3">{formatMoney(it.unitCost)}</td>
-                      <td className="p-3">
+                      <td className="p-3 text-center">{it.unitsOrdered}</td>
+                      <td className="p-3 text-center">{it.unitsReceived || 0}</td>
+                      <td className="p-3 text-right">{formatMoney(it.unitCost)}</td>
+                      <td className="p-3 text-right">
                         {formatMoney(
                           it.price
                             ? Number(it.price)
@@ -377,7 +377,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                     <td colSpan={5} className="p-3 text-right font-medium">
                       Subtotal
                     </td>
-                    <td className="p-3 font-medium">{formatMoney(subtotal)}</td>
+                    <td className="p-3 text-right font-medium">{formatMoney(subtotal)}</td>
                   </tr>
 
                   {/* Taxes and Costs */}
@@ -393,7 +393,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                             ? `(${tax.taxValue}%)`
                             : ""}
                         </td>
-                        <td className="p-3 font-medium">
+                        <td className="p-3 font-medium text-right">
                           {tax.taxCategory === "PERCENTAGE"
                             ? formatMoney(
                                 (subtotal * Number(tax.taxValue || 0)) / 100
@@ -420,7 +420,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                     <td colSpan={5} className="p-3 text-right font-semibold">
                       Total
                     </td>
-                    <td className="p-3 font-semibold">{formatMoney(total)}</td>
+                    <td className="p-3 font-semibold text-right">{formatMoney(total)}</td>
                   </tr>
                 </tbody>
               </table>
