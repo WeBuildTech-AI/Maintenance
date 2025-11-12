@@ -31,6 +31,7 @@ import { purchaseOrderService } from "../../store/purchaseOrders";
 import ConfirmationModal from "./ConfirmationModal";
 import toast from "react-hot-toast";
 import PurchaseOrderDetails from "./PurchaseOrderDetails";
+import Loader from "../Loader/Loader";
 
 // ... (getChangedFields function remains the same) ...
 function getChangedFields(
@@ -82,10 +83,10 @@ export function PurchaseOrders() {
   const [pageSize, setPageSize] = useState(25);
   const [showSettings, setShowSettings] = useState(false);
   const [showCommentBox, setShowCommentBox] = useState(false);
-  const [comment, setComment] = useState("");
   const commentsRef = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState("details");
+  const [isLoading, setIsLoading] = useState(false);
 
   // ... (scrollToTop, scrollToComments, handleSend functions same rahenge) ...
   const scrollToTop = () => {
@@ -102,14 +103,6 @@ export function PurchaseOrders() {
         block: "start",
       });
       setActiveTab("comments");
-    }
-  };
-
-  const handleSend = () => {
-    if (comment.trim()) {
-      console.log("Comment sent:", comment);
-      setComment("");
-      setShowCommentBox(false);
     }
   };
 
@@ -151,6 +144,7 @@ export function PurchaseOrders() {
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isCreating, setIsCreating] = useState(false);
+
   const [apiError, setApiError] = useState<string | null>(null);
   const [modalAction, setModalAction] = useState<
     "reject" | "approve" | "delete" | null
@@ -159,6 +153,7 @@ export function PurchaseOrders() {
 
   const fetchPurchaseOrder = async () => {
     try {
+      setIsLoading(true);
       const res = await purchaseOrderService.fetchPurchaseOrders();
       const sortedData = [...res].sort(
         (a: PurchaseOrder, b: PurchaseOrder) =>
@@ -171,6 +166,8 @@ export function PurchaseOrders() {
       }
     } catch (err) {
       console.error(err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -214,13 +211,6 @@ export function PurchaseOrders() {
       })
     );
   }, [getPurchaseOrderData]);
-
-  // --- REMOVED pagedOrders ---
-  // const pagedOrders = useMemo(
-  //   () => filteredPOs.slice(0, pageSize),
-  //   [filteredPOs, pageSize]
-  // );
-  // This was incorrect as PurchaseOrdersTable does its own pagination.
 
   /* ------------------------------- Handlers ------------------------------- */
 
@@ -539,7 +529,6 @@ export function PurchaseOrders() {
   };
 
   // ... (Modal confirmation logic same rahega) ...
-  const [isLoading, setIsLoading] = useState(false);
   const handleCloseModal = () => {
     if (!isLoading) {
       setModalAction(null);
@@ -563,6 +552,8 @@ export function PurchaseOrders() {
         await purchaseOrderService.deletePurchaseOrder(id);
         toast.success("Deleted Successfully");
         setSelectedPOId(null);
+      } else if (modalAction === "cancelled") {
+        await purchaseOrderService.cancelPurchaseOrder(id);
       }
       fetchPurchaseOrder();
     } catch (error) {
@@ -591,6 +582,12 @@ export function PurchaseOrders() {
       title: "Delete Confirmation",
       message: "Are you sure you want to Delete this?",
       confirmButtonText: "Delete",
+      variant: "warning" as const,
+    },
+    cancelled: {
+      title: "Cancelled Confirmation",
+      message: "Are you sure you want to Cancel this?",
+      confirmButtonText: "Cancel",
       variant: "warning" as const,
     },
   };
@@ -638,71 +635,77 @@ export function PurchaseOrders() {
 
             {/* PO List */}
             <div className="flex-1 overflow-y-auto min-h-0 ">
-              {filteredPOs?.map((po) => {
-                return (
-                  <Card
-                    key={po.id}
-                    className={`cursor-pointer transition-colors rounded-none border-x-0 border-t-0 ${
-                      selectedPOId === po.id
-                        ? "border-l-4 border-l-orange-600 bg-orange-50/50 bg-muted/50"
-                        : "hover:bg-muted/50  border-l-4 border-l-transparent"
-                    }`}
-                    onClick={() => setSelectedPOId(po.id)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-4">
-                          <Avatar className="h-8 w-8">
-                            <AvatarFallback>
-                              {po.vendor?.name
-                                ?.split(" ")
-                                .map((n) => n[0])
-                                .join("") || "V"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <span className="font-medium">
-                              Purchase Order #{po.poNumber || "-"}
-                            </span>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <Building2 className="h-3 w-3" />
-                              <span>{po.vendor?.name || "-"}</span>
+              {isLoading && filteredPOs.length === 0 ? (
+                <Loader />
+              ) : (
+                <>
+                  {filteredPOs?.map((po) => {
+                    return (
+                      <Card
+                        key={po.id}
+                        className={`cursor-pointer transition-colors rounded-none border-x-0 border-t-0 ${
+                          selectedPOId === po.id
+                            ? "border-l-4 border-l-orange-600 bg-orange-50/50 bg-muted/50"
+                            : "hover:bg-muted/50  border-l-4 border-l-transparent"
+                        }`}
+                        onClick={() => setSelectedPOId(po.id)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-4">
+                              <Avatar className="h-8 w-8">
+                                <AvatarFallback>
+                                  {po.vendor?.name
+                                    ?.split(" ")
+                                    .map((n) => n[0])
+                                    .join("") || "V"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <span className="font-medium">
+                                  Purchase Order #{po.poNumber || "-"}
+                                </span>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <Building2 className="h-3 w-3" />
+                                  <span>{po.vendor?.name || "-"}</span>
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  Total Cost: {formatMoney(totals[po.id] ?? 0)}
+                                </div>
+                              </div>
                             </div>
-                            <div className="text-sm text-muted-foreground">
-                              Total Cost: {formatMoney(totals[po.id] ?? 0)}
+                            <div className="text-right">
+                              <div className="mt-2 capitalize">
+                                <StatusBadge status={po.status as POStatus} />
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="mt-2 capitalize">
-                            <StatusBadge status={po.status as POStatus} />
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
 
-              {filteredPOs.length === 0 && (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
-                    <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed" />
-                  </div>
-                  <p className="text-muted-foreground mb-2">
-                    No purchase orders found
-                  </p>
-                  <Button
-                    variant="link"
-                    className="text-primary p-0"
-                    onClick={() => {
-                      resetNewPO();
-                      setCreatingPO(true);
-                    }}
-                  >
-                    Create your first Purchase Order
-                  </Button>
-                </div>
+                  {filteredPOs.length === 0 && (
+                    <div className="text-center py-8">
+                      <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
+                        <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed" />
+                      </div>
+                      <p className="text-muted-foreground mb-2">
+                        No purchase orders found
+                      </p>
+                      <Button
+                        variant="link"
+                        className="text-primary p-0"
+                        onClick={() => {
+                          resetNewPO();
+                          setCreatingPO(true);
+                        }}
+                      >
+                        Create your first Purchase Order
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -722,11 +725,8 @@ export function PurchaseOrders() {
                 addressToLine={addressToLine}
                 commentsRef={commentsRef}
                 StatusBadge={StatusBadge}
-                comment={comment}
                 showCommentBox={showCommentBox}
-                handleSend={handleSend}
                 setShowCommentBox={setShowCommentBox}
-                setComment={setComment}
                 handleEditClick={() => handleEditPO(selectedPO)}
                 fetchPurchaseOrder={fetchPurchaseOrder}
               />
@@ -819,10 +819,11 @@ function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
     pending: "bg-orange-50 text-orange-700 border-orange-200",
     approved: "bg-green-50 text-green-700 border-green-200",
-    sent: "bg-blue-50 text-blue-700 border-blue-200",
+    partially_fulfilled: "bg-blue-50 text-blue-700 border-blue-200",
     received: "bg-emerald-50 text-emerald-700 border-emerald-200",
     cancelled: "bg-red-50 text-red-700 border-red-200",
     Draft: "bg-gray-50 text-gray-700 border-gray-200",
+    completed: "bg-orange-50 text-orange-600 border-orange-600",
   };
   const className = map[status] || map["Draft"];
   return (

@@ -16,6 +16,7 @@ import { ConfirmationModal } from "../GenerateProcedure/components/ConfirmationM
 import { useDispatch } from "react-redux";
 import { deleteProcedure } from "../../../store/procedures/procedures.thunks";
 import type { AppDispatch } from "../../../store"; // ✅ FIX: 'import' ko 'import type' se badal diya
+import { Tooltip } from "../../ui/tooltip";
 
 function formatTableDate(dateString: string) {
   if (!dateString) return "—";
@@ -78,7 +79,7 @@ export function LibraryTable({
     () => procedures.map((p) => p.id),
     [procedures]
   );
-  
+
   const selectedCount = selectedProcedures.length;
   const isEditing = selectedCount > 0;
   const areAllSelected =
@@ -181,17 +182,19 @@ export function LibraryTable({
                         Edit {selectedCount}{" "}
                         {selectedCount === 1 ? "Procedure" : "Procedures"}
                       </span>
-                      <button
-                        onClick={() => {
-                          const first = procedures.find(
-                            (p) => p.id === selectedProcedures[0]
-                          );
-                          if (first) handleDeleteClick(first);
-                        }}
-                        className="ml-1 text-gray-600 hover:text-red-600 transition"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      <Tooltip text="Delete">
+                        <button
+                          onClick={() => {
+                            const first = procedures.find(
+                              (p) => p.id === selectedProcedures[0]
+                            );
+                            if (first) handleDeleteClick(first);
+                          }}
+                          className="ml-1 text-gray-600 hover:text-red-600 transition"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </Tooltip>
                     </div>
                   )}
                 </th>

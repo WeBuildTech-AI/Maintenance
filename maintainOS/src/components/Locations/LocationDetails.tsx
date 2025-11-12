@@ -22,7 +22,7 @@ import DeleteModal from "./DeleteModal";
 import { LocationImages } from "./LocationImages";
 import { LocationFiles } from "./LocationFiles";
 import type { Location } from "./location.types";
-
+import { Tooltip } from "../ui/tooltip";
 
 // Props interface
 interface LocationDetailsProps {
@@ -44,7 +44,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
   onEdit,
   handleShowNewSubLocationForm,
 }) => {
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
   const [openDeleteModal, setOpenDeleteModal] = React.useState(false);
   const modalRef = React.useRef<HTMLDivElement>(null);
 
@@ -57,18 +57,19 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
             {selectedLocation?.name || "Unnamed Location"}
           </h2>
           <div className="flex items-center gap-2">
-            <button
-              title="Copy Link"
-              onClick={() => {
-                const url = `${window.location.origin}/locations/${selectedLocation.id}`;
-                navigator.clipboard.writeText(url);
-                toast.success("Location link copied!");
-              }}
-              className="cursor-pointer rounded-md p-2 text-orange-600"
-            >
-              <LinkIcon size={18} />
-            </button>
-
+            <Tooltip text="Copy Link">
+              <button
+                title="Copy Link"
+                onClick={() => {
+                  const url = `${window.location.origin}/locations/${selectedLocation.id}`;
+                  navigator.clipboard.writeText(url);
+                  toast.success("Location link copied!");
+                }}
+                className="cursor-pointer rounded-md p-2 text-orange-600"
+              >
+                <LinkIcon size={18} />
+              </button>
+            </Tooltip>
             <button
               title="Edit"
               className="flex cursor-pointer items-center gap-1 rounded-md border border-orange-600 px-3 py-1.5 text-orange-600 hover:bg-orange-50"
@@ -124,7 +125,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
               QR Code/Barcode
             </h3>
             <h4 className="mt-2 text-sm text-gray-700">
-              {selectedLocation.qrCode.split("/").pop() }
+              {selectedLocation.qrCode.split("/").pop()}
             </h4>
             <div className="mb-3 mt-2 flex justify-start">
               <div className="w-fit rounded-lg border border-gray-200 bg-white p-2 shadow-md">

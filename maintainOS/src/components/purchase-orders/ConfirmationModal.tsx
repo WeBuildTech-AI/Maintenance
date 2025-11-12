@@ -1,7 +1,7 @@
 import { Check, X } from "lucide-react";
 import React from "react";
 
-function SuccessModal({ onClose, selectedPO }) {
+function SuccessModal({ onClose, selectedPO }:any) {
   // We pass 'onClose' to the 'X' button
   return (
     <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 border border-gray-200">

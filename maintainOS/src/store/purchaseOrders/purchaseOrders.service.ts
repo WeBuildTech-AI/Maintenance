@@ -2,6 +2,7 @@ import axios from "axios";
 
 import type {
   CreateAddressData,
+  CreatePurchaseOrderComment,
   CreatePurchaseOrderData,
   PurchaseOrderResponse,
   UpdatePurchaseOrderData,
@@ -65,6 +66,15 @@ export const purchaseOrderService = {
   approvePurchaseOrder: async (id: string): Promise<void> => {
     await api.patch(`/purchase-orders/${id}/approve`);
   },
+  fullfillPurchaseOrder: async (id: string): Promise<void> => {
+    await api.patch(`/purchase-orders/${id}/fulfill`);
+  },
+  completePurchaseOrder: async (id: string): Promise<void> => {
+    await api.patch(`/purchase-orders/${id}/complete`);
+  },
+  cancelPurchaseOrder: async (id: string): Promise<void> => {
+    await api.patch(`/purchase-orders/${id}/cancel`);
+  },
 
   updateItemOrder: async (
     poId: string,
@@ -75,6 +85,14 @@ export const purchaseOrderService = {
       `/purchase-orders/${poId}/order-items/${itemId}`,
       data
     );
+    return res.data;
+  },
+
+  createPurchaseOrderComment: async (
+    id: string,
+    data: CreatePurchaseOrderComment
+  ): Promise<PurchaseOrderResponse> => {
+    const res = await api.post(`/purchase-orders/${id}/comment`, data);
     return res.data;
   },
 };

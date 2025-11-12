@@ -2,10 +2,12 @@ import React from "react";
 import {
   Building2,
   Check,
+  CopyPlusIcon,
   Edit,
   LinkIcon,
   Mail,
   MoreHorizontal,
+  PhoneCallIcon,
   Trash2,
   Upload,
   X, // 'Reject' ke liye
@@ -23,12 +25,15 @@ import { formatDateOnly } from "../utils/Date"; // Path check karein
 import { purchaseOrderService } from "../../store/purchaseOrders";
 import toast from "react-hot-toast";
 import PurchaseStockUI from "./PurchaseStockUI";
+import ContinueModal from "./ContinueModal";
+import { Tooltip } from "../ui/tooltip";
 
 interface OrderItem {
   id: string;
   itemName?: string; // Optional
   partNumber?: string;
   unitsOrdered: number;
+  unitsReceived: number;
   unitCost: number;
   price: number; // Price bhi hai
   part?: {
@@ -52,7 +57,13 @@ interface Address {
 interface PurchaseOrder {
   id: string;
   poNumber: string;
-  status: "pending" | "approved" | "sent" | "cancelled";
+  status:
+    | "pending"
+    | "approved"
+    | "sent"
+    | "cancelled"
+    | "fulfilled"
+    | "partially_fulfilled";
   vendorId: string;
   vendor: {
     // Vendor object nested hai
@@ -76,7 +87,7 @@ interface PurchaseOrderDetailsProps {
   updateState: (status: string) => void; // Sirf status update hota hai
   handleConfirm: (id: string) => void;
   setModalAction: (
-    action: "reject" | "approve" | "delete" | "fullfill"
+    action: "reject" | "approve" | "delete" | "fullfill" | "cancelled"
   ) => void; // Actions restrict kiye
   topRef: React.RefObject<HTMLDivElement>;
   commentsRef: React.RefObject<HTMLDivElement>;
@@ -102,30 +113,92 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   formatMoney,
   addressToLine,
   commentsRef,
-  comment,
   showCommentBox,
-  handleSend,
+
   setShowCommentBox,
-  setComment,
+
   handleEditClick,
   setApproveModal,
   StatusBadge,
   fetchPurchaseOrder,
 }) => {
-  // Calculate totals
-  const subtotal =
-    selectedPO.orderItems?.reduce(
-      (acc, it) => acc + (it.price || it.unitCost * it.unitsOrdered),
-      0
-    ) ?? 0;
-  const total = subtotal + (selectedPO.extraCosts ?? 0);
   const [fullFillModal, setFullFillModal] = React.useState(false);
-  
+  const [continueModal, setContinueModal] = React.useState(false);
+  const [comment, setComment] = React.useState("");
+  const modalRef = React.useRef<HTMLDivElement>(null);
+
   const handleApprove = async (id) => {
-    await purchaseOrderService.approvePurchaseOrder(id);
-    setModalAction("approve");
-    toast.success("Successfully Approved ");
-    fetchPurchaseOrder();
+    try {
+      await purchaseOrderService.approvePurchaseOrder(id);
+      setModalAction("approve");
+      toast.success("Successfully Approved ");
+      fetchPurchaseOrder();
+    } catch (err) {
+      toast.error("Failed to Approve");
+    }
+  };
+
+  const handleContinue = async () => {
+    try {
+      await purchaseOrderService.completePurchaseOrder(selectedPO.id);
+      setContinueModal(false);
+      toast.success("Successfully Completed ");
+      fetchPurchaseOrder();
+    } catch (err) {
+      toast.error("Failed to Complete");
+    }
+  };
+
+  const subtotal =
+    selectedPO.orderItems?.reduce((acc, item) => {
+      // Unit Cost aur Units Ordered ko Number banayein
+      const cost = Number(item.unitCost) || 0;
+      const qty = Number(item.unitsOrdered) || 0;
+
+      // Agar item ki direct 'price' available hai to wo use karein, nahi to calculate karein
+      const itemTotal = item.price ? Number(item.price) : cost * qty;
+
+      return acc + itemTotal;
+    }, 0) || 0;
+
+  // 2. Taxes & Costs Calculation
+  const extraCosts = Number(selectedPO.extraCosts) || 0;
+
+  // 3. Final Total Calculation
+  const total = subtotal + extraCosts;
+
+  const handleSend = async () => {
+    // 1. Validation
+    if (!comment.trim()) {
+      toast.error("Please write a comment first.");
+      return;
+    }
+
+    const poId = selectedPO?.id;
+    if (!poId) {
+      toast.error("Purchase Order ID is missing.");
+      return;
+    }
+    try {
+      const payload = {
+        message: comment,
+      };
+      await purchaseOrderService.createPurchaseOrderComment(poId, payload);
+
+      toast.success("Comment added successfully!");
+      setComment("");
+      setShowCommentBox(false);
+      if (fetchPurchaseOrder) {
+        await fetchPurchaseOrder();
+      }
+    } catch (error: any) {
+      // 6. Error Handling
+      toast.error("Failed to add comment.");
+      toast.error(error?.response?.data?.message || "Failed to add comment.");
+    } finally {
+      // 7. Loading state reset
+      // setIsCommentLoading(false);
+    }
   };
 
   return (
@@ -137,12 +210,20 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
             <h1 className="text-xl font-medium">
               Purchase Order #{selectedPO.poNumber}
             </h1>
-            <LinkIcon className="h-4 w-4 text-orange-600" />
+            <Tooltip text="Copy Link">
+              <LinkIcon
+                onClick={() => {
+                  const url = `${window.location.origin}/purchase-orders/${selectedPO?.id}`;
+                  navigator.clipboard.writeText(url);
+                  toast.success("Purchase Order link copied!");
+                }}
+                className="h-4 w-4 text-orange-600"
+              />
+            </Tooltip>
           </div>
 
           {/* HEADER ACTIONS */}
           <div className="flex items-center gap-2">
-            
             <Button className="gap-2 border cursor-pointer border-orange-600 bg-white text-orange-600 hover:bg-orange-50">
               <Upload className="h-4 w-4" />
               Send to Vendor
@@ -164,15 +245,32 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setModalAction("approve")}>
-                  <Check className="h-4 w-4 mr-2" /> Mark as Approved
+                {selectedPO.status === "pending" && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      handleApprove(selectedPO.id);
+                    }}
+                  >
+                    <Check className="h-4 w-4 mr-2" /> Mark as Approved
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  onClick={() => {
+                    const url = `${window.location.origin}/purchase-orders/${selectedPO?.id}`;
+                    navigator.clipboard.writeText(url);
+                    toast.success("Purchase Order link copied!");
+                  }}
+                >
+                  <CopyPlusIcon className="h-4 w-4 mr-2" /> Copy Link
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => updateState("sent")}>
-                  <Mail className="h-4 w-4 mr-2" /> Mark as Sent
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => updateState("cancelled")}>
-                  <X className="h-4 w-4 mr-2" /> Cancel
-                </DropdownMenuItem>
+                {selectedPO.status === "approved" ||
+                  (selectedPO.status === "pending" && (
+                    <DropdownMenuItem
+                      onClick={() => setModalAction("cancelled")}
+                    >
+                      <X className="h-4 w-4 mr-2" /> Cancel
+                    </DropdownMenuItem>
+                  ))}
                 <DropdownMenuItem
                   className="text-red-600"
                   onClick={() => setModalAction("delete")}
@@ -248,33 +346,49 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                         {it.partNumber || it.part?.partNumber || "-"}
                       </td>
                       <td className="p-3">{it.unitsOrdered}</td>
-                      <td className="p-3">0</td>{" "}
-                      {/* (Yeh value API se aani chahiye) */}
+                      <td className="p-3">{it.unitsReceived || 0}</td>
                       <td className="p-3">{formatMoney(it.unitCost)}</td>
                       <td className="p-3">
-                        {formatMoney(it.price || it.unitCost * it.unitsOrdered)}
+                        {/* Yahan hum wahi logic dikhayenge jo calculation me use kiya */}
+                        {formatMoney(
+                          it.price
+                            ? Number(it.price)
+                            : Number(it.unitCost) * Number(it.unitsOrdered)
+                        )}
                       </td>
                     </tr>
                   ))}
+
+                  {/* --- Subtotal Row --- */}
                   <tr className="border-t">
                     <td colSpan={5} className="p-3 text-right font-medium">
                       Subtotal
                     </td>
-                    <td className="p-3 font-medium">{formatMoney(subtotal)}</td>
+                    <td className="p-3 font-medium">
+                      {/* Calculated Subtotal Variable */}
+                      {formatMoney(subtotal)}
+                    </td>
                   </tr>
+
+                  {/* --- Extra Costs Row --- */}
                   <tr className="border-t">
                     <td colSpan={5} className="p-3 text-right font-medium">
                       Taxes &amp; Costs
                     </td>
                     <td className="p-3 font-medium">
-                      {formatMoney(selectedPO.extraCosts ?? 0)}
+                      {formatMoney(extraCosts)}
                     </td>
                   </tr>
+
+                  {/* --- Total Row --- */}
                   <tr className="border-t bg-muted/30">
                     <td colSpan={5} className="p-3 text-right font-semibold">
                       Total
                     </td>
-                    <td className="p-3 font-semibold">{formatMoney(total)}</td>
+                    <td className="p-3 font-semibold">
+                      {/* Calculated Total Variable */}
+                      {formatMoney(total)}
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -300,11 +414,11 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                 Shipping Contact
               </div>
               <div className="flex items-start gap-2">
-                <div className="text-sm">
-                  {/* addressToLine helper use karein */}
-                  {selectedPO.contactName}
+                <div className="text-sm">{selectedPO.contactName}</div>
+                <div className="text-sm flex items-center gap-1">
+                  <PhoneCallIcon size={12} />
+                  {selectedPO.phoneOrMail}
                 </div>
-                <div className="text-sm">{selectedPO.phoneOrMail}</div>
               </div>
             </Card>
           </div>
@@ -337,17 +451,19 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
           </div>
 
           <Comment
+            selectedPO={selectedPO}
             showCommentBox={showCommentBox}
             comment={comment}
             handleSend={handleSend}
             setShowCommentBox={setShowCommentBox}
             setComment={setComment}
+            fetchPurchanseOrder={fetchPurchaseOrder}
           />
         </div>
       </div>
 
       {/* FOOTER */}
-      {selectedPO.status === "pending" ? (
+      {selectedPO.status === "pending" && (
         <>
           <div className="p-6 border-t flex justify-between flex-none bg-white">
             <Button
@@ -369,7 +485,8 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
             </Button>
           </div>
         </>
-      ) : (
+      )}
+      {selectedPO.status === "approved" && (
         <>
           <div className="p-6 border-t flex justify-end flex-none bg-white">
             <Button
@@ -383,13 +500,46 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
         </>
       )}
 
+      {selectedPO.status === "partially_fulfilled" && (
+        <>
+          <div className="p-6 border-t flex justify-end flex-none bg-white gap-4">
+            <div>
+              <Button
+                onClick={() => setFullFillModal(true)}
+                className="gap-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md px-4 py-2 text-sm font-medium cursor-pointer flex items-center"
+              >
+                <Upload className="h-4 w-4" />
+                Fulfill
+              </Button>
+            </div>
+            <div>
+              <Button
+                onClick={() => setContinueModal(true)}
+                className="gap-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md px-4 py-2 text-sm font-medium cursor-pointer flex items-center"
+              >
+                <Check className="h-4 w-4" />
+                Countinue
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
+
       {fullFillModal && (
         <>
           <PurchaseStockUI
             setFullFillModal={setFullFillModal}
             selectedPO={selectedPO}
+            fetchPurchaseOrder={fetchPurchaseOrder}
           />
         </>
+      )}
+      {continueModal && (
+        <ContinueModal
+          onClose={() => setContinueModal(false)}
+          onConfirm={handleContinue}
+          modalRef={modalRef}
+        />
       )}
     </div>
   );

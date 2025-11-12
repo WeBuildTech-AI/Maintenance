@@ -4,11 +4,13 @@ import { Settings, X, MapPin, ChevronDown, Loader2 } from "lucide-react";
 // --- ADDED ---
 // PLEASE UPDATE THIS PATH to point to your actual service file
 import { purchaseOrderService } from "../../store/purchaseOrders/purchaseOrders.service";
+import toast from "react-hot-toast";
 // -----------
 
 type Props = {
   setFullFillModal: (v: boolean) => void;
   selectedPO?: any;
+  fetchPurchaseOrder?: () => void;
 };
 
 // Define a type for the state
@@ -23,6 +25,7 @@ interface ItemState {
 export default function PurchaseStockUI({
   setFullFillModal,
   selectedPO,
+  fetchPurchaseOrder,
 }: Props) {
   // State for loading
   const [isLoading, setIsLoading] = useState(false);
@@ -74,7 +77,7 @@ export default function PurchaseStockUI({
   // === UPDATED AND FIXED API HANDLER ===
   const handleOrderUpdate = async () => {
     setIsLoading(true);
-    setError(null); // Clear previous errors
+    setError(null);
 
     const poId = selectedPO?.poNumber;
     if (!poId) {
@@ -84,69 +87,46 @@ export default function PurchaseStockUI({
     }
 
     try {
-      // Create an array of API call promises
+      // 1. Create Array of Promises
       const apiCalls = itemsState.map((itemState, index) => {
         const originalItem = selectedPO.orderItems[index];
-        const itemId = itemState.id; // This is the order-item-id
+        const itemId = itemState.id;
 
-        // Construct the full data payload as requested
         const updatedItemData = {
-          // Identifying info from original item
           partId: originalItem.part?.id || originalItem.partId,
           partNumber: originalItem.partNumber,
-
-          // Data from our component's state
           unitCost: itemState.unitCost,
           unitsOrdered: itemState.unitsOrdered,
           unitsReceived: itemState.unitsReceived,
-          // location: itemState.location,
-
-          // Recalculated price based on updated cost and *ordered* units
           price: itemState.unitCost * itemState.unitsOrdered,
-        };
+        } as any;
 
-        // Log data being sent for debugging
         console.log(`Sending data for item ${itemId}:`, updatedItemData);
 
-        return purchaseOrderService
-          .updateItemOrder(poId, itemId, updatedItemData)
-          .then(async (response: any) => {
-            if (!response.ok) {
-              // Handle HTTP errors
-              const errorData = await response.json().catch(() => ({})); // Try to parse error
-              console.error(`Error updating item ${itemId}:`, errorData);
-              throw new Error(
-                `Failed to update item ${
-                  originalItem.partNumber
-                }: ${response.statusText}`
-              );
-            }
-            // If response.ok, try to parse JSON
-            return response.json();
-          })
-          .catch((err: any) => {
-            // Handle errors from the individual API call
-            console.error(`Error in updateItemOrder for ${itemId}:`, err);
-            // Re-throw the error to make Promise.all fail
-            throw new Error(
-              `Failed to update ${originalItem.partNumber}: ${err.message}`
-            );
-          });
-        // --- END OF FIX ---
+        return purchaseOrderService.updateItemOrder(
+          selectedPO.id,
+          itemId,
+          updatedItemData
+        );
       });
 
-      // Wait for all API calls to complete
-      const results = await Promise.all(apiCalls);
-      console.log("All items updated successfully:", results);
+      await Promise.all(apiCalls);
 
-      // If all successful, close the modal
+      toast.success("Order Items updated successfully");
+
+      await purchaseOrderService.fullfillPurchaseOrder(selectedPO.id);
+
+      if (fetchPurchaseOrder) {
+        await fetchPurchaseOrder();
+      }
+
+      // 5. Finally Close the Modal
       setFullFillModal(false);
     } catch (err: any) {
-      // This catch block handles errors from Promise.all (if any promise failed)
-      console.error("An error occurred during update:", err);
+      console.error(err);
+      toast.error("An error occurred during update.");
       setError(err.message || "An unknown error occurred.");
     } finally {
-      // Stop loading regardless of success or error
       setIsLoading(false);
     }
   };
@@ -161,7 +141,8 @@ export default function PurchaseStockUI({
         {/* Header */}
         <div className="bg-orange-600 flex items-center justify-center px-1 py-2 relative rounded-t-lg">
           <div className="text-black text-center font-medium">
-            Purchase Order #{selectedPO?.poNumber?.slice(0,6) || "—"} - Approved
+            Purchase Order #{selectedPO?.poNumber?.slice(0, 6) || "—"} -
+            Approved
           </div>
         </div>
 

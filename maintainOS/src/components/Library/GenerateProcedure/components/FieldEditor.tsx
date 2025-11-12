@@ -15,6 +15,7 @@ import { useProcedureBuilder } from "../ProcedureBuilderContext";
 import type { FieldData } from "../types";
 import { FieldContentRenderer } from "./FieldContentRenderer";
 import { ConditionLogicEditor } from "./ConditionLogicEditor";
+import { Tooltip } from "../../../ui/tooltip";
 
 interface FieldEditorProps {
   field: FieldData;
@@ -150,9 +151,8 @@ export function FieldEditor({
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center">
                         {
-                          fieldTypes.find(
-                            (f) => f.label === field.selectedType
-                          )?.icon
+                          fieldTypes.find((f) => f.label === field.selectedType)
+                            ?.icon
                         }
                       </div>
                       <span>{field.selectedType}</span>
