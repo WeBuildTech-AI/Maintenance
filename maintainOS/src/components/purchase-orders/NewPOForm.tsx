@@ -311,7 +311,7 @@ export function NewPOForm(props: NewPOFormProps) {
                     setNewPO((s) => ({ ...s, poNumber: e.target.value }))
                   }
                   placeholder="Enter Purchase Order Number"
-                  className="h-9 text-sm"
+                  className="h-9 text-sm bg-white border border-border"
                 />
                 <div className="mt-2 text-sm text-muted-foreground">
                   or{" "}
@@ -586,7 +586,7 @@ export function NewPOForm(props: NewPOFormProps) {
                     {/* Value Input Group with Toggle */}
                     <div className="flex items-center h-9 border border-orange-600 rounded-md bg-white overflow-hidden">
                        <Input
-                        className="h-full border-0 rounded-none focus-visible:ring-0 w-24 text-sm px-2"
+                        className="h-full border-0 rounded-none bg-white w-24 text-sm px-2"
                         type="number"
                         min={0}
                         step="0.01"
@@ -840,7 +840,7 @@ export function NewPOForm(props: NewPOFormProps) {
 
             {/* Contact Details */}
             <div className="text-base font-medium mt-4">Contact</div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
               <Input
                 className="h-9 text-sm bg-white border-orange-600"
                 placeholder="Contact name"
@@ -1086,7 +1086,7 @@ export function NewPOForm(props: NewPOFormProps) {
 
           {/* Details & Submit Section */}
           <section>
-            <div className="text-base font-medium mb-4">Due Date</div>
+            <div className="text-base font-medium mb-4 mt-4">Due Date</div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="relative">
                 <Calendar className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
