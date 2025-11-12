@@ -32,139 +32,9 @@ import { convertStateToJSON } from "./utils/conversion";
 
 // --- 1. Define the Context Type (all state and handlers) ---
 interface ProcedureBuilderContextType {
-  // --- 庁 ADDED: name and description ---
-  name: string;
-  description: string;
-  // --- END ADDITION ---
-
-  fields: FieldData[];
-  setFields: React.Dispatch<React.SetStateAction<FieldData[]>>;
-  settings: ProcedureSettingsState;
-  setSettings: React.Dispatch<React.SetStateAction<ProcedureSettingsState>>;
-  activeField: FieldData | null;
-  editingFieldId: number | null;
-  setEditingFieldId: React.Dispatch<React.SetStateAction<number | null>>;
-  activeContainerId: number | "root";
-  setActiveContainerId: React.Dispatch<React.SetStateAction<number | "root">>;
-  overContainerId: string | number | null;
-  setOverContainerId: React.Dispatch<
-    React.SetStateAction<string | number | null>
-  >;
-  dropdownOpen: number | null;
-  setDropdownOpen: React.Dispatch<React.SetStateAction<number | null>>;
-  editingSectionId: number | null;
-  setEditingSectionId: React.Dispatch<React.SetStateAction<number | null>>;
-  sectionMenuOpen: number | null;
-  setSectionMenuOpen: React.Dispatch<React.SetStateAction<number | null>>;
-  logicEditorOpen: number | null;
-  setLogicEditorOpen: React.Dispatch<React.SetStateAction<number | null>>;
-  conditionOperatorDropdownOpen: number | null;
-  setConditionOperatorDropdownOpen: React.Dispatch<
-    React.SetStateAction<number | null>
-  >;
-  conditionMenuOpen: number | null;
-  setConditionMenuOpen: React.Dispatch<React.SetStateAction<number | null>>;
-  fieldMenuOpen: number | null;
-  setFieldMenuOpen: React.Dispatch<React.SetStateAction<number | null>>;
-  isReorderModalOpen: boolean;
-  setIsReorderModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  isLinkModalOpen: { fieldId: number | null };
-  setIsLinkModalOpen: React.Dispatch<
-    React.SetStateAction<{ fieldId: number | null }>
-  >;
-  dropdownWidths: Record<number, number>;
-  setDropdownWidths: React.Dispatch<
-    React.SetStateAction<Record<number, number>>
-  >;
-  collapsed: Record<number, boolean>;
-  toggleCollapse: (id: number) => void;
-  fieldTypes: { label: string; icon: ReactNode }[];
-  totalFieldCount: number;
-
-  // --- Refs ---
-  dropdownRefs: React.MutableRefObject<Record<number, HTMLDivElement | null>>;
-  buttonRefs: React.MutableRefObject<Record<number, HTMLDivElement | null>>;
-  fieldBlockRefs: React.MutableRefObject<Record<number, HTMLDivElement | null>>;
-  sidebarRef: React.RefObject<HTMLDivElement>;
-  sectionBlockRefs: React.MutableRefObject<
-    Record<number, HTMLDivElement | null>
-  >;
-  sectionMenuButtonRefs: React.MutableRefObject<
-    Record<number, HTMLDivElement | null>
-  >;
-  sectionMenuPopoverRefs: React.MutableRefObject<
-    Record<number, HTMLDivElement | null>
-  >;
-  logicEditorButtonRefs: React.MutableRefObject<
-    Record<number, HTMLButtonElement | null>
-  >;
-  logicEditorPanelRefs: React.MutableRefObject<
-    Record<number, HTMLDivElement | null>
-  >;
-  conditionOpButtonRefs: React.MutableRefObject<
-    Record<number, HTMLButtonElement | null>
-  >;
-  conditionOpPanelRefs: React.MutableRefObject<
-    Record<number, HTMLDivElement | null>
-  >;
-  conditionMenuButtonRefs: React.MutableRefObject<
-    Record<number, HTMLButtonElement | null>
-  >;
-  conditionMenuPanelRefs: React.MutableRefObject<
-    Record<number, HTMLDivElement | null>
-  >;
-  fieldMenuButtonRefs: React.MutableRefObject<
-    Record<number, HTMLButtonElement | null>
-  >;
-  fieldMenuPanelRefs: React.MutableRefObject<
-    Record<number, HTMLDivElement | null>
-  >;
-  linkModalRef: React.RefObject<HTMLDivElement | null>;
-
-  // --- Handlers ---
-  findFieldRecursive: (
-    fieldsList: FieldData[],
-    id: number
-  ) => FieldData | undefined;
-  updateFieldsRecursive: (
-    fieldsList: FieldData[],
-    updateFn: (field: FieldData) => FieldData
-  ) => FieldData[];
-  handleAddField: () => void;
-  handleAddHeading: () => void;
-  handleAddSection: () => void;
-  handleDeleteField: (id: number) => void;
-  handleAddFieldInsideSection: (sectionId: number) => void;
-  handleFieldPropChange: (
-    id: number,
-    prop: keyof FieldData,
-    value: any
-  ) => void;
-  handleLabelChange: (id: number, value: string) => void;
-  handleAddOption: (id: number) => void;
-  handleOptionChange: (id: number, index: number, value: string) => void;
-  handleRemoveOption: (id: number, index: number) => void;
-  handleTypeChange: (id: number, newType: string) => void;
+  // ... (saari purani types)
   handleAddCondition: (fieldId: number) => void;
-  handleDeleteCondition: (fieldId: number, conditionId: number) => void;
-  handleConditionChange: (
-    fieldId: number,
-    conditionId: number,
-    prop: keyof ConditionData,
-    value: any
-  ) => void;
-  handleAddFieldInsideCondition: (
-    fieldId: number,
-    conditionId: number
-  ) => void;
-  handleToggleConditionCollapse: (fieldId: number, conditionId: number) => void;
-  logicEnabledFieldTypes: string[];
-  handleToggleRequired: (fieldId: number, isChecked: boolean) => void;
-  handleToggleDescription: (fieldId: number) => void;
-  handleDuplicateField: (fieldId: number) => void;
-  handleDragEnd: (event: DragEndEvent) => void;
-  handleFieldDragStart: (event: DragStartEvent) => void;
-  handleFieldDragOver: (event: DragOverEvent) => void;
+  // ... (baaki saari types)
   handleFieldDragEnd: (event: DragEndEvent) => void;
 }
 
@@ -173,7 +43,7 @@ const ProcedureBuilderContext = createContext<
   ProcedureBuilderContextType | undefined
 >(undefined);
 
-// ... (All helper functions like findFieldAndParent, findAndAddRecursive, countFieldsRecursive) ...
+// ... (findFieldAndParent, findAndAddRecursive, countFieldsRecursive helpers) ...
 // --- Helper: Find any field and its parent array ---
 type ParentArray = FieldData[] | ConditionData["fields"];
 interface FieldLocation {
@@ -268,6 +138,18 @@ const countFieldsRecursive = (fieldsList: FieldData[]): number => {
   return count;
 };
 
+// --- 🐞 YEH NAYA HELPER FUNCTION HAI ---
+// Ek default field banane ke liye
+const createDefaultField = (): FieldData => ({
+  id: Date.now(),
+  selectedType: "Text Field",
+  blockType: "field",
+  label: "New Field",
+  isRequired: false,
+  hasDescription: false,
+});
+// --- END ---
+
 // --- ADDED PROPS FOR PROVIDER ---
 interface ProcedureBuilderProviderProps {
   children: ReactNode;
@@ -281,7 +163,11 @@ export function ProcedureBuilderProvider({
   name,
   description,
 }: ProcedureBuilderProviderProps) {
-  const [fields, setFields] = useState<FieldData[]>([]); // Start empty
+  
+  // --- 🐞 YEH HAI AAPKA FIX ---
+  // State ab khaali array se shuru nahi hogi
+  const [fields, setFields] = useState<FieldData[]>(() => [createDefaultField()]);
+  // --- END FIX ---
 
   // --- ADDED SETTINGS STATE & DEFAULT ---
   const [settings, setSettings] = useState<ProcedureSettingsState>({
@@ -394,7 +280,6 @@ export function ProcedureBuilderProvider({
     }
   }, [dropdownOpen]);
 
-  // --- 🐞 YEH HAI AAPKA FIX ---
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       // 1. Close Field Dropdowns
@@ -483,7 +368,7 @@ export function ProcedureBuilderProvider({
             !clickInsideLinkModal
           ) {
             setEditingFieldId(null);
-            setActiveContainerId("root"); // <-- YEH LINE ADD KI HAI
+            setActiveContainerId("root");
           }
         }
       }
@@ -497,7 +382,7 @@ export function ProcedureBuilderProvider({
           !sidebarClicked
         ) {
           setEditingSectionId(null);
-          setActiveContainerId("root"); // <-- YEH LINE ADD KI HAI
+          setActiveContainerId("root");
         }
       }
 
@@ -555,7 +440,6 @@ export function ProcedureBuilderProvider({
     conditionMenuOpen,
     fieldMenuOpen,
   ]);
-  // --- END FIX ---
 
   // --- NEW: Calculate total field count ---
   const totalFieldCount = useMemo(() => {

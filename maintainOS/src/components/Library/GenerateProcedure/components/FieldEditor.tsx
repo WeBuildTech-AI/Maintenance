@@ -8,14 +8,13 @@ import {
   Trash2,
   X,
   Trash,
-  File, // File icon import
+  File,
 } from "lucide-react";
 import { useRef } from "react";
 import { useProcedureBuilder } from "../ProcedureBuilderContext";
 import type { FieldData } from "../types";
 import { FieldContentRenderer } from "./FieldContentRenderer";
 import { ConditionLogicEditor } from "./ConditionLogicEditor";
-import { Tooltip } from "../../../ui/tooltip";
 
 interface FieldEditorProps {
   field: FieldData;
@@ -52,6 +51,7 @@ export function FieldEditor({
     handleDuplicateField,
     handleFieldPropChange,
     setIsLinkModalOpen,
+    // --- 🐞 handleAddCondition ko import karna zaroori hai ---
     handleAddCondition,
   } = useProcedureBuilder();
 
@@ -151,8 +151,9 @@ export function FieldEditor({
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center">
                         {
-                          fieldTypes.find((f) => f.label === field.selectedType)
-                            ?.icon
+                          fieldTypes.find(
+                            (f) => f.label === field.selectedType
+                          )?.icon
                         }
                       </div>
                       <span>{field.selectedType}</span>
@@ -295,10 +296,9 @@ export function FieldEditor({
                     ) : (
                       // --- FILE PREVIEW (Triggers download) ---
                       <div className="relative flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-md w-full sm:w-2/3">
-                        {/* --- 🐞 YEH HAI AAPKA FIX --- */}
                         <a
                           href={attachment.url}
-                          download={attachment.name} // <-- YEH FILE KO DOWNLOAD KARWAYEGA
+                          download={attachment.name}
                           className="flex items-center gap-3 min-w-0"
                         >
                           <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-white text-gray-500 rounded-lg border border-gray-200">
@@ -316,7 +316,6 @@ export function FieldEditor({
                             {attachment.name}
                           </span>
                         </a>
-                        {/* --- END FIX --- */}
                         <button
                           onClick={() => deleteAttachment(attachment.id)}
                           className="text-gray-400 hover:text-gray-600 flex-shrink-0 ml-2"
@@ -411,6 +410,7 @@ export function FieldEditor({
                   </label>
                 )}
 
+                {/* --- 🐞 YEH HAI AAPKA FIX --- */}
                 {logicEnabledFieldTypes.includes(field.selectedType) && (
                   <button
                     ref={(el) =>
@@ -418,9 +418,13 @@ export function FieldEditor({
                     }
                     onClick={(e) => {
                       e.stopPropagation();
+                      // Logic panel ko toggle karein
                       setLogicEditorOpen(
                         logicEditorOpen === field.id ? null : field.id
                       );
+                      
+                      // Agar conditions pehle se nahi hain (yaani 0 hain),
+                      // toh pehli condition add karein
                       if (!field.conditions || field.conditions.length === 0) {
                         handleAddCondition(field.id);
                       }
@@ -432,6 +436,8 @@ export function FieldEditor({
                     <Share2 size={18} />
                   </button>
                 )}
+                {/* --- END FIX --- */}
+                
                 <button
                   onClick={() => setIsLinkModalOpen({ fieldId: field.id })}
                   className="hover:text-blue-600"
