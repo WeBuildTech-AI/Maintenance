@@ -10,7 +10,7 @@ import {
   PhoneCallIcon,
   Trash2,
   Upload,
-  X, // 'Reject' ke liye
+  X,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import {
@@ -21,7 +21,7 @@ import {
 } from "../ui/dropdown-menu";
 import { Card } from "../ui/card";
 import Comment from "../ui/comment";
-import { formatDateOnly } from "../utils/Date"; // Path check karein
+import { formatDateOnly } from "../utils/Date";
 import { purchaseOrderService } from "../../store/purchaseOrders";
 import toast from "react-hot-toast";
 import PurchaseStockUI from "./PurchaseStockUI";
@@ -30,14 +30,13 @@ import { Tooltip } from "../ui/tooltip";
 
 interface OrderItem {
   id: string;
-  itemName?: string; // Optional
+  itemName?: string;
   partNumber?: string;
   unitsOrdered: number;
   unitsReceived: number;
   unitCost: number;
-  price: number; // Price bhi hai
+  price: number;
   part?: {
-    // Part object bhi nested ho sakta hai
     id: string;
     name: string;
     partNumber?: string;
@@ -54,6 +53,15 @@ interface Address {
   country: string;
 }
 
+interface TaxItems {
+  id: string;
+  taxLabel: string;
+  taxValue: string;
+  taxCategory: "PERCENTAGE" | "FIXED";
+  isTaxable?: boolean;
+  purchaseOrderId?: string;
+}
+
 interface PurchaseOrder {
   id: string;
   poNumber: string;
@@ -66,47 +74,46 @@ interface PurchaseOrder {
     | "partially_fulfilled";
   vendorId: string;
   vendor: {
-    // Vendor object nested hai
     id: string;
     name: string;
   };
   shippingAddressId?: string;
-  shippingAddress?: Address; // Address object
+  shippingAddress?: Address;
   billingAddressId?: string;
-  billingAddress?: Address; // Address object
+  billingAddress?: Address;
   orderItems?: OrderItem[];
-  dueDate: string; // Date string
+  dueDate: string;
   notes?: string;
   extraCosts?: number;
   contactName?: string;
   phoneOrMail?: string;
+  taxesAndCosts?: TaxItems[];
 }
 
 interface PurchaseOrderDetailsProps {
-  selectedPO: string;
-  updateState: (status: string) => void; // Sirf status update hota hai
+  selectedPO: PurchaseOrder;
+  updateState: (status: string) => void;
   handleConfirm: (id: string) => void;
   setModalAction: (
     action: "reject" | "approve" | "delete" | "fullfill" | "cancelled"
-  ) => void; // Actions restrict kiye
+  ) => void;
   topRef: React.RefObject<HTMLDivElement>;
   commentsRef: React.RefObject<HTMLDivElement>;
   formatMoney: (amount: number) => string;
-  addressToLine: (address: Address | null | undefined) => string; // Helper function type
-  comment: string; // Comment string hai, array nahi (aapke PurchaseOrders.tsx ke hisaab se)
+  addressToLine: (address: Address | null | undefined) => string;
+  comment?: string;
   showCommentBox: boolean;
-  StatusBadge: () => void;
-  handleSend: () => void;
+  StatusBadge: React.ComponentType<{ status: PurchaseOrder["status"] }>;
   setApproveModal: () => void;
   setShowCommentBox: (show: boolean) => void;
-  setComment: (comment: string) => void; // string
-  handleEditClick: () => void; // <-- HAMARA NAYA PROP
+  setComment: (comment: string) => void;
+  handleEditClick: () => void;
   fetchPurchaseOrder: () => void;
 }
 
 const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   selectedPO,
-  updateState, // Yeh ab 'purchaseOrders.tsx' mein 'updateStatus' hai
+  updateState,
   handleConfirm,
   setModalAction,
   topRef,
@@ -114,9 +121,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   addressToLine,
   commentsRef,
   showCommentBox,
-
   setShowCommentBox,
-
   handleEditClick,
   setApproveModal,
   StatusBadge,
@@ -127,13 +132,13 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   const [comment, setComment] = React.useState("");
   const modalRef = React.useRef<HTMLDivElement>(null);
 
-  const handleApprove = async (id) => {
+  const handleApprove = async (id: string) => {
     try {
       await purchaseOrderService.approvePurchaseOrder(id);
       setModalAction("approve");
       toast.success("Successfully Approved ");
       fetchPurchaseOrder();
-    } catch (err) {
+    } catch {
       toast.error("Failed to Approve");
     }
   };
@@ -144,31 +149,33 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
       setContinueModal(false);
       toast.success("Successfully Completed ");
       fetchPurchaseOrder();
-    } catch (err) {
+    } catch {
       toast.error("Failed to Complete");
     }
   };
 
   const subtotal =
     selectedPO.orderItems?.reduce((acc, item) => {
-      // Unit Cost aur Units Ordered ko Number banayein
       const cost = Number(item.unitCost) || 0;
       const qty = Number(item.unitsOrdered) || 0;
-
-      // Agar item ki direct 'price' available hai to wo use karein, nahi to calculate karein
       const itemTotal = item.price ? Number(item.price) : cost * qty;
-
       return acc + itemTotal;
     }, 0) || 0;
 
-  // 2. Taxes & Costs Calculation
+  const taxesAndCosts = selectedPO.taxesAndCosts || [];
   const extraCosts = Number(selectedPO.extraCosts) || 0;
 
-  // 3. Final Total Calculation
-  const total = subtotal + extraCosts;
+  // Total tax & cost calculation
+  const taxTotal = taxesAndCosts.reduce((acc, tax) => {
+    if (tax.taxCategory === "PERCENTAGE") {
+      return acc + (subtotal * Number(tax.taxValue || 0)) / 100;
+    }
+    return acc + Number(tax.taxValue || 0);
+  }, 0);
+
+  const total = subtotal + extraCosts + taxTotal;
 
   const handleSend = async () => {
-    // 1. Validation
     if (!comment.trim()) {
       toast.error("Please write a comment first.");
       return;
@@ -180,24 +187,15 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
       return;
     }
     try {
-      const payload = {
-        message: comment,
-      };
+      const payload = { message: comment };
       await purchaseOrderService.createPurchaseOrderComment(poId, payload);
 
       toast.success("Comment added successfully!");
       setComment("");
       setShowCommentBox(false);
-      if (fetchPurchaseOrder) {
-        await fetchPurchaseOrder();
-      }
+      await fetchPurchaseOrder();
     } catch (error: any) {
-      // 6. Error Handling
-      toast.error("Failed to add comment.");
       toast.error(error?.response?.data?.message || "Failed to add comment.");
-    } finally {
-      // 7. Loading state reset
-      // setIsCommentLoading(false);
     }
   };
 
@@ -217,7 +215,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                   navigator.clipboard.writeText(url);
                   toast.success("Purchase Order link copied!");
                 }}
-                className="h-4 w-4 text-orange-600"
+                className="h-4 w-4 text-orange-600 cursor-pointer"
               />
             </Tooltip>
           </div>
@@ -229,10 +227,9 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
               Send to Vendor
             </Button>
 
-            {/* --- EDIT BUTTON CLICK HANDLER --- */}
             <Button
               className="gap-2 bg-white cursor-pointer text-orange-600 border border-orange-600 hover:bg-orange-50"
-              onClick={handleEditClick} // <-- YAHAN ADD KIYA
+              onClick={handleEditClick}
             >
               <Edit className="h-4 w-4" />
               Edit
@@ -263,14 +260,14 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                 >
                   <CopyPlusIcon className="h-4 w-4 mr-2" /> Copy Link
                 </DropdownMenuItem>
-                {selectedPO.status === "approved" ||
-                  (selectedPO.status === "pending" && (
-                    <DropdownMenuItem
-                      onClick={() => setModalAction("cancelled")}
-                    >
-                      <X className="h-4 w-4 mr-2" /> Cancel
-                    </DropdownMenuItem>
-                  ))}
+                {(selectedPO.status === "approved" ||
+                  selectedPO.status === "pending") && (
+                  <DropdownMenuItem
+                    onClick={() => setModalAction("cancelled")}
+                  >
+                    <X className="h-4 w-4 mr-2" /> Cancel
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   className="text-red-600"
                   onClick={() => setModalAction("delete")}
@@ -294,10 +291,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                   <div className="text-sm text-muted-foreground mb-1 ">
                     Status
                   </div>
-                  <span className="capitalize text-sm font-medium">
-                    {/* StatusBadge component use karein */}
-                    <StatusBadge status={selectedPO.status} />
-                  </span>
+                  <StatusBadge status={selectedPO.status} />
                 </div>
                 <div className="capitalize">
                   <div className="text-sm text-muted-foreground mb-1 ">
@@ -349,7 +343,6 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                       <td className="p-3">{it.unitsReceived || 0}</td>
                       <td className="p-3">{formatMoney(it.unitCost)}</td>
                       <td className="p-3">
-                        {/* Yahan hum wahi logic dikhayenge jo calculation me use kiya */}
                         {formatMoney(
                           it.price
                             ? Number(it.price)
@@ -359,34 +352,55 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                     </tr>
                   ))}
 
-                  {/* --- Subtotal Row --- */}
+                  {/* Subtotal */}
                   <tr className="border-t">
                     <td colSpan={5} className="p-3 text-right font-medium">
                       Subtotal
                     </td>
-                    <td className="p-3 font-medium">
-                      {/* Calculated Subtotal Variable */}
-                      {formatMoney(subtotal)}
-                    </td>
+                    <td className="p-3 font-medium">{formatMoney(subtotal)}</td>
                   </tr>
 
-                  {/* --- Extra Costs Row --- */}
-                  <tr className="border-t">
-                    <td colSpan={5} className="p-3 text-right font-medium">
-                      Taxes &amp; Costs
-                    </td>
-                    <td className="p-3 font-medium">
-                      {formatMoney(extraCosts)}
-                    </td>
-                  </tr>
+                  {/* Taxes and Costs */}
+                  {taxesAndCosts?.length > 0 &&
+                    taxesAndCosts.map((tax) => (
+                      <tr key={tax.id} className="border-t">
+                        <td
+                          colSpan={5}
+                          className="p-3 text-right font-medium capitalize"
+                        >
+                          {tax.taxLabel}{" "}
+                          {tax.taxCategory === "PERCENTAGE"
+                            ? `(${tax.taxValue}%)`
+                            : ""}
+                        </td>
+                        <td className="p-3 font-medium">
+                          {tax.taxCategory === "PERCENTAGE"
+                            ? formatMoney(
+                                (subtotal * Number(tax.taxValue || 0)) / 100
+                              )
+                            : formatMoney(Number(tax.taxValue || 0))}
+                        </td>
+                      </tr>
+                    ))}
 
-                  {/* --- Total Row --- */}
+                  {/* Extra Costs */}
+                  {extraCosts > 0 && (
+                    <tr className="border-t">
+                      <td colSpan={5} className="p-3 text-right font-medium">
+                        Extra Costs
+                      </td>
+                      <td className="p-3 font-medium">
+                        {formatMoney(extraCosts)}
+                      </td>
+                    </tr>
+                  )}
+
+                  {/* Total */}
                   <tr className="border-t bg-muted/30">
                     <td colSpan={5} className="p-3 text-right font-semibold">
                       Total
                     </td>
                     <td className="p-3 font-semibold">
-                      {/* Calculated Total Variable */}
                       {formatMoney(total)}
                     </td>
                   </tr>
@@ -404,7 +418,6 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
               <div className="flex items-start gap-2">
                 <Building2 className="h-4 w-4 text-muted-foreground mt-1" />
                 <div className="text-sm">
-                  {/* addressToLine helper use karein */}
                   {addressToLine(selectedPO.shippingAddress)}
                 </div>
               </div>
@@ -422,6 +435,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
               </div>
             </Card>
           </div>
+
           <div className="grid grid-cols-2 gap-6 mt-4">
             <Card className="p-4">
               <div className="text-sm text-muted-foreground mb-2">
@@ -443,7 +457,6 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
         <div ref={commentsRef}>
           <h3 className="font-medium mb-3">Comments &amp; History</h3>
 
-          {/* TODO: Yahaan aapko comments ki list render karni chahiye */}
           <div className="border rounded-lg p-4 mb-4">
             <div className="text-sm text-muted-foreground mb-2">
               No Comments Found
@@ -462,78 +475,65 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
         </div>
       </div>
 
-      {/* FOOTER */}
+      {/* FOOTER BUTTONS (no changes) */}
       {selectedPO.status === "pending" && (
-        <>
-          <div className="p-6 border-t flex justify-between flex-none bg-white">
-            <Button
-              onClick={() => setModalAction("reject")}
-              className="gap-2 text-red-600 bg-white border border-red-600 rounded-md px-4 py-2 text-sm font-medium hover:bg-red-50 cursor-pointer"
-            >
-              <X className="h-4 w-4" />
-              Reject
-            </Button>
-            <Button
-              onClick={() => {
-                handleApprove(selectedPO.id);
-              }}
-              // onClick={() => handleConfirm(selectedPO.i)}
-              className="gap-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md px-4 py-2 text-sm font-medium cursor-pointer flex items-center"
-            >
-              <Check className="h-4 w-4" /> {/* 'Upload' ki jagah 'Check' */}
-              Approve
-            </Button>
-          </div>
-        </>
+        <div className="p-6 border-t flex justify-between flex-none bg-white">
+          <Button
+            onClick={() => setModalAction("reject")}
+            className="gap-2 text-red-600 bg-white border border-red-600 rounded-md px-4 py-2 text-sm font-medium hover:bg-red-50 cursor-pointer"
+          >
+            <X className="h-4 w-4" />
+            Reject
+          </Button>
+          <Button
+            onClick={() => handleApprove(selectedPO.id)}
+            className="gap-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md px-4 py-2 text-sm font-medium cursor-pointer flex items-center"
+          >
+            <Check className="h-4 w-4" />
+            Approve
+          </Button>
+        </div>
       )}
+
       {selectedPO.status === "approved" && (
-        <>
-          <div className="p-6 border-t flex justify-end flex-none bg-white">
-            <Button
-              onClick={() => setFullFillModal(true)}
-              className="gap-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md px-4 py-2 text-sm font-medium cursor-pointer flex items-center"
-            >
-              <Upload className="h-4 w-4" />
-              Fulfill
-            </Button>
-          </div>
-        </>
+        <div className="p-6 border-t flex justify-end flex-none bg-white">
+          <Button
+            onClick={() => setFullFillModal(true)}
+            className="gap-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md px-4 py-2 text-sm font-medium cursor-pointer flex items-center"
+          >
+            <Upload className="h-4 w-4" />
+            Fulfill
+          </Button>
+        </div>
       )}
 
       {selectedPO.status === "partially_fulfilled" && (
-        <>
-          <div className="p-6 border-t flex justify-end flex-none bg-white gap-4">
-            <div>
-              <Button
-                onClick={() => setFullFillModal(true)}
-                className="gap-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md px-4 py-2 text-sm font-medium cursor-pointer flex items-center"
-              >
-                <Upload className="h-4 w-4" />
-                Fulfill
-              </Button>
-            </div>
-            <div>
-              <Button
-                onClick={() => setContinueModal(true)}
-                className="gap-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md px-4 py-2 text-sm font-medium cursor-pointer flex items-center"
-              >
-                <Check className="h-4 w-4" />
-                Countinue
-              </Button>
-            </div>
-          </div>
-        </>
+        <div className="p-6 border-t flex justify-end flex-none bg-white gap-4">
+          <Button
+            onClick={() => setFullFillModal(true)}
+            className="gap-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md px-4 py-2 text-sm font-medium cursor-pointer flex items-center"
+          >
+            <Upload className="h-4 w-4" />
+            Fulfill
+          </Button>
+          <Button
+            onClick={() => setContinueModal(true)}
+            className="gap-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md px-4 py-2 text-sm font-medium cursor-pointer flex items-center"
+          >
+            <Check className="h-4 w-4" />
+            Continue
+          </Button>
+        </div>
       )}
 
       {fullFillModal && (
-        <>
-          <PurchaseStockUI
-            setFullFillModal={setFullFillModal}
-            selectedPO={selectedPO}
-            fetchPurchaseOrder={fetchPurchaseOrder}
-          />
-        </>
+        <PurchaseStockUI
+          setFullFillModal={setFullFillModal}
+          selectedPO={selectedPO}
+          fetchPurchaseOrder={fetchPurchaseOrder}
+        />
       )}
+
       {continueModal && (
         <ContinueModal
           onClose={() => setContinueModal(false)}
