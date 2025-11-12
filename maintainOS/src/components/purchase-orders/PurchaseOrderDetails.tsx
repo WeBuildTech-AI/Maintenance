@@ -518,7 +518,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                 className="gap-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md px-4 py-2 text-sm font-medium cursor-pointer flex items-center"
               >
                 <Check className="h-4 w-4" />
-                Countinue
+                Complete
               </Button>
             </div>
           </div>
