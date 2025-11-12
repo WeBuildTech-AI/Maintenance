@@ -196,7 +196,6 @@ export const updateItemOrder = createAsyncThunk(
   }
 );
 
-
 export const createPurchaseOrderComment = createAsyncThunk(
   "purchaseOrders/createPurchaseOrderComment",
   async (
@@ -207,7 +206,22 @@ export const createPurchaseOrderComment = createAsyncThunk(
       return await purchaseOrderService.updatePurchaseOrder(id, data);
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to create the comment in purchase order"
+        error.response?.data?.message ||
+          "Failed to create the comment in purchase order"
+      );
+    }
+  }
+);
+
+export const fetchPurchaseOrderComment = createAsyncThunk(
+  "purchaseOrders/fetchPurchaseOrderComment",
+  async (_, { rejectWithValue }) => {
+    try {
+      return await purchaseOrderService.FetchPurchaseOrderComment;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Failed to fetch purchase orders comment"
       );
     }
   }

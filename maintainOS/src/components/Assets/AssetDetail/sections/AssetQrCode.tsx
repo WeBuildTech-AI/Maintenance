@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 
 export function AssetQrCode({ asset }: { asset: any }) {
   // ✅ Build full QR value for scanning
-  const qrValue = asset?.qrCode ? `asset/${asset.qrCode}` : "";
+  const qrValue = asset?.qrCode ? `${asset.qrCode}` : "";
 
   // ✅ Extract only the part after "/"
   const displayValue = qrValue.split("/").pop() || "";

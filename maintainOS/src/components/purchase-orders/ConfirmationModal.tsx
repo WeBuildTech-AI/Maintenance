@@ -1,7 +1,7 @@
 import { Check, X } from "lucide-react";
 import React from "react";
 
-function SuccessModal({ onClose, selectedPO }:any) {
+function SuccessModal({ onClose, selectedPO }: any) {
   // We pass 'onClose' to the 'X' button
   return (
     <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 border border-gray-200">
@@ -36,13 +36,13 @@ function SuccessModal({ onClose, selectedPO }:any) {
           {/* Send to Vendor Button */}
           <button
             disabled
-            className="w-full cursor-pointer px-4 py-3 text-sm font-medium text-orange-600 hover:bg-orange-50 border-orange-600  rounded-lg hover:bg-gray-200 transition-all focus:outline-none focus:ring-2 focus:ring-gray-300"
+            className="w-full border-border cursor-pointer px-4 py-3 text-sm font-medium text-orange-600 hover:bg-orange-50 border-orange-600  rounded-lg hover:bg-gray-200 transition-all focus:outline-none focus:ring-2 focus:ring-gray-300"
           >
             Send to Vendor
           </button>
-          <button className="w-full cursor-pointer px-4 py-3 text-sm font-medium text-orange-600 bg-white border border-blue-600 rounded-lg hover:bg-orange-50 transition-all focus:outline-none focus:ring-2 focus:ring-blue-300">
+          {/* <button className="w-full cursor-pointer px-4 py-3 text-sm font-medium text-orange-600 bg-white border border-blue-600 rounded-lg hover:bg-orange-50 transition-all focus:outline-none focus:ring-2 focus:ring-blue-300">
             Export to PDF
-          </button>
+          </button> */}
         </div>
       </div>
     </div>
@@ -123,7 +123,7 @@ export default function ConfirmationModal({
               disabled={isLoading}
               className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Cancel
+              {confirmButtonText === "Cancel" ? "Go Back" : "Cancel"}
             </button>
 
             <button

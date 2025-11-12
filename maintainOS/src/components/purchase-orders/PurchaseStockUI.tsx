@@ -1,11 +1,7 @@
 import React, { useState } from "react";
 import { Settings, X, MapPin, ChevronDown, Loader2 } from "lucide-react";
-
-// --- ADDED ---
-// PLEASE UPDATE THIS PATH to point to your actual service file
 import { purchaseOrderService } from "../../store/purchaseOrders/purchaseOrders.service";
 import toast from "react-hot-toast";
-// -----------
 
 type Props = {
   setFullFillModal: (v: boolean) => void;
@@ -13,7 +9,6 @@ type Props = {
   fetchPurchaseOrder?: () => void;
 };
 
-// Define a type for the state
 interface ItemState {
   id: any;
   unitCost: number;
@@ -27,28 +22,25 @@ export default function PurchaseStockUI({
   selectedPO,
   fetchPurchaseOrder,
 }: Props) {
-  // State for loading
   const [isLoading, setIsLoading] = useState(false);
-  // State for API errors
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize state for each order item dynamically
   const [itemsState, setItemsState] = useState<ItemState[]>(
     selectedPO?.orderItems?.map(
       (item: any): ItemState => ({
         id: item.id,
         unitCost: parseFloat(item.unitCost) || 0,
         unitsOrdered: item.unitsOrdered || 0,
-        unitsReceived: 0, // Default to 0
+        // Auto-fill logic: Use received if exists, else ordered, else 0
+        unitsReceived: item.unitsReceived || item.unitsOrdered || 0,
         location: "General",
       })
     ) || []
   );
 
-  // === IMMUTABLE HANDLECHANGE FUNCTION ===
   const handleChange = (
     index: number,
-    key: keyof ItemState, // Use keyof to ensure key is valid
+    key: keyof ItemState,
     value: any
   ) => {
     setItemsState((prevState) =>
@@ -64,7 +56,6 @@ export default function PurchaseStockUI({
     );
   };
 
-  // Calculate total ordered and total received
   const totalOrdered = itemsState.reduce(
     (sum, item) => sum + item.unitCost * item.unitsOrdered,
     0
@@ -74,7 +65,6 @@ export default function PurchaseStockUI({
     0
   );
 
-  // === UPDATED AND FIXED API HANDLER ===
   const handleOrderUpdate = async () => {
     setIsLoading(true);
     setError(null);
@@ -87,7 +77,6 @@ export default function PurchaseStockUI({
     }
 
     try {
-      // 1. Create Array of Promises
       const apiCalls = itemsState.map((itemState, index) => {
         const originalItem = selectedPO.orderItems[index];
         const itemId = itemState.id;
@@ -120,7 +109,6 @@ export default function PurchaseStockUI({
         await fetchPurchaseOrder();
       }
 
-      // 5. Finally Close the Modal
       setFullFillModal(false);
     } catch (err: any) {
       console.error(err);
@@ -153,7 +141,6 @@ export default function PurchaseStockUI({
             the costs.
           </h2>
 
-          {/* Map through order items */}
           {selectedPO?.orderItems?.map((item: any, index: number) => {
             const state = itemsState[index];
             if (!state) return null;
@@ -192,13 +179,15 @@ export default function PurchaseStockUI({
                           type="number"
                           min={0}
                           step="0.01"
-                          value={state.unitCost}
-                          disabled={isLoading} // Disable when loading
+                          // Check: Value or 0
+                          value={state.unitCost || 0} 
+                          disabled={isLoading}
                           onChange={(e) =>
                             handleChange(
                               index,
                               "unitCost",
-                              Math.max(0, parseFloat(e.target.value) || 0)
+                              // If empty string, default to 0 immediately
+                              e.target.value === "" ? 0 : parseFloat(e.target.value)
                             )
                           }
                           className="w-16 text-right text-sm outline-none ml-1 bg-transparent"
@@ -214,15 +203,16 @@ export default function PurchaseStockUI({
                         <input
                           type="number"
                           min={0}
-                          max={state.unitsOrdered}
                           step="1"
-                          value={state.unitsReceived}
-                          disabled={isLoading} // Disable when loading
+                          // Check: Value or 0 (Shows 0 if value is empty/null)
+                          value={state.unitsReceived || 0} 
+                          disabled={isLoading}
                           onChange={(e) =>
                             handleChange(
                               index,
                               "unitsReceived",
-                              Math.max(0, parseInt(e.target.value || "0"))
+                              // If empty string, default to 0 immediately
+                              e.target.value === "" ? 0 : parseInt(e.target.value)
                             )
                           }
                           className="w-16 text-right text-sm outline-none bg-transparent"
@@ -245,7 +235,6 @@ export default function PurchaseStockUI({
 
         {/* Footer */}
         <div className="border-t bg-white px-2 py-2">
-          {/* Error Message */}
           {error && (
             <div className="text-red-600 text-sm px-4 pb-2 text-center">
               Error: {error}
@@ -272,14 +261,14 @@ export default function PurchaseStockUI({
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setFullFillModal(false)}
-                  disabled={isLoading} // Disable when loading
+                  disabled={isLoading}
                   className="text-sm text-orange-600 px-6 py-2 rounded cursor-pointer hover:bg-orange-50 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleOrderUpdate}
-                  disabled={isLoading} // Disable when loading
+                  disabled={isLoading}
                   className="px-6 py-2 bg-orange-600 text-white cursor-pointer rounded text-sm flex items-center gap-2 hover:bg-orange-600 disabled:bg-blue-400"
                 >
                   {isLoading ? (
