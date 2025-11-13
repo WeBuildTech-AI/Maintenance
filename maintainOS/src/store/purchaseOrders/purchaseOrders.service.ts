@@ -111,4 +111,9 @@ export const purchaseOrderService = {
     return res.data;
   },
 
+
+   deletePurchaseOrderComment: async (id: string): Promise<void> => {
+    await api.delete(`/purchase-orders/comments/${id}`);
+  },
+
 };

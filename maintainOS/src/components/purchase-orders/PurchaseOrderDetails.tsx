@@ -140,6 +140,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   const modalRef = React.useRef<HTMLDivElement>(null);
   const user = useSelector((state: RootState) => state.auth.user);
 
+  //  Change the status in Purchase Order to approve
   const handleApprove = async (id: string) => {
     try {
       await purchaseOrderService.approvePurchaseOrder(id);
@@ -151,6 +152,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
     }
   };
 
+  // Change the status to continue
   const handleContinue = async () => {
     try {
       await purchaseOrderService.completePurchaseOrder(selectedPO.id);
@@ -162,6 +164,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
     }
   };
 
+  // fetch Purchase Order Comment
   const fetchPurchaseOrderComments = async () => {
     try {
       setIsLoading(true);
@@ -175,19 +178,26 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
       setIsLoading(false);
     }
   };
-
+  // fetch Purchase order Log
   const fetchPurchaseOrderLog = async () => {
     try {
-      setIsLoading(true)
+      setIsLoading(true);
       const res = await purchaseOrderService.FetchPurchaseOrderLog(
         selectedPO.id
       );
       setLog(res || []);
     } catch (err) {
       toast.error("Failed to fetch the Log");
-    }finally{
+    } finally {
       setIsLoading(false);
     }
+  };
+
+  // delete Comment in purchase Order
+
+  const handleDeleteComment = async (id) => {
+    await purchaseOrderService.deletePurchaseOrderComment(id);
+    fetchPurchaseOrderComments();
   };
 
   useEffect(() => {
@@ -553,7 +563,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                       return (
                         <div
                           key={item.id}
-                          className="flex items-start gap-3 border-b pb-3 last:border-b-0"
+                          className="flex items-start gap-3 border-b pb-3 last:border-b-0 group relative"
                         >
                           {/* Avatar Circle */}
                           <div className="flex items-center justify-center w-10 h-10 rounded-full bg-orange-100 text-orange-700 font-semibold">
@@ -562,14 +572,24 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
 
                           {/* Comment Content */}
                           <div className="flex-1">
-                            <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                              <span>{item.author?.name || "Unknown User"}</span>
-                              <span>{formattedDate}</span>
+                            <div className="flex justify-between text-xs  mb-1">
+                              <div className="font-medium text-black capitalize ">{item.author?.name || "Unknown User"}</div>
+                              <div className="flex justify-center itme-center">
+                                <span className="mr-2">{formattedDate}</span>
+                                <button
+                                  onClick={() => handleDeleteComment(item.id)} // 🔥 add your delete logic here
+                                  className=" text-red-600"
+                                >
+                                  <Trash2 className="w-4 h-4 pt-3 " />
+                                </button>
+                              </div>
                             </div>
                             <p className="text-sm text-gray-800">
                               {item.message}
                             </p>
                           </div>
+
+                          {/* Delete Icon (hidden until hover) */}
                         </div>
                       );
                     })}
@@ -614,7 +634,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                         className="flex items-start gap-3 pb-1 last:border-b-0"
                       >
                         {/* Avatar Circle */}
-                        <div className="flex items-center justify-center mt-1 capitalize w-8 h-8 rounded-full bg-orange-100 text-orange-700 font-semibold">
+                        <div className="flex items-center justify-center mt-1 capitalize font-medium  w-8 h-8 rounded-full bg-orange-100 text-orange-700 font-semibold">
                           {renderInitials(user?.fullName)}
                         </div>
 
