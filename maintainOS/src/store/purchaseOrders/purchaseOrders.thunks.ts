@@ -226,3 +226,31 @@ export const fetchPurchaseOrderComment = createAsyncThunk(
     }
   }
 );
+export const fetchPurchaseOrderLog = createAsyncThunk(
+  "purchaseOrders/fetchPurchaseOrderLog",
+  async (_, { rejectWithValue }) => {
+    try {
+      return await purchaseOrderService.FetchPurchaseOrderLog;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Failed to fetch purchase orders log"
+      );
+    }
+  }
+);
+
+
+export const deletePurchaseOrderComment = createAsyncThunk(
+  "purchaseOrders/deletePurchaseOrderComment",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      await purchaseOrderService.deletePurchaseOrderComment;
+      return id;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete purchase order comment"
+      );
+    }
+  }
+);

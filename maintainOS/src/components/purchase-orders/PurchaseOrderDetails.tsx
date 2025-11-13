@@ -28,6 +28,9 @@ import PurchaseStockUI from "./PurchaseStockUI";
 import ContinueModal from "./ContinueModal";
 import { Tooltip } from "../ui/tooltip";
 import Loader from "../Loader/Loader";
+import type { RootState } from "../../store";
+import { useSelector } from "react-redux";
+import { renderInitials } from "../utils/renderInitials";
 
 interface OrderItem {
   id: string;
@@ -133,8 +136,11 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   const [commentData, setCommentData] = React.useState([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const [comment, setComment] = React.useState("");
+  const [log, setLog] = React.useState([]);
   const modalRef = React.useRef<HTMLDivElement>(null);
+  const user = useSelector((state: RootState) => state.auth.user);
 
+  //  Change the status in Purchase Order to approve
   const handleApprove = async (id: string) => {
     try {
       await purchaseOrderService.approvePurchaseOrder(id);
@@ -146,6 +152,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
     }
   };
 
+  // Change the status to continue
   const handleContinue = async () => {
     try {
       await purchaseOrderService.completePurchaseOrder(selectedPO.id);
@@ -157,6 +164,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
     }
   };
 
+  // fetch Purchase Order Comment
   const fetchPurchaseOrderComments = async () => {
     try {
       setIsLoading(true);
@@ -170,9 +178,31 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
       setIsLoading(false);
     }
   };
+  // fetch Purchase order Log
+  const fetchPurchaseOrderLog = async () => {
+    try {
+      setIsLoading(true);
+      const res = await purchaseOrderService.FetchPurchaseOrderLog(
+        selectedPO.id
+      );
+      setLog(res || []);
+    } catch (err) {
+      toast.error("Failed to fetch the Log");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // delete Comment in purchase Order
+
+  const handleDeleteComment = async (id) => {
+    await purchaseOrderService.deletePurchaseOrderComment(id);
+    fetchPurchaseOrderComments();
+  };
 
   useEffect(() => {
     fetchPurchaseOrderComments();
+    fetchPurchaseOrderLog();
   }, [selectedPO.id]);
 
   const subtotal =
@@ -313,36 +343,37 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                   </div>
                   <StatusBadge status={selectedPO.status} />
                 </div>
-                <div className="capitalize">
-                  <div className="text-sm text-muted-foreground mb-1">
-                    Due Date
+                {selectedPO.dueDate && (
+                  <div className="capitalize">
+                    <div className="text-sm text-muted-foreground mb-1">
+                      Due Date
+                    </div>
+                    {(() => {
+                      const dueDate = new Date(selectedPO?.dueDate);
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+
+                      const isOverdue = dueDate < today;
+
+                      return (
+                        <span
+                          className={`capitalize text-sm font-medium ${
+                            isOverdue ? "text-red-600 font-semibold" : ""
+                          }`}
+                        >
+                          {isOverdue ? (
+                            <div className="">
+                              <span>{formatDateOnly(selectedPO.dueDate)}</span>
+                              <p>Overdue</p>
+                            </div>
+                          ) : (
+                            formatDateOnly(selectedPO.dueDate)
+                          )}
+                        </span>
+                      );
+                    })()}
                   </div>
-
-                  {(() => {
-                    const dueDate = new Date(selectedPO?.dueDate);
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-
-                    const isOverdue = dueDate < today;
-
-                    return (
-                      <span
-                        className={`capitalize text-sm font-medium ${
-                          isOverdue ? "text-red-600 font-semibold" : ""
-                        }`}
-                      >
-                        {isOverdue ? (
-                          <div className="">
-                            <span>{formatDateOnly(selectedPO.dueDate)}</span>
-                            <p>Overdue</p>
-                          </div>
-                        ) : (
-                          formatDateOnly(selectedPO.dueDate)
-                        )}
-                      </span>
-                    );
-                  })()}
-                </div>
+                )}
               </div>
             </Card>
 
@@ -532,7 +563,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                       return (
                         <div
                           key={item.id}
-                          className="flex items-start gap-3 border-b pb-3 last:border-b-0"
+                          className="flex items-start gap-3 border-b pb-3 last:border-b-0 group relative"
                         >
                           {/* Avatar Circle */}
                           <div className="flex items-center justify-center w-10 h-10 rounded-full bg-orange-100 text-orange-700 font-semibold">
@@ -541,14 +572,24 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
 
                           {/* Comment Content */}
                           <div className="flex-1">
-                            <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                              <span>{item.author?.name || "Unknown User"}</span>
-                              <span>{formattedDate}</span>
+                            <div className="flex justify-between text-xs  mb-1">
+                              <div className="font-medium text-black capitalize ">{item.author?.name || "Unknown User"}</div>
+                              <div className="flex justify-center itme-center">
+                                <span className="mr-2">{formattedDate}</span>
+                                <button
+                                  onClick={() => handleDeleteComment(item.id)} // 🔥 add your delete logic here
+                                  className=" text-red-600"
+                                >
+                                  <Trash2 className="w-4 h-4 pt-3 " />
+                                </button>
+                              </div>
                             </div>
                             <p className="text-sm text-gray-800">
                               {item.message}
                             </p>
                           </div>
+
+                          {/* Delete Icon (hidden until hover) */}
                         </div>
                       );
                     })}
@@ -567,6 +608,53 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
             setComment={setComment}
             fetchPurchanseOrder={fetchPurchaseOrder}
           />
+
+          <div>
+            <div className="space-y-4">
+              {isLoading ? (
+                <Loader />
+              ) : (
+                <>
+                  {[...log].reverse().map((item: any) => {
+                    const formattedDate = new Date(
+                      item.createdAt
+                    ).toLocaleString();
+
+                    // Optional: Extract initials from author name or fallback to '?'
+
+                    // Choose display text (backend gives `responseLog`)
+                    const message = item.responseLog || "No activity message";
+
+                    // Optional: user display name
+                    const authorName = user?.fullName || "Unknown User";
+
+                    return (
+                      <div
+                        key={item.id}
+                        className="flex items-start gap-3 pb-1 last:border-b-0"
+                      >
+                        {/* Avatar Circle */}
+                        <div className="flex items-center justify-center mt-1 capitalize font-medium  w-8 h-8 rounded-full bg-orange-100 text-orange-700 font-semibold">
+                          {renderInitials(user?.fullName)}
+                        </div>
+
+                        {/* Log Content */}
+                        <div className="flex-1">
+                          <div className="flex gap-4 capitalize text-xs text-muted-foreground mb-1">
+                            <span>{authorName}</span>
+                            <span>{formattedDate}</span>
+                          </div>
+
+                          {/* Activity Message */}
+                          <p className="text-sm text-gray-800">{message}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 

@@ -4,6 +4,7 @@ import type {
   CreateAddressData,
   CreatePurchaseOrderComment,
   CreatePurchaseOrderData,
+  GetPurchaseOrderLog,
   PurchaseOrderResponse,
   UpdatePurchaseOrderData,
 } from "./purchaseOrders.types";
@@ -101,6 +102,18 @@ export const purchaseOrderService = {
   ): Promise<PurchaseOrderResponse> => {
     const res = await api.get(`/purchase-orders/${id}/comments`);
     return res.data;
+  },
+
+  FetchPurchaseOrderLog: async (
+    id: string
+  ): Promise<GetPurchaseOrderLog> => {
+    const res = await api.get(`/purchase-orders/get/logs/${id}`);
+    return res.data;
+  },
+
+
+   deletePurchaseOrderComment: async (id: string): Promise<void> => {
+    await api.delete(`/purchase-orders/comments/${id}`);
   },
 
 };

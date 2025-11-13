@@ -31,6 +31,8 @@ import ConfirmationModal from "./ConfirmationModal";
 import toast from "react-hot-toast";
 import PurchaseOrderDetails from "./PurchaseOrderDetails";
 import Loader from "../Loader/Loader";
+import { useNavigate } from "react-router-dom";
+import { formatDateOnly } from "../utils/Date";
 
 // --- Helper to deep compare arrays ---
 function getChangedFields(
@@ -144,7 +146,7 @@ export function PurchaseOrders() {
   };
 
   const [newPO, setNewPO] = useState<NewPOFormType>(initialPOState);
-
+  const navigate = useNavigate();
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -167,6 +169,7 @@ export function PurchaseOrders() {
 
       if (!selectedPOId && sortedData.length > 0) {
         setSelectedPOId(sortedData[0].id);
+        // navigate(`${sortedData[0].id}`)
       }
     } catch (err) {
       console.error(err);
@@ -515,8 +518,6 @@ export function PurchaseOrders() {
           }));
       }
 
-      // --- CHANGE 5: Handle Tax Updates ---
-      // @ts-ignore
       if (changedFormFields.taxLines) {
         // @ts-ignore
         payload.taxesAndCosts = formatTaxesForPayload(
@@ -561,7 +562,6 @@ export function PurchaseOrders() {
       toast.error("No PO selected for action.");
       return;
     }
-
     setIsLoading(true);
     try {
       if (modalAction === "reject") {
@@ -667,7 +667,7 @@ export function PurchaseOrders() {
                             ? "border-l-4 border-l-orange-600 bg-orange-50/50 bg-muted/50"
                             : "hover:bg-muted/50  border-l-4 border-l-transparent"
                         }`}
-                        onClick={() => setSelectedPOId(po.id)}
+                        onClick={() => setSelectedPOId(po.id) }
                       >
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between">
@@ -696,6 +696,34 @@ export function PurchaseOrders() {
                             <div className="text-right">
                               <div className="mt-2 capitalize">
                                 <StatusBadge status={po.status as POStatus} />
+                              </div>
+                              <div className="mt-1">
+                                {(() => {
+                                  const today = new Date();
+                                  const dueDate = new Date(po.dueDate);
+
+                                  // reset times for accurate comparison
+                                  today.setHours(0, 0, 0, 0);
+                                  dueDate.setHours(0, 0, 0, 0);
+
+                                  if (dueDate < today) {
+                                    return (
+                                      <span className="text-red-600 font-medium text-sm mt-1">
+                                        Overdue
+                                      </span>
+                                    );
+                                  } else if (
+                                    dueDate.getTime() === today.getTime()
+                                  ) {
+                                    return (
+                                      <span className="text-red-600 font-medium text-sm mt-1">
+                                       Overdue
+                                      </span>
+                                    );
+                                  } else {
+                                    return null;
+                                  }
+                                })()}
                               </div>
                             </div>
                           </div>

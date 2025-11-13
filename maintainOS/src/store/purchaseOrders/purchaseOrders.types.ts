@@ -79,14 +79,16 @@ export interface UpdatePurchaseOrderData {
 export interface CreateAddressData {
   purchaseOrderId: string;
   // address can be a single string or a structured object depending on API
-  address: string | {
-    line1?: string;
-    line2?: string;
-    city?: string;
-    state?: string;
-    postalCode?: string;
-    country?: string;
-  };
+  address:
+    | string
+    | {
+        line1?: string;
+        line2?: string;
+        city?: string;
+        state?: string;
+        postalCode?: string;
+        country?: string;
+      };
   // optional type: 'shipping' | 'billing'
   type?: "shipping" | "billing";
   contact?: Record<string, any>;
@@ -99,7 +101,17 @@ export interface PurchaseOrdersState {
   error: string | null;
 }
 
+export interface CreatePurchaseOrderComment {
+  message: string;
+}
 
-export interface CreatePurchaseOrderComment{
-  message:string
+export interface GetPurchaseOrderLog {
+  id: string;
+  authorId: string;
+  purchaseOrderId: string;
+  responseLog: string;
+  activityType: string;
+  oldValue: string | null;
+  newValue: string | null;
+  createdAt: string;
 }
