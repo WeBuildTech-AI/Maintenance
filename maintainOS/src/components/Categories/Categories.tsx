@@ -1,6 +1,5 @@
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  ArrowLeft,
   TriangleAlert,
   Zap,
   ClipboardList,
@@ -9,162 +8,176 @@ import {
   FileText,
   Snowflake,
   Shield,
-  FileSignature,
   MoreHorizontal,
   Edit,
+  Link as LinkIcon,
+  Loader2,
 } from "lucide-react";
 
-import { Button } from "../ui/button";
+import { Button } from "../ui/button"; 
 import CategoriesHeader from "./CategoriesHeader";
-import { NewCategoryForm } from "./NewCategoriesForm";
-import { Link, NavLink } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-// import { Separator } from "../ui/separator";
 
-// Helper component for individual sidebar items (now handles clicks)
-const SidebarItem = ({ icon, label, isActive, onClick }) => (
+import { Link, NavLink } from "react-router-dom";
+import { categoryService } from "../../store/categories";
+
+// Import the updated form component
+import { NewCategoryForm } from "./NewCategoriesForm"; 
+
+// --- Types ---
+interface Category {
+  id: string;
+  _id?: string;
+  name: string;
+  description?: string;
+  iconName?: string;
+  createdAt?: string;
+  code?: string;
+}
+
+// --- Icon Map ---
+const ALL_ICONS: { [key: string]: React.ReactNode } = {
+  Damage: <TriangleAlert className="w-5 h-5 text-red-600" />,
+  Electrical: <Zap className="w-5 h-5 text-yellow-600" />,
+  Inspection: <ClipboardList className="w-5 h-5 text-purple-600" />,
+  Mechanical: <Cog className="w-5 h-5 text-pink-600" />,
+  Preventive: <RefreshCw className="w-5 h-5 text-green-600" />,
+  Project: <FileText className="w-5 h-5 text-orange-600" />,
+  Refrigeration: <Snowflake className="w-5 h-5 text-blue-500" />,
+  Safety: <Shield className="w-5 h-5 text-teal-600" />,
+  Default: <FileText className="w-5 h-5 text-gray-600" />,
+};
+
+const getCategoryIcon = (categoryName?: string) => {
+  if (!categoryName) return ALL_ICONS.Default;
+  const iconKey = Object.keys(ALL_ICONS).find((k) =>
+    categoryName.toLowerCase().includes(k.toLowerCase())
+  );
+  return iconKey ? ALL_ICONS[iconKey] : ALL_ICONS.Default;
+};
+
+// --- Sidebar Item ---
+const SidebarItem = ({
+  item,
+  isActive,
+  onClick,
+}: {
+  item: Category;
+  isActive: boolean;
+  onClick: () => void;
+}) => (
   <button
     onClick={onClick}
-    className={`flex items-center w-full text-left p-3 gap-3 cursor-pointer transition-colors ${
+    className={`flex items-center w-full text-left p-3 gap-3 cursor-pointer transition-colors rounded-md ${
       isActive
-        ? "bg-primary/10 text-primary font-semibold"
+        ? "bg-primary/10 text-primary font-semibold border-r-4 border-primary"
         : "hover:bg-muted/50 text-foreground"
     }`}
   >
-    {icon}
-    <span>{label}</span>
+    {getCategoryIcon(item.iconName || item.name)}
+    <span className="capitalize">{item.name}</span>
   </button>
 );
 
-// All available icons, mapping their names to components and colors
-const ALL_ICONS = {
-  TriangleAlert: {
-    icon: <TriangleAlert className="w-5 h-5 text-red-600" />,
-    color: "bg-red-100",
-  },
-  Zap: {
-    icon: <Zap className="w-5 h-5 text-yellow-600" />,
-    color: "bg-yellow-100",
-  },
-  ClipboardList: {
-    icon: <ClipboardList className="w-5 h-5 text-purple-600" />,
-    color: "bg-purple-100",
-  },
-  Cog: {
-    icon: <Cog className="w-5 h-5 text-pink-600" />,
-    color: "bg-pink-100",
-  },
-  RefreshCw: {
-    icon: <RefreshCw className="w-5 h-5 text-green-600" />,
-    color: "bg-green-100",
-  },
-  FileText: {
-    icon: <FileText className="w-5 h-5 text-orange-600" />,
-    color: "bg-orange-100",
-  },
-  Snowflake: {
-    icon: <Snowflake className="w-5 h-5 text-blue-500" />,
-    color: "bg-blue-100",
-  },
-  Shield: {
-    icon: <Shield className="w-5 h-5 text-teal-600" />,
-    color: "bg-teal-100",
-  },
-  FileSignature: {
-    icon: <FileSignature className="w-5 h-5 text-rose-600" />,
-    color: "bg-rose-100",
-  },
-};
-
+// --- Main Component ---
 export function Categories() {
-  const sidebarItems = [
-    {
-      name: "Damage",
-      iconName: "TriangleAlert",
-      description: "Category for reporting all types of asset damage.",
-    },
-    {
-      name: "Electrical",
-      iconName: "Zap",
-      description:
-        "For issues related to wiring, power outages, and electrical components.",
-    },
-    {
-      name: "Inspection",
-      iconName: "ClipboardList",
-      description: "Routine and ad-hoc inspection tasks.",
-    },
-    {
-      name: "Mechanical",
-      iconName: "Cog",
-      description: "Tasks related to motors, engines, and mechanical parts.",
-    },
-    {
-      name: "Preventive",
-      iconName: "RefreshCw",
-      description: "Scheduled preventive maintenance activities.",
-    },
-    {
-      name: "Project",
-      iconName: "FileText",
-      description: "Tasks related to specific, ongoing projects.",
-    },
-    {
-      name: "Refrigeration",
-      iconName: "Snowflake",
-      description: "All tasks concerning cooling and refrigeration units.",
-    },
-    {
-      name: "Safety",
-      iconName: "Shield",
-      description: "Safety checks, compliance, and incident reports.",
-    },
-  
-  ];
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize with the first category in the list
-  const [selectedCategory, setSelectedCategory] = useState(sidebarItems[0]);
-  const [newFormCategories, setNewFormCategories] = useState(false);
+  // Form state to handle Create vs Edit
+  const [formState, setFormState] = useState<{
+    mode: "closed" | "create" | "edit";
+    data: Category | null;
+  }>({ mode: "closed", data: null });
 
-  const handleSelectCategory = (category) => {
+  const fetchCategories = async () => {
+    setIsLoading(true);
+    try {
+      const res = await (categoryService as any).fetchAllCategories();
+      const data = Array.isArray(res) ? res : (res as any).data || [];
+
+      // Sort: Newest First
+      const sortedData = data.sort((a: Category, b: Category) => {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateB - dateA; 
+      });
+
+      setCategories(sortedData);
+
+      // Maintain selection or select first
+      if (selectedCategory) {
+        const updatedSelected = sortedData.find((c: Category) => c.id === selectedCategory.id);
+        setSelectedCategory(updatedSelected || sortedData[0] || null);
+      } else if (sortedData.length > 0) {
+        setSelectedCategory(sortedData[0]);
+      }
+    } catch (err) {
+      console.error("Failed to fetch categories:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  // Handlers
+  const handleSelectCategory = (category: Category) => {
     setSelectedCategory(category);
+    setFormState({ mode: "closed", data: null });
+  };
+
+  const handleAddNew = () => {
+    setFormState({ mode: "create", data: null });
+    setSelectedCategory(null); // Deselect to show form
+  };
+
+  const handleEdit = () => {
+    if (selectedCategory) {
+      setFormState({ mode: "edit", data: selectedCategory });
+    }
+  };
+
+  const handleCloseForm = () => {
+    setFormState({ mode: "closed", data: null });
+    if (categories.length > 0 && !selectedCategory) {
+      setSelectedCategory(categories[0]);
+    }
   };
 
   return (
     <div className="flex h-full flex-col">
-      <CategoriesHeader setNewFormCategories={setNewFormCategories} />
+      <CategoriesHeader setNewFormCategories={handleAddNew} />
+
       <div className="flex gap-4 flex-1 overflow-hidden mt-6 min-h-0">
-        {/* Left Sidebar */}
-        <aside className="w-96 border bg-white ml-2  flex flex-col gap-2 overflow-y-auto">
-          <div className="flex-1 space-y-1 overflow-y-auto ">
-            {sidebarItems.length > 0 ? (
-              sidebarItems?.map((item) => (
+        {/* Sidebar */}
+        <aside className="w-96 border bg-white ml-2 flex flex-col gap-2 overflow-y-auto rounded-lg shadow-sm">
+          <div className="flex-1 space-y-1 p-2">
+            {isLoading ? (
+              <div className="flex justify-center items-center py-10">
+                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+              </div>
+            ) : categories.length > 0 ? (
+              categories.map((item) => (
                 <SidebarItem
-                  key={item.name}
-                  label={item.name}
-                  icon={ALL_ICONS[item.iconName].icon}
-                  isActive={selectedCategory?.name === item.name}
-                  onClick={() => {
-                    handleSelectCategory(item);
-                    setNewFormCategories(false);
-                  }}
+                  key={item.id || item._id}
+                  item={item}
+                  isActive={selectedCategory?.id === item.id}
+                  onClick={() => handleSelectCategory(item)}
                 />
               ))
             ) : (
               <div className="text-center py-8">
-                <p className="text-muted-foreground mb-2">
-                  No Categories Found
-                </p>
-                <Button
-                  // variant="link"
-                  onClick={() => setNewFormCategories(true)}
-                  className="text-primary p-0 bg-white cursor-pointer"
-                >
+                <p className="text-muted-foreground mb-2">No Categories Found</p>
+                <Button onClick={handleAddNew} variant="link" className="text-primary">
                   Create the first asset
                 </Button>
               </div>
@@ -172,114 +185,80 @@ export function Categories() {
           </div>
         </aside>
 
-        {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto">
-          {newFormCategories === true ? (
-            <NewCategoryForm setNewFormCategories={setNewFormCategories} />
-          ) : (
-            <>
-              {selectedCategory ? (
-                <div className="max-w-3xl mr-2 border h-full p-4 mx-auto bg-white">
-                  {/* Header */}
-                  <div className="flex justify-between items-center  mb-3">
-                    <h2 className="text-xl font-semibold text-gray-800 capitalize">
-                      {selectedCategory?.name}
-                    </h2>
-                    <div className="flex items-center gap-2">
-                      <button
-                        title="Copy Link"
-                        className="p-2 rounded-md text-orange-600 cursor-pointer"
-                      >
-                        <Link size={18} />
-                      </button>
-                      <button
-                        title="Edit"
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-md cursor-pointer text-orange-600 hover:bg-orange-50 border border-orange-600"
-                        // onClick={() => {
-                        //   // ❌ REMOVED: setIsEdit(true) & setEditData(selectedLocation)
-                        //   // ✅ Navigate to the new parameterized URL
-                        //   navigate(
-                        //     `/locations/${selectedLocation.id}/edit`
-                        //   );
-                        // }}
-                      >
-                        <Edit size={16} /> Edit
-                      </button>
-                      <div className="flex items-center gap-2">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="mt-2">
-                            <DropdownMenuItem
-                            // onClick={() =>
-                            //   handleDeleteLocation(selectedLocation?.id)
-                            // }
-                            >
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto pr-2">
+          {formState.mode === "create" || formState.mode === "edit" ? (
+            <NewCategoryForm
+              initialData={formState.data}
+              onClose={handleCloseForm}
+              refreshCategories={fetchCategories}
+            />
+          ) : selectedCategory ? (
+            <div className="max-w-3xl w-full border h-full p-6 mx-auto bg-white rounded-lg shadow-sm">
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gray-50 rounded-full">
+                    {getCategoryIcon(selectedCategory.iconName || selectedCategory.name)}
                   </div>
-
-                  <hr className="my-4" />
-
-                  {/* Footer */}
-
-                  {/* {selectedLocation.createdAt ===
-                      selectedLocation.updatedAt ? (
-                        <>
-                          <div className="text-sm text-gray-500 mt-6">
-                            Created By{" "}
-                            <span className="font-medium text-gray-700 capitalize">
-                              {user?.fullName}
-                            </span>{" "}
-                            on {formatDate(selectedLocation.createdAt)}
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="text-sm text-gray-500 mt-6">
-                            Created By{" "}
-                            <span className="font-medium text-gray-700 capitalize">
-                              {user?.fullName}
-                            </span>{" "}
-                            on {formatDate(selectedLocation.createdAt)}
-                          </div>
-                          <div className="text-sm text-gray-500 mt-6">
-                            Updated By{" "}
-                            <span className="font-medium text-gray-700 capitalize">
-                              {user?.fullName}
-                            </span>{" "}
-                            on {formatDate(selectedLocation.updatedAt)}
-                          </div>
-                        </>
-                      )} */}
-                  {/* Action Button */}
-                  <div className="mt-6 flex justify-center">
-                    <NavLink to="/work-orders">
-                      <button className="bg-white border hover-bg-orange-50 border-orange-600 text-orange-600 px-5 py-3 p-2 cursor-pointer rounded-full text-sm shadow-sm transition">
-                        Use in New Work Order
-                      </button>
-                    </NavLink>
-                  </div>
+                  <h2 className="text-2xl font-bold text-gray-800 capitalize">
+                    {selectedCategory.name}
+                  </h2>
                 </div>
-              ) : (
-                // Fallback message if no category is selected
-                <div className="flex h-full items-center justify-center rounded-lg border bg-white">
-                  <p className="text-gray-500">
-                    Select a category to see its details
+                <div className="flex items-center gap-2">
+                  <button className="p-2 rounded-md text-gray-500 hover:bg-gray-100 transition">
+                    <LinkIcon size={18} />
+                  </button>
+                  <button
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-md cursor-pointer text-orange-600 hover:bg-orange-50 border border-orange-600 transition"
+                    onClick={handleEdit}
+                  >
+                    <Edit size={16} /> Edit
+                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem className="text-red-600 cursor-pointer">
+                        Delete Category
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+              <hr className="border-gray-100 my-6" />
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Description</h3>
+                  <p className="mt-1 text-gray-900">
+                    {selectedCategory.description || "No description provided."}
                   </p>
                 </div>
-              )}
-            </>
+                {selectedCategory.code && (
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Category Code</h3>
+                    <p className="mt-1 text-gray-900">{selectedCategory.code}</p>
+                  </div>
+                )}
+              </div>
+              <div className="mt-10 flex justify-end">
+                <NavLink to="/work-orders">
+                  <button className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-md text-sm font-medium shadow-sm transition">
+                    Use in New Work Order
+                  </button>
+                </NavLink>
+              </div>
+            </div>
+          ) : (
+            !isLoading && (
+              <div className="flex h-full flex-col items-center justify-center rounded-lg border bg-white border-dashed p-8 text-center">
+                <FileText className="h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-semibold text-gray-900">No Category Selected</h3>
+              </div>
+            )
           )}
-
-          {}
         </main>
       </div>
     </div>
