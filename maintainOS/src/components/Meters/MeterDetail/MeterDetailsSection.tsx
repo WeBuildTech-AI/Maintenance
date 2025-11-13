@@ -7,9 +7,15 @@ export function MeterDetailsSection({ selectedMeter }: any) {
     if (!selectedMeter?.readings?.length || !selectedMeter?.readingFrequency)
       return "N/A";
 
-    const lastReadingTime = new Date(selectedMeter.readings[0].timestamp);
-    const time = Number(selectedMeter.readingFrequency.time); // ✅ ensure it's numeric
-    const interval = selectedMeter.readingFrequency.interval?.toLowerCase();
+    const lastReadingTime = new Date(
+      selectedMeter.readings && selectedMeter.readings[0].timestamp
+    );
+    const time = Number(
+      selectedMeter.readingFrequency && selectedMeter.readingFrequency.time
+    ); // ✅ ensure it's numeric
+    const interval =
+      selectedMeter.readingFrequency &&
+      selectedMeter.readingFrequency.interval?.toLowerCase();
 
     if (isNaN(time)) return "Invalid frequency";
 
@@ -75,10 +81,11 @@ export function MeterDetailsSection({ selectedMeter }: any) {
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-muted-foreground" />
             <span className="text-base">
-              {selectedMeter.readings &&
-                `${selectedMeter.readings[0].value} ${
-                  selectedMeter.measurement?.name || ""
-                }`}
+              {selectedMeter?.readings?.length > 0
+                ? `${selectedMeter.readings[0].value ?? "-"} ${
+                    selectedMeter?.measurement?.name || ""
+                  }`
+                : "No readings available"}
             </span>
           </div>
         </div>
@@ -91,8 +98,8 @@ export function MeterDetailsSection({ selectedMeter }: any) {
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <span className="text-base">
-              {selectedMeter.readings &&
-                formatDate(selectedMeter.readings[0].timestamp)}
+              {selectedMeter?.readings?.length > 0 ? 
+                formatDate(selectedMeter.readings[0].timestamp) : "N/A"}
             </span>
           </div>
         </div>
