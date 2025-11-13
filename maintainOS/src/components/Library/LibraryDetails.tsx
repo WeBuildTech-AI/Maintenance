@@ -10,11 +10,10 @@ import { useState, useEffect } from "react";
 import { ProcedureForm } from "./GenerateProcedure/components/ProcedureForm";
 import { MoreActionsMenu } from "./GenerateProcedure/components/MoreActionsMenu";
 
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux"; 
 import { useNavigate } from "react-router-dom";
-// --- 👇 [CHANGE] 'batchDeleteProcedures' ko import kiya ---
 import { batchDeleteProcedures, duplicateProcedure } from "../../store/procedures/procedures.thunks"; 
-import type { AppDispatch } from "../../store"; 
+import type { AppDispatch, RootState } from "../../store"; 
 
 import { ConfirmationModal } from "./GenerateProcedure/components/ConfirmationModal";
 
@@ -35,11 +34,15 @@ function formatDisplayDate(dateString: string) {
   }
 }
 
-// --- DetailsTabContent component (koi change nahi) ---
+// --- DetailsTabContent component (UPDATED) ---
 const DetailsTabContent = ({ procedure }: { procedure: any }) => {
   const createdDate = formatDisplayDate(procedure.createdAt);
   const updatedDate = formatDisplayDate(procedure.updatedAt);
   const procedureId = procedure.id || "N/A";
+
+  // --- Get the user's full name from the auth slice ---
+  const user = useSelector((state: RootState) => state.auth.user);
+  const fullName = user?.fullName;
 
   return (
     <div className="p-6 space-y-6">
@@ -48,13 +51,17 @@ const DetailsTabContent = ({ procedure }: { procedure: any }) => {
           <User size={16} className="text-blue-600" />
           <span>
             Created By{" "}
-            <span className="font-semibold text-gray-900">sumit sahani</span> on{" "}
+            <span className="font-semibold text-gray-900">{fullName || "Unknown User"}</span> on{" "}
             {createdDate}
           </span>
         </div>
+        {/* --- 👇 [THE FIX] Added fullName to the "Last updated" line --- */}
         <div className="flex items-center text-sm text-gray-600 pl-8">
-          <span>Last updated on {updatedDate}</span>
+          <span>
+            Last updated by <span className="font-semibold text-gray-900">{fullName || "Unknown User"}</span> on {updatedDate}
+          </span>
         </div>
+        {/* --- END FIX --- */}
       </div>
       <div className="pt-6 border-t border-gray-200">
         <p className="text-sm text-gray-500 mb-2">Procedure ID</p>
@@ -73,12 +80,11 @@ const DetailsTabContent = ({ procedure }: { procedure: any }) => {
 export function LibraryDetails({
   selectedProcedure,
   onRefresh, 
-  // --- 👇 [CHANGE] Naya prop add karein ---
   onEdit,
 }: {
   selectedProcedure: any;
   onRefresh: () => void; 
-  onEdit: (id: string) => void; // <-- Prop type
+  onEdit: (id: string) => void;
 }) {
   const [activeTab, setActiveTab] = useState<"fields" | "details" | "history">(
     "fields"
@@ -96,9 +102,7 @@ export function LibraryDetails({
     if (!selectedProcedure) return;
 
     try {
-      // --- 👇 [CHANGE] Ab 'batchDeleteProcedures' ko call karein ---
       await dispatch(batchDeleteProcedures([selectedProcedure.id])).unwrap();
-      
       onRefresh(); 
       navigate("/library");
     } catch (error) {
@@ -160,7 +164,6 @@ export function LibraryDetails({
 
           {/* Buttons */}
           <div className="flex items-center gap-2 relative">
-            {/* --- 👇 [CHANGE] onClick handler add karein --- */}
             <button 
               onClick={() => onEdit(selectedProcedure.id)}
               className="inline-flex items-center rounded border border-blue-500 text-blue-600 px-4 py-1.5 text-sm font-medium hover:bg-blue-50"
