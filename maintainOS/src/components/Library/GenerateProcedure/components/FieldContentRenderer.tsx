@@ -1,14 +1,18 @@
 import {
   Calendar,
-  CheckSquare,
+
   GripVertical,
   Gauge,
-  X,
-  ChevronDown,
+
 } from "lucide-react";
 import { useProcedureBuilder } from "../ProcedureBuilderContext";
-import { FieldData } from "../types";
-// import { useState } from "react"; // --- REMOVED ---
+import { type FieldData } from "../types";
+// --- [NEW] Imports for fetching data and using the custom dropdown ---
+import { useState,  useCallback } from "react";
+import { meterService } from "../../../../store/meters/meters.service";
+import type { MeterResponse } from "../../../../store/meters/meters.types";
+
+import LibDynamicSelect from "../components/LibDynamicSelect";
 
 // --- ADDED: A clock icon ---
 const ClockIcon = () => (
@@ -39,33 +43,72 @@ interface FieldContentRendererProps {
 export function FieldContentRenderer({
   field,
   isEditing,
-  parentSectionId,
 }: FieldContentRendererProps) {
   const {
     handleFieldPropChange,
     handleOptionChange,
     handleRemoveOption,
     handleAddOption,
+    // --- [NEW] Custom dropdown ke liye context se state lein ---
+    activeDropdown,
+    setActiveDropdown,
   } = useProcedureBuilder();
 
+  const [meters, setMeters] = useState<MeterResponse[]>([]);
+  const [isLoadingMeters, setIsLoadingMeters] = useState(false);
+
+  const loadMeters = useCallback(async () => {
+    // Don't refetch if already loading or already fetched
+    if (isLoadingMeters || meters.length > 0) return;
+
+    setIsLoadingMeters(true);
+    try {
+      const data = await meterService.fetchMeters(1000, 1, 0); // Default pagination
+      setMeters(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error("Failed to fetch meters:", e);
+      setMeters([]); // Error par empty array
+    } finally {
+      setIsLoadingMeters(false);
+    }
+  }, [isLoadingMeters, meters.length]); // Dependencies
+  
+  const handleMeterSelectChange = (meterId: string | string[]) => {
+    const selectedId = Array.isArray(meterId) ? meterId[0] : meterId;
+    
+    if (!selectedId) {
+      // Handle "None" or "Clear"
+      handleFieldPropChange(field.id, "selectedMeter", "");
+      handleFieldPropChange(field.id, "selectedMeterName", "");
+      handleFieldPropChange(field.id, "meterUnit", "");
+      handleFieldPropChange(field.id, "lastReading", null);
+      return;
+    }
+
+    const selectedMeter = meters.find(m => m.id === selectedId);
+    if (!selectedMeter) return;
+
+    handleFieldPropChange(field.id, "selectedMeter", selectedId);
+    handleFieldPropChange(field.id, "selectedMeterName", selectedMeter.name);
+    handleFieldPropChange(field.id, "meterUnit", selectedMeter.measurement?.symbol || "");
+    handleFieldPropChange(field.id, "lastReading", selectedMeter.last_reading?.value || null);
+  };
+
+
   const ReadingPlaceholder = ({
-    unit,
+
     className,
   }: {
     unit?: string;
     className?: string;
   }) => (
-    <div className={`relative ${className}`}>
+    
+    <div className={`relative ${className}`}> 
       <textarea
         placeholder="Reading will be entered here"
         disabled
         className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-600 italic placeholder-gray-400 resize-none h-24 bg-gray-50 cursor-not-allowed"
       />
-      {unit && (
-        <span className="absolute top-3 right-4 text-gray-500 font-medium text-sm">
-          {unit}
-        </span>
-      )}
     </div>
   );
 
@@ -176,8 +219,6 @@ export function FieldContentRenderer({
               >
                 + Add Option
               </button>
-
-              {/* --- REMOVED "Add multiple options" feature --- */}
             </>
           )}
         </div>
@@ -272,32 +313,26 @@ export function FieldContentRenderer({
               <label className="text-sm font-medium text-gray-700 mb-1 block">
                 Select Meter
               </label>
-              <div className="flex items-center border border-gray-200 rounded-md px-3 py-1.5 bg-white focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-400">
-                <Gauge size={20} className="text-gray-500 mr-2" />
-                <input
-                  type="text"
-                  placeholder="Start typing..."
+              {/* --- [FIX] Native <select> ko <LibDynamicSelect> se replace kiya --- */}
+              <div 
+                className="flex items-center bg-white"
+                // Click ko field tak bubble hone se rokein
+                onClick={(e) => e.stopPropagation()} 
+              >
+                <LibDynamicSelect
+                  // --- [NEW] Icon prop add karein ---
+                  icon={<Gauge size={20} className="text-gray-500" />}
+                  options={meters.map(m => ({ id: m.id, label: m.name }))}
                   value={field.selectedMeter || ""}
-                  onChange={(e) =>
-                    handleFieldPropChange(
-                      field.id,
-                      "selectedMeter",
-                      e.target.value
-                    )
-                  }
-                  className="flex-1 p-0 border-none outline-none text-sm text-gray-800 placeholder-gray-400"
+                  onChange={handleMeterSelectChange}
+                  fetchOptions={loadMeters} // Dropdown khulne par fetch karega
+                  loading={isLoadingMeters}
+                  placeholder={isLoadingMeters ? "Loading meters..." : "Start typing..."}
+                  name={`meter-select-${field.id}`} // Dropdown ke liye unique name
+                  activeDropdown={activeDropdown}
+                  setActiveDropdown={setActiveDropdown}
+                  isMulti={false} // Sirf ek select kar sakte hain
                 />
-                {field.selectedMeter && (
-                  <button
-                    onClick={() =>
-                      handleFieldPropChange(field.id, "selectedMeter", "")
-                    }
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
-                <ChevronDown size={16} className="text-gray-500 ml-2" />
               </div>
             </div>
             <div>
@@ -308,23 +343,27 @@ export function FieldContentRenderer({
                 type="text"
                 placeholder="e.g., Feet, kWh, Volts"
                 value={field.meterUnit || ""}
-                onChange={(e) =>
-                  handleFieldPropChange(field.id, "meterUnit", e.target.value)
-                }
-                className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                // Unit auto-fill hoga, isliye read-only
+                readOnly
+                className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-gray-50"
               />
             </div>
+            {/* --- [FIX] ReadingPlaceholder component unit ko andar dikhayega --- */}
             <ReadingPlaceholder unit={field.meterUnit} className="mt-2" />
           </div>
         );
       } else {
+        // --- View mode logic ---
         return (
           <>
-            {field.selectedMeter && (
+            {/* Selected meter ka naam dikhayein */}
+            {field.selectedMeterName && (
               <p className="text-blue-600 text-sm mb-3">
-                {field.selectedMeter}
+                {field.selectedMeterName}
               </p>
             )}
+            {/* "Last Reading" ab FieldViewer.tsx mein dikhega */}
+            {/* --- [FIX] ReadingPlaceholder component unit ko andar dikhayega --- */}
             <ReadingPlaceholder unit={field.meterUnit} className="mt-2" />
           </>
         );

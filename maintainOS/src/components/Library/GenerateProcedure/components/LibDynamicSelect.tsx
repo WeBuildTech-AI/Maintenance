@@ -31,6 +31,8 @@ interface LibDynamicSelectProps {
   ctaText?: string;
   onCtaClick?: () => void;
   className?: string;
+  // --- 👇 [NEW] Naya prop add karein ---
+  icon?: React.ReactNode; 
 }
 
 const spinner = <Loader2 className="h-5 w-5 animate-spin text-gray-400" />;
@@ -67,6 +69,8 @@ export function LibDynamicSelect({
   ctaText,
   onCtaClick,
   className,
+  // --- 👇 [NEW] Naya prop read karein ---
+  icon,
 }: LibDynamicSelectProps) {
   const ref = React.useRef<HTMLDivElement | null>(null);
   const open = activeDropdown === name;
@@ -111,29 +115,38 @@ export function LibDynamicSelect({
     : options.filter((o) => o.id === selectedVals);
 
   return (
-    <div ref={ref} className={`relative ${className || ""}`}>
+    <div ref={ref} className={`relative ${className || "w-full"}`}>
       <style>{checkboxStyles}</style>
 
       <div
         className="flex items-center gap-2 border border-gray-200 rounded-md bg-white px-3 py-2 min-h-[44px] cursor-pointer"
         onClick={toggleDropdown}
       >
+        {/* --- 👇 [NEW] Icon ko yahaan render karein --- */}
+        {icon && <div className="flex-shrink-0">{icon}</div>}
+        
         <div className="flex-1 flex flex-wrap gap-2">
           {selectedOptions.length ? (
             selectedOptions.map((s) => (
-              <div key={s.id} className="inline-flex items-center gap-1 bg-gray-100 px-2 py-1 rounded text-sm">
+              <div 
+                key={s.id} 
+                // --- [FIX] Pill style ko hatayein agar single select hai ---
+                className={`inline-flex items-center gap-1 ${isMulti ? 'bg-gray-100 px-2 py-1 rounded' : 'bg-transparent p-0'} text-sm`}
+              >
                 {s.label}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (isMulti) toggleSelect(s.id);
-                    else onChange("");
-                  }}
-                  className="ml-1 text-xs hover:text-red-600"
-                  aria-label="remove"
-                >
-                  <X className="h-3 w-3" />
-                </button>
+                {/* --- [FIX] 'X' button ko logic add karein --- */}
+                {isMulti && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleSelect(s.id);
+                    }}
+                    className="ml-1 text-xs hover:text-red-600"
+                    aria-label="remove"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
               </div>
             ))
           ) : (
@@ -141,7 +154,21 @@ export function LibDynamicSelect({
           )}
         </div>
 
-        <div className="text-gray-400">{open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}</div>
+        {/* --- [FIX] 'X' button (single select ke liye) --- */}
+        {!isMulti && selectedOptions.length > 0 && (
+           <button
+             onClick={(e) => {
+               e.stopPropagation();
+               onChange(""); // Value ko clear karein
+             }}
+             className="text-gray-400 hover:text-gray-600"
+             aria-label="clear selection"
+           >
+             <X className="h-4 w-4" />
+           </button>
+        )}
+
+        <div className="text-gray-400 ml-2">{open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}</div>
       </div>
 
       {open && (
@@ -162,11 +189,18 @@ export function LibDynamicSelect({
                     }}
                   >
                     <div className={`${isSelected ? "font-medium text-gray-900" : "text-gray-700"}`}>{opt.label}</div>
-                    <div className={isSelected ? "checked" : ""}>
-                      <div className="custom-checkbox-box">
-                        <Check className="custom-checkbox-icon" />
+                    {/* --- [FIX] Checkbox ko sirf multi-select ke liye dikhayein --- */}
+                    {isMulti && (
+                      <div className={isSelected ? "checked" : ""}>
+                        <div className="custom-checkbox-box">
+                          <Check className="custom-checkbox-icon" />
+                        </div>
                       </div>
-                    </div>
+                    )}
+                    {/* --- [FIX] Single-select ke liye selected checkmark dikhayein --- */}
+                    {!isMulti && isSelected && (
+                      <Check className="h-4 w-4 text-blue-600" />
+                    )}
                   </div>
                 );
               })}

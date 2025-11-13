@@ -46,7 +46,6 @@ export function Library() {
   const [modalProcedure, setModalProcedure] = useState<any>(null);
   const [showDeleted, setShowDeleted] = useState(false);
 
-  // --- 👇 [CHANGE] Nayi state add karein ---
   const [editingProcedureId, setEditingProcedureId] = useState<string | null>(null);
 
   // --- SORT MODAL KE LIYE STATE ---
@@ -67,14 +66,14 @@ export function Library() {
         
         let res;
         if (showDeleted) {
-          console.log("倹 Fetching DELETED procedures...");
+          console.log("Fetching DELETED procedures...");
           res = await procedureService.fetchDeletedProcedures();
         } else {
-          console.log("倹 Fetching ACTIVE procedures...");
+          console.log("Fetching ACTIVE procedures...");
           res = await procedureService.fetchProcedures();
         }
         
-        console.log("倹 API response (procedures):", res);
+        console.log("API response (procedures):", res);
 
         const data = Array.isArray(res)
           ? res
@@ -82,7 +81,7 @@ export function Library() {
 
         setProcedures(data);
       } catch (err: any) {
-        console.error("笶Error fetching procedures:", err);
+        console.error("Error fetching procedures:", err);
         setError(err.message || "Failed to fetch procedures");
       } finally {
         setLoading(false);
@@ -182,18 +181,18 @@ export function Library() {
     setModalProcedure(null);
   }
 
-  // --- 👇 [CHANGE] Naya handler add karein ---
+  // --- Edit Handler (No Change) ---
   const handleEditProcedure = (id: string) => {
     setEditingProcedureId(id);
     setShowForm(true);
-    setViewMode("panel"); // Edit hamesha panel view mein open ho
+    setViewMode("panel"); 
   };
 
-  // --- 👇 [CHANGE] Naya handler add karein ---
+  // --- Back Handler (No Change) ---
   const handleBackFromBuilder = () => {
     setShowForm(false);
-    setEditingProcedureId(null); // Edit ID ko reset karein
-    fetchData(); // List ko refresh karein
+    setEditingProcedureId(null); 
+    fetchData(); 
   }
 
   return (
@@ -205,7 +204,6 @@ export function Library() {
           setViewMode={setViewMode}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
-          // --- 👇 [CHANGE] "New Procedure" click par ID ko null set karein ---
           setIsCreatingForm={() => {
             setEditingProcedureId(null); 
             setShowForm(true);
@@ -221,7 +219,6 @@ export function Library() {
           // --- FORM VIEW (SCROLLS) ---
           <div className="flex-1 bg-white p-6 overflow-y-auto h-full">
             <GenerateProcedure
-              // --- 👇 [CHANGE] Naye props pass karein ---
               onBack={handleBackFromBuilder}
               editingProcedureId={editingProcedureId}
             />
@@ -286,13 +283,12 @@ export function Library() {
                   <LibraryDetails
                     selectedProcedure={selectedProcedure}
                     onRefresh={fetchData}
-                    // --- 👇 [CHANGE] Naya handler pass karein ---
                     onEdit={handleEditProcedure}
                   />
                 </div>
               </div>
             ) : (
-              // --- TABLE VIEW (No Change) ---
+              // --- TABLE VIEW (UPDATE) ---
               <LibraryTable
                 procedures={sortedProcedures}
                 sortType={sortType}
@@ -302,6 +298,8 @@ export function Library() {
                 visibleColumns={visibleColumns}
                 onViewProcedure={(proc) => setModalProcedure(proc)}
                 showDeleted={showDeleted}
+                // --- 👇 [CHANGE] Naya prop pass karein ---
+                onEdit={handleEditProcedure}
               />
             )}
           </>
@@ -342,7 +340,6 @@ export function Library() {
         <LibraryDetails
           selectedProcedure={modalProcedure}
           onRefresh={handleModalRefresh}
-          // --- 👇 [CHANGE] Naya handler pass karein ---
           onEdit={handleEditProcedure}
         />
       </ProcedureDetailModal>

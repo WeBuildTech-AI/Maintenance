@@ -73,7 +73,7 @@ interface RenderItemProps {
   allFieldsInScope: any[]; 
 }
 
-// Renders a single interactive Field (NO CHANGE)
+// Renders a single interactive Field
 const PreviewField = memo(function PreviewField({
   item: field,
   answers,
@@ -86,7 +86,13 @@ const PreviewField = memo(function PreviewField({
   const fieldType = field.fieldType || field.selectedType;
   const fieldDesc = field.fieldDescription || field.description;
   const fieldOptions = field.config?.options || field.options;
+  
+  // --- [NEW] Meter reading ke liye specific data normalize karein ---
   const fieldUnit = field.config?.meterUnit || field.meterUnit;
+  // Yeh properties builder state se (via conversion) ya direct API se aa sakti hain
+  const meterName = field.selectedMeterName || field.config?.meterName;
+  const lastReading = field.lastReading !== undefined ? field.lastReading : field.config?.lastReading;
+
   const isRequired = field.required || field.isRequired;
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -195,39 +201,56 @@ const PreviewField = memo(function PreviewField({
 
       case "meter_reading":
       case "Meter Reading":
+        // --- 👇 [FIX] Yahaan par Last Reading aur Meter Name add karein ---
         return (
-          <div style={{ position: "relative" }}>
-            <input
-              type="number"
-              placeholder="Enter Reading"
-              style={{
-                width: "100%",
-                padding: "10px 12px",
-                border: "1px solid #d1d5db",
-                borderRadius: "6px",
-                fontSize: "0.9rem",
-                background: "#fff",
-              }}
-              value={currentValue || ""}
-              onChange={(e) => updateAnswer(fieldId, e.target.value)}
-            />
-            {fieldUnit && (
-              <span
-                style={{
-                  position: "absolute",
-                  right: "12px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  color: "#6b7280",
-                  pointerEvents: "none",
-                  fontSize: "0.9rem",
-                }}
-              >
-                {fieldUnit}
-              </span>
+          <>
+            {/* Last Reading (View mode jaisa) */}
+            {(lastReading !== null && lastReading !== undefined) && (
+              <p style={{ fontSize: "0.75rem", color: "#6b7280", marginBottom: "4px" }}>
+                Last Reading: {lastReading} {fieldUnit || ""}
+              </p>
             )}
-          </div>
+            {/* Meter Name (View mode jaisa) */}
+            {meterName && (
+              <p style={{ fontSize: "0.875rem", color: "#2563eb", marginBottom: "8px", fontWeight: 500 }}>
+                {meterName}
+              </p>
+            )}
+            {/* Reading Input Box */}
+            <div style={{ position: "relative" }}>
+              <input
+                type="number"
+                placeholder="Enter Reading"
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "6px",
+                  fontSize: "0.9rem",
+                  background: "#fff",
+                }}
+                value={currentValue || ""}
+                onChange={(e) => updateAnswer(fieldId, e.target.value)}
+              />
+              {fieldUnit && (
+                <span
+                  style={{
+                    position: "absolute",
+                    right: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "#6b7280",
+                    pointerEvents: "none",
+                    fontSize: "0.9rem",
+                  }}
+                >
+                  {fieldUnit}
+                </span>
+              )}
+            </div>
+          </>
         );
+        // --- END FIX ---
 
       case "signature_block":
       case "Signature Block":
@@ -557,7 +580,6 @@ const PreviewSection = memo(function PreviewSection({
 }: RenderItemProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   
-  // --- 💡 FIX: Combine section fields and headings ---
   const sectionFields = section.fields || [];
   const sectionHeadings = section.headings || [];
   const combinedSectionItems = [...sectionFields, ...sectionHeadings]
@@ -620,10 +642,9 @@ const PreviewSection = memo(function PreviewSection({
             gap: "24px",
           }}
         >
-          {/* --- 💡 FIX: Render the combined list --- */}
           {props.renderAllItems(
-            combinedSectionItems, // Use the new combined/sorted array
-            props.allFieldsInScope // allFieldsInScope is for *logic*, which is correct
+            combinedSectionItems, 
+            props.allFieldsInScope 
           )}
         </div>
       )}
@@ -641,7 +662,6 @@ const RenderPreviewItem = memo(function RenderPreviewItem(
   let blockType = item.blockType;
   if (!blockType) {
     if (item.sectionName) blockType = "section";
-    // --- 💡 FIX: Check for `item.text` (from GET) or `item.fieldType === 'heading'` (from conversion) ---
     else if (item.text || item.fieldType === "heading") blockType = "heading";
     else blockType = "field";
   }
@@ -662,7 +682,6 @@ const RenderPreviewItem = memo(function RenderPreviewItem(
             paddingBottom: "8px",
           }}
         >
-          {/* --- 💡 FIX: Prioritize `item.text` (from GET) --- */}
           {item.text || item.label || item.fieldName}
         </h3>
       );
@@ -674,14 +693,14 @@ const RenderPreviewItem = memo(function RenderPreviewItem(
 // --- Main Reusable Component ---
 interface ProcedureFormProps {
   rootFields: any[];
-  rootHeadings: any[]; // <-- 💡 FIX: Add prop for root headings
+  rootHeadings: any[]; 
   sections: any[];
   resetKey: string;
 }
 
 export function ProcedureForm({
   rootFields,
-  rootHeadings, // <-- 💡 FIX: Accept prop
+  rootHeadings, 
   sections,
   resetKey,
 }: ProcedureFormProps) {
@@ -747,16 +766,13 @@ export function ProcedureForm({
     [answers, updateAnswer]
   );
 
-  // --- 💡 FIX: Combine root fields and root headings and sort by order ---
   const combinedRootItems = [...(rootFields || []), ...(rootHeadings || [])]
     .sort((a, b) => (a.order || 0) - (b.order || 0));
     
-  // --- For logic, we only care about fields ---
   const allRootFieldsForLogic = rootFields || []; 
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      {/* --- 💡 FIX: Render the combined/sorted list --- */}
       {renderAllItems(combinedRootItems, allRootFieldsForLogic)}
 
       {/* Render Sections */}

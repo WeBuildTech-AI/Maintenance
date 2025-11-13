@@ -15,7 +15,6 @@ import { MoreActionsMenu } from "../GenerateProcedure/components/MoreActionsMenu
 import { ConfirmationModal } from "../GenerateProcedure/components/ConfirmationModal";
 import { useDispatch } from "react-redux";
 import {
-  // --- 👇 [CHANGE] 'deleteProcedure' ko yahaan se hata diya ---
   duplicateProcedure,
   batchDeleteProcedures,
   restoreProcedure,
@@ -45,6 +44,8 @@ interface LibraryTableProps {
   visibleColumns: string[];
   onViewProcedure: (procedure: any) => void; 
   showDeleted: boolean; 
+  // --- 👇 [CHANGE] Naya prop add karein ---
+  onEdit: (id: string) => void;
 }
 
 const RenderTableCell = ({
@@ -75,6 +76,8 @@ export function LibraryTable({
   visibleColumns,
   onViewProcedure, 
   showDeleted,
+  // --- 👇 [CHANGE] Naya prop read karein ---
+  onEdit,
 }: LibraryTableProps) {
   const [modalProc, setModalProc] = useState<any | null>(null);
   const [isBatchDeleteModalOpen, setIsBatchDeleteModalOpen] = useState(false);
@@ -137,7 +140,6 @@ export function LibraryTable({
   const handleConfirmDelete = async () => {
     if (!modalProc) return;
     try {
-      // --- 👇 [CHANGE] Ab yeh 'batchDeleteProcedures' ko array ke saath call karega ---
       await dispatch(batchDeleteProcedures([modalProc.id])).unwrap();
       onRefresh(); 
     } catch (error: any) {
@@ -324,7 +326,11 @@ export function LibraryTable({
                     {/* Actions Cell */}
                     <td className="px-4 py-3 text-gray-600">
                       <div className="flex items-center justify-end gap-4">
-                        <button className="hover:text-blue-600">
+                        {/* --- 👇 [CHANGE] onClick handler add karein --- */}
+                        <button 
+                          onClick={() => onEdit(proc.id)} 
+                          className="hover:text-blue-600"
+                        >
                           <Pencil size={18} />
                         </button>
                         <button 

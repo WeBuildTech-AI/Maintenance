@@ -8,7 +8,7 @@ export interface ConditionData {
   isCollapsed?: boolean;
 }
 
-// --- 🐞 YEH INTERFACE UPDATE KIYA GAYA HAI ---
+// --- 🐞 INTERFACE UPDATED ---
 export interface FieldData {
   id: number;
   selectedType: string;
@@ -30,14 +30,12 @@ export interface FieldData {
   conditions?: ConditionData[];
   includeTime?: boolean;
 
-  // --- "link" ko "links" (array) bana diya ---
   links?: {
     id: string;
     url: string;
     text: string;
   }[];
   
-  // --- "attachment" ko "attachments" (array) bana diya ---
   attachments?: {
     id: string;
     name: string;

@@ -14,7 +14,6 @@ interface FieldViewerProps {
 export function FieldViewer({
   field,
   parentSectionId,
-  isNested,
   onClick,
 }: FieldViewerProps) {
   const {
@@ -52,9 +51,19 @@ export function FieldViewer({
       <div
         className="flex-1 mb-6 border border-gray-200 bg-gray-50 hover:bg-white rounded-lg p-4 relative cursor-pointer"
       >
-        <p className="font-medium text-gray-800 mb-2">
+        <p className="font-medium text-gray-800 mb-1">
           {field.label || "Field Name"}
         </p>
+
+        {/* --- [NEW] Show Last Reading for Meter Reading fields --- */}
+        {field.selectedType === "Meter Reading" && 
+         (field.lastReading !== null && field.lastReading !== undefined) && (
+          <p className="text-xs text-gray-500 mb-2">
+            {/* Example: "Last Reading: 12 bar" */}
+            Last Reading: {field.lastReading} {field.meterUnit || ""}
+          </p>
+        )}
+        {/* --- END NEW --- */}
 
         <FieldContentRenderer
           field={field}

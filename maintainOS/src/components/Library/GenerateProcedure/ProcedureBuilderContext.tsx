@@ -7,7 +7,6 @@ import {
   type ReactNode,
   useMemo,
 } from "react";
-// --- UPDATED: Added ProcedureSettingsState ---
 import {
   type FieldData,
   type ConditionData,
@@ -24,19 +23,96 @@ import {
   Radio,
   Gauge,
 } from "lucide-react";
-// ✅ FIX: Yeh 'import' ab 'import type' hai
 import type { DragEndEvent, DragOverEvent, DragStartEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-// --- IMPORT THE CONVERSION FUNCTION ---
 import { convertStateToJSON } from "./utils/conversion";
 
 // --- 1. Define the Context Type (all state and handlers) ---
 interface ProcedureBuilderContextType {
-  // ... (saari purani types)
+  name: string;
+  description: string;
+  fields: FieldData[];
+  setFields: React.Dispatch<React.SetStateAction<FieldData[]>>;
+  settings: ProcedureSettingsState;
+  setSettings: React.Dispatch<React.SetStateAction<ProcedureSettingsState>>;
+  activeField: FieldData | null;
+  editingFieldId: number | null;
+  setEditingFieldId: React.Dispatch<React.SetStateAction<number | null>>;
+  activeContainerId: number | "root";
+  setActiveContainerId: React.Dispatch<React.SetStateAction<number | "root">>;
+  overContainerId: string | number | null;
+  setOverContainerId: React.Dispatch<React.SetStateAction<string | number | null>>;
+  dropdownOpen: number | null;
+  setDropdownOpen: React.Dispatch<React.SetStateAction<number | null>>;
+  
+  // --- [NEW] Yeh state LibDynamicSelect ke liye zaroori hai ---
+  activeDropdown: string | null;
+  setActiveDropdown: React.Dispatch<React.SetStateAction<string | null>>;
+  
+  editingSectionId: number | null;
+  setEditingSectionId: React.Dispatch<React.SetStateAction<number | null>>;
+  sectionMenuOpen: number | null;
+  setSectionMenuOpen: React.Dispatch<React.SetStateAction<number | null>>;
+  logicEditorOpen: number | null;
+  setLogicEditorOpen: React.Dispatch<React.SetStateAction<number | null>>;
+  conditionOperatorDropdownOpen: number | null;
+  setConditionOperatorDropdownOpen: React.Dispatch<React.SetStateAction<number | null>>;
+  conditionMenuOpen: number | null;
+  setConditionMenuOpen: React.Dispatch<React.SetStateAction<number | null>>;
+  fieldMenuOpen: number | null;
+  setFieldMenuOpen: React.Dispatch<React.SetStateAction<number | null>>;
+  isReorderModalOpen: boolean;
+  setIsReorderModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  isLinkModalOpen: { fieldId: number | null };
+  setIsLinkModalOpen: React.Dispatch<React.SetStateAction<{ fieldId: number | null }>>;
+  dropdownWidths: Record<number, number>;
+  setDropdownWidths: React.Dispatch<React.SetStateAction<Record<number, number>>>;
+  collapsed: Record<number, boolean>;
+  toggleCollapse: (id: number) => void;
+  fieldTypes: { label: string; icon: React.ReactNode }[];
+  totalFieldCount: number;
+  dropdownRefs: React.MutableRefObject<Record<number, HTMLDivElement | null>>;
+  buttonRefs: React.MutableRefObject<Record<number, HTMLDivElement | null>>;
+  fieldBlockRefs: React.MutableRefObject<Record<number, HTMLDivElement | null>>;
+  sidebarRef: React.MutableRefObject<HTMLDivElement | null>;
+  sectionBlockRefs: React.MutableRefObject<Record<number, HTMLDivElement | null>>;
+  sectionMenuButtonRefs: React.MutableRefObject<Record<number, HTMLDivElement | null>>;
+  sectionMenuPopoverRefs: React.MutableRefObject<Record<number, HTMLDivElement | null>>;
+  logicEditorButtonRefs: React.MutableRefObject<Record<number, HTMLButtonElement | null>>;
+  logicEditorPanelRefs: React.MutableRefObject<Record<number, HTMLDivElement | null>>;
+  conditionOpButtonRefs: React.MutableRefObject<Record<number, HTMLButtonElement | null>>;
+  conditionOpPanelRefs: React.MutableRefObject<Record<number, HTMLDivElement | null>>;
+  conditionMenuButtonRefs: React.MutableRefObject<Record<number, HTMLButtonElement | null>>;
+  conditionMenuPanelRefs: React.MutableRefObject<Record<number, HTMLDivElement | null>>;
+  fieldMenuButtonRefs: React.MutableRefObject<Record<number, HTMLButtonElement | null>>;
+  fieldMenuPanelRefs: React.MutableRefObject<Record<number, HTMLDivElement | null>>;
+  linkModalRef: React.MutableRefObject<HTMLDivElement | null>;
+  findFieldRecursive: (fieldsList: FieldData[], id: number) => FieldData | undefined;
+  updateFieldsRecursive: (fieldsList: FieldData[], updateFn: (field: FieldData) => FieldData) => FieldData[];
+  handleAddField: () => void;
+  handleAddHeading: () => void;
+  handleAddSection: () => void;
+  handleDeleteField: (id: number) => void;
+  handleAddFieldInsideSection: (sectionId: number) => void;
+  handleFieldPropChange: (id: number, prop: keyof FieldData, value: any) => void;
+  handleLabelChange: (id: number, value: string) => void;
+  handleAddOption: (id: number) => void;
+  handleOptionChange: (id: number, index: number, value: string) => void;
+  handleRemoveOption: (id: number, index: number) => void;
+  handleTypeChange: (id: number, newType: string) => void;
   handleAddCondition: (fieldId: number) => void;
-  // --- 👇 [CHANGE] Naya function add karein ---
-  handleToggleLogicEditor: (fieldId: number) => void; 
-  // ... (baaki saari types)
+  handleToggleLogicEditor: (fieldId: number) => void;
+  handleDeleteCondition: (fieldId: number, conditionId: number) => void;
+  handleConditionChange: (fieldId: number, conditionId: number, prop: keyof ConditionData, value: any) => void;
+  handleAddFieldInsideCondition: (fieldId: number, conditionId: number) => void;
+  handleToggleConditionCollapse: (fieldId: number, conditionId: number) => void;
+  logicEnabledFieldTypes: string[];
+  handleToggleRequired: (fieldId: number, isChecked: boolean) => void;
+  handleToggleDescription: (fieldId: number) => void;
+  handleDuplicateField: (fieldId: number) => void;
+  handleDragEnd: (event: DragEndEvent) => void;
+  handleFieldDragStart: (event: DragStartEvent) => void;
+  handleFieldDragOver: (event: DragOverEvent) => void;
   handleFieldDragEnd: (event: DragEndEvent) => void;
 }
 
@@ -77,7 +153,6 @@ function findFieldAndParent(
 }
 
 // --- Helper: Recursively update fields ---
-// (Yeh helper `handleToggleLogicEditor` ke liye zaroori hai)
 const updateFieldsRecursive = (
   fieldsList: FieldData[],
   updateFn: (field: FieldData) => FieldData
@@ -104,7 +179,6 @@ const updateFieldsRecursive = (
 };
 
 // --- Helper: Find a field recursively ---
-// (Yeh helper `handleToggleLogicEditor` ke liye zaroori hai)
 const findFieldRecursive = (
   fieldsList: FieldData[],
   id: number
@@ -248,6 +322,10 @@ export function ProcedureBuilderProvider({
   >(null);
   const [editingFieldId, setEditingFieldId] = useState<number | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState<number | null>(null);
+  
+  // --- [NEW] State for LibDynamicSelect ---
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+
   const [editingSectionId, setEditingSectionId] = useState<number | null>(null);
   const [sectionMenuOpen, setSectionMenuOpen] = useState<number | null>(null);
   const [logicEditorOpen, setLogicEditorOpen] = useState<number | null>(null);
@@ -270,7 +348,7 @@ export function ProcedureBuilderProvider({
   const dropdownRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const buttonRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const fieldBlockRefs = useRef<Record<number, HTMLDivElement | null>>({});
-  const sidebarRef = useRef<HTMLDivElement>(null);
+  const sidebarRef = useRef<HTMLDivElement | null>(null);
   const sectionBlockRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const sectionMenuButtonRefs = useRef<Record<number, HTMLDivElement | null>>(
     {}
@@ -350,7 +428,10 @@ export function ProcedureBuilderProvider({
       const isOutsideButtons = Object.values(buttonRefs.current).every(
         (ref) => !ref || !ref.contains(event.target as Node)
       );
-      if (isOutsideDropdowns && isOutsideButtons) {
+      // --- [NEW] Add check for LibDynamicSelect ---
+      const isOutsideActiveDropdown = activeDropdown === null; 
+      
+      if (isOutsideDropdowns && isOutsideButtons && isOutsideActiveDropdown) {
         setDropdownOpen(null);
       }
 
@@ -403,7 +484,9 @@ export function ProcedureBuilderProvider({
         if (
           activeFieldRef &&
           !activeFieldRef.contains(event.target as Node) &&
-          !sidebarClicked
+          !sidebarClicked &&
+          // --- [NEW] Add check for LibDynamicSelect ---
+          isOutsideActiveDropdown
         ) {
           let clickInsideLogicPanel = false;
           Object.values(logicEditorPanelRefs.current).forEach((panel) => {
@@ -500,6 +583,8 @@ export function ProcedureBuilderProvider({
     conditionOperatorDropdownOpen,
     conditionMenuOpen,
     fieldMenuOpen,
+    // --- [NEW] Add dependency ---
+    activeDropdown,
   ]);
 
   // --- NEW: Calculate total field count ---
@@ -1180,6 +1265,11 @@ export function ProcedureBuilderProvider({
     setOverContainerId,
     dropdownOpen,
     setDropdownOpen,
+    
+    // --- [NEW] State ko provide karein ---
+    activeDropdown,
+    setActiveDropdown,
+
     editingSectionId,
     setEditingSectionId,
     sectionMenuOpen,
