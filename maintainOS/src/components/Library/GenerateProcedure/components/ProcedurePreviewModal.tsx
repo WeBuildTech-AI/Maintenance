@@ -1,7 +1,7 @@
 import { X } from "lucide-react";
 import { useProcedureBuilder } from "../ProcedureBuilderContext";
-import { convertStateToJSON } from "../utils/conversion"; // Import the converter
-import { ProcedureForm } from "./ProcedureForm"; // Import the new reusable component
+import { convertStateToJSON } from "../utils/conversion"; 
+import { ProcedureForm } from "./ProcedureForm"; 
 
 interface PreviewModalProps {
   isOpen: boolean;
@@ -21,8 +21,11 @@ export function ProcedurePreviewModal({ isOpen, onClose }: PreviewModalProps) {
     description
   );
   
+  // --- 💡 FIX: Get rootHeadings from the converted data ---
   const rootFields = apiFormattedData.rootFields || [];
+  const rootHeadings = apiFormattedData.headings || []; // <-- GET ROOT HEADINGS
   const sections = apiFormattedData.sections || [];
+  // --- END FIX ---
 
   return (
     <div
@@ -90,11 +93,14 @@ export function ProcedurePreviewModal({ isOpen, onClose }: PreviewModalProps) {
             background: "#f9fafb", // Light gray background
           }}
         >
+          {/* --- 💡 FIX: Pass rootHeadings prop --- */}
           <ProcedureForm
             rootFields={rootFields}
+            rootHeadings={rootHeadings}
             sections={sections}
             resetKey={name} // Use name or a timestamp as a key
           />
+          {/* --- END FIX --- */}
         </div>
       </div>
     </div>

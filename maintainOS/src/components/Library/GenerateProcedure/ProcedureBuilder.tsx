@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ChevronLeft, Eye, Loader2 } from "lucide-react";
 import ProcedureBody from "./ProcedureBody";
 import ProcedureSettings from "./ProcedureSettings";
-import { useLayout } from "../../MainLayout";
+import { useLayout } from "../../MainLayout"; // Note: This path is inferred
 import { useProcedureBuilder } from "./ProcedureBuilderContext";
 import { convertStateToJSON } from "./utils/conversion";
 import { ProcedurePreviewModal } from "./components/ProcedurePreviewModal";
@@ -10,8 +10,8 @@ import { ProcedurePreviewModal } from "./components/ProcedurePreviewModal";
 // --- 💡 1. REDUX IMPORTS ---
 import { useDispatch } from "react-redux";
 // import { useSelector } from "react-redux"; 
-import { type RootState, type AppDispatch } from "../../../store"; 
-import { createProcedure } from "../../../store/procedures/procedures.thunks";
+import { type RootState, type AppDispatch } from "../../../store"; // Note: This path is inferred
+import { createProcedure } from "../../../store/procedures/procedures.thunks"; // Note: This path is inferred
 
 
 interface BuilderProps {
@@ -48,14 +48,14 @@ export default function ProcedureBuilder({
     // 1. Get the JSON data *with* IDs (for the preview)
     const previewJSON = convertStateToJSON(fields, settings, name, description);
     
-    // 2. --- FIX: Create API payload *without* IDs ---
-    // Helper function to remove 'id' from an object
+    // 2. --- FIX: Update helper function to remove 'sectionId' ---
     const removeId = (obj: any) => {
       // This strips 'id' and any other non-API props
       const { 
         id, 
         condition,
         parentId,
+        sectionId, // <-- (FIX) ADDED sectionId TO BE REMOVED
         // --- Add any other frontend-only props here ---
         ...rest 
       } = obj;
@@ -72,12 +72,15 @@ export default function ProcedureBuilder({
       return rest;
     };
     
+    // 3. --- FIX: Apply 'removeId' to the new 'headings' arrays ---
     const apiPayload = {
       ...previewJSON,
-      rootFields: previewJSON.rootFields.map(removeId), // Remove ID from root fields
+      headings: previewJSON.headings.map(removeId), // <-- (FIX) CLEAN ROOT HEADINGS
+      rootFields: previewJSON.rootFields.map(removeId), 
       sections: previewJSON.sections.map((section: any) => ({
-        ...removeId(section), // Remove ID from the section itself
-        fields: section.fields.map(removeId) // Remove ID from fields within the section
+        ...removeId(section), 
+        headings: section.headings.map(removeId), // <-- (FIX) CLEAN SECTION HEADINGS
+        fields: section.fields.map(removeId) 
       }))
     };
     // --- END FIX ---
@@ -87,13 +90,11 @@ export default function ProcedureBuilder({
     console.log(JSON.stringify(apiPayload, null, 2));
 
     try {
-      // 3. Dispatch the payload WITHOUT IDs
+      // 4. Dispatch the payload WITHOUT IDs
       await dispatch(createProcedure(apiPayload)).unwrap();
       
       // Success
       setIsSaving(false);
-      // --- 💡 4. Alert ko yahan se hata diya gaya hai ---
-      // alert("Template Saved Successfully!"); 
       onBack(); // Wapas Library screen par bhej diya
       
     } catch (error: any) {

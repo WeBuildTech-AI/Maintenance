@@ -87,3 +87,63 @@ export const deleteProcedure = createAsyncThunk(
     }
   }
 );
+
+export const duplicateProcedure = createAsyncThunk(
+  "procedures/duplicateProcedure",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      const newProcedure = await procedureService.duplicateProcedure(id);
+      return newProcedure; 
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to duplicate procedure"
+      );
+    }
+  }
+);
+
+export const batchDeleteProcedures = createAsyncThunk(
+  "procedures/batchDeleteProcedures",
+  async (ids: string[], { rejectWithValue }) => {
+    try {
+      await procedureService.batchDeleteProcedures(ids);
+      return ids; 
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete procedures"
+      );
+    }
+  }
+);
+
+export const fetchDeletedProcedures = createAsyncThunk(
+  "procedures/fetchDeletedProcedures",
+  async (_, { rejectWithValue }) => {
+    try {
+      const procedures = await procedureService.fetchDeletedProcedures();
+      return procedures;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch deleted procedures"
+      );
+    }
+  }
+);
+
+// --- 👇 [CHANGE] YEH NAYA THUNK ADD KIYA GAYA HAI ---
+export const restoreProcedure = createAsyncThunk(
+  "procedures/restoreProcedure",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      // API call karein
+      await procedureService.restoreProcedure(id);
+      // Success hone par ID return karein taaki reducer use list se hata sake
+      return id;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to restore procedure"
+      );
+    }
+  }
+);
+// --- END OF NEW THUNK ---

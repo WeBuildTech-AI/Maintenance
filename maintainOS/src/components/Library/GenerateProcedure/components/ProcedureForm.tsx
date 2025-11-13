@@ -3,12 +3,11 @@ import { Camera, Check, Trash2 } from "lucide-react";
 import { ChevronDown } from "lucide-react";
 import type { ConditionData } from "../types"; // Make sure this path is correct
 
-// --- Helper: checkCondition (Full logic) ---
+// --- Helper: checkCondition (Full logic - NO CHANGE) ---
 function checkCondition(
   condition: ConditionData,
   parentAnswer: any
 ): boolean {
-  // --- 💡 1. NORMALIZE operator for easier checks ---
   const op = condition.conditionOperator || condition.type;
 
   if (
@@ -16,23 +15,21 @@ function checkCondition(
     parentAnswer === null ||
     parentAnswer === ""
   ) {
-    // --- 💡 2. FIX: Handle "is not checked" for both UI and API formats ---
     if (op === "is not checked" || op === "is_not_checked") {
       return true;
     }
     return false;
   }
 
-  // --- 💡 3. Operator is already defined, proceed with original logic ---
   const val = condition.conditionValue || condition.value;
   const val2 = condition.conditionValue2;
-  const values = condition.values; // API format for 'one_of'
+  const values = condition.values; 
 
   if (op === "is") return parentAnswer === val;
-  if (op === "one_of") return values?.includes(parentAnswer); // API
+  if (op === "one_of") return values?.includes(parentAnswer); 
 
   if (op === "is not") return parentAnswer !== val;
-  if (op === "not_one_of") return !values?.includes(parentAnswer); // API
+  if (op === "not_one_of") return !values?.includes(parentAnswer); 
 
   if (op === "is checked" || op === "is_checked") return parentAnswer === true;
   if (op === "is not checked" || op === "is_not_checked")
@@ -66,24 +63,24 @@ function checkCondition(
 
 // --- Helper Components (Internal to this file) ---
 interface RenderItemProps {
-  item: any; // Use 'any' to accept both Builder and API types
+  item: any; 
   answers: Record<string, any>;
   updateAnswer: (fieldId: string, value: any) => void;
   renderAllItems: (
     items: any[],
     allFieldsInScope: any[]
   ) => React.ReactNode[];
-  allFieldsInScope: any[]; // For checking children
+  allFieldsInScope: any[]; 
 }
 
-// Renders a single interactive Field
+// Renders a single interactive Field (NO CHANGE)
 const PreviewField = memo(function PreviewField({
   item: field,
   answers,
   updateAnswer,
 }: Omit<RenderItemProps, "renderAllItems" | "allFieldsInScope">) {
   // --- Normalize Builder vs API props ---
-  const fieldId = field.id.toString(); // Use string ID for answers map
+  const fieldId = field.id.toString(); 
   const currentValue = answers[fieldId];
   const fieldLabel = field.fieldName || field.label;
   const fieldType = field.fieldType || field.selectedType;
@@ -104,7 +101,6 @@ const PreviewField = memo(function PreviewField({
   };
 
   const renderFieldInput = () => {
-    // --- 💡 FIX: This switch now handles BOTH UI names and API names ---
     switch (fieldType) {
       case "number_field":
       case "Number Field":
@@ -143,8 +139,8 @@ const PreviewField = memo(function PreviewField({
           />
         );
 
-      case "amount": // <-- API name
-      case "Amount ($)": // <-- UI name
+      case "amount": 
+      case "Amount ($)": 
         return (
           <div style={{ position: "relative" }}>
             <span
@@ -176,7 +172,7 @@ const PreviewField = memo(function PreviewField({
           </div>
         );
 
-      case "Date": // <-- API name AND UI name
+      case "Date": 
         return (
           <div style={{ position: "relative" }}>
             <input
@@ -253,8 +249,8 @@ const PreviewField = memo(function PreviewField({
           </div>
         );
 
-      case "checkbox": // <-- API name
-      case "Checkbox": // <-- UI name
+      case "checkbox": 
+      case "Checkbox": 
         return (
           <label
             style={{
@@ -320,22 +316,21 @@ const PreviewField = memo(function PreviewField({
             style={{
               width: "100%",
               padding: "24px",
-              border: "2px dashed #007AFF", // Blue theme
-              background: "#f0f7ff", // Light blue
+              border: "2px dashed #007AFF", 
+              background: "#f0f7ff", 
               borderRadius: "6px",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
               gap: "10px",
-      
               cursor: "pointer",
             }}
           >
             <Camera size={24} color="#007AFF" />
             <span
               style={{
-                color: "#007AFF", // Blue theme
+                color: "#007AFF", 
                 fontWeight: 500,
                 fontSize: "0.9rem",
               }}
@@ -368,7 +363,7 @@ const PreviewField = memo(function PreviewField({
             }}
           >
             {options.map((opt) => {
-              const isSelected = currentValue === opt.toLowerCase(); // API uses 'fail'
+              const isSelected = currentValue === opt.toLowerCase(); 
               const style = colors[opt as keyof typeof colors];
               return (
                 <button
@@ -411,7 +406,7 @@ const PreviewField = memo(function PreviewField({
             }}
           >
             {ynnOptions.map((opt) => {
-              const isSelected = currentValue === opt.toLowerCase(); // API uses 'no'
+              const isSelected = currentValue === opt.toLowerCase(); 
               return (
                 <button
                   key={opt}
@@ -419,11 +414,11 @@ const PreviewField = memo(function PreviewField({
                   style={{
                     padding: "10px",
                     border: `1px solid ${
-                      isSelected ? "#007AFF" : "#d1d5db" // Blue theme
+                      isSelected ? "#007AFF" : "#d1d5db" 
                     }`,
                     borderRadius: "6px",
-                    background: isSelected ? "#f0f7ff" : "white", // Blue theme
-                    color: isSelected ? "#007AFF" : "#374151", // Blue theme
+                    background: isSelected ? "#f0f7ff" : "white", 
+                    color: isSelected ? "#007AFF" : "#374151", 
                     fontWeight: 600,
                     fontSize: "0.9rem",
                     cursor: "pointer",
@@ -436,8 +431,8 @@ const PreviewField = memo(function PreviewField({
           </div>
         );
 
-      case "mulitple_choice": // <-- API name (with typo)
-      case "Multiple Choice": // <-- UI name
+      case "mulitple_choice": 
+      case "Multiple Choice": 
         return (
           <div
             style={{ display: "flex", flexDirection: "column", gap: "8px" }}
@@ -561,7 +556,14 @@ const PreviewSection = memo(function PreviewSection({
   ...props
 }: RenderItemProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const fieldCount = section.fields?.length || 0;
+  
+  // --- 💡 FIX: Combine section fields and headings ---
+  const sectionFields = section.fields || [];
+  const sectionHeadings = section.headings || [];
+  const combinedSectionItems = [...sectionFields, ...sectionHeadings]
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+  const fieldCount = sectionFields.length; // Still show count of *fields*
   const sectionLabel = section.sectionName || section.label;
 
   return (
@@ -618,9 +620,10 @@ const PreviewSection = memo(function PreviewSection({
             gap: "24px",
           }}
         >
+          {/* --- 💡 FIX: Render the combined list --- */}
           {props.renderAllItems(
-            section.fields || [],
-            props.allFieldsInScope
+            combinedSectionItems, // Use the new combined/sorted array
+            props.allFieldsInScope // allFieldsInScope is for *logic*, which is correct
           )}
         </div>
       )}
@@ -638,7 +641,8 @@ const RenderPreviewItem = memo(function RenderPreviewItem(
   let blockType = item.blockType;
   if (!blockType) {
     if (item.sectionName) blockType = "section";
-    else if (item.fieldType === "heading") blockType = "heading";
+    // --- 💡 FIX: Check for `item.text` (from GET) or `item.fieldType === 'heading'` (from conversion) ---
+    else if (item.text || item.fieldType === "heading") blockType = "heading";
     else blockType = "field";
   }
 
@@ -658,7 +662,8 @@ const RenderPreviewItem = memo(function RenderPreviewItem(
             paddingBottom: "8px",
           }}
         >
-          {item.label || item.fieldName}
+          {/* --- 💡 FIX: Prioritize `item.text` (from GET) --- */}
+          {item.text || item.label || item.fieldName}
         </h3>
       );
     default:
@@ -669,13 +674,14 @@ const RenderPreviewItem = memo(function RenderPreviewItem(
 // --- Main Reusable Component ---
 interface ProcedureFormProps {
   rootFields: any[];
+  rootHeadings: any[]; // <-- 💡 FIX: Add prop for root headings
   sections: any[];
-  // A unique key (like procedure.id) to reset state when the procedure changes
   resetKey: string;
 }
 
 export function ProcedureForm({
   rootFields,
+  rootHeadings, // <-- 💡 FIX: Accept prop
   sections,
   resetKey,
 }: ProcedureFormProps) {
@@ -693,15 +699,15 @@ export function ProcedureForm({
   // --- This function renders a list of fields (from root or section) ---
   const renderAllItems = useCallback(
     (
-      items: any[], // The list of fields to render (e.g., section.fields)
-      allFieldsInScope: any[] // All fields in this scope (e.g., section.fields)
+      items: any[], 
+      allFieldsInScope: any[] 
     ): React.ReactNode[] => {
       const visibleItems: React.ReactNode[] = [];
       const parentFields = items.filter((f) => !f.parentId); // Top-level fields
       const childFields = items.filter((f) => f.parentId); // Conditional fields
 
       parentFields.forEach((item) => {
-        // Render the parent field
+        // Render the parent item (field or heading)
         visibleItems.push(
           <RenderPreviewItem
             key={item.id}
@@ -741,10 +747,17 @@ export function ProcedureForm({
     [answers, updateAnswer]
   );
 
+  // --- 💡 FIX: Combine root fields and root headings and sort by order ---
+  const combinedRootItems = [...(rootFields || []), ...(rootHeadings || [])]
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+    
+  // --- For logic, we only care about fields ---
+  const allRootFieldsForLogic = rootFields || []; 
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      {/* Render Root Fields */}
-      {renderAllItems(rootFields, rootFields)}
+      {/* --- 💡 FIX: Render the combined/sorted list --- */}
+      {renderAllItems(combinedRootItems, allRootFieldsForLogic)}
 
       {/* Render Sections */}
       {sections.map((section: any) => (

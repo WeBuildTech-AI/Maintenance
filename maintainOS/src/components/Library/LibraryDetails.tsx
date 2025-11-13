@@ -6,18 +6,16 @@ import {
   User,
 } from "lucide-react";
 import { Button } from "../ui/button";
-// --- 庁 1. 'useState' ko import kiya ---
 import { useState, useEffect } from "react";
 import { ProcedureForm } from "./GenerateProcedure/components/ProcedureForm";
 import { MoreActionsMenu } from "./GenerateProcedure/components/MoreActionsMenu";
 
-// --- 1. IMPORTS ADD KIYE ---
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { deleteProcedure } from "../../store/procedures/procedures.thunks"; // Path check kar lein
-import type { AppDispatch } from "../../store"; // ✅ FIX: 'import' ko 'import type' se badal diya
+// --- 👇 [CHANGE] 'deleteProcedure' ko 'batchDeleteProcedures' se replace kiya ---
+import { batchDeleteProcedures, duplicateProcedure } from "../../store/procedures/procedures.thunks"; 
+import type { AppDispatch } from "../../store"; 
 
-// --- 庁 2. ConfirmationModal ko import kiya ---
 import { ConfirmationModal } from "./GenerateProcedure/components/ConfirmationModal";
 
 // --- Helper function to format dates ---
@@ -74,57 +72,65 @@ const DetailsTabContent = ({ procedure }: { procedure: any }) => {
 // --- Main LibraryDetails Component ---
 export function LibraryDetails({
   selectedProcedure,
-  onRefresh, // <-- 2. REFRESH PROP ACCEPT KIYA
+  onRefresh, // <-- YEH PROP ZAROORI HAI
 }: {
   selectedProcedure: any;
-  onRefresh: () => void; // <-- 2. TYPE DEFINE KIYA
+  onRefresh: () => void; 
 }) {
   const [activeTab, setActiveTab] = useState<"fields" | "details" | "history">(
     "fields"
   );
-  // --- 庁 3. Modal ko control karne ke liye state add ki ---
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  // --- 3. HOOKS KO INITIALIZE KIYA ---
   const dispatch = useDispatch<AppDispatch>();
-  const navigate = useNavigate(); // ✅ navigate hook (pehlese imported hai)
+  const navigate = useNavigate(); 
 
   useEffect(() => {
     setActiveTab("fields");
   }, [selectedProcedure]);
 
-  // --- 庁 4. Is function ko 'handleConfirmDelete' rename kiya ---
-  // Yeh ab 'Confirm' button dabane par hi chalega
   const handleConfirmDelete = async () => {
     if (!selectedProcedure) return;
 
-    // --- 'window.confirm' aur 'if (isConfirmed)' ko hata diya ---
     try {
-      // Thunk ko dispatch kiya
-      await dispatch(deleteProcedure(selectedProcedure.id)).unwrap();
-      // List ko refresh kiya
-      onRefresh();
-      // User ko main library page par bhej diya
+      // --- 👇 [CHANGE] Ab 'batchDeleteProcedures' ko array ke saath call karein ---
+      await dispatch(batchDeleteProcedures([selectedProcedure.id])).unwrap();
+      
+      // --- 👇 YEH HAI FIX: 'onRefresh' ko call karein ---
+      onRefresh(); 
+      
       navigate("/library");
     } catch (error) {
       console.error("Failed to delete procedure:", error);
       alert("Failed to delete procedure.");
     } finally {
-      // --- Modal ko band kiya (chahe success ho ya error) ---
       setIsDeleteModalOpen(false);
     }
   };
 
-  // --- 庁 5. Yeh naya function sirf modal ko kholeta hai ---
   const handleDeleteClick = () => {
     if (!selectedProcedure) return;
     setIsDeleteModalOpen(true);
   };
 
+  const handleDuplicate = async () => {
+    if (!selectedProcedure) return;
+
+    try {
+      await dispatch(duplicateProcedure(selectedProcedure.id)).unwrap();
+      
+      // --- 👇 YEH HAI FIX: 'onRefresh' ko call karein ---
+      onRefresh();
+
+    } catch (error) {
+      console.error("Failed to duplicate procedure:", error);
+      alert("Failed to duplicate procedure.");
+    }
+  };
+
   // --- (NEW) "Use in Work Order" button ke liye handler ---
   const handleUseInWorkOrder = () => {
     if (!selectedProcedure) return;
-    // User ko /work-orders/create par bhejega aur URL mein procedureId daal dega
     navigate(`/work-orders/create?procedureId=${selectedProcedure.id}`);
   };
 
@@ -137,6 +143,7 @@ export function LibraryDetails({
   }
 
   const rootFields = selectedProcedure.fields || [];
+  const rootHeadings = selectedProcedure.headings || [];
   const sections = selectedProcedure.sections || [];
 
   return (
@@ -160,8 +167,10 @@ export function LibraryDetails({
               <Pencil className="h-4 w-4 mr-2" />
               Edit
             </button>
-            {/* --- 庁 6. 'onDelete' prop ab 'handleDeleteClick' ko call karega --- */}
-            <MoreActionsMenu onDelete={handleDeleteClick}>
+            <MoreActionsMenu 
+              onDelete={handleDeleteClick}
+              onDuplicate={handleDuplicate}
+            >
               <button className="inline-flex items-center rounded p-2 text-blue-600 hover:text-blue-700 relative">
                 <MoreVertical className="h-4 w-4" />
               </button>
@@ -215,6 +224,7 @@ export function LibraryDetails({
           <div className="p-6">
             <ProcedureForm
               rootFields={rootFields}
+              rootHeadings={rootHeadings}
               sections={sections}
               resetKey={selectedProcedure.id}
             />
@@ -246,7 +256,6 @@ export function LibraryDetails({
       >
         <Button
           variant="outline"
-          // --- (NEW) onClick handler add kiya ---
           onClick={handleUseInWorkOrder}
           className="text-yellow-600 border-2 border-yellow-400 hover:bg-yellow-50 px-8 py-3 rounded-full shadow-lg bg-white font-medium whitespace-nowrap"
         >
@@ -255,12 +264,12 @@ export function LibraryDetails({
         </Button>
       </div>
 
-      {/* --- 庁 7. Modal component ko yahan render kiya --- */}
+      {/* --- Confirmation Modal --- */}
       <ConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleConfirmDelete}
-        title="Delete Procedure" // Title text (component ke andar ignore ho raha hai, par prop pass karna acchi practice hai)
+        title="Delete Procedure" 
         message={`Are you sure you want to delete "${selectedProcedure?.title}"?`}
       />
     </div>

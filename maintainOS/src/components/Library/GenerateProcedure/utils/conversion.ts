@@ -5,16 +5,16 @@ function mapFieldType(type: string): string {
   const map: Record<string, string> = {
     "Text Field": "text_field",
     "Number Field": "number_field",
-    "Amount ($)": "amount", // <-- FIX: Was 'amount_field'
+    "Amount ($)": "amount",
     "Yes, No, N/A": "yes_no_NA",
     "Inspection Check": "inspection_check",
     Checklist: "checklist",
-    "Multiple Choice": "mulitple_choice", // <-- FIX: Match API typo
+    "Multiple Choice": "mulitple_choice", // Match API typo
     "Meter Reading": "meter_reading",
     "Picture/File Field": "picture_file",
     "Signature Block": "signature_block",
-    Date: "Date", // <-- FIX: Was 'date_field'
-    Checkbox: "checkbox", // <-- Added for clarity
+    Date: "Date",
+    Checkbox: "checkbox",
   };
   return map[type] || type?.toLowerCase() || "unknown";
 }
@@ -38,7 +38,6 @@ function mapCondition(condition: ConditionData, parentType: string): any {
 
   targetCondition.type = operatorMap[condition.conditionOperator || ""] || "unknown";
   
-  // --- Pass condition ID (for preview) ---
   targetCondition.id = condition.id;
 
   if (["one_of", "not_one_of", "contains"].includes(targetCondition.type)) {
@@ -61,11 +60,12 @@ function mapCondition(condition: ConditionData, parentType: string): any {
 }
 
 // --- Helper: Transforms a single UI field to the target JSON field ---
+// --- UPDATED: This function no longer processes "heading" types ---
 function transformField(field: FieldData, order: number): any {
   const targetField: any = {
-    id: field.id, // <-- Pass the original ID (for preview)
+    id: field.id, 
     fieldName: field.label,
-    fieldType: mapFieldType(field.selectedType), // <-- Uses FIXED map
+    fieldType: mapFieldType(field.selectedType),
     required: !!field.isRequired,
     order: order,
   };
@@ -97,21 +97,14 @@ function transformField(field: FieldData, order: number): any {
       let conditionalOrder = 1;
       condition.fields.forEach((conditionalItem) => {
         
+        // --- FIX: Only process "field" blockTypes ---
+        // Conditional headings are not supported by the new API structure
         if (conditionalItem.blockType === "field") {
           const targetChildField = transformField(conditionalItem, conditionalOrder++);
           targetChildField.condition = mapCondition(condition, field.selectedType);
           targetField.children.push(targetChildField);
-
-        } else if (conditionalItem.blockType === "heading") {
-          targetField.children.push({
-            id: conditionalItem.id, // <-- Pass the original ID (for preview)
-            fieldName: conditionalItem.label,
-            fieldType: "heading",
-            required: false,
-            order: conditionalOrder++,
-            condition: mapCondition(condition, field.selectedType),
-          });
         }
+        // --- Removed "heading" blockType processing ---
       });
     });
   }
@@ -121,6 +114,7 @@ function transformField(field: FieldData, order: number): any {
 
 
 // --- Main Export Function ---
+// --- UPDATED: This function now correctly separates fields and headings ---
 export function convertStateToJSON(
   fieldsState: FieldData[], 
   settings: ProcedureSettingsState,
@@ -131,70 +125,77 @@ export function convertStateToJSON(
     title: procedureName,
     description: procedureDescription,
         
-    // --- 3. MAP SETTINGS TO JSON ---
     assetIds: settings.assets, 
     teamsInCharge: settings.teamsInCharge, 
     locationIds: settings.locations, 
     visibility: settings.visibility,
 
+    // --- FIX: Initialize all new arrays ---
+    headings: [],
     rootFields: [],
     sections: []
   };
 
-  const rootItems: any[] = [];
-  const sectionsList: any[] = [];
+  // --- FIX: Add a continuous order counter for root items ---
+  let rootOrder = 1;
 
   fieldsState.forEach(item => {
     if (item.blockType === "section") {
       // --- Handle Section ---
       const newSection: any = {
-        id: item.id, // <-- Pass the original ID (for preview)
+        id: item.id,
         sectionName: item.label,
-        order: sectionsList.length + 1,
+        order: result.sections.length + 1, // Section order is separate
+        
+        // --- FIX: Add separate heading/field arrays ---
+        headings: [],
         fields: []
       };
 
       if (item.fields) {
-        let fieldOrder = 1;
+        // --- FIX: Add continuous order counter for section items ---
+        let sectionOrder = 1;
+        
         item.fields.forEach((sectionItem) => {
           if (sectionItem.blockType === "field") {
-            newSection.fields.push(transformField(sectionItem, fieldOrder++));
+            newSection.fields.push(transformField(sectionItem, sectionOrder++));
           } else if (sectionItem.blockType === "heading") {
-            newSection.fields.push({
-              id: sectionItem.id, // <-- Pass the original ID (for preview)
-              fieldName: sectionItem.label,
-              fieldType: "heading",
-              required: false,
-              order: fieldOrder++,
+            // --- FIX: Create correct heading object ---
+            newSection.headings.push({
+              id: sectionItem.id,
+              text: sectionItem.label,
+              order: sectionOrder++,
             });
           }
         });
       }
-      sectionsList.push(newSection);
+      result.sections.push(newSection);
 
     } else if (item.blockType === "field") {
       // --- Handle Root Field ---
-      rootItems.push(transformField(item, rootItems.length + 1));
+      result.rootFields.push(transformField(item, rootOrder++));
+      
     } else if (item.blockType === "heading") {
       // --- Handle Root Heading ---
-      rootItems.push({
-        id: item.id, // <-- Pass the original ID (for preview)
-        fieldName: item.label,
-        fieldType: "heading",
-        required: false,
-        order: rootItems.length + 1
+      result.headings.push({
+        id: item.id,
+        text: item.label,
+        order: rootOrder++,
       });
     }
   });
-
-  result.rootFields = rootItems;
-  result.sections = sectionsList;
   
-  // --- Re-organize children to match API structure ---
-  // This logic moves conditional fields from 'children' to the correct 'fields' array
-  
+  // --- This logic for flattening conditional fields remains the same ---
+  // It correctly operates on rootFields and section.fields,
+  // leaving the new headings arrays untouched.
   const allFields: any[] = [...result.rootFields];
-  result.sections.forEach((s: any) => allFields.push(...s.fields));
+  result.sections.forEach((s: any) => {
+    // Add sectionId to fields for easier parent lookup
+    s.fields.forEach((f: any) => {
+        f.sectionId = s.id;
+        allFields.push(f);
+    });
+  });
 
   const childFields: any[] = [];
 

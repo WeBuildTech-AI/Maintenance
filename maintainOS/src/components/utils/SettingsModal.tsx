@@ -132,7 +132,7 @@ const CustomColumnSelect: React.FC<CustomColumnSelectProps> = ({
   );
 };
 
-// --- (NEW) Custom Dropdown Component 2: "Single Select" ---
+// --- (NEW) Custom Dropdown Component 2: "Single Select" (No Change) ---
 interface CustomSingleSelectProps {
   options: string[];
   value: string;
@@ -383,6 +383,8 @@ interface SettingsModalProps {
   }) => void;
   allToggleableColumns: string[];
   currentVisibleColumns: string[];
+  // --- (NEW) Naya prop add karein ---
+  currentShowDeleted: boolean;
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -391,9 +393,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   onApply,
   allToggleableColumns,
   currentVisibleColumns,
+  // --- (NEW) Prop ko yahaan read karein ---
+  currentShowDeleted,
 }) => {
   const [resultsPerPage, setResultsPerPage] = useState(25);
-  const [showDeleted, setShowDeleted] = useState(false);
+  // --- (NEW) State ko 'currentShowDeleted' prop se initialize karein ---
+  const [showDeleted, setShowDeleted] = useState(currentShowDeleted);
   const [sortColumn, setSortColumn] = useState("Last updated");
   const [tempVisibleColumns, setTempVisibleColumns] =
     useState<string[]>(currentVisibleColumns);
@@ -408,13 +413,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
+      // Jab modal khule, parent ki current state se sync karein
       setTempVisibleColumns(currentVisibleColumns);
-      // (NEW) Default sort ko bhi sync kar dete hain
+      // --- (NEW) 'showDeleted' state ko bhi sync karein ---
+      setShowDeleted(currentShowDeleted);
+      
       if (currentVisibleColumns.length > 0) {
-        setSortColumn("Title"); // Ya aapka jo bhi default logic ho
+        setSortColumn("Title");
       }
     }
-  }, [isOpen, currentVisibleColumns]);
+    // --- (NEW) 'currentShowDeleted' ko dependency mein add karein ---
+  }, [isOpen, currentVisibleColumns, currentShowDeleted]);
 
   if (!isOpen) return null;
 
@@ -423,7 +432,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     (col) => !selectedColumns.includes(col)
   );
   
-  // (NEW) Sort column ke options
   const sortColumnOptions = ["Title", ...allToggleableColumns];
 
   const handleRemoveColumn = (columnName: string) => {
@@ -503,7 +511,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         </button>
       </div>
 
-      {/* Content (Scrollable) */}
+      {/* Content (Scrollable) (No Change) */}
       <div style={{ padding: "22px 20px", flexGrow: 1, overflowY: "auto" }}>
         {/* Results per page (No change) */}
         <div style={{ marginBottom: "24px" }}>
@@ -650,7 +658,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           </DndContext>
         </div>
 
-        {/* --- (NEW) Default sort column (UPDATED) --- */}
+        {/* --- Default sort column (No Change) --- */}
         <div
           style={{
             borderTop: "1px solid #e5e7eb",
@@ -667,7 +675,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           >
             Default sort column
           </p>
-          {/* --- <select> ko CustomSingleSelect se replace kiya --- */}
           <CustomSingleSelect
             value={sortColumn}
             onChange={setSortColumn}

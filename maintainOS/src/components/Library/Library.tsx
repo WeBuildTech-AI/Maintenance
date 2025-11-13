@@ -5,6 +5,9 @@ import { LibraryHeaderComponent } from "./LibraryHeader";
 import type { ViewMode } from "../purchase-orders/po.types";
 import GenerateProcedure from "./GenerateProcedure/GenerateProcedure";
 import { ChevronDown } from "lucide-react";
+// --- (FIX) SettingsModal ka import path check karein ---
+// Aapne bataya ki yeh `utils` folder mein hai, lekin aapki di gayi file `SettingsModal.tsx` hai
+// Main maan raha hoon ki yeh `../utils/SettingsModal` par hai jaisa ki aapne import kiya hai
 import SettingsModal from "../utils/SettingsModal"; 
 
 // --- NYE COMPONENTS IMPORT ---
@@ -12,11 +15,12 @@ import { LibraryCard } from "./LibraryCard";
 import { LibraryDetails } from "./LibraryDetails";
 import SortModal from "./SortModal"; 
 import EmptyState from "./components/EmptyState";
+// --- (FIX) LibraryTable ka path aapke folder structure ke hisaab se update kiya ---
 import { LibraryTable } from "./GenerateProcedure/LibraryTable";
 // --- (NEW) Naya modal import karein (path check kar lein) ---
 import { ProcedureDetailModal } from "./GenerateProcedure/components/ProcedureDetailModal"; 
 
-// --- 💡 2. Priority sort helper ---
+// --- 庁 2. Priority sort helper ---
 const priorityToValue = (priority: string | null | undefined): number => {
   if (!priority) return 4; 
   switch (priority.toLowerCase()) {
@@ -44,8 +48,11 @@ export function Library() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // --- (NEW) Table view mein modal ke liye state ---
   const [modalProcedure, setModalProcedure] = useState<any>(null);
+
+  // --- (NEW) "Show Deleted" toggle ke liye state ---
+  // Iski default value 'false' hai
+  const [showDeleted, setShowDeleted] = useState(false);
 
   // --- SORT MODAL KE LIYE STATE ---
   const [isSortModalOpen, setIsSortModalOpen] = useState(false);
@@ -56,14 +63,26 @@ export function Library() {
   const [visibleColumns, setVisibleColumns] =
     useState<string[]>(allToggleableColumns);
 
-  // --- 2. WRAPPED fetchData in a memoized function ---
+  // --- 2. fetchData function (UPDATE) ---
+  // Ab yeh 'showDeleted' state par depend karega
   const fetchData = useMemo(() => {
     return async () => {
       try {
         setLoading(true);
         setError(null);
-        const res = await procedureService.fetchProcedures();
-        console.log("🌐 API response (procedures):", res);
+        
+        let res;
+        if (showDeleted) {
+          // --- (NEW) Deleted procedures API call ---
+          console.log("倹 Fetching DELETED procedures...");
+          res = await procedureService.fetchDeletedProcedures();
+        } else {
+          // --- (EXISTING) Active procedures API call ---
+          console.log("倹 Fetching ACTIVE procedures...");
+          res = await procedureService.fetchProcedures();
+        }
+        
+        console.log("倹 API response (procedures):", res);
 
         const data = Array.isArray(res)
           ? res
@@ -71,21 +90,21 @@ export function Library() {
 
         setProcedures(data);
       } catch (err: any) {
-        console.error("❌ Error fetching procedures:", err);
+        console.error("笶Error fetching procedures:", err);
         setError(err.message || "Failed to fetch procedures");
       } finally {
         setLoading(false);
       }
     };
-  }, []); 
+  }, [showDeleted]); // <-- (UPDATE) 'showDeleted' ko dependency banaya
 
   // --- 3. API CALL (ACTIVE) ---
   useEffect(() => {
     console.log("Using Live API");
     fetchData();
-  }, [fetchData]); 
+  }, [fetchData]); // <-- Ab jab 'fetchData' (ya 'showDeleted') change hoga, yeh re-run hoga
 
-  // --- 💡 4. SORTING LOGIC (Updated for Priority) ---
+  // --- 庁 4. SORTING LOGIC (No Change) ---
   const sortedProcedures = useMemo(() => {
     const compareStrings = (a: string, b: string) => {
       return (a || "").localeCompare(b || "", undefined, { numeric: true });
@@ -138,7 +157,7 @@ export function Library() {
     });
   }, [procedures, sortType, sortOrder]);
 
-  // --- INITIAL SELECTION LOGIC (Reverted) ---
+  // --- INITIAL SELECTION LOGIC (No Change) ---
   useEffect(() => {
     if (viewMode === 'panel' && !selectedProcedure && sortedProcedures.length > 0) {
       setSelectedProcedure(sortedProcedures[0]);
@@ -150,9 +169,9 @@ export function Library() {
     ) {
       setSelectedProcedure(sortedProcedures[0] || null);
     }
-  }, [sortedProcedures, selectedProcedure, viewMode]); // (NEW) viewMode par depend karega
+  }, [sortedProcedures, selectedProcedure, viewMode]);
 
-  // --- SORT HANDLER ---
+  // --- SORT HANDLER (No Change) ---
   const handleSortChange = (type: string, order: "asc" | "desc") => {
     setSortType(type);
     setSortOrder(order);
@@ -166,10 +185,10 @@ export function Library() {
     return sortType;
   };
 
-  // --- (NEW) Refresh function for the modal ---
+  // --- (NEW) Refresh function for the modal (No Change) ---
   const handleModalRefresh = () => {
-    fetchData(); // List ko refresh karega
-    setModalProcedure(null); // Modal ko band karega
+    fetchData();
+    setModalProcedure(null);
   }
 
   return (
@@ -183,11 +202,12 @@ export function Library() {
           setSearchQuery={setSearchQuery}
           setIsCreatingForm={setShowForm}
           setShowSettings={setShowSettings}
+          // --- (FIX) 'showDeleted' props yahaan se hata diye gaye hain ---
         />
       )}
 
-      {/* --- Content area "flex-1 overflow-hidden" HOGI --- */}
-      <div className="flex-1 overflow-hidden border-t border-gray-200">
+      {/* --- Main Content (No Change) --- */}
+      <div className="flex-1 flex flex-col overflow-hidden border-t border-gray-200">
         {showForm ? (
           // --- FORM VIEW (SCROLLS) ---
           <div className="flex-1 bg-white p-6 overflow-y-auto h-full">
@@ -203,19 +223,19 @@ export function Library() {
             Loading procedures...
           </div>
         ) : procedures.length === 0 ? (
-          // --- 5. REPLACED inline UI with EmptyState component ---
+          // --- EMPTY STATE (No Change) ---
           <div className="flex-1 flex items-center justify-center m-2 bg-white h-full">
             <EmptyState />
           </div>
         ) : (
-          // --- ViewMode ke hisaab se logic ---
+          // --- ViewMode Logic ---
           <>
             {viewMode === "panel" ? (
-              // --- PANEL VIEW (Aapka purana code) ---
+              // --- PANEL VIEW (No Change) ---
               <div className="flex h-full">
                 {/* Left Panel (Fixed Width + Scroll) */}
                 <div className="w-96 mr-2 ml-3 mb-2 border border-border flex flex-col min-h-0">
-                  {/* Tabs + Sort (Work Order jaisa) */}
+                  {/* Tabs + Sort */}
                   <div className="p-4 border-b">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-lg font-semibold">My Templates</h3>
@@ -257,12 +277,12 @@ export function Library() {
                 <div className="flex-1 bg-card mr-3 ml-2 mb-2 border border-border min-h-0 flex flex-col">
                   <LibraryDetails
                     selectedProcedure={selectedProcedure}
-                    onRefresh={fetchData} // Panel view puraani refresh logic use karega
+                    onRefresh={fetchData}
                   />
                 </div>
               </div>
             ) : (
-              // --- 💡 5. TABLE VIEW (Updated props) ---
+              // --- TABLE VIEW (UPDATE) ---
               <LibraryTable
                 procedures={sortedProcedures}
                 sortType={sortType}
@@ -270,15 +290,16 @@ export function Library() {
                 onSortChange={handleSortChange}
                 onRefresh={fetchData} 
                 visibleColumns={visibleColumns}
-                // --- (NEW) Naya prop pass karein ---
                 onViewProcedure={(proc) => setModalProcedure(proc)}
+                // --- (NEW) 'showDeleted' state ko table mein pass karein (styling ke liye) ---
+                showDeleted={showDeleted}
               />
             )}
           </>
         )}
       </div>
 
-      {/* --- SORT MODAL RENDER KIYA --- */}
+      {/* --- SORT MODAL (No Change) --- */}
       <SortModal
         isOpen={isSortModalOpen}
         onClose={() => setIsSortModalOpen(false)}
@@ -288,21 +309,27 @@ export function Library() {
         anchorRef={sortButtonRef}
       />
 
-      {/* --- SETTINGS MODAL (No Change) --- */}
+      {/* --- (UPDATE) SETTINGS MODAL --- */}
       <SettingsModal
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
         allToggleableColumns={allToggleableColumns}
         currentVisibleColumns={visibleColumns}
+        // --- (NEW) Parent ki current state ko modal mein pass karein ---
+        currentShowDeleted={showDeleted}
+        // --- (NEW) 'onApply' ab settings object ko handle karega ---
         onApply={(settings) => {
           console.log("Settings applied:", settings);
+          // Columns ko update karein
           setVisibleColumns(settings.visibleColumns);
+          // 'showDeleted' state ko update karein
+          setShowDeleted(settings.showDeleted);
+          // Modal band karein
           setShowSettings(false);
         }}
       />
 
-      {/* --- (NEW) PROCEDURE DETAIL MODAL --- */}
-      {/* Yeh modal LibraryDetails component ko render karega */}
+      {/* --- (NEW) PROCEDURE DETAIL MODAL (No Change) --- */}
       <ProcedureDetailModal
         isOpen={!!modalProcedure}
         onClose={() => setModalProcedure(null)}
@@ -310,7 +337,7 @@ export function Library() {
       >
         <LibraryDetails
           selectedProcedure={modalProcedure}
-          onRefresh={handleModalRefresh} // Modal band karne ke liye naya handler
+          onRefresh={handleModalRefresh}
         />
       </ProcedureDetailModal>
     </div>

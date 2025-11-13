@@ -2,7 +2,8 @@ import type { Dispatch, SetStateAction } from "react";
 import type { ViewMode } from "../purchase-orders/po.types";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
-import { ChevronDown, PanelTop, Plus, Search, Settings, Table } from "lucide-react";
+// --- (FIX) Trash2 icon hata diya gaya hai ---
+import { ChevronDown, PanelTop, Plus, Search, Settings, Table } from "lucide-react"; 
 import { Input } from "../ui/input";
 import LibraryFilterBar from "./LibraryFilterBar";
 
@@ -13,6 +14,7 @@ interface LibraryHeaderProps {
   setSearchQuery: Dispatch<SetStateAction<string>>;
   setIsCreatingForm: Dispatch<SetStateAction<boolean>>;
   setShowSettings: Dispatch<SetStateAction<boolean>>;
+  // --- (FIX) 'showDeleted' props yahaan se hata diye gaye hain ---
 }
 
 export function LibraryHeaderComponent({
@@ -80,14 +82,22 @@ export function LibraryHeaderComponent({
 
       <div className="flex items-center mt-4 p-1 h-10 justify-between">
         <LibraryFilterBar />
-        {viewMode === "table" && (
-          <button
-            onClick={() => setShowSettings(true)}
-            className="p-2 rounded-md border hover:bg-gray-100 transition"
-          >
-            <Settings className="h-5 w-5 text-orange-600" />
-          </button>
-        )}
+        
+        {/* --- (FIX) 'Show Deleted' toggle section yahaan se hata diya gaya hai --- */}
+        
+        {/* --- Settings button ab justify-end ke bajaye yahaan hai --- */}
+        <div className="flex items-center gap-2">
+          {viewMode === "table" && (
+            <button
+              onClick={() => setShowSettings(true)}
+              className="p-2 rounded-md border hover:bg-gray-100 transition"
+            >
+              <Settings className="h-5 w-5 text-orange-600" />
+            </button>
+          )}
+        </div>
+        {/* --- END OF FIX --- */}
+
       </div>
     </header>
   );

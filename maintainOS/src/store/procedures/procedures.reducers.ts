@@ -10,6 +10,11 @@ import {
   fetchProcedureById,
   fetchProcedures,
   updateProcedure,
+  duplicateProcedure, 
+  batchDeleteProcedures, 
+  // --- 👇 [CHANGE] NAYE THUNKS IMPORT KAREIN ---
+  restoreProcedure,
+  fetchDeletedProcedures,
 } from "./procedures.thunks";
 
 const initialState: ProceduresState = {
@@ -47,6 +52,22 @@ const proceduresSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
+
+      // --- 👇 [CHANGE] fetchDeletedProcedures ke cases add karein ---
+      .addCase(fetchDeletedProcedures.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchDeletedProcedures.fulfilled, (state, action) => {
+        state.loading = false;
+        // State ko deleted procedures se replace karein
+        state.procedures = action.payload;
+      })
+      .addCase(fetchDeletedProcedures.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // --- END fetchDeletedProcedures ---
 
       .addCase(fetchProcedureById.pending, (state) => {
         state.loading = true;
@@ -111,7 +132,64 @@ const proceduresSlice = createSlice({
       .addCase(deleteProcedure.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+
+      .addCase(duplicateProcedure.pending, (state) => {
+        state.loading = true; 
+        state.error = null;
+      })
+      .addCase(duplicateProcedure.fulfilled, (state, action) => {
+        state.loading = false;
+        state.procedures.unshift(action.payload);
+      })
+      .addCase(duplicateProcedure.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+
+      .addCase(batchDeleteProcedures.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(batchDeleteProcedures.fulfilled, (state, action) => {
+        state.loading = false;
+        const deletedIds = new Set(action.payload); 
+        
+        state.procedures = state.procedures.filter(
+          (procedure) => !deletedIds.has(procedure.id)
+        );
+
+        if (
+          state.selectedProcedure &&
+          deletedIds.has(state.selectedProcedure.id)
+        ) {
+          state.selectedProcedure = null;
+        }
+      })
+      .addCase(batchDeleteProcedures.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      
+      // --- 👇 [CHANGE] YEH NAYE CASES ADD KIYE GAYE HAIN ---
+      .addCase(restoreProcedure.pending, (state) => {
+        // Option: loading state dikha sakte hain
+        // state.loading = true; 
+        state.error = null;
+      })
+      .addCase(restoreProcedure.fulfilled, (state, action) => {
+        // action.payload ab restored procedure ki ID hai
+        // Ise current 'procedures' (jo deleted list hai) se hata dein
+        state.procedures = state.procedures.filter(
+          (procedure) => procedure.id !== action.payload
+        );
+        state.loading = false;
+      })
+      .addCase(restoreProcedure.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
+      // --- END RESTORE ---
   },
 });
 
