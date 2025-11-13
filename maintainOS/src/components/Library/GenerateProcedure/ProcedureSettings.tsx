@@ -1,65 +1,92 @@
 "use client";
 
-import React, { useState } from "react";
+// --- 👇 [CHANGE] Added useState and useCallback ---
+import React, { useState, useCallback } from "react";
 import LibDynamicSelect, {
   type LibSelectOption,
 } from "./components/LibDynamicSelect";
-import { useProcedureBuilder } from "./ProcedureBuilderContext"; // <-- 1. CONTEXT KO IMPORT KAREIN
-import { ProcedureSettingsState } from "./types"; // <-- 2. TYPE KO IMPORT KAREIN (Best practice)
+import { useProcedureBuilder } from "./ProcedureBuilderContext"; 
+import { ProcedureSettingsState } from "./types"; 
+// --- 👇 [CHANGE] Added import for the data fetcher ---
+import { fetchFilterData } from "../../utils/filterDataFetcher";
 
 /**
  * ProcedureSettings.tsx
- * - Inline CSS only
- * - Each main section is in its own card
- * - (FIXED) Now fully controlled by ProcedureBuilderContext
+ * - (FIXED) Now fetches live data for dropdowns
  */
 
 export default function ProcedureSettings() {
-  // --- 3. LOCAL STATE (settings, categoryValue, etc.) HATA DIYA GAYA HAI ---
-  const { settings, setSettings } = useProcedureBuilder(); // <-- 4. CONTEXT SE STATE LEIN
+  const { settings, setSettings } = useProcedureBuilder(); 
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
-  // Mock data (Yeh aisi hi rahegi)
-  const categories: LibSelectOption[] = [
-    { id: "c1", label: "Electrical" },
-    { id: "c2", label: "Mechanical" },
-    { id: "c3", label: "HVAC" },
-  ];
-  const assets: LibSelectOption[] = [
-    { id: "a1", label: "Generator A" },
-    { id: "a2", label: "Pump #2" },
-  ];
-  const locations: LibSelectOption[] = [
-    { id: "l1", label: "Building 1" },
-    { id: "l2", label: "Roof" },
-  ];
-  const teams: LibSelectOption[] = [
-    { id: "t1", label: "Maintenance" },
-    { id: "t2", label: "Operations" },
-    { id: "t3", label: "Facilities" },
-  ];
+  // --- 👇 [CHANGE] State to hold dynamic options ---
+  const [categoryOptions, setCategoryOptions] = useState<LibSelectOption[]>([]);
+  const [assetOptions, setAssetOptions] = useState<LibSelectOption[]>([]);
+  const [locationOptions, setLocationOptions] = useState<LibSelectOption[]>([]);
+  const [teamOptions, setTeamOptions] = useState<LibSelectOption[]>([]);
+
+  // --- 👇 [CHANGE] State to hold loading status for each dropdown ---
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [loadingAssets, setLoadingAssets] = useState(false);
+  const [loadingLocations, setLoadingLocations] = useState(false);
+  const [loadingTeams, setLoadingTeams] = useState(false);
+  
+  // --- 👇 [CHANGE] Mock data (categories, assets, etc.) has been removed ---
+
+  // --- 👇 [CHANGE] New function to load data on demand ---
+  const loadOptions = useCallback(async (filterType: string) => {
+    const key = filterType.toLowerCase();
+    
+    // 1. Set loading state
+    if (key === 'categories') setLoadingCategories(true);
+    if (key === 'assets') setLoadingAssets(true);
+    if (key === 'locations') setLoadingLocations(true);
+    if (key === 'team members') setLoadingTeams(true);
+
+    try {
+      // 2. Fetch data (will use cache if available)
+      const result = await fetchFilterData(key);
+      
+      // 3. Map data from { id, name } to { id, label }
+      const options = result.data.map((item: any) => ({
+        id: item.id,
+        label: item.name,
+      }));
+
+      // 4. Set options state
+      if (key === 'categories') setCategoryOptions(options);
+      if (key === 'assets') setAssetOptions(options);
+      if (key === 'locations') setLocationOptions(options);
+      if (key === 'team members') setTeamOptions(options);
+
+    } catch (error) {
+      console.error(`Failed to load ${filterType}:`, error);
+    } finally {
+      // 5. Set loading state to false
+      if (key === 'categories') setLoadingCategories(false);
+      if (key === 'assets') setLoadingAssets(false);
+      if (key === 'locations') setLoadingLocations(false);
+      if (key === 'team members') setLoadingTeams(false);
+    }
+  }, []); // Empty dependency array, as `fetchFilterData` is a stable import
+  // --- END OF NEW FUNCTION ---
 
   const handleVisibilityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // <-- 5. AB YEH DIRECT CONTEXT KO UPDATE KAREGA ---
     setSettings((p) => ({
       ...p,
       visibility: e.target.value as "private" | "public",
     }));
   };
 
-  // --- Baaki saare styles (pageStyle, cardStyle, etc.) same rahenge ---
-  // Page layout styles
+  // --- All style objects (pageStyle, cardStyle, etc.) remain unchanged ---
   const pageStyle: React.CSSProperties = {
     display: "flex",
     justifyContent: "center",
-    // --- 👇 [FIX] Background ko "#F8FAFC" (bluish) se "#fff" (white) kar diya ---
-    background: "#fff", 
+    background: "#fff",
     padding: 40,
     minHeight: "100vh",
     boxSizing: "border-box",
   };
-
-  // Shared card style
   const cardStyle: React.CSSProperties = {
     width: "100%",
     maxWidth: 960,
@@ -69,8 +96,6 @@ export default function ProcedureSettings() {
     padding: 24,
     boxSizing: "border-box",
   };
-
-  // Spacing between stacked cards
   const stackStyle: React.CSSProperties = {
     display: "flex",
     flexDirection: "column",
@@ -78,7 +103,6 @@ export default function ProcedureSettings() {
     width: "100%",
     maxWidth: 960,
   };
-
   const sectionTitle: React.CSSProperties = {
     fontSize: 20,
     fontWeight: 600,
@@ -122,6 +146,7 @@ export default function ProcedureSettings() {
     marginTop: 6,
     lineHeight: 1.4,
   };
+  // --- End of style objects ---
 
   return (
     <div style={pageStyle}>
@@ -137,18 +162,20 @@ export default function ProcedureSettings() {
             <div>
               <label style={labelStyle}>Categories</label>
               <LibDynamicSelect
-                options={categories}
-                value={settings.categories} // <-- 6. CONTEXT SE VALUE READ KAREIN
+                // --- 👇 [CHANGE] Updated props ---
+                options={categoryOptions}
+                value={settings.categories} 
                 onChange={(v) =>
                   setSettings((p) => ({ ...p, categories: v as string[] }))
-                } // <-- 7. CONTEXT MEIN VALUE SET KAREIN
-                fetchOptions={() => {}}
-                loading={false}
+                } 
+                fetchOptions={() => loadOptions('categories')}
+                loading={loadingCategories}
+                // --- End of updated props ---
                 placeholder="Start typing..."
                 name="lib-categories"
                 activeDropdown={activeDropdown}
                 setActiveDropdown={setActiveDropdown}
-                isMulti={true} // <-- 8. YEH MULTI HONA CHAHIYE (aapke type ke hisaab se)
+                isMulti={true} 
                 ctaText="Create category"
                 onCtaClick={() => alert("Create category")}
               />
@@ -157,36 +184,40 @@ export default function ProcedureSettings() {
             <div>
               <label style={labelStyle}>Assets</label>
               <LibDynamicSelect
-                options={assets}
-                value={settings.assets} // <-- 6. CONTEXT SE VALUE READ KAREIN
+                // --- 👇 [CHANGE] Updated props ---
+                options={assetOptions}
+                value={settings.assets} 
                 onChange={(v) =>
                   setSettings((p) => ({ ...p, assets: v as string[] }))
-                } // <-- 7. CONTEXT MEIN VALUE SET KAREIN
-                fetchOptions={() => {}}
-                loading={false}
+                } 
+                fetchOptions={() => loadOptions('assets')}
+                loading={loadingAssets}
+                // --- End of updated props ---
                 placeholder="Start typing..."
                 name="lib-assets"
                 activeDropdown={activeDropdown}
                 setActiveDropdown={setActiveDropdown}
-                isMulti={true} // <-- 8. YEH MULTI HONA CHAHIYE
+                isMulti={true}
               />
             </div>
 
             <div>
               <label style={labelStyle}>Locations</label>
               <LibDynamicSelect
-                options={locations}
-                value={settings.locations} // <-- 6. CONTEXT SE VALUE READ KAREIN
+                // --- 👇 [CHANGE] Updated props ---
+                options={locationOptions}
+                value={settings.locations} 
                 onChange={(v) =>
                   setSettings((p) => ({ ...p, locations: v as string[] }))
-                } // <-- 7. CONTEXT MEIN VALUE SET KAREIN
-                fetchOptions={() => {}}
-                loading={false}
+                }
+                fetchOptions={() => loadOptions('locations')}
+                loading={loadingLocations}
+                // --- End of updated props ---
                 placeholder="Start typing..."
                 name="lib-locations"
                 activeDropdown={activeDropdown}
                 setActiveDropdown={setActiveDropdown}
-                isMulti={true} // <-- 8. YEH MULTI HONA CHAHIYE
+                isMulti={true}
               />
             </div>
           </div>
@@ -202,13 +233,16 @@ export default function ProcedureSettings() {
           <div>
             <label style={labelStyle}>Select team</label>
             <LibDynamicSelect
-              options={teams}
-              value={settings.teamsInCharge} // <-- 6. CONTEXT SE VALUE READ KAREIN
+              // --- 👇 [CHANGE] Updated props ---
+              options={teamOptions}
+              value={settings.teamsInCharge}
               onChange={(v) =>
                 setSettings((p) => ({ ...p, teamsInCharge: v as string[] }))
-              } // <-- 7. CONTEXT MEIN VALUE SET KAREIN
-              fetchOptions={() => {}}
-              loading={false}
+              } 
+              // --- Note: 'team members' must match the key in filterDataFetcher.ts ---
+              fetchOptions={() => loadOptions('team members')}
+              loading={loadingTeams}
+              // --- End of updated props ---
               name="lib-teams"
               activeDropdown={activeDropdown}
               setActiveDropdown={setActiveDropdown}
@@ -220,7 +254,7 @@ export default function ProcedureSettings() {
           </div>
         </div>
 
-        {/* Card 3 - Procedure Visibility */}
+        {/* Card 3 - Procedure Visibility (No Change) */}
         <div style={cardStyle}>
           <div style={sectionTitle}>Procedure Visibility</div>
 
@@ -230,7 +264,7 @@ export default function ProcedureSettings() {
                 type="radio"
                 name="visibility"
                 value="private"
-                checked={settings.visibility === "private"} // <-- 6. CONTEXT SE VALUE READ KAREIN
+                checked={settings.visibility === "private"} 
                 onChange={handleVisibilityChange}
                 style={{ marginTop: 6 }}
               />
@@ -248,7 +282,7 @@ export default function ProcedureSettings() {
                 type="radio"
                 name="visibility"
                 value="public"
-                checked={settings.visibility === "public"} // <-- 6. CONTEXT SE VALUE READ KAREIN
+                checked={settings.visibility === "public"} 
                 onChange={handleVisibilityChange}
                 style={{ marginTop: 6 }}
               />

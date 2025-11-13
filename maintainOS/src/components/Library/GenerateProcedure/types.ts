@@ -1,4 +1,4 @@
-// --- [NO CHANGE] ---
+// ✅ FIX: Added 'export'
 export interface ConditionData {
   id: number;
   conditionOperator: string | null; // e.g., 'is', 'higher than', 'between'
@@ -8,7 +8,7 @@ export interface ConditionData {
   isCollapsed?: boolean;
 }
 
-// --- [NO CHANGE] ---
+// --- 🐞 YEH INTERFACE UPDATE KIYA GAYA HAI ---
 export interface FieldData {
   id: number;
   selectedType: string;
@@ -16,18 +16,28 @@ export interface FieldData {
   blockType: "field" | "heading" | "section";
   label: string;
   fields?: FieldData[];
+  
+  // --- [CHANGE] Added new properties for Meter Reading ---
   meterUnit?: string;
-  selectedMeter?: string;
+  selectedMeter?: string; // This will store the ID
+  selectedMeterName?: string; // This will store the Name for view mode
+  lastReading?: number | string | null; // This will store the last_reading.value
+  // --- END CHANGE ---
+  
   description?: string;
   hasDescription?: boolean;
   isRequired?: boolean;
   conditions?: ConditionData[];
   includeTime?: boolean;
+
+  // --- "link" ko "links" (array) bana diya ---
   links?: {
     id: string;
     url: string;
     text: string;
   }[];
+  
+  // --- "attachment" ko "attachments" (array) bana diya ---
   attachments?: {
     id: string;
     name: string;
@@ -35,14 +45,16 @@ export interface FieldData {
     type: string;
   }[];
 }
+// --- END UPDATE ---
 
-// --- [NO CHANGE] ---
+// ✅ FIX: Added 'export'
 export interface ProcedureBodyProps {
   name: string;
   description: string;
 }
 
-// --- [NO CHANGE] ---
+// --- ADDED THIS INTERFACE ---
+// ✅ FIX: Added 'export'
 export interface ProcedureSettingsState {
   categories: string[]; 
   assets: string[];
@@ -51,8 +63,9 @@ export interface ProcedureSettingsState {
   visibility: "private" | "public";
   priority: string | null;
 }
+// --- END ADDITION ---
 
-// --- [NO CHANGE] ---
+// ✅ FIX: Added 'export'
 export const logicConditionTypes: Record<string, string[]> = {
   "Number Field": [
     "higher than",
@@ -82,9 +95,7 @@ export const logicConditionTypes: Record<string, string[]> = {
   Checkbox: ["is checked", "is not checked"],
 };
 
-
-// --- 👇 [CHANGE] Update 'CreateProcedureData' and 'UpdateProcedureData' ---
-
+// --- [NO CHANGE] ---
 interface ProcedureItemBase {
   fieldName?: string; // (field)
   text?: string; // (heading)
@@ -97,7 +108,7 @@ export interface CreateProcedureData {
   title: string;
   description?: string;
   visibility: "private" | "public";
-  priority?: string | null; // Priority is optional on CREATE
+  priority?: string | null; 
   
   assetIds: string[];
   locationIds: string[];
@@ -108,9 +119,6 @@ export interface CreateProcedureData {
   sections: ProcedureItemBase[];
 }
 
-// This new type omits 'priority' from the partial data
-// This correctly models the API which rejects 'priority' on PATCH
 type UpdateProcedurePayload = Omit<Partial<CreateProcedureData>, 'priority'>;
 
 export interface UpdateProcedureData extends UpdateProcedurePayload {}
-// --- END CHANGE ---

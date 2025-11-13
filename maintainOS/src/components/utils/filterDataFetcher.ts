@@ -5,14 +5,18 @@ import { assetService } from "../../store/assets/assets.service";
 import { vendorService } from "../../store/vendors/vendors.service";
 import { procedureService } from "../../store/procedures/procedures.service";
 import { teamMemberService } from "../../store/teamMembers/teamMembers.service";
-import { userService } from "../../store/users/users.service"; // ✅ Added for users summary
+import { userService } from "../../store/users/users.service";
+import { categoryService } from "../../store/categories/categories.service";
+import { teamService } from "../../store/teams/teams.service";
+// --- 👇 [NEW] Added import for meter service ---
+import { meterService } from "../../store/meters/meters.service";
 
 // 🔹 Simple in-memory cache to avoid repeat API calls
 const cache: Record<string, any[]> = {};
 
 /**
  * Universal filter data fetcher.
- * Handles: Locations, Assets, Parts, Vendors, Procedures, Team Members, Users
+ * Handles: Locations, Assets, Parts, Vendors, Procedures, Team Members, Users, Categories, Meters
  */
 export async function fetchFilterData(filterType: string) {
   const key = filterType.toLowerCase();
@@ -25,6 +29,7 @@ export async function fetchFilterData(filterType: string) {
 
   try {
     let result: any[] = [];
+    let list: any[] = []; // To hold the response data array
 
     switch (key) {
       /**
@@ -35,7 +40,7 @@ export async function fetchFilterData(filterType: string) {
       case "location":
       case "locations": {
         const res = await locationService.fetchLocationsName(1000, 1, 0);
-        const list = Array.isArray(res?.data) ? res.data : res;
+        list = Array.isArray(res?.data) ? res.data : res;
         result = (list || []).map((l: any) => ({
           id: l.id,
           name: l.name,
@@ -53,7 +58,7 @@ export async function fetchFilterData(filterType: string) {
       case "part":
       case "parts": {
         const res = await partService.fetchPartsName();
-        const list = Array.isArray(res?.data) ? res.data : res;
+        list = Array.isArray(res?.data) ? res.data : res;
         result = (list || []).map((p: any) => ({
           id: p.id,
           name: p.name,
@@ -71,7 +76,7 @@ export async function fetchFilterData(filterType: string) {
       case "asset":
       case "assets": {
         const res = await assetService.fetchAssetsName();
-        const list = Array.isArray(res?.data) ? res.data : res;
+        list = Array.isArray(res?.data) ? res.data : res;
         result = (list || []).map((a: any) => ({
           id: a.id,
           name: a.name,
@@ -89,13 +94,30 @@ export async function fetchFilterData(filterType: string) {
       case "vendor":
       case "vendors": {
         const res = await vendorService.fetchVendorName();
-        const list = Array.isArray(res?.data) ? res.data : res;
+        list = Array.isArray(res?.data) ? res.data : res;
         result = (list || []).map((v: any) => ({
           id: v.id,
           name: v.name,
           image: v.image || null,
         }));
         console.log("🟢 Vendors fetched:", result.length);
+        break;
+      }
+      
+      /**
+       * -------------------------------------------------
+       * 🏷️ CATEGORIES
+       * -------------------------------------------------
+       */
+      case "category":
+      case "categories": {
+        list = await categoryService.fetchCategories();
+        result = (list || []).map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          image: null, 
+        }));
+        console.log("🟢 Categories fetched:", result.length);
         break;
       }
 
@@ -106,8 +128,7 @@ export async function fetchFilterData(filterType: string) {
        */
       case "user":
       case "users": {
-        // ✅ API: GET /api/v1/users/summary
-        const list = await userService.fetchUserSummary();
+        list = await userService.fetchUserSummary();
         result = (list || []).map((u: any) => ({
           id: u.id,
           name: u.fullName || "Unnamed User",
@@ -125,10 +146,10 @@ export async function fetchFilterData(filterType: string) {
       case "procedure":
       case "procedures": {
         const res = await procedureService.fetchProcedures();
-        const list = Array.isArray(res?.data) ? res.data : res;
+        list = Array.isArray(res?.data) ? res.data : res;
         result = (list || []).map((proc: any) => ({
           id: proc.id,
-          name: proc.name || proc.procedureName || "Unnamed Procedure",
+          name: proc.name || proc.procedureName || proc.title || "Unnamed Procedure",
           image: null,
         }));
         console.log("🟢 Procedures fetched:", result.length);
@@ -137,7 +158,7 @@ export async function fetchFilterData(filterType: string) {
 
       /**
        * -------------------------------------------------
-       * 👥 TEAM MEMBERS
+       * 👥 TEAMS
        * -------------------------------------------------
        */
       case "team":
@@ -146,19 +167,36 @@ export async function fetchFilterData(filterType: string) {
       case "team-members":
       case "team member":
       case "team members": {
-        const res = await teamMemberService.fetchTeamMembers();
-        const list = Array.isArray(res?.data) ? res.data : res;
+        list = await teamService.fetchTeamsName();
         result = (list || []).map((t: any) => ({
           id: t.id,
-          name:
-            t.name ||
-            `${t.firstName || ""} ${t.lastName || ""}`.trim() ||
-            "Unnamed Member",
-          image: t.avatar || t.image || null,
+          name: t.name || "Unnamed Team",
+          image: null,
         }));
-        console.log("🟢 Team Members fetched:", result.length);
+        console.log("🟢 Teams fetched:", result.length);
         break;
       }
+
+      // --- 👇 [NEW] Added case for meters ---
+      /**
+       * -------------------------------------------------
+       * 📟 METERS
+       * -------------------------------------------------
+       */
+      case "meter":
+      case "meters": {
+        // Use the fetchMeters function from the service
+        // Pass default pagination params like we do for locations
+        list = await meterService.fetchMeters(1000, 1, 0);
+        result = (list || []).map((m: any) => ({
+          id: m.id,
+          name: m.name, // MeterResponse type has 'name'
+          image: null, 
+        }));
+        console.log("🟢 Meters fetched:", result.length);
+        break;
+      }
+      // --- END OF NEW CASE ---
 
       /**
        * -------------------------------------------------
