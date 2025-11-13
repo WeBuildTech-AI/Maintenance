@@ -19,6 +19,19 @@ export const fetchCategories = createAsyncThunk(
     }
   }
 );
+export const fetchAllCategories = createAsyncThunk(
+  "categories/fetchCategories",
+  async (_, { rejectWithValue }) => {
+    try {
+      const categories = await categoryService.fetchAllCategories();
+      return categories;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch categories"
+      );
+    }
+  }
+);
 
 export const fetchCategoryById = createAsyncThunk(
   "categories/fetchCategoryById",

@@ -7,22 +7,28 @@ import type {
 } from "./categories.types";
 
 const API_URL = import.meta.env.VITE_API_URL;
+import api from "../auth/auth.service";
 
 export const categoryService = {
   fetchCategories: async (): Promise<CategoryResponse[]> => {
-    const res = await axios.get(`${API_URL}/categories`);
+    const res = await api.get(`/categories`);
+    return res.data;
+  },
+
+  fetchAllCategories: async (): Promise<CategoryResponse[]> => {
+    const res = await api.get(`/categories/super`);
     return res.data;
   },
 
   fetchCategoryById: async (id: string): Promise<CategoryResponse> => {
-    const res = await axios.get(`${API_URL}/categories/${id}`);
+    const res = await api.get(`/categories/${id}`);
     return res.data;
   },
 
   createCategory: async (
     data: CreateCategoryData
   ): Promise<CategoryResponse> => {
-    const res = await axios.post(`${API_URL}/categories`, data);
+    const res = await api.post(`/categories`, data);
     return res.data;
   },
 
@@ -30,11 +36,11 @@ export const categoryService = {
     id: string,
     data: UpdateCategoryData
   ): Promise<CategoryResponse> => {
-    const res = await axios.patch(`${API_URL}/categories/${id}`, data);
+    const res = await api.patch(`/categories/${id}`, data);
     return res.data;
   },
 
   deleteCategory: async (id: string): Promise<void> => {
-    await axios.delete(`${API_URL}/categories/${id}`);
+    await api.delete(`/categories/${id}`);
   },
 };
