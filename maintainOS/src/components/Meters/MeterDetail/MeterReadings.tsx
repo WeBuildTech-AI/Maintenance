@@ -12,7 +12,6 @@ import {
 } from "recharts";
 import { Button } from "../../ui/button";
 import { subHours, subDays, subWeeks, subMonths, isAfter } from "date-fns";
-
 export function MeterReadings({ selectedMeter, setShowReadingMeter }: any) {
   const [selectedTimePeriod, setSelectedTimePeriod] = useState("1D");
   const [customRange, setCustomRange] = useState<{ start: Date | null; end: Date | null }>({
