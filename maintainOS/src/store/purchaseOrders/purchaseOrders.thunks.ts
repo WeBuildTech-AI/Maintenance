@@ -226,3 +226,16 @@ export const fetchPurchaseOrderComment = createAsyncThunk(
     }
   }
 );
+export const fetchPurchaseOrderLog = createAsyncThunk(
+  "purchaseOrders/fetchPurchaseOrderLog",
+  async (_, { rejectWithValue }) => {
+    try {
+      return await purchaseOrderService.FetchPurchaseOrderLog;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Failed to fetch purchase orders log"
+      );
+    }
+  }
+);
