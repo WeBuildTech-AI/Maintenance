@@ -53,7 +53,7 @@ export function MeterDetailsSection({ selectedMeter }: any) {
 
     return isToday
       ? `Today at ${format(nextReading, "HH:mm")}`
-      : format(nextReading, "dd MMM yyyy, HH:mm");
+      : format(nextReading, "dd/MM/yyyy, HH:mm");
   };
 
   return (
