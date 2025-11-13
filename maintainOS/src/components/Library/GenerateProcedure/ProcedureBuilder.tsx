@@ -11,19 +11,24 @@ import { ProcedurePreviewModal } from "./components/ProcedurePreviewModal";
 import { useDispatch } from "react-redux";
 // import { useSelector } from "react-redux"; 
 import { type RootState, type AppDispatch } from "../../../store"; // Note: This path is inferred
-import { createProcedure } from "../../../store/procedures/procedures.thunks"; // Note: This path is inferred
+// --- 👇 [CHANGE] 'updateProcedure' ko import karein ---
+import { createProcedure, updateProcedure } from "../../../store/procedures/procedures.thunks"; 
 
 
 interface BuilderProps {
   name: string;
   description: string;
   onBack: () => void;
+  // --- 👇 [CHANGE] Naya prop add karein ---
+  editingProcedureId: string | null;
 }
 
 export default function ProcedureBuilder({
   name,
   description,
   onBack,
+  // --- 👇 [CHANGE] Prop ko read karein ---
+  editingProcedureId,
 }: BuilderProps) {
   const [scoring, setScoring] = useState(false);
   const [activeTab, setActiveTab] = useState<"fields" | "settings">("fields");
@@ -41,7 +46,7 @@ export default function ProcedureBuilder({
   const FOOTER_HEIGHT = 60;
 
   // --- 💡 3. 'SAVE TEMPLATE' LOGIC (UPDATED) ---
-  const handleSaveTemplate = async () => {
+  const handleSaveOrUpdateTemplate = async () => {
     
     setIsSaving(true);
     
@@ -90,8 +95,15 @@ export default function ProcedureBuilder({
     console.log(JSON.stringify(apiPayload, null, 2));
 
     try {
-      // 4. Dispatch the payload WITHOUT IDs
-      await dispatch(createProcedure(apiPayload)).unwrap();
+      // --- 👇 [CHANGE] Logic to Create vs Update ---
+      if (editingProcedureId) {
+        // UPDATE (Edit Mode)
+        await dispatch(updateProcedure({ id: editingProcedureId, procedureData: apiPayload })).unwrap();
+      } else {
+        // CREATE (New Mode)
+        await dispatch(createProcedure(apiPayload)).unwrap();
+      }
+      // --- END CHANGE ---
       
       // Success
       setIsSaving(false);
@@ -106,7 +118,7 @@ export default function ProcedureBuilder({
   };
 
   return (
-    <div className="flex flex-col bg-gray-50" style={{ height: "100vh" }}>
+    <div className="flex flex-col bg-white" style={{ height: "100vh" }}>
       {/* 🔹 Fixed Header */}
       <header
         style={{
@@ -268,7 +280,7 @@ export default function ProcedureBuilder({
             </button>
           ) : (
             <button
-              onClick={handleSaveTemplate} // API call karega
+              onClick={handleSaveOrUpdateTemplate} // <-- [CHANGE] Function ka naam badla
               disabled={isSaving}
               style={{
                 backgroundColor: isSaving ? "#d1d5db" : "#2563eb", // Disable color
@@ -286,7 +298,8 @@ export default function ProcedureBuilder({
               {isSaving && (
                 <Loader2 size={16} className="animate-spin" />
               )}
-              {isSaving ? "Saving..." : "Save Template"}
+              {/* --- 👇 [CHANGE] Button text ko dynamic banayein --- */}
+              {isSaving ? "Saving..." : (editingProcedureId ? "Update Template" : "Save Template")}
             </button>
           )}
         </div>

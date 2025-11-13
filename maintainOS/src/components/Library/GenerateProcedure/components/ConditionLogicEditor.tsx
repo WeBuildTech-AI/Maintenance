@@ -10,9 +10,13 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+// --- 👇 [FIX] 'useEffect' ko React se import karne ki zaroorat nahi hai ---
 
 export function ConditionLogicEditor({ field }: { field: FieldData }) {
   const { logicEditorPanelRefs, handleAddCondition } = useProcedureBuilder();
+
+  // --- 👇 [FIX] 'useEffect' logic yahaan se poori tarah HATA di gayi hai ---
+  // (Yeh pichhle response mein galti se add ho gayi thi)
 
   return (
     <div
@@ -20,6 +24,11 @@ export function ConditionLogicEditor({ field }: { field: FieldData }) {
       className="mt-6"
       onClick={(e) => e.stopPropagation()}
     >
+      {/* Ab, jab `FieldEditor` mein icon click hoga, 
+        `handleToggleLogicEditor` call hoga.
+        Woh panel kholega AUR (agar zaroorat hai) ek condition add karega.
+        Yeh component fir uss ek condition ke saath render hoga.
+      */}
       {field.conditions?.map((condition) => (
         <ConditionBlock
           key={condition.id}
@@ -228,13 +237,11 @@ function ConditionBlock({
                     : condition.id
                 );
               }}
-              // --- 🐞 YEH HAI AAPKA FIX ---
               className={`flex items-center justify-between border ${
                 conditionOperatorDropdownOpen === condition.id
                   ? "border-blue-400"
-                  : "border-gray-300" // <-- ':' Yahaan add kiya hai
+                  : "border-gray-300"
               } rounded-md px-2 py-1 text-sm bg-white w-36`}
-              // --- END FIX ---
             >
               <span>{condition.conditionOperator || "Select..."}</span>
               <ChevronDown

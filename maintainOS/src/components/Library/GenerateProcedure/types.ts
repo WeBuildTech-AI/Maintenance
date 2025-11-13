@@ -1,4 +1,4 @@
-// ✅ FIX: Added 'export'
+// --- [NO CHANGE] ---
 export interface ConditionData {
   id: number;
   conditionOperator: string | null; // e.g., 'is', 'higher than', 'between'
@@ -8,7 +8,7 @@ export interface ConditionData {
   isCollapsed?: boolean;
 }
 
-// --- 🐞 YEH INTERFACE UPDATE KIYA GAYA HAI ---
+// --- [NO CHANGE] ---
 export interface FieldData {
   id: number;
   selectedType: string;
@@ -23,15 +23,11 @@ export interface FieldData {
   isRequired?: boolean;
   conditions?: ConditionData[];
   includeTime?: boolean;
-
-  // --- "link" ko "links" (array) bana diya ---
   links?: {
     id: string;
     url: string;
     text: string;
   }[];
-  
-  // --- "attachment" ko "attachments" (array) bana diya ---
   attachments?: {
     id: string;
     name: string;
@@ -39,26 +35,24 @@ export interface FieldData {
     type: string;
   }[];
 }
-// --- END UPDATE ---
 
-// ✅ FIX: Added 'export'
+// --- [NO CHANGE] ---
 export interface ProcedureBodyProps {
   name: string;
   description: string;
 }
 
-// --- ADDED THIS INTERFACE ---
-// ✅ FIX: Added 'export'
+// --- [NO CHANGE] ---
 export interface ProcedureSettingsState {
-  categories: string[]; // In a real app, these might be objects with IDs
+  categories: string[]; 
   assets: string[];
   locations: string[];
   teamsInCharge: string[];
   visibility: "private" | "public";
+  priority: string | null;
 }
-// --- END ADDITION ---
 
-// ✅ FIX: Added 'export'
+// --- [NO CHANGE] ---
 export const logicConditionTypes: Record<string, string[]> = {
   "Number Field": [
     "higher than",
@@ -87,3 +81,36 @@ export const logicConditionTypes: Record<string, string[]> = {
   "Inspection Check": ["is", "is not"],
   Checkbox: ["is checked", "is not checked"],
 };
+
+
+// --- 👇 [CHANGE] Update 'CreateProcedureData' and 'UpdateProcedureData' ---
+
+interface ProcedureItemBase {
+  fieldName?: string; // (field)
+  text?: string; // (heading)
+  sectionName?: string; // (section)
+  order: number;
+  // ... any other common properties
+}
+
+export interface CreateProcedureData {
+  title: string;
+  description?: string;
+  visibility: "private" | "public";
+  priority?: string | null; // Priority is optional on CREATE
+  
+  assetIds: string[];
+  locationIds: string[];
+  teamsInCharge: string[];
+
+  headings: ProcedureItemBase[];
+  rootFields: ProcedureItemBase[];
+  sections: ProcedureItemBase[];
+}
+
+// This new type omits 'priority' from the partial data
+// This correctly models the API which rejects 'priority' on PATCH
+type UpdateProcedurePayload = Omit<Partial<CreateProcedureData>, 'priority'>;
+
+export interface UpdateProcedureData extends UpdateProcedurePayload {}
+// --- END CHANGE ---

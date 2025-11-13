@@ -31,7 +31,8 @@ export function FieldEditor({
     dropdownOpen,
     setDropdownOpen,
     logicEditorOpen,
-    setLogicEditorOpen,
+    // --- 👇 [CHANGE] 'setLogicEditorOpen' ko hata dein ---
+    // setLogicEditorOpen, // (Ab naya function use hoga)
     fieldBlockRefs,
     dropdownRefs,
     buttonRefs,
@@ -51,8 +52,8 @@ export function FieldEditor({
     handleDuplicateField,
     handleFieldPropChange,
     setIsLinkModalOpen,
-    // --- 🐞 handleAddCondition ko import karna zaroori hai ---
-    handleAddCondition,
+    // --- 👇 [CHANGE] Naya function import karein ---
+    handleToggleLogicEditor, 
   } = useProcedureBuilder();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -410,7 +411,7 @@ export function FieldEditor({
                   </label>
                 )}
 
-                {/* --- 🐞 YEH HAI AAPKA FIX --- */}
+                {/* --- 👇 [CHANGE] YEH AAPKA FIX HAI --- */}
                 {logicEnabledFieldTypes.includes(field.selectedType) && (
                   <button
                     ref={(el) =>
@@ -418,16 +419,8 @@ export function FieldEditor({
                     }
                     onClick={(e) => {
                       e.stopPropagation();
-                      // Logic panel ko toggle karein
-                      setLogicEditorOpen(
-                        logicEditorOpen === field.id ? null : field.id
-                      );
-                      
-                      // Agar conditions pehle se nahi hain (yaani 0 hain),
-                      // toh pehli condition add karein
-                      if (!field.conditions || field.conditions.length === 0) {
-                        handleAddCondition(field.id);
-                      }
+                      // Naye, smart function ko call karein
+                      handleToggleLogicEditor(field.id);
                     }}
                     className={`hover:text-blue-600 ${
                       logicEditorOpen === field.id ? "text-blue-600" : ""

@@ -12,7 +12,7 @@ import { MoreActionsMenu } from "./GenerateProcedure/components/MoreActionsMenu"
 
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-// --- 👇 [CHANGE] 'deleteProcedure' ko 'batchDeleteProcedures' se replace kiya ---
+// --- 👇 [CHANGE] 'batchDeleteProcedures' ko import kiya ---
 import { batchDeleteProcedures, duplicateProcedure } from "../../store/procedures/procedures.thunks"; 
 import type { AppDispatch } from "../../store"; 
 
@@ -72,10 +72,13 @@ const DetailsTabContent = ({ procedure }: { procedure: any }) => {
 // --- Main LibraryDetails Component ---
 export function LibraryDetails({
   selectedProcedure,
-  onRefresh, // <-- YEH PROP ZAROORI HAI
+  onRefresh, 
+  // --- 👇 [CHANGE] Naya prop add karein ---
+  onEdit,
 }: {
   selectedProcedure: any;
   onRefresh: () => void; 
+  onEdit: (id: string) => void; // <-- Prop type
 }) {
   const [activeTab, setActiveTab] = useState<"fields" | "details" | "history">(
     "fields"
@@ -93,12 +96,10 @@ export function LibraryDetails({
     if (!selectedProcedure) return;
 
     try {
-      // --- 👇 [CHANGE] Ab 'batchDeleteProcedures' ko array ke saath call karein ---
+      // --- 👇 [CHANGE] Ab 'batchDeleteProcedures' ko call karein ---
       await dispatch(batchDeleteProcedures([selectedProcedure.id])).unwrap();
       
-      // --- 👇 YEH HAI FIX: 'onRefresh' ko call karein ---
       onRefresh(); 
-      
       navigate("/library");
     } catch (error) {
       console.error("Failed to delete procedure:", error);
@@ -118,17 +119,13 @@ export function LibraryDetails({
 
     try {
       await dispatch(duplicateProcedure(selectedProcedure.id)).unwrap();
-      
-      // --- 👇 YEH HAI FIX: 'onRefresh' ko call karein ---
       onRefresh();
-
     } catch (error) {
       console.error("Failed to duplicate procedure:", error);
       alert("Failed to duplicate procedure.");
     }
   };
 
-  // --- (NEW) "Use in Work Order" button ke liye handler ---
   const handleUseInWorkOrder = () => {
     if (!selectedProcedure) return;
     navigate(`/work-orders/create?procedureId=${selectedProcedure.id}`);
@@ -163,7 +160,11 @@ export function LibraryDetails({
 
           {/* Buttons */}
           <div className="flex items-center gap-2 relative">
-            <button className="inline-flex items-center rounded border border-blue-500 text-blue-600 px-4 py-1.5 text-sm font-medium hover:bg-blue-50">
+            {/* --- 👇 [CHANGE] onClick handler add karein --- */}
+            <button 
+              onClick={() => onEdit(selectedProcedure.id)}
+              className="inline-flex items-center rounded border border-blue-500 text-blue-600 px-4 py-1.5 text-sm font-medium hover:bg-blue-50"
+            >
               <Pencil className="h-4 w-4 mr-2" />
               Edit
             </button>

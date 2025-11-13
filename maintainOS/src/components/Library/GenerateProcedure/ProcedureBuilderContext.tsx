@@ -34,6 +34,8 @@ import { convertStateToJSON } from "./utils/conversion";
 interface ProcedureBuilderContextType {
   // ... (saari purani types)
   handleAddCondition: (fieldId: number) => void;
+  // --- 👇 [CHANGE] Naya function add karein ---
+  handleToggleLogicEditor: (fieldId: number) => void; 
   // ... (baaki saari types)
   handleFieldDragEnd: (event: DragEndEvent) => void;
 }
@@ -73,6 +75,56 @@ function findFieldAndParent(
   }
   return null;
 }
+
+// --- Helper: Recursively update fields ---
+// (Yeh helper `handleToggleLogicEditor` ke liye zaroori hai)
+const updateFieldsRecursive = (
+  fieldsList: FieldData[],
+  updateFn: (field: FieldData) => FieldData
+): FieldData[] => {
+  return fieldsList.map((field) => {
+    let updatedField = updateFn(field);
+
+    if (updatedField.fields) {
+      updatedField.fields = updateFieldsRecursive(
+        updatedField.fields,
+        updateFn
+      );
+    }
+
+    if (updatedField.conditions) {
+      updatedField.conditions = updatedField.conditions.map((c) => ({
+        ...c,
+        fields: updateFieldsRecursive(c.fields, updateFn),
+      }));
+    }
+
+    return updatedField;
+  });
+};
+
+// --- Helper: Find a field recursively ---
+// (Yeh helper `handleToggleLogicEditor` ke liye zaroori hai)
+const findFieldRecursive = (
+  fieldsList: FieldData[],
+  id: number
+): FieldData | undefined => {
+  for (const field of fieldsList) {
+    if (field.id === id) return field;
+    if (field.fields) {
+      const found = findFieldRecursive(field.fields, id);
+      if (found) return found;
+    }
+    if (field.conditions) {
+      for (const c of field.conditions) {
+        const found = findFieldRecursive(c.fields, id);
+        if (found) return found;
+      }
+    }
+  }
+  return undefined;
+};
+
 
 // --- NEW HELPER: Recursively find a container and add an item to it ---
 const findAndAddRecursive = (
@@ -138,8 +190,7 @@ const countFieldsRecursive = (fieldsList: FieldData[]): number => {
   return count;
 };
 
-// --- 🐞 YEH NAYA HELPER FUNCTION HAI ---
-// Ek default field banane ke liye
+// --- Helper: Ek default field banane ke liye ---
 const createDefaultField = (): FieldData => ({
   id: Date.now(),
   selectedType: "Text Field",
@@ -148,13 +199,26 @@ const createDefaultField = (): FieldData => ({
   isRequired: false,
   hasDescription: false,
 });
-// --- END ---
+
+// --- Default settings state ---
+const defaultSettingsState: ProcedureSettingsState = {
+  categories: [],
+  assets: [],
+  locations: [],
+  teamsInCharge: [],
+  visibility: "private",
+  priority: null, 
+};
 
 // --- ADDED PROPS FOR PROVIDER ---
 interface ProcedureBuilderProviderProps {
   children: ReactNode;
   name: string;
   description: string;
+  initialState?: {
+    fields: FieldData[];
+    settings: ProcedureSettingsState;
+  };
 }
 
 // --- 3. Create Provider Component ---
@@ -162,23 +226,19 @@ export function ProcedureBuilderProvider({
   children,
   name,
   description,
+  initialState, 
 }: ProcedureBuilderProviderProps) {
   
-  // --- 🐞 YEH HAI AAPKA FIX ---
-  // State ab khaali array se shuru nahi hogi
-  const [fields, setFields] = useState<FieldData[]>(() => [createDefaultField()]);
-  // --- END FIX ---
+  // --- State initialization (No Change) ---
+  const [fields, setFields] = useState<FieldData[]>(() => 
+    initialState?.fields || [createDefaultField()]
+  );
+  
+  const [settings, setSettings] = useState<ProcedureSettingsState>(() => 
+    initialState?.settings || defaultSettingsState
+  );
 
-  // --- ADDED SETTINGS STATE & DEFAULT ---
-  const [settings, setSettings] = useState<ProcedureSettingsState>({
-    categories: [],
-    assets: [],
-    locations: [],
-    teamsInCharge: [],
-    visibility: "private",
-  });
-  // --- END ADDITION ---
-
+  // --- Baaki saari state (No Change) ---
   const [activeContainerId, setActiveContainerId] = useState<number | "root">(
     "root"
   );
@@ -206,6 +266,7 @@ export function ProcedureBuilderProvider({
   }>({ fieldId: null });
   const [collapsed, setCollapsed] = useState<Record<number, boolean>>({});
 
+  // --- Saare Refs (No Change) ---
   const dropdownRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const buttonRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const fieldBlockRefs = useRef<Record<number, HTMLDivElement | null>>({});
@@ -456,52 +517,6 @@ export function ProcedureBuilderProvider({
   }, [fields, settings, name, description]); // <-- ADDED settings
   // --- END NEW ---
 
-  // --- Helper function to recursively update fields ---
-  const updateFieldsRecursive = (
-    fieldsList: FieldData[],
-    updateFn: (field: FieldData) => FieldData
-  ): FieldData[] => {
-    return fieldsList.map((field) => {
-      let updatedField = updateFn(field);
-
-      if (updatedField.fields) {
-        updatedField.fields = updateFieldsRecursive(
-          updatedField.fields,
-          updateFn
-        );
-      }
-
-      if (updatedField.conditions) {
-        updatedField.conditions = updatedField.conditions.map((c) => ({
-          ...c,
-          fields: updateFieldsRecursive(c.fields, updateFn),
-        }));
-      }
-
-      return updatedField;
-    });
-  };
-
-  // --- Helper function to find a field recursively ---
-  const findFieldRecursive = (
-    fieldsList: FieldData[],
-    id: number
-  ): FieldData | undefined => {
-    for (const field of fieldsList) {
-      if (field.id === id) return field;
-      if (field.fields) {
-        const found = findFieldRecursive(field.fields, id);
-        if (found) return found;
-      }
-      if (field.conditions) {
-        for (const c of field.conditions) {
-          const found = findFieldRecursive(c.fields, id);
-          if (found) return found;
-        }
-      }
-    }
-    return undefined;
-  };
 
   // --- HANDLERS (MODIFIED) ---
 
@@ -759,6 +774,7 @@ export function ProcedureBuilderProvider({
     setDropdownOpen(null);
   };
 
+  // --- [NO CHANGE] Yeh function waisa hi hai, "Add Another" ke liye ---
   const handleAddCondition = (fieldId: number) => {
     const newCondition: ConditionData = {
       id: Date.now(),
@@ -790,6 +806,56 @@ export function ProcedureBuilderProvider({
       })
     );
   };
+  
+  // --- 👇 [CHANGE] YEH NAYA FUNCTION HAI JO BUG FIX KAREGA ---
+  const handleToggleLogicEditor = (fieldId: number) => {
+    // Pehle, panel ko toggle karein (open ya close)
+    setLogicEditorOpen(prevOpenId => (prevOpenId === fieldId ? null : fieldId));
+
+    // Agar panel *band* ho raha hai, toh kuch na karein
+    if (logicEditorOpen === fieldId) {
+      return;
+    }
+    
+    // Agar panel *khul* raha hai, toh state ko check karein
+    setFields(prevFields => {
+      // Hamesha latest state (prevFields) se field dhoondein
+      const field = findFieldRecursive(prevFields, fieldId);
+
+      // Check karein ki field hai aur conditions *waqai* 0 hain
+      if (field && (!field.conditions || field.conditions.length === 0)) {
+        // Nayi condition banayein
+        const newCondition: ConditionData = {
+          id: Date.now(),
+          conditionOperator: null,
+          conditionValue: null,
+          conditionValue2: null,
+          fields: [
+            {
+              id: Date.now() + 1,
+              selectedType: "Text Field",
+              blockType: "field",
+              label: "New Field",
+              isRequired: false,
+              hasDescription: false,
+            },
+          ],
+          isCollapsed: false,
+        };
+        
+        // State ko update karein (sirf agar zaroorat hai)
+        return updateFieldsRecursive(prevFields, f => 
+          f.id === fieldId 
+            ? { ...f, conditions: [newCondition] } 
+            : f
+        );
+      }
+
+      // Agar conditions pehle se hain, toh state change na karein
+      return prevFields;
+    });
+  };
+  // --- END OF NEW FUNCTION ---
 
   const handleDeleteCondition = (fieldId: number, conditionId: number) => {
     setFields((prev) =>
@@ -1099,10 +1165,8 @@ export function ProcedureBuilderProvider({
 
   // --- 5. Provide Context Value ---
   const contextValue: ProcedureBuilderContextType = {
-    // --- 庁 FIX: Pass name and description into context ---
     name,
     description,
-    // --- END FIX ---
     fields,
     setFields,
     settings,
@@ -1168,6 +1232,8 @@ export function ProcedureBuilderProvider({
     handleRemoveOption,
     handleTypeChange,
     handleAddCondition,
+    // --- 👇 [CHANGE] Naya function pass karein ---
+    handleToggleLogicEditor,
     handleDeleteCondition,
     handleConditionChange,
     handleAddFieldInsideCondition,

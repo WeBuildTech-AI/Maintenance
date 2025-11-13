@@ -52,7 +52,8 @@ export default function ProcedureSettings() {
   const pageStyle: React.CSSProperties = {
     display: "flex",
     justifyContent: "center",
-    background: "#F8FAFC",
+    // --- 👇 [FIX] Background ko "#F8FAFC" (bluish) se "#fff" (white) kar diya ---
+    background: "#fff", 
     padding: 40,
     minHeight: "100vh",
     boxSizing: "border-box",

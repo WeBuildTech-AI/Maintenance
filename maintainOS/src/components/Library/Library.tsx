@@ -5,9 +5,6 @@ import { LibraryHeaderComponent } from "./LibraryHeader";
 import type { ViewMode } from "../purchase-orders/po.types";
 import GenerateProcedure from "./GenerateProcedure/GenerateProcedure";
 import { ChevronDown } from "lucide-react";
-// --- (FIX) SettingsModal ka import path check karein ---
-// Aapne bataya ki yeh `utils` folder mein hai, lekin aapki di gayi file `SettingsModal.tsx` hai
-// Main maan raha hoon ki yeh `../utils/SettingsModal` par hai jaisa ki aapne import kiya hai
 import SettingsModal from "../utils/SettingsModal"; 
 
 // --- NYE COMPONENTS IMPORT ---
@@ -15,9 +12,7 @@ import { LibraryCard } from "./LibraryCard";
 import { LibraryDetails } from "./LibraryDetails";
 import SortModal from "./SortModal"; 
 import EmptyState from "./components/EmptyState";
-// --- (FIX) LibraryTable ka path aapke folder structure ke hisaab se update kiya ---
 import { LibraryTable } from "./GenerateProcedure/LibraryTable";
-// --- (NEW) Naya modal import karein (path check kar lein) ---
 import { ProcedureDetailModal } from "./GenerateProcedure/components/ProcedureDetailModal"; 
 
 // --- 庁 2. Priority sort helper ---
@@ -49,10 +44,10 @@ export function Library() {
   const [error, setError] = useState<string | null>(null);
 
   const [modalProcedure, setModalProcedure] = useState<any>(null);
-
-  // --- (NEW) "Show Deleted" toggle ke liye state ---
-  // Iski default value 'false' hai
   const [showDeleted, setShowDeleted] = useState(false);
+
+  // --- 👇 [CHANGE] Nayi state add karein ---
+  const [editingProcedureId, setEditingProcedureId] = useState<string | null>(null);
 
   // --- SORT MODAL KE LIYE STATE ---
   const [isSortModalOpen, setIsSortModalOpen] = useState(false);
@@ -63,8 +58,7 @@ export function Library() {
   const [visibleColumns, setVisibleColumns] =
     useState<string[]>(allToggleableColumns);
 
-  // --- 2. fetchData function (UPDATE) ---
-  // Ab yeh 'showDeleted' state par depend karega
+  // --- fetchData function (UPDATE) ---
   const fetchData = useMemo(() => {
     return async () => {
       try {
@@ -73,11 +67,9 @@ export function Library() {
         
         let res;
         if (showDeleted) {
-          // --- (NEW) Deleted procedures API call ---
           console.log("倹 Fetching DELETED procedures...");
           res = await procedureService.fetchDeletedProcedures();
         } else {
-          // --- (EXISTING) Active procedures API call ---
           console.log("倹 Fetching ACTIVE procedures...");
           res = await procedureService.fetchProcedures();
         }
@@ -96,13 +88,13 @@ export function Library() {
         setLoading(false);
       }
     };
-  }, [showDeleted]); // <-- (UPDATE) 'showDeleted' ko dependency banaya
+  }, [showDeleted]);
 
   // --- 3. API CALL (ACTIVE) ---
   useEffect(() => {
     console.log("Using Live API");
     fetchData();
-  }, [fetchData]); // <-- Ab jab 'fetchData' (ya 'showDeleted') change hoga, yeh re-run hoga
+  }, [fetchData]);
 
   // --- 庁 4. SORTING LOGIC (No Change) ---
   const sortedProcedures = useMemo(() => {
@@ -185,10 +177,23 @@ export function Library() {
     return sortType;
   };
 
-  // --- (NEW) Refresh function for the modal (No Change) ---
   const handleModalRefresh = () => {
     fetchData();
     setModalProcedure(null);
+  }
+
+  // --- 👇 [CHANGE] Naya handler add karein ---
+  const handleEditProcedure = (id: string) => {
+    setEditingProcedureId(id);
+    setShowForm(true);
+    setViewMode("panel"); // Edit hamesha panel view mein open ho
+  };
+
+  // --- 👇 [CHANGE] Naya handler add karein ---
+  const handleBackFromBuilder = () => {
+    setShowForm(false);
+    setEditingProcedureId(null); // Edit ID ko reset karein
+    fetchData(); // List ko refresh karein
   }
 
   return (
@@ -200,22 +205,25 @@ export function Library() {
           setViewMode={setViewMode}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
-          setIsCreatingForm={setShowForm}
+          // --- 👇 [CHANGE] "New Procedure" click par ID ko null set karein ---
+          setIsCreatingForm={() => {
+            setEditingProcedureId(null); 
+            setShowForm(true);
+            setViewMode("panel");
+          }}
           setShowSettings={setShowSettings}
-          // --- (FIX) 'showDeleted' props yahaan se hata diye gaye hain ---
         />
       )}
 
-      {/* --- Main Content (No Change) --- */}
+      {/* --- Main Content --- */}
       <div className="flex-1 flex flex-col overflow-hidden border-t border-gray-200">
         {showForm ? (
           // --- FORM VIEW (SCROLLS) ---
           <div className="flex-1 bg-white p-6 overflow-y-auto h-full">
             <GenerateProcedure
-              onBack={() => {
-                setShowForm(false);
-                fetchData(); 
-              }}
+              // --- 👇 [CHANGE] Naye props pass karein ---
+              onBack={handleBackFromBuilder}
+              editingProcedureId={editingProcedureId}
             />
           </div>
         ) : loading ? (
@@ -233,7 +241,7 @@ export function Library() {
             {viewMode === "panel" ? (
               // --- PANEL VIEW (No Change) ---
               <div className="flex h-full">
-                {/* Left Panel (Fixed Width + Scroll) */}
+                {/* Left Panel */}
                 <div className="w-96 mr-2 ml-3 mb-2 border border-border flex flex-col min-h-0">
                   {/* Tabs + Sort */}
                   <div className="p-4 border-b">
@@ -278,11 +286,13 @@ export function Library() {
                   <LibraryDetails
                     selectedProcedure={selectedProcedure}
                     onRefresh={fetchData}
+                    // --- 👇 [CHANGE] Naya handler pass karein ---
+                    onEdit={handleEditProcedure}
                   />
                 </div>
               </div>
             ) : (
-              // --- TABLE VIEW (UPDATE) ---
+              // --- TABLE VIEW (No Change) ---
               <LibraryTable
                 procedures={sortedProcedures}
                 sortType={sortType}
@@ -291,7 +301,6 @@ export function Library() {
                 onRefresh={fetchData} 
                 visibleColumns={visibleColumns}
                 onViewProcedure={(proc) => setModalProcedure(proc)}
-                // --- (NEW) 'showDeleted' state ko table mein pass karein (styling ke liye) ---
                 showDeleted={showDeleted}
               />
             )}
@@ -309,27 +318,22 @@ export function Library() {
         anchorRef={sortButtonRef}
       />
 
-      {/* --- (UPDATE) SETTINGS MODAL --- */}
+      {/* --- SETTINGS MODAL (No Change) --- */}
       <SettingsModal
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
         allToggleableColumns={allToggleableColumns}
         currentVisibleColumns={visibleColumns}
-        // --- (NEW) Parent ki current state ko modal mein pass karein ---
         currentShowDeleted={showDeleted}
-        // --- (NEW) 'onApply' ab settings object ko handle karega ---
         onApply={(settings) => {
           console.log("Settings applied:", settings);
-          // Columns ko update karein
           setVisibleColumns(settings.visibleColumns);
-          // 'showDeleted' state ko update karein
           setShowDeleted(settings.showDeleted);
-          // Modal band karein
           setShowSettings(false);
         }}
       />
 
-      {/* --- (NEW) PROCEDURE DETAIL MODAL (No Change) --- */}
+      {/* --- PROCEDURE DETAIL MODAL (No Change) --- */}
       <ProcedureDetailModal
         isOpen={!!modalProcedure}
         onClose={() => setModalProcedure(null)}
@@ -338,6 +342,8 @@ export function Library() {
         <LibraryDetails
           selectedProcedure={modalProcedure}
           onRefresh={handleModalRefresh}
+          // --- 👇 [CHANGE] Naya handler pass karein ---
+          onEdit={handleEditProcedure}
         />
       </ProcedureDetailModal>
     </div>
