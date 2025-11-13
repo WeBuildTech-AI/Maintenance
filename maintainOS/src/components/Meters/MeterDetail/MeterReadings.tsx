@@ -128,7 +128,7 @@ export function MeterReadings({ selectedMeter, setShowReadingMeter }: any) {
       {/* Chart Section */}
       <div className="space-y-4">
         <div className="text-sm font-medium text-muted-foreground">
-          {selectedMeter?.unit || ""}
+          {selectedMeter.measurement && selectedMeter.measurement.name}
         </div>
 
         <div className="h-80 w-full transition-all duration-300">
@@ -210,7 +210,7 @@ export function MeterReadings({ selectedMeter, setShowReadingMeter }: any) {
 
                 <Tooltip
                   formatter={(value: number) => [
-                    `${value} ${selectedMeter.unit}`,
+                    `${value} ${selectedMeter.measurement && selectedMeter.measurement.name}`,
                     "Reading",
                   ]}
                   labelFormatter={(label: string) =>
@@ -227,10 +227,10 @@ export function MeterReadings({ selectedMeter, setShowReadingMeter }: any) {
                 <Line
                   type="monotone"
                   dataKey="value"
-                  stroke="#3b82f6"
+                  stroke="#FFCD00"
                   strokeWidth={2}
-                  dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, stroke: "#3b82f6", strokeWidth: 2 }}
+                  dot={{ fill: "#FFCD00", strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6, stroke: "#FFCD00", strokeWidth: 2 }}
                   isAnimationActive
                   animationDuration={500}
                 >
