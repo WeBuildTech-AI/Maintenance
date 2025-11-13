@@ -39,7 +39,7 @@ export function NewMeterForm({
   const [asset, setAsset] = useState("");
   const [location, setLocation] = useState("");
   const [readingFrequencyValue, setReadingFrequencyValue] = useState("");
-  const [readingFrequencyUnit, setReadingFrequencyUnit] = useState("none");
+  const [readingFrequencyUnit, setReadingFrequencyUnit] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [docs, setDocs] = useState<File[]>([]);
   const [error, setError] = useState("");
