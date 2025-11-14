@@ -84,6 +84,8 @@ export const assetService = {
     return res.data;
   },
 
-  
+  deleteAssetStatus: async (id: string): Promise<void> => {
+    await api.delete(`/assets/${id}/status`);
+  },
 
 };

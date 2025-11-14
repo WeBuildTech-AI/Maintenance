@@ -408,7 +408,7 @@ export function UpdateAssetStatusModal({
     return true;
   };
 
-  // --- `handleFormSubmit` `since` key bhejega (Unchanged from last time) ---
+
   const handleFormSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!isFormValid() || isLoading) return;
@@ -421,45 +421,44 @@ export function UpdateAssetStatusModal({
       submitData.notes = notes;
     }
 
-    if (selectedStatus !== "online") {
-      if (selectedStatus === "offline") {
-        submitData.downtimeType = downtimeType; // "planned" ya "unplanned"
-      }
-
-      const now = new Date();
-
-      switch (offlineSince) {
-        case "Now":
-          submitData.since = now.toISOString();
-          break;
-        case "1 hour ago":
-          now.setHours(now.getHours() - 1);
-          submitData.since = now.toISOString();
-          break;
-        case "2 hours ago":
-          now.setHours(now.getHours() - 2);
-          submitData.since = now.toISOString();
-          break;
-        case "1 day ago":
-          now.setDate(now.getDate() - 1);
-          submitData.since = now.toISOString();
-          break;
-        case "Custom date":
-          if (fromDate && fromTime) {
-            submitData.since = new Date(
-              `${fromDate}T${fromTime}`
-            ).toISOString();
-          }
-          if (toDate && toTime) {
-            submitData.to = new Date(`${toDate}T${toTime}`).toISOString();
-          }
-          break;
-        default:
-          submitData.since = now.toISOString();
-      }
+    // --- CHANGE 1: Sirf 'downtimeType' ke liye check karein ki status offline hai ya nahi ---
+    if (selectedStatus === "offline") {
+      submitData.downtimeType = downtimeType;
     }
 
-    // `onSubmit` ko data bhejें
+    // --- CHANGE 2: Date calculation logic ko bahar nikaal diya ---
+    // Ab ye logic 'online', 'offline' aur 'doNotTrack' sabke liye chalega
+    const now = new Date();
+
+    switch (offlineSince) {
+      case "Now":
+        submitData.since = now.toISOString();
+        break;
+      case "1 hour ago":
+        now.setHours(now.getHours() - 1);
+        submitData.since = now.toISOString();
+        break;
+      case "2 hours ago":
+        now.setHours(now.getHours() - 2);
+        submitData.since = now.toISOString();
+        break;
+      case "1 day ago":
+        now.setDate(now.getDate() - 1);
+        submitData.since = now.toISOString();
+        break;
+      case "Custom date":
+        if (fromDate && fromTime) {
+          submitData.since = new Date(`${fromDate}T${fromTime}`).toISOString();
+        }
+        if (toDate && toTime) {
+          submitData.to = new Date(`${toDate}T${toTime}`).toISOString();
+        }
+        break;
+      default:
+        submitData.since = now.toISOString();
+    }
+
+    console.log("Submitting Data:", submitData); // Debugging ke liye check kar lein
     onSubmit(submitData);
   };
 
