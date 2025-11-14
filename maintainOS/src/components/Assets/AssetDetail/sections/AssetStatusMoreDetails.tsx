@@ -51,13 +51,15 @@ export default function AssetStatusMoreDetails({
     setShowActionMenu(false);
   };
 
-  const handleDeleteStatus = () => {
-    setShowActionMenu(false);
-    // Add delete logic here
-  };
-
   const periods: Period[] = [
-    "1H", "1D", "1W", "1M", "3M", "6M", "1Y", "Custom",
+    "1H",
+    "1D",
+    "1W",
+    "1M",
+    "3M",
+    "6M",
+    "1Y",
+    "Custom",
   ];
 
   const getAssetStatusLog = async () => {
@@ -76,6 +78,12 @@ export default function AssetStatusMoreDetails({
     getAssetStatusLog();
   }, []);
 
+  const handleDeleteStatus = async (id) => {
+    setShowActionMenu(false);
+    await assetService.deleteAssetStatus(id);
+    getAssetStatusLog();
+  };
+
   const formatDate = (date: string) => {
     if (!date) return "-";
     const d = new Date(date);
@@ -92,15 +100,24 @@ export default function AssetStatusMoreDetails({
     const hour = 60 * 60 * 1000;
     const day = 24 * hour;
     switch (period) {
-      case "1H": return hour;
-      case "1D": return day;
-      case "1W": return 7 * day;
-      case "1M": return 30 * day;
-      case "3M": return 90 * day;
-      case "6M": return 180 * day;
-      case "1Y": return 365 * day;
-      case "Custom": return 365 * day;
-      default: return 7 * day;
+      case "1H":
+        return hour;
+      case "1D":
+        return day;
+      case "1W":
+        return 7 * day;
+      case "1M":
+        return 30 * day;
+      case "3M":
+        return 90 * day;
+      case "6M":
+        return 180 * day;
+      case "1Y":
+        return 365 * day;
+      case "Custom":
+        return 365 * day;
+      default:
+        return 7 * day;
     }
   };
 
@@ -109,29 +126,31 @@ export default function AssetStatusMoreDetails({
   // ---------------------------------------------------------
   const getNormalizedStatus = (status: string) => {
     const raw = (status || "").toLowerCase().trim();
-    
+
     if (raw === "offline") return "offline";
-    
+
     // All variations of "Do Not Track"
-    if ([
-      "donottrack", 
-      "do not track", 
-      "do_not_track", 
-      "donotdisturb", 
-      "do not disturb", 
-      "do_not_disturb"
-    ].includes(raw)) {
+    if (
+      [
+        "donottrack",
+        "do not track",
+        "do_not_track",
+        "donotdisturb",
+        "do not disturb",
+        "do_not_disturb",
+      ].includes(raw)
+    ) {
       return "doNotTrack";
     }
 
     // Default fallback to online if not offline/dnt
-    return "online"; 
+    return "online";
   };
 
   // ---------------------------------------------------------
   // ✅ Updated Timeline Logic
   // ---------------------------------------------------------
-// ---------------------------------------------------------
+  // ---------------------------------------------------------
   // ✅ Updated Timeline Logic (Fix for missing 'to' date)
   // ---------------------------------------------------------
   const generateTimelineSegments = () => {
@@ -141,10 +160,10 @@ export default function AssetStatusMoreDetails({
 
     const relevantLogs = logData.filter((e) => {
       if (!e.since) return false; // 'since' hona zaroori hai
-      
+
       const logStart = new Date(e.since).getTime();
       // Agar 'to' nahi hai, toh maan lo abhi tak chal raha hai (now)
-      const logEnd = e.to ? new Date(e.to).getTime() : now; 
+      const logEnd = e.to ? new Date(e.to).getTime() : now;
 
       // Check overlap
       return logEnd >= startTime && logStart <= now;
@@ -161,7 +180,7 @@ export default function AssetStatusMoreDetails({
 
       // Width calculation safely
       const totalDuration = Math.max(logEnd - logStart, 0);
-      
+
       const left = ((logStart - startTime) / duration) * 100;
       const width = (totalDuration / duration) * 100;
 
@@ -253,9 +272,15 @@ export default function AssetStatusMoreDetails({
       const d = new Date(time);
       let label = "";
       if (selectedPeriod === "1H" || selectedPeriod === "1D") {
-        label = d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+        label = d.toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
       } else {
-        label = d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+        label = d.toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "short",
+        });
       }
       labels.push(label);
     }
@@ -368,7 +393,9 @@ export default function AssetStatusMoreDetails({
 
                     {/* Row 2: Offline */}
                     <div className="flex items-center gap-4">
-                      <span className="text-xs text-gray-600 w-20">Offline</span>
+                      <span className="text-xs text-gray-600 w-20">
+                        Offline
+                      </span>
                       <div className="flex-1 relative h-6 bg-gray-50 rounded">
                         {timelineSegments
                           .filter((seg) => seg.status === "offline")
@@ -380,7 +407,9 @@ export default function AssetStatusMoreDetails({
                                 left: `${seg.left}%`,
                                 width: `${seg.width}%`,
                               }}
-                              title={`${seg.downtimeType}: ${formatDate(seg.since)}`}
+                              title={`${seg.downtimeType}: ${formatDate(
+                                seg.since
+                              )}`}
                             ></div>
                           ))}
                       </div>
@@ -388,7 +417,9 @@ export default function AssetStatusMoreDetails({
 
                     {/* Row 3: Do Not Track */}
                     <div className="flex items-center gap-4">
-                      <span className="text-xs text-gray-600 w-20">Do Not Track</span>
+                      <span className="text-xs text-gray-600 w-20">
+                        Do Not Track
+                      </span>
                       <div className="flex-1 relative h-6 bg-gray-50 rounded">
                         {timelineSegments
                           .filter((seg) => seg.status === "doNotTrack")
@@ -477,10 +508,15 @@ export default function AssetStatusMoreDetails({
                                 const since = new Date(entry.since).getTime();
                                 const to = new Date(entry.to).getTime();
                                 const diffMs = Math.abs(to - since);
-                                const totalMinutes = Math.floor(diffMs / (1000 * 60));
+                                const totalMinutes = Math.floor(
+                                  diffMs / (1000 * 60)
+                                );
                                 const hours = Math.floor(totalMinutes / 60);
                                 const minutes = totalMinutes % 60;
-                                durationStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+                                durationStr =
+                                  hours > 0
+                                    ? `${hours}h ${minutes}m`
+                                    : `${minutes}m`;
                               }
 
                               return (
@@ -495,9 +531,12 @@ export default function AssetStatusMoreDetails({
                                     <div className="flex items-center gap-2">
                                       <span
                                         className={`w-2 h-2 rounded-full ${
-                                          getNormalizedStatus(entry.status) === "offline"
+                                          getNormalizedStatus(entry.status) ===
+                                          "offline"
                                             ? "bg-red-500"
-                                            : getNormalizedStatus(entry.status) === "online"
+                                            : getNormalizedStatus(
+                                                entry.status
+                                              ) === "online"
                                             ? "bg-green-500"
                                             : "bg-orange-600"
                                         }`}
@@ -533,9 +572,13 @@ export default function AssetStatusMoreDetails({
                         <div className="flex items-center gap-2">
                           <span
                             className={`w-2 h-2 rounded-full ${
-                                getNormalizedStatus(logData[selectedEntry].status) === "offline"
+                              getNormalizedStatus(
+                                logData[selectedEntry].status
+                              ) === "offline"
                                 ? "bg-red-500"
-                                : getNormalizedStatus(logData[selectedEntry].status) === "online"
+                                : getNormalizedStatus(
+                                    logData[selectedEntry].status
+                                  ) === "online"
                                 ? "bg-green-500"
                                 : "bg-orange-600"
                             }`}
@@ -544,37 +587,41 @@ export default function AssetStatusMoreDetails({
                             {logData[selectedEntry].status}
                           </span>
                         </div>
-                        
-                        <div className="relative">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setShowActionMenu(!showActionMenu);
-                              }}
-                              className={`p-1 rounded transition-colors ${
-                                showActionMenu ? "bg-blue-50 text-blue-600" : "hover:bg-gray-100 text-gray-600"
-                              }`}
-                            >
-                              <MoreVertical className="w-4 h-4" />
-                            </button>
 
-                            {showActionMenu && (
-                              <div className="absolute right-0 left-10 top-full mt-1 mr-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top-left">
-                                <button
-                                  onClick={handleEditStatus}
-                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                                >
-                                  Edit
-                                </button>
-                                <div className="border-t border-gray-100"></div>
-                                <button
-                                  onClick={handleDeleteStatus}
-                                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                                >
-                                  Delete
-                                </button>
-                              </div>
-                            )}
+                        <div className="relative">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowActionMenu(!showActionMenu);
+                            }}
+                            className={`p-1 rounded transition-colors ${
+                              showActionMenu
+                                ? "bg-blue-50 text-blue-600"
+                                : "hover:bg-gray-100 text-gray-600"
+                            }`}
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+
+                          {showActionMenu && (
+                            <div className="absolute right-0 left-10 top-full mt-1 mr-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top-left">
+                              <button
+                                onClick={handleEditStatus}
+                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                              >
+                                Edit
+                              </button>
+                              <div className="border-t border-gray-100"></div>
+                              <button
+                                onClick={() =>
+                                  handleDeleteStatus(logData[selectedEntry].id)
+                                }
+                                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -588,22 +635,26 @@ export default function AssetStatusMoreDetails({
                         )}
                         {logData[selectedEntry].since && (
                           <div className="flex justify-between bg-gray-50 rounded p-2">
-                            <div className="text-xs text-gray-500 mb-1">From</div>
+                            <div className="text-xs text-gray-500 mb-1">
+                              From
+                            </div>
                             <div className="text-sm text-gray-700">
                               {formatDate(logData[selectedEntry].since)}
                             </div>
                           </div>
                         )}
                         {logData[selectedEntry].to && (
-                            <div className="flex justify-between bg-gray-50 rounded p-2">
+                          <div className="flex justify-between bg-gray-50 rounded p-2">
                             <div className="text-xs text-gray-500 mb-1">To</div>
                             <div className="text-sm text-gray-700">
-                                {formatDate(logData[selectedEntry].to)}
+                              {formatDate(logData[selectedEntry].to)}
                             </div>
-                            </div>
+                          </div>
                         )}
                         <div className="flex justify-between bg-gray-50 rounded p-2">
-                          <div className="text-xs text-gray-500 mb-1">Created By</div>
+                          <div className="text-xs text-gray-500 mb-1">
+                            Created By
+                          </div>
                           <div className="flex items-center gap-2">
                             <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center text-xs">
                               <User />
@@ -614,7 +665,9 @@ export default function AssetStatusMoreDetails({
                           </div>
                         </div>
                         <div className="flex justify-between bg-gray-50 rounded p-2">
-                          <div className="text-xs text-gray-500 mb-1">Updated By</div>
+                          <div className="text-xs text-gray-500 mb-1">
+                            Updated By
+                          </div>
                           <div className="flex items-center gap-2">
                             <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center text-xs">
                               <User />
@@ -626,7 +679,9 @@ export default function AssetStatusMoreDetails({
                         </div>
                         {logData[selectedEntry].notes && (
                           <div>
-                            <div className="text-xs text-gray-500 mb-1">Note</div>
+                            <div className="text-xs text-gray-500 mb-1">
+                              Note
+                            </div>
                             <div className="text-sm text-gray-700">
                               {logData[selectedEntry].notes}
                             </div>

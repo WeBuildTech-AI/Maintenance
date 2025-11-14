@@ -193,3 +193,17 @@ export const fetchAssetStatusLog = createAsyncThunk(
     }
   }
 );
+
+export const deleteAssetStatus = createAsyncThunk(
+  "assets/deleteAsset",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      await assetService.deleteAssetStatus(id);
+      return id;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete asset status"
+      );
+    }
+  }
+);
