@@ -326,8 +326,8 @@ export default function AssetStatusMoreDetails({
                     className="flex items-center cursor-pointer"
                     onClick={() => setSeeMoreAssetStatus(false)}
                   >
-                    <ChevronLeft className="w-4 h-4 text-blue-600 mt-1" />
-                    <span className="text-blue-600">{asset.name}</span>
+                    <ChevronLeft className="w-4 h-4 text-orange-600 mt-1" />
+                    <span className="text-orange-600">{asset.name}</span>
                   </div>
                   <span className="text-gray-400">/</span>
                   <span className="text-gray-700">Status</span>
@@ -340,7 +340,7 @@ export default function AssetStatusMoreDetails({
                   seeMoreFlag={seeMoreFlag}
                   getAssetStatusLog={getAssetStatusLog}
                 />
-                <button className="flex items-center gap-2 px-4 py-2 text-blue-600 border border-blue-600 rounded hover:bg-blue-50 text-sm font-medium">
+                <button className="flex items-center gap-2 px-4 py-2 text-orange-600 border border-blue-600 rounded hover:bg-blue-50 text-sm font-medium">
                   <Download className="w-4 h-4" /> Export Data
                 </button>
               </div>
@@ -356,9 +356,9 @@ export default function AssetStatusMoreDetails({
                       <button
                         key={period}
                         onClick={() => setSelectedPeriod(period)}
-                        className={`px-3 py-1 text-xs font-medium rounded ${
+                        className={`px-3 py-1 text-xs cursor-pointer font-medium rounded ${
                           selectedPeriod === period
-                            ? "bg-blue-500 text-white"
+                            ? "bg-orange-600 text-white "
                             : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                         }`}
                       >
@@ -367,7 +367,6 @@ export default function AssetStatusMoreDetails({
                     ))}
                   </div>
                 </div>
-
                 {/* Timeline Chart */}
                 <div className="bg-white rounded border border-gray-200 p-4 mb-8">
                   <div className="space-y-3">
@@ -476,7 +475,7 @@ export default function AssetStatusMoreDetails({
                 {/* Add Manual Downtime Button */}
                 <button
                   onClick={() => setUpdateAssetModal(!updateAssetModal)}
-                  className="flex items-center gap-2 px-4 py-2 text-blue-600 border border-blue-600 rounded hover:bg-blue-50 text-sm font-medium mb-6"
+                  className="flex items-center gap-2 px-4 py-2 text-orange-600 border border-blue-600 rounded hover:bg-blue-50 text-sm font-medium mb-6"
                 >
                   <Plus className="w-4 h-4" /> Add Manual Downtime
                 </button>
@@ -596,7 +595,7 @@ export default function AssetStatusMoreDetails({
                             }}
                             className={`p-1 rounded transition-colors ${
                               showActionMenu
-                                ? "bg-blue-50 text-blue-600"
+                                ? "bg-blue-50 text-orange-600"
                                 : "hover:bg-gray-100 text-gray-600"
                             }`}
                           >

@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { Upload, Lock, RefreshCcw, User } from "lucide-react";
 import { createMeter, meterService, updateMeter } from "../../../store/meters";
@@ -16,7 +15,6 @@ interface NewMeterFormProps {
   editingMeter?: any;
 }
 
-// Reading Frequency ke options
 const readingFrequencyOptions = [
   { id: "none", name: "None" },
   { id: "hours", name: "Hours" },
@@ -49,8 +47,6 @@ export function NewMeterForm({
   const [getAssetData, setGetAssestData] = useState([]);
   const [getLocationData, setGetLocationData] = useState([]);
   const [measurementUnitOption, setMeasurementUnitOption] = useState<any[]>([]);
-
-  // Har dropdown ke liye alag loading state
   const [assetLoading, setAssetLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
   const [measurementLoading, setMeasurementLoading] = useState(false);
@@ -128,8 +124,6 @@ export function NewMeterForm({
       setPostMeterDataLoading(true);
 
       const formData = new FormData();
-
-      // formData.append("organizationId", user.organizationId);
       formData.append("name", meterName);
       formData.append("measurementId", measurementUnit);
       formData.append("meterType", meterType);
@@ -161,7 +155,7 @@ export function NewMeterForm({
         toast.success("Successfully added the Meter");
       }
 
-      onCreate(true); // Pass true to indicate success
+      onCreate(true);
     } catch (err: any) {
       console.error("❌ Meter save failed:", err);
       toast.error(err.message || "Meter save failed. Please try again.");
@@ -226,8 +220,6 @@ export function NewMeterForm({
           {isEdit ? "Update Meter" : "New Meter"}
         </h2>
       </div>
-
-      {/* Scrollable content */}
       <div className="min-h-0 flex-1 overflow-y-auto">
         {/* Name row */}
         <div className="px-6 pt-6">
@@ -252,8 +244,6 @@ export function NewMeterForm({
             </div>
           </div>
         </div>
-
-        {/* Meter Type */}
         <div className="px-6 pb-6 pt-6">
           <label className="mb-2 block text-sm font-medium text-gray-900">
             Meter Type
@@ -285,8 +275,6 @@ export function NewMeterForm({
             </button>
           </div>
         </div>
-
-        {/* Description */}
         <div className="px-6 pb-6">
           <label className="mb-2 block text-sm font-medium text-gray-900">
             Description
@@ -298,11 +286,7 @@ export function NewMeterForm({
             className="w-full min-h-[96px]  rounded-md border border-gray-300 px-3 py-2 text-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
         </div>
-
-        {/* Divider */}
         <div className="mx-6 border-b" />
-
-        {/* Measurement Unit (Required) */}
         <div className="px-6 pt-6 pb-2">
           <div className="w-full sm:max-w-md md:max-w-lg">
             <CustomDropdown
@@ -356,8 +340,6 @@ export function NewMeterForm({
 
         {/* Divider */}
         <div className="mx-6 border-b" />
-
-        {/* Reading Frequency */}
         <div style={{ padding: "24px" }}>
           <h3
             style={{
@@ -388,7 +370,6 @@ export function NewMeterForm({
                 fontSize: "14px",
               }}
             />
-
             <div style={{ position: "relative", width: "180px" }}>
               <CustomDropdown
                 id="reading-frequency"
@@ -406,14 +387,10 @@ export function NewMeterForm({
 
         {/* Divider */}
         <div className="mx-6 border-b mb-20" />
-
-        {/* Additional Info (dropzone updated) */}
         <div className="px-6 pb-24 pt-6">
           <h3 className="mb-3 text-lg font-semibold text-gray-900">
             Additional Info
           </h3>
-
-          {/* Image uploader */}
           {files.length === 0 ? (
             <div
               onDrop={handleDrop}
@@ -476,8 +453,6 @@ export function NewMeterForm({
               })}
             </div>
           )}
-
-          {/* Docs Preview */}
           {docs.length > 0 && (
             <div className="space-y-2 mt-3">
               {docs.map((file, i) => (
@@ -506,7 +481,6 @@ export function NewMeterForm({
           )}
         </div>
       </div>
-
       {/* Footer (fixed) */}
       <div className="sticky bottom-0 mt-6 flex items-center jusitfy-end border-t bg-white px-6 py-4">
         {onCancel && (
