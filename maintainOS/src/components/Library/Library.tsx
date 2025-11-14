@@ -328,7 +328,9 @@ export function Library() {
           setVisibleColumns(settings.visibleColumns);
           setShowDeleted(settings.showDeleted);
           setShowSettings(false);
+          
         }}
+        componentName="Procedure"
       />
 
       {/* --- PROCEDURE DETAIL MODAL (No Change) --- */}

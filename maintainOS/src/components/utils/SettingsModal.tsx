@@ -191,9 +191,7 @@ const CustomSingleSelect: React.FC<CustomSingleSelectProps> = ({
           cursor: "pointer",
         }}
       >
-        <span style={{ color: "#111827", fontSize: "14px" }}>
-          {value}
-        </span>
+        <span style={{ color: "#111827", fontSize: "14px" }}>{value}</span>
         <ChevronDown
           size={16}
           style={{
@@ -252,7 +250,6 @@ const CustomSingleSelect: React.FC<CustomSingleSelectProps> = ({
   );
 };
 // --- (End of) Custom Single Select ---
-
 
 // --- Custom Toggle Component (No Change) ---
 interface CustomToggleProps {
@@ -316,14 +313,12 @@ interface SortableColumnItemProps {
   onRemove: (id: string) => void;
 }
 
-const SortableColumnItem: React.FC<SortableColumnItemProps> = ({ id, onRemove }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({ id });
+const SortableColumnItem: React.FC<SortableColumnItemProps> = ({
+  id,
+  onRemove,
+}) => {
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -335,15 +330,15 @@ const SortableColumnItem: React.FC<SortableColumnItemProps> = ({ id, onRemove })
     borderRadius: "6px",
     border: "1px solid #e5e7eb",
     background: "#fff",
-    touchAction: 'none',
+    touchAction: "none",
   };
 
   return (
     <div ref={setNodeRef} style={style}>
-      <button 
-        {...attributes} 
+      <button
+        {...attributes}
         {...listeners}
-        style={{ background: 'none', border: 'none', cursor: 'grab' }}
+        style={{ background: "none", border: "none", cursor: "grab" }}
       >
         <GripVertical size={16} color="#9ca3af" />
       </button>
@@ -385,6 +380,7 @@ interface SettingsModalProps {
   currentVisibleColumns: string[];
   // --- (NEW) Naya prop add karein ---
   currentShowDeleted: boolean;
+  componentName: string;
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -395,13 +391,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   currentVisibleColumns,
   // --- (NEW) Prop ko yahaan read karein ---
   currentShowDeleted,
+  componentName,
 }) => {
   const [resultsPerPage, setResultsPerPage] = useState(25);
   // --- (NEW) State ko 'currentShowDeleted' prop se initialize karein ---
   const [showDeleted, setShowDeleted] = useState(currentShowDeleted);
   const [sortColumn, setSortColumn] = useState("Last updated");
-  const [tempVisibleColumns, setTempVisibleColumns] =
-    useState<string[]>(currentVisibleColumns);
+  const [tempVisibleColumns, setTempVisibleColumns] = useState<string[]>(
+    currentVisibleColumns
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -417,7 +415,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       setTempVisibleColumns(currentVisibleColumns);
       // --- (NEW) 'showDeleted' state ko bhi sync karein ---
       setShowDeleted(currentShowDeleted);
-      
+
       if (currentVisibleColumns.length > 0) {
         setSortColumn("Title");
       }
@@ -431,13 +429,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const availableColumns = allToggleableColumns.filter(
     (col) => !selectedColumns.includes(col)
   );
-  
+
   const sortColumnOptions = ["Title", ...allToggleableColumns];
 
   const handleRemoveColumn = (columnName: string) => {
-    setTempVisibleColumns((prev) =>
-      prev.filter((col) => col !== columnName)
-    );
+    setTempVisibleColumns((prev) => prev.filter((col) => col !== columnName));
   };
 
   const handleAddColumn = (newColumn: string) => {
@@ -570,7 +566,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           <div
             style={{
               display: "flex",
-              alignItems: "center", 
+              alignItems: "center",
               gap: "10px",
               minHeight: "22px",
             }}
@@ -579,16 +575,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               checked={showDeleted}
               onChange={(v) => setShowDeleted(v)}
             />
-            <span 
-              style={{ 
-                color: "#374151", 
-                fontSize: "14px", 
+            <span
+              style={{
+                color: "#374151",
+                fontSize: "14px",
                 fontWeight: 500,
-                cursor: "pointer"
+                cursor: "pointer",
               }}
               onClick={() => setShowDeleted(!showDeleted)}
             >
-              Show only deleted procedures
+              Show only deleted {componentName || ""}
             </span>
           </div>
         </div>
@@ -611,7 +607,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             Column options
           </p>
           <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "10px" }}
+            >
               <div
                 style={{
                   display: "flex",
@@ -622,7 +620,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   background: "#f3f4f6",
                 }}
               >
-                <GripVertical size={16} color="#9ca3af" style={{ opacity: 0.5 }} />
+                <GripVertical
+                  size={16}
+                  color="#9ca3af"
+                  style={{ opacity: 0.5 }}
+                />
                 <span
                   style={{
                     color: "#6b7280",
@@ -634,7 +636,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   Title (Locked)
                 </span>
               </div>
-              
+
               <SortableContext
                 items={selectedColumns}
                 strategy={verticalListSortingStrategy}
@@ -647,7 +649,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   />
                 ))}
               </SortableContext>
-              
+
               {availableColumns.length > 0 && (
                 <CustomColumnSelect
                   options={availableColumns}

@@ -1118,6 +1118,7 @@ export function AssetTable({
         onApply={handleApplySettings}
         allToggleableColumns={allAvailableColumns}
         currentVisibleColumns={visibleColumns}
+        componentName="Asset"
       />
     </div>
   );
