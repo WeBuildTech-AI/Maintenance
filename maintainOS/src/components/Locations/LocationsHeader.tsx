@@ -26,7 +26,8 @@ export function LocationHeaderComponent(
   searchQuery: string,
   setSearchQuery: Dispatch<SetStateAction<string>>,
   setIsCreatingForm: () => void, // 👈 UPDATED TYPE: now a void function for navigation
-  setShowSettings: Dispatch<SetStateAction<boolean>>
+  setShowSettings: Dispatch<SetStateAction<boolean>>,
+  setIsSettingsModalOpen: Dispatch<SetStateAction<boolean>>
 ) {
   return (
     <>
@@ -95,7 +96,7 @@ export function LocationHeaderComponent(
           {/* Right: Settings button (only for table view) */}
           {viewMode === "table" && (
             <button
-              onClick={() => setShowSettings(true)}
+              onClick={() => setIsSettingsModalOpen(true)}
               className="p-2 rounded-md border hover:bg-gray-100 transition"
             >
               <Settings className="h-5 w-5 text-orange-600" />

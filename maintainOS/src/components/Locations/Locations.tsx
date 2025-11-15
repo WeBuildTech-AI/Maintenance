@@ -37,6 +37,7 @@ export function Locations() {
   const [viewMode, setViewMode] = useState<ViewMode>("panel");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSettings, setShowSettings] = useState(false);
+   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [filteredLocations, setFilteredLocations] = useState<
     LocationResponse[]
   >([]);
@@ -366,7 +367,8 @@ export function Locations() {
           searchQuery,
           setSearchQuery,
           handleShowNewLocationForm, // 👈 New URL-driven handler
-          setShowSettings
+          setShowSettings,
+          setIsSettingsModalOpen
         )}
 
         {viewMode === "table" ? (
@@ -374,6 +376,8 @@ export function Locations() {
             <LocationTable
               location={locations}
               selectedLocation={selectedLocation}
+              setIsSettingsModalOpen={setIsSettingsModalOpen}
+              isSettingsModalOpen = {isSettingsModalOpen}
             />
           </>
         ) : (

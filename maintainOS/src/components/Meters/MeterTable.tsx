@@ -1,13 +1,139 @@
+"use client";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Card, CardContent } from "../ui/card";
-import { Avatar, AvatarFallback } from "../ui/avatar";
+import { Avatar as ShadCNAvatar, AvatarFallback } from "../ui/avatar";
+import { Settings } from "lucide-react";
+import { Tooltip } from "../ui/tooltip"; // ShadCN Tooltip
+import SettingsModal from "../utils/SettingsModal"; // Is path ko check kar lein
+
+// ⭐ NEW: Date formatting ke liye
+import { formatDateOnly } from "../utils/Date"; // Path check kar lein
+
+// ⭐ 1. Ant Design Imports
+import { Table, Avatar, Tooltip as AntTooltip } from "antd";
+import type { TableProps, TableColumnType } from "antd";
+
+// --- Helper Functions (AssetTable se) ---
+
+type Sorter = Parameters<NonNullable<TableProps<any>["onChange"]>>[2];
+
+const mapAntSortOrder = (order: "asc" | "desc"): "ascend" | "descend" =>
+  order === "asc" ? "ascend" : "descend";
+
+// Row Styling
+const tableStyles = `
+  .selected-row-class > td {
+    background-color: #f0f9ff !important; /* Primary/5 equivalent */
+  }
+  .selected-row-class:hover > td {
+    background-color: #f9fafb !important;
+  }
+  .ant-table-cell-fix-left,  
+  .ant-table-cell-fix-right {
+    background-color: #fff !important;  
+    z-index: 3 !important;
+  }
+  .ant-table-row:hover > td {
+    background-color: #f9fafb !important;
+  }
+  .ant-table-thead > tr > th {
+    background-color: #f9fafb !important; /* Header BG */
+    text-transform: uppercase;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+  }
+  .ant-table-tbody > tr > td {
+    border-bottom: 1px solid #f3f4f6; /* Lighter border */
+  }
+`;
+// --- End Helper Functions ---
+
+// ⭐ 2. Column Configuration (Updated)
+const allAvailableColumns = [
+  "ID",
+  "Type",
+  "Asset",
+  "Location",
+  "Last Reading",
+  "Status",
+  "Updated At", // NEW
+  "Created At", // NEW
+];
+
+const columnConfig: {
+  [key: string]: {
+    dataIndex: string;
+    width: number;
+    sorter?: (a: any, b: any) => number;
+  };
+} = {
+  ID: {
+    dataIndex: "id",
+    width: 120,
+    sorter: (a, b) => (a.id || "").localeCompare(b.id || ""),
+  },
+  Type: {
+    dataIndex: "meterType",
+    width: 130,
+    sorter: (a, b) => (a.meterType || "").localeCompare(b.meterType || ""),
+  },
+  Asset: {
+    dataIndex: "asset",
+    width: 150,
+    sorter: (a, b) => (a.asset || "").localeCompare(b.asset || ""),
+  },
+  Location: {
+    dataIndex: "location",
+    width: 150,
+    sorter: (a, b) => (a.location || "").localeCompare(b.location || ""),
+  },
+  "Last Reading": {
+    dataIndex: "lastReading",
+    width: 150,
+    sorter: (a, b) => (a.lastReading || "").localeCompare(b.lastReading || ""),
+  },
+  Status: {
+    dataIndex: "status",
+    width: 130,
+    sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
+  },
+  // ⭐ NEW Date Columns
+  "Updated At": {
+    dataIndex: "updatedAt",
+    width: 150,
+    sorter: (a, b) =>
+      new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
+  },
+  "Created At": {
+    dataIndex: "createdAt",
+    width: 150,
+    sorter: (a, b) =>
+      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  },
+};
 
 export function MeterTable({
   meter,
   selectedMeter,
+  isSettingsModalOpen,
+  setIsSettingsModalOpen,
 }: {
   meter: any[];
+  isSettingsModalOpen: any;
+  setIsSettingsModalOpen: any;
   selectedMeter: any;
 }) {
+  // ⭐ 3. State Management (Updated)
+  const [visibleColumns, setVisibleColumns] =
+    useState<string[]>(allAvailableColumns);
+  const [sortType, setSortType] = useState<string>("name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
+  // ⭐ NEW: Selection State
+  const [selectedMeterIds, setSelectedMeterIds] = useState<string[]>([]);
+  const headerCheckboxRef = useRef<HTMLInputElement>(null);
+
   const renderInitials = (text: string) =>
     text
       .split(" ")
@@ -16,98 +142,247 @@ export function MeterTable({
       .join("")
       .toUpperCase();
 
+  // ⭐ NEW: Selection Logic
+  const allMeterIds = useMemo(() => meter.map((p) => p.id), [meter]);
+  const selectedCount = selectedMeterIds.length;
+  const isEditing = selectedCount > 0;
+  const areAllSelected =
+    allMeterIds.length > 0 && selectedCount === allMeterIds.length;
+  const isIndeterminate = selectedCount > 0 && !areAllSelected;
+
+  useEffect(() => {
+    if (headerCheckboxRef.current) {
+      headerCheckboxRef.current.indeterminate = isIndeterminate;
+    }
+  }, [isIndeterminate, isEditing]);
+
+  const handleSelectAllToggle = () => {
+    if (areAllSelected) setSelectedMeterIds([]);
+    else setSelectedMeterIds(allMeterIds);
+  };
+
+  const toggleRowSelection = (id: string) => {
+    setSelectedMeterIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+  // --- End Selection Logic ---
+
+  // ⭐ 4. Handlers
+  const handleTableChange: TableProps<any>["onChange"] = (
+    pagination,
+    filters,
+    sorter
+  ) => {
+    const s = Array.isArray(sorter) ? sorter[0] : sorter;
+    if (s && s.field && s.order) {
+      setSortType(s.field as string);
+      setSortOrder(s.order === "ascend" ? "asc" : "desc");
+    } else if (s && s.field) {
+      setSortType(s.field as string);
+      setSortOrder("asc");
+    } else {
+      setSortType("name");
+      setSortOrder("asc");
+    }
+  };
+
+  const handleApplySettings = (settings: {
+    resultsPerPage: number;
+    showDeleted: boolean;
+    sortColumn: string;
+    visibleColumns: string[];
+  }) => {
+    setVisibleColumns(settings.visibleColumns);
+    setIsSettingsModalOpen(false);
+  };
+
+  // ⭐ 5. Columns Definition (Updated)
+  const columns: TableColumnType<any>[] = useMemo(() => {
+    // --- Name Column (Fixed Left) ---
+    const nameColumn: TableColumnType<any> = {
+      title: () => {
+        if (!isEditing) {
+          return (
+            <div className="flex items-center justify-between gap-2 h-full">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  ref={headerCheckboxRef}
+                  checked={areAllSelected}
+                  onChange={handleSelectAllToggle}
+                  className="h-4 w-4 accent-blue-600 cursor-pointer"
+                />
+                <span className="text-gray-600">Name</span>
+              </div>
+            </div>
+          );
+        }
+        // --- Bulk Edit Header ---
+        return (
+          <div className="flex items-center gap-4 h-full">
+            <input
+              type="checkbox"
+              ref={headerCheckboxRef}
+              checked={areAllSelected}
+              onChange={handleSelectAllToggle}
+              className="h-4 w-4 accent-blue-600 cursor-pointer"
+            />
+            <span className="text-sm font-medium text-gray-900">
+              Edit {selectedCount} {selectedCount === 1 ? "Item" : "Items"}
+            </span>
+           
+          </div>
+        );
+      },
+      dataIndex: "name",
+      key: "name",
+      fixed: "left",
+      width: 250,
+      sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
+      sortOrder: sortType === "name" ? mapAntSortOrder(sortOrder) : undefined,
+      render: (name: string, record: any) => {
+        const isSelected = selectedMeterIds.includes(record.id);
+        return (
+          <div className="flex items-center gap-3 font-medium text-gray-800 h-full">
+            <div
+              className="flex items-center justify-center h-8 w-8 cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleRowSelection(record.id);
+              }}
+            >
+              {isEditing ? (
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  readOnly
+                  className="h-5 w-5 accent-blue-600 cursor-pointer"
+                />
+              ) : (
+                <ShadCNAvatar className="h-8 w-8 flex-shrink-0">
+                  <AvatarFallback>{renderInitials(name)}</AvatarFallback>
+                </ShadCNAvatar>
+              )}
+            </div>
+            <span className="truncate">{name}</span>
+          </div>
+        );
+      },
+    };
+
+    const dynamicColumns: TableColumnType<any>[] = visibleColumns
+      .map((colName) => {
+        const config = columnConfig[colName];
+        if (!config) return null;
+
+        let renderFunc:
+          | ((value: any, record: any) => React.ReactNode)
+          | undefined = undefined;
+
+        // Custom render for Status
+        if (colName === "Status") {
+          renderFunc = (status: string, record: any) => (
+            <span
+              className={`font-medium ${
+                record.isOverdue ? "text-destructive" : "text-muted-foreground"
+              }`}
+            >
+              {status || "—"}
+            </span>
+          );
+        }
+        // ⭐ NEW: Custom render for Dates
+        else if (colName === "Created At" || colName === "Updated At") {
+          renderFunc = (text: string) => formatDateOnly(text) || "—";
+        }
+
+        return {
+          title: colName,
+          dataIndex: config.dataIndex,
+          key: config.dataIndex,
+          width: config.width,
+          sorter: config.sorter,
+          sortOrder:
+            sortType === config.dataIndex
+              ? mapAntSortOrder(sortOrder)
+              : undefined,
+          render: renderFunc,
+        };
+      })
+      .filter(Boolean) as TableColumnType<any>[];
+
+    return [nameColumn, ...dynamicColumns];
+  }, [
+    isEditing,
+    sortType,
+    sortOrder,
+    visibleColumns,
+    areAllSelected, 
+    selectedCount,
+    selectedMeterIds, 
+  ]);
+
+  const dataSource = useMemo(() => {
+    return meter.map((m) => ({
+      key: m.id,
+      id: m.id || "—",
+      name: m.name || "—",
+      meterType: m.meterType || "—",
+      asset: m.asset?.name || "—",
+      location: m.location?.name || "—",
+      lastReading: m.readingFrequency
+        ? `${m.readingFrequency.time} ${m.readingFrequency.interval}`
+        : "—",
+      status: m.status || "—",
+      isOverdue: m.isOverdue || false,
+      createdAt: m.createdAt || "—", // NEW
+      updatedAt: m.updatedAt || "—", // NEW
+      fullMeter: m, 
+    }));
+  }, [meter]);
   return (
     <div className="flex-1 overflow-auto p-2">
-      <Card className="overflow-hidden shadow-sm">
+      <style>{tableStyles}</style>
+
+      <Card className="shadow-sm border rounded-lg overflow-hidden w-full">
         <CardContent className="p-0">
-          <table className="w-full table-fixed text-sm">
-            <thead className="bg-muted/60 border-b text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="w-[18%] px-4 py-3 text-left">Name</th>
-                <th className="w-[10%] px-4 py-3 text-left">ID</th>
-                <th className="w-[12%] px-4 py-3 text-left">Type</th>
-                <th className="w-[15%] px-4 py-3 text-left">Asset</th>
-                <th className="w-[15%] px-4 py-3 text-left">Location</th>
-                <th className="w-[15%] px-4 py-3 text-left">Last Reading</th>
-                <th className="w-[15%] px-4 py-3 text-left">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {meter.length > 0 ? (
-                meter &&
-                meter.map((m) => (
-                  <tr
-                    key={m.id}
-                    className={`border-b border-border transition hover:bg-muted/40 ${
-                      selectedMeter && m.id === selectedMeter.id
-                        ? "bg-primary/5"
-                        : ""
-                    }`}
-                  >
-                    {/* Name + Avatar */}
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback>
-                            {renderInitials(m.name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium">{m.name || "-"}</span>
-                      </div>
-                    </td>
-
-                    {/* ID */}
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {m.id || "-"}
-                    </td>
-
-                    {/* Type */}
-                    <td className="px-4 py-3 capitalize text-muted-foreground">
-                      {m.meterType || "-"}
-                    </td>
-
-                    {/* Asset */}
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {(m.asset && m.asset.name) || "-"}
-                    </td>
-
-                    {/* Location */}
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {(m.location && m.location.name) || "-"}
-                    </td>
-
-                    {/* Last Reading */}
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {`${m.readingFrequency.time} ${m.readingFrequency.interval}` ||
-                        "-"}
-                    </td>
-
-                    {/* Status */}
-                    <td
-                      className={`px-4 py-3 font-medium ${
-                        m.isOverdue
-                          ? "text-destructive"
-                          : "text-muted-foreground"
-                      }`}
-                    >
-                      {m.status || "-"}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    className="px-4 py-6 text-center text-muted-foreground"
-                    colSpan={7}
-                  >
-                    No meters found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+          <Table
+            columns={columns}
+            dataSource={dataSource}
+            pagination={false}
+            scroll={{ x: "max-content", y: "75vh" }}
+            rowClassName={(record: any) =>
+              // Ab selection state se highlight hoga
+              selectedMeterIds.includes(record.id) ? "selected-row-class" : ""
+            }
+            onChange={handleTableChange}
+            // ⭐ NEW: Row Selection props
+            rowSelection={{
+              selectedRowKeys: selectedMeterIds,
+              columnWidth: 0,
+              renderCell: () => null,
+              columnTitle: " ", 
+            }}
+            onRow={(record) => ({
+              onClick: () => {
+              
+                toggleRowSelection(record.id);
+              },
+            })}
+          />
         </CardContent>
       </Card>
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        onApply={handleApplySettings}
+        allToggleableColumns={allAvailableColumns}
+        currentVisibleColumns={visibleColumns}
+        componentName="Meter"
+      />
     </div>
   );
 }

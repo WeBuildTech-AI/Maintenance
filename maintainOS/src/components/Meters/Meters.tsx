@@ -41,6 +41,7 @@ export function Meters() {
   const [openSection, setOpenSection] = useState("Name");
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const headerRef = useRef(null);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
   // const modalRef = useRef(null);
 
   const dispatch = useDispatch<AppDispatch>();
@@ -188,13 +189,14 @@ export function Meters() {
           searchQuery,
           setSearchQuery,
           handleShowNewMeterForm,
-          setShowSettings
+          setShowSettings,
+          setIsSettingsModalOpen,
           // setSelectedMeter
         )}
 
         {viewMode === "table" ? (
           <>
-            <MeterTable meter={meterData} selectedMeter={selectedMeter} />
+            <MeterTable meter={meterData} selectedMeter={selectedMeter} setIsSettingsModalOpen={setIsSettingsModalOpen} isSettingsModalOpen={isSettingsModalOpen}  />
           </>
         ) : (
           <>
