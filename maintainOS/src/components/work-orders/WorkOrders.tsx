@@ -158,7 +158,7 @@ export function WorkOrders() {
             />
           )}
 
-          {viewMode === "list" && <ListView workOrders={filteredWorkOrders} />}
+          {viewMode === "list" && <ListView workOrders={filteredWorkOrders}  onRefreshWorkOrders={handleRefreshWorkOrders} />}
 
           {viewMode === "calendar" && (
             <CalendarView workOrders={filteredWorkOrders} />

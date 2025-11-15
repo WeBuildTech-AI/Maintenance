@@ -62,7 +62,7 @@ const tableStyles = `
   }
 `;
 
-export function ListView({ workOrders }: ListViewProps) {
+export function ListView({ workOrders ,  onRefreshWorkOrders}: ListViewProps) {
   const dispatch = useDispatch<AppDispatch>();
 
   const [modalWO, setModalWO] = useState<any | null>(null);
@@ -359,6 +359,7 @@ export function ListView({ workOrders }: ListViewProps) {
           ...selectedWO,
           description: selectedWO?.full?.description,
         }}
+         onRefreshWorkOrders={ onRefreshWorkOrders}
       />
     </div>
   );
