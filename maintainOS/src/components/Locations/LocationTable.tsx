@@ -2,7 +2,8 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Card, CardContent } from "../ui/card";
 import { Avatar as ShadCNAvatar, AvatarFallback } from "../ui/avatar";
-import { Settings } from "lucide-react";
+// ⭐ NEW: Imports for delete button
+import { Settings, Trash2, Loader2 } from "lucide-react";
 import { Tooltip } from "../ui/tooltip"; // ShadCN Tooltip
 import SettingsModal from "../utils/SettingsModal"; // Is path ko check kar lein
 import { formatDateOnly } from "../utils/Date"; // Path check kar lein
@@ -10,6 +11,11 @@ import { formatDateOnly } from "../utils/Date"; // Path check kar lein
 // ⭐ 1. Ant Design Imports
 import { Table, Avatar, Tooltip as AntTooltip } from "antd";
 import type { TableProps, TableColumnType } from "antd";
+
+// ⭐ NEW: Import toast for notifications
+import toast from "react-hot-toast";
+import { locationService } from "../../store/locations";
+// ⭐ NEW: Import your location service (adjust path as needed)
 
 // --- Helper Functions ---
 
@@ -108,23 +114,26 @@ export function LocationTable({
   location,
   setIsSettingsModalOpen,
   isSettingsModalOpen,
-  selectedLocation, // Yeh abhi highlighting ke liye use nahi ho raha, par prop rakha hai
+  selectedLocation,
+  fetchLocations, // ⭐ NEW PROP: Add this to refresh data
 }: {
   location: any[];
   setIsSettingsModalOpen: any;
   isSettingsModalOpen: any;
   selectedLocation: any;
+  fetchLocations: () => void; // ⭐ NEW PROP
 }) {
   // ⭐ 3. State Management
   const [visibleColumns, setVisibleColumns] =
     useState<string[]>(allAvailableColumns);
-  // const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [sortType, setSortType] = useState<string>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  // ⭐ NEW: Selection State
   const [selectedLocationIds, setSelectedLocationIds] = useState<string[]>([]);
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
+
+  // ⭐ NEW: Deleting state
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const renderInitials = (text: string) =>
     text
@@ -134,7 +143,7 @@ export function LocationTable({
       .join("")
       .toUpperCase();
 
-  // ⭐ NEW: Selection Logic
+  // Selection Logic
   const allLocationIds = useMemo(() => location.map((p) => p.id), [location]);
   const selectedCount = selectedLocationIds.length;
   const isEditing = selectedCount > 0;
@@ -161,6 +170,34 @@ export function LocationTable({
   // --- End Selection Logic ---
 
   // ⭐ 4. Handlers
+
+  // ⭐ NEW: Bulk Delete Handler
+  const handleDelete = async () => {
+    if (selectedLocationIds.length === 0) {
+      toast.error("No locations selected to delete.");
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      // Assume your service has a 'batchDeleteLocation' function
+      await locationService.batchDeleteLocation(selectedLocationIds);
+
+      toast.success("Locations deleted successfully!");
+
+      setSelectedLocationIds([]);
+
+      // Call the new prop to refresh the list
+      fetchLocations();
+    } catch (err) {
+      console.error("Error bulk deleting locations:", err);
+      toast.error("Failed to delete locations.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleTableChange: TableProps<any>["onChange"] = (
     pagination,
     filters,
@@ -189,9 +226,8 @@ export function LocationTable({
     setIsSettingsModalOpen(false);
   };
 
-  // ⭐ 5. Columns Definition
+  // ⭐ 5. Columns Definition (Updated with Delete Button)
   const columns: TableColumnType<any>[] = useMemo(() => {
-    // --- Name Column (Fixed Left) ---
     const nameColumn: TableColumnType<any> = {
       title: () => {
         if (!isEditing) {
@@ -210,6 +246,7 @@ export function LocationTable({
             </div>
           );
         }
+        // --- Bulk Edit Header ---
         return (
           <div className="flex items-center gap-4 h-full">
             <input
@@ -222,6 +259,25 @@ export function LocationTable({
             <span className="text-sm font-medium text-gray-900">
               Edit {selectedCount} {selectedCount === 1 ? "Item" : "Items"}
             </span>
+
+            {/* ⭐ NEW: Delete Button */}
+            <AntTooltip title="Delete" getPopupContainer={() => document.body}>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className={`flex items-center gap-1 transition ${
+                  isDeleting
+                    ? "text-gray-400 cursor-not-allowed"
+                    : "text-red-600 hover:text-red-700"
+                }`}
+              >
+                {isDeleting ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Trash2 size={16} />
+                )}
+              </button>
+            </AntTooltip>
           </div>
         );
       },
@@ -300,6 +356,7 @@ export function LocationTable({
     areAllSelected,
     selectedCount,
     selectedLocationIds,
+    isDeleting, // ⭐ NEW: Add dependency
   ]);
 
   const dataSource = useMemo(() => {
@@ -339,14 +396,13 @@ export function LocationTable({
               selectedRowKeys: selectedLocationIds,
               columnWidth: 0,
               renderCell: () => null,
-              columnTitle: " ", // Default header checkbox ko hide karega
+              columnTitle: " ",
             }}
             onRow={(record) => ({
               onClick: () => {
                 toggleRowSelection(record.id);
               },
             })}
-            // Agar data na ho toh text dikhane ke liye
             locale={{
               emptyText: "No Location found.",
             }}

@@ -44,4 +44,10 @@ export const locationService = {
   deleteLocation: async (id: string): Promise<void> => {
     await api.delete(`/locations/${id}`);
   },
+
+  batchDeleteLocation: async (ids: string[]): Promise<void> => {
+    await api.delete(`locations/batch-delete`, {
+      data: { ids: ids },
+    });
+  },
 };

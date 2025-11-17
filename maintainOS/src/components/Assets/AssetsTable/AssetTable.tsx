@@ -22,6 +22,7 @@ import { Table, Avatar, Tooltip as AntTooltip } from "antd";
 import type { TableProps, TableColumnType } from "antd";
 import type { AppDispatch } from "../../../store"; // Store path check kar lein
 import { useDispatch } from "react-redux";
+import Loader from "../../Loader/Loader";
 
 // --- Helper Functions (ListView se copy kiye gaye) ---
 
@@ -44,7 +45,7 @@ const tableStyles = `
     z-index: 3 !important;
   }
   .ant-table-row:hover > td {
-    background-color: #f9fafb !importan_t;
+    background-color: #f9fafb !important;
   }
   .ant-table-thead > tr > th {
     background-color: #f9fafb !important; /* Header BG */
@@ -102,7 +103,8 @@ const columnConfig: {
   Manufacturer: {
     dataIndex: "manufacturer",
     width: 150,
-    sorter: (a, b) => (a.manufacturer || "").localeCompare(b.manufacturer || ""),
+    sorter: (a, b) =>
+      (a.manufacturer || "").localeCompare(b.manufacturer || ""),
   },
   Type: { dataIndex: "type", width: 150 },
   QrCode: { dataIndex: "qrCode", width: 150 },
@@ -132,7 +134,7 @@ export function AssetTable({
   const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
-
+  const [assetDetailsModal, setAssetDetailsModal] = useState(false);
   const [updateAssetModal, setUpdateAssetModal] = useState(false);
   const [selectedStatusAsset, setSelectedStatusAsset] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -234,17 +236,25 @@ export function AssetTable({
 
   // --- Delete, Status, Criticality Handlers (Aapke original code se) ---
   const handleDelete = async () => {
-    if (selectedAssetIds.length === 0) return;
-    setIsDeleting(true);
-    for (const id of selectedAssetIds) {
-      try {
-        await handleDeleteAsset(id);
-      } catch (err) {
-        console.error("Error deleting asset:", id, err);
-      }
+    if (selectedAssetIds.length === 0) {
+      toast.error("No assets selected to delete.");
+      return;
     }
-    setIsDeleting(false);
-    setSelectedAssetIds([]);
+    setIsDeleting(true);
+
+    try {
+      // Call your new function directly with the array of IDs
+      await assetService.batchDeleteAsset(selectedAssetIds);
+      toast.success("Assets deleted successfully!");
+      setSelectedAssetIds([]);
+      fetchAssetsData();
+    } catch (err) {
+      console.error("Error bulk deleting assets:", err);
+      toast.error("Failed to delete assets.");
+    } finally {
+      // Always stop the loading spinner
+      setIsDeleting(false);
+    }
   };
 
   const handleStatusClick = (asset: any) => {
@@ -351,11 +361,7 @@ export function AssetTable({
                     : "text-orange-600 hover:text-red-700"
                 }`}
               >
-                {isDeleting ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <Trash2 size={16} />
-                )}
+                {isDeleting ? <Loader /> : <Trash2 size={16} />}
               </button>
             </Tooltip>
             <Tooltip text="Edit Location">
@@ -376,7 +382,7 @@ export function AssetTable({
                   ref={triggerRef}
                   onClick={() => setIsCriticalityPopoverOpen((prev) => !prev)}
                   disabled={isDeleting}
-                  className={`flex items-center gap-1 transition ${
+                  className={`flex items-center gap-1 mt-1 transition ${
                     isDeleting
                       ? "text-orange-400 cursor-not-allowed"
                       : "text-orange-600 hover:text-red-700"
@@ -443,24 +449,16 @@ export function AssetTable({
                         type="checkbox"
                         id="sub-assets"
                         checked={includeSubAssets}
-                        onChange={(e) =>
-                          setIncludeSubAssets(e.target.checked)
-                        }
+                        onChange={(e) => setIncludeSubAssets(e.target.checked)}
                         className="mt-1 cursor-pointer accent-orange-600"
                       />
-                      <label
-                        htmlFor="sub-assets"
-                        className="cursor-pointer"
-                      >
+                      <label htmlFor="sub-assets" className="cursor-pointer">
                         Edit Sub-Asset criticality as well
                       </label>
                     </div>
                     <button
                       onClick={handleApplyCriticalityChanges}
-                      disabled={
-                        !selectedCriticality ||
-                        isUpdatingCriticality
-                      }
+                      disabled={!selectedCriticality || isUpdatingCriticality}
                       className="w-full bg-orange-600 text-white px-3 py-1.5 text-sm rounded-md hover:bg-orange-700 disabled:bg-orange-300 disabled:cursor-not-allowed flex items-center justify-center"
                     >
                       {isUpdatingCriticality ? (
@@ -544,8 +542,9 @@ export function AssetTable({
         if (!config) return null;
 
         // Custom render function
-        let renderFunc: ((value: any, record: any) => React.ReactNode) | undefined =
-          undefined;
+        let renderFunc:
+          | ((value: any, record: any) => React.ReactNode)
+          | undefined = undefined;
 
         if (colName === "Status") {
           renderFunc = (status: string, record: any) => (
@@ -599,13 +598,11 @@ export function AssetTable({
     selectedCount,
     visibleColumns, // ⭐ Yeh dependency zaroori hai
     isDeleting,
-    isCriticalityPopoverOpen, // Popover state par dependency
-    selectedCriticality, // Popover ke radio buttons ke liye dependency
-    isUpdatingCriticality, // Popover ke button ke liye dependency
+    isCriticalityPopoverOpen,
+    selectedCriticality,
+    isUpdatingCriticality,
   ]);
 
-  // ⭐ 6. Data Source Definition (`useMemo` mein)
-  // Data ko flatten karna (jaisa ListView mein kiya gaya hai)
   const dataSource = useMemo(() => {
     return assets.map((item) => ({
       key: item.id,
@@ -618,9 +615,7 @@ export function AssetTable({
       manufacturer: item.manufacturer?.name || "—",
       type: item.assetTypes?.length
         ? `${item.assetTypes[0]?.name}${
-            item.assetTypes.length > 1
-              ? ` +${item.assetTypes.length - 1}`
-              : ""
+            item.assetTypes.length > 1 ? ` +${item.assetTypes.length - 1}` : ""
           }`
         : "—",
       qrCode: (item.qrCode && item.qrCode?.split("/").pop()) || "—",
@@ -631,7 +626,7 @@ export function AssetTable({
         : "—",
       part: item.parts?.length
         ? `${item.parts[0]?.name}${
-            item.parts.length > 1 ? ` +${item.parts.length - f1}` : ""
+            item.parts.length > 1 ? ` +${item.parts.length - 1}` : ""
           }`
         : "—",
       team: item.teams?.length
@@ -645,29 +640,26 @@ export function AssetTable({
     }));
   }, [assets]);
 
-  // ⭐ 7. Naya JSX (Antd Table ke saath)
   return (
     <div className="flex p-2 w-full h-full overflow-x-auto">
       <style>{tableStyles}</style>
 
-      <Card className="shadow-sm border rounded-lg overflow-hidden w-full">
+      <Card className=" border rounded-lg overflow-hidden w-full">
         <CardContent className="p-0">
           <Table
             columns={columns}
             dataSource={dataSource}
             pagination={false}
-            scroll={{ x: "max-content", y: "75vh" }} // 'x' ko dynamic rakha
+            scroll={{ x: "content", y: "75vh" }} // 'x' ko dynamic rakha
             rowClassName={(record: any) =>
               selectedAssetIds.includes(record.id) ? "selected-row-class" : ""
             }
-            onChange={handleTableChange}
+            // onChange={handleTableChange}
             rowSelection={{
-              // Yeh row selection ko control karne mein madad karta hai
               selectedRowKeys: selectedAssetIds,
-              // Hum custom checkbox use kar rahe hain, isliye antd ka hide karein
               columnWidth: 0,
               renderCell: () => null,
-              // ⭐ BADLAAV 2: Yeh default Antd header checkbox ko hide kar dega
+
               columnTitle: " ",
             }}
             onRow={(record) => ({

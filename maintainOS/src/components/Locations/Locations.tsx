@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  ChevronDown,
-  MapPin,
-  Check, 
-  ChevronUp, 
-} from "lucide-react";
+import { ChevronDown, MapPin, Check, ChevronUp } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
@@ -37,7 +32,7 @@ export function Locations() {
   const [viewMode, setViewMode] = useState<ViewMode>("panel");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSettings, setShowSettings] = useState(false);
-   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [filteredLocations, setFilteredLocations] = useState<
     LocationResponse[]
   >([]);
@@ -140,6 +135,13 @@ export function Locations() {
 
   const fetchLocations = async (currentPage = 1) => {
     setLoading(true);
+
+    // ⭐ YAHAN ADD KAREIN:
+    // Agar pehla page load ho raha hai, toh selectedLocation ko clear karein
+    if (currentPage === 1) {
+      setSelectedLocation(null);
+    }
+
     try {
       const res = await locationService.fetchLocations(
         limit,
@@ -150,7 +152,14 @@ export function Locations() {
       if (currentPage === 1) {
         const reversedLocations = [...res].reverse();
         setLocations(reversedLocations);
+
+        // ⭐ YAHAN BHI ADD KAREIN:
+        // Naya data aane ke baad, pehla item select karein
+        if (reversedLocations.length > 0) {
+          setSelectedLocation(reversedLocations[0]);
+        }
       } else {
+        // Page 2 ya uske baad, bas data add karein aur selection na badlein
         setLocations((prev) => [...prev, ...res]);
       }
 
@@ -162,6 +171,7 @@ export function Locations() {
     } catch (err) {
       console.error(err);
       setError("Failed to fetch locations");
+      setLocations([]); // Error par locations bhi clear kar dein
     } finally {
       setLoading(false);
       hasFetched.current = true;
@@ -377,7 +387,8 @@ export function Locations() {
               location={locations}
               selectedLocation={selectedLocation}
               setIsSettingsModalOpen={setIsSettingsModalOpen}
-              isSettingsModalOpen = {isSettingsModalOpen}
+              isSettingsModalOpen={isSettingsModalOpen}
+              fetchLocations={fetchLocations}
             />
           </>
         ) : (

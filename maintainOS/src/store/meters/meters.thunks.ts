@@ -118,3 +118,16 @@ export const updateMeterReading = createAsyncThunk(
     }
   }
 );
+export const batchDeleteMeter = createAsyncThunk(
+  "meter/batchDeleteMeter",
+  async (ids: string[], { rejectWithValue }) => {
+    try {
+      await meterService.batchDeleteMeter(ids);
+      return ids;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete Meter"
+      );
+    }
+  }
+);

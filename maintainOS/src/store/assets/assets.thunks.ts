@@ -207,3 +207,17 @@ export const deleteAssetStatus = createAsyncThunk(
     }
   }
 );
+
+export const batchDeleteAsset = createAsyncThunk(
+  "assets/batchDeleteAsset",
+  async (ids: string[], { rejectWithValue }) => {
+    try {
+      await assetService.batchDeleteAsset(ids);
+      return ids;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete Asset"
+      );
+    }
+  }
+);

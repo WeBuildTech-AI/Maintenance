@@ -79,7 +79,7 @@ export const assetService = {
     return res.data;
   },
 
-  fetchAssetStatusLog: async (id:string): Promise<AssetResponse> => {
+  fetchAssetStatusLog: async (id: string): Promise<AssetResponse> => {
     const res = await api.get(`/assets/${id}/logs`);
     return res.data;
   },
@@ -88,4 +88,9 @@ export const assetService = {
     await api.delete(`/assets/${id}/status`);
   },
 
+ batchDeleteAsset: async (ids: string[]): Promise<void> => {
+    await api.delete(`assets/batch-delete`, {
+      data: { ids: ids },
+    });
+  },
 };

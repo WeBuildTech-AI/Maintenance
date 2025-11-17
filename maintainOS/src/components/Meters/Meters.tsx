@@ -41,7 +41,7 @@ export function Meters() {
   const [openSection, setOpenSection] = useState("Name");
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const headerRef = useRef(null);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   // const modalRef = useRef(null);
 
   const dispatch = useDispatch<AppDispatch>();
@@ -83,6 +83,8 @@ export function Meters() {
 
   const fetchMeters = async () => {
     setLoading(true);
+    setSelectedMeter(null); // <-- YAHAN ADD KAREIN: API call se pehle selectMeter ko clear karein
+
     try {
       const res = await meterService.fetchMeters(10, 1, 0);
 
@@ -93,20 +95,19 @@ export function Meters() {
 
       setMeterData(sortedData);
 
-      // ✅ Only set selectedMeter AFTER data is fetched successfully
+      // ✅ Ab data aane ke baad hi selectedMeter set hoga
       if (sortedData.length > 0) {
-        setSelectedMeter(sortedData[0]); // or whatever default you want
+        setSelectedMeter(sortedData[0]);
       }
     } catch (err) {
       console.error(err);
+      setMeterData([]); // Error ke case mein data ko clear karna accha rehta hai
     } finally {
       setLoading(false);
     }
   };
 
-  // NEW: useEffect for sorting and filtering the meters
 
-  // NEW: useEffect to position the custom dropdown
   useEffect(() => {
     if (isDropdownOpen && headerRef.current) {
       const rect = headerRef.current.getBoundingClientRect();
@@ -190,13 +191,19 @@ export function Meters() {
           setSearchQuery,
           handleShowNewMeterForm,
           setShowSettings,
-          setIsSettingsModalOpen,
+          setIsSettingsModalOpen
           // setSelectedMeter
         )}
 
         {viewMode === "table" ? (
           <>
-            <MeterTable meter={meterData} selectedMeter={selectedMeter} setIsSettingsModalOpen={setIsSettingsModalOpen} isSettingsModalOpen={isSettingsModalOpen}  />
+            <MeterTable
+              meter={meterData}
+              selectedMeter={selectedMeter}
+              setIsSettingsModalOpen={setIsSettingsModalOpen}
+              isSettingsModalOpen={isSettingsModalOpen}
+              fetchMeters={fetchMeters}
+            />
           </>
         ) : (
           <>

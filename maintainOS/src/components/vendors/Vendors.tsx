@@ -18,6 +18,7 @@ export function Vendors() {
   const [showSettings, setShowSettings] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedVendorId, setSelectedVendorId] = useState();
+  const [isSettingModalOpen, setIsSettingModalOpen] = useState(false);
 
   // ✅ ADDED FILTER STATE
   const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>(
@@ -58,26 +59,26 @@ export function Vendors() {
   const refreshVendors = async () => {
     try {
       const res = await vendorService.fetchVendors();
-      setVendors(() => [...res]); // ✅ force re-render with new array reference
+      setVendors(() => [...res]); //  force re-render with new array reference
     } catch (err) {
       console.error(err);
     }
   };
 
   // Fetch vendors on mount
+  const fetchVendors = async () => {
+    setLoading(true);
+    try {
+      const res = await vendorService.fetchVendors();
+      console.log("📦 Vendor API response:", res);
+      setVendors(res);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
-    const fetchVendors = async () => {
-      setLoading(true);
-      try {
-        const res = await vendorService.fetchVendors();
-        console.log("📦 Vendor API response:", res);
-        setVendors(res);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchVendors();
   }, []);
 
@@ -168,8 +169,7 @@ export function Vendors() {
                 name: formData.name,
                 description: formData.description,
                 color: formData.color,
-                contacts:
-                  formData.contacts || v.contacts,
+                contacts: formData.contacts || v.contacts,
               }
             : v
         )
@@ -196,7 +196,8 @@ export function Vendors() {
         setSearchQuery,
         handleShowCreateForm,
         setShowSettings,
-        setActiveFilters // ✅ Pass filter setter to header
+        setActiveFilters, // ✅ Pass filter setter to header
+        setIsSettingModalOpen
       )}
 
       {/* Body */}
@@ -213,7 +214,9 @@ export function Vendors() {
               {isCreateRoute || isEditRoute ? (
                 <VendorForm
                   initialData={vendorToEdit}
-                  onSubmit={isEditMode ? handleUpdateSubmit : handleCreateSubmit}
+                  onSubmit={
+                    isEditMode ? handleUpdateSubmit : handleCreateSubmit
+                  }
                   onCancel={handleCancelForm}
                   setVendors={setVendors}
                   setSelectedVendorId={setSelectedVendorId}
@@ -254,6 +257,9 @@ export function Vendors() {
           <VendorTable
             vendors={filteredVendors}
             selectedVendorId={selectedVendorId}
+            setIsSettingModalOpen={setIsSettingModalOpen}
+            isSettingModalOpen={isSettingModalOpen}
+            fetchVendors={fetchVendors}
           />
         )}
       </div>

@@ -101,3 +101,17 @@ export const deleteLocation = createAsyncThunk(
     }
   }
 );
+
+export const batchDeleteLocation = createAsyncThunk(
+  "locations/batchDeleteLocations",
+  async (ids: string[], { rejectWithValue }) => {
+    try {
+      await locationService.batchDeleteLocation(ids);
+      return ids;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete Location"
+      );
+    }
+  }
+);

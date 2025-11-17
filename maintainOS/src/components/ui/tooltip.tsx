@@ -31,9 +31,10 @@ export function Tooltip({ children, text }: TooltipProps) {
             borderRadius: "6px",
             fontSize: "12px",
             whiteSpace: "nowrap",
-            zIndex: 1000,
+            zIndex: 99000,
             boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
             animation: "tooltipFadeIn 0.2s ease-in-out",
+          
           }}
         >
           {text}
