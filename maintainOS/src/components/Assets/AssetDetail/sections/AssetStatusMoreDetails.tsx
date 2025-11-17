@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import {
   ChevronLeft,
   Download,
@@ -18,6 +18,8 @@ import { useSelector } from "react-redux";
 import { formatDateOnly } from "../../../utils/Date";
 import toast from "react-hot-toast";
 import Loader from "../../../Loader/Loader";
+import { MeterReadings } from "../../../Meters/MeterDetail/MeterReadings";
+import { Button } from "../../../ui/button";
 
 type Period = "1H" | "1D" | "1W" | "1M" | "3M" | "6M" | "1Y" | "Custom";
 
@@ -25,12 +27,14 @@ interface AssetStatusMoreDetailsProps {
   setSeeMoreAssetStatus: (value: boolean) => void;
   asset: Asset;
   fetchAssetsData?: () => void;
+  setShowNewAssetForm: Dispatch<SetStateAction<boolean>>;
 }
 
 export default function AssetStatusMoreDetails({
   setSeeMoreAssetStatus,
   fetchAssetsData,
   asset,
+  setShowNewAssetForm,
 }: AssetStatusMoreDetailsProps) {
   const [seeMoreFlag, setSeeMoreFlag] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<Period>("1W");
@@ -78,7 +82,7 @@ export default function AssetStatusMoreDetails({
     getAssetStatusLog();
   }, []);
 
-  const handleDeleteStatus = async (id) => {
+  const handleDeleteStatus = async (id: string) => {
     setShowActionMenu(false);
     await assetService.deleteAssetStatus(id);
     getAssetStatusLog();
@@ -129,7 +133,6 @@ export default function AssetStatusMoreDetails({
 
     if (raw === "offline") return "offline";
 
-    // All variations of "Do Not Track"
     if (
       [
         "donottrack",
@@ -143,15 +146,11 @@ export default function AssetStatusMoreDetails({
       return "doNotTrack";
     }
 
-    // Default fallback to online if not offline/dnt
     return "online";
   };
 
   // ---------------------------------------------------------
-  // ✅ Updated Timeline Logic
-  // ---------------------------------------------------------
-  // ---------------------------------------------------------
-  // ✅ Updated Timeline Logic (Fix for missing 'to' date)
+  //  Updated Timeline Logic
   // ---------------------------------------------------------
   const generateTimelineSegments = () => {
     const now = new Date().getTime();
@@ -159,35 +158,26 @@ export default function AssetStatusMoreDetails({
     const startTime = now - duration;
 
     const relevantLogs = logData.filter((e) => {
-      if (!e.since) return false; // 'since' hona zaroori hai
-
+      if (!e.since) return false;
       const logStart = new Date(e.since).getTime();
-      // Agar 'to' nahi hai, toh maan lo abhi tak chal raha hai (now)
       const logEnd = e.to ? new Date(e.to).getTime() : now;
-
-      // Check overlap
       return logEnd >= startTime && logStart <= now;
     });
 
     return relevantLogs.map((entry) => {
       let logStart = new Date(entry.since).getTime();
-      // Agar 'to' nahi hai, toh 'now' use karein
       let logEnd = entry.to ? new Date(entry.to).getTime() : now;
 
-      // Clipping logic (chart ke bahar ka hissa kaatne ke liye)
       if (logStart < startTime) logStart = startTime;
       if (logEnd > now) logEnd = now;
 
-      // Width calculation safely
       const totalDuration = Math.max(logEnd - logStart, 0);
-
       const left = ((logStart - startTime) / duration) * 100;
       const width = (totalDuration / duration) * 100;
 
-      // Use Helper Function
       const normalizedStatus = getNormalizedStatus(entry.status);
+      let color = "bg-green-500";
 
-      let color = "bg-green-500"; // Default Online color
       if (normalizedStatus === "offline") {
         const type = (entry.downtimeType || "").toLowerCase();
         color = type === "planned" ? "bg-blue-500" : "bg-red-500";
@@ -202,7 +192,7 @@ export default function AssetStatusMoreDetails({
         status: normalizedStatus,
         downtimeType: entry.downtimeType,
         since: entry.since,
-        to: entry.to || new Date().toISOString(), // Tooltip ke liye
+        to: entry.to || new Date().toISOString(),
       };
     });
   };
@@ -210,7 +200,7 @@ export default function AssetStatusMoreDetails({
   const timelineSegments = generateTimelineSegments();
 
   // ---------------------------------------------------------
-  // ✅ FIXED: Uptime Calculation (Now matches Chart Logic)
+  //  FIXED: Uptime Calculation
   // ---------------------------------------------------------
   const calculateDurations = () => {
     let uptime = 0;
@@ -227,11 +217,8 @@ export default function AssetStatusMoreDetails({
       let start = new Date(entry.since).getTime();
       let end = new Date(entry.to).getTime();
 
-      // Overlap Check (Same logic as chart)
       if (end < startTime || start > now) return;
 
-      // Clamp time for calculation (sirf visible area ka stats dikhane ke liye)
-      // Agar aapko "Total History" ka stats chahiye, to neeche ki 2 lines hata dein
       if (start < startTime) start = startTime;
       if (end > now) end = now;
 
@@ -248,7 +235,6 @@ export default function AssetStatusMoreDetails({
           unplannedDowntime += diffHours;
         }
       }
-      // "doNotTrack" is ignored in uptime/downtime calculation usually
     });
 
     return {
@@ -304,6 +290,104 @@ export default function AssetStatusMoreDetails({
     }
   };
 
+  // ---------------------------------------------------------
+  // 👇 NEW EXPORT FUNCTION
+  // ---------------------------------------------------------
+  const handleExport = () => {
+    if (!logData || logData.length === 0) {
+      toast.error("No data to export.");
+      return;
+    }
+
+    // Helper to safely format CSV data (handles commas/quotes)
+    const escapeCSV = (str: any) => {
+      if (str === null || str === undefined) return "";
+      let result = String(str);
+      // If it contains commas, quotes, or newlines, wrap in double quotes
+      if (
+        result.includes(",") ||
+        result.includes('"') ||
+        result.includes("\n")
+      ) {
+        // Escape existing double quotes by doubling them
+        result = result.replace(/"/g, '""');
+        // Wrap the whole string in double quotes
+        result = `"${result}"`;
+      }
+      return result;
+    };
+
+    // Helper to calculate duration string
+    const getDurationString = (since: string | null, to: string | null) => {
+      if (!since || !to) return "-";
+      try {
+        const sinceDate = new Date(since).getTime();
+        const toDate = new Date(to).getTime();
+        const diffMs = Math.abs(toDate - sinceDate);
+        const totalMinutes = Math.floor(diffMs / (1000 * 60));
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+      } catch (e) {
+        return "-";
+      }
+    };
+
+    // 1. Define CSV Headers
+    const headers = [
+      "StatusId",
+      "Status",
+      "Custom Status",
+      "Downtime",
+      "StartedAt",
+      "EndedAt",
+      "Duration",
+      "Note",
+      "Created By",
+      "Created On",
+    ];
+
+    // 2. Create CSV Rows
+    const csvRows = [headers.join(",")]; // Add header row
+
+    logData.forEach((entry) => {
+      const row = [
+        escapeCSV(entry.id),
+        escapeCSV(entry.status),
+        escapeCSV(entry.status), // Using raw 'status' for "Custom Status" as requested
+        escapeCSV(entry.downtimeType || "-"),
+        escapeCSV(entry.since ? formatDate(entry.since) : "-"), // Using your existing formatDate
+        escapeCSV(entry.to ? formatDate(entry.to) : "-"), // Using your existing formatDate
+        escapeCSV(getDurationString(entry.since, entry.to)),
+        escapeCSV(entry.notes || "-"),
+        escapeCSV(entry.user?.fullName || "System"),
+        escapeCSV(entry.createdAt ? formatDate(entry.createdAt) : "-"), // Using your existing formatDate
+      ];
+      csvRows.push(row.join(","));
+    });
+
+    const csvString = csvRows.join("\n");
+
+    // 3. Create Blob and Trigger Download
+    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+
+    link.setAttribute("href", url);
+    // Create a dynamic filename based on the asset name
+    link.setAttribute("download", `${asset.name}_status_history.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success("Export started!");
+  };
+  // ---------------------------------------------------------
+  // 🔼 END OF NEW FUNCTION
+  // ---------------------------------------------------------
+
   return (
     <>
       {isLoading ? (
@@ -316,7 +400,17 @@ export default function AssetStatusMoreDetails({
             {/* Header */}
             <div className="flex justify-between item-center gap-6 p-6">
               <h1 className="text-2xl font-semibold">Assets</h1>
-              <button>New Asset</button>
+              <Button
+                className="gap-2 cursor-pointer bg-orange-600 hover:outline-none"
+                onClick={() => {
+                  setShowNewAssetForm(true);
+                  setSeeMoreAssetStatus(false);
+                }}
+              >
+                {" "}
+                <Plus />
+                New Asset
+              </Button>
             </div>
 
             <div className="border">
@@ -340,7 +434,11 @@ export default function AssetStatusMoreDetails({
                   seeMoreFlag={seeMoreFlag}
                   getAssetStatusLog={getAssetStatusLog}
                 />
-                <button className="flex items-center gap-2 px-4 py-2 text-orange-600 border border-blue-600 rounded hover:bg-blue-50 text-sm font-medium">
+
+                <button
+                  onClick={handleExport}
+                  className="cursor-pointer flex items-center gap-2 px-4 py-2 text-orange-600 border border-blue-600 rounded hover:bg-blue-50 text-sm font-medium"
+                >
                   <Download className="w-4 h-4" /> Export Data
                 </button>
               </div>
@@ -475,7 +573,7 @@ export default function AssetStatusMoreDetails({
                 {/* Add Manual Downtime Button */}
                 <button
                   onClick={() => setUpdateAssetModal(!updateAssetModal)}
-                  className="flex items-center gap-2 px-4 py-2 text-orange-600 border border-blue-600 rounded hover:bg-blue-50 text-sm font-medium mb-6"
+                  className=" cursor-pointer flex items-center gap-2 px-4 py-2 text-orange-600 border border-blue-600 rounded hover:bg-blue-50 text-sm font-medium mb-6"
                 >
                   <Plus className="w-4 h-4" /> Add Manual Downtime
                 </button>
@@ -689,6 +787,26 @@ export default function AssetStatusMoreDetails({
                       </div>
                     </div>
                   )}
+                </div>
+                <div className="mt-4 w-130 ">
+                  <h6 className="font-bold">Meter Reading</h6>
+                  {asset.meters && asset.meters.length > 0 ? (
+                    <div className="border border-orange-600 mt-2 p-4 rounded-lg">
+                      {asset.meters.map((meter) => (
+                        <div>
+                          <div>
+                            <p className="text-sm font-medium">{meter?.name}</p>
+                          </div>
+                          <MeterReadings
+                            selectedMeter={meter}
+                            setShowReadingMeter={() => {}} // Placeholder
+                          />
+                          <div>
+                            </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>

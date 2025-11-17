@@ -12,27 +12,32 @@ import {
 } from "recharts";
 import { Button } from "../../ui/button";
 import { subHours, subDays, subWeeks, subMonths, isAfter } from "date-fns";
+
 export function MeterReadings({ selectedMeter, setShowReadingMeter }: any) {
   const [selectedTimePeriod, setSelectedTimePeriod] = useState("1D");
-  const [customRange, setCustomRange] = useState<{ start: Date | null; end: Date | null }>({
+  const [customRange, setCustomRange] = useState<{
+    start: Date | null;
+    end: Date | null;
+  }>({
     start: null,
     end: null,
   });
 
   const readings = selectedMeter?.readings || [];
 
-  // ✅ Convert timestamps -> numeric for recharts
+  // 1. Convert timestamps (no change)
   const formattedData = useMemo(
     () =>
       readings.map((r: any) => ({
         ...r,
-        date: new Date(r.timestamp).getTime(), // 🔥 numeric timestamp
+        date: new Date(r.timestamp).getTime(), // numeric timestamp
       })),
     [readings]
   );
 
-  // ✅ Filter dynamically
-  const filteredData = useMemo(() => {
+  // 2. (NEW) Create a dedicated useMemo for the time range (domain)
+  // This calculates the [startTime, endTime] as numbers
+  const domainRange = useMemo(() => {
     const now = new Date();
     let startDate: Date;
     let endDate = now;
@@ -63,20 +68,30 @@ export function MeterReadings({ selectedMeter, setShowReadingMeter }: any) {
         if (customRange.start && customRange.end) {
           startDate = customRange.start;
           endDate = customRange.end;
-          break;
-        } else return [];
+        } else {
+          // Fallback if custom is selected but not set
+          startDate = subDays(now, 1);
+        }
+        break;
       default:
-        startDate = new Date(0);
+        startDate = subDays(now, 1);
     }
+    // Return numeric timestamps
+    return [startDate.getTime(), endDate.getTime()];
+  }, [selectedTimePeriod, customRange]);
 
-    const filtered = formattedData.filter(
-      (d) => isAfter(new Date(d.date), startDate) && d.date <= endDate.getTime()
+  // 3. (CHANGED) Simplify filteredData to use the new domainRange
+  const filteredData = useMemo(() => {
+    // Get the numeric start/end times from our new hook
+    const [startTime, endTime] = domainRange;
+
+    // Filter the data based on this fixed range
+    return formattedData.filter(
+      (d) => d.date >= startTime && d.date <= endTime
     );
+  }, [formattedData, domainRange]);
 
-    return filtered.length > 0 ? filtered : formattedData;
-  }, [selectedTimePeriod, formattedData, customRange]);
-
-  // ✅ Dynamic Y-axis
+  // 4. Dynamic Y-axis (no change)
   const { minValue, maxValue } = useMemo(() => {
     if (filteredData.length === 0) return { minValue: 0, maxValue: 100 };
     const values = filteredData.map((d) => d.value);
@@ -89,7 +104,7 @@ export function MeterReadings({ selectedMeter, setShowReadingMeter }: any) {
     };
   }, [filteredData]);
 
-  // ✅ Custom date input
+  // 5. Custom date input (no change)
   const handleCustomDateSelect = () => {
     const start = prompt("Enter start date (YYYY-MM-DD):");
     const end = prompt("Enter end date (YYYY-MM-DD):");
@@ -101,31 +116,33 @@ export function MeterReadings({ selectedMeter, setShowReadingMeter }: any) {
 
   return (
     <div>
-      {/* Header */}
+      {/* Header (no change) */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-medium">Readings</h2>
         <div className="flex items-center gap-1 flex-wrap">
-          {["1H", "1D", "1W", "1M", "3M", "6M", "1Y", "Custom"].map((period) => (
-            <Button
-              key={period}
-              size="sm"
-              onClick={() => {
-                if (period === "Custom") handleCustomDateSelect();
-                else setSelectedTimePeriod(period);
-              }}
-              className={`${
-                selectedTimePeriod === period
-                  ? "bg-orange-600 hover:bg-orange-700 text-white"
-                  : "bg-transparent hover:bg-gray-100 text-gray-600"
-              } transition-all duration-200`}
-            >
-              {period}
-            </Button>
-          ))}
+          {["1H", "1D", "1W", "1M", "3M", "6M", "1Y", "Custom"].map(
+            (period) => (
+              <Button
+                key={period}
+                size="sm"
+                onClick={() => {
+                  if (period === "Custom") handleCustomDateSelect();
+                  else setSelectedTimePeriod(period);
+                }}
+                className={`${
+                  selectedTimePeriod === period
+                    ? "bg-orange-600 hover:bg-orange-700 text-white"
+                    : "bg-transparent hover:bg-gray-100 text-gray-600"
+                } transition-all duration-200`}
+              >
+                {period}
+              </Button>
+            )
+          )}
         </div>
       </div>
 
-      {/* Chart Section */}
+      {/* Chart Section (no change) */}
       <div className="space-y-4">
         <div className="text-sm font-medium text-muted-foreground">
           {selectedMeter.measurement && selectedMeter.measurement.name}
@@ -145,14 +162,13 @@ export function MeterReadings({ selectedMeter, setShowReadingMeter }: any) {
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
 
-                {/* ✅ FIXED X-AXIS */}
+                {/* 6. (CHANGED) THIS IS THE KEY FIX */}
                 <XAxis
                   dataKey="date"
                   type="number"
-                  domain={["dataMin", "dataMax"]}
+                  domain={domainRange}
                   tickFormatter={(value) => {
                     const date = new Date(value);
-
                     switch (selectedTimePeriod) {
                       case "1H":
                         return date.toLocaleTimeString("en-IN", {
@@ -184,6 +200,7 @@ export function MeterReadings({ selectedMeter, setShowReadingMeter }: any) {
                       case "1Y":
                         return date.toLocaleDateString("en-IN", {
                           month: "short",
+                          year: "2-digit",
                         });
                       case "Custom":
                         return date.toLocaleDateString("en-IN", {
@@ -200,7 +217,7 @@ export function MeterReadings({ selectedMeter, setShowReadingMeter }: any) {
                   tick={{ fontSize: 12, fill: "#666" }}
                 />
 
-                {/* ✅ FIXED Y-AXIS */}
+                {/* Y-Axis (no change) */}
                 <YAxis
                   domain={[minValue, maxValue]}
                   axisLine={false}
@@ -208,9 +225,13 @@ export function MeterReadings({ selectedMeter, setShowReadingMeter }: any) {
                   tick={{ fontSize: 12, fill: "#666" }}
                 />
 
+                {/* Tooltip (no change) */}
                 <Tooltip
                   formatter={(value: number) => [
-                    `${value} ${selectedMeter.measurement && selectedMeter.measurement.name}`,
+                    `${value} ${
+                      selectedMeter.measurement &&
+                      selectedMeter.measurement.name
+                    }`,
                     "Reading",
                   ]}
                   labelFormatter={(label: string) =>
@@ -223,7 +244,7 @@ export function MeterReadings({ selectedMeter, setShowReadingMeter }: any) {
                   }
                 />
 
-                {/* ✅ Line + Labels fixed */}
+                {/* Line (no change) */}
                 <Line
                   type="monotone"
                   dataKey="value"
@@ -246,7 +267,7 @@ export function MeterReadings({ selectedMeter, setShowReadingMeter }: any) {
           )}
         </div>
 
-        {/* Button */}
+        {/* Button (no change) */}
         <div className="pt-4">
           <Button
             className="gap-2 bg-orange-600 hover:bg-orange-700"

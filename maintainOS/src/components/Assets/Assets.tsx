@@ -22,6 +22,7 @@ export interface Asset {
     id: number | string;
     name: string;
   };
+  meters:[]
 }
 
 export const Assets: FC = () => {
@@ -235,6 +236,7 @@ export const Assets: FC = () => {
                       onEdit={handleEditAsset}
                       fetchAssetsData={fetchAssetsData}
                       setSeeMoreAssetStatus={setSeeMoreAssetStatus}
+                      
                     />
                   ) : (
                     <div className="flex items-center justify-center h-full text-center">
@@ -262,6 +264,7 @@ export const Assets: FC = () => {
                 setSeeMoreAssetStatus={setSeeMoreAssetStatus}
                 asset={selectedAsset}
                 fetchAssetsData={fetchAssetsData}
+                setShowNewAssetForm={setShowNewAssetForm}
               />
             }
           </>
