@@ -7,7 +7,14 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
-import { ChevronDown, PanelTop, Plus, Search, Settings, Table } from "lucide-react";
+import {
+  ChevronDown,
+  PanelTop,
+  Plus,
+  Search,
+  Settings,
+  Table,
+} from "lucide-react";
 import { Input } from "../ui/input";
 import VendorFilterBar from "./VendorFilterBar";
 
@@ -87,8 +94,8 @@ export function VendorHeaderComponent(
         {/* Right: Settings button (only for table view) */}
         {viewMode === "table" && (
           <button
-         onClick={() => setIsSettingModalOpen(true)}
-            className="p-2 rounded-md border hover:bg-gray-100 transition"
+           onClick={() => setIsSettingModalOpen(true)}
+            className="p-2 rounded-md border cursor-pointer  hover:bg-gray-100 transition"
           >
             <Settings className="h-5 w-5 text-orange-600" />
           </button>

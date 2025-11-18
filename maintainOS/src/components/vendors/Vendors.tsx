@@ -20,6 +20,8 @@ export function Vendors() {
   const [selectedVendorId, setSelectedVendorId] = useState();
   const [isSettingModalOpen, setIsSettingModalOpen] = useState(false);
 
+  console.log(isSettingModalOpen, "setIsSettingModalOpen");
+
   // ✅ ADDED FILTER STATE
   const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>(
     {}
@@ -70,7 +72,7 @@ export function Vendors() {
     setLoading(true);
     try {
       const res = await vendorService.fetchVendors();
-      console.log("📦 Vendor API response:", res);
+      // console.log("📦 Vendor API response:", res);
       setVendors(res);
     } catch (err) {
       console.error(err);
@@ -126,7 +128,7 @@ export function Vendors() {
     }
   }, [vendors, selectedVendorId]);
 
-  console.log(selectedVendor, "selectedVendor");
+  // console.log(selectedVendor, "selectedVendor");
 
   // ✅ MODIFIED: submit handler for update
   const handleUpdateSubmit = async (formData: any) => {
@@ -195,9 +197,9 @@ export function Vendors() {
         searchQuery,
         setSearchQuery,
         handleShowCreateForm,
+        setIsSettingModalOpen,
         setShowSettings,
         setActiveFilters,
-        setIsSettingModalOpen
       )}
 
       {/* Body */}
