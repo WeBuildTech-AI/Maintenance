@@ -1,4 +1,3 @@
-
 import { Edit, Link, MoreHorizontal } from "lucide-react";
 import { Button } from "../../ui/button";
 import {
@@ -9,9 +8,7 @@ import {
 } from "../../ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "../../ui/tabs";
 import { Tooltip } from "../../ui/tooltip"; // Import the simple tooltip
-import { deleteAsset } from "../../../store/assets";
-import { useDispatch } from "react-redux";
-import type { AppDispatch } from "../../../store";
+
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import React, { useState } from "react";
@@ -30,6 +27,7 @@ interface AssetDetailHeaderProps {
   setShowHistory: (show: boolean) => void;
   onEdit: (asset: Asset) => void;
   onDelete: (asset: Asset) => void;
+  onClose: () => void;
 }
 
 export function AssetDetailHeader({
@@ -37,11 +35,12 @@ export function AssetDetailHeader({
   setShowHistory,
   onEdit,
   onDelete,
+  onClose,
 }: AssetDetailHeaderProps) {
   const navigate = useNavigate();
   const [openAssetDeleteModal, setOpenAssetDeleteModal] = useState(false);
   const modalRef = React.useRef<HTMLDivElement>(null);
-  
+
   return (
     <div className="p-6 border-b border-border flex-shrink-0">
       <div className="flex items-center justify-between mb-6">
@@ -96,7 +95,10 @@ export function AssetDetailHeader({
       {openAssetDeleteModal && (
         <DeleteAssetModal
           modalRef={modalRef}
-          onClose={() => setOpenAssetDeleteModal(false)}
+          onClose={() => {
+            setOpenAssetDeleteModal(false);
+            onClose();
+          }}
           onConfirm={() => onDelete(asset.id)}
         />
       )}

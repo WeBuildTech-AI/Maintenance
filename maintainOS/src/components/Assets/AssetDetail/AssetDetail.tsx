@@ -1,4 +1,4 @@
-import { useState, FC } from "react";
+import { useState, FC, type Dispatch, type SetStateAction } from "react";
 import { AssetDetailContent } from "./AssetDetailContent";
 import { AssetDetailHeader } from "./AssetDetailHeader";
 import { useSelector } from "react-redux";
@@ -24,9 +24,10 @@ interface Asset {
 interface AssetDetailProps {
   asset: Asset;
   onEdit: (asset: Asset) => void;
-  onDelete: (id: string | number) => void; 
-  fetchAssetsData: () => void; 
-  setSeeMoreAssetStatus: boolean
+  onDelete: (id: string | number) => void;
+  fetchAssetsData: () => void;
+  setSeeMoreAssetStatus: Dispatch<SetStateAction<boolean>>;
+  onClose: () => void;
 }
 
 // 3. Use the defined types in your component.
@@ -35,7 +36,8 @@ export const AssetDetail: FC<AssetDetailProps> = ({
   onEdit,
   onDelete,
   fetchAssetsData,
-  setSeeMoreAssetStatus
+  setSeeMoreAssetStatus,
+  onClose,
 }) => {
   const [showHistory, setShowHistory] = useState<boolean>(false);
   const user = useSelector((state: RootState) => state.auth.user);
@@ -54,6 +56,7 @@ export const AssetDetail: FC<AssetDetailProps> = ({
         setShowHistory={setShowHistory}
         onEdit={onEdit}
         onDelete={onDelete} // This prop is now passed down correctly
+        onClose={onClose}
       />
 
       {showHistory ? (
@@ -90,7 +93,11 @@ export const AssetDetail: FC<AssetDetailProps> = ({
           </div>
         </div>
       ) : (
-        <AssetDetailContent fetchAssetsData={fetchAssetsData} asset={asset}  setSeeMoreAssetStatus={setSeeMoreAssetStatus}/>
+        <AssetDetailContent
+          fetchAssetsData={fetchAssetsData}
+          asset={asset}
+          setSeeMoreAssetStatus={setSeeMoreAssetStatus}
+        />
       )}
     </div>
   );

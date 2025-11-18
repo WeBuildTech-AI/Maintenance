@@ -23,6 +23,7 @@ import type { TableProps, TableColumnType } from "antd";
 import type { AppDispatch } from "../../../store"; // Store path check kar lein
 import { useDispatch } from "react-redux";
 import Loader from "../../Loader/Loader";
+import AssetTableModal from "./AssetTableModal";
 
 // --- Helper Functions (ListView se copy kiye gaye) ---
 
@@ -122,6 +123,8 @@ export function AssetTable({
   fetchAssetsData,
   setIsSettingsModalOpen,
   isSettingsModalOpen,
+  onEdit,
+  onDelete
 }: {
   assets: any[];
   selectedAsset: any;
@@ -129,6 +132,8 @@ export function AssetTable({
   fetchAssetsData: () => void;
   setIsSettingsModalOpen: (isOpen: boolean) => void;
   isSettingsModalOpen: boolean;
+  onEdit: (asset: Asset) => void;
+  onDelete: (id: string | number) => void;
 }) {
   const dispatch = useDispatch<AppDispatch>();
   const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
@@ -144,7 +149,10 @@ export function AssetTable({
   const [selectedCriticality, setSelectedCriticality] = useState("");
   const [includeSubAssets, setIncludeSubAssets] = useState(false);
   const [isUpdatingCriticality, setIsUpdatingCriticality] = useState(false);
-
+  const [isOpenAssetDetailsMpdal, setIsOpenAssetDetailsModal] = useState(false);
+  const [isSelectedAssetTable, setIsSelectedAssetTable] = useState<any[]>(
+    []
+  );
   const popoverRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -526,6 +534,8 @@ export function AssetTable({
                 e.stopPropagation();
                 console.log("Open details for:", record.name);
                 // setSelectedAsset(record.fullAsset); // Jaise
+                setIsSelectedAssetTable(record);
+                setIsOpenAssetDetailsModal(true);
               }}
             >
               {name}
@@ -691,7 +701,15 @@ export function AssetTable({
         allToggleableColumns={allAvailableColumns}
         currentVisibleColumns={visibleColumns}
         componentName="Asset"
+        currentShowDeleted
       />
+
+      {
+        isOpenAssetDetailsMpdal && (
+          <AssetTableModal asset={isSelectedAssetTable} onClose={() => setIsOpenAssetDetailsModal(false)} onDelete={onDelete}
+                      onEdit={onEdit} />
+        )
+      }
     </div>
   );
 }

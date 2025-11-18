@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, FC, useMemo } from "react";
-import { AssetDetail } from "./AssetDetail/AssetDetail"
+import { AssetDetail } from "./AssetDetail/AssetDetail";
 import { AssetsList } from "./AssetsList/AssetsList";
 import { NewAssetForm } from "./NewAssetForm/NewAssetForm";
 import { AssetTable } from "./AssetsTable/AssetTable";
@@ -22,7 +22,7 @@ export interface Asset {
     id: number | string;
     name: string;
   };
-  meters:[]
+  meters: [];
 }
 
 export const Assets: FC = () => {
@@ -174,6 +174,8 @@ export const Assets: FC = () => {
                 fetchAssetsData={fetchAssetsData}
                 setIsSettingsModalOpen={setIsSettingsModalOpen}
                 isSettingsModalOpen={isSettingsModalOpen}
+                onDelete={handleDeleteAsset}
+                onEdit={handleEditAsset}
               />
             ) : (
               <div className="flex flex-1 min-h-0">
@@ -236,7 +238,6 @@ export const Assets: FC = () => {
                       onEdit={handleEditAsset}
                       fetchAssetsData={fetchAssetsData}
                       setSeeMoreAssetStatus={setSeeMoreAssetStatus}
-                      
                     />
                   ) : (
                     <div className="flex items-center justify-center h-full text-center">

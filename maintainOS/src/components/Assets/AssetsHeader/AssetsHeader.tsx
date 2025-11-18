@@ -26,7 +26,7 @@ export function AssetHeaderComponent(
   setSearchQuery: Dispatch<SetStateAction<string>>,
   setShowNewAssetForm: Dispatch<SetStateAction<boolean>>,
   setShowSettings: Dispatch<SetStateAction<boolean>>,
-  setSelectedAsset: Dispatch<SetStateAction<boolean>>,
+  setSelectedAsset: Dispatch<SetStateAction<null>>,
   setIsSettingsModalOpen: Dispatch<SetStateAction<boolean>>
 ) {
   return (
