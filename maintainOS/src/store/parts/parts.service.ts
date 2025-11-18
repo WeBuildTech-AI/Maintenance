@@ -90,4 +90,9 @@ export const partService = {
     const res = await api.get(`/parts/restock-logs/${logId}`);
     return res.data;
   },
+  batchDeletePart: async (ids: string[]): Promise<void> => {
+    await api.delete(`parts/batch-delete`, {
+      data: { ids: ids },
+    });
+  },
 };

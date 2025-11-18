@@ -161,3 +161,17 @@ export const getRestockLogById = createAsyncThunk(
     }
   }
 );
+
+export const batchDeletePart = createAsyncThunk(
+  "part/batchDeletePart",
+  async (ids: string[], { rejectWithValue }) => {
+    try {
+      await partService.batchDeletePart(ids);
+      return ids;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete Part"
+      );
+    }
+  }
+);

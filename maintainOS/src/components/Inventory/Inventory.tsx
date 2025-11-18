@@ -28,6 +28,7 @@ export function Inventory() {
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const headerRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+  const [isSettingsModalOpen , setIsSettingsModalOpen] = useState(false)
 
   // ✅ Refresh helper function
   const refreshParts = async () => {
@@ -120,7 +121,8 @@ export function Inventory() {
         "",
         () => { },
         () => navigate("/inventory/create"),
-        () => { }
+        () => { },
+        setIsSettingsModalOpen,
       )}
 
       {/* 🟩 TABLE VIEW */}
@@ -137,6 +139,10 @@ export function Inventory() {
             <PartTable
               inventory={sortedParts}
               setSelectedId={(id) => navigate(`/inventory/${id}`)}
+              fetchPartsData={refreshParts}
+              isSettingsModalOpen={isSettingsModalOpen}
+              setIsSettingsModalOpen={setIsSettingsModalOpen}
+
             />
           )}
         </div>
