@@ -6,21 +6,25 @@ import { Avatar as ShadCNAvatar, AvatarFallback } from "../ui/avatar";
 // ⭐ NEW: Imports for Antd, Icons, Services, and Toast
 import { Table, Tooltip as AntTooltip } from "antd";
 import type { TableProps, TableColumnType } from "antd";
-import { Trash2, Loader2 } from "lucide-react";
+// ⭐ FIX 1: Settings icon import karein
+import { Trash2, Loader2, Settings } from "lucide-react";
 import { formatDateOnly } from "../utils/Date"; // Path check kar lein
 import toast from "react-hot-toast";
 import SettingsModal from "../utils/SettingsModal";
-// import SettingsModal from "../utils/SettingsModal";
+// ⭐ NEW: Service aur Type imports (path check kar lein)
+// import { vendorService } from "../../../store/vendors";
+import { type Vendor } from "./vendors.types";
+import { vendorService } from "../../store/vendors";
 
 // --- Helper Functions ---
 
 const mapAntSortOrder = (order: "asc" | "desc"): "ascend" | "descend" =>
   order === "asc" ? "ascend" : "descend";
 
-// Row Styling (Aapke doosre tables se copy kiya gaya)
+// Row Styling
 const tableStyles = `
   .selected-row-class > td {
-    background-color: #f0f9ff !important; /* Blue selection color */
+    background-color: #f0f9ff !importableAnt; /* Blue selection color */
   }
   .selected-row-class:hover > td {
     background-color: #f9fafb !important;
@@ -46,7 +50,7 @@ const tableStyles = `
 `;
 // --- End Helper Functions ---
 
-// ⭐ 2. Column Configuration (Aapke purane code se update kiya gaya)
+// Column Configuration
 const allAvailableColumns = [
   "ID",
   "Parts",
@@ -95,21 +99,21 @@ export function VendorTable({
   vendors,
   isSettingModalOpen,
   setIsSettingModalOpen,
-  fetchVendors, 
+  fetchVendors,
 }: {
   vendors: Vendor[];
-  isSettingModalOpen: any;
+  isSettingModalOpen: any; // Type 'any' rakha hai aapke code ke hisaab se
   setIsSettingModalOpen: (isOpen: boolean) => void;
-  fetchVendors: () => void; 
+  fetchVendors: () => void;
 }) {
-  // ⭐ 3. State Management
+  // State Management
   const [visibleColumns, setVisibleColumns] =
     useState<string[]>(allAvailableColumns);
   const [sortType, setSortType] = useState<string>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [showDeleted, setShowDeleted] = useState(false);
 
-  // ⭐ NEW: Selection & Delete State
+  // Selection & Delete State
   const [selectedVendorIds, setSelectedVendorIds] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
@@ -122,7 +126,7 @@ export function VendorTable({
       .join("")
       .toUpperCase();
 
-  // ⭐ NEW: Selection Logic
+  // Selection Logic
   const allVendorIds = useMemo(() => vendors.map((p) => p.id), [vendors]);
   const selectedCount = selectedVendorIds.length;
   const isEditing = selectedCount > 0;
@@ -147,6 +151,7 @@ export function VendorTable({
     );
   };
 
+  // Delete Handler
   const handleDelete = async () => {
     if (selectedVendorIds.length === 0) {
       toast.error("No vendors selected to delete.");
@@ -154,7 +159,8 @@ export function VendorTable({
     }
     setIsDeleting(true);
     try {
-      // await vendorService.batchDeleteVendor(selectedVendorIds);
+      // ⭐ FIX: Delete service call ko uncomment kiya
+      await vendorService.batchDeleteVendor(selectedVendorIds);
       toast.success("Vendors deleted successfully!");
       setSelectedVendorIds([]);
       fetchVendors(); // Refresh the list
@@ -166,6 +172,7 @@ export function VendorTable({
     }
   };
 
+  // Table Change Handler
   const handleTableChange: TableProps<any>["onChange"] = (
     _pagination,
     _filters,
@@ -184,6 +191,7 @@ export function VendorTable({
     }
   };
 
+  // Settings Handler
   const handleApplySettings = (settings: {
     resultsPerPage: number;
     showDeleted: boolean;
@@ -195,7 +203,7 @@ export function VendorTable({
     setIsSettingModalOpen(false);
   };
 
-  // ⭐ 5. Columns Definition (Antd layout)
+  // Columns Definition
   const columns: TableColumnType<any>[] = useMemo(() => {
     // --- Name Column (Fixed Left) ---
     const nameColumn: TableColumnType<any> = {
@@ -214,6 +222,17 @@ export function VendorTable({
                 />
                 <span className="text-gray-600">Name</span>
               </div>
+              
+              {/* ⭐ FIX 2: YAHAN SETTINGS BUTTON ADD KIYA GAYA HAI */}
+              <AntTooltip title="Settings" getPopupContainer={() => document.body}>
+                <button
+                  onClick={() => setIsSettingModalOpen(true)}
+                  className="text-gray-500 hover:text-gray-800"
+                >
+                  <Settings size={16} />
+                </button>
+              </AntTooltip>
+
             </div>
           );
         }
@@ -287,7 +306,6 @@ export function VendorTable({
       },
     };
 
-    // --- Dynamic Columns ---
     const dynamicColumns: TableColumnType<any>[] = visibleColumns
       .map((colName) => {
         const config = columnConfig[colName];
@@ -297,7 +315,6 @@ export function VendorTable({
           | ((value: any, record: any) => React.ReactNode)
           | undefined = undefined;
 
-        // Date formatter
         if (colName === "Created" || colName === "Updated") {
           renderFunc = (text: string) => formatDateOnly(text) || "—";
         }
@@ -326,10 +343,9 @@ export function VendorTable({
     areAllSelected,
     selectedCount,
     selectedVendorIds,
-    isDeleting, // Dependency add karein
+    isDeleting,
   ]);
-
-  // ⭐ 6. Data Source (Antd layout ke liye)
+  
   const dataSource = useMemo(() => {
     return vendors.map((vendor) => ({
       key: vendor.id,
@@ -339,11 +355,11 @@ export function VendorTable({
       locations: vendor.locations.map((loc: any) => loc.name).join(", ") || "—",
       createdAt: vendor.createdAt,
       updatedAt: vendor.updatedAt,
-      fullVendor: vendor, // Future actions ke liye
+      fullVendor: vendor,
     }));
   }, [vendors]);
 
-  // ⭐ 7. JSX (Antd Table ke saath)
+  // JSX
   return (
     <div className="flex-1 overflow-auto p-2">
       <style>{tableStyles}</style>
@@ -354,7 +370,7 @@ export function VendorTable({
             columns={columns}
             dataSource={dataSource}
             pagination={false}
-            scroll={{ x: "max-content", y: "75vh" }} // Height adjust kar sakte hain
+            scroll={{ x: "max-content", y: "75vh" }} 
             rowClassName={(record: any) =>
               selectedVendorIds.includes(record.id) ? "selected-row-class" : ""
             }
@@ -363,7 +379,7 @@ export function VendorTable({
               selectedRowKeys: selectedVendorIds,
               columnWidth: 0,
               renderCell: () => null,
-              columnTitle: " ", // Default header checkbox hide karega
+              columnTitle: " ", 
             }}
             onRow={(record) => ({
               onClick: () => {

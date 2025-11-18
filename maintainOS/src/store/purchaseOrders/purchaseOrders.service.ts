@@ -116,4 +116,10 @@ export const purchaseOrderService = {
     await api.delete(`/purchase-orders/comments/${id}`);
   },
 
+  batchDeletePurchaseOrder: async (ids: string[]): Promise<void> => {
+    await api.delete(`purchase-orders/batch-delete`, {
+      data: { ids: ids },
+    });
+  },
+
 };

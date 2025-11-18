@@ -1,109 +1,176 @@
-import React, { useState, useRef, useEffect } from "react";
-import type { PurchaseOrdersTableProps } from "./po.types";
+"use client";
+import React, { useState, useRef, useEffect, useMemo } from "react";
+import { Avatar as ShadCNAvatar, AvatarFallback } from "../ui/avatar"; // ⭐ Import yahi hai
 import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronUp,
-  ChevronDown,
+  FileText,
+  CheckCircle,
+  Send,
+  Package,
+  XCircle,
+  // ⭐ UPDATE: Icons
+  Settings,
+  Trash2,
+  Loader2,
 } from "lucide-react";
-import { Avatar, AvatarFallback } from "../ui/avatar";
-import { FileText, CheckCircle, Send, Package, XCircle } from "lucide-react";
 import { renderInitials } from "../utils/renderInitials";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../store";
 
+// ⭐ NEW: Antd components aur Card
+import { Table, Tooltip as AntTooltip } from "antd";
+import type { TableProps, TableColumnType } from "antd";
+import { Card, CardContent } from "../ui/card";
+
+// ⭐ NEW: Imports for new features
+import { formatDateOnly } from "../utils/Date"; // Path check kar lein
+import toast from "react-hot-toast";
+import SettingsModal from "../utils/SettingsModal"; // Path check kar lein
+import { purchaseOrderService } from "../../store/purchaseOrders";
+
+// --- Helper Functions ---
+
+const mapAntSortOrder = (order: "asc" | "desc"): "ascend" | "descend" =>
+  order === "asc" ? "ascend" : "descend";
+
+// Row Styling
+const tableStyles = `
+  .selected-row-class > td {
+    background-color: #ffe8d9 !important; /* Orange theme */
+  }
+  .selected-row-class:hover > td {
+    background-color: #f9fafb !important;
+  }
+  .ant-table-cell-fix-left,  
+  .ant-table-cell-fix-right {
+    background-color: #fff !important;  
+    z-index: 3 !important;
+  }
+  .ant-table-row:hover > td {
+    background-color: #f9fafb !important;
+  }
+  .ant-table-thead > tr > th {
+    background-color: #f9fafb !important; /* Header BG */
+    text-transform: uppercase;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+  }
+  .ant-table-tbody > tr > td {
+    border-bottom: 1px solid #f3f4f6; /* Lighter border */
+  }
+`;
+// --- End Helper Functions ---
+
+// Column Configuration
+const allAvailableColumns = ["ID", "Vendor", "Status", "Created By", "Created"];
+
+const columnConfig: {
+  [key: string]: {
+    dataIndex: string;
+    width: number;
+    sorter?: (a: any, b: any) => number;
+  };
+} = {
+  ID: {
+    dataIndex: "id",
+    width: 150,
+    sorter: (a, b) => (a.id || "").localeCompare(b.id || ""),
+  },
+  Vendor: {
+    dataIndex: "vendor",
+    width: 200,
+    sorter: (a, b) =>
+      (a.vendor?.name || "").localeCompare(b.vendor?.name || ""),
+  },
+  Status: {
+    dataIndex: "status",
+    width: 150,
+    sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
+  },
+  "Created By": {
+    dataIndex: "createdBy",
+    width: 200,
+    sorter: (a, b) => (a.createdBy || "").localeCompare(b.createdBy || ""),
+  },
+  Created: {
+    dataIndex: "createdAt",
+    width: 150,
+    sorter: (a, b) =>
+      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  },
+};
+
+// Updated Props Interface
+export interface PurchaseOrdersTableProps {
+  orders: any[];
+  isSettingModalOpen: boolean;
+  setIsSettingModalOpen: (isOpen: boolean) => void;
+  fetchPurchaseOrders: () => void; // Refresh ke liye
+}
+
 export default function PurchaseOrdersTable({
   orders,
-  columns,
-  pageSize,
+  isSettingModalOpen,
+  setIsSettingModalOpen,
+  fetchPurchaseOrders,
 }: PurchaseOrdersTableProps) {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [sortKey, setSortKey] = useState<string | null>(null);
+  const user = useSelector((state: RootState) => state.auth.user);
+
+  // State for Antd Table
+  const [visibleColumns, setVisibleColumns] =
+    useState<string[]>(allAvailableColumns);
+  const [sortType, setSortType] = useState<string>("poNumber");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [selectedPOs, setSelectedPOs] = useState<string[]>([]);
+  const [showDeleted, setShowDeleted] = useState(false);
+  const [selectedPOIds, setSelectedPOIds] = useState<string[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const headerCheckboxRef = useRef<HTMLInputElement>(null);
 
-  const toggleSelection = (id: string) => {
-    setSelectedPOs((prev) =>
-      prev.includes(id) ? prev.filter((po) => po !== id) : [...prev, id]
-    );
-  };
-
-  console.log(orders, "orders");
-
-  // handle sorting
-  const handleSort = (key: string) => {
-    if (sortKey === key) {
-      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setSortOrder("asc");
-    }
-  };
-
-  const sortedOrders = [...orders].sort((a, b) => {
-    if (!sortKey) return 0;
-    const valA = a[sortKey as keyof typeof a];
-    const valB = b[sortKey as keyof typeof b];
-
-    if (valA === undefined && valB === undefined) return 0;
-    if (valA === undefined) return sortOrder === "asc" ? 1 : -1;
-    if (valB === undefined) return sortOrder === "asc" ? -1 : 1;
-
-    if (valA < valB) return sortOrder === "asc" ? -1 : 1;
-    if (valA > valB) return sortOrder === "asc" ? 1 : -1;
-    return 0;
-  });
-
-  const totalPages = Math.ceil(sortedOrders.length / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const visibleOrders = sortedOrders.slice(startIndex, endIndex);
-
-  const goPrev = () => setCurrentPage((p) => Math.max(p - 1, 1));
-  const goNext = () => setCurrentPage((p) => Math.min(p + 1, totalPages));
-
+  // ⭐ FIX 1: `renderStatus` function ko update kiya gaya
   const renderStatus = (status: string) => {
     switch (status) {
-      case "Draft":
+      case "pending": // 'pemding' ko 'pending' kiya
         return (
-          <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
+          <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 text-orange-600 border-orange-200 px-2 py-1 text-xs font-medium ">
             <FileText className="h-4 w-4" />
-            Draft
+            Pending
           </span>
         );
-
       case "approved":
         return (
-          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
+          <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 border-green-200">
             <CheckCircle className="h-4 w-4" />
             Approved
           </span>
         );
-
-      case "Sent":
+      case "partially_fulfilled":
         return (
-          <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-1 text-xs font-medium text-orange-700">
+          <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 border-blue-200">
             <Send className="h-4 w-4" />
-            Sent
+            Partially fulfilled
           </span>
         );
-
-      case "Received":
+      case "completed":
         return (
-          <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2 py-1 text-xs font-medium text-purple-700">
+          <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2 py-1 text-xs font-medium text-orange-700">
             <Package className="h-4 w-4" />
-            Received
+            Completed
           </span>
         );
-
-      case "Cancelled":
+      case "rejected":
+        return (
+          <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-700">
+            <XCircle className="h-4 w-4" />
+            Rejected
+          </span>
+        );
+      case "Cancelled": // Yeh aapke purane function mein tha, shayad aapko iski zaroorat ho
         return (
           <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-700">
             <XCircle className="h-4 w-4" />
             cancelled
           </span>
         );
-
       default:
         return (
           <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
@@ -113,247 +180,306 @@ export default function PurchaseOrdersTable({
     }
   };
 
-  const headerCheckboxRef = useRef<HTMLInputElement>(null);
-
-  const user = useSelector((state: RootState) => state.auth.user);
+  // Selection Logic
+  const allPOIds = useMemo(() => orders.map((p) => p.id), [orders]);
+  const selectedCount = selectedPOIds.length;
+  const isEditing = selectedCount > 0;
+  const areAllSelected =
+    allPOIds.length > 0 && selectedCount === allPOIds.length;
+  const isIndeterminate = selectedCount > 0 && !areAllSelected;
 
   useEffect(() => {
-    if (!headerCheckboxRef.current) return;
+    if (headerCheckboxRef.current) {
+      headerCheckboxRef.current.indeterminate = isIndeterminate;
+    }
+  }, [isIndeterminate, isEditing, orders]);
 
-    const allSelected =
-      visibleOrders.length > 0 &&
-      visibleOrders.every((order) => selectedPOs.includes(order.id));
+  const handleSelectAllToggle = () => {
+    if (areAllSelected) {
+      setSelectedPOIds([]);
+    } else {
+      setSelectedPOIds(allPOIds);
+    }
+  };
 
-    const someSelected =
-      visibleOrders.some((order) => selectedPOs.includes(order.id)) &&
-      !allSelected;
+  const toggleRowSelection = (id: string) => {
+    setSelectedPOIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+  // --- End Selection Logic ---
 
-    headerCheckboxRef.current.indeterminate = someSelected;
-  }, [visibleOrders, selectedPOs]);
+  // Handlers
+  const handleDelete = async () => {
+    if (selectedPOIds.length === 0) {
+      toast.error("No purchase orders selected to delete.");
+      return;
+    }
+    setIsDeleting(true);
 
-  return (
-    // --- UPDATED ---
-    // Applied border, rounded-lg, shadow, bg-card, and overflow-hidden
-    <div className="border rounded-lg shadow-sm bg-card flex flex-col h-full overflow-hidden">
-      {/* Scrollable table body */}
-      <div className="flex-1 overflow-auto">
-        {/* --- UPDATED --- Applied w-full and text-sm */}
-        <table className="w-full text-sm">
-          {/* --- UPDATED --- Applied new thead styling from LocationTable */}
-          <thead className="bg-muted/60 border-b text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            <tr>
-              {/* --- UPDATED --- Changed py-4 to py-3 */}
-              <th className="px-4 py-3 text-left w-10">
+    try {
+      // STEP 1: Sirf delete API call ko try...catch ke andar rakhein
+      await purchaseOrderService.batchDeletePurchaseOrder(selectedPOIds);
+      toast.success("Purchase orders deleted successfully!");
+      setSelectedPOIds([]);
+      fetchPurchaseOrders(); // Refresh list
+    } catch (err) {
+      console.error("Error bulk deleting purchase orders:", err);
+      toast.error("Failed to delete purchase orders.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleTableChange: TableProps<any>["onChange"] = (
+    _pagination,
+    _filters,
+    sorter
+  ) => {
+    const s = Array.isArray(sorter) ? sorter[0] : sorter;
+    if (s && s.field && s.order) {
+      setSortType(s.field as string);
+      setSortOrder(s.order === "ascend" ? "asc" : "desc");
+    } else if (s && s.field) {
+      setSortType(s.field as string);
+      setSortOrder("asc");
+    } else {
+      setSortType("poNumber");
+      setSortOrder("asc");
+    }
+  };
+
+  const handleApplySettings = (settings: {
+    resultsPerPage: number;
+    showDeleted: boolean;
+    sortColumn: string;
+    visibleColumns: string[];
+  }) => {
+    setVisibleColumns(settings.visibleColumns);
+    setShowDeleted(settings.showDeleted);
+    setIsSettingModalOpen(false);
+  };
+
+  // Columns `useMemo`
+  const columns: TableColumnType<any>[] = useMemo(() => {
+    // --- Name Column (Fixed Left) ---
+    const nameColumn: TableColumnType<any> = {
+      title: () => {
+        if (!isEditing) {
+          // Default Header
+          return (
+            <div className="flex items-center justify-between gap-2 h-full">
+              <div className="flex items-center gap-2">
                 <input
-                  ref={headerCheckboxRef}
                   type="checkbox"
-                  checked={
-                    visibleOrders.length > 0 &&
-                    visibleOrders.every((order) =>
-                      selectedPOs.includes(order.id)
-                    )
-                  }
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      const allIds = visibleOrders.map((o) => o.id);
-                      setSelectedPOs((prev) =>
-                        Array.from(new Set([...prev, ...allIds]))
-                      );
-                    } else {
-                      setSelectedPOs((prev) =>
-                        prev.filter(
-                          (id) => !visibleOrders.some((o) => o.id === id)
-                        )
-                      );
-                    }
-                  }}
-                  className="cursor-pointer accent-orange-600"
+                  ref={headerCheckboxRef}
+                  checked={areAllSelected}
+                  onChange={handleSelectAllToggle}
+                  className="h-4 w-4 accent-orange-600 cursor-pointer"
                 />
-              </th>
-              {columns.map((col) => (
-                <th
-                  key={col.key}
-                  // --- UPDATED --- Changed py-4 to py-3 and removed explicit text/font styles
-                  className="px-4 py-3 text-left cursor-pointer select-none"
-                  onClick={() => handleSort(col.key)}
-                >
-                  <div className="flex items-center gap-1">
-                    {col.label}
-                    <a href="#">
-                      <svg
-                        className="w-3 h-3 ms-1.5"
-                        aria-hidden="true"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M8.574 11.024h6.852a2.075 2.075 0 0 0 1.847-1.086 1.9 1.9 0 0 0-.11-1.986L13.736 2.9a2.122 2.122 0 0 0-3.472 0L6.837 7.952a1.9 1.9 0 0 0-.11 1.986 2.074 2.074 0 0 0 1.847 1.086Zm6.852 1.952H8.574a2.072 2.072 0 0 0-1.847 1.087 1.9 1.9 0 0 0 .11 1.985l3.426 5.05a2.123 2.123 0 0 0 3.472 0l3.427-5.05a1.9 1.9 0 0 0 .11-1.985 2.074 2.074 0 0 0-1.846-1.087Z" />
-                      </svg>
-                    </a>
-                    {sortKey === col.key &&
-                      (sortOrder === "asc" ? (
-                        <ChevronUp className="h-3 w-3" />
-                      ) : (
-                        <ChevronDown className="h-3 w-3" />
-                      ))}
-                  </div>
-                </th>
-              ))}
-            </tr>
-          </thead>
+                <span className="text-gray-600">PO Number</span>
+              </div>
+            </div>
+          );
+        }
+        // Bulk Edit Header
+        return (
+          <div className="flex items-center gap-4 h-full">
+            <input
+              type="checkbox"
+              ref={headerCheckboxRef}
+              checked={areAllSelected}
+              onChange={handleSelectAllToggle}
+              className="h-4 w-4 accent-orange-600 cursor-pointer"
+            />
+            <span className="text-sm font-medium text-gray-900">
+              Edit {selectedCount} {selectedCount === 1 ? "Item" : "Items"}
+            </span>
+            {/* Delete Button */}
+            <AntTooltip title="Delete" getPopupContainer={() => document.body}>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className={`flex items-center gap-1 transition ${
+                  isDeleting
+                    ? "text-gray-400 cursor-not-allowed"
+                    : "text-red-600 hover:text-red-700"
+                }`}
+              >
+                {isDeleting ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Trash2 size={16} />
+                )}
+              </button>
+            </AntTooltip>
+          </div>
+        );
+      },
+      dataIndex: "poNumber",
+      key: "poNumber",
+      fixed: "left",
+      width: 250,
+      sorter: (a, b) => (a.poNumber || "").localeCompare(b.poNumber || ""),
+      sortOrder:
+        sortType === "poNumber" ? mapAntSortOrder(sortOrder) : undefined,
+      render: (poNumber: string, record: any) => {
+        const isSelected = selectedPOIds.includes(record.id);
+        return (
+          <div className="flex items-center gap-3 font-medium text-gray-800 h-full">
+            <div
+              className="flex items-center justify-center h-8 w-8 cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleRowSelection(record.id);
+              }}
+            >
+              {isEditing ? (
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  readOnly
+                  className="h-5 w-5 accent-orange-600 cursor-pointer"
+                />
+              ) : (
+                // ⭐ FIX 2: `AvatarFallback` ke bahar `ShadCNAvatar` wrapper lagaya
+                <ShadCNAvatar className="h-8 w-8 flex-shrink-0">
+                  <AvatarFallback>
+                    {renderInitials(record.vendor?.name || "PO")}
+                  </AvatarFallback>
+                </ShadCNAvatar>
+              )}
+            </div>
+            <span className="truncate capitalize">
+              Purchase Order #{poNumber}
+            </span>
+          </div>
+        );
+      },
+    };
 
-          {/* Body */}
-          <tbody>
-            {visibleOrders.length > 0 ? (
-              visibleOrders.map((order) => (
-                <tr
-                  key={order.id}
-                  // --- UPDATED --- Applied new row styling from LocationTable
-                  className="border-b border-border transition hover:bg-muted/40"
-                >
-                  {/* --- UPDATED --- Changed py-4 to py-3 */}
-                  <td key="rowCheckbox" className="px-4 py-3 w-10">
-                    <input
-                      type="checkbox"
-                      checked={selectedPOs.includes(order.id)}
-                      onChange={() => toggleSelection(order.id)}
-                      className="cursor-pointer accent-orange-600"
-                    />
-                  </td>
-                  {columns?.map((col) => {
-                    const value = order[col.key as keyof typeof order];
+    // --- Dynamic Columns ---
+    const dynamicColumns: TableColumnType<any>[] = visibleColumns
+      .map((colName) => {
+        const config = columnConfig[colName];
+        if (!config) return null;
 
-                    switch (col.key) {
-                      case "title":
-                        return (
-                          // --- UPDATED --- Standardized padding
-                          <td
-                            key={col.key}
-                            className="px-4 py-3 flex items-center gap-3"
-                          >
-                            <Avatar className="h-8 w-8">
-                              <AvatarFallback>
-                                {renderInitials(order.vendor.name)}
-                              </AvatarFallback>
-                            </Avatar>
-                            {/* --- UPDATED --- Applied font-medium and text-foreground */}
-                            <p className="font-medium text-foreground">
-                              {order.title}
-                            </p>
-                          </td>
-                        );
-                      case "id":
-                        return (
-                          // --- UPDATED --- Applied text-muted-foreground
-                          <td
-                            key={col.key}
-                            className="px-4 py-3 font-mono text-muted-foreground"
-                          >
-                            #{order.id}
-                          </td>
-                        );
-                      case "vendor":
-                        return (
-                          // --- UPDATED --- Applied text-muted-foreground
-                          <td
-                            key={col.key}
-                            className="px-4 py-3 text-muted-foreground"
-                          >
-                            <p>{order.vendor.name}</p>
-                          </td>
-                        );
-                      case "status":
-                        return (
-                          // --- UPDATED --- Standardized padding
-                          <td key={col.key} className="px-4 py-3 font-medium">
-                            {renderStatus(order.status)}
-                          </td>
-                        );
-                      case "createdAt":
-                        return (
-                          // --- UPDATED --- Applied text-muted-foreground
-                          <td
-                            key={col.key}
-                            className="px-4 py-3 text-muted-foreground"
-                          >
-                            {new Date(order.createdAt).toLocaleDateString(
-                              "en-GB"
-                            )}
-                          </td>
-                        );
-                      case "createdBy":
-                        return (
-                          // --- UPDATED --- Applied text-muted-foreground
-                          <td
-                            key={col.key}
-                            className="px-4 py-3 flex items-center gap-2 text-muted-foreground"
-                          >
-                            <Avatar className="h-10 w-10">
-                              <AvatarFallback>
-                                {renderInitials(user.fullName)}
-                              </AvatarFallback>
-                            </Avatar>
-                            {/* --- UPDATED --- Applied text-foreground to the name */}
-                            <span className="text-foreground">
-                              {order.createdBy}
-                            </span>
-                          </td>
-                        );
-                      default:
-                        return (
-                          // --- UPDATED --- Applied text-muted-foreground
-                          <td
-                            key={col.key}
-                            className="px-4 py-3 text-muted-foreground"
-                          >
-                            {String(value)}
-                          </td>
-                        );
-                    }
-                  })}
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan={columns.length + 1}
-                  // --- UPDATED --- Applied new empty state styling
-                  className="px-4 py-6 text-center text-muted-foreground"
-                >
-                  No purchase orders found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+        let renderFunc:
+          | ((value: any, record: any) => React.ReactNode)
+          | undefined = undefined;
 
-      {/* --- UPDATED --- Applied bg-card and text-muted-foreground */}
-      <div className="flex items-center justify-between p-3 border-t text-sm text-muted-foreground bg-card">
-        <span>
-          {orders.length === 0
-            ? "0 of 0"
-            : `${startIndex + 1}–${Math.min(endIndex, orders.length)} of ${
-                orders.length
-              }`}
-        </span>
-        <div className="flex gap-1">
-          <button
-            onClick={goPrev}
-            disabled={currentPage === 1}
-            className="p-1 rounded-md border disabled:opacity-50"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <button
-            onClick={goNext}
-            disabled={currentPage === totalPages}
-            className="p-1 rounded-md border disabled:opacity-50"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
+        if (colName === "ID") {
+          renderFunc = (id: string) => (
+            <span className="font-mono text-muted-foreground">#{id}</span>
+          );
+        } else if (colName === "Vendor") {
+          renderFunc = (vendor: any) => (
+            <span className="text-muted-foreground">{vendor?.name || "—"}</span>
+          );
+        } else if (colName === "Status") {
+          renderFunc = (status: string) => renderStatus(status);
+        } else if (colName === "Created") {
+          renderFunc = (text: string) => formatDateOnly(text) || "—";
+        } else if (colName === "Created By") {
+          renderFunc = (createdBy: string) => (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              {/* ⭐ FIX 3: `Avatar` ko `ShadCNAvatar` se replace kiya */}
+              <ShadCNAvatar className="h-8 w-8">
+                <AvatarFallback>
+                  {renderInitials(createdBy || "U")}
+                </AvatarFallback>
+              </ShadCNAvatar>
+              <span className="text-foreground">{createdBy}</span>
+            </div>
+          );
+        }
+
+        return {
+          title: colName,
+          dataIndex: config.dataIndex,
+          key: config.dataIndex,
+          width: config.width,
+          sorter: config.sorter,
+          sortOrder:
+            sortType === config.dataIndex
+              ? mapAntSortOrder(sortOrder)
+              : undefined,
+          render: renderFunc,
+        };
+      })
+      .filter(Boolean) as TableColumnType<any>[];
+
+    return [nameColumn, ...dynamicColumns];
+  }, [
+    isEditing,
+    sortType,
+    sortOrder,
+    visibleColumns,
+    areAllSelected,
+    selectedCount,
+    selectedPOIds,
+    isDeleting,
+    user, // User dependency
+  ]);
+
+  // Data Source for Antd Table
+  const dataSource = useMemo(() => {
+    return orders.map((order) => ({
+      key: order.id,
+      id: order.id,
+      poNumber: order.poNumber,
+      vendor: order.vendor,
+      status: order.status,
+      createdAt: order.createdAt,
+      createdBy: order.createdBy,
+      fullOrder: order,
+    }));
+  }, [orders]);
+
+  // JSX using Antd Table
+  return (
+    <div className="flex-1 overflow-auto p-2">
+      <style>{tableStyles}</style>
+
+      <Card className="shadow-sm border rounded-lg overflow-hidden w-full">
+        <CardContent className="p-0">
+          <Table
+            columns={columns}
+            dataSource={dataSource}
+            pagination={false}
+            scroll={{ x: "max-content", y: "75vh" }}
+            rowClassName={(record: any) =>
+              selectedPOIds.includes(record.id) ? "selected-row-class" : ""
+            }
+            onChange={handleTableChange}
+            rowSelection={{
+              selectedRowKeys: selectedPOIds,
+              columnWidth: 0,
+              renderCell: () => null,
+              columnTitle: " ",
+            }}
+            onRow={(record) => ({
+              onClick: () => {
+                toggleRowSelection(record.id);
+              },
+            })}
+            locale={{
+              emptyText: "No purchase orders found.",
+            }}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingModalOpen}
+        onClose={() => setIsSettingModalOpen(false)}
+        onApply={handleApplySettings}
+        allToggleableColumns={allAvailableColumns}
+        currentVisibleColumns={visibleColumns}
+        currentShowDeleted={showDeleted}
+        componentName="PurchaseOrder"
+      />
     </div>
   );
 }

@@ -150,7 +150,7 @@ export function PurchaseOrders() {
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isCreating, setIsCreating] = useState(false);
-
+  const [isSettingModalOpen, setIsSettingModalOpen] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [modalAction, setModalAction] = useState<
     "reject" | "approve" | "delete" | null
@@ -628,7 +628,8 @@ export function PurchaseOrders() {
           resetNewPO();
           setCreatingPO(true);
         },
-        setShowSettings
+        setShowSettings,
+        setIsSettingModalOpen,
       )}
 
       {viewMode === "table" ? (
@@ -638,6 +639,10 @@ export function PurchaseOrders() {
               orders={filteredPOs}
               columns={selectedColumns}
               pageSize={pageSize}
+              isSettingModalOpen={isSettingModalOpen}
+              setIsSettingModalOpen={setIsSettingModalOpen}
+              fetchPurchaseOrders={fetchPurchaseOrder}
+
             />
           </div>
         </div>
@@ -667,7 +672,7 @@ export function PurchaseOrders() {
                             ? "border-l-4 border-l-orange-600 bg-orange-50/50 bg-muted/50"
                             : "hover:bg-muted/50  border-l-4 border-l-transparent"
                         }`}
-                        onClick={() => setSelectedPOId(po.id) }
+                        onClick={() => setSelectedPOId(po.id)}
                       >
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between">
@@ -717,7 +722,7 @@ export function PurchaseOrders() {
                                   ) {
                                     return (
                                       <span className="text-red-600 font-medium text-sm mt-1">
-                                       Overdue
+                                        Overdue
                                       </span>
                                     );
                                   } else {

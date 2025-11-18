@@ -196,7 +196,7 @@ export function Vendors() {
         setSearchQuery,
         handleShowCreateForm,
         setShowSettings,
-        setActiveFilters, // ✅ Pass filter setter to header
+        setActiveFilters,
         setIsSettingModalOpen
       )}
 

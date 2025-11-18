@@ -215,3 +215,18 @@ export const deleteTimeEntry = createAsyncThunk(
     }
   }
 );
+
+export const batchDeleteMeter = createAsyncThunk(
+  "workOrder/batchDeleteWorkOrder",
+  async (ids: string[], { rejectWithValue }) => {
+    try {
+      await workOrderService.batchDeleteWorkOrder(ids);
+      return ids;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete work order"
+      );
+    }
+  }
+);
+

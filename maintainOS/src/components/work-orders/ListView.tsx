@@ -6,6 +6,7 @@ import {
   MoreVertical,
   ClipboardList,
   Trash2,
+  Loader2,
 } from "lucide-react";
 
 // Ant Design
@@ -14,16 +15,20 @@ import type { TableProps, TableColumnType } from "antd";
 
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store";
-import { deleteWorkOrder } from "../../store/workOrders/workOrders.thunks";
+import {
+  deleteWorkOrder,
+  // batchDeleteWorkOrders,
+} from "../../store/workOrders/workOrders.thunks";
 
 import DeleteWorkOrderModal from "./ToDoView/DeleteWorkOrderModal";
 import { type ListViewProps } from "./types";
 import { Tooltip } from "./../ui/tooltip";
 import { MoreActionsMenuWorkOrder } from "./Tableview/modals/MoreActionsMenuWorkOrder";
 
-// ⭐⭐ NEW — DETAILS MODAL ⭐⭐
+// DETAILS MODAL
 import WorkOrderDetailsModal from "./Tableview/modals/WorkOrderDetailModal";
-
+import toast from "react-hot-toast";
+import { workOrderService } from "../../store/workOrders";
 
 // Format Dates
 function formatTableDate(dateString: string) {
@@ -62,15 +67,16 @@ const tableStyles = `
   }
 `;
 
-export function ListView({ workOrders ,  onRefreshWorkOrders}: ListViewProps) {
+export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
   const dispatch = useDispatch<AppDispatch>();
 
   const [modalWO, setModalWO] = useState<any | null>(null);
   const [selectedWorkOrderIds, setSelectedWorkOrderIds] = useState<string[]>([]);
   const [sortType, setSortType] = useState<string>("Title");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  // ⭐ NEW — View modal (DETAILS MODAL)
+  // VIEW MODAL
   const [viewModal, setViewModal] = useState(false);
   const [selectedWO, setSelectedWO] = useState<any>(null);
 
@@ -102,6 +108,26 @@ export function ListView({ workOrders ,  onRefreshWorkOrders}: ListViewProps) {
     setSelectedWorkOrderIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
+  };
+
+  const handleDelete = async () => {
+    if (selectedWorkOrderIds.length === 0) {
+      toast.error("No work orders selected to delete.");
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      // await dispatch(batchDeleteWorkOrders(selectedWorkOrderIds)).unwrap();
+      await workOrderService.batchDeleteWorkOrder(selectedWorkOrderIds)
+      toast.success("Work orders deleted successfully!");
+      setSelectedWorkOrderIds([]);
+      onRefreshWorkOrders();
+    } catch (err) {
+      console.error("Error bulk deleting work orders:", err);
+      toast.error("Failed to delete work orders.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleTableChange: TableProps<any>["onChange"] = (
@@ -151,10 +177,19 @@ export function ListView({ workOrders ,  onRefreshWorkOrders}: ListViewProps) {
             </span>
             <Tooltip text="Delete">
               <button
-                onClick={() => alert("Batch delete")}
-                className="ml-1 text-gray-600 hover:text-red-600 transition"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className={`ml-1 transition ${
+                  isDeleting
+                    ? "text-gray-400 cursor-not-allowed"
+                    : "text-gray-600 hover:text-red-600"
+                }`}
               >
-                <Trash2 size={16} />
+                {isDeleting ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Trash2 size={16} />
+                )}
               </button>
             </Tooltip>
           </div>
@@ -175,10 +210,8 @@ export function ListView({ workOrders ,  onRefreshWorkOrders}: ListViewProps) {
         return (
           <div className="flex items-center gap-3 font-medium text-gray-800 h-full">
             {isEditing ? (
-              <div
-                className="flex items-center justify-center h-8 w-8 cursor-pointer"
-                onClick={() => toggleRowSelection(record.id)}
-              >
+              // ⭐ FIX 1: Yahaan se onClick hata diya
+              <div className="flex items-center justify-center h-8 w-8 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={isSelected}
@@ -187,22 +220,19 @@ export function ListView({ workOrders ,  onRefreshWorkOrders}: ListViewProps) {
                 />
               </div>
             ) : (
-              <div
-                className="flex items-center justify-center h-8 w-8 cursor-pointer"
-                onClick={() => toggleRowSelection(record.id)}
-              >
+              // ⭐ FIX 1: Yahaan se bhi onClick hata diya
+              <div className="flex items-center justify-center h-8 w-8 cursor-pointer">
                 <Avatar className="h-8 w-8 flex-shrink-0">
                   <ClipboardList size={18} />
                 </Avatar>
               </div>
             )}
 
-            {/* ⭐ CLICK → OPEN VIEW MODAL ⭐ */}
             <span
               className="truncate cursor-pointer hover:text-blue-600 hover:underline"
               onClick={(e) => {
-                e.stopPropagation();
-                setSelectedWO(record);
+                e.stopPropagation(); // Row click ko trigger hone se roka
+                setSelectedWO(record.full);
                 setViewModal(true);
               }}
             >
@@ -221,13 +251,23 @@ export function ListView({ workOrders ,  onRefreshWorkOrders}: ListViewProps) {
         key: "status",
         width: 150,
         render: (status: string) => (
-          <Badge variant="secondary">{status}</Badge>
+          <Badge status="processing" text={status} />
         ),
       },
       { title: "Priority", dataIndex: "priority", key: "priority", width: 130 },
       { title: "Work Type", dataIndex: "workType", key: "workType", width: 150 },
-      { title: "Assigned To", dataIndex: "assignedTo", key: "assignedTo", width: 170 },
-      { title: "Categories", dataIndex: "categories", key: "categories", width: 150 },
+      {
+        title: "Assigned To",
+        dataIndex: "assignedTo",
+        key: "assignedTo",
+        width: 170,
+      },
+      {
+        title: "Categories",
+        dataIndex: "categories",
+        key: "categories",
+        width: 150,
+      },
       { title: "Asset", dataIndex: "asset", key: "asset", width: 150 },
       { title: "Location", dataIndex: "location", key: "location", width: 150 },
       {
@@ -260,7 +300,11 @@ export function ListView({ workOrders ,  onRefreshWorkOrders}: ListViewProps) {
         <div className="flex items-center justify-end gap-4 h-full">
           <AntTooltip title="Edit">
             <button
-              onClick={() => alert("Edit " + record.title)}
+              // ⭐ FIX 2: stopPropagation add kiya
+              onClick={(e) => {
+                e.stopPropagation();
+                alert("Edit " + record.title);
+              }}
               className="text-gray-500 hover:text-blue-600"
             >
               <Pencil size={18} />
@@ -269,15 +313,23 @@ export function ListView({ workOrders ,  onRefreshWorkOrders}: ListViewProps) {
 
           <AntTooltip title="Duplicate">
             <button
-              onClick={() => alert("Duplicate " + record.title)}
+              // ⭐ FIX 2: stopPropagation add kiya
+              onClick={(e) => {
+                e.stopPropagation();
+                alert("Duplicate " + record.title);
+              }}
               className="text-gray-500 hover:text-blue-600"
             >
               <Copy size={18} />
             </button>
           </AntTooltip>
 
-          <MoreActionsMenuWorkOrder onDelete={() => setModalWO(record)}>
-            <button className="text-gray-500 hover:text-blue-600">
+          <MoreActionsMenuWorkOrder onDelete={() => setModalWO(record.full)}>
+            <button
+              // ⭐ FIX 2: stopPropagation add kiya
+              onClick={(e) => e.stopPropagation()}
+              className="text-gray-500 hover:text-blue-600"
+            >
               <MoreVertical size={18} />
             </button>
           </MoreActionsMenuWorkOrder>
@@ -293,6 +345,7 @@ export function ListView({ workOrders ,  onRefreshWorkOrders}: ListViewProps) {
     selectedWorkOrderIds,
     areAllSelected,
     selectedCount,
+    isDeleting,
   ]);
 
   // Map data
@@ -335,11 +388,22 @@ export function ListView({ workOrders ,  onRefreshWorkOrders}: ListViewProps) {
                 : ""
             }
             onChange={handleTableChange}
+            rowSelection={{
+              selectedRowKeys: selectedWorkOrderIds,
+              columnWidth: 0,
+              renderCell: () => null,
+              columnTitle: " ",
+            }}
+            onRow={(record) => ({
+              onClick: () => {
+                toggleRowSelection(record.id);
+              },
+            })}
           />
         </CardContent>
       </Card>
 
-      {/* DELETE MODAL */}
+      {/* DELETE MODAL (Single) */}
       {modalWO && (
         <DeleteWorkOrderModal
           isOpen={!!modalWO}
@@ -347,19 +411,17 @@ export function ListView({ workOrders ,  onRefreshWorkOrders}: ListViewProps) {
           onConfirm={async () => {
             await dispatch(deleteWorkOrder(modalWO.id)).unwrap();
             setModalWO(null);
+            onRefreshWorkOrders();
           }}
         />
       )}
 
-      {/* ⭐⭐ VIEW DETAILS MODAL ⭐⭐ */}
+      {/* VIEW DETAILS MODAL */}
       <WorkOrderDetailsModal
         open={viewModal}
         onClose={() => setViewModal(false)}
-        workOrder={{
-          ...selectedWO,
-          description: selectedWO?.full?.description,
-        }}
-         onRefreshWorkOrders={ onRefreshWorkOrders}
+        workOrder={selectedWO}
+        onRefreshWorkOrders={onRefreshWorkOrders}
       />
     </div>
   );

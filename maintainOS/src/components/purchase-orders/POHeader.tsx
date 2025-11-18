@@ -13,7 +13,8 @@ export function POHeaderComponent(
   searchQuery: string,
   setSearchQuery: Dispatch<SetStateAction<string>>,
   setIsCreatingForm: Dispatch<SetStateAction<boolean>>,
-  setShowSettings: Dispatch<SetStateAction<boolean>>
+  setShowSettings: Dispatch<SetStateAction<boolean>>,
+  setIsSettingModalOpen: Dispatch<SetStateAction<boolean>>
 ) {
   return <header className=" border-border bg-card px-6 py-4">
     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -77,12 +78,12 @@ export function POHeaderComponent(
       {/* Right: Settings button (only for table view) */}
       {viewMode === "table" && (
         <button
-          onClick={() => setShowSettings(true)}
+          onClick={() => setIsSettingModalOpen(true)}
           className="p-2 rounded-md border hover:bg-gray-100 transition"
         >
           <Settings className="h-5 w-5 text-orange-600" />
         </button>
-      )}
+      )} 
     </div>
   </header>;
 }

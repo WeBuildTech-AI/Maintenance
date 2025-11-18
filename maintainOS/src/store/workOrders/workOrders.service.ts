@@ -118,4 +118,14 @@ export const workOrderService = {
     const res = await api.delete(`/work-orders/${id}/time/${entryId}`);
     return res.data;
   },
+
+  batchDeleteWorkOrder: async (ids: string[]): Promise<void> => {
+    await api.delete(`work-orders/batch-delete`, {
+      data: { ids: ids },
+    });
+  },
+
+
+
 };
+

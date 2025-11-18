@@ -83,3 +83,18 @@ export const updateVendorContact = createAsyncThunk(
     }
   }
 );
+
+
+export const batchDeleteVendor = createAsyncThunk(
+  "vendor/batchDeleteVendor",
+  async (ids: string[], { rejectWithValue }) => {
+    try {
+      await vendorService.batchDeleteVendor(ids);
+      return ids;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete Vendor"
+      );
+    }
+  }
+);

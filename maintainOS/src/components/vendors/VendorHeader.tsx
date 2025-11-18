@@ -17,8 +17,8 @@ export function VendorHeaderComponent(
   searchQuery: string,
   setSearchQuery: Dispatch<SetStateAction<string>>,
   setIsCreatingForm: () => void,
-  setShowSettings: Dispatch<SetStateAction<boolean>>,
   setIsSettingModalOpen: Dispatch<SetStateAction<boolean>>,
+  setShowSettings: Dispatch<SetStateAction<boolean>>,
   setActiveFilters: Dispatch<SetStateAction<Record<string, string[]>>>
 ) {
   return (
@@ -87,7 +87,7 @@ export function VendorHeaderComponent(
         {/* Right: Settings button (only for table view) */}
         {viewMode === "table" && (
           <button
-            onClick={() => {setIsSettingModalOpen(true)}}
+         onClick={() => setIsSettingModalOpen(true)}
             className="p-2 rounded-md border hover:bg-gray-100 transition"
           >
             <Settings className="h-5 w-5 text-orange-600" />

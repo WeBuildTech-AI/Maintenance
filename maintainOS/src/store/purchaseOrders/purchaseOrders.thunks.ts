@@ -254,3 +254,17 @@ export const deletePurchaseOrderComment = createAsyncThunk(
     }
   }
 );
+
+export const batchDeletePurchaseOrder = createAsyncThunk(
+  "purchaseOrder/batchDeletePurhaseOrder",
+  async (ids: string[], { rejectWithValue }) => {
+    try {
+      await purchaseOrderService.batchDeletePurchaseOrder(ids);
+      return ids;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete Purchase Order"
+      );
+    }
+  }
+);
