@@ -71,7 +71,7 @@ export const vendorService = {
 
 
   batchDeleteVendor: async (ids: string[]): Promise<void> => {
-    await api.delete(`vendor/batch-delete`, {
+    await api.delete(`vendors/batch-delete`, {
       data: { ids: ids },
     });
   },
