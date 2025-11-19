@@ -1,4 +1,11 @@
-import { Calendar, DollarSign, Paperclip, Plus, Trash2, Percent } from "lucide-react";
+import {
+  Calendar,
+  DollarSign,
+  Paperclip,
+  Plus,
+  Trash2,
+  Percent,
+} from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import {
@@ -9,7 +16,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import { formatMoney } from "./helpers";
-import { type NewPOFormProps, type Vendor } from "./po.types"; 
+import { type NewPOFormProps, type Vendor } from "./po.types";
 import { useState, useRef, useEffect } from "react";
 import { vendorService } from "../../store/vendors";
 import { partService } from "../../store/parts";
@@ -35,11 +42,13 @@ export function NewPOForm(props: NewPOFormProps) {
     handleFileAttachClick,
     handleFileChange,
     removeAttachedFile,
+    showCustomPoInput,
+    setShowCustomPoInput,
     // --- END NEW PROPS ---
   } = props;
 
   // --- Form-specific State ---
-  const [showCustomPoInput, setShowCustomPoInput] = useState(false);
+  // const [showCustomPoInput, setShowCustomPoInput] = useState(false);
 
   // --- Vendor State ---
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -49,7 +58,7 @@ export function NewPOForm(props: NewPOFormProps) {
   const [isVendorSearchFocused, setIsVendorSearchFocused] = useState(false);
 
   // --- Parts State ---
-  const [parts, setPart] = useState<any[]>([]); 
+  const [parts, setPart] = useState<any[]>([]);
   const [isLoadingParts, setIsLoadingParts] = useState(false);
   const [hasFetchedParts, setHasFetchedParts] = useState(false);
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
@@ -69,18 +78,26 @@ export function NewPOForm(props: NewPOFormProps) {
     city: "",
     stateProvince: "",
     ZIP: "",
-    country: "IN", 
+    country: "IN",
   });
 
   // --- Billing Address State ---
   const [billingAddresses, setBillingAddresses] = useState<any[]>([]);
-  const [isLoadingBillingAddresses, setIsLoadingBillingAddresses] = useState(false);
-  const [hasFetchedBillingAddresses, setHasFetchedBillingAddresses] = useState(false);
-  const [billingAddressSearchQuery, setBillingAddressSearchQuery] = useState("");
-  const [isBillingAddressSearchFocused, setIsBillingAddressSearchFocused] = useState(false);
-  const [showNewBillingAddressForm, setShowNewBillingAddressForm] = useState(false);
-  const [isCreatingBillingAddress, setIsCreatingBillingAddress] = useState(false);
-  const [billingAddressApiError, setBillingAddressApiError] = useState<string | null>(null);
+  const [isLoadingBillingAddresses, setIsLoadingBillingAddresses] =
+    useState(false);
+  const [hasFetchedBillingAddresses, setHasFetchedBillingAddresses] =
+    useState(false);
+  const [billingAddressSearchQuery, setBillingAddressSearchQuery] =
+    useState("");
+  const [isBillingAddressSearchFocused, setIsBillingAddressSearchFocused] =
+    useState(false);
+  const [showNewBillingAddressForm, setShowNewBillingAddressForm] =
+    useState(false);
+  const [isCreatingBillingAddress, setIsCreatingBillingAddress] =
+    useState(false);
+  const [billingAddressApiError, setBillingAddressApiError] = useState<
+    string | null
+  >(null);
 
   const [newBillingAddress, setNewBillingAddress] = useState({
     street: "",
@@ -177,11 +194,19 @@ export function NewPOForm(props: NewPOFormProps) {
     setIsCreatingAddress(true);
     setAddressApiError(null);
     try {
-      const createdAddress = await purchaseOrderService.createAddressOrder({ ...newAddress });
+      const createdAddress = await purchaseOrderService.createAddressOrder({
+        ...newAddress,
+      });
       setShippingAddresses((prev) => [createdAddress, ...prev]);
       handleSelectAddress(createdAddress);
       setShowNewAddressForm(false);
-      setNewAddress({ street: "", city: "", stateProvince: "", ZIP: "", country: "IN" });
+      setNewAddress({
+        street: "",
+        city: "",
+        stateProvince: "",
+        ZIP: "",
+        country: "IN",
+      });
     } catch (error: any) {
       setAddressApiError(error.message || "Failed to create address");
     } finally {
@@ -221,11 +246,19 @@ export function NewPOForm(props: NewPOFormProps) {
     setIsCreatingBillingAddress(true);
     setBillingAddressApiError(null);
     try {
-      const createdAddress = await purchaseOrderService.createAddressOrder({ ...newBillingAddress });
+      const createdAddress = await purchaseOrderService.createAddressOrder({
+        ...newBillingAddress,
+      });
       setBillingAddresses((prev) => [createdAddress, ...prev]);
       handleSelectBillingAddress(createdAddress);
       setShowNewBillingAddressForm(false);
-      setNewBillingAddress({ street: "", city: "", stateProvince: "", ZIP: "", country: "IN" });
+      setNewBillingAddress({
+        street: "",
+        city: "",
+        stateProvince: "",
+        ZIP: "",
+        country: "IN",
+      });
     } catch (error: any) {
       setBillingAddressApiError(error.message || "Failed to create address");
     } finally {
@@ -234,15 +267,15 @@ export function NewPOForm(props: NewPOFormProps) {
   };
 
   // --- TAX & COSTS LOGIC ---
-  
+
   // 1. Calculate total Tax/Cost amount for display
   const calculateTotalExtras = () => {
     const taxLines = (newPO as any).taxLines || [];
     return taxLines.reduce((acc: number, item: any) => {
       const val = Number(item.value) || 0;
-      if (item.type === 'percentage') {
+      if (item.type === "percentage") {
         // Calculate percentage of Subtotal
-        return acc + ((newPOSubtotal * val) / 100);
+        return acc + (newPOSubtotal * val) / 100;
       }
       // Fixed amount
       return acc + val;
@@ -258,29 +291,29 @@ export function NewPOForm(props: NewPOFormProps) {
       id: generateId(),
       label: "",
       value: 0,
-      type: 'percentage', // Default to % as per your image style (shows % active)
-      isTaxable: true
+      type: "percentage", // Default to % as per your image style (shows % active)
+      isTaxable: true,
     };
-    
-    setNewPO(prev => ({
+
+    setNewPO((prev) => ({
       ...prev,
       // @ts-ignore - assuming you will update types
-      taxLines: [...(prev.taxLines || []), newTaxLine]
+      taxLines: [...(prev.taxLines || []), newTaxLine],
     }));
   };
 
   // 3. Remove Tax Line
   const handleRemoveTaxLine = (id: string) => {
-    setNewPO(prev => ({
+    setNewPO((prev) => ({
       ...prev,
       // @ts-ignore
-      taxLines: (prev.taxLines || []).filter((t: any) => t.id !== id)
+      taxLines: (prev.taxLines || []).filter((t: any) => t.id !== id),
     }));
   };
 
   // 4. Update Tax Line
   const handleUpdateTaxLine = (id: string, field: string, value: any) => {
-    setNewPO(prev => ({
+    setNewPO((prev) => ({
       ...prev,
       // @ts-ignore
       taxLines: (prev.taxLines || []).map((t: any) => {
@@ -288,7 +321,7 @@ export function NewPOForm(props: NewPOFormProps) {
           return { ...t, [field]: value };
         }
         return t;
-      })
+      }),
     }));
   };
 
@@ -473,10 +506,22 @@ export function NewPOForm(props: NewPOFormProps) {
                                     className="p-2 z-50 text-sm hover:bg-muted cursor-pointer"
                                     onMouseDown={(e) => {
                                       e.preventDefault();
-                                      updateItemField(it.id, "itemName", part.name);
+                                      updateItemField(
+                                        it.id,
+                                        "itemName",
+                                        part.name
+                                      );
                                       updateItemField(it.id, "partId", part.id);
-                                      updateItemField(it.id, "partNumber", part.partNumber || "");
-                                      updateItemField(it.id, "unitCost", part.unitCost || 0);
+                                      updateItemField(
+                                        it.id,
+                                        "partNumber",
+                                        part.partNumber || ""
+                                      );
+                                      updateItemField(
+                                        it.id,
+                                        "unitCost",
+                                        part.unitCost || 0
+                                      );
                                       setFocusedItemId(null);
                                     }}
                                   >
@@ -493,7 +538,11 @@ export function NewPOForm(props: NewPOFormProps) {
                             placeholder="e.g. #12345"
                             value={it.partNumber ?? ""}
                             onChange={(e) =>
-                              updateItemField(it.id, "partNumber", e.target.value)
+                              updateItemField(
+                                it.id,
+                                "partNumber",
+                                e.target.value
+                              )
                             }
                           />
                         </td>
@@ -504,13 +553,19 @@ export function NewPOForm(props: NewPOFormProps) {
                             min={0}
                             value={it.quantity}
                             onChange={(e) =>
-                              updateItemField(it.id, "quantity", Number(e.target.value))
+                              updateItemField(
+                                it.id,
+                                "quantity",
+                                Number(e.target.value)
+                              )
                             }
                           />
                         </td>
                         <td className="p-3">
                           <div className="flex items-center">
-                            <span className="text-muted-foreground mr-1">$</span>
+                            <span className="text-muted-foreground mr-1">
+                              $
+                            </span>
                             <Input
                               className="h-9 text-sm bg-white border-orange-600"
                               type="number"
@@ -518,7 +573,11 @@ export function NewPOForm(props: NewPOFormProps) {
                               step="0.01"
                               value={it.unitCost}
                               onChange={(e) =>
-                                updateItemField(it.id, "unitCost", Number(e.target.value))
+                                updateItemField(
+                                  it.id,
+                                  "unitCost",
+                                  Number(e.target.value)
+                                )
                               }
                             />
                           </div>
@@ -573,42 +632,61 @@ export function NewPOForm(props: NewPOFormProps) {
             <div className="flex flex-col items-end mt-4 space-y-3">
               {/* List of added tax lines */}
               {((newPO as any).taxLines || []).map((tax: any) => (
-                <div key={tax.id} className="flex flex-col items-end w-full md:w-auto">
+                <div
+                  key={tax.id}
+                  className="flex flex-col items-end w-full md:w-auto"
+                >
                   <div className="flex items-center gap-2 mb-1">
                     {/* Label Input */}
                     <Input
                       className="h-9 text-sm w-48 bg-white border-orange-600"
                       placeholder="Tax / Cost Label"
                       value={tax.label}
-                      onChange={(e) => handleUpdateTaxLine(tax.id, 'label', e.target.value)}
+                      onChange={(e) =>
+                        handleUpdateTaxLine(tax.id, "label", e.target.value)
+                      }
                     />
-                    
+
                     {/* Value Input Group with Toggle */}
                     <div className="flex items-center h-9 border border-orange-600 rounded-md bg-white overflow-hidden">
-                       <Input
+                      <Input
                         className="h-full border-0 rounded-none bg-white w-24 text-sm px-2"
                         type="number"
                         min={0}
                         step="0.01"
                         value={tax.value}
-                        onChange={(e) => handleUpdateTaxLine(tax.id, 'value', e.target.value)}
+                        onChange={(e) =>
+                          handleUpdateTaxLine(tax.id, "value", e.target.value)
+                        }
                         placeholder="0"
                       />
                       <div className="flex h-full border-l border-orange-200">
-                         <button
-                           type="button"
-                           onClick={() => handleUpdateTaxLine(tax.id, 'type', 'fixed')}
-                           className={`px-2 h-full flex items-center justify-center text-xs font-medium transition-colors ${tax.type === 'fixed' ? 'bg-orange-600 text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
-                         >
-                           <DollarSign className="h-3 w-3" />
-                         </button>
-                         <button
-                           type="button"
-                           onClick={() => handleUpdateTaxLine(tax.id, 'type', 'percentage')}
-                           className={`px-2 h-full flex items-center justify-center text-xs font-medium transition-colors ${tax.type === 'percentage' ? 'bg-orange-600 text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
-                         >
-                            <Percent className="h-3 w-3" />
-                         </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleUpdateTaxLine(tax.id, "type", "fixed")
+                          }
+                          className={`px-2 h-full flex items-center justify-center text-xs font-medium transition-colors ${
+                            tax.type === "fixed"
+                              ? "bg-orange-600 text-white"
+                              : "bg-gray-50 text-gray-500 hover:bg-gray-100"
+                          }`}
+                        >
+                          <DollarSign className="h-3 w-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleUpdateTaxLine(tax.id, "type", "percentage")
+                          }
+                          className={`px-2 h-full flex items-center justify-center text-xs font-medium transition-colors ${
+                            tax.type === "percentage"
+                              ? "bg-orange-600 text-white"
+                              : "bg-gray-50 text-gray-500 hover:bg-gray-100"
+                          }`}
+                        >
+                          <Percent className="h-3 w-3" />
+                        </button>
                       </div>
                     </div>
 
@@ -622,17 +700,28 @@ export function NewPOForm(props: NewPOFormProps) {
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                  
+
                   {/* Taxable Checkbox Row */}
                   <div className="flex items-center gap-2 w-full justify-start md:justify-start md:pl-1">
-                     <input 
-                        type="checkbox"
-                        checked={tax.isTaxable}
-                        onChange={(e) => handleUpdateTaxLine(tax.id, 'isTaxable', e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        id={`taxable-${tax.id}`}
-                     />
-                     <label htmlFor={`taxable-${tax.id}`} className="text-sm text-gray-700">Taxable</label>
+                    <input
+                      type="checkbox"
+                      checked={tax.isTaxable}
+                      onChange={(e) =>
+                        handleUpdateTaxLine(
+                          tax.id,
+                          "isTaxable",
+                          e.target.checked
+                        )
+                      }
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      id={`taxable-${tax.id}`}
+                    />
+                    <label
+                      htmlFor={`taxable-${tax.id}`}
+                      className="text-sm text-gray-700"
+                    >
+                      Taxable
+                    </label>
                   </div>
                 </div>
               ))}
@@ -645,7 +734,7 @@ export function NewPOForm(props: NewPOFormProps) {
                 >
                   + Add Taxes &amp; Costs
                 </button>
-                
+
                 <div className="text-sm">
                   <span className="text-muted-foreground mr-2">Total</span>
                   <span className="font-semibold text-lg">
@@ -655,7 +744,6 @@ export function NewPOForm(props: NewPOFormProps) {
               </div>
             </div>
             {/* --- END DYNAMIC TAXES & COSTS SECTION --- */}
-
           </section>
 
           {/* Shipping Information Section */}
@@ -1009,9 +1097,7 @@ export function NewPOForm(props: NewPOFormProps) {
                           !newBillingAddress.city
                         }
                       >
-                        {isCreatingBillingAddress
-                          ? "Adding..."
-                          : "Add Address"}
+                        {isCreatingBillingAddress ? "Adding..." : "Add Address"}
                       </Button>
                     </div>
                   </div>
@@ -1100,9 +1186,7 @@ export function NewPOForm(props: NewPOFormProps) {
                 />
               </div>
               <div className="md:col-span-2">
-                <div className="text-base font-medium mb-4">
-                  Note
-                </div>
+                <div className="text-base font-medium mb-4">Note</div>
                 <Input
                   className="h-9 text-sm bg-white border-orange-600"
                   placeholder="Add notes"

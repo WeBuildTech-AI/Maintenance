@@ -156,6 +156,7 @@ export function PurchaseOrders() {
     "reject" | "approve" | "delete" | null
   >(null);
   const user = useSelector((state: RootState) => state.auth.user);
+  const [showCustomPoInput, setShowCustomPoInput] = useState(false);
 
   const fetchPurchaseOrder = async () => {
     try {
@@ -388,7 +389,16 @@ export function PurchaseOrders() {
     try {
       const payload: any = {};
 
-      if (newPO.poNumber) payload.poNumber = newPO.poNumber;
+      if (showCustomPoInput === false) {
+        const randomNumber = Math.floor(
+          100000 + Math.random() * 900000
+        ).toString();
+        payload.poNumber = randomNumber;
+        console.log("RANDOM PO APPLIED:", randomNumber);
+      } else {
+        payload.poNumber = newPO.poNumber || "";
+      }
+
       if (newPO.vendorId) payload.vendorId = newPO.vendorId;
       payload.status = "pending";
 
@@ -629,7 +639,7 @@ export function PurchaseOrders() {
           setCreatingPO(true);
         },
         setShowSettings,
-        setIsSettingModalOpen,
+        setIsSettingModalOpen
       )}
 
       {viewMode === "table" ? (
@@ -642,7 +652,6 @@ export function PurchaseOrders() {
               isSettingModalOpen={isSettingModalOpen}
               setIsSettingModalOpen={setIsSettingModalOpen}
               fetchPurchaseOrders={fetchPurchaseOrder}
-
             />
           </div>
         </div>
@@ -830,6 +839,8 @@ export function PurchaseOrders() {
         handleFileAttachClick={handleFileAttachClick}
         handleFileChange={handleFileChange}
         removeAttachedFile={removeAttachedFile}
+        showCustomPoInput={showCustomPoInput}
+        setShowCustomPoInput={setShowCustomPoInput}
       />
 
       {showSettings && (

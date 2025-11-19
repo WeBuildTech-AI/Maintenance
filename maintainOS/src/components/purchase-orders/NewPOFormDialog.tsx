@@ -34,6 +34,8 @@ interface NewPOFormDialogProps {
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   removeAttachedFile: (fileName: string) => void;
   isEditing: boolean; // <-- HAMARA NAYA PROP
+  showCustomPoInput: boolean;
+  setShowCustomPoInput: boolean;
 }
 
 export function NewPOFormDialog(props: NewPOFormDialogProps) {
@@ -57,11 +59,13 @@ export function NewPOFormDialog(props: NewPOFormDialogProps) {
     handleFileChange,
     removeAttachedFile,
     isEditing, // <-- Naya prop
+    showCustomPoInput,
+    setShowCustomPoInput,
   } = props;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-   <DialogContent
+      <DialogContent
         className="sm:max-w-4xl w-[92vw] max-h-[85vh] p-0 flex flex-col bg-card text-card-foreground"
         style={{ width: "min(92vw, 56rem)", maxHeight: "85vh", padding: 0 }}
       >
@@ -89,17 +93,15 @@ export function NewPOFormDialog(props: NewPOFormDialogProps) {
           handleFileAttachClick={handleFileAttachClick}
           handleFileChange={handleFileChange}
           removeAttachedFile={removeAttachedFile}
+          showCustomPoInput={showCustomPoInput}
+          setShowCustomPoInput={setShowCustomPoInput}
         />
-        
+
         {/* Sticky Footer */}
         <DialogFooter className="flex-shrink-0 p-4 border-t bg-muted/50">
           <div className="w-full flex justify-end items-center">
             <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                onClick={onCancel}
-                disabled={isCreating}
-              >
+              <Button variant="ghost" onClick={onCancel} disabled={isCreating}>
                 Cancel
               </Button>
               <Button

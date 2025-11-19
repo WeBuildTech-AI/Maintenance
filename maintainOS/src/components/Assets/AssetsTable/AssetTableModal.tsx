@@ -5,6 +5,7 @@ import { AssetDetail } from "../AssetDetail/AssetDetail";
 // If you don't have a shared type file, I've defined a placeholder below.
 import type { Asset } from "../Assets";
 import { MeterDetail } from "../../Meters/MeterDetail/MeterDetail";
+import LocationDetails from "../../Locations/LocationDetails";
 
 // Define the props interface
 interface AssetTableModalProps {
@@ -46,7 +47,7 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h2 className="text-lg font-semibold">Asset Details</h2>
+          <h2 className="text-lg font-semibold capitalize">{showDetailsSection} Details</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 cursor-pointer rounded-full transition-colors"
@@ -72,6 +73,14 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
             showDetailsSection === "meter" && (
               <MeterDetail
               selectedMeter ={data}
+              />
+            )
+          }
+
+          {
+            showDetailsSection === "location" && (
+              <LocationDetails
+                selectedLocation={data}
               />
             )
           }

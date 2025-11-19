@@ -6,8 +6,6 @@ import type { RootState } from "../../../store";
 import { MapPin } from "lucide-react";
 import { formatDate, formatFriendlyDate } from "../../utils/Date";
 
-// 1. Define a clear type for your Asset.
-// (I added createdAt since it's used in your JSX)
 interface Asset {
   id: number | string;
   name: string;
@@ -20,7 +18,6 @@ interface Asset {
   // Add other properties of your asset here
 }
 
-// 2. Define a type for the component's props.
 interface AssetDetailProps {
   asset: any[];
   onEdit: (asset: Asset) => void;
@@ -30,7 +27,6 @@ interface AssetDetailProps {
   onClose: () => void;
 }
 
-// 3. Use the defined types in your component.
 export const AssetDetail: FC<AssetDetailProps> = ({
   asset,
   onEdit,

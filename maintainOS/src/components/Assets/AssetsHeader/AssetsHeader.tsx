@@ -18,6 +18,7 @@ import {
 import { Input } from "../../ui/input";
 import AssetFilterBar from "./AssetFilterBar";
 import type { setSelectedAsset } from "../../../store/assets";
+import { useNavigate } from "react-router-dom";
 
 export function AssetHeaderComponent(
   viewMode: ViewMode,
@@ -29,7 +30,10 @@ export function AssetHeaderComponent(
   setSelectedAsset: Dispatch<SetStateAction<null>>,
   setIsSettingsModalOpen: Dispatch<SetStateAction<boolean>>
 ) {
+  const navigate = useNavigate()
+  const currentPath = window.location.pathname;
   return (
+    
     <header className=" border-border bg-card px-6 py-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -79,6 +83,7 @@ export function AssetHeaderComponent(
             onClick={() => {
               setShowNewAssetForm(true);
               setViewMode("panel");
+              navigate(`${currentPath}?create`, { replace: true }); 
               // setSelectedAsset();
             }}
           >
