@@ -22,7 +22,7 @@ interface Asset {
 
 // 2. Define a type for the component's props.
 interface AssetDetailProps {
-  asset: Asset;
+  asset: any[];
   onEdit: (asset: Asset) => void;
   onDelete: (id: string | number) => void;
   fetchAssetsData: () => void;

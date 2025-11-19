@@ -1,27 +1,32 @@
-import React from "react";
+import React, { type Dispatch, type SetStateAction } from "react";
 import { X } from "lucide-react"; // Assuming you use lucide-react for icons
 import { AssetDetail } from "../AssetDetail/AssetDetail";
-// Import your Asset type definition here. 
+// Import your Asset type definition here.
 // If you don't have a shared type file, I've defined a placeholder below.
-import type { Asset } from "../Assets"; 
+import type { Asset } from "../Assets";
+import { MeterDetail } from "../../Meters/MeterDetail/MeterDetail";
 
 // Define the props interface
 interface AssetTableModalProps {
-  asset: Asset;
+  data: any[];
   onClose: () => void;
   onEdit: (asset: Asset) => void;
   onDelete: (id: string | number) => void;
   fetchAssetsData: () => void;
   setSeeMoreAssetStatus: (value: boolean) => void;
+  showDetailsSection: string;
+  setShowReadingMeter:Dispatch<SetStateAction<boolean>>
+  setIsRecordModalOpen:Dispatch<SetStateAction<boolean>>
 }
 
 const AssetTableModal: React.FC<AssetTableModalProps> = ({
   onClose,
-  asset,
+  data,
   onDelete,
   onEdit,
   fetchAssetsData,
   setSeeMoreAssetStatus,
+  showDetailsSection,
 }) => {
   // Prevent click inside modal content from closing the modal
   const handleContentClick = (e: React.MouseEvent) => {
@@ -36,15 +41,15 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
       onClick={onClose} // Close when clicking the background overlay
     >
       <div
-        className="bg-card rounded-lg shadow-md w-130 h-full flex flex-col overflow-auto bg-white"
+        className="bg-card rounded-lg shadow-md w-200 h-full flex flex-col overflow-auto bg-white"
         onClick={handleContentClick}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-            <h2 className="text-lg font-semibold">Asset Details</h2>
-          <button 
-            onClick={onClose} 
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          <h2 className="text-lg font-semibold">Asset Details</h2>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 cursor-pointer rounded-full transition-colors"
           >
             <X className="h-5 w-5 text-gray-500" />
           </button>
@@ -52,14 +57,24 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
 
         {/* Content Body - Scrollable */}
         <div className="flex-1 overflow-y-auto">
-          <AssetDetail
-            asset={asset}
-            onDelete={onDelete}
-            onEdit={onEdit}
-            fetchAssetsData={fetchAssetsData}
-            setSeeMoreAssetStatus={setSeeMoreAssetStatus}
-            onClose={onClose}
-          />
+          {showDetailsSection === "asset" && (
+            <AssetDetail
+              asset={data}
+              onDelete={onDelete}
+              onEdit={() => {}}
+              fetchAssetsData={fetchAssetsData}
+              setSeeMoreAssetStatus={() => {}}
+              onClose={onClose}
+            />
+          )}
+
+          {
+            showDetailsSection === "meter" && (
+              <MeterDetail
+              selectedMeter ={data}
+              />
+            )
+          }
         </div>
       </div>
     </div>

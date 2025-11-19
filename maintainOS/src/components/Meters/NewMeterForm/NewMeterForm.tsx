@@ -360,14 +360,15 @@ export function NewMeterForm({
               value={readingFrequencyValue || ""}
               onChange={(e) => setReadingFrequencyValue(e.target.value)}
               style={{
-                height: "40px",
+                height: "37px",
                 width: "70px",
-                border: "1px solid #e5e7eb",
+                border: "1px solid #FFCD00",
                 borderRadius: "6px",
                 backgroundColor: "#fff",
                 textAlign: "center",
                 color: "#374151",
                 fontSize: "14px",
+                marginTop:"8px",
               }}
             />
             <div style={{ position: "relative", width: "180px" }}>

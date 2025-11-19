@@ -2,25 +2,15 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Card, CardContent } from "../ui/card";
 import { Avatar as ShadCNAvatar, AvatarFallback } from "../ui/avatar";
-// ⭐ NEW: Imports for delete button
 import { Settings, Trash2, Loader2 } from "lucide-react";
 import { Tooltip } from "../ui/tooltip"; // ShadCN Tooltip
-import SettingsModal from "../utils/SettingsModal"; 
-
-// ⭐ NEW: Date formatting
-import { formatDateOnly } from "../utils/Date"; 
-
-// ⭐ 1. Ant Design Imports
+import SettingsModal from "../utils/SettingsModal";
+import { formatDateOnly } from "../utils/Date";
 import { Table, Avatar, Tooltip as AntTooltip } from "antd";
 import type { TableProps, TableColumnType } from "antd";
-
-// ⭐ NEW: Import toast for notifications
 import toast from "react-hot-toast";
 import { meterService } from "../../store/meters";
-// ⭐ NEW: Import your meter service (adjust path as needed)
-// import { meterService } from "../../../store/meters";
-
-// --- Helper Functions ---
+import AssetTableModal from "../Assets/AssetsTable/AssetTableModal";
 
 type Sorter = Parameters<NonNullable<TableProps<any>["onChange"]>>[2];
 
@@ -64,8 +54,8 @@ const allAvailableColumns = [
   "Location",
   "Last Reading",
   "Status",
-  "Updated At", 
-  "Created At", 
+  "Updated At",
+  "Created At",
 ];
 
 const columnConfig: {
@@ -136,9 +126,10 @@ export function MeterTable({
     useState<string[]>(allAvailableColumns);
   const [sortType, setSortType] = useState<string>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  
+  const [selectedMeterTable, setSelectedMeterTable] = useState<string[]>([]);
   const [selectedMeterIds, setSelectedMeterIds] = useState<string[]>([]);
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
+  const [isOpenMeterDetailsModal , setIsOpenMeterDetailsModal] = useState(false);
 
   // ⭐ NEW: Deleting state
   const [isDeleting, setIsDeleting] = useState(false);
@@ -183,20 +174,19 @@ export function MeterTable({
       toast.error("No meters selected to delete.");
       return;
     }
-  
+
     setIsDeleting(true);
-  
+
     try {
       // Assuming your service has a batchDeleteMeter function
       await meterService.batchDeleteMeter(selectedMeterIds);
-  
+
       toast.success("Meters deleted successfully!");
-      
+
       setSelectedMeterIds([]);
-      
+
       // Call the new prop to refresh the list
-      fetchMeters(); 
-  
+      fetchMeters();
     } catch (err) {
       console.error("Error bulk deleting meters:", err);
       toast.error("Failed to delete meters.");
@@ -205,6 +195,7 @@ export function MeterTable({
     }
   };
 
+  console.log(selectedMeterTable, "selectedMeterTable");
 
   const handleTableChange: TableProps<any>["onChange"] = (
     pagination,
@@ -267,7 +258,7 @@ export function MeterTable({
             <span className="text-sm font-medium text-gray-900">
               Edit {selectedCount} {selectedCount === 1 ? "Item" : "Items"}
             </span>
-            
+
             {/* ⭐ NEW: Delete Button */}
             <AntTooltip title="Delete" getPopupContainer={() => document.body}>
               <button
@@ -286,7 +277,6 @@ export function MeterTable({
                 )}
               </button>
             </AntTooltip>
-            
           </div>
         );
       },
@@ -320,7 +310,16 @@ export function MeterTable({
                 </ShadCNAvatar>
               )}
             </div>
-            <span className="truncate">{name}</span>
+            <span
+              className="truncate cursor-pointer hover:text-orange-600 hover:underline"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedMeterTable(record);
+                setIsOpenMeterDetailsModal(true);
+              }}
+            >
+              {name}
+            </span>
           </div>
         );
       },
@@ -345,8 +344,7 @@ export function MeterTable({
               {status || "—"}
             </span>
           );
-        }
-        else if (colName === "Created At" || colName === "Updated At") {
+        } else if (colName === "Created At" || colName === "Updated At") {
           renderFunc = (text: string) => formatDateOnly(text) || "—";
         }
 
@@ -371,7 +369,7 @@ export function MeterTable({
     sortType,
     sortOrder,
     visibleColumns,
-    areAllSelected, 
+    areAllSelected,
     selectedCount,
     selectedMeterIds,
     isDeleting, // ⭐ NEW: Add dependency
@@ -390,9 +388,9 @@ export function MeterTable({
         : "—",
       status: m.status || "—",
       isOverdue: m.isOverdue || false,
-      createdAt: m.createdAt || "—", 
-      updatedAt: m.updatedAt || "—", 
-      fullMeter: m, 
+      createdAt: m.createdAt || "—",
+      updatedAt: m.updatedAt || "—",
+      fullMeter: m,
     }));
   }, [meter]);
 
@@ -415,7 +413,7 @@ export function MeterTable({
               selectedRowKeys: selectedMeterIds,
               columnWidth: 0,
               renderCell: () => null,
-              columnTitle: " ", 
+              columnTitle: " ",
             }}
             onRow={(record) => ({
               onClick: () => {
@@ -435,6 +433,16 @@ export function MeterTable({
         currentVisibleColumns={visibleColumns}
         componentName="Meter"
       />
+
+      {
+        isOpenMeterDetailsModal && (
+          <AssetTableModal
+          data={selectedMeterTable.fullMeter}
+          onClose={() => setIsOpenMeterDetailsModal(false)}
+          showDetailsSection={"meter"}
+          />
+        )
+      }
     </div>
   );
 }

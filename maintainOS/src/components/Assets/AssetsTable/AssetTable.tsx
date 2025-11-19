@@ -124,7 +124,7 @@ export function AssetTable({
   setIsSettingsModalOpen,
   isSettingsModalOpen,
   onEdit,
-  onDelete
+  onDelete,
 }: {
   assets: any[];
   selectedAsset: any;
@@ -134,6 +134,7 @@ export function AssetTable({
   isSettingsModalOpen: boolean;
   onEdit: (asset: Asset) => void;
   onDelete: (id: string | number) => void;
+  fullAsset:any[];
 }) {
   const dispatch = useDispatch<AppDispatch>();
   const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
@@ -150,11 +151,10 @@ export function AssetTable({
   const [includeSubAssets, setIncludeSubAssets] = useState(false);
   const [isUpdatingCriticality, setIsUpdatingCriticality] = useState(false);
   const [isOpenAssetDetailsMpdal, setIsOpenAssetDetailsModal] = useState(false);
-  const [isSelectedAssetTable, setIsSelectedAssetTable] = useState<any[]>(
-    []
-  );
+  const [isSelectedAssetTable, setIsSelectedAssetTable] = useState<any[]>([]);
   const popoverRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const [showDetailsSection , setShowDetailsSection] = useState("asset");
 
   const [visibleColumns, setVisibleColumns] =
     useState<string[]>(allAvailableColumns);
@@ -219,19 +219,17 @@ export function AssetTable({
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
-  // --- End Selection Logic ---
 
-  // ⭐ 4. Table Change Handler (ListView se)
   const handleTableChange: TableProps<any>["onChange"] = (
     pagination,
     filters,
     sorter
   ) => {
-    const s = sorter as Sorter;
-    if (s.field && s.order) {
+    const s = Array.isArray(sorter) ? sorter[0] : sorter;
+    if (s && s.field && s.order) {
       setSortType(s.field as string);
       setSortOrder(s.order === "ascend" ? "asc" : "desc");
-    } else if (s.field) {
+    } else if (s && s.field) {
       // Agar sort order null hai (cycle complete), default par reset karein
       setSortType(s.field as string);
       setSortOrder("asc");
@@ -242,7 +240,6 @@ export function AssetTable({
     }
   };
 
-  // --- Delete, Status, Criticality Handlers (Aapke original code se) ---
   const handleDelete = async () => {
     if (selectedAssetIds.length === 0) {
       toast.error("No assets selected to delete.");
@@ -251,7 +248,6 @@ export function AssetTable({
     setIsDeleting(true);
 
     try {
-      // Call your new function directly with the array of IDs
       await assetService.batchDeleteAsset(selectedAssetIds);
       toast.success("Assets deleted successfully!");
       setSelectedAssetIds([]);
@@ -322,6 +318,8 @@ export function AssetTable({
     setVisibleColumns(settings.visibleColumns);
     setIsSettingsModalOpen(false);
   };
+
+  console.log(isSelectedAssetTable, "selected Asset");
 
   // ⭐ 5. Columns Definition (`useMemo` mein)
   const columns: TableColumnType<any>[] = useMemo(() => {
@@ -532,7 +530,6 @@ export function AssetTable({
               onClick={(e) => {
                 // Yahaan par aap asset detail view open kar sakte hain
                 e.stopPropagation();
-                console.log("Open details for:", record.name);
                 // setSelectedAsset(record.fullAsset); // Jaise
                 setIsSelectedAssetTable(record);
                 setIsOpenAssetDetailsModal(true);
@@ -704,12 +701,15 @@ export function AssetTable({
         currentShowDeleted
       />
 
-      {
-        isOpenAssetDetailsMpdal && (
-          <AssetTableModal asset={isSelectedAssetTable} onClose={() => setIsOpenAssetDetailsModal(false)} onDelete={onDelete}
-                      onEdit={onEdit} />
-        )
-      }
+      {isOpenAssetDetailsMpdal && (
+        <AssetTableModal
+          data={isSelectedAssetTable.fullAsset}
+          onClose={() => setIsOpenAssetDetailsModal(false)}
+          onDelete={onDelete}
+          onEdit={onEdit}
+          showDetailsSection={showDetailsSection}
+        />
+      )}
     </div>
   );
 }
