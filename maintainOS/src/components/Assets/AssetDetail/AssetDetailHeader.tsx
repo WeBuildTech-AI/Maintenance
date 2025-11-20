@@ -49,7 +49,7 @@ export function AssetDetailHeader({
           <Tooltip text="Copy link">
             <Link
               onClick={() => {
-                const url = `${window.location.origin}/assets/${asset?.id}`;
+                const url = `${window.location.origin}/assets?${asset?.id}`;
                 navigator.clipboard.writeText(url);
                 toast.success("Asset link copied!");
               }}

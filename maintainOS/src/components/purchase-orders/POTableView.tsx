@@ -62,7 +62,7 @@ const tableStyles = `
 // --- End Helper Functions ---
 
 // Column Configuration
-const allAvailableColumns = ["ID", "Vendor", "Status", "Created By", "Created"];
+const allAvailableColumns = ["ID", "Vendor", "Status", "Created By", "Created" , "Custom Number" , "Note"];
 
 const columnConfig: {
   [key: string]: {
@@ -97,6 +97,18 @@ const columnConfig: {
     width: 150,
     sorter: (a, b) =>
       new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  },
+  "Custom Number": {
+    dataIndex: "customNumber",
+    width: 150,
+    sorter: (a, b) =>
+      (a.poNumber || "").localeCompare(b.poNumber|| ""),
+  },
+  "Note": {
+    dataIndex: "note",
+    width: 150,
+    sorter: (a, b) =>
+      (a.note || "").localeCompare(b.note|| ""),
   },
 };
 
@@ -392,8 +404,12 @@ export default function PurchaseOrdersTable({
               <span className="text-foreground">{createdBy}</span>
             </div>
           );
+        }else if (colName === "Custom Number") {
+          renderFunc = (poNumber: string) => poNumber;
         }
-
+        else if (colName === "Note") {
+          renderFunc = (note: string) => note;
+        }
         return {
           title: colName,
           dataIndex: config.dataIndex,
@@ -420,7 +436,7 @@ export default function PurchaseOrdersTable({
     selectedPOIds,
     isDeleting,
     user, // User dependency
-  ]);
+  ])
 
   // Data Source for Antd Table
   const dataSource = useMemo(() => {
@@ -432,6 +448,8 @@ export default function PurchaseOrdersTable({
       status: order.status,
       createdAt: order.createdAt,
       createdBy: order.createdBy,
+      customNumber: order.poNumber,
+      note: order.notes,
       fullOrder: order,
     }));
   }, [orders]);

@@ -98,3 +98,14 @@ export const batchDeleteVendor = createAsyncThunk(
     }
   }
 );
+
+export const fetchVendorContact = createAsyncThunk(
+  "vendors/fetchVendorContact",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      return await vendorService.fetchVendorContact(id);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || "Failed to fetch vendor contact");
+    }
+  }
+);

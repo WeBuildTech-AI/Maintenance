@@ -48,13 +48,19 @@ export function CustomDropdown({
   useEffect(() => {
     if (value) {
       const selectedOption = options.find((o) => o.id === value);
-      setInputValue(selectedOption ? selectedOption.name : value);
+
+      if (selectedOption) {
+        setInputValue(selectedOption.name);
+      } else {
+        if (options.length === 0) {
+          setInputValue("");
+        }
+      }
     } else {
       setInputValue("");
     }
   }, [value, options]);
-
-  // Close when clicking outside
+  
   useEffect(() => {
     function handleOutside(e: MouseEvent) {
       if (
@@ -151,10 +157,7 @@ export function CustomDropdown({
   return (
     <div className="w-full">
       {label && (
-        <label
-          htmlFor={id}
-          className="block text-sm font-medium text-gray-700"
-        >
+        <label htmlFor={id} className="block text-sm font-medium text-gray-700">
           {label}
         </label>
       )}
@@ -173,7 +176,6 @@ export function CustomDropdown({
 
         {isOpen && (
           <div className="absolute z-50 w-full max-h-64 overflow-auto bg-white shadow-lg ring-1 ring-black ring-opacity-5 rounded-md p-2">
-
             {/* LOADING */}
             {loading && (
               <div className="px-4 py-2 text-gray-500">
@@ -236,17 +238,13 @@ export function CustomDropdown({
               isMeasurement &&
               !Object.keys(filteredGroupedOptions).length &&
               !showCreateOption && (
-                <div className="px-4 py-2 text-gray-500">
-                  No options found
-                </div>
+                <div className="px-4 py-2 text-gray-500">No options found</div>
               )}
           </div>
         )}
       </div>
 
-      {errorText && (
-        <p className="mt-2 text-sm text-red-600">{errorText}</p>
-      )}
+      {errorText && <p className="mt-2 text-sm text-red-600">{errorText}</p>}
     </div>
   );
 }

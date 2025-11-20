@@ -75,6 +75,11 @@ export const vendorService = {
       data: { ids: ids },
     });
   },
+
+  fetchVendorContact: async (id: string): Promise<VendorResponse> => {
+    const res = await api.get(`/vendors/${id}/contacts`);
+    return res.data;
+  },
 };
 
 

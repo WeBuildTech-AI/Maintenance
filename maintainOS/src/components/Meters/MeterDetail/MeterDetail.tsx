@@ -187,15 +187,6 @@ export function MeterDetail({
           />
         )}
       </div>
-      {/* {isRecordModalOpen && (
-        <RecordReadingModal
-          modalRef={modalRef}
-          selectedMeter={selectedMeter}
-          onClose={() => setIsRecordModalOpen(false)}
-          fetchMeters={fetchMeters}
-          // onConfirm={handleRecordReadingConfirm}
-        />
-      )} */}
     </div>
   );
 }
