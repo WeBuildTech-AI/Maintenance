@@ -26,10 +26,9 @@ interface AssetHeaderProps {
   searchQuery: string;
   setSearchQuery: Dispatch<SetStateAction<string>>;
   setShowNewAssetForm: Dispatch<SetStateAction<boolean>>;
-  // Note: Using 'any' here as the 'Asset' type is external/not defined here.
-  // Ideally, you would import the 'Asset' type.
-  setSelectedAsset: Dispatch<SetStateAction<any | null>>; 
+  setSelectedAsset: Dispatch<SetStateAction<any | null>>;
   setIsSettingsModalOpen: Dispatch<SetStateAction<boolean>>;
+  setShowDeleted: Dispatch<SetStateAction<boolean>>;
 }
 
 // 2. Convert to a proper React Functional Component (FC)
@@ -41,6 +40,7 @@ export const AssetHeaderComponent: FC<AssetHeaderProps> = ({
   setShowNewAssetForm,
   setSelectedAsset, // Destructured prop
   setIsSettingsModalOpen,
+  setShowDeleted,
 }) => {
   const navigate = useNavigate();
   const currentPath = window.location.pathname;
@@ -70,17 +70,16 @@ export const AssetHeaderComponent: FC<AssetHeaderProps> = ({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
                   {/* View Mode Switch Logic is correct */}
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={() => {
-                        setViewMode("panel");
-                        setSelectedAsset(null); // Clear selection when changing view to panel, if desired
+                      setViewMode("panel");
+                      setShowDeleted(false);
+                      setSelectedAsset(null); // Clear selection when changing view to panel, if desired
                     }}
                   >
                     <PanelTop className="mr-2 h-4 w-4" /> Panel View
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => setViewMode("table")}
-                  >
+                  <DropdownMenuItem onClick={() => setViewMode("table")}>
                     <Table className="mr-2 h-4 w-4" /> Table View
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -104,7 +103,7 @@ export const AssetHeaderComponent: FC<AssetHeaderProps> = ({
               setShowNewAssetForm(true);
               setViewMode("panel");
               setSelectedAsset(null); // Ensure no asset is selected when creating a new one
-              navigate(`${currentPath}?create`, { replace: true }); 
+              navigate(`${currentPath}?create`, { replace: true });
             }}
           >
             <Plus className="mr-2 h-4 w-4" />
@@ -128,4 +127,4 @@ export const AssetHeaderComponent: FC<AssetHeaderProps> = ({
       </div>
     </header>
   );
-}
+};

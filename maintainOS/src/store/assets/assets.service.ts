@@ -88,9 +88,14 @@ export const assetService = {
     await api.delete(`/assets/${id}/status`);
   },
 
- batchDeleteAsset: async (ids: string[]): Promise<void> => {
+  batchDeleteAsset: async (ids: string[]): Promise<void> => {
     await api.delete(`assets/batch-delete`, {
       data: { ids: ids },
     });
+  },
+
+  fetchDeleteAsset: async (): Promise<void> => {
+    const res = await api.get(`assets/deleted/all`);
+    return res.data;
   },
 };

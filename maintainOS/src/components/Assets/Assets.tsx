@@ -4,13 +4,13 @@ import { AssetDetail } from "./AssetDetail/AssetDetail";
 import { AssetsList } from "./AssetsList/AssetsList";
 import { NewAssetForm } from "./NewAssetForm/NewAssetForm";
 import { AssetTable } from "./AssetsTable/AssetTable";
-import { AssetHeaderComponent } from "./AssetsHeader/AssetsHeader"; 
+import { AssetHeaderComponent } from "./AssetsHeader/AssetsHeader";
 import type { ViewMode } from "../purchase-orders/po.types";
 import { assetService, deleteAsset } from "../../store/assets";
 import toast, { Toaster } from "react-hot-toast";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store";
-import { locationService } from "../../store/locations"; 
+import { locationService } from "../../store/locations";
 import AssetStatusMoreDetails from "./AssetDetail/sections/AssetStatusMoreDetails";
 
 // --- Interfaces (Same as provided) ---
@@ -24,7 +24,7 @@ export interface Asset {
   name: string;
   updatedAt: string;
   createdAt: string;
-  location: Location; 
+  location: Location;
   meters: any[];
 }
 
@@ -42,22 +42,30 @@ export const Assets: FC = () => {
   const [allLocationData, setAllLocationData] = useState<Location[]>([]);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
 
   const fetchAssetsData = useCallback(async () => {
-    // ... (fetchAssetsData logic is unchanged and correct)
     setLoading(true);
     setSelectedAsset(null);
 
     try {
-      const assets: Asset[] = await assetService.fetchAssets(10, 1, 0);
+      let assets: Asset[] = [];
+
+      if (showDeleted && viewMode === "table") {
+        assets = await assetService.fetchDeleteAsset();
+      } else {
+        assets = await assetService.fetchAssets(10, 1, 0);
+      }
 
       if (assets && assets.length > 0) {
         setAssetData(assets);
+
         const mostRecent = [...assets].sort(
           (a, b) =>
             new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
         );
+
         setSelectedAsset(mostRecent[0]);
       } else {
         setAssetData([]);
@@ -71,7 +79,7 @@ export const Assets: FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showDeleted]);
 
   const fetchAllLocationData = useCallback(async () => {
     // ... (fetchAllLocationData logic is unchanged and correct)
@@ -84,10 +92,12 @@ export const Assets: FC = () => {
   }, []);
 
   useEffect(() => {
+    // if (viewMode !== "panel") return;
     fetchAssetsData();
+
     fetchAllLocationData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchAssetsData, fetchAllLocationData]); 
+  }, [fetchAssetsData, fetchAllLocationData, viewMode]);
 
   const handleEditAsset = useCallback((assetToEdit: Asset) => {
     setEditingAsset(assetToEdit);
@@ -174,6 +184,7 @@ export const Assets: FC = () => {
               setShowNewAssetForm={setShowNewAssetForm}
               setSelectedAsset={setSelectedAsset}
               setIsSettingsModalOpen={setIsSettingsModalOpen}
+              setShowDeleted={setShowDeleted}
             />
 
             {viewMode === "table" ? (
@@ -186,6 +197,8 @@ export const Assets: FC = () => {
                 isSettingsModalOpen={isSettingsModalOpen}
                 onDelete={handleDeleteAsset}
                 onEdit={handleEditAsset}
+                showDeleted={showDeleted}
+                setShowDeleted={setShowDeleted}
               />
             ) : (
               <div className="flex flex-1 min-h-0">
