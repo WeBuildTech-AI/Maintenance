@@ -63,6 +63,8 @@ export type NewPOFormProps = {
   handleFileAttachClick: () => void;
   handleFileChange: () => void;
   removeAttachedFile: () => void;
+  showCustomPoInput: boolean;
+  setShowCustomPoInput: boolean;
 };
 
 export type POStatus = "Draft" | "Approved" | "pending" | "Received" | "Cancelled";

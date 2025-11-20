@@ -15,6 +15,7 @@ import type { TableProps, TableColumnType } from "antd";
 // ⭐ NEW: Import toast for notifications
 import toast from "react-hot-toast";
 import { locationService } from "../../store/locations";
+import AssetTableModal from "../Assets/AssetsTable/AssetTableModal";
 // ⭐ NEW: Import your location service (adjust path as needed)
 
 // --- Helper Functions ---
@@ -128,7 +129,11 @@ export function LocationTable({
     useState<string[]>(allAvailableColumns);
   const [sortType, setSortType] = useState<string>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-
+  const [selectedLocationTableData, setSelectedLocationTableData] = useState<
+    string[]
+  >([]);
+  const [isLocationTableModalOpen, setIsLocationTableModalOpen] =
+    useState(false);
   const [selectedLocationIds, setSelectedLocationIds] = useState<string[]>([]);
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
 
@@ -313,7 +318,16 @@ export function LocationTable({
                 </ShadCNAvatar>
               )}
             </div>
-            <span className="truncate capitalize">{name}</span>
+            <span
+               className="truncate cursor-pointer hover:text-orange-600 hover:underline"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedLocationTableData(record);
+                setIsLocationTableModalOpen(true);
+              }}
+            >
+              {name}
+            </span>
           </div>
         );
       },
@@ -356,7 +370,7 @@ export function LocationTable({
     areAllSelected,
     selectedCount,
     selectedLocationIds,
-    isDeleting, // ⭐ NEW: Add dependency
+    isDeleting, // NEW: Add dependency
   ]);
 
   const dataSource = useMemo(() => {
@@ -419,6 +433,14 @@ export function LocationTable({
         currentVisibleColumns={visibleColumns}
         componentName="Location"
       />
+
+      {isLocationTableModalOpen && (
+        <AssetTableModal
+          onClose={() => setIsLocationTableModalOpen(false)}
+          data={selectedLocationTableData.fullLocation}
+          showDetailsSection={"location"}
+        />
+      )}
     </div>
   );
 }

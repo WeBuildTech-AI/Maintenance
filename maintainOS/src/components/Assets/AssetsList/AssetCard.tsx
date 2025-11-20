@@ -2,6 +2,7 @@ import { Factory, MapPin } from "lucide-react";
 import { Badge } from "../../ui/badge";
 import { Card, CardContent } from "../../ui/card";
 import { renderInitials } from "../../utils/renderInitials";
+import { useNavigate } from "react-router-dom";
 
 export function AssetCard({
   asset,
@@ -15,8 +16,10 @@ export function AssetCard({
   onSelect: () => void;
   setShowNewAssetForm: React.Dispatch<React.SetStateAction<boolean>>;
   allLocationData: { name: string }[];
+
 }) {
   asset.status === "Online";
+  const navigate = useNavigate()
   return (
     <Card
       className={`cursor-pointer transition-colors ${
@@ -24,7 +27,7 @@ export function AssetCard({
       }`}
       onClick={() => {
         onSelect();
-
+        // navigate(asset.id)
         setShowNewAssetForm(false);
       }}
     >

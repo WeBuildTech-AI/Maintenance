@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, FC, useMemo } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom"; 
 import { AssetDetail } from "./AssetDetail/AssetDetail";
 import { AssetsList } from "./AssetsList/AssetsList";
 import { NewAssetForm } from "./NewAssetForm/NewAssetForm";
@@ -10,7 +11,6 @@ import { assetService, deleteAsset } from "../../store/assets";
 import toast, { Toaster } from "react-hot-toast";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store";
-import { locationService } from "../../store/locations";
 import AssetStatusMoreDetails from "./AssetDetail/sections/AssetStatusMoreDetails";
 
 export interface Asset {
@@ -25,7 +25,22 @@ export interface Asset {
   meters: [];
 }
 
+// ⚠️ Helper function to extract the Asset ID from the custom URL format
+const getAssetIdFromUrl = (searchString: string): string | null => {
+    if (searchString && searchString.startsWith('?')) {
+        // Remove the leading '?' and return the rest (which is the ID)
+        const id = searchString.substring(1);
+        return id.trim() || null; // Return null if it's just '?' or '?? '
+    }
+    return null;
+};
+
+
 export const Assets: FC = () => {
+  const navigate = useNavigate();
+  // useSearchParams is still needed to track URL changes
+  const [searchParams, setSearchParams] = useSearchParams(); 
+
   const [searchQuery, setSearchQuery] = useState("");
   const [seeMoreAssetStatus, setSeeMoreAssetStatus] = useState(false);
   const [showNewAssetForm, setShowNewAssetForm] = useState(false);
@@ -36,39 +51,87 @@ export const Assets: FC = () => {
   const [assetData, setAssetData] = useState<Asset[]>([]);
   const [sortType, setSortType] = useState("Name");
   const [sortOrder, setSortOrder] = useState("asc");
-  const [allLocationData, setAllLocationData] = useState<{ name: string }[]>(
-    []
-  );
+  const [allLocationData, setAllLocationData] = useState<{ name: string }[]>([]);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
 
+  // Handler function to update the URL and state
+  const handleAssetSelect = (asset: Asset | null) => {
+    const currentPath = window.location.pathname;
+    
+    if (!asset) {
+        // Clear the search part of the URL
+        navigate(currentPath, { replace: true });
+        setSelectedAsset(null);
+        return;
+    }
+
+    // Set the asset ID directly as the search string
+    const assetId = asset.id.toString();
+    navigate(`${currentPath}?${assetId}`, { replace: true }); 
+    
+    // Update the local state for immediate UI response
+    setSelectedAsset(asset);
+  };
+
+  // Effect to Sync URL -> State (Key for handling refresh/copy-paste)
+  useEffect(() => {
+    // Get the raw search string from the URL
+    const assetIdFromUrl = getAssetIdFromUrl(window.location.search);
+
+    if (assetData.length > 0) {
+      if (assetIdFromUrl) {
+        const foundAsset = assetData.find(
+          (a) => a.id.toString() === assetIdFromUrl
+        );
+        
+        // Only update if the asset is found and is different from current selection
+        if (foundAsset && foundAsset.id !== selectedAsset?.id) {
+          setSelectedAsset(foundAsset);
+        } else if (!foundAsset && selectedAsset) {
+          // If ID in URL is bad/not found, clear selection (and URL)
+          handleAssetSelect(null); 
+        }
+      } else if (selectedAsset) {
+        // If URL has no ID, but state does, clear state
+        setSelectedAsset(null);
+      }
+    }
+  }, [window.location.search, assetData, selectedAsset]); 
+
+
   const fetchAssetsData = async () => {
     setLoading(true);
-    setSelectedAsset(null); // 🧹 clear any old selection first
-
+    
     try {
       const assets: Asset[] = await assetService.fetchAssets(10, 1, 0);
 
       if (assets && assets.length > 0) {
         setAssetData(assets);
 
-        // sort by updatedAt to find most recent
-        const mostRecent = [...assets].sort(
-          (a, b) =>
-            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-        );
-
-        // ✅ only set after successful fetch + valid data
-        setSelectedAsset(mostRecent[0]);
+        // 5. Initial Selection Logic (Only if no custom ID in URL on first load)
+        const assetIdFromUrl = getAssetIdFromUrl(window.location.search);
+        
+        if (!assetIdFromUrl) {
+          // Auto-select the most recent asset
+          const mostRecent = [...assets].sort(
+            (a, b) =>
+              new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+          );
+          // Update URL/state using the handler
+          handleAssetSelect(mostRecent[0]); 
+        }
+        // If assetIdFromUrl exists, the dedicated useEffect above will handle selecting it 
+        // once assetData is set.
       } else {
         setAssetData([]);
-        setSelectedAsset(null); // no data, no selection
+        handleAssetSelect(null); 
       }
     } catch (err) {
       console.error("Failed to fetch assets:", err);
       setAssetData([]);
-      setSelectedAsset(null); // error → clear selection
+      handleAssetSelect(null);
     } finally {
       setLoading(false);
     }
@@ -76,7 +139,6 @@ export const Assets: FC = () => {
 
   useEffect(() => {
     fetchAssetsData();
-    // FetchAllLocationApi();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -122,6 +184,7 @@ export const Assets: FC = () => {
     );
   }, [assetData, sortType, sortOrder, searchQuery]);
 
+
   const handleDeleteAsset = (id: string | number) => {
     const currentIndex = assetData.findIndex((a) => a.id === id);
     dispatch(deleteAsset(id))
@@ -131,13 +194,13 @@ export const Assets: FC = () => {
         setAssetData(newAssetList);
 
         if (newAssetList.length === 0) {
-          setSelectedAsset(null);
+          handleAssetSelect(null);
         } else {
           const newIndexToSelect = Math.min(
             currentIndex,
             newAssetList.length - 1
           );
-          setSelectedAsset(newAssetList[newIndexToSelect]);
+          handleAssetSelect(newAssetList[newIndexToSelect]);
         }
 
         toast.success("Asset deleted successfully!");
@@ -162,7 +225,7 @@ export const Assets: FC = () => {
               setSearchQuery,
               setShowNewAssetForm,
               setShowSettings,
-              setSelectedAsset,
+              handleAssetSelect, 
               setIsSettingsModalOpen
             )}
 
@@ -182,7 +245,7 @@ export const Assets: FC = () => {
                 <AssetsList
                   assets={sortedAndFilteredAssets}
                   selectedAsset={selectedAsset}
-                  setSelectedAsset={setSelectedAsset}
+                  setSelectedAsset={handleAssetSelect} 
                   setShowNewAssetForm={setShowNewAssetForm}
                   loading={loading}
                   sortType={sortType}
@@ -197,30 +260,23 @@ export const Assets: FC = () => {
                     <NewAssetForm
                       onCreate={(updatedOrNewAsset) => {
                         if (editingAsset) {
-                          // Edit Mode: Purane asset ko naye, merged data se replace karein
                           setAssetData((prevAssets) =>
                             prevAssets.map((asset) => {
                               if (asset.id === updatedOrNewAsset.id) {
-                                // Yahan hum purane asset (...asset) aur API se aaye naye data
-                                // (...updatedOrNewAsset) ko merge kar rahe hain.
-                                // Isse 'createdAt' jaisi properties bani rehti hain.
                                 return { ...asset, ...updatedOrNewAsset };
                               }
                               return asset;
                             })
                           );
                         } else {
-                          // Create Mode: List ke shuru mein naya asset add karein
                           setAssetData((prevAssets) => [
                             updatedOrNewAsset as Asset,
                             ...prevAssets,
                           ]);
                         }
 
-                        // Baaki logic same rahega
-                        setSelectedAsset(updatedOrNewAsset);
+                        handleAssetSelect(updatedOrNewAsset as Asset); 
                         setShowNewAssetForm(false);
-
                         setEditingAsset(null);
                       }}
                       onCancel={() => {
@@ -260,14 +316,12 @@ export const Assets: FC = () => {
           </>
         ) : (
           <>
-            {
-              <AssetStatusMoreDetails
-                setSeeMoreAssetStatus={setSeeMoreAssetStatus}
-                asset={selectedAsset}
-                fetchAssetsData={fetchAssetsData}
-                setShowNewAssetForm={setShowNewAssetForm}
-              />
-            }
+            <AssetStatusMoreDetails
+              setSeeMoreAssetStatus={setSeeMoreAssetStatus}
+              asset={selectedAsset}
+              fetchAssetsData={fetchAssetsData}
+              setShowNewAssetForm={setShowNewAssetForm}
+            />
           </>
         )}
       </div>

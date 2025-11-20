@@ -1,26 +1,28 @@
-// ./components/CustomDropdown.tsx (UPDATED)
+// ./components/CustomDropdown.tsx
 
 import React, { useState, useEffect, useRef } from "react";
-import { ChevronDown } from "lucide-react"; // Using lucide-react like your other icons
 import Loader from "../../Loader/Loader";
-import { Navigate, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 interface DropdownOption {
   id: string;
   name: string;
+  category?: string;
 }
 
 interface CustomDropdownProps {
   id: string;
   label: string;
-  value: string; // The selected ID
+  value: string;
   onChange: (value: string) => void;
   options: DropdownOption[];
-  onOpen: () => void; // Function to call to fetch data
+  onOpen: () => void;
   loading: boolean;
   placeholder: string;
   errorText?: string;
-  naigateTo?: string;
+
+  // only for measurement
+  measurementCategory?: string;
 }
 
 export function CustomDropdown({
@@ -33,76 +35,123 @@ export function CustomDropdown({
   loading,
   placeholder,
   errorText,
-  navigateTo,
+  measurementCategory,
 }: CustomDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
-
-  // This state holds what the user is typing
   const [inputValue, setInputValue] = useState("");
-  const navigate = useNavigate();
+
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Jab 'value' (selected ID) badalta hai, toh input field ko update karo
+  const isMeasurement = label === "Measurement Unit (Required)";
+
+  // Update input when value changes
   useEffect(() => {
     if (value) {
-      const selectedOption = options.find((item) => item.id === value);
-      setInputValue(selectedOption ? selectedOption.name : "");
+      const selectedOption = options.find((o) => o.id === value);
+      setInputValue(selectedOption ? selectedOption.name : value);
     } else {
-      setInputValue(""); // Agar value clear ho, toh input ko bhi clear karo
+      setInputValue("");
     }
-  }, [value, options, isOpen]); // isOpen add kiya taaki select karne par update ho
+  }, [value, options]);
 
-  // Click-Outside Handler
+  // Close when clicking outside
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handleOutside(e: MouseEvent) {
       if (
         dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
+        !dropdownRef.current.contains(e.target as Node)
       ) {
         setIsOpen(false);
-
-        // Agar user ne bahar click kiya aur kuch select nahi kiya, toh reset karo
-        const selectedOption = options.find((item) => item.id === value);
+        const selectedOption = options.find((o) => o.id === value);
         setInputValue(selectedOption ? selectedOption.name : "");
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [dropdownRef, value, options]);
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [value, options]);
 
-  // Options ko filter karo based on user input
-  const filteredOptions = Array.isArray(options)
-    ? options.filter((item) =>
-        item.name.toLowerCase().includes(inputValue.toLowerCase())
+  // --------------------------------------------------------------------
+  // LOGIC FOR NON-MEASUREMENT DROPDOWNS
+  // --------------------------------------------------------------------
+  const normalFilteredOptions = !isMeasurement
+    ? options.filter((o) =>
+        o.name.toLowerCase().includes(inputValue.toLowerCase())
       )
     : [];
 
+  // --------------------------------------------------------------------
+  // LOGIC FOR MEASUREMENT-DROPDOWN ONLY
+  // --------------------------------------------------------------------
+  let categoryFilteredOptions = options;
+
+  if (isMeasurement && measurementCategory) {
+    categoryFilteredOptions = options.filter(
+      (o) => o.category === measurementCategory
+    );
+  }
+
+  // Group by category
+  const groupedOptions = isMeasurement
+    ? categoryFilteredOptions.reduce((acc, item) => {
+        if (!acc[item.category || "OTHER"]) acc[item.category || "OTHER"] = [];
+        acc[item.category || "OTHER"].push(item);
+        return acc;
+      }, {} as Record<string, DropdownOption[]>)
+    : {};
+
+  // Filter inside groups
+  const filteredGroupedOptions: Record<string, DropdownOption[]> = {};
+
+  if (isMeasurement) {
+    Object.keys(groupedOptions).forEach((category) => {
+      const match = groupedOptions[category].filter((o) =>
+        o.name.toLowerCase().includes(inputValue.toLowerCase())
+      );
+      if (match.length > 0) filteredGroupedOptions[category] = match;
+    });
+  }
+
+  // Create option logic (measurement only)
+  const exactMatch =
+    isMeasurement &&
+    categoryFilteredOptions.some(
+      (o) => o.name.toLowerCase() === inputValue.toLowerCase()
+    );
+
+  const showCreateOption =
+    isMeasurement && inputValue.trim().length > 0 && !exactMatch && !loading;
+
+  // --------------------------------------------------------------------
+  // HANDLERS
+  // --------------------------------------------------------------------
   const handleInputClick = () => {
-    onOpen(); // Data fetch karo
-    setIsOpen(true); // List open karo
+    onOpen();
+    setIsOpen(true);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newInputValue = e.target.value;
-    setInputValue(newInputValue); // User jo type kar raha hai, woh dikhao
-    onChange(""); // Selection (ID) ko clear kardo kyunki user naya search kar raha hai
-    setIsOpen(true); // List ko open rakho
+    setInputValue(e.target.value);
+    onChange("");
+    setIsOpen(true);
   };
 
   const handleOptionClick = (item: DropdownOption) => {
-    onChange(item.id); // ID set karo
-    setInputValue(item.name); // Input field mein poora naam dikhao
-    setIsOpen(false); // List band karo
+    onChange(item.id);
+    setInputValue(item.name);
+    setIsOpen(false);
+  };
+
+  const handleCreateClick = () => {
+    const newId = inputValue.toLowerCase().replace(/\s+/g, "-");
+    onChange(newId);
+    setInputValue(inputValue);
+    setIsOpen(false);
   };
 
   return (
     <div className="w-full">
-      {/* Label only renders if provided */}
       {label && (
         <label
-          id={`${id}-label`}
           htmlFor={id}
           className="block text-sm font-medium text-gray-700"
         >
@@ -110,85 +159,94 @@ export function CustomDropdown({
         </label>
       )}
 
-      <div className={label ? "relative mt-2" : "relative"} ref={dropdownRef}>
+      <div className="relative mt-2" ref={dropdownRef}>
         <input
-          type="text"
           id={id}
+          type="text"
           value={inputValue}
-          onChange={handleInputChange}
           onClick={handleInputClick}
+          onChange={handleInputChange}
           placeholder={placeholder}
-          className="relative block w-full pl-2 cursor-default rounded-md bg-white py-2 pl-3 pr-10 text-left text-sm text-gray-700 shadow-sm border border-gray-300 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-          style={{ height: "40px" }}
-          aria-expanded={isOpen}
-          aria-labelledby={`${id}-label`}
+          className="block w-full pl-2 cursor-default rounded-md bg-white py-2 pl-3 pr-10 text-sm text-gray-700 border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
           autoComplete="off"
         />
 
         {isOpen && (
-          <div className="absolute z-50 p-2 max-h-64 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-            {/* Loading state */}
+          <div className="absolute z-50 w-full max-h-64 overflow-auto bg-white shadow-lg ring-1 ring-black ring-opacity-5 rounded-md p-2">
+
+            {/* LOADING */}
             {loading && (
-              <div className="cursor-default select-none px-4 py-2 text-gray-500">
+              <div className="px-4 py-2 text-gray-500">
                 <Loader />
               </div>
             )}
 
-            {/* Error state */}
-            {errorText && !loading && !options.length && (
-              <div className="cursor-default select-none px-4 py-2 text-red-600">
-                Error loading data
-              </div>
-            )}
-
-            {!loading && filteredOptions.length === 0 && (
-              <>
-                <div className="cursor-default select-none px-4 py-2 text-gray-500">
-                  No options found
-                </div>
-
-                {/* Yeh create button ka logic yahan nahi, 
-                  'showCreateOption' waale logic mein hona chahiye 
-                  jo maine pichle code mein diya tha.
-              */}
-
-                {/* <div className="flex justify-center item-center">
-                <button
-                  onClick={() => Navigate(navigateTo)}
-                  className="text-center"
-                >
-                  Create
-                </button>
-              </div> */}
-              </>
-            )}
-
+            {/* ---------------------------------------------------------------- */}
+            {/* NON-MEASUREMENT MODE (Asset, Location etc.) */}
+            {/* ---------------------------------------------------------------- */}
             {!loading &&
-              filteredOptions.map((item) => (
+              !isMeasurement &&
+              normalFilteredOptions.map((item) => (
                 <div
                   key={item.id}
                   onClick={() => handleOptionClick(item)}
-                  className="relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 hover:bg-indigo-600 hover:text-white"
-                  role="option"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      handleOptionClick(item);
-                    }
-                  }}
+                  className="cursor-pointer px-3 py-2 hover:bg-indigo-600 hover:text-white rounded-md"
                 >
-                  <span className="block truncate">{item.name}</span>
-                  {value === item.id && (
-                    <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-indigo-600"></span>
-                  )}
+                  {item.name}
                 </div>
               ))}
+
+            {/* ---------------------------------------------------------------- */}
+            {/* MEASUREMENT MODE (ONLY Measurement Unit dropdown) */}
+            {/* ---------------------------------------------------------------- */}
+
+            {/* CREATE */}
+            {!loading && showCreateOption && (
+              <div
+                onClick={handleCreateClick}
+                className="cursor-pointer px-4 py-2 text-indigo-600 hover:bg-indigo-100 rounded-md"
+              >
+                + Create “{inputValue}”
+              </div>
+            )}
+
+            {/* GROUPED OPTIONS */}
+            {!loading &&
+              isMeasurement &&
+              Object.keys(filteredGroupedOptions).map((category) => (
+                <div key={category}>
+                  <div className="px-3 py-1 text-xs font-semibold text-gray-500">
+                    {category}
+                  </div>
+
+                  {filteredGroupedOptions[category].map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => handleOptionClick(item)}
+                      className="cursor-pointer py-2 pl-3 pr-9 hover:bg-indigo-600 hover:text-white rounded-md"
+                    >
+                      {item.name}
+                    </div>
+                  ))}
+                </div>
+              ))}
+
+            {/* NOTHING FOUND */}
+            {!loading &&
+              isMeasurement &&
+              !Object.keys(filteredGroupedOptions).length &&
+              !showCreateOption && (
+                <div className="px-4 py-2 text-gray-500">
+                  No options found
+                </div>
+              )}
           </div>
         )}
       </div>
 
-      {/* Validation error */}
-      {errorText && <p className="mt-2 text-sm text-red-600">{errorText}</p>}
+      {errorText && (
+        <p className="mt-2 text-sm text-red-600">{errorText}</p>
+      )}
     </div>
   );
 }
