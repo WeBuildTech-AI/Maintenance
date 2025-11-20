@@ -248,7 +248,7 @@ export const mockPOsSeed: PurchaseOrder[] = [
     number: "Purchase Order #3",
     vendorId: "V-001",
     vendor: "Ramu Verma",
-    status: "Sent",
+    status: "Received",
     dueDate: new Date(Date.now() + 14 * 86400000).toISOString(),
     shippingAddress: {
       line1: "Warehouse B, Sector 9",

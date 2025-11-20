@@ -122,10 +122,14 @@ export function NewPOForm(props: NewPOFormProps) {
   });
 
   const [billingAddresses, setBillingAddresses] = useState<any[]>([]);
+  const [isLoadingBillingAddresses, setIsLoadingBillingAddresses] =
+    useState(false);
   const [hasFetchedBillingAddresses, setHasFetchedBillingAddresses] =
     useState(false);
   const [billingAddressSearchQuery, setBillingAddressSearchQuery] =
     useState("");
+  const [isBillingAddressSearchFocused, setIsBillingAddressSearchFocused] =
+    useState(false);
   const [showNewBillingAddressForm, setShowNewBillingAddressForm] =
     useState(false);
   const [isCreatingBillingAddress, setIsCreatingBillingAddress] =
@@ -340,14 +344,14 @@ export function NewPOForm(props: NewPOFormProps) {
     }
   };
   const fetchBillingAddresses = async () => {
-    // setIsLoadingBillingAddresses(true);
+    setIsLoadingBillingAddresses(true);
     try {
       const res = await purchaseOrderService.fetchAdressess();
       setBillingAddresses(res);
     } catch (error) {
       console.error("Failed to fetch billing addresses:", error);
     } finally {
-      // setIsLoadingBillingAddresses(false);
+      setIsLoadingBillingAddresses(false);
       setHasFetchedBillingAddresses(true);
     }
   };
@@ -356,7 +360,7 @@ export function NewPOForm(props: NewPOFormProps) {
   };
   const handleSelectBillingAddress = (address: any) => {
     setBillingAddressSearchQuery(address.name || address.street);
-    // setIsBillingAddressSearchFocused(false);
+    setIsBillingAddressSearchFocused(false);
     setNewPO((currentState) => ({
       ...currentState,
       billingAddressId: address.id,
