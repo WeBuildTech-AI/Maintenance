@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from "react";
+import { FC, Dispatch, SetStateAction } from "react"; // Added FC
 import type { ViewMode } from "../../purchase-orders/po.types";
 import {
   DropdownMenu,
@@ -17,22 +17,35 @@ import {
 } from "lucide-react";
 import { Input } from "../../ui/input";
 import AssetFilterBar from "./AssetFilterBar";
-import type { setSelectedAsset } from "../../../store/assets";
 import { useNavigate } from "react-router-dom";
 
-export function AssetHeaderComponent(
-  viewMode: ViewMode,
-  setViewMode: Dispatch<SetStateAction<ViewMode>>,
-  searchQuery: string,
-  setSearchQuery: Dispatch<SetStateAction<string>>,
-  setShowNewAssetForm: Dispatch<SetStateAction<boolean>>,
-  setSelectedAsset: Dispatch<SetStateAction<null>>,
-  setIsSettingsModalOpen: Dispatch<SetStateAction<boolean>>
-) {
-  const navigate = useNavigate()
+// 1. Define the Props interface for clarity and correct structure
+interface AssetHeaderProps {
+  viewMode: ViewMode;
+  setViewMode: Dispatch<SetStateAction<ViewMode>>;
+  searchQuery: string;
+  setSearchQuery: Dispatch<SetStateAction<string>>;
+  setShowNewAssetForm: Dispatch<SetStateAction<boolean>>;
+  // Note: Using 'any' here as the 'Asset' type is external/not defined here.
+  // Ideally, you would import the 'Asset' type.
+  setSelectedAsset: Dispatch<SetStateAction<any | null>>; 
+  setIsSettingsModalOpen: Dispatch<SetStateAction<boolean>>;
+}
+
+// 2. Convert to a proper React Functional Component (FC)
+export const AssetHeaderComponent: FC<AssetHeaderProps> = ({
+  viewMode,
+  setViewMode,
+  searchQuery,
+  setSearchQuery,
+  setShowNewAssetForm,
+  setSelectedAsset, // Destructured prop
+  setIsSettingsModalOpen,
+}) => {
+  const navigate = useNavigate();
   const currentPath = window.location.pathname;
+
   return (
-    
     <header className=" border-border bg-card px-6 py-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -56,10 +69,18 @@ export function AssetHeaderComponent(
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
-                  <DropdownMenuItem onClick={() => setViewMode("panel")}>
+                  {/* View Mode Switch Logic is correct */}
+                  <DropdownMenuItem 
+                    onClick={() => {
+                        setViewMode("panel");
+                        setSelectedAsset(null); // Clear selection when changing view to panel, if desired
+                    }}
+                  >
                     <PanelTop className="mr-2 h-4 w-4" /> Panel View
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setViewMode("table")}>
+                  <DropdownMenuItem 
+                    onClick={() => setViewMode("table")}
+                  >
                     <Table className="mr-2 h-4 w-4" /> Table View
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -68,12 +89,12 @@ export function AssetHeaderComponent(
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <div className="relative border-orange-600 focus:border-orange-600  ">
+          <div className="relative border-orange-600 focus:border-orange-600 	">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-orange-600" />
             <Input
               placeholder="Search assets "
-              className="w-96 pl-9 bg-white border-orange-600  "
-              value={searchQuery} // Use the prop directly
+              className="w-96 pl-9 bg-white border-orange-600 	"
+              value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
@@ -82,8 +103,8 @@ export function AssetHeaderComponent(
             onClick={() => {
               setShowNewAssetForm(true);
               setViewMode("panel");
+              setSelectedAsset(null); // Ensure no asset is selected when creating a new one
               navigate(`${currentPath}?create`, { replace: true }); 
-              // setSelectedAsset();
             }}
           >
             <Plus className="mr-2 h-4 w-4" />
@@ -98,7 +119,7 @@ export function AssetHeaderComponent(
         {/* Right: Settings button (only for table view) */}
         {viewMode === "table" && (
           <button
-           onClick={() => setIsSettingsModalOpen(true)}
+            onClick={() => setIsSettingsModalOpen(true)}
             className="p-2 cursor-pointer rounded-md border hover:bg-gray-100 transition"
           >
             <Settings className="h-5 w-5 text-orange-600" />
