@@ -98,4 +98,9 @@ export const assetService = {
     const res = await api.get(`assets/deleted/all`);
     return res.data;
   },
+
+  restoreAssetData: async (id: string): Promise<AssetResponse> => {
+    const res = await api.patch(`/assets/${id}/restore`);
+    return res.data;
+  },
 };

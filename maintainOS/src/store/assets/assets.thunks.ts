@@ -235,3 +235,24 @@ export const fetchDeleteAsset = createAsyncThunk(
     }
   }
 );
+
+export const restoreAssetData = createAsyncThunk(
+  "assets/restoreAssetData",
+  async (
+    {
+      id,
+    }: {
+      id: string;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const asset = await assetService.restoreAssetData(id);
+      return asset;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to restore asset Data"
+      );
+    }
+  }
+);

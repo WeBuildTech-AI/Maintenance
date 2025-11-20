@@ -25,6 +25,7 @@ interface AssetDetailProps {
   fetchAssetsData: () => void;
   setSeeMoreAssetStatus: Dispatch<SetStateAction<boolean>>;
   onClose: () => void;
+  restoreData:string;
 }
 
 export const AssetDetail: FC<AssetDetailProps> = ({
@@ -34,6 +35,7 @@ export const AssetDetail: FC<AssetDetailProps> = ({
   fetchAssetsData,
   setSeeMoreAssetStatus,
   onClose,
+  restoreData,
 }) => {
   const [showHistory, setShowHistory] = useState<boolean>(false);
   const user = useSelector((state: RootState) => state.auth.user);
@@ -53,6 +55,8 @@ export const AssetDetail: FC<AssetDetailProps> = ({
         onEdit={onEdit}
         onDelete={onDelete} // This prop is now passed down correctly
         onClose={onClose}
+        restoreData={restoreData}
+        fetchAssetsData={fetchAssetsData}
       />
 
       {showHistory ? (
