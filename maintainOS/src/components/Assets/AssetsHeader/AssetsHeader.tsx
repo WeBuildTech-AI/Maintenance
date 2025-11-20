@@ -26,8 +26,6 @@ interface AssetHeaderProps {
   searchQuery: string;
   setSearchQuery: Dispatch<SetStateAction<string>>;
   setShowNewAssetForm: Dispatch<SetStateAction<boolean>>;
-  // Note: Using 'any' here as the 'Asset' type is external/not defined here.
-  // Ideally, you would import the 'Asset' type.
   setSelectedAsset: Dispatch<SetStateAction<any | null>>; 
   setIsSettingsModalOpen: Dispatch<SetStateAction<boolean>>;
 }

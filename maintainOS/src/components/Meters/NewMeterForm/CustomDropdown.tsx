@@ -60,7 +60,7 @@ export function CustomDropdown({
       setInputValue("");
     }
   }, [value, options]);
-  
+
   useEffect(() => {
     function handleOutside(e: MouseEvent) {
       if (
@@ -175,7 +175,7 @@ export function CustomDropdown({
         />
 
         {isOpen && (
-          <div className="absolute z-50 w-full max-h-64 overflow-auto bg-white shadow-lg ring-1 ring-black ring-opacity-5 rounded-md p-2">
+          <div className="absolute z-50 w-full border mt-1 max-h-64 overflow-auto bg-white shadow-lg ring-1 ring-black ring-opacity-5 rounded-md p-2">
             {/* LOADING */}
             {loading && (
               <div className="px-4 py-2 text-gray-500">
@@ -215,9 +215,12 @@ export function CustomDropdown({
             {/* GROUPED OPTIONS */}
             {!loading &&
               isMeasurement &&
-              Object.keys(filteredGroupedOptions).map((category) => (
+              Object.keys(filteredGroupedOptions).map((category, index) => (
                 <div key={category}>
-                  <div className="px-3 py-1 text-xs font-semibold text-gray-500">
+                  <div
+                    className={`p-1 text-sm font-semibold text-orange-600 text-gray-500 
+    ${index !== 0 ? "border-t" : ""}`}
+                  >
                     {category}
                   </div>
 
@@ -225,7 +228,7 @@ export function CustomDropdown({
                     <div
                       key={item.id}
                       onClick={() => handleOptionClick(item)}
-                      className="cursor-pointer py-2 pl-3 pr-9 hover:bg-indigo-600 hover:text-white rounded-md"
+                      className="cursor-pointer py-2 px-3 capitalize pl-3 pr-9 hover:bg-indigo-600 hover:text-white rounded-md"
                     >
                       {item.name}
                     </div>
