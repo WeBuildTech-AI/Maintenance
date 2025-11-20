@@ -1,11 +1,10 @@
-import { DynamicSelect, type SelectOption } from "../NewWorkOrderForm/DynamicSelect";
-// ✅ ADD: Import Icons
+import { DynamicSelect, type SelectOption } from "./DynamicSelect";
 import { Clock, DollarSign, Wrench } from "lucide-react";
 
 interface Props {
   selectedPriority: string; onPriorityChange: (value: string) => void;
+  // ✅ Added missing props definition
   qrCodeValue: string; onQrCodeChange: (value: string) => void;
-  
   teamIds: string[]; onTeamSelect: (value: string | string[]) => void;
   teamOptions: SelectOption[]; isTeamsLoading: boolean;
   onFetchTeams: () => void; onCreateTeam: () => void;
@@ -14,27 +13,22 @@ interface Props {
   categoryOptions: SelectOption[]; isCategoriesLoading: boolean;
   onFetchCategories: () => void; onCreateCategory: () => void;
 
-  // Added Props for Parts
   partIds: string[]; onPartSelect: (value: string | string[]) => void;
   partOptions: SelectOption[]; isPartsLoading: boolean;
   onFetchParts: () => void; onCreatePart: () => void;
   
-  // Added Props for Vendors
   vendorIds: string[]; onVendorSelect: (value: string | string[]) => void;
   vendorOptions: SelectOption[]; isVendorsLoading: boolean;
   onFetchVendors: () => void; onCreateVendor: () => void;
   
   activeDropdown: string | null; setActiveDropdown: (name: string | null) => void;
-
-  // ✅ ADD: Props for panel logic
   onPanelClick: (panel: 'time' | 'cost' | 'parts') => void;
   isEditMode: boolean;
 }
 
-// ✅ ADD: Helper component for tracking buttons
-const TrackingButton = ({ icon: Icon, label, onClick }) => (
+const TrackingButton = ({ icon: Icon, label, onClick }: any) => (
   <button
-    type="button" // Prevent form submission
+    type="button"
     onClick={onClick}
     className="flex items-center w-full p-4 bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded-lg transition-colors duration-200"
   >
@@ -48,17 +42,16 @@ const TrackingButton = ({ icon: Icon, label, onClick }) => (
   </button>
 );
 
-
 export function WorkOrderClassificationAndLinks({
   selectedPriority, onPriorityChange,
-  qrCodeValue, onQrCodeChange, // Added missing props
-  teamIds, onTeamSelect, teamOptions, isTeamsLoading, onFetchTeams, onCreateTeam, // Added missing props
+  // ✅ Destructure new props
+  qrCodeValue, onQrCodeChange,
+  teamIds, onTeamSelect, teamOptions, isTeamsLoading, onFetchTeams, onCreateTeam,
   categoryIds, onCategorySelect, categoryOptions, isCategoriesLoading, onFetchCategories, onCreateCategory,
   partIds, onPartSelect, partOptions, isPartsLoading, onFetchParts, onCreatePart,
   vendorIds, onVendorSelect, vendorOptions, isVendorsLoading, onFetchVendors, onCreateVendor,
   activeDropdown, setActiveDropdown,
-  onPanelClick, // ✅ ADD: Destructure
-  isEditMode    // ✅ ADD: Destructure
+  onPanelClick, isEditMode
 }: Props) {
   const priorities = [
     { name: "None", color: "bg-blue-500", textColor: "text-white" },
@@ -77,21 +70,10 @@ export function WorkOrderClassificationAndLinks({
           ))}
         </div>
       </div>
-      
-      {/* ✅ ADD: Missing fields from your screenshot (Teams, QR Code) */}
-      <div className="mt-4">
-        <h3 className="mb-4 text-base font-medium text-gray-900">QR Code/Barcode</h3>
-        <input
-          type="text"
-          value={qrCodeValue}
-          onChange={(e) => onQrCodeChange(e.target.value)}
-          placeholder="Enter or scan code"
-          className="w-full h-12 px-4 border border-gray-300 rounded-md text-sm bg-white"
-        />
-      </div>
 
+      {/* ✅ Teams Field Added */}
       <div className="mt-4">
-        <h3 className="mb-4 text-base font-medium text-gray-900">Teams in Charge</h3>
+        <h3 className="mb-4 text-base font-medium text-gray-900">Teams</h3>
         <DynamicSelect name="teams" placeholder="Select teams..." options={teamOptions} loading={isTeamsLoading} value={teamIds} onSelect={onTeamSelect} onFetch={onFetchTeams} ctaText="+ Create New Team" onCtaClick={onCreateTeam} activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown} />
       </div>
 
@@ -108,7 +90,26 @@ export function WorkOrderClassificationAndLinks({
         <DynamicSelect name="vendors" placeholder="Select vendors..." options={vendorOptions} loading={isVendorsLoading} value={vendorIds} onSelect={onVendorSelect} onFetch={onFetchVendors} ctaText="+ Add New Vendor" onCtaClick={onCreateVendor} activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown} />
       </div>
 
-      {/* ✅ ADD: Cost Tracking section is now conditional */}
+      {/* ✅ QR Code Field Added */}
+      <div className="mt-6">
+        <label className="mb-2 block text-sm font-medium text-gray-900">
+          QR Code/Barcode
+        </label>
+        <input
+          type="text"
+          value={qrCodeValue}
+          onChange={(e) => onQrCodeChange(e.target.value)}
+          placeholder="Enter or scan code"
+          className="w-full h-12 px-4 border border-gray-300 rounded-md text-sm bg-white"
+        />
+        <div className="mt-2">
+          <span className="text-gray-900 text-sm">or </span>
+          <span className="text-orange-600 text-sm cursor-pointer hover:underline">
+            Generate Code
+          </span>
+        </div>
+      </div>
+
       {isEditMode && (
         <div className="mt-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">

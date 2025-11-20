@@ -18,25 +18,41 @@ import {
   User,
 } from "lucide-react";
 
-// ✅ 1. IMPORT DISPATCH and THUNK
 import { useDispatch } from "react-redux";
-import type { AppDispatch } from "../../../../store"; // Path adjust karein agar zaroori ho
+import type { AppDispatch } from "../../../../store";
 import { deleteWorkOrder } from "../../../../store/workOrders/workOrders.thunks";
-
-// ✅ 2. IMPORT THE REUSABLE "NEW WORK ORDER FORM"
 import { NewWorkOrderForm } from "../../NewWorkOrderForm/NewWorkOrderFrom";
-
-// ✅ 3. IMPORT THE *REAL* PANELS (for panel switching)
 import TimeOverviewPanel from "../../panels/TimeOverviewPanel";
 import OtherCostsPanel from "../../panels/OtherCostsPanel";
 import UpdatePartsPanel from "../../panels/UpdatePartsPanel";
-
-// ✅ 4. IMPORT COMMENTS SECTION
 import { CommentsSection } from "../../ToDoView/CommentsSection";
+import WorkOrderOptionsDropdown from "../../ToDoView/WorkOrderOptionsDropdown";
 
+// Helper to safely render object/string values
+const safeRender = (value: any) => {
+  if (!value) return null;
+  if (typeof value === "string" || typeof value === "number") return value;
+  if (typeof value === "object") {
+    // Check common name properties
+    return value.name || value.title || value.fullName || value.label || "—";
+  }
+  return "—";
+};
 
-// --- Sub-Panels (Tailwind) ---
-// (Aapka original code)
+// Special helper for assignedTo which might be an array or object
+const safeRenderAssignee = (workOrder: any) => {
+  // Priority 1: Direct assignedTo object/string
+  if (workOrder.assignedTo) {
+    return safeRender(workOrder.assignedTo);
+  }
+  // Priority 2: assignees array
+  if (Array.isArray(workOrder.assignees) && workOrder.assignees.length > 0) {
+    return safeRender(workOrder.assignees[0]);
+  }
+  return "Unassigned";
+};
+
+// --- Sub-Panels ---
 function PartsPanel({ onBack }) {
   return (
     <div className="p-6">
@@ -44,7 +60,6 @@ function PartsPanel({ onBack }) {
       <p className="mt-2.5 text-gray-500">
         (Demo Panel) Parts management UI goes here…
       </p>
-
       <button
         onClick={onBack}
         className="mt-5 px-4 py-2 border rounded-md cursor-pointer bg-gray-50 text-gray-700 hover:bg-gray-100"
@@ -62,7 +77,6 @@ function TimePanel({ onBack }) {
       <p className="mt-2.5 text-gray-500">
         (Demo Panel) Time overview UI goes here…
       </p>
-
       <button
         onClick={onBack}
         className="mt-5 px-4 py-2 border rounded-md cursor-pointer bg-gray-50 text-gray-700 hover:bg-gray-100"
@@ -72,8 +86,6 @@ function TimePanel({ onBack }) {
     </div>
   );
 }
-
-
 
 function CostPanel({ onBack, workOrder }) {
   const total = (workOrder.otherCosts || []).reduce(
@@ -87,11 +99,9 @@ function CostPanel({ onBack, workOrder }) {
       <p className="mt-2.5 text-gray-500">
         {workOrder.otherCosts?.length || 0} entries
       </p>
-
       <p className="mt-2.5 text-lg font-semibold text-gray-900">
         ${total.toFixed(2)}
       </p>
-
       <button
         onClick={onBack}
         className="mt-5 px-4 py-2 border rounded-md cursor-pointer bg-gray-50 text-gray-700 hover:bg-gray-100"
@@ -102,7 +112,6 @@ function CostPanel({ onBack, workOrder }) {
   );
 }
 
-// ✅ ADDED: Date formatting helper
 function formatModalDateTime(isoString) {
   if (!isoString) return "N/A";
   try {
@@ -124,30 +133,27 @@ function formatModalDateTime(isoString) {
   }
 }
 
-// --- Main Modal (Hybrid: Inline frame, Tailwind content) ---
-// ✅ ADDED 'onRefresh' prop
-export default function WorkOrderDetailsModal({ open, onClose, workOrder,  onRefreshWorkOrders }) {
+export default function WorkOrderDetailsModal({
+  open,
+  onClose,
+  workOrder,
+  onRefreshWorkOrders,
+}) {
   if (!open || !workOrder) return null;
 
   const [panel, setPanel] = useState("details");
   const [activeStatus, setActiveStatus] = useState(workOrder.status);
-  const [isExpanded, setIsExpanded] = useState(false); // <-- Resize state
-  
-  // ✅ 5. ADD 'isEditing' STATE TO SWITCH VIEWS
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  
-  // ✅ 6. ADD STATE FOR COMMENTS
+
   const [comment, setComment] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const commentTextAreaRef = useRef<HTMLTextAreaElement>(null);
 
-  // ✅ 7. ADD STATE AND REFS FOR DROPDOWN (Aapke snippet se)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  
-  // ✅ 9. SETUP DISPATCH
+
   const dispatch = useDispatch<AppDispatch>();
 
   useEffect(() => {
@@ -155,27 +161,6 @@ export default function WorkOrderDetailsModal({ open, onClose, workOrder,  onRef
       setActiveStatus(workOrder.status);
     }
   }, [workOrder]);
-
-  // ✅ 10. ADD EFFECT TO CLOSE DROPDOWN ON OUTSIDE CLICK (Aapke snippet se)
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(event.target as Node)
-      ) {
-        setIsDropdownOpen(false);
-      }
-    };
-    if (isDropdownOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isDropdownOpen]);
-
 
   const otherCosts = workOrder.otherCosts || [];
   const totalOtherCost = otherCosts.reduce(
@@ -185,74 +170,66 @@ export default function WorkOrderDetailsModal({ open, onClose, workOrder,  onRef
 
   const handleClose = () => {
     setPanel("details");
-    setIsEditing(false); // <-- Reset edit state
-    setActiveStatus(workOrder.status); // Reset status on close
-    setIsExpanded(false); // Reset expansion
+    setIsEditing(false);
+    setActiveStatus(workOrder.status);
+    setIsExpanded(false);
     onClose();
-    onRefreshWorkOrders?.(); // ✅ Call refresh on close
+    onRefreshWorkOrders?.();
   };
-  
-  // ✅ 11. ADD HANDLER TO EXIT EDIT MODE
+
   const handleCancelEdit = () => {
     setIsEditing(false);
   };
 
-  // ✅ 12. ADD DELETE HANDLER (API ke saath)
   const handleDeleteClick = async () => {
     setIsDropdownOpen(false);
     if (window.confirm("Are you sure you want to delete this work order?")) {
       try {
         await dispatch(deleteWorkOrder(workOrder.id)).unwrap();
-        handleClose(); // Delete ke baad modal band kar dein (jo refresh trigger karega)
+        handleClose();
       } catch (error) {
         console.error("Failed to delete work order:", error);
-        // Aap yahaan toast notification dikha sakte hain
       }
     }
   };
 
   return (
-    // Backdrop (Inline Style)
     <div
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 999999999, // High z-index
+        zIndex: 999999999,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "rgba(0,0,0,0.45)", // Black overlay
+        backgroundColor: "rgba(0,0,0,0.45)",
       }}
       onClick={handleClose}
     >
-      {/* Modal Box (Inline Style) */}
       <div
         style={{
           background: "white",
-          width: isExpanded ? "95%" : "900px", // <-- Dynamic width
-          height: "90vh", // <-- FIXED Height
-          overflow: "hidden", // <-- Correct, content inside scrolls
+          width: isExpanded ? "95%" : "900px",
+          height: "90vh",
+          overflow: "hidden",
           borderRadius: "14px",
           padding: 0,
-          position: "relative", // <-- Correct, for floating button
+          position: "relative",
           boxShadow: "0 25px 40px rgba(0,0,0,0.25)",
           display: "flex",
           flexDirection: "column",
-          transition: "width 0.3s ease-in-out", // <-- Resize animation
+          transition: "width 0.3s ease-in-out",
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* --- 1. NAYA BLUE HEADER (TAILWIND) [FIXED] --- */}
         <div className="bg-blue-600 text-white px-6 py-4 grid grid-cols-3 items-center flex-shrink-0 z-10">
-          {/* LEFT — EXPAND ICON & BACK BUTTON */}
           <div className="flex justify-start items-center gap-4">
             <button
-              onClick={() => setIsExpanded(!isExpanded)} // <-- Resize toggle
+              onClick={() => setIsExpanded(!isExpanded)}
               className="text-white p-1 rounded-lg hover:bg-white/20 transition"
             >
               {isExpanded ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
             </button>
-            {/* ✅ 13. Show 'Back' button only in edit mode */}
             {isEditing && (
               <button
                 onClick={handleCancelEdit}
@@ -264,9 +241,7 @@ export default function WorkOrderDetailsModal({ open, onClose, workOrder,  onRef
             )}
           </div>
 
-          {/* CENTER DATE / TITLE */}
-          <div className="text-sm font-medium text-center truncate"> {/* Added truncate */}
-            {/* ✅ 14. Show 'Edit Work Order' title when editing */}
+          <div className="text-sm font-medium text-center truncate">
             {isEditing ? (
               <span className="font-bold text-base">Edit Work Order</span>
             ) : (
@@ -281,7 +256,6 @@ export default function WorkOrderDetailsModal({ open, onClose, workOrder,  onRef
             )}
           </div>
 
-          {/* RIGHT — CLOSE BUTTON */}
           <div className="flex justify-end">
             <button
               onClick={handleClose}
@@ -292,8 +266,6 @@ export default function WorkOrderDetailsModal({ open, onClose, workOrder,  onRef
           </div>
         </div>
 
-        {/* --- 2. WHITE HEADER (TAILWIND) [FIXED] --- */}
-        {/* ✅ 15. Only show when NOT editing */}
         {panel === "details" && !isEditing && (
           <div className="p-6 border-b bg-white flex-shrink-0 z-10">
             <div className="flex justify-between items-center">
@@ -301,23 +273,20 @@ export default function WorkOrderDetailsModal({ open, onClose, workOrder,  onRef
                 {workOrder.title}
               </h2>
 
-              {/* --- Header Buttons --- */}
               <div className="flex items-center gap-2">
                 <button className="bg-white rounded-md px-4 py-2 border border-blue-500 text-blue-600 flex items-center gap-2 cursor-pointer hover:bg-blue-50 font-medium">
                   <MessageSquare size={18} />
                   Comments
                 </button>
-                {/* ✅ 16. THIS 'Edit' BUTTON NOW SETS 'isEditing' TO TRUE */}
-                <button 
+                <button
                   onClick={() => setIsEditing(true)}
                   className="bg-white rounded-md px-4 py-2 border border-blue-500 text-blue-600 flex items-center gap-2 cursor-pointer hover:bg-blue-50 font-medium"
                 >
                   <Edit size={18} />
                   Edit
                 </button>
-                
-                {/* ✅ 17. REPLACED BUTTON WITH YOUR SNIPPET */}
-                <div className="relative"> {/* Wrapper for positioning */}
+
+                <div className="relative">
                   <button
                     ref={buttonRef}
                     onClick={() => setIsDropdownOpen((p) => !p)}
@@ -326,91 +295,54 @@ export default function WorkOrderDetailsModal({ open, onClose, workOrder,  onRef
                     <MoreHorizontal className="h-4 w-4" />
                   </button>
 
-                  {isDropdownOpen && (
-                    <div
-                      ref={dropdownRef}
-                      className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-72 mt-2" // ✅ Updated to w-72
-                      style={{ right: 0, top: "40px" }} // User's inline CSS
-                    >
-                      <ul className="text-sm text-gray-700">
-                        <li
-                          onClick={() => { alert("Mark as unread"); setIsDropdownOpen(false); }}
-                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                        >
-                          Mark as unread
-                        </li>
-                        <li
-                          onClick={() => { alert("Copy to new work order"); setIsDropdownOpen(false); }}
-                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                        >
-                          Copy to New Work Order
-                        </li>
-                        <li
-                          onClick={() => { alert("Save as Template"); setIsDropdownOpen(false); }}
-                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                        >
-                          Save as Work Order Template
-                        </li>
-                        <li
-                          onClick={() => { alert("Export to PDF"); setIsDropdownOpen(false); }}
-                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                        >
-                          Export to PDF
-                        </li>
-                        <li
-                          onClick={() => { alert("Email to Vendors"); setIsDropdownOpen(false); }}
-                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                        >
-                          Email to Vendors
-                        </li>
-                        <hr className="my-1 border-gray-200" />
-                        <li
-                          onClick={handleDeleteClick} // ✅ Connected real delete handler
-                          className="px-4 py-2 text-red-600 hover:bg-red-50 cursor-pointer"
-                        >
-                          Delete
-                        </li>
-                      </ul>
-                    </div>
-                  )}
+                  <WorkOrderOptionsDropdown
+                    isOpen={isDropdownOpen}
+                    onClose={() => setIsDropdownOpen(false)}
+                    triggerRef={buttonRef}
+                    onDelete={handleDeleteClick}
+                    onMarkUnread={() => {
+                      alert("Mark as unread");
+                      setIsDropdownOpen(false);
+                    }}
+                    onCopy={() => {
+                      alert("Copy to new work order");
+                      setIsDropdownOpen(false);
+                    }}
+                    onExport={() => {
+                      alert("Export to PDF");
+                      setIsDropdownOpen(false);
+                    }}
+                  />
                 </div>
-                {/* ✅ END OF REPLACEMENT */}
-
               </div>
             </div>
             <div className="mt-2.5 flex gap-4 text-sm text-gray-500 px-6 pb-2">
               <span className="flex items-center gap-1">
-                <Repeat size={14} /> {workOrder.priority}
+                <Repeat size={14} /> {safeRender(workOrder.priority)}
               </span>
               <span className="flex items-center gap-1">
-                <CalendarDays size={14} /> Due by {workOrder.dueDate}
+                <CalendarDays size={14} /> Due by{" "}
+                {workOrder.dueDate ? formatModalDateTime(workOrder.dueDate) : "—"}
               </span>
             </div>
           </div>
         )}
 
-        {/* --- 3. SCROLLABLE CONTENT AREA (TAILWIND) --- */}
-        <div className="overflow-y-auto relative bg-gray-50"> {/* ✅ Added bg-gray-50 */}
-          
-          {/* ✅ 18. Main conditional rendering logic */}
+        <div className="overflow-y-auto relative bg-gray-50">
           {isEditing ? (
-            // --- EDITING PANEL ---
             <div className="bg-white">
               <NewWorkOrderForm
                 isEditMode={true}
                 existingWorkOrder={workOrder}
                 editId={workOrder.id}
-                onCancel={handleCancelEdit} // "Cancel" button acts as "Back"
+                onCancel={handleCancelEdit}
                 onCreate={() => {
-                  handleClose(); // Close modal on successful update
+                  handleClose();
                 }}
               />
             </div>
           ) : (
-            // --- DETAILS PANEL ---
             <>
-              {/* PANELS (Tailwind) */}
-              {/* ✅ 19. Use REAL panels instead of demo panels */}
               {panel === "parts" && (
                 <UpdatePartsPanel onCancel={() => setPanel("details")} />
               )}
@@ -429,10 +361,8 @@ export default function WorkOrderDetailsModal({ open, onClose, workOrder,  onRef
                 />
               )}
 
-              {/* MAIN DETAILS PANEL (Tailwind) */}
               {panel === "details" && (
                 <>
-                  {/* STATUS PANEL (Tailwind) */}
                   <div className="p-6 border-b">
                     <h3 className="text-sm font-medium mb-2.5 text-gray-700">
                       Status
@@ -476,19 +406,22 @@ export default function WorkOrderDetailsModal({ open, onClose, workOrder,  onRef
                     </div>
                   </div>
 
-                  {/* META SECTION (Tailwind) */}
                   <div className="p-6 flex justify-between border-b bg-white">
                     <div>
                       <h4 className="text-sm font-medium text-gray-700">
                         Due Date
                       </h4>
-                      <p className="text-sm text-gray-500">{workOrder.dueDate}</p>
+                      <p className="text-sm text-gray-500">
+                        {workOrder.dueDate || "—"}
+                      </p>
                     </div>
                     <div>
                       <h4 className="text-sm font-medium text-gray-700">
                         Priority
                       </h4>
-                      <p className="text-sm text-gray-500">{workOrder.priority}</p>
+                      <p className="text-sm text-gray-500">
+                        {safeRender(workOrder.priority)}
+                      </p>
                     </div>
                     <div>
                       <h4 className="text-sm font-medium text-gray-700">
@@ -498,7 +431,6 @@ export default function WorkOrderDetailsModal({ open, onClose, workOrder,  onRef
                     </div>
                   </div>
 
-                  {/* ASSIGNED (Tailwind) */}
                   <div className="p-6 border-b bg-white">
                     <h4 className="text-sm font-medium mb-2 text-gray-700">
                       Assigned To
@@ -506,12 +438,11 @@ export default function WorkOrderDetailsModal({ open, onClose, workOrder,  onRef
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 bg-gray-200 rounded-full"></div>
                       <span className="text-sm text-gray-800">
-                        {workOrder.assignedTo || "Unassigned"}
+                        {safeRenderAssignee(workOrder)}
                       </span>
                     </div>
                   </div>
 
-                  {/* DESCRIPTION (Tailwind) */}
                   <div className="p-6 border-b bg-white">
                     <h4 className="text-sm font-medium mb-2 text-gray-700">
                       Description
@@ -521,7 +452,6 @@ export default function WorkOrderDetailsModal({ open, onClose, workOrder,  onRef
                     </p>
                   </div>
 
-                  {/* DETAILS GRID (Tailwind) */}
                   <div className="p-6 grid grid-cols-2 gap-6 border-b bg-white">
                     <div>
                       <h4 className="text-sm font-medium mb-1.5 text-gray-700">
@@ -529,7 +459,7 @@ export default function WorkOrderDetailsModal({ open, onClose, workOrder,  onRef
                       </h4>
                       <span className="flex items-center gap-1.5 text-sm text-gray-800">
                         <Factory size={16} className="text-gray-500" />
-                        {workOrder.asset}
+                        {safeRender(workOrder.asset)}
                       </span>
                     </div>
                     <div>
@@ -538,7 +468,7 @@ export default function WorkOrderDetailsModal({ open, onClose, workOrder,  onRef
                       </h4>
                       <span className="flex items-center gap-1.5 text-sm text-gray-800">
                         <MapPin size={16} className="text-gray-500" />
-                        {workOrder.location}
+                        {safeRender(workOrder.location)}
                       </span>
                     </div>
                     <div>
@@ -547,7 +477,7 @@ export default function WorkOrderDetailsModal({ open, onClose, workOrder,  onRef
                       </h4>
                       <span className="flex items-center gap-1.5 text-sm text-gray-800">
                         <Clock size={16} className="text-gray-500" />
-                        {workOrder.estimated_time}
+                        {workOrder.estimated_time || "—"}
                       </span>
                     </div>
                     <div>
@@ -556,62 +486,66 @@ export default function WorkOrderDetailsModal({ open, onClose, workOrder,  onRef
                       </h4>
                       <span className="flex items-center gap-1.5 text-sm text-gray-800">
                         <CalendarDays size={16} className="text-gray-500" />
-                        {workOrder.work_type}
+                        {safeRender(workOrder.work_type || workOrder.workType)}
                       </span>
                     </div>
                   </div>
 
-                  {/* ✅ 20. TIME & COST (Yellow Line Design) */}
                   <div className="p-6 border-b bg-white">
                     <h2 className="text-xl font-semibold mb-3 text-gray-900">
                       Time & Cost Tracking
                     </h2>
                     <div className="space-y-2">
-                      <div 
+                      <div
                         onClick={() => setPanel("parts")}
                         className="flex justify-between items-center py-3 border-b-2 border-yellow-400 cursor-pointer group"
                       >
-                        <span className="text-sm font-medium text-gray-700">Parts</span>
-                        <div className="flex items-center text-sm text-gray-500 group-hover:text-blue-600">
-                          Add
-                          <ChevronRight className="w-4 h-4 ml-1" />
-                        </div>
-                      </div>
-                      
-                      <div 
-                        onClick={() => setPanel("time")}
-                        className="flex justify-between items-center py-3 border-b-2 border-yellow-400 cursor-pointer group"
-                      >
-                        <span className="text-sm font-medium text-gray-700">Time</span>
+                        <span className="text-sm font-medium text-gray-700">
+                          Parts
+                        </span>
                         <div className="flex items-center text-sm text-gray-500 group-hover:text-blue-600">
                           Add
                           <ChevronRight className="w-4 h-4 ml-1" />
                         </div>
                       </div>
 
-                      <div 
+                      <div
+                        onClick={() => setPanel("time")}
+                        className="flex justify-between items-center py-3 border-b-2 border-yellow-400 cursor-pointer group"
+                      >
+                        <span className="text-sm font-medium text-gray-700">
+                          Time
+                        </span>
+                        <div className="flex items-center text-sm text-gray-500 group-hover:text-blue-600">
+                          Add
+                          <ChevronRight className="w-4 h-4 ml-1" />
+                        </div>
+                      </div>
+
+                      <div
                         onClick={() => setPanel("cost")}
                         className="flex justify-between items-start py-3 border-b-2 border-yellow-400 cursor-pointer group"
                       >
-                        <span className="text-sm font-medium text-gray-700">Other Costs</span>
+                        <span className="text-sm font-medium text-gray-700">
+                          Other Costs
+                        </span>
                         <div className="text-right">
                           <div className="flex items-center text-sm text-gray-500 group-hover:text-blue-600 justify-end">
                             {otherCosts.length} entries
                             <ChevronRight className="w-4 h-4 ml-1" />
                           </div>
-                           <div className="text-base font-semibold text-gray-900 mt-0.5">
-                             ${totalOtherCost.toFixed(2)}
-                           </div>
+                          <div className="text-base font-semibold text-gray-900 mt-0.5">
+                            ${totalOtherCost.toFixed(2)}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* ✅ 21. FOOTER (Tailwind) - MOVED HERE */}
                   <div className="p-6 flex justify-between text-sm text-gray-600 bg-white border-b">
                     <div className="flex items-center gap-1.5">
                       Created by
-                      <User className="w-4 h-4 text-blue-500" /> 
+                      <User className="w-4 h-4 text-blue-500" />
                       <strong className="font-semibold text-gray-800">
                         {workOrder.createdBy || "System"}
                       </strong>
@@ -622,7 +556,6 @@ export default function WorkOrderDetailsModal({ open, onClose, workOrder,  onRef
                     </div>
                   </div>
 
-                  {/* ✅ 22. ADDED COMMENTS SECTION */}
                   <CommentsSection
                     ref={commentTextAreaRef}
                     comment={comment}
@@ -632,34 +565,30 @@ export default function WorkOrderDetailsModal({ open, onClose, workOrder,  onRef
                     fileRef={fileRef}
                   />
 
-                  {/* Empty space for floating button */}
                   <div className="h-24 flex-shrink-0 bg-white"></div>
                 </>
               )}
             </>
           )}
-        </div> {/* End of scrollable area */}
-        
-        {/* --- FLOATING BUTTON (FIXED) --- */}
-        {/* ✅ 23. This is outside the scrollable div, so it's fixed */}
-        {/* It only shows if panel is "details" AND not in edit mode */}
+        </div>
+
         {panel === "details" && !isEditing && (
           <div
             style={{
               position: "absolute",
-              bottom: "24px", // 1.5rem
+              bottom: "24px",
               left: "50%",
               transform: "translateX(-50%)",
               zIndex: 10,
             }}
           >
-            <button className="flex items-center gap-2 bg-white text-blue-600 border-2 border-yellow-400 hover:bg-yellow-50 px-6 py-2 rounded-full shadow-lg font-medium whitespace-nowrap">
-              <View size={18} className="text-blue-500"/>
+            <button className="flex items-center gap-2 bg-white text-blue-600 border-2 border-yellow-400 hover:bg-blue-50 px-6 py-2 rounded-full shadow-lg font-medium whitespace-nowrap">
+              <View size={18} className="text-blue-500" />
               View Procedure
             </button>
           </div>
         )}
-      </div> 
-    </div> 
+      </div>
+    </div>
   );
 }

@@ -145,7 +145,8 @@ export function WorkOrders() {
 
       {/* Main View Logic */}
       {!loading && (
-        <div className="flex-1 overflow-hidden">
+        // ✅ FIX: 'overflow-hidden' ko 'overflow-auto' se badal diya hai
+        <div className="flex-1 overflow-auto">
           {viewMode === "todo" && (
             <ToDoView
               todoWorkOrders={todoWorkOrders}
@@ -158,7 +159,13 @@ export function WorkOrders() {
             />
           )}
 
-          {viewMode === "list" && <ListView workOrders={filteredWorkOrders}  onRefreshWorkOrders={handleRefreshWorkOrders} />}
+          {/* ✅ FIX: 'onRefresh' prop yahaan add kar diya hai */}
+          {viewMode === "list" && (
+            <ListView 
+              workOrders={filteredWorkOrders} 
+              onRefresh={getWorkOrders} 
+            />
+          )}
 
           {viewMode === "calendar" && (
             <CalendarView workOrders={filteredWorkOrders} />

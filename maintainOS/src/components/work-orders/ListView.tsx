@@ -49,7 +49,7 @@ type Sorter = Parameters<NonNullable<TableProps<any>["onChange"]>>[2];
 const mapAntSortOrder = (order: "asc" | "desc"): "ascend" | "descend" =>
   order === "asc" ? "ascend" : "descend";
 
-// Row Styling
+// Row Styling & Custom Scrollbar
 const tableStyles = `
   .selected-row-class > td {
     background-color: #eff6ff !important;
@@ -64,6 +64,22 @@ const tableStyles = `
   }
   .ant-table-row:hover > td {
     background-color: #f9fafb !important;
+  }
+
+  /* ✅ CUSTOM SCROLLBAR STYLING FOR ANT TABLE */
+  .ant-table-body::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .ant-table-body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .ant-table-body::-webkit-scrollbar-thumb {
+    background: #d1d5db; /* gray-300 */
+    border-radius: 9999px;
+  }
+  .ant-table-body::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af; /* gray-400 */
   }
 `;
 
@@ -210,8 +226,10 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
         return (
           <div className="flex items-center gap-3 font-medium text-gray-800 h-full">
             {isEditing ? (
-              // ⭐ FIX 1: Yahaan se onClick hata diya
-              <div className="flex items-center justify-center h-8 w-8 cursor-pointer">
+              <div
+                className="flex items-center justify-center h-8 w-8 cursor-pointer"
+                onClick={() => toggleRowSelection(record.id)}
+              >
                 <input
                   type="checkbox"
                   checked={isSelected}
@@ -220,18 +238,21 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
                 />
               </div>
             ) : (
-              // ⭐ FIX 1: Yahaan se bhi onClick hata diya
-              <div className="flex items-center justify-center h-8 w-8 cursor-pointer">
+              <div
+                className="flex items-center justify-center h-8 w-8 cursor-pointer"
+                onClick={() => toggleRowSelection(record.id)}
+              >
                 <Avatar className="h-8 w-8 flex-shrink-0">
                   <ClipboardList size={18} />
                 </Avatar>
               </div>
             )}
 
+            {/* ⭐ CLICK → OPEN VIEW MODAL ⭐ */}
             <span
               className="truncate cursor-pointer hover:text-blue-600 hover:underline"
               onClick={(e) => {
-                e.stopPropagation(); // Row click ko trigger hone se roka
+                e.stopPropagation();
                 setSelectedWO(record.full);
                 setViewModal(true);
               }}
@@ -251,7 +272,7 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
         key: "status",
         width: 150,
         render: (status: string) => (
-          <Badge status="processing" text={status} />
+          <Badge variant="secondary">{status}</Badge>
         ),
       },
       { title: "Priority", dataIndex: "priority", key: "priority", width: 130 },
@@ -300,11 +321,7 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
         <div className="flex items-center justify-end gap-4 h-full">
           <AntTooltip title="Edit">
             <button
-              // ⭐ FIX 2: stopPropagation add kiya
-              onClick={(e) => {
-                e.stopPropagation();
-                alert("Edit " + record.title);
-              }}
+              onClick={() => alert("Edit " + record.title)}
               className="text-gray-500 hover:text-blue-600"
             >
               <Pencil size={18} />
@@ -313,11 +330,7 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
 
           <AntTooltip title="Duplicate">
             <button
-              // ⭐ FIX 2: stopPropagation add kiya
-              onClick={(e) => {
-                e.stopPropagation();
-                alert("Duplicate " + record.title);
-              }}
+              onClick={() => alert("Duplicate " + record.title)}
               className="text-gray-500 hover:text-blue-600"
             >
               <Copy size={18} />
@@ -325,11 +338,7 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
           </AntTooltip>
 
           <MoreActionsMenuWorkOrder onDelete={() => setModalWO(record.full)}>
-            <button
-              // ⭐ FIX 2: stopPropagation add kiya
-              onClick={(e) => e.stopPropagation()}
-              className="text-gray-500 hover:text-blue-600"
-            >
+            <button className="text-gray-500 hover:text-blue-600">
               <MoreVertical size={18} />
             </button>
           </MoreActionsMenuWorkOrder>
@@ -381,7 +390,7 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
             columns={columns}
             dataSource={dataSource}
             pagination={false}
-            scroll={{ x: "120%", y: "75vh" }}
+            scroll={{ x: "120%", y: "calc(100vh - 280px)" }}
             rowClassName={(record: any) =>
               selectedWorkOrderIds.includes(record.id)
                 ? "selected-row-class"
@@ -401,6 +410,45 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
             })}
           />
         </CardContent>
+
+        {/* ⭐ PAGINATION FOOTER (Fixed at bottom) ⭐ */}
+        <div className="flex-shrink-0 flex items-center justify-end p-3 border-t border-gray-100 bg-white">
+          <div className="inline-flex items-center gap-4 rounded-md border bg-white p-2 shadow-sm">
+            <span className="text-sm text-gray-600">
+              1 – {workOrders.length} of {workOrders.length}
+            </span>
+            <button className="text-gray-400 hover:text-gray-700">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+            <button className="text-gray-400 hover:text-gray-700">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
       </Card>
 
       {/* DELETE MODAL (Single) */}

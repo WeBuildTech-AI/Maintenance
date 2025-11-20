@@ -22,17 +22,15 @@ import { procedureService } from "../../../store/procedures/procedures.service";
 import { LinkedProcedurePreviewModal } from "./LinkedProcedurePreviewModal";
 import AddProcedureModal from "../WorkloadView/Modal/AddProcedureModal";
 
-// ✅ ADD: Import the panels for Cost Tracking
+// Panels for edit mode
 import TimeOverviewPanel from "./../panels/TimeOverviewPanel";
 import OtherCostsPanel from "./../panels/OtherCostsPanel";
 import UpdatePartsPanel from "./../panels/UpdatePartsPanel";
-
 
 function parseDateInputToISO(input?: string): string | undefined {
   if (!input) return undefined;
   const v = input.trim();
   if (!v) return undefined;
-  // ... (rest of function is unchanged)
   const maybe = Date.parse(v);
   if (!Number.isNaN(maybe) && v.includes("T")) return new Date(maybe).toISOString();
 
@@ -74,48 +72,65 @@ export function NewWorkOrderForm({
 
   const isEditMode = propIsEditMode ?? location.pathname.includes("/edit");
   const id = editId ?? existingWorkOrder?.id ?? null;
+  // ✅ Fix Prefill: Check if we are on the create route
+  const isCreateRoute = location.pathname.endsWith("/create");
 
-  // ✅ ADD: State for panel management
   const [currentPanel, setCurrentPanel] = useState<'form' | 'time' | 'cost' | 'parts'>('form');
 
+  // --- Form States ---
   const [loading, setLoading] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  
   const [workOrderName, setWorkOrderName] = useState("");
   const [description, setDescription] = useState("");
   const [locationId, setLocationId] = useState("");
+  
   const [assetIds, setAssetIds] = useState<string[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  
   const [dueDate, setDueDate] = useState("");
   const [startDate, setStartDate] = useState("");
+  
+  // ✅ Default values
   const [selectedWorkType, setSelectedWorkType] = useState("Reactive");
   const [selectedPriority, setSelectedPriority] = useState("None");
   const [qrCodeValue, setQrCodeValue] = useState("");
+  const [recurrence, setRecurrence] = useState("Does not repeat");
+  
+  const [teamIds, setTeamIds] = useState<string[]>([]);
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
+  const [partIds, setPartIds] = useState<string[]>([]);
+  const [vendorIds, setVendorIds] = useState<string[]>([]);
 
+  // Options for Dropdowns
   const [locationOptions, setLocationOptions] = useState<SelectOption[]>([]);
   const [assetOptions, setAssetOptions] = useState<SelectOption[]>([]);
-  const [teamIds, setTeamIds] = useState<string[]>([]);
   const [teamOptions, setTeamOptions] = useState<SelectOption[]>([]);
-  const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [categoryOptions, setCategoryOptions] = useState<SelectOption[]>([]);
-  const [partIds, setPartIds] = useState<string[]>([]);
   const [partOptions, setPartOptions] = useState<SelectOption[]>([]);
-  const [vendorIds, setVendorIds] = useState<string[]>([]);
   const [vendorOptions, setVendorOptions] = useState<SelectOption[]>([]);
 
+  // Procedures
   const [linkedProcedure, setLinkedProcedure] = useState<any>(null);
   const [isProcedureLoading, setIsProcedureLoading] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isAddProcModalOpen, setIsAddProcModalOpen] = useState(false);
 
+  // Fetch Helper
   const handleFetch = async (type: string, setOptions: (val: SelectOption[]) => void) => {
     try {
       const { data } = await fetchFilterData(type);
-      setOptions(data);
+      const normalized = Array.isArray(data) ? data.map((d: any) => ({
+        id: d.id,
+        name: d.name || d.title || d.fullName || "Unknown"
+      })) : [];
+      setOptions(normalized);
     } catch (e) {
       console.error(`Failed fetching ${type}`, e);
     }
   };
 
+  // Load Procedure from URL
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const procedureId = params.get("procedureId");
@@ -126,7 +141,6 @@ export function NewWorkOrderForm({
         try {
           const allProcs = await procedureService.fetchProcedures();
           const foundProc = allProcs.find((p: any) => p.id === procedureId);
-          
           if (foundProc) {
             setLinkedProcedure(foundProc);
             navigate(location.pathname, { replace: true });
@@ -143,8 +157,11 @@ export function NewWorkOrderForm({
     }
   }, [location.search, linkedProcedure, navigate, location.pathname]);
 
-
+  // Load Existing Data
   useEffect(() => {
+    // ✅ FIX: If we are on CREATE route, DO NOT load existing data
+    if (isCreateRoute) return;
+
     const fillFields = (data: any) => {
       if (!data) return;
       setWorkOrderName(data.title || "");
@@ -152,13 +169,18 @@ export function NewWorkOrderForm({
       setLocationId(data.locationId || "");
       setAssetIds(data.assetIds || []);
       setSelectedUsers(data.assigneeIds || []);
+      
       setDueDate(data.dueDate ? new Date(data.dueDate).toLocaleDateString("en-US") : "");
       setStartDate(data.startDate ? new Date(data.startDate).toLocaleDateString("en-US") : "");
+      
       setSelectedWorkType(data.workType || "Reactive");
       setSelectedPriority(
         data.priority ? data.priority.charAt(0).toUpperCase() + data.priority.slice(1) : "None"
       );
-      setQrCodeValue(data.qrCodeValue || "");
+      
+      // ✅ Fill new fields
+      setQrCodeValue(data.qrCode || "");
+      setRecurrence(data.recurrence || "Does not repeat");
       setTeamIds(data.assignedTeamIds || []);
       setCategoryIds(data.categoryIds || []);
       setPartIds(data.partIds || []);
@@ -173,7 +195,6 @@ export function NewWorkOrderForm({
       if (isEditMode && id) {
         try {
           setLoading(true);
-          // ✅ FIX: Use existingWorkOrder if available, otherwise fetch
           if (existingWorkOrder) {
             fillFields(existingWorkOrder);
           } else {
@@ -191,17 +212,29 @@ export function NewWorkOrderForm({
     };
 
     loadWorkOrder();
-  }, [dispatch, id, existingWorkOrder, isEditMode]);
+  }, [dispatch, id, existingWorkOrder, isEditMode, isCreateRoute]); // Added isCreateRoute dependency
 
+  // ✅ Reset form when explicitly creating
   useEffect(() => {
-    if (location.pathname.endsWith("/create") && !location.search.includes("procedureId")) {
+    if (isCreateRoute && !location.search.includes("procedureId")) {
       setWorkOrderName("");
       setDescription("");
       setLocationId("");
-      // ... (reset all other fields)
+      setAssetIds([]);
+      setSelectedUsers([]);
+      setDueDate("");
+      setStartDate("");
+      setSelectedWorkType("Reactive");
+      setSelectedPriority("None");
+      setQrCodeValue("");
+      setRecurrence("Does not repeat");
+      setTeamIds([]);
+      setCategoryIds([]);
+      setPartIds([]);
+      setVendorIds([]);
       setLinkedProcedure(null);
     }
-  }, [location.pathname, location.search]);
+  }, [location.pathname, location.search, isCreateRoute]);
 
   const handleSubmit = async () => {
     try {
@@ -211,20 +244,69 @@ export function NewWorkOrderForm({
       }
 
       const formData = new FormData();
-      // ... (append all form data)
-      formData.append("title", workOrderName);
-      formData.append("description", description || "");
-      // ...
+      
+      // ✅ Only append if value exists
+      if (workOrderName) formData.append("title", workOrderName);
+      if (description) formData.append("description", description);
+      
+      // Default status
+      formData.append("status", "open");
+
+      // ✅ Only append Work Type if selected
+      if (selectedWorkType) formData.append("workType", selectedWorkType);
+
+      // ❌ FIX: Backend throwing 400 error for recurrence. 
+      // Commenting this out until backend supports it.
+      // if (recurrence) formData.append("recurrence", recurrence);
+
+      // ✅ Only append QR Code if filled
+      if (qrCodeValue) formData.append("qrCode", qrCodeValue);
+
+      // Priority mapping
+      const priorityMap: Record<string, string> = {
+        None: "low", Low: "low", Medium: "medium", High: "high", Urgent: "urgent",
+      };
+      // Only send priority if not None (or send default low)
+      const mappedPriority = priorityMap[selectedPriority] || "low";
+      formData.append("priority", mappedPriority);
+
+      if (locationId) formData.append("locationId", locationId);
+
+      // Arrays - Only append if length > 0
+      if (assetIds.length > 0) assetIds.forEach((i) => i && formData.append("assetIds[]", i));
+      if (vendorIds.length > 0) vendorIds.forEach((i) => i && formData.append("vendorIds[]", i));
+      if (partIds.length > 0) partIds.forEach((i) => i && formData.append("partIds[]", i));
+      if (teamIds.length > 0) teamIds.forEach((i) => i && formData.append("assignedTeamIds[]", i));
+      if (categoryIds.length > 0) categoryIds.forEach((i) => i && formData.append("categoryIds[]", i));
+      if (selectedUsers.length > 0) selectedUsers.forEach((i) => i && formData.append("assigneeIds[]", i));
+
       if (linkedProcedure) {
         formData.append("procedureIds[]", linkedProcedure.id);
       }
-      // ...
+
+      // Dates - Only append if valid
+      const isoDue = parseDateInputToISO(dueDate);
+      const isoStart = parseDateInputToISO(startDate);
+      if (isoDue) formData.append("dueDate", isoDue);
+      if (isoStart) formData.append("startDate", isoStart);
 
       const authorId = authUser?.id;
       if (!authorId) {
         toast.error("User information missing. Please re-login.");
         return;
       }
+
+      // ✅ DEBUG LOG: See exactly what is being sent
+      const payloadObj: any = {};
+      formData.forEach((value, key) => {
+        if (payloadObj[key]) {
+            if (!Array.isArray(payloadObj[key])) payloadObj[key] = [payloadObj[key]];
+            payloadObj[key].push(value);
+        } else {
+            payloadObj[key] = value;
+        }
+      });
+      console.log("🚀 FINAL API PAYLOAD:", payloadObj);
 
       if (isEditMode && id) {
         await (dispatch as any)(
@@ -241,58 +323,25 @@ export function NewWorkOrderForm({
       }
 
       await (dispatch as any)(fetchWorkOrders()).unwrap();
-      // ✅ FIX: Call onCreate OR navigate back
-      if (onCreate) {
-        onCreate();
-      } else {
-        navigate("/work-orders");
-      }
+      if (onCreate) onCreate();
+      else navigate("/work-orders");
+
     } catch (err: any) {
       console.error("❌ Error saving work order:", err);
-      toast.error(err?.message || "Failed to save work order");
+      // Show backend error message if available
+      const errorMsg = err?.message || (typeof err === 'string' ? err : "Failed to save work order");
+      toast.error(errorMsg);
     }
   };
 
   if (loading || isProcedureLoading)
-    return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-gray-600 text-sm">Loading...</p>
-      </div>
-    );
+    return <div className="flex items-center justify-center h-full"><p className="text-gray-600 text-sm">Loading...</p></div>;
 
-  // ✅ ADD: Panel Rendering Logic
-  // Panel: TIME
-  if (currentPanel === 'time') {
-    return (
-      <TimeOverviewPanel
-        onCancel={() => setCurrentPanel('form')}
-        selectedWorkOrder={existingWorkOrder} // Pass the loaded work order
-        workOrderId={id} // Pass the id
-      />
-    );
-  }
+  // Panel Switching
+  if (currentPanel === 'time') return <TimeOverviewPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={existingWorkOrder} workOrderId={id} />;
+  if (currentPanel === 'cost') return <OtherCostsPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={existingWorkOrder} workOrderId={id} />;
+  if (currentPanel === 'parts') return <UpdatePartsPanel onCancel={() => setCurrentPanel('form')} />;
 
-  // Panel: COST
-  if (currentPanel === 'cost') {
-    return (
-      <OtherCostsPanel
-        onCancel={() => setCurrentPanel('form')}
-        selectedWorkOrder={existingWorkOrder}
-        workOrderId={id}
-      />
-    );
-  }
-
-  // Panel: PARTS
-  if (currentPanel === 'parts') {
-    return (
-      <UpdatePartsPanel
-        onCancel={() => setCurrentPanel('form')}
-      />
-    );
-  }
-
-  // Panel: FORM (default)
   return (
     <>
       <div className="flex h-full flex-col overflow-hidden rounded-lg border bg-white">
@@ -344,12 +393,16 @@ export function NewWorkOrderForm({
             setStartDate={setStartDate}
             selectedWorkType={selectedWorkType}
             setSelectedWorkType={setSelectedWorkType}
+            // ✅ Pass Recurrence Props
+            recurrence={recurrence}
+            setRecurrence={setRecurrence}
             onOpenInviteModal={() => toast("Invite modal open")}
           />
 
           <WorkOrderClassificationAndLinks
             selectedPriority={selectedPriority}
             onPriorityChange={setSelectedPriority}
+            // ✅ Pass QR and Teams Props
             qrCodeValue={qrCodeValue}
             onQrCodeChange={setQrCodeValue}
             teamIds={teamIds}
@@ -358,28 +411,31 @@ export function NewWorkOrderForm({
             isTeamsLoading={false}
             onFetchTeams={() => handleFetch("team-members", setTeamOptions)}
             onCreateTeam={() => toast("Open Create Team Modal")}
+            
             categoryIds={categoryIds}
             onCategorySelect={(val) => setCategoryIds(val as string[])}
             categoryOptions={categoryOptions}
             isCategoriesLoading={false}
             onFetchCategories={() => handleFetch("categories", setCategoryOptions)}
             onCreateCategory={() => toast("Open Create Category Modal")}
+            
             partIds={partIds}
             onPartSelect={(val) => setPartIds(val as string[])}
             partOptions={partOptions}
             isPartsLoading={false}
             onFetchParts={() => handleFetch("parts", setPartOptions)}
             onCreatePart={() => toast("Open Create Part Modal")}
+            
             vendorIds={vendorIds}
             onVendorSelect={(val) => setVendorIds(val as string[])}
             vendorOptions={vendorOptions}
             isVendorsLoading={false}
             onFetchVendors={() => handleFetch("vendors", setVendorOptions)}
             onCreateVendor={() => toast("Open Create Vendor Modal")}
+            
             activeDropdown={activeDropdown}
             setActiveDropdown={setActiveDropdown}
             
-            // ✅ ADD: Pass panel click handler and edit mode flag
             onPanelClick={setCurrentPanel}
             isEditMode={isEditMode}
           />
@@ -388,7 +444,7 @@ export function NewWorkOrderForm({
         {/* Footer */}
         <div className="sticky bottom-0 flex items-center justify-end gap-3 border-t bg-white px-6 py-4">
           <button
-            type="button" // Add type="button"
+            type="button"
             onClick={() => {
               if (onCancel) onCancel();
               else navigate("/work-orders");
@@ -398,7 +454,7 @@ export function NewWorkOrderForm({
             Cancel
           </button>
           <button
-            type="button" // Add type="button"
+            type="button"
             onClick={handleSubmit}
             className="rounded-md border border-orange-600 bg-orange-600 px-6 py-2 text-sm font-medium text-white hover:bg-orange-700 transition-colors"
           >
@@ -407,7 +463,6 @@ export function NewWorkOrderForm({
         </div>
       </div>
       
-      {/* Modals */}
       <LinkedProcedurePreviewModal
         isOpen={isPreviewOpen}
         onClose={() => setIsPreviewOpen(false)}

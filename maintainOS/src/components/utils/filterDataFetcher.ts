@@ -4,7 +4,6 @@ import { partService } from "../../store/parts/parts.service";
 import { assetService } from "../../store/assets/assets.service";
 import { vendorService } from "../../store/vendors/vendors.service";
 import { procedureService } from "../../store/procedures/procedures.service";
-import { teamMemberService } from "../../store/teamMembers/teamMembers.service";
 import { userService } from "../../store/users/users.service";
 import { categoryService } from "../../store/categories/categories.service";
 import { teamService } from "../../store/teams/teams.service";

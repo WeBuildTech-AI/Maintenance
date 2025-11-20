@@ -14,6 +14,8 @@ interface Props {
   selectedWorkType: string;
   setSelectedWorkType: (value: string) => void;
   onOpenInviteModal: () => void;
+  recurrence: string;
+  setRecurrence: (value: string) => void;
 }
 
 export function AssignmentAndScheduling({
@@ -26,21 +28,43 @@ export function AssignmentAndScheduling({
   selectedWorkType,
   setSelectedWorkType,
   onOpenInviteModal,
+  recurrence,
+  setRecurrence,
 }: Props) {
   const [assignedOpen, setAssignedOpen] = useState(false);
   const [assignedSearch, setAssignedSearch] = useState("");
   const [workTypeOpen, setWorkTypeOpen] = useState(false);
+  const [recurrenceOpen, setRecurrenceOpen] = useState(false);
   const [users, setUsers] = useState<{ id: string; name: string }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const workTypes = ["Reactive", "Preventive", "Other"];
 
-  // ✅ Calendar states
   const [showDueCalendar, setShowDueCalendar] = useState(false);
   const [showStartCalendar, setShowStartCalendar] = useState(false);
   const dueRef = useRef<HTMLDivElement>(null);
   const startRef = useRef<HTMLDivElement>(null);
 
-  // ✅ Close calendar when clicking outside
+  // Days of week
+  const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  // WEEKLY + DAILY shared state
+  const [interval, setInterval] = useState(1);
+  const [selectedWeekDays, setSelectedWeekDays] = useState<string[]>(daysOfWeek);
+
+  // MONTHLY STATES
+  const [monthInterval, setMonthInterval] = useState(1);
+  const [monthDay, setMonthDay] = useState("1st");
+
+  const monthDaysList = [
+    "1st","2nd","3rd","4th","5th","6th","7th","8th","9th","10th",
+    "11th","12th","13th","14th","15th","16th","17th","18th","19th","20th",
+    "21st","22nd","23rd","24th","25th","26th","27th","28th","29th","30th","31st",
+  ];
+
+  // YEARLY STATE
+  const [yearInterval, setYearInterval] = useState(1);
+
+  // Close dropdowns / calendars when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dueRef.current && !dueRef.current.contains(event.target as Node)) {
@@ -49,12 +73,13 @@ export function AssignmentAndScheduling({
       if (startRef.current && !startRef.current.contains(event.target as Node)) {
         setShowStartCalendar(false);
       }
+      setRecurrenceOpen(false);
+      setWorkTypeOpen(false);
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ✅ Fetch users from backend (/users/summary)
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
@@ -78,27 +103,53 @@ export function AssignmentAndScheduling({
     if (assignedOpen && users.length === 0) fetchUsers();
   }, [assignedOpen]);
 
-  // ✅ Safe filtering
   const filteredUsers = users.filter((u) =>
     (u.name || "").toLowerCase().includes(assignedSearch.toLowerCase())
   );
 
-  // ✅ Toggle user by ID, not name
   const toggleUser = (id: string) => {
     setSelectedUsers((prev) =>
       prev.includes(id) ? prev.filter((uid) => uid !== id) : [...prev, id]
     );
   };
 
-  // ✅ Get display name from ID
   const getUserName = (id: string) => {
     const user = users.find((u) => u.id === id);
     return user ? user.name : "Unknown";
   };
 
+  // Shared handler for day clicks (Daily & Weekly)
+  const handleDayClick = (day: string) => {
+    setSelectedWeekDays((prev) => {
+      let next: string[];
+      if (prev.includes(day)) {
+        next = prev.filter((d) => d !== day);
+      } else {
+        next = [...prev, day];
+      }
+
+      // If user is on Daily and unselects any day -> switch to Weekly
+      if (recurrence === "Daily" && next.length < daysOfWeek.length) {
+        setRecurrence("Weekly");
+      }
+
+      return next;
+    });
+  };
+
+  // Yearly text based on startDate
+  const getYearlyDateLabel = () => {
+    if (!startDate) return "the start date";
+    const d = new Date(startDate);
+    if (isNaN(d.getTime())) return "the start date";
+    const month = (d.getMonth() + 1).toString().padStart(2, "0");
+    const day = d.getDate().toString().padStart(2, "0");
+    return `${month}/${day}`;
+  };
+
   return (
     <>
-      {/* Assigned To Section */}
+      {/* Assigned To */}
       <div className="mt-4">
         <h3 className="mb-4 text-base font-medium text-gray-900">Assigned To</h3>
         <div className="relative">
@@ -169,13 +220,9 @@ export function AssignmentAndScheduling({
                 Users
               </div>
 
-              {/* ✅ Scrollable container — shows 4 items max */}
               <div
                 className="overflow-y-auto"
-                style={{
-                  maxHeight: "200px",
-                  scrollbarWidth: "thin",
-                }}
+                style={{ maxHeight: "200px", scrollbarWidth: "thin" }}
               >
                 {isLoading ? (
                   <div className="p-4 text-center text-gray-500 text-sm">
@@ -216,7 +263,7 @@ export function AssignmentAndScheduling({
         </div>
       </div>
 
-      {/* Estimated Time section */}
+      {/* Estimated Time */}
       <div className="mt-4">
         <h3 className="mb-4 text-base font-medium text-gray-900">
           Estimated Time
@@ -245,7 +292,7 @@ export function AssignmentAndScheduling({
         </div>
       </div>
 
-      {/* Due Date section */}
+      {/* Due Date */}
       <div className="mt-4" ref={dueRef}>
         <h3 className="mb-4 text-base font-medium text-gray-900">Due Date</h3>
         <div className="grid grid-cols-2 gap-4 relative">
@@ -290,7 +337,7 @@ export function AssignmentAndScheduling({
         </div>
       </div>
 
-      {/* Start Date section */}
+      {/* Start Date */}
       <div className="mt-4" ref={startRef}>
         <h3 className="mb-4 text-base font-medium text-gray-900">Start Date</h3>
         <div className="grid grid-cols-2 gap-4 relative">
@@ -335,22 +382,82 @@ export function AssignmentAndScheduling({
         </div>
       </div>
 
-      {/* Recurrence */}
+      {/* RECURRENCE */}
       <div className="mt-4">
         <h3 className="mb-4 text-base font-medium text-gray-900">Recurrence</h3>
+
         <div className="grid grid-cols-2 gap-4">
-          <div className="relative">
-            <select className="w-full h-12 px-4 pr-10 border border-gray-300 rounded-md text-gray-900 bg-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none">
-              <option>Does not repeat</option>
-              <option>Daily</option>
-              <option>Weekly</option>
-              <option>Monthly</option>
-            </select>
-          </div>
+          {/* Recurrence dropdown */}
           <div className="relative">
             <div
-              onClick={() => setWorkTypeOpen(!workTypeOpen)}
-              className="flex items-center justify-between cursor-pointer text-gray-900 h-12"
+              onClick={() => {
+                setRecurrenceOpen(!recurrenceOpen);
+                setWorkTypeOpen(false);
+              }}
+              className={`flex items-center justify-between w-full h-12 px-4 
+                border rounded-md bg-white cursor-pointer text-gray-900
+                ${
+                  recurrenceOpen
+                    ? "border-yellow-400 ring-2 ring-yellow-300"
+                    : "border-gray-300"
+                }`}
+            >
+              <span>{recurrence}</span>
+              <ChevronDown
+                className={`ml-2 h-4 w-4 text-blue-500 transition-transform ${
+                  recurrenceOpen ? "rotate-180" : ""
+                }`}
+              />
+            </div>
+
+            {recurrenceOpen && (
+              <div
+                onMouseDown={(e) => e.stopPropagation()}
+                className="absolute left-0 mt-2 w-full rounded-md border border-gray-200 bg-white shadow-xl z-40"
+              >
+                {["Does not repeat", "Daily", "Weekly", "Monthly", "Yearly"].map(
+                  (r) => (
+                    <div
+                      key={r}
+                      onClick={() => {
+                        if (r === "Daily") {
+                          // Daily = all days selected
+                          setSelectedWeekDays(daysOfWeek);
+                        }
+                        setRecurrence(r);
+                        setRecurrenceOpen(false);
+                      }}
+                      className={`px-4 py-3 cursor-pointer text-sm ${
+                        recurrence === r
+                          ? "text-blue-600 font-semibold bg-blue-50 flex justify-between"
+                          : "text-gray-700 hover:bg-gray-100"
+                      }`}
+                    >
+                      <span>{r}</span>
+                      {recurrence === r && (
+                        <span className="text-blue-600">✔</span>
+                      )}
+                    </div>
+                  )
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Work Type dropdown */}
+          <div className="relative">
+            <div
+              onClick={() => {
+                setWorkTypeOpen(!workTypeOpen);
+                setRecurrenceOpen(false);
+              }}
+              className={`flex items-center justify-between w-full h-12 px-4 
+                border rounded-md bg-white cursor-pointer text-gray-900
+                ${
+                  workTypeOpen
+                    ? "border-blue-400 ring-2 ring-blue-300"
+                    : "border-gray-300"
+                }`}
             >
               <span>
                 Work Type:{" "}
@@ -362,8 +469,12 @@ export function AssignmentAndScheduling({
                 }`}
               />
             </div>
+
             {workTypeOpen && (
-              <div className="absolute left-0 mt-2 w-48 rounded-md border border-gray-200 bg-white shadow-lg z-10">
+              <div
+                onMouseDown={(e) => e.stopPropagation()}
+                className="absolute left-0 mt-2 w-full rounded-md border border-gray-200 bg-white shadow-xl z-50"
+              >
                 {workTypes.map((type) => (
                   <div
                     key={type}
@@ -371,7 +482,7 @@ export function AssignmentAndScheduling({
                       setSelectedWorkType(type);
                       setWorkTypeOpen(false);
                     }}
-                    className={`px-4 py-2 cursor-pointer text-sm ${
+                    className={`px-4 py-3 cursor-pointer text-sm ${
                       selectedWorkType === type
                         ? "text-blue-600 font-semibold bg-blue-50 flex justify-between"
                         : "text-gray-700 hover:bg-gray-100"
@@ -387,6 +498,136 @@ export function AssignmentAndScheduling({
             )}
           </div>
         </div>
+
+        {/* DAILY UI */}
+        {recurrence === "Daily" && (
+          <div className="mt-4">
+            <div className="flex gap-2 mb-2">
+              {daysOfWeek.map((day) => (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => handleDayClick(day)}
+                  className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
+                    selectedWeekDays.includes(day)
+                      ? "bg-blue-500 text-white"
+                      : "bg-white border border-blue-200 text-blue-500 hover:bg-blue-50"
+                  }`}
+                >
+                  {day}
+                </button>
+              ))}
+            </div>
+            <p className="text-sm text-gray-500 mt-2">
+              Repeats every day after completion of this Work Order.
+            </p>
+          </div>
+        )}
+
+        {/* WEEKLY UI */}
+        {recurrence === "Weekly" && (
+          <div className="mt-4">
+            <div className="flex items-center gap-2 text-sm text-gray-700 mb-3">
+              <span>Every</span>
+              <input
+                type="number"
+                value={interval}
+                onChange={(e) => setInterval(Number(e.target.value))}
+                className="w-12 border-b border-gray-400 text-center outline-none focus:border-blue-500"
+              />
+              <span>week on</span>
+            </div>
+
+            <div className="flex gap-2 mb-2">
+              {daysOfWeek.map((day) => (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => handleDayClick(day)}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
+                    selectedWeekDays.includes(day)
+                      ? "bg-blue-500 text-white"
+                      : "bg-white border border-blue-200 text-blue-500 hover:bg-blue-50"
+                  }`}
+                >
+                  {day}
+                </button>
+              ))}
+            </div>
+
+            <p className="text-sm text-gray-500 mt-2">
+              Repeats every {interval} week{interval > 1 ? "s" : ""} on{" "}
+              {selectedWeekDays.join(", ")} after completion of this Work Order.
+            </p>
+          </div>
+        )}
+
+        {/* MONTHLY UI */}
+        {recurrence === "Monthly" && (
+          <div className="mt-4">
+            <div className="flex items-center gap-2 text-sm text-gray-700 mb-3">
+              <span>Every</span>
+
+              <select
+                value={monthInterval}
+                onChange={(e) => setMonthInterval(Number(e.target.value))}
+                className="border-b border-gray-400 outline-none focus:border-blue-500 bg-white"
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+
+              <span>month on the</span>
+
+              <select
+                value={monthDay}
+                onChange={(e) => setMonthDay(e.target.value)}
+                className="border-b border-gray-400 outline-none focus:border-blue-500 bg-white"
+              >
+                {monthDaysList.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <p className="text-sm text-gray-500 mt-2">
+              Repeats every month on the {monthDay} day of the month after
+              completion of this Work Order.
+            </p>
+          </div>
+        )}
+
+        {/* YEARLY UI */}
+        {recurrence === "Yearly" && (
+          <div className="mt-4">
+            <div className="flex items-center gap-2 text-sm text-gray-700 mb-3">
+              <span>Every</span>
+              <select
+                value={yearInterval}
+                onChange={(e) => setYearInterval(Number(e.target.value))}
+                className="border-b border-gray-400 outline-none focus:border-blue-500 bg-white"
+              >
+                {[1, 2, 3, 4, 5, 10].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+              <span>year</span>
+            </div>
+
+            <p className="text-sm text-gray-500 mt-2">
+              Repeats every {yearInterval} year
+              {yearInterval > 1 ? "s" : ""} on {getYearlyDateLabel()} after
+              completion of this Work Order.
+            </p>
+          </div>
+        )}
       </div>
     </>
   );
