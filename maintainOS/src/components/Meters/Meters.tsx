@@ -11,7 +11,6 @@ import {
   type MeterResponse,
 } from "../../store/meters";
 import type { ViewMode } from "../purchase-orders/po.types";
-
 import { useNavigate, useMatch } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import { useDispatch } from "react-redux";
@@ -22,9 +21,6 @@ import RecordReadingModal from "./MeterDetail/RecordReadingModal";
 
 export function Meters() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedType, setSelectedType] = useState("all");
-  const [selectedAsset, setSelectedAsset] = useState("all");
-  const [selectedLocation, setSelectedLocation] = useState("all");
   const [showSettings, setShowSettings] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("panel");
   const [meterData, setMeterData] = useState<MeterResponse[]>([]);
@@ -36,13 +32,11 @@ export function Meters() {
   >(null);
   const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [sortType, setSortType] = useState("Name"); // "Name", "Status", or "Last Reading"
-  const [sortOrder, setSortOrder] = useState("asc"); // "asc" or "desc"
-  const [openSection, setOpenSection] = useState("Name");
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const headerRef = useRef(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   // const modalRef = useRef(null);
+  
 
   const dispatch = useDispatch<AppDispatch>();
 

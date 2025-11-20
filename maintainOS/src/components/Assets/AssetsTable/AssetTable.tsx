@@ -136,9 +136,9 @@ export function AssetTable({
   isSettingsModalOpen: boolean;
   onEdit: (asset: Asset) => void;
   onDelete: (id: string | number) => void;
-  fullAsset:any[];
-  showDeleted:boolean,
-  setShowDeleted:boolean
+  fullAsset: any[];
+  showDeleted: boolean;
+  setShowDeleted: boolean;
 }) {
   const dispatch = useDispatch<AppDispatch>();
   const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
@@ -158,7 +158,7 @@ export function AssetTable({
   const [isSelectedAssetTable, setIsSelectedAssetTable] = useState<any[]>([]);
   const popoverRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const [showDetailsSection , setShowDetailsSection] = useState("asset");
+  const [showDetailsSection, setShowDetailsSection] = useState("asset");
 
   const [visibleColumns, setVisibleColumns] =
     useState<string[]>(allAvailableColumns);
@@ -708,8 +708,8 @@ export function AssetTable({
           setVisibleColumns(settings.visibleColumns);
           setShowDeleted(settings.showDeleted);
           setIsSettingsModalOpen(false);
-          
         }}
+        
       />
 
       {isOpenAssetDetailsMpdal && (
@@ -719,7 +719,8 @@ export function AssetTable({
           onDelete={onDelete}
           onEdit={onEdit}
           showDetailsSection={showDetailsSection}
-
+          restoreData={"Restore"}
+          fetchAssetsData={fetchAssetsData}
         />
       )}
     </div>
