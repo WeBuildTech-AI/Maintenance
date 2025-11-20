@@ -125,6 +125,8 @@ export function AssetTable({
   isSettingsModalOpen,
   onEdit,
   onDelete,
+  showDeleted,
+  setShowDeleted,
 }: {
   assets: any[];
   selectedAsset: any;
@@ -135,6 +137,8 @@ export function AssetTable({
   onEdit: (asset: Asset) => void;
   onDelete: (id: string | number) => void;
   fullAsset:any[];
+  showDeleted:boolean,
+  setShowDeleted:boolean
 }) {
   const dispatch = useDispatch<AppDispatch>();
   const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
@@ -698,7 +702,14 @@ export function AssetTable({
         allToggleableColumns={allAvailableColumns}
         currentVisibleColumns={visibleColumns}
         componentName="Asset"
-        currentShowDeleted
+        currentShowDeleted={showDeleted}
+        onApply={(settings) => {
+          console.log("Settings applied:", settings);
+          setVisibleColumns(settings.visibleColumns);
+          setShowDeleted(settings.showDeleted);
+          setIsSettingsModalOpen(false);
+          
+        }}
       />
 
       {isOpenAssetDetailsMpdal && (
@@ -708,6 +719,7 @@ export function AssetTable({
           onDelete={onDelete}
           onEdit={onEdit}
           showDetailsSection={showDetailsSection}
+
         />
       )}
     </div>

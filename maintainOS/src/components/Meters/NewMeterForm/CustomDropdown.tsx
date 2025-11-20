@@ -127,9 +127,6 @@ export function CustomDropdown({
   const showCreateOption =
     isMeasurement && inputValue.trim().length > 0 && !exactMatch && !loading;
 
-  // --------------------------------------------------------------------
-  // HANDLERS
-  // --------------------------------------------------------------------
   const handleInputClick = () => {
     onOpen();
     setIsOpen(true);
@@ -150,8 +147,8 @@ export function CustomDropdown({
   const handleCreateClick = () => {
     const newId = inputValue.toLowerCase().replace(/\s+/g, "-");
     onChange(newId);
-    setInputValue(inputValue);
-    setIsOpen(false);
+    // setInputValue(inputValue);
+    // setIsOpen(false);
   };
 
   return (
