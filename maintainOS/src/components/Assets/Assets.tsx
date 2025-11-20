@@ -128,8 +128,8 @@ export const Assets: FC = () => {
         return sortOrder === "asc" ? comparison : -comparison;
       }
       // For Date/Time: If sortOrder is 'desc' (latest first), the default comparison (b-a) is correct.
-      return sortOrder === "desc" ? comparison : -comparison; 
-      // NOTE: The original logic for dates was: return sortOrder === "desc" ? comparison : -comparison; 
+      return sortOrder === "desc" ? comparison : -comparison;
+      // NOTE: The original logic for dates was: return sortOrder === "desc" ? comparison : -comparison;
       // This is generally correct for sorting dates where comparison is b.time - a.time (descending by default).
     });
 
@@ -182,16 +182,15 @@ export const Assets: FC = () => {
         {seeMoreAssetStatus === false ? (
           <>
             {/* 1. CORRECTED: Use AssetHeaderComponent as a JSX component */}
-            <AssetHeaderComponent
-              viewMode={viewMode}
-              setViewMode={setViewMode}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              setShowNewAssetForm={setShowNewAssetForm}
-              // setShowSettings={setShowSettings} // Unused, removed
-              setSelectedAsset={setSelectedAsset}
-              setIsSettingsModalOpen={setIsSettingsModalOpen}
-            />
+            {AssetHeaderComponent(
+              viewMode,
+              setViewMode,
+              searchQuery,
+              setSearchQuery,
+              setShowNewAssetForm,
+              setSelectedAsset,
+              setIsSettingsModalOpen
+            )}
 
             {viewMode === "table" ? (
               <AssetTable
