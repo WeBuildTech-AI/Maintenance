@@ -31,7 +31,7 @@ export const meterService = {
     const res = await api.post(`/meters`, data);
     return res.data;
   },
-  
+
   fetchMesurementUnit: async (): Promise<MeterResponse> => {
     const res = await api.get(`/measurements`);
     return res.data;
@@ -62,4 +62,13 @@ export const meterService = {
       data: { ids: ids },
     });
   },
+  fetchDeleteMeter: async (): Promise<void> => {
+    const res = await api.get(`meters/deleted/all`);
+    return res.data;
+  },
+
+  restoreMeterData: async (id: string): Promise<MeterResponse> => {
+      const res = await api.patch(`/meters/${id}/restore`);
+      return res.data;
+    },
 };

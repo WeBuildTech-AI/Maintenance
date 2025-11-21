@@ -39,6 +39,7 @@ export type NewPOForm = {
   extraCosts: number;
   contactName: string;
   contactEmailOrPhone: string;
+  taxLines: string;
 };
 
 export type NewPOFormProps = {
@@ -67,7 +68,12 @@ export type NewPOFormProps = {
   setShowCustomPoInput: boolean;
 };
 
-export type POStatus = "Draft" | "Approved" | "pending" | "Received" | "Cancelled";
+export type POStatus =
+  | "Draft"
+  | "Approved"
+  | "pending"
+  | "Received"
+  | "Cancelled";
 
 export type PurchaseOrder = {
   id: string; // internal id

@@ -13,11 +13,12 @@ interface AssetTableModalProps {
   onClose: () => void;
   onEdit: (asset: Asset) => void;
   onDelete: (id: string | number) => void;
-  fetchAssetsData: () => void;
+  fetchData: () => void;
   setSeeMoreAssetStatus: (value: boolean) => void;
   showDetailsSection: string;
-  setShowReadingMeter:Dispatch<SetStateAction<boolean>>
-  setIsRecordModalOpen:Dispatch<SetStateAction<boolean>>
+  setShowReadingMeter: Dispatch<SetStateAction<boolean>>;
+  setIsRecordModalOpen: Dispatch<SetStateAction<boolean>>;
+  restoreData: string;
 }
 
 const AssetTableModal: React.FC<AssetTableModalProps> = ({
@@ -25,9 +26,10 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
   data,
   onDelete,
   onEdit,
-  fetchAssetsData,
+  fetchData,
   setSeeMoreAssetStatus,
   showDetailsSection,
+  restoreData,
 }) => {
   // Prevent click inside modal content from closing the modal
   const handleContentClick = (e: React.MouseEvent) => {
@@ -47,7 +49,9 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h2 className="text-lg font-semibold capitalize">{showDetailsSection} Details</h2>
+          <h2 className="text-lg font-semibold capitalize">
+            {showDetailsSection} Details
+          </h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 cursor-pointer rounded-full transition-colors"
@@ -63,27 +67,25 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
               asset={data}
               onDelete={onDelete}
               onEdit={() => {}}
-              fetchAssetsData={fetchAssetsData}
+              fetchAssetsData={fetchData}
               setSeeMoreAssetStatus={() => {}}
+              onClose={onClose}
+              restoreData={restoreData}
+            />
+          )}
+
+          {showDetailsSection === "meter" && (
+            <MeterDetail
+              selectedMeter={data}
+              restoreData={"Restore"}
+              fetchMeters={fetchData}
               onClose={onClose}
             />
           )}
 
-          {
-            showDetailsSection === "meter" && (
-              <MeterDetail
-              selectedMeter ={data}
-              />
-            )
-          }
-
-          {
-            showDetailsSection === "location" && (
-              <LocationDetails
-                selectedLocation={data}
-              />
-            )
-          }
+          {showDetailsSection === "location" && (
+            <LocationDetails selectedLocation={data} />
+          )}
         </div>
       </div>
     </div>

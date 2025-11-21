@@ -87,7 +87,9 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
   const dispatch = useDispatch<AppDispatch>();
 
   const [modalWO, setModalWO] = useState<any | null>(null);
-  const [selectedWorkOrderIds, setSelectedWorkOrderIds] = useState<string[]>([]);
+  const [selectedWorkOrderIds, setSelectedWorkOrderIds] = useState<string[]>(
+    []
+  );
   const [sortType, setSortType] = useState<string>("Title");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [isDeleting, setIsDeleting] = useState(false);
@@ -134,7 +136,7 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
     setIsDeleting(true);
     try {
       // await dispatch(batchDeleteWorkOrders(selectedWorkOrderIds)).unwrap();
-      await workOrderService.batchDeleteWorkOrder(selectedWorkOrderIds)
+      await workOrderService.batchDeleteWorkOrder(selectedWorkOrderIds);
       toast.success("Work orders deleted successfully!");
       setSelectedWorkOrderIds([]);
       onRefreshWorkOrders();
@@ -226,21 +228,31 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
         return (
           <div className="flex items-center gap-3 font-medium text-gray-800 h-full">
             {isEditing ? (
+              // When in Editing mode, show the checkbox
               <div
                 className="flex items-center justify-center h-8 w-8 cursor-pointer"
-                onClick={() => toggleRowSelection(record.id)}
+                onClick={(e) => {
+                  // e.stopPropagation() prevents the row click from firing twice,
+                  // but we rely on onRow for selection, so we can omit it here
+                  // or keep it to make the click only on the checkbox area toggle selection.
+                  // Since the table's onRow handles the click, we'll keep the onRow logic.
+                }}
               >
                 <input
                   type="checkbox"
                   checked={isSelected}
-                  readOnly
+                  readOnly // Use readOnly since the row click is managing the state change
                   className="h-5 w-5 accent-blue-600 cursor-pointer"
                 />
               </div>
             ) : (
+              // When not in Editing mode, show the Avatar/List icon
               <div
                 className="flex items-center justify-center h-8 w-8 cursor-pointer"
-                onClick={() => toggleRowSelection(record.id)}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent opening view modal when clicking icon
+                  toggleRowSelection(record.id); // Allow clicking icon/area to start selection
+                }}
               >
                 <Avatar className="h-8 w-8 flex-shrink-0">
                   <ClipboardList size={18} />
@@ -252,7 +264,7 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
             <span
               className="truncate cursor-pointer hover:text-blue-600 hover:underline"
               onClick={(e) => {
-                e.stopPropagation();
+                e.stopPropagation(); // Crucial to prevent row selection when opening modal
                 setSelectedWO(record.full);
                 setViewModal(true);
               }}
@@ -265,37 +277,89 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
     };
 
     const dynamicColumns: TableColumnType<any>[] = [
-      { title: "ID", dataIndex: "id", key: "id", width: 120 },
+      {
+        title: "ID",
+        dataIndex: "id",
+        key: "id",
+        width: 120,
+        sorter: (a, b) => (a.id || "").localeCompare(b.id || ""),
+        sortOrder: sortType === "id" ? mapAntSortOrder(sortOrder) : undefined,
+      },
       {
         title: "Status",
         dataIndex: "status",
         key: "status",
         width: 150,
-        render: (status: string) => (
-          <Badge variant="secondary">{status}</Badge>
-        ),
+        sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
+        sortOrder:
+          sortType === "status" ? mapAntSortOrder(sortOrder) : undefined,
+        render: (status: string) => <Badge variant="secondary">{status}</Badge>,
       },
-      { title: "Priority", dataIndex: "priority", key: "priority", width: 130 },
-      { title: "Work Type", dataIndex: "workType", key: "workType", width: 150 },
+      {
+        title: "Priority",
+        dataIndex: "priority",
+        key: "priority",
+        width: 130,
+        sorter: (a, b) => (a.priority || "").localeCompare(b.priority || ""),
+        sortOrder:
+          sortType === "priority" ? mapAntSortOrder(sortOrder) : undefined,
+      },
+      {
+        title: "Work Type",
+        dataIndex: "workType",
+        key: "workType",
+        width: 150,
+        sorter: (a, b) => (a.workType || "").localeCompare(b.workType || ""),
+        sortOrder:
+          sortType === "workType" ? mapAntSortOrder(sortOrder) : undefined,
+      },
       {
         title: "Assigned To",
         dataIndex: "assignedTo",
         key: "assignedTo",
         width: 170,
+        sorter: (a, b) =>
+          (a.assignedTo || "").localeCompare(b.assignedTo || ""),
+        sortOrder:
+          sortType === "assignedTo" ? mapAntSortOrder(sortOrder) : undefined,
       },
       {
         title: "Categories",
         dataIndex: "categories",
         key: "categories",
         width: 150,
+        sorter: (a, b) =>
+          (a.categories || "").localeCompare(b.categories || ""),
+        sortOrder:
+          sortType === "categories" ? mapAntSortOrder(sortOrder) : undefined,
       },
-      { title: "Asset", dataIndex: "asset", key: "asset", width: 150 },
-      { title: "Location", dataIndex: "location", key: "location", width: 150 },
+      {
+        title: "Asset",
+        dataIndex: "asset",
+        key: "asset",
+        width: 150,
+        sorter: (a, b) => (a.asset || "").localeCompare(b.asset || ""),
+        sortOrder:
+          sortType === "asset" ? mapAntSortOrder(sortOrder) : undefined,
+      },
+      {
+        title: "Location",
+        dataIndex: "location",
+        key: "location",
+        width: 150,
+        sorter: (a, b) => (a.location || "").localeCompare(b.location || ""),
+        sortOrder:
+          sortType === "location" ? mapAntSortOrder(sortOrder) : undefined,
+      },
       {
         title: "Created On",
         dataIndex: "createdOn",
         key: "createdOn",
         width: 150,
+        sorter: (a, b) =>
+          new Date(a.createdOn).getTime() - new Date(b.createdOn).getTime(),
+        sortOrder:
+          sortType === "createdOn" ? mapAntSortOrder(sortOrder) : undefined,
         render: (text: string) => formatTableDate(text),
       },
       {
@@ -303,6 +367,10 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
         dataIndex: "updatedOn",
         key: "updatedOn",
         width: 150,
+        sorter: (a, b) =>
+          new Date(a.updatedOn).getTime() - new Date(b.updatedOn).getTime(),
+        sortOrder:
+          sortType === "updatedOn" ? mapAntSortOrder(sortOrder) : undefined,
         render: (text: string) => formatTableDate(text),
       },
       {
@@ -310,6 +378,12 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
         dataIndex: "attachedProcedure",
         key: "attachedProcedure",
         width: 200,
+        sorter: (a, b) =>
+          (a.attachedProcedure || "").localeCompare(b.attachedProcedure || ""),
+        sortOrder:
+          sortType === "attachedProcedure"
+            ? mapAntSortOrder(sortOrder)
+            : undefined,
       },
     ];
 
@@ -355,6 +429,9 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
     areAllSelected,
     selectedCount,
     isDeleting,
+    handleSelectAllToggle, // Added dependency for handleSelectAllToggle
+    toggleRowSelection, // Added dependency for toggleRowSelection
+    handleDelete, // Added dependency for handleDelete
   ]);
 
   // Map data

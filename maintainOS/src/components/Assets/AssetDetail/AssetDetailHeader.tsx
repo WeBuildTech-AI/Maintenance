@@ -13,6 +13,7 @@ import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import React, { useState } from "react";
 import DeleteAssetModal from "./DeleteAssetModal";
+import { assetService } from "../../../store/assets";
 
 // Define a type for the asset object for type safety
 interface Asset {
@@ -28,6 +29,8 @@ interface AssetDetailHeaderProps {
   onEdit: (asset: Asset) => void;
   onDelete: (asset: Asset) => void;
   onClose: () => void;
+  restoreData: string;
+  fetchAssetsData: () => void;
 }
 
 export function AssetDetailHeader({
@@ -36,10 +39,23 @@ export function AssetDetailHeader({
   onEdit,
   onDelete,
   onClose,
+  restoreData,
+  fetchAssetsData,
 }: AssetDetailHeaderProps) {
   const navigate = useNavigate();
   const [openAssetDeleteModal, setOpenAssetDeleteModal] = useState(false);
   const modalRef = React.useRef<HTMLDivElement>(null);
+
+  const handleRestoreData = async () => {
+    try {
+      await assetService.restoreAssetData(asset.id);
+      toast.success("Successfully store the Asset Data");
+      fetchAssetsData();
+      onClose();
+    } catch (err) {
+      toast.error("Failed to restore");
+    }
+  };
 
   return (
     <div className="p-6 border-b border-border flex-shrink-0">
@@ -49,7 +65,7 @@ export function AssetDetailHeader({
           <Tooltip text="Copy link">
             <Link
               onClick={() => {
-                const url = `${window.location.origin}/assets/${asset?.id}`;
+                const url = `${window.location.origin}/assets?${asset?.id}`;
                 navigator.clipboard.writeText(url);
                 toast.success("Asset link copied!");
               }}
@@ -61,7 +77,7 @@ export function AssetDetailHeader({
           <Button
             variant="outline"
             onClick={() => onEdit(asset)}
-            className="gap-2 text-orange-600 border-orange-600 hover:bg-orange-50"
+            className="gap-2 text-orange-600 cursor-pointer border-orange-600 hover:bg-orange-50"
           >
             <Edit className="h-4 w-4" />
             Edit
@@ -69,13 +85,18 @@ export function AssetDetailHeader({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm">
-                <MoreHorizontal className="h-4 w-4" />
+                <MoreHorizontal className="h-4 w-4 cursor-pointer " />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => setOpenAssetDeleteModal(true)}>
                 Delete
               </DropdownMenuItem>
+              {restoreData && (
+                <DropdownMenuItem onClick={handleRestoreData}>
+                  Restore
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

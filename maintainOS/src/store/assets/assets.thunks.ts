@@ -221,3 +221,38 @@ export const batchDeleteAsset = createAsyncThunk(
     }
   }
 );
+
+export const fetchDeleteAsset = createAsyncThunk(
+  "assets/fetchDeleteAsset",
+  async (_, { rejectWithValue }) => {
+    try {
+      const assets = await assetService.fetchDeleteAsset();
+      return assets;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch Delete assets "
+      );
+    }
+  }
+);
+
+export const restoreAssetData = createAsyncThunk(
+  "assets/restoreAssetData",
+  async (
+    {
+      id,
+    }: {
+      id: string;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const asset = await assetService.restoreAssetData(id);
+      return asset;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to restore asset Data"
+      );
+    }
+  }
+);

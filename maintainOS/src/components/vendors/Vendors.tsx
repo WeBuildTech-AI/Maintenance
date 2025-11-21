@@ -20,7 +20,6 @@ export function Vendors() {
   const [selectedVendorId, setSelectedVendorId] = useState();
   const [isSettingModalOpen, setIsSettingModalOpen] = useState(false);
 
-  console.log(isSettingModalOpen, "setIsSettingModalOpen");
 
   // ✅ ADDED FILTER STATE
   const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>(

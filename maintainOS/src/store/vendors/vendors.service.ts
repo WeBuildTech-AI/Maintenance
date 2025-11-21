@@ -69,12 +69,22 @@ export const vendorService = {
     return res.data;
   },
 
-
   batchDeleteVendor: async (ids: string[]): Promise<void> => {
     await api.delete(`vendors/batch-delete`, {
       data: { ids: ids },
     });
   },
+
+  fetchVendorContact: async (id: string): Promise<VendorResponse> => {
+    const res = await api.get(`/vendors/${id}/contacts`);
+    return res.data;
+  },
+
+  fetchVendorContactData: async (
+    vendorId: string,
+    contactId: string[],
+  ): Promise<Contact> => {
+    const res = await api.get(`/vendors/${vendorId}/contacts/${contactId}`);
+    return res.data;
+  },
 };
-
-
