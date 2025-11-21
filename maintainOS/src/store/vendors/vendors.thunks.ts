@@ -109,3 +109,17 @@ export const fetchVendorContact = createAsyncThunk(
     }
   }
 );
+
+export const updateVendorContactData = createAsyncThunk(
+  "vendors/updateVendorContact",
+  async (
+    { vendorId, contactId }: { vendorId: string; contactId: string[]; },
+    { rejectWithValue }
+  ) => {
+    try {
+      return await vendorService.fetchVendorContactData(vendorId, contactId,);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || "Failed to update contact Data");
+    }
+  }
+);

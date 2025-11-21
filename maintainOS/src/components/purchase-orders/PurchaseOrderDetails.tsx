@@ -11,6 +11,7 @@ import {
   Trash2,
   Upload,
   X,
+  User, // Added User icon for contact details
 } from "lucide-react";
 import { Button } from "../ui/button";
 import {
@@ -31,6 +32,7 @@ import Loader from "../Loader/Loader";
 import type { RootState } from "../../store";
 import { useSelector } from "react-redux";
 import { renderInitials } from "../utils/renderInitials";
+import { vendorService } from "../../store/vendors";
 
 interface OrderItem {
   id: string;
@@ -66,6 +68,16 @@ interface TaxItems {
   purchaseOrderId?: string;
 }
 
+// NEW INTERFACE FOR FETCHED CONTACT DETAILS
+interface VendorContact {
+    id: string;
+    fullName: string;
+    role?: string;
+    email?: string;
+    phoneNumber?: string;
+}
+
+
 interface PurchaseOrder {
   id: string;
   poNumber: string;
@@ -92,6 +104,8 @@ interface PurchaseOrder {
   contactName?: string;
   phoneOrMail?: string;
   taxesAndCosts?: TaxItems[];
+  // --- ADDED vendorContactIds TO PO INTERFACE ---
+  vendorContactIds?: string[]; 
 }
 
 interface PurchaseOrderDetailsProps {
@@ -139,8 +153,13 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   const [log, setLog] = React.useState([]);
   const modalRef = React.useRef<HTMLDivElement>(null);
   const user = useSelector((state: RootState) => state.auth.user);
+  
+  // --- NEW STATE: To store detailed contact objects ---
+  const [contactDetails, setContactDetails] = React.useState<VendorContact[]>([]); 
+  const [isLoadingContacts, setIsLoadingContacts] = React.useState(false);
 
-  //  Change the status in Purchase Order to approve
+
+  //  Change the status in Purchase Order to approve
   const handleApprove = async (id: string) => {
     try {
       await purchaseOrderService.approvePurchaseOrder(id);
@@ -192,17 +211,45 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
       setIsLoading(false);
     }
   };
+  
+  // --- NEW: Function to fetch contact details by IDs ---
+  // const fetchContactDetails = async (contactIds: string[]) => {
+  //   if (contactIds.length === 0) {
+  //     setContactDetails([]);
+  //     return;
+  //   }
+
+  //   setIsLoadingContacts(true);
+  //   try {
+  //     // ASSUMPTION: vendorService has a function like fetchContactsByIds
+  //     // If vendorService.fetchContactsByIds is not available, you would need
+  //     // to loop through IDs and call a single fetch function.
+      
+  //     const details = await vendorService.fetchVendorContactData(selectedPO.vendor.id ,contactIds); 
+  //     setContactDetails(details);
+  //   } catch (error) {
+  //     console.error("Failed to fetch contact details:", error);
+  //     setContactDetails([]);
+  //     toast.error("Failed to load contact details.");
+  //   } finally {
+  //     setIsLoadingContacts(false);
+  //   }
+  // };
 
   // delete Comment in purchase Order
 
-  const handleDeleteComment = async (id) => {
+  const handleDeleteComment = async (id: string) => {
     await purchaseOrderService.deletePurchaseOrderComment(id);
     fetchPurchaseOrderComments();
   };
 
   useEffect(() => {
+    // Fetch comments and log when PO changes
     fetchPurchaseOrderComments();
     fetchPurchaseOrderLog();
+    
+    // --- NEW: Fetch contact details when PO or IDs change ---
+    // fetchContactDetails(selectedPO.vendorContactIds || []);
   }, [selectedPO.id]);
 
   const subtotal =
@@ -388,6 +435,51 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
             </Card>
           </div>
 
+          {/* NEW CONTACTS SECTION */}
+          {(isLoadingContacts || (contactDetails && contactDetails.length > 0)) && (
+            <div>
+                <h3 className="font-medium mb-3 mt-4">Contacts ({contactDetails.length})</h3>
+                <div className="border rounded-lg p-4 space-y-3">
+                    {isLoadingContacts ? (
+                        <Loader />
+                    ) : (
+                        contactDetails.map((contact, index) => (
+                            <div key={contact.id || index} className="flex items-start gap-4 p-2 border-b last:border-b-0">
+                                {/* Initial Avatar */}
+                                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-semibold text-sm shrink-0">
+                                    {renderInitials(contact.fullName || contact.email || "?")}
+                                </div>
+                                
+                                <div className="flex-1">
+                                    <p className="font-medium text-sm">{contact.fullName || "Contact"}</p>
+                                    <div className="text-xs text-muted-foreground space-y-1 mt-0.5">
+                                        {contact.role && (
+                                            <div className="flex items-center gap-1">
+                                                <User className="h-3 w-3" />
+                                                <span>{contact.role}</span>
+                                            </div>
+                                        )}
+                                        {contact.email && (
+                                            <div className="flex items-center gap-1">
+                                                <Mail className="h-3 w-3" />
+                                                <span>{contact.email}</span>
+                                            </div>
+                                        )}
+                                        {contact.phoneNumber && (
+                                            <div className="flex items-center gap-1">
+                                                <PhoneCallIcon className="h-3 w-3" />
+                                                <span>{contact.phoneNumber}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+          )}
+
           {/* ORDER ITEMS */}
           <div>
             <h3 className="font-medium mb-3 mt-4">Order Items</h3>
@@ -501,18 +593,23 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                 </div>
               </div>
             </Card>
-            <Card className="p-4 rounded-lg">
-              <div className="text-sm text-muted-foreground mb-2">
-                Shipping Contact
-              </div>
-              <div className="flex items-start gap-2">
-                <div className="text-sm">{selectedPO.contactName}</div>
-                <div className="text-sm flex items-center gap-1">
-                  <PhoneCallIcon size={12} />
-                  {selectedPO.phoneOrMail}
-                </div>
-              </div>
-            </Card>
+            
+            {/* OLD SINGLE CONTACT CARD - KEPT FOR LEGACY DISPLAY IF FIELDS EXIST */}
+            {(selectedPO.contactName || selectedPO.phoneOrMail) && (
+                <Card className="p-4 rounded-lg">
+                    <div className="text-sm text-muted-foreground mb-2">
+                    Shipping Contact (Legacy)
+                    </div>
+                    <div className="flex items-start gap-2">
+                        <div className="text-sm">{selectedPO.contactName}</div>
+                        <div className="text-sm flex items-center gap-1">
+                            <PhoneCallIcon size={12} />
+                            {selectedPO.phoneOrMail}
+                        </div>
+                    </div>
+                </Card>
+            )}
+
           </div>
 
           <div className="grid grid-cols-2 gap-6 mt-4">
@@ -572,12 +669,12 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
 
                           {/* Comment Content */}
                           <div className="flex-1">
-                            <div className="flex justify-between text-xs  mb-1">
+                            <div className="flex justify-between text-xs  mb-1">
                               <div className="font-medium text-black capitalize ">{item.author?.name || "Unknown User"}</div>
                               <div className="flex justify-center itme-center">
                                 <span className="mr-2">{formattedDate}</span>
                                 <button
-                                  onClick={() => handleDeleteComment(item.id)} // 🔥 add your delete logic here
+                                  onClick={() => handleDeleteComment(item.id)} 
                                   className=" text-red-600"
                                 >
                                   <Trash2 className="w-4 h-4 pt-3 " />
@@ -620,8 +717,6 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                       item.createdAt
                     ).toLocaleString();
 
-                    // Optional: Extract initials from author name or fallback to '?'
-
                     // Choose display text (backend gives `responseLog`)
                     const message = item.responseLog || "No activity message";
 
@@ -634,7 +729,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                         className="flex items-start gap-3 pb-1 last:border-b-0"
                       >
                         {/* Avatar Circle */}
-                        <div className="flex items-center justify-center mt-1 capitalize font-medium  w-8 h-8 rounded-full bg-orange-100 text-orange-700 font-semibold">
+                        <div className="flex items-center justify-center mt-1 capitalize font-medium w-8 h-8 rounded-full bg-orange-100 text-orange-700 font-semibold">
                           {renderInitials(user?.fullName)}
                         </div>
 

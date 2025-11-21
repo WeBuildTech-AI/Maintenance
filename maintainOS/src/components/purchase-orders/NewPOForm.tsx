@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-// Note: Select components are imported but we use custom logic for contacts
 import {
   Select,
   SelectContent,
@@ -39,7 +38,7 @@ const getInitials = (name: string) => {
     .slice(0, 2);
 };
 
-// --- Helper for Avatar Colors (Fallback if API color is null) ---
+// --- Helper for Avatar Colors ---
 const getRandomAvatarColor = (name: string) => {
   const colors = [
     "bg-red-500",
@@ -92,13 +91,13 @@ export function NewPOForm(props: NewPOFormProps) {
 
   // Form Data for New Contact
   const [newContactData, setNewContactData] = useState({
-    name: "", // Will map to fullName
+    name: "",
     role: "",
     email: "",
-    phone: "", // Will map to phoneNumber
+    phone: "",
   });
 
-  // --- Parts & Address States (Unchanged) ---
+  // --- Parts & Address States ---
   const [parts, setPart] = useState<any[]>([]);
   const [isLoadingParts, setIsLoadingParts] = useState(false);
   const [hasFetchedParts, setHasFetchedParts] = useState(false);
@@ -122,10 +121,14 @@ export function NewPOForm(props: NewPOFormProps) {
   });
 
   const [billingAddresses, setBillingAddresses] = useState<any[]>([]);
+  const [isLoadingBillingAddresses, setIsLoadingBillingAddresses] =
+    useState(false);
   const [hasFetchedBillingAddresses, setHasFetchedBillingAddresses] =
     useState(false);
   const [billingAddressSearchQuery, setBillingAddressSearchQuery] =
     useState("");
+  const [isBillingAddressSearchFocused, setIsBillingAddressSearchFocused] =
+    useState(false);
   const [showNewBillingAddressForm, setShowNewBillingAddressForm] =
     useState(false);
   const [isCreatingBillingAddress, setIsCreatingBillingAddress] =
@@ -188,10 +191,13 @@ export function NewPOForm(props: NewPOFormProps) {
     setShowCustomPoInput(true);
   };
 
-  // --- 1. Handle Click on "Select Vendor Contact" ---
+  // ----------------------------------------------------------
+  // --- CONTACT LOGIC: Multi-select & ID Payload Handling ---
+  // ----------------------------------------------------------
+
+  // 1. Fetch Contacts on Click
   const handleVendorContactClick = async () => {
     if (!selectedVendor) return;
-
     if (showContactForm) setShowContactForm(false);
 
     if (isContactDropdownOpen) {
@@ -202,13 +208,14 @@ export function NewPOForm(props: NewPOFormProps) {
     setIsContactLoading(true);
     try {
       const res = await vendorService.fetchVendorContact(selectedVendor.id);
-
-      // Ensure res is an array (Handling your specific API response structure)
       let contactsArray: any[] = [];
+
       if (Array.isArray(res)) {
         contactsArray = res;
       } else if (res && Array.isArray(res.data)) {
         contactsArray = res.data;
+      } else if (res && Array.isArray(res.contacts)) {
+        contactsArray = res.contacts;
       }
 
       setVendorContacts(contactsArray);
@@ -223,44 +230,61 @@ export function NewPOForm(props: NewPOFormProps) {
       }
     } catch (err) {
       console.error("Error fetching contacts:", err);
-      // Fallback to form on error
       setShowContactForm(true);
-      setIsContactDropdownOpen(false);
     } finally {
       setIsContactLoading(false);
     }
   };
 
-  // --- 2. Select Existing Contact ---
-  const handleSelectContact = (contact: any) => {
-    setNewPO((prev) => ({
-      ...prev,
-      // Mapping from your API: fullName -> contactName
-      contactName: contact.fullName,
-      // Mapping from your API: email OR phoneNumber -> phoneOrMail
-      phoneOrMail: contact.email || contact.phoneNumber || "",
-    }));
-    setIsContactDropdownOpen(false);
-    setContactSearchQuery("");
+  // 2. Toggle Selection (Multi-select)
+  // FIXED: This only updates the ID list, does NOT touch text inputs
+  const toggleContactSelection = (contact: any) => {
+    setNewPO((prev) => {
+      const currentIds = (prev as any).vendorContactIds || [];
+      const isSelected = currentIds.includes(contact.id);
+
+      let updatedIds;
+      if (isSelected) {
+        // Remove ID
+        updatedIds = currentIds.filter((id: string) => id !== contact.id);
+      } else {
+        // Add ID
+        updatedIds = [...currentIds, contact.id];
+      }
+
+      return {
+        ...prev,
+        vendorContactIds: updatedIds, // Only update IDs
+      };
+    });
   };
 
-  // --- 3. Save New Contact ---
+  // 3. Remove Contact Chip
+  const removeSelectedContact = (contactId: string) => {
+    setNewPO((prev) => ({
+      ...prev,
+      vendorContactIds: ((prev as any).vendorContactIds || []).filter(
+        (id: string) => id !== contactId
+      ),
+    }));
+  };
+
+  // 4. Save New Contact
   const handleSaveNewContact = async () => {
     if (!selectedVendor) return;
     setIsSavingContact(true);
 
     try {
-      // Construct Payload matching your backend schema
       const payload = {
         vendorId: selectedVendor.id,
-        fullName: newContactData.name, // Map 'name' to 'fullName'
+        fullName: newContactData.name,
         role: newContactData.role,
         email: newContactData.email,
-        phoneNumber: newContactData.phone, // Map 'phone' to 'phoneNumber'
-        phoneExtension: "+91", // Default or add input for this
+        phoneNumber: newContactData.phone,
+        phoneExtension: "+91",
         contactColor: getRandomAvatarColor(newContactData.name)
           .replace("bg-", "")
-          .replace("-500", ""), // Just a placeholder logic if backend needs it, or let backend handle color
+          .replace("-500", ""),
       };
 
       const savedContact = await vendorService.createVendorContact(
@@ -268,13 +292,13 @@ export function NewPOForm(props: NewPOFormProps) {
         payload
       );
 
-      // Add new contact to the top of the list
+      // Add to local list so it appears in dropdown
       setVendorContacts((prev) => [savedContact, ...prev]);
 
-      // Auto-select it
-      handleSelectContact(savedContact);
+      // Automatically select this new contact's ID
+      toggleContactSelection(savedContact);
 
-      // Reset and Close Form
+      // Reset form
       setShowContactForm(false);
       setNewContactData({ name: "", role: "", email: "", phone: "" });
     } catch (error) {
@@ -284,7 +308,7 @@ export function NewPOForm(props: NewPOFormProps) {
     }
   };
 
-  // --- Address & Tax Logic (Standard) ---
+  // --- Address Handlers ---
   const fetchAddresses = async () => {
     setIsLoadingAddresses(true);
     try {
@@ -297,9 +321,11 @@ export function NewPOForm(props: NewPOFormProps) {
       setHasFetchedAddresses(true);
     }
   };
+
   const handleAddressDropdownOpen = () => {
     if (!hasFetchedAddresses) fetchAddresses();
   };
+
   const handleSelectAddress = (address: any) => {
     setAddressSearchQuery(address.name || address.street);
     setIsAddressSearchFocused(false);
@@ -316,6 +342,7 @@ export function NewPOForm(props: NewPOFormProps) {
       return newState;
     });
   };
+
   const handleAddNewAddress = async () => {
     setIsCreatingAddress(true);
     setAddressApiError(null);
@@ -339,30 +366,34 @@ export function NewPOForm(props: NewPOFormProps) {
       setIsCreatingAddress(false);
     }
   };
+
   const fetchBillingAddresses = async () => {
-    // setIsLoadingBillingAddresses(true);
+    setIsLoadingBillingAddresses(true);
     try {
       const res = await purchaseOrderService.fetchAdressess();
       setBillingAddresses(res);
     } catch (error) {
       console.error("Failed to fetch billing addresses:", error);
     } finally {
-      // setIsLoadingBillingAddresses(false);
+      setIsLoadingBillingAddresses(false);
       setHasFetchedBillingAddresses(true);
     }
   };
+
   const handleBillingAddressDropdownOpen = () => {
     if (!hasFetchedBillingAddresses) fetchBillingAddresses();
   };
+
   const handleSelectBillingAddress = (address: any) => {
     setBillingAddressSearchQuery(address.name || address.street);
-    // setIsBillingAddressSearchFocused(false);
+    setIsBillingAddressSearchFocused(false);
     setNewPO((currentState) => ({
       ...currentState,
       billingAddressId: address.id,
       billingAddress: address,
     }));
   };
+
   const handleAddNewBillingAddress = async () => {
     setIsCreatingBillingAddress(true);
     setBillingAddressApiError(null);
@@ -386,6 +417,8 @@ export function NewPOForm(props: NewPOFormProps) {
       setIsCreatingBillingAddress(false);
     }
   };
+
+  // --- Tax Calculation ---
   const calculateTotalExtras = () => {
     const taxLines = (newPO as any).taxLines || [];
     return taxLines.reduce((acc: number, item: any) => {
@@ -396,7 +429,9 @@ export function NewPOForm(props: NewPOFormProps) {
       return acc + val;
     }, 0);
   };
+
   const finalCalculatedTotal = newPOSubtotal + calculateTotalExtras();
+
   const handleAddTaxLine = () => {
     const newTaxLine = {
       id: generateId(),
@@ -407,18 +442,23 @@ export function NewPOForm(props: NewPOFormProps) {
     };
     setNewPO((prev) => ({
       ...prev,
+      // @ts-ignore
       taxLines: [...(prev.taxLines || []), newTaxLine],
     }));
   };
+
   const handleRemoveTaxLine = (id: string) => {
     setNewPO((prev) => ({
       ...prev,
+      // @ts-ignore
       taxLines: (prev.taxLines || []).filter((t: any) => t.id !== id),
     }));
   };
+
   const handleUpdateTaxLine = (id: string, field: string, value: any) => {
     setNewPO((prev) => ({
       ...prev,
+      // @ts-ignore
       taxLines: (prev.taxLines || []).map((t: any) => {
         if (t.id === id) {
           return { ...t, [field]: value };
@@ -497,8 +537,9 @@ export function NewPOForm(props: NewPOFormProps) {
                         setNewPO((s) => ({
                           ...s,
                           vendorId: "",
-                          contactName: "",
-                          phoneOrMail: "",
+                          vendorContactIds: [],
+                          contactName: "", // Clears manual input (optional, can remove)
+                          phoneOrMail: "", // Clears manual input (optional, can remove)
                         }));
                         setVendorSearchQuery("");
                         setShowContactForm(false);
@@ -509,6 +550,54 @@ export function NewPOForm(props: NewPOFormProps) {
                       &times;
                     </Button>
                   </div>
+
+                  {/* 2. SELECTED CONTACTS CHIPS */}
+                  <div className="flex flex-wrap gap-2 mb-1">
+                    {((newPO as any).vendorContactIds || []).map(
+                      (selectedId: string) => {
+                        const contactDetails = vendorContacts.find(
+                          (c) => c.id === selectedId
+                        );
+                        if (!contactDetails) return null;
+
+                        return (
+                          <div
+                            key={selectedId}
+                            className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-medium border border-blue-100 animate-in fade-in zoom-in duration-200"
+                          >
+                            <div
+                              className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] text-white font-bold shrink-0`}
+                              style={{
+                                backgroundColor: contactDetails.contactColor
+                                  ? contactDetails.contactColor
+                                  : undefined,
+                              }}
+                              {...(!contactDetails.contactColor
+                                ? {
+                                    className: `w-4 h-4 rounded-full flex items-center justify-center text-[8px] text-white font-bold shrink-0 ${getRandomAvatarColor(
+                                      contactDetails.fullName
+                                    )}`,
+                                  }
+                                : {})}
+                            >
+                              {getInitials(contactDetails.fullName)}
+                            </div>
+                            <span>{contactDetails.fullName}</span>
+                            <button
+                              onClick={() => removeSelectedContact(selectedId)}
+                              className="hover:text-blue-900 rounded-full hover:bg-blue-200 p-0.5"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        );
+                      }
+                    )}
+                  </div>
+
+                  {/* --- SMART CONTACT SELECTION --- */}
+
+                  {/* A. Create New Contact Form */}
                   {showContactForm ? (
                     <div className="border rounded-lg p-4 mt-2 bg-white space-y-4 shadow-sm">
                       <div className="flex justify-between items-center">
@@ -523,6 +612,7 @@ export function NewPOForm(props: NewPOFormProps) {
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1">
                           <label className="text-xs font-medium">
@@ -585,6 +675,7 @@ export function NewPOForm(props: NewPOFormProps) {
                           />
                         </div>
                       </div>
+
                       <div className="flex justify-end pt-2">
                         <Button
                           className="bg-orange-600 hover:bg-orange-700 text-white"
@@ -596,7 +687,7 @@ export function NewPOForm(props: NewPOFormProps) {
                       </div>
                     </div>
                   ) : (
-                   
+                    /* B. Link Trigger + Searchable Dropdown */
                     <div className="relative w-full">
                       {/* Link Trigger */}
                       <button
@@ -604,21 +695,13 @@ export function NewPOForm(props: NewPOFormProps) {
                         onClick={handleVendorContactClick}
                         disabled={isContactLoading}
                       >
-                        {!newPO.contactName && !isContactLoading && (
-                          <Plus className="h-4 w-4" />
-                        )}
+                        {!((newPO as any).vendorContactIds?.length > 0) &&
+                          !isContactLoading && <Plus className="h-4 w-4" />}
                         <span>
                           {isContactLoading
                             ? "Loading contacts..."
-                            : newPO.contactName
-                            ? newPO.contactName
                             : "Select Vendor Contact"}
                         </span>
-                        {newPO.contactName && !isContactLoading && (
-                          <span className="text-muted-foreground font-normal text-xs ml-1">
-                            (Click to change)
-                          </span>
-                        )}
                       </button>
 
                       {/* Searchable Dropdown */}
@@ -643,7 +726,7 @@ export function NewPOForm(props: NewPOFormProps) {
                             </button>
                           </div>
 
-                          {/* List of Contacts - MAPPED CORRECTLY TO YOUR JSON */}
+                          {/* List */}
                           <div className="flex-1 overflow-y-auto">
                             {vendorContacts.length === 0 && (
                               <div className="p-3 text-sm text-muted-foreground text-center">
@@ -652,55 +735,66 @@ export function NewPOForm(props: NewPOFormProps) {
                             )}
                             {vendorContacts
                               .filter((c: any) =>
-                                c?.fullName // Using fullName from API
+                                c?.fullName
                                   ?.toLowerCase()
                                   .includes(contactSearchQuery.toLowerCase())
                               )
-                              .map((contact: any) => (
-                                <div
-                                  key={contact.id}
-                                  className="flex items-center px-4 py-3 hover:bg-muted cursor-pointer border-b last:border-0"
-                                  onClick={() => handleSelectContact(contact)}
-                                >
-                                  {/* Avatar: Uses contactColor from API or fallback */}
+                              .map((contact: any) => {
+                                const isSelected = (
+                                  (newPO as any).vendorContactIds || []
+                                ).includes(contact.id);
+
+                                return (
                                   <div
-                                    className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold mr-3 shrink-0`}
-                                    style={{
-                                      backgroundColor:
-                                        contact.contactColor || undefined,
-                                    }}
-                                    // If contactColor is null/undefined, use the className helper
-                                    {...(!contact.contactColor
-                                      ? {
-                                          className: `w-8 h-8 rounded-full ${getRandomAvatarColor(
-                                            contact.fullName
-                                          )} flex items-center justify-center text-white text-xs font-bold mr-3 shrink-0`,
-                                        }
-                                      : {})}
+                                    key={contact.id}
+                                    className={`flex items-center px-4 py-3 cursor-pointer border-b last:border-0 ${
+                                      isSelected
+                                        ? "bg-blue-50"
+                                        : "hover:bg-muted"
+                                    }`}
+                                    onClick={() =>
+                                      toggleContactSelection(contact)
+                                    }
                                   >
-                                    {getInitials(contact.fullName)}
-                                  </div>
-
-                                  {/* Details: Using fullName, role, email */}
-                                  <div className="flex-1">
-                                    <div className="text-sm font-medium text-gray-900">
-                                      {contact.fullName}{" "}
-                                      <span className="text-muted-foreground font-normal">
-                                        - {contact.role || "No Role"}
-                                      </span>
+                                    {/* Avatar */}
+                                    <div
+                                      className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold mr-3 shrink-0`}
+                                      style={{
+                                        backgroundColor: contact.contactColor
+                                          ? contact.contactColor
+                                          : undefined,
+                                      }}
+                                      {...(!contact.contactColor
+                                        ? {
+                                            className: `w-8 h-8 rounded-full flex items-center justify-center text-[8px] text-white font-bold shrink-0 ${getRandomAvatarColor(
+                                              contact.fullName
+                                            )}`,
+                                          }
+                                        : {})}
+                                    >
+                                      {getInitials(contact.fullName)}
                                     </div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {/* Show email or phone */}
-                                      {contact.email || contact.phoneNumber}
-                                    </div>
-                                  </div>
 
-                                  {/* Checkmark if selected */}
-                                  {newPO.contactName === contact.fullName && (
-                                    <Check className="h-4 w-4 text-blue-600" />
-                                  )}
-                                </div>
-                              ))}
+                                    {/* Details */}
+                                    <div className="flex-1">
+                                      <div className="text-sm font-medium text-gray-900">
+                                        {contact.fullName}{" "}
+                                        <span className="text-muted-foreground font-normal">
+                                          - {contact.role || "No Role"}
+                                        </span>
+                                      </div>
+                                      <div className="text-xs text-muted-foreground">
+                                        {contact.email || contact.phoneNumber}
+                                      </div>
+                                    </div>
+
+                                    {/* Checkmark */}
+                                    {isSelected && (
+                                      <Check className="h-4 w-4 text-blue-600" />
+                                    )}
+                                  </div>
+                                );
+                              })}
 
                             {/* Add New Contact Button */}
                             <div
@@ -719,7 +813,7 @@ export function NewPOForm(props: NewPOFormProps) {
                   )}
                 </div>
               ) : (
-           
+                /* 2. VENDOR SEARCH INPUT (Default) */
                 <div className="relative">
                   <Input
                     placeholder="Search and select a vendor..."
@@ -768,9 +862,10 @@ export function NewPOForm(props: NewPOFormProps) {
               )}
             </div>
 
-            {/* ... Rest of form components (Order Items, Shipping, etc.) - kept concise ... */}
+            {/* Order Items Table */}
             <div className="text-base font-medium mb-3">Order Items</div>
             <div className="overflow border rounded-lg">
+              {/* ... (Table code remains the same) ... */}
               <table className="w-full text-sm table-fixed">
                 <thead className="bg-muted/50">
                   <tr className="text-left">
@@ -786,9 +881,13 @@ export function NewPOForm(props: NewPOFormProps) {
                   {newPO.items.map((it) => {
                     const price =
                       (Number(it.quantity) || 0) * (Number(it.unitCost) || 0);
+
                     const filteredParts = parts.filter((p) =>
-                      p.name.toLowerCase().includes(it.itemName.toLowerCase())
+                      p.name
+                        .toLowerCase()
+                        .includes(it.itemName.toLowerCase())
                     );
+
                     return (
                       <tr key={it.id} className="border-t">
                         <td className="p-3 relative">
@@ -810,21 +909,22 @@ export function NewPOForm(props: NewPOFormProps) {
                               setFocusedItemId(it.id);
                             }}
                             onBlur={() => {
-                              setTimeout(() => setFocusedItemId(null), 150);
+                              setTimeout(
+                                () => setFocusedItemId(null),
+                                150
+                              );
                             }}
                           />
                           {focusedItemId === it.id && (
                             <div className="absolute z-50 w-[95%] mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
-                              {" "}
                               {isLoadingParts ? (
                                 <div className="p-2 text-sm text-muted-foreground">
-                                  {" "}
-                                  Loading...{" "}
+                                  Loading...
                                 </div>
-                              ) : filteredParts.length === 0 && it.itemName ? (
+                              ) : filteredParts.length === 0 &&
+                                it.itemName ? (
                                 <div className="p-2 text-sm text-muted-foreground">
-                                  {" "}
-                                  No parts found.{" "}
+                                  No parts found.
                                 </div>
                               ) : (
                                 filteredParts.map((part) => (
@@ -838,7 +938,11 @@ export function NewPOForm(props: NewPOFormProps) {
                                         "itemName",
                                         part.name
                                       );
-                                      updateItemField(it.id, "partId", part.id);
+                                      updateItemField(
+                                        it.id,
+                                        "partId",
+                                        part.id
+                                      );
                                       updateItemField(
                                         it.id,
                                         "partNumber",
@@ -852,11 +956,10 @@ export function NewPOForm(props: NewPOFormProps) {
                                       setFocusedItemId(null);
                                     }}
                                   >
-                                    {" "}
-                                    {part.name}{" "}
+                                    {part.name}
                                   </div>
                                 ))
-                              )}{" "}
+                              )}
                             </div>
                           )}
                         </td>
@@ -956,6 +1059,7 @@ export function NewPOForm(props: NewPOFormProps) {
               </table>
             </div>
 
+            {/* Taxes & Costs Section */}
             <div className="flex flex-col items-end mt-4 space-y-3">
               {((newPO as any).taxLines || []).map((tax: any) => (
                 <div
@@ -979,7 +1083,11 @@ export function NewPOForm(props: NewPOFormProps) {
                         step="0.01"
                         value={tax.value}
                         onChange={(e) =>
-                          handleUpdateTaxLine(tax.id, "value", e.target.value)
+                          handleUpdateTaxLine(
+                            tax.id,
+                            "value",
+                            e.target.value
+                          )
                         }
                         placeholder="0"
                       />
@@ -1000,7 +1108,11 @@ export function NewPOForm(props: NewPOFormProps) {
                         <button
                           type="button"
                           onClick={() =>
-                            handleUpdateTaxLine(tax.id, "type", "percentage")
+                            handleUpdateTaxLine(
+                              tax.id,
+                              "type",
+                              "percentage"
+                            )
                           }
                           className={`px-2 h-full flex items-center justify-center text-xs font-medium transition-colors ${
                             tax.type === "percentage"
@@ -1044,6 +1156,7 @@ export function NewPOForm(props: NewPOFormProps) {
                   </div>
                 </div>
               ))}
+
               <div className="flex items-center justify-end w-full gap-6">
                 <button
                   className="text-sm text-orange-600 font-medium hover:underline"
@@ -1051,6 +1164,7 @@ export function NewPOForm(props: NewPOFormProps) {
                 >
                   + Add Taxes &amp; Costs
                 </button>
+
                 <div className="text-sm">
                   <span className="text-muted-foreground mr-2">Total</span>
                   <span className="font-semibold text-lg">
@@ -1061,13 +1175,12 @@ export function NewPOForm(props: NewPOFormProps) {
             </div>
           </section>
 
-          {/* Shipping & Address Sections */}
+          {/* Shipping Information Section */}
           <section>
             <div className="text-base font-medium mb-4">
               Shipping Information
             </div>
-            {/* ... (Shipping and Billing Logic remains the same as previously provided) ... */}
-            {/* I'm keeping this condensed as you have it in previous responses, the focus here was the Vendor Contact logic */}
+
             <div className="grid grid-cols-1 gap-4 mb-4">
               {newPO.shippingAddressId && !showNewAddressForm ? (
                 <div className="flex items-center justify-between h-9 px-3 py-2 text-sm border rounded-md bg-muted/50">
@@ -1087,12 +1200,106 @@ export function NewPOForm(props: NewPOFormProps) {
                     variant="ghost"
                     className="h-auto p-1 text-orange-600 hover:text-orange-700"
                     onClick={() => {
-                      setNewPO((s) => ({ ...s, shippingAddressId: null }));
+                      setNewPO((s) => ({
+                        ...s,
+                        shippingAddressId: null,
+                      }));
                       setAddressSearchQuery("");
                     }}
                   >
                     Change
                   </Button>
+                </div>
+              ) : showNewAddressForm ? (
+                <div className="p-4 border rounded-lg space-y-3">
+                  <div className="text-sm font-medium">
+                    Create New Address
+                  </div>
+                  <div className="flex gap-4">
+                    <Input
+                      className="h-9 text-sm bg-white border-orange-600"
+                      placeholder="Street Address (Line 1)"
+                      value={newAddress.street}
+                      onChange={(e) =>
+                        setNewAddress((s) => ({
+                          ...s,
+                          street: e.target.value,
+                        }))
+                      }
+                    />
+                    <Input
+                      className="h-9 text-sm bg-white border-orange-600"
+                      placeholder="City"
+                      value={newAddress.city}
+                      onChange={(e) =>
+                        setNewAddress((s) => ({
+                          ...s,
+                          city: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="flex md:grid-cols-2 gap-3">
+                    <Input
+                      className="h-9 text-sm bg-white border-orange-600"
+                      placeholder="State / Province"
+                      value={newAddress.stateProvince}
+                      onChange={(e) =>
+                        setNewAddress((s) => ({
+                          ...s,
+                          stateProvince: e.target.value,
+                        }))
+                      }
+                    />
+
+                    <Input
+                      className="h-9 text-sm bg-white border-orange-600"
+                      placeholder="PIN Code"
+                      value={newAddress.ZIP}
+                      onChange={(e) =>
+                        setNewAddress((s) => ({
+                          ...s,
+                          ZIP: e.target.value,
+                        }))
+                      }
+                    />
+                    <Input
+                      className="h-9 text-sm bg-white border-orange-600"
+                      placeholder="Country"
+                      value={newAddress.country}
+                      onChange={(e) =>
+                        setNewAddress((s) => ({
+                          ...s,
+                          country: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  {addressApiError && (
+                    <div className="text-sm text-red-600">
+                      {addressApiError}
+                    </div>
+                  )}
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button
+                      variant="ghost"
+                      onClick={() => setShowNewAddressForm(false)}
+                      disabled={isCreatingAddress}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      className="bg-orange-600 hover:bg-orange-700"
+                      onClick={handleAddNewAddress}
+                      disabled={
+                        isCreatingAddress ||
+                        !newAddress.street ||
+                        !newAddress.city
+                      }
+                    >
+                      {isCreatingAddress ? "Adding..." : "Add Address"}
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="relative">
@@ -1105,7 +1312,10 @@ export function NewPOForm(props: NewPOFormProps) {
                       handleAddressDropdownOpen();
                     }}
                     onBlur={() => {
-                      setTimeout(() => setIsAddressSearchFocused(false), 150);
+                      setTimeout(
+                        () => setIsAddressSearchFocused(false),
+                        150
+                      );
                     }}
                     onChange={(e) => setAddressSearchQuery(e.target.value)}
                   />
@@ -1113,7 +1323,7 @@ export function NewPOForm(props: NewPOFormProps) {
                     <div className="absolute z-20 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
                       {isLoadingAddresses ? (
                         <div className="p-2 text-sm text-muted-foreground">
-                          Loading...
+                          Loading addresses...
                         </div>
                       ) : (
                         <>
@@ -1152,9 +1362,8 @@ export function NewPOForm(props: NewPOFormProps) {
                 </div>
               )}
             </div>
-          </section>
 
-          <section>
+            {/* Contact Details - Manual Entry (Separate from Vendor Selection) */}
             <div className="text-base font-medium mt-4">Contact</div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
               <Input
@@ -1174,6 +1383,8 @@ export function NewPOForm(props: NewPOFormProps) {
                 }
               />
             </div>
+
+            {/* Billing Address Checkbox */}
             <label className="flex items-center gap-2 text-sm select-none mt-2">
               <input
                 type="checkbox"
@@ -1195,12 +1406,203 @@ export function NewPOForm(props: NewPOFormProps) {
               />
               Use the same Shipping and Billing Address
             </label>
+
+            {/* Manual Billing Address Form */}
             {!newPO.sameShipBill && (
-              /* Billing logic here (simplified for brevity) */
-              <div className="text-base font-medium mt-4">Billing Address</div>
+              <>
+                <div className="text-base font-medium mt-4">
+                  Billing Address
+                </div>
+                {newPO.billingAddressId && !showNewBillingAddressForm ? (
+                  <div className="flex items-center justify-between h-9 px-3 py-2 text-sm border rounded-md bg-muted/50">
+                    <span>
+                      {(
+                        billingAddresses.find(
+                          (a) => a.id === newPO.billingAddressId
+                        ) || newPO.billingAddress
+                      )?.name ||
+                        (
+                          billingAddresses.find(
+                            (a) => a.id === newPO.billingAddressId
+                          ) || newPO.billingAddress
+                        )?.street}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      className="h-auto p-1 text-orange-600 hover:text-orange-700"
+                      onClick={() => {
+                        setNewPO((s) => ({
+                          ...s,
+                          billingAddressId: null,
+                        }));
+                        setBillingAddressSearchQuery("");
+                      }}
+                    >
+                      Change
+                    </Button>
+                  </div>
+                ) : showNewBillingAddressForm ? (
+                  <div className="p-4 border rounded-lg space-y-3">
+                    <div className="text-sm font-medium">
+                      Create New Billing Address
+                    </div>
+                    {/* ... New Billing Address Form Fields (same as your code) ... */}
+                    <div className="flex gap-4">
+                      <Input
+                        className="h-9 text-sm bg-white border-orange-600"
+                        placeholder="Street Address (Line 1)"
+                        value={newBillingAddress.street}
+                        onChange={(e) =>
+                          setNewBillingAddress((s) => ({
+                            ...s,
+                            street: e.target.value,
+                          }))
+                        }
+                      />
+                      <Input
+                        className="h-9 text-sm bg-white border-orange-600"
+                        placeholder="City"
+                        value={newBillingAddress.city}
+                        onChange={(e) =>
+                          setNewBillingAddress((s) => ({
+                            ...s,
+                            city: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="flex md:grid-cols-2 gap-3">
+                      <Input
+                        className="h-9 text-sm bg-white border-orange-600"
+                        placeholder="State / Province"
+                        value={newBillingAddress.stateProvince}
+                        onChange={(e) =>
+                          setNewBillingAddress((s) => ({
+                            ...s,
+                            stateProvince: e.target.value,
+                          }))
+                        }
+                      />
+                      <Input
+                        className="h-9 text-sm bg-white border-orange-600"
+                        placeholder="PIN Code"
+                        value={newBillingAddress.ZIP}
+                        onChange={(e) =>
+                          setNewBillingAddress((s) => ({
+                            ...s,
+                            ZIP: e.target.value,
+                          }))
+                        }
+                      />
+                      <Input
+                        className="h-9 text-sm bg-white border-orange-600"
+                        placeholder="Country"
+                        value={newBillingAddress.country}
+                        onChange={(e) =>
+                          setNewBillingAddress((s) => ({
+                            ...s,
+                            country: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                    {billingAddressApiError && (
+                      <div className="text-sm text-red-600">
+                        {billingAddressApiError}
+                      </div>
+                    )}
+                    <div className="flex justify-end gap-2 pt-2">
+                      <Button
+                        variant="ghost"
+                        onClick={() => setShowNewBillingAddressForm(false)}
+                        disabled={isCreatingBillingAddress}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        className="bg-orange-600 hover:bg-orange-700"
+                        onClick={handleAddNewBillingAddress}
+                        disabled={
+                          isCreatingBillingAddress ||
+                          !newBillingAddress.street ||
+                          !newBillingAddress.city
+                        }
+                      >
+                        {isCreatingBillingAddress
+                          ? "Adding..."
+                          : "Add Address"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <Input
+                      placeholder="Search billing address..."
+                      className="h-9 text-sm bg-white border-orange-600"
+                      value={billingAddressSearchQuery}
+                      onFocus={() => {
+                        setIsBillingAddressSearchFocused(true);
+                        handleBillingAddressDropdownOpen();
+                      }}
+                      onBlur={() => {
+                        setTimeout(
+                          () => setIsBillingAddressSearchFocused(false),
+                          150
+                        );
+                      }}
+                      onChange={(e) =>
+                        setBillingAddressSearchQuery(e.target.value)
+                      }
+                    />
+                    {isBillingAddressSearchFocused && (
+                      <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                        {isLoadingBillingAddresses ? (
+                          <div className="p-2 text-sm text-muted-foreground">
+                            Loading addresses...
+                          </div>
+                        ) : (
+                          <>
+                            {billingAddresses
+                              .filter((addr) =>
+                                (addr.name || addr.street)
+                                  .toLowerCase()
+                                  .includes(
+                                    billingAddressSearchQuery.toLowerCase()
+                                  )
+                              )
+                              .map((addr) => (
+                                <div
+                                  key={addr.id}
+                                  className="p-2 text-sm hover:bg-muted cursor-pointer"
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    handleSelectBillingAddress(addr);
+                                  }}
+                                >
+                                  {addr.name || addr.street} ({addr.city})
+                                </div>
+                              ))}
+                            <div
+                              className="p-2 text-sm text-orange-600 font-medium hover:bg-muted cursor-pointer border-t"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                setShowNewBillingAddressForm(true);
+                                setIsBillingAddressSearchFocused(false);
+                              }}
+                            >
+                              + Create New Address
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
             )}
           </section>
 
+          {/* Final Details (Due Date, Note, Files, Submit) */}
           <section>
             <div className="text-base font-medium mb-4 mt-4">Due Date</div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -1227,6 +1629,7 @@ export function NewPOForm(props: NewPOFormProps) {
                 />
               </div>
             </div>
+
             <div className="mt-4 space-y-2">
               <input
                 type="file"
@@ -1241,7 +1644,8 @@ export function NewPOForm(props: NewPOFormProps) {
                 onClick={handleFileAttachClick}
                 disabled={isCreating}
               >
-                <Paperclip className="h-4 w-4" /> Attach files
+                <Paperclip className="h-4 w-4" />
+                Attach files
               </Button>
               <div className="flex flex-wrap gap-2">
                 {attachedFiles?.map((file) => (
