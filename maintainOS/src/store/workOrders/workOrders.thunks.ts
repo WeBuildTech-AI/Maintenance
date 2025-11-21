@@ -96,7 +96,6 @@ export const batchDeleteMeter = createAsyncThunk(
 
 // --- Status ---
 
-// ✅ This export is CRITICAL for the reducer to work
 export const markWorkOrderCompleted = createAsyncThunk(
   "workOrders/markCompleted",
   async (id: string, { rejectWithValue }) => {
@@ -185,11 +184,12 @@ export const fetchWorkOrderComments = createAsyncThunk(
   }
 );
 
+// ✅ Updated fetchWorkOrderLogs to accept ID
 export const fetchWorkOrderLogs = createAsyncThunk(
   "workOrders/fetchLogs",
-  async (_, { rejectWithValue }) => {
+  async (workOrderId: string, { rejectWithValue }) => {
     try {
-      return await workOrderService.fetchWorkOrderLogs();
+      return await workOrderService.fetchWorkOrderLogs(workOrderId);
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch logs"

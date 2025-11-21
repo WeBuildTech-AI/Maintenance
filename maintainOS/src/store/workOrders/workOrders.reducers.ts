@@ -187,14 +187,12 @@ const workOrdersSlice = createSlice({
           const newComment = action.payload;
           const workOrderId = (action.meta as any).arg.id;
 
-          // Helper: Add comment safely avoiding duplicates
           const addSafe = (existing: WorkOrderComment[] | undefined) => {
             const list = existing || [];
             if (list.some(c => c.id === newComment.id)) return list;
             return [...list, newComment];
           };
 
-          // Update selected work order if it matches
           if (
             state.selectedWorkOrder &&
             state.selectedWorkOrder.id === workOrderId
@@ -202,7 +200,6 @@ const workOrdersSlice = createSlice({
             state.selectedWorkOrder.comments = addSafe(state.selectedWorkOrder.comments);
           }
           
-          // Update the list item if it exists
           const idx = state.workOrders.findIndex((w) => w.id === workOrderId);
           if (idx !== -1) {
             state.workOrders[idx].comments = addSafe(state.workOrders[idx].comments);
@@ -217,24 +214,22 @@ const workOrdersSlice = createSlice({
       // --- Fetch Comments ---
       .addCase(fetchWorkOrderComments.fulfilled, (state, action: PayloadAction<WorkOrderComment[]>) => {
         const workOrderId = (action.meta as any).arg;
-        // Update selected work order if open
         if (state.selectedWorkOrder && state.selectedWorkOrder.id === workOrderId) {
           state.selectedWorkOrder.comments = action.payload;
         }
-        // Update list item if exists
         const idx = state.workOrders.findIndex((w) => w.id === workOrderId);
         if (idx !== -1) {
           state.workOrders[idx].comments = action.payload;
         }
       })
 
-      // --- Fetch Logs (✅ Added) ---
+      // --- Fetch Logs (✅ Updated) ---
       .addCase(fetchWorkOrderLogs.pending, (state) => {
         state.loading = true;
       })
       .addCase(fetchWorkOrderLogs.fulfilled, (state, action: PayloadAction<WorkOrderLog[]>) => {
         state.loading = false;
-        // Ensure we store the array, regardless of API response structure
+        // ✅ Store logs array directly
         if (Array.isArray(action.payload)) {
           state.logs = action.payload;
         } else {

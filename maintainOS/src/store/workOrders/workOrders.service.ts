@@ -1,4 +1,3 @@
-// src/store/workOrders/workOrders.service.ts
 import api from "../auth/auth.service";
 import type {
   AssignWorkOrderData,
@@ -29,8 +28,6 @@ export const workOrderService = {
   createWorkOrder: async (
     data: CreateWorkOrderData
   ): Promise<WorkOrderResponse> => {
-    // Using multipart/form-data if your API expects it for file uploads, 
-    // otherwise application/json is fine. Adjust as per backend.
     const res = await api.post(`/work-orders`, data, {
       headers: { "Content-Type": "multipart/form-data" },
     });
@@ -42,10 +39,9 @@ export const workOrderService = {
     authorId: string,
     data: UpdateWorkOrderData
   ): Promise<WorkOrderResponse> => {
-    // Note: Using PATCH as requested in previous turns
     const res = await api.request({
       method: "PATCH",
-      url: `/work-orders/${id}`,
+      url: `/work-orders/${id}/${authorId}`, 
       data,
       headers: {
         "Content-Type": "multipart/form-data", 
@@ -85,46 +81,33 @@ export const workOrderService = {
     return res.data;
   },
 
-  // --- COMMENTS (Updated) ---
+  // --- COMMENTS ---
 
-  // POST /api/v1/work-orders/{id}/comment
   addWorkOrderComment: async (
     id: string,
     data: AddCommentPayload
   ): Promise<WorkOrderComment> => {
-    // Note: Endpoint uses singular 'comment' as per requirement
     const res = await api.post(`/work-orders/${id}/comment`, data);
     return res.data;
   },
 
-  // GET /api/v1/work-orders/{id}/comments
   fetchWorkOrderComments: async (id: string): Promise<WorkOrderComment[]> => {
     const res = await api.get(`/work-orders/${id}/comments`);
     return res.data;
   },
 
-  // --- LOGS (Updated with Debugging & Safe Check) ---
+  // --- LOGS (Updated) ---
 
-  // GET /api/v1/work-orders/get/work-order-logs
-  fetchWorkOrderLogs: async (): Promise<WorkOrderLog[]> => {
-    try {
-      const res = await api.get(`/work-orders/get/work-order-logs`);
-      
-      // 🔍 Debugging Logs to check API response structure in Console
-      console.log("🔍 [DEBUG] Raw Logs API Response:", res);
-      
-      // Handle if API returns array directly or nested in 'data'
-      if (Array.isArray(res.data)) {
+  fetchWorkOrderLogs: async (workOrderId: string): Promise<WorkOrderLog[]> => {
+    const res = await api.get(`/work-orders/get/work-order-logs/${workOrderId}`);
+    
+    // Safe Data Extraction
+    if (Array.isArray(res.data)) {
         return res.data;
-      } else if (res.data && Array.isArray(res.data.data)) {
+    } else if (res.data && Array.isArray(res.data.data)) {
         return res.data.data;
-      }
-      
-      return [];
-    } catch (error) {
-      console.error("❌ [DEBUG] Failed to fetch logs:", error);
-      throw error;
     }
+    return [];
   },
 
   // --- Costs & Time ---
