@@ -226,21 +226,31 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
         return (
           <div className="flex items-center gap-3 font-medium text-gray-800 h-full">
             {isEditing ? (
+              // When in Editing mode, show the checkbox
               <div
                 className="flex items-center justify-center h-8 w-8 cursor-pointer"
-                onClick={() => toggleRowSelection(record.id)}
+                onClick={(e) => {
+                  // e.stopPropagation() prevents the row click from firing twice, 
+                  // but we rely on onRow for selection, so we can omit it here 
+                  // or keep it to make the click only on the checkbox area toggle selection.
+                  // Since the table's onRow handles the click, we'll keep the onRow logic.
+                }}
               >
                 <input
                   type="checkbox"
                   checked={isSelected}
-                  readOnly
+                  readOnly // Use readOnly since the row click is managing the state change
                   className="h-5 w-5 accent-blue-600 cursor-pointer"
                 />
               </div>
             ) : (
+              // When not in Editing mode, show the Avatar/List icon
               <div
                 className="flex items-center justify-center h-8 w-8 cursor-pointer"
-                onClick={() => toggleRowSelection(record.id)}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent opening view modal when clicking icon
+                  toggleRowSelection(record.id); // Allow clicking icon/area to start selection
+                }}
               >
                 <Avatar className="h-8 w-8 flex-shrink-0">
                   <ClipboardList size={18} />
@@ -252,7 +262,7 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
             <span
               className="truncate cursor-pointer hover:text-blue-600 hover:underline"
               onClick={(e) => {
-                e.stopPropagation();
+                e.stopPropagation(); // Crucial to prevent row selection when opening modal
                 setSelectedWO(record.full);
                 setViewModal(true);
               }}
@@ -355,6 +365,9 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
     areAllSelected,
     selectedCount,
     isDeleting,
+    handleSelectAllToggle, // Added dependency for handleSelectAllToggle
+    toggleRowSelection, // Added dependency for toggleRowSelection
+    handleDelete, // Added dependency for handleDelete
   ]);
 
   // Map data

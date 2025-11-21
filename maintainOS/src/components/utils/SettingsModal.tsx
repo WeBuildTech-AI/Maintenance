@@ -581,6 +581,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 fontSize: "14px",
                 fontWeight: 500,
                 cursor: "pointer",
+                marginTop:"20px"
               }}
               onClick={() => setShowDeleted(!showDeleted)}
             >

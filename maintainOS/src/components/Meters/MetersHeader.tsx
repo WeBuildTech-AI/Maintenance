@@ -17,17 +17,16 @@ import {
 } from "lucide-react";
 import { Input } from "../ui/input";
 import MetersFilterBar from "./MetersFilterBar";
-import type { setSelectedMeter } from "../../store/meters";
 
 export function MetersHeaderComponent(
   viewMode: ViewMode,
   setViewMode: Dispatch<SetStateAction<ViewMode>>,
   searchQuery: string,
   setSearchQuery: Dispatch<SetStateAction<string>>,
-  setIsCreatingForm: () => void, // 👈 UPDATED TYPE: now a void function for navigation
+  setIsCreatingForm: () => void,
   setShowSettings: Dispatch<SetStateAction<boolean>>,
-  setIsSettingsModalOpen: Dispatch<SetStateAction<boolean>>
-  // setSelectedMeter:Dispatch<SetStateAction<boolean>>
+  setIsSettingsModalOpen: Dispatch<SetStateAction<boolean>>,
+  setShowDeleted: Dispatch<SetStateAction<boolean>>
 ) {
   return (
     <header className=" border-border bg-card px-6 py-4">
@@ -53,7 +52,12 @@ export function MetersHeaderComponent(
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
-                  <DropdownMenuItem onClick={() => setViewMode("panel")}>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setViewMode("panel");
+                      setShowDeleted(false);
+                    }}
+                  >
                     <PanelTop className="mr-2 h-4 w-4" /> Panel View
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setViewMode("table")}>
@@ -77,9 +81,8 @@ export function MetersHeaderComponent(
           <Button
             className="gap-2 cursor-pointer bg-orange-600 hover:outline-none"
             onClick={() => {
-              setIsCreatingForm(); // 👈 Function call without boolean argument
+              setIsCreatingForm();
               setViewMode("panel");
-              // setSelectedMeter("");
             }}
           >
             <Plus className="mr-2 h-4 w-4" />

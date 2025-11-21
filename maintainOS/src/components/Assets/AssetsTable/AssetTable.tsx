@@ -720,7 +720,7 @@ export function AssetTable({
           onEdit={onEdit}
           showDetailsSection={showDetailsSection}
           restoreData={"Restore"}
-          fetchAssetsData={fetchAssetsData}
+          fetchData={fetchAssetsData}
         />
       )}
     </div>
