@@ -300,6 +300,7 @@ export function ToDoView({
                 attachment={attachment}
                 setAttachment={setAttachment}
                 fileRef={fileRef}
+                selectedWorkOrder={selectedWorkOrder}
               />
             )}
           </div>

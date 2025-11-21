@@ -18,15 +18,21 @@ import {
   User,
 } from "lucide-react";
 
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux"; // ✅ Added useSelector
 import type { AppDispatch } from "../../../../store";
-import { deleteWorkOrder } from "../../../../store/workOrders/workOrders.thunks";
+import { 
+  deleteWorkOrder,
+  patchWorkOrderComplete, // ✅ Added
+  markWorkOrderInProgress, // ✅ Added
+  updateWorkOrder // ✅ Added
+} from "../../../../store/workOrders/workOrders.thunks";
 import { NewWorkOrderForm } from "../../NewWorkOrderForm/NewWorkOrderFrom";
 import TimeOverviewPanel from "../../panels/TimeOverviewPanel";
 import OtherCostsPanel from "../../panels/OtherCostsPanel";
 import UpdatePartsPanel from "../../panels/UpdatePartsPanel";
 import { CommentsSection } from "../../ToDoView/CommentsSection";
 import WorkOrderOptionsDropdown from "../../ToDoView/WorkOrderOptionsDropdown";
+import toast from "react-hot-toast"; // ✅ Added toast
 
 // Helper to safely render object/string values
 const safeRender = (value: any) => {
@@ -52,67 +58,7 @@ const safeRenderAssignee = (workOrder: any) => {
   return "Unassigned";
 };
 
-// --- Sub-Panels ---
-function PartsPanel({ onBack }) {
-  return (
-    <div className="p-6">
-      <h2 className="text-xl font-semibold text-gray-900">Parts</h2>
-      <p className="mt-2.5 text-gray-500">
-        (Demo Panel) Parts management UI goes here…
-      </p>
-      <button
-        onClick={onBack}
-        className="mt-5 px-4 py-2 border rounded-md cursor-pointer bg-gray-50 text-gray-700 hover:bg-gray-100"
-      >
-        Back
-      </button>
-    </div>
-  );
-}
-
-function TimePanel({ onBack }) {
-  return (
-    <div className="p-6">
-      <h2 className="text-xl font-semibold text-gray-900">Time Overview</h2>
-      <p className="mt-2.5 text-gray-500">
-        (Demo Panel) Time overview UI goes here…
-      </p>
-      <button
-        onClick={onBack}
-        className="mt-5 px-4 py-2 border rounded-md cursor-pointer bg-gray-50 text-gray-700 hover:bg-gray-100"
-      >
-        Back
-      </button>
-    </div>
-  );
-}
-
-function CostPanel({ onBack, workOrder }) {
-  const total = (workOrder.otherCosts || []).reduce(
-    (sum, x) => sum + Number(x.amount || 0),
-    0
-  );
-
-  return (
-    <div className="p-6">
-      <h2 className="text-xl font-semibold text-gray-900">Other Costs</h2>
-      <p className="mt-2.5 text-gray-500">
-        {workOrder.otherCosts?.length || 0} entries
-      </p>
-      <p className="mt-2.5 text-lg font-semibold text-gray-900">
-        ${total.toFixed(2)}
-      </p>
-      <button
-        onClick={onBack}
-        className="mt-5 px-4 py-2 border rounded-md cursor-pointer bg-gray-50 text-gray-700 hover:bg-gray-100"
-      >
-        Back
-      </button>
-    </div>
-  );
-}
-
-function formatModalDateTime(isoString) {
+function formatModalDateTime(isoString: string) {
   if (!isoString) return "N/A";
   try {
     const date = new Date(isoString);
@@ -133,16 +79,23 @@ function formatModalDateTime(isoString) {
   }
 }
 
-export default function WorkOrderDetailsModal({
+export default function WorkOrderDetailModal({
   open,
   onClose,
   workOrder,
   onRefreshWorkOrders,
-}) {
+}: any) {
   if (!open || !workOrder) return null;
 
+  const dispatch = useDispatch<AppDispatch>();
+  // ✅ Get current user for updates
+  const user = useSelector((state: any) => state.auth?.user);
+
   const [panel, setPanel] = useState("details");
-  const [activeStatus, setActiveStatus] = useState(workOrder.status);
+  
+  // ✅ Initialize with workOrder status, fallback to 'open' if null
+  const [activeStatus, setActiveStatus] = useState(workOrder.status || "open");
+  
   const [isExpanded, setIsExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -154,24 +107,22 @@ export default function WorkOrderDetailsModal({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  const dispatch = useDispatch<AppDispatch>();
-
   useEffect(() => {
     if (workOrder) {
-      setActiveStatus(workOrder.status);
+      setActiveStatus(workOrder.status || "open");
     }
   }, [workOrder]);
 
   const otherCosts = workOrder.otherCosts || [];
   const totalOtherCost = otherCosts.reduce(
-    (sum, c) => sum + Number(c.amount ?? 0),
+    (sum: number, c: any) => sum + Number(c.amount ?? 0),
     0
   );
 
   const handleClose = () => {
     setPanel("details");
     setIsEditing(false);
-    setActiveStatus(workOrder.status);
+    setActiveStatus(workOrder.status || "open");
     setIsExpanded(false);
     onClose();
     onRefreshWorkOrders?.();
@@ -190,6 +141,49 @@ export default function WorkOrderDetailsModal({
       } catch (error) {
         console.error("Failed to delete work order:", error);
       }
+    }
+  };
+
+  // ✅ New Handler for Status Buttons
+  const handleStatusChange = async (newStatus: string) => {
+    // Don't trigger if clicking the same status
+    if (activeStatus === newStatus) return;
+
+    const prevStatus = activeStatus;
+    // Optimistic UI update
+    setActiveStatus(newStatus);
+
+    try {
+      if (newStatus === "done") {
+        await dispatch(patchWorkOrderComplete(workOrder.id)).unwrap();
+        toast.success("Work order completed");
+      } else if (newStatus === "in_progress") {
+        await dispatch(markWorkOrderInProgress(workOrder.id)).unwrap();
+        toast.success("Work order in progress");
+      } else {
+        // Update for Open / On Hold
+        if (!user?.id) {
+            toast.error("User not authenticated");
+            setActiveStatus(prevStatus);
+            return;
+        }
+        await dispatch(
+            updateWorkOrder({
+                id: workOrder.id,
+                authorId: user.id,
+                data: { status: newStatus as any },
+            })
+        ).unwrap();
+        toast.success(`Status updated to ${newStatus.replace("_", " ")}`);
+      }
+      
+      // Refresh list in background
+      onRefreshWorkOrders?.();
+
+    } catch (error) {
+      console.error("Status update failed", error);
+      toast.error("Failed to update status");
+      setActiveStatus(prevStatus); // Revert on error
     }
   };
 
@@ -248,8 +242,8 @@ export default function WorkOrderDetailsModal({
               <>
                 Created on{" "}
                 <span className="font-bold">
-                  {workOrder.createdOn
-                    ? new Date(workOrder.createdOn).toLocaleDateString("en-US")
+                  {workOrder.createdAt
+                    ? new Date(workOrder.createdAt).toLocaleDateString("en-US")
                     : "N/A"}
                 </span>
               </>
@@ -382,16 +376,18 @@ export default function WorkOrderDetailsModal({
                           },
                           { key: "done", label: "Done", Icon: CalendarDays },
                         ].map(({ key, label, Icon }) => {
-                          const active = activeStatus === key;
+                          // ✅ Check active status correctly (handle nulls/undefined)
+                          const active = (activeStatus || "open") === key;
                           return (
                             <button
                               key={key}
                               type="button"
-                              onClick={() => setActiveStatus(key)}
+                              // ✅ Added Click Handler
+                              onClick={() => handleStatusChange(key)}
                               aria-pressed={active}
                               className={`h-16 w-20 rounded-lg border shadow-md inline-flex flex-col items-center justify-center gap-2 transition-all outline-none focus-visible:ring-[3px] focus-visible:border-ring ${
                                 active
-                                  ? "bg-orange-600 text-white border-orange-600"
+                                  ? "bg-orange-600 text-white border-orange-600" // ✅ Active Color
                                   : "bg-orange-50 text-sidebar-foreground border-gray-200 hover:bg-orange-100"
                               }`}
                             >
@@ -549,10 +545,10 @@ export default function WorkOrderDetailsModal({
                       <strong className="font-semibold text-gray-800">
                         {workOrder.createdBy || "System"}
                       </strong>
-                      on {formatModalDateTime(workOrder.createdOn)}
+                      on {formatModalDateTime(workOrder.createdAt)}
                     </div>
                     <div>
-                      Last updated on {formatModalDateTime(workOrder.updatedOn)}
+                      Last updated on {formatModalDateTime(workOrder.updatedAt)}
                     </div>
                   </div>
 

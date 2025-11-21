@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useMatch } from "react-router-dom";
-import { useDispatch } from "react-redux"; // ✅ Added
+import { useDispatch } from "react-redux";
 import { workOrderService } from "../../store/workOrders/workOrders.service";
-import { fetchWorkOrders } from "../../store/workOrders/workOrders.thunks"; // ✅ Added
+import { fetchWorkOrders } from "../../store/workOrders/workOrders.thunks";
 import { CalendarView } from "./CalendarView";
 import { ListView } from "./ListView";
 import NewWorkOrderModal from "./NewWorkOrderModal";
@@ -26,7 +26,7 @@ export function WorkOrders() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   const navigate = useNavigate();
-  const dispatch = useDispatch(); // ✅ Added
+  const dispatch = useDispatch();
 
   // ✅ Router Hooks
   const isCreateRoute = useMatch("/work-orders/create");
@@ -37,14 +37,26 @@ export function WorkOrders() {
   const editingId = editMatch?.params?.id;
   const viewingId = viewMatch?.params?.id;
 
-  // ✅ Centralized Fetch (so we can re-use)
+  // ✅ Centralized Fetch
   const getWorkOrders = async () => {
     try {
       setLoading(true);
       const res = await workOrderService.fetchWorkOrders();
       console.log("✅ API Response:", res);
+      
+      // Map API response if necessary (though your JSON fits the interface well)
       setWorkOrders(res || []);
-      if (res.length > 0 && !selectedWorkOrder) setSelectedWorkOrder(res[0]);
+      
+      if (res.length > 0 && !selectedWorkOrder) {
+        // If on a specific ID route, select that one, otherwise first
+        if (viewingId) {
+            const match = res.find((r: any) => r.id === viewingId);
+            if(match) setSelectedWorkOrder(match);
+            else setSelectedWorkOrder(res[0]);
+        } else {
+            setSelectedWorkOrder(res[0]);
+        }
+      }
     } catch (error) {
       console.error("❌ Error fetching work orders:", error);
     } finally {
@@ -57,7 +69,7 @@ export function WorkOrders() {
     getWorkOrders();
   }, []);
 
-  // ✅ Select active work order based on route
+  // ✅ Select active work order based on route changes
   useEffect(() => {
     if (!workOrders.length) return;
     if (viewingId) {
@@ -72,12 +84,17 @@ export function WorkOrders() {
     const query = searchQuery.toLowerCase();
 
     return workOrders.filter((wo) => {
+      // Safe navigation for null fields in your JSON
       const title = wo.title?.toLowerCase() || "";
       const description = wo.description?.toLowerCase() || "";
-      const location = wo.location?.name?.toLowerCase() || "";
+      
+      // Handle complex objects that might be null in JSON
+      const location = (wo.location as any)?.name?.toLowerCase() || "";
       const asset = wo.assets?.[0]?.name?.toLowerCase() || "";
       const assignee = wo.assignees?.[0]?.fullName?.toLowerCase() || "";
-      const vendor = wo.vendors?.map((v) => v.name?.toLowerCase()).join(" ") || "";
+      
+      // Handle vendors array safely
+      const vendor = wo.vendors?.map((v: any) => v.name?.toLowerCase()).join(" ") || "";
 
       return (
         title.includes(query) ||
@@ -90,13 +107,24 @@ export function WorkOrders() {
     });
   }, [searchQuery, workOrders]);
 
+  // ✅ Categorize for ToDo View based on JSON "status"
   const todoWorkOrders = useMemo(
-    () => filteredWorkOrders.filter((wo) => wo.status !== "completed"),
+    () =>
+      filteredWorkOrders.filter((wo) => {
+        const s = wo.status?.toLowerCase();
+        // Include: null, undefined, open, in_progress, on_hold
+        return !s || s === "open" || s === "in_progress" || s === "on_hold";
+      }),
     [filteredWorkOrders]
   );
 
   const doneWorkOrders = useMemo(
-    () => filteredWorkOrders.filter((wo) => wo.status === "completed"),
+    () =>
+      filteredWorkOrders.filter((wo) => {
+        const s = wo.status?.toLowerCase();
+        // Include: done, completed
+        return s === "done" || s === "completed";
+      }),
     [filteredWorkOrders]
   );
 
@@ -119,10 +147,10 @@ export function WorkOrders() {
     setCreatingWorkOrder(false);
   };
 
-  // ✅ Realtime refresh function for ToDoView
+  // ✅ Realtime refresh function
   const handleRefreshWorkOrders = async () => {
-    await getWorkOrders(); // ✅ Re-fetch latest list
-    dispatch(fetchWorkOrders()); // ✅ optional Redux sync
+    await getWorkOrders(); // Re-fetch latest list
+    dispatch(fetchWorkOrders() as any); // Sync Redux
   };
 
   return (
@@ -147,7 +175,6 @@ export function WorkOrders() {
 
       {/* Main View Logic */}
       {!loading && (
-        // ✅ FIX: 'overflow-hidden' ko 'overflow-auto' se badal diya hai
         <div className="flex-1 overflow-auto">
           {viewMode === "todo" && (
             <ToDoView
@@ -157,15 +184,14 @@ export function WorkOrders() {
               onSelectWorkOrder={handleSelectWorkOrder}
               creatingWorkOrder={creatingWorkOrder}
               onCancelCreate={handleCancelCreate}
-              onRefreshWorkOrders={handleRefreshWorkOrders} // ✅ connected
+              onRefreshWorkOrders={handleRefreshWorkOrders}
             />
           )}
 
-          {/* ✅ FIX: 'onRefresh' prop yahaan add kar diya hai */}
           {viewMode === "list" && (
             <ListView 
               workOrders={filteredWorkOrders} 
-              onRefresh={getWorkOrders} 
+              onRefreshWorkOrders={handleRefreshWorkOrders} 
               isSettingsModalOpen={isSettingsModalOpen}
               setIsSettingsModalOpen={setIsSettingsModalOpen}
             />
