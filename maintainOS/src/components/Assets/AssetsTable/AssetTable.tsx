@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Card, CardContent } from "../../ui/card";
-import { Avatar as ShadCNAvatar, AvatarFallback } from "../../ui/avatar"; // Renamed
+import { Avatar as ShadCNAvatar, AvatarFallback } from "../../ui/avatar";
 import {
   CircleCheck,
   MapPin,
@@ -17,49 +17,43 @@ import { Tooltip } from "../../ui/tooltip";
 import toast from "react-hot-toast";
 import SettingsModal from "../../utils/SettingsModal";
 
-// ⭐ 1. Ant Design Imports (ListView se copy kiye gaye)
-import { Table, Avatar, Tooltip as AntTooltip } from "antd";
+import { Table } from "antd";
 import type { TableProps, TableColumnType } from "antd";
-import type { AppDispatch } from "../../../store"; // Store path check kar lein
+import type { AppDispatch } from "../../../store";
 import { useDispatch } from "react-redux";
 import Loader from "../../Loader/Loader";
 import AssetTableModal from "./AssetTableModal";
 
-// --- Helper Functions (ListView se copy kiye gaye) ---
-
-type Sorter = Parameters<NonNullable<TableProps<any>["onChange"]>>[2];
-
+// Map sort order
 const mapAntSortOrder = (order: "asc" | "desc"): "ascend" | "descend" =>
   order === "asc" ? "ascend" : "descend";
 
-// Row Styling (ListView se copy kiya gaya)
 const tableStyles = `
   .selected-row-class > td {
-    background-color: #ffe8d9 !important; /* Orange theme */
+    background-color: #ffe8d9 !important;
   }
   .selected-row-class:hover > td {
     background-color: #f9fafb !important;
   }
-  .ant-table-cell-fix-left,  
+  .ant-table-cell-fix-left,
   .ant-table-cell-fix-right {
-    background-color: #fff !important;  
+    background-color: #fff !important;
     z-index: 3 !important;
   }
   .ant-table-row:hover > td {
     background-color: #f9fafb !important;
   }
   .ant-table-thead > tr > th {
-    background-color: #f9fafb !important; /* Header BG */
+    background-color: #f9fafb !important;
     text-transform: uppercase;
     font-size: 12px;
     font-weight: 600;
     color: #6b7280;
   }
   .ant-table-tbody > tr > td {
-    border-bottom: 1px solid #f3f4f6; /* Lighter border */
+    border-bottom: 1px solid #f3f4f6;
   }
 `;
-// --- End Helper Functions ---
 
 const allAvailableColumns = [
   "ID",
@@ -76,8 +70,6 @@ const allAvailableColumns = [
   "Created At",
 ];
 
-// ⭐ 2. Data Mapping (har column ke liye)
-// Yeh batata hai ki "Visible Column Name" ka data 'dataSource' mein kis key par milega
 const columnConfig: {
   [key: string]: {
     dataIndex: string;
@@ -90,7 +82,11 @@ const columnConfig: {
     width: 120,
     sorter: (a, b) => (a.id || "").localeCompare(b.id || ""),
   },
-  Status: { dataIndex: "status", width: 150 },
+  Status: {
+    dataIndex: "status",
+    width: 150,
+    sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
+  },
   Location: {
     dataIndex: "location",
     width: 150,
@@ -107,18 +103,48 @@ const columnConfig: {
     sorter: (a, b) =>
       (a.manufacturer || "").localeCompare(b.manufacturer || ""),
   },
-  Type: { dataIndex: "type", width: 150 },
-  QrCode: { dataIndex: "qrCode", width: 150 },
-  Meter: { dataIndex: "meter", width: 150 },
-  Part: { dataIndex: "part", width: 150 },
-  Team: { dataIndex: "team", width: 150 },
-  "Updated At": { dataIndex: "updatedAt", width: 150 },
-  "Created At": { dataIndex: "createdAt", width: 150 },
+  Type: {
+    dataIndex: "type",
+    width: 150,
+    sorter: (a, b) => (a.type || "").localeCompare(b.type || ""),
+  },
+  QrCode: {
+    dataIndex: "qrCode",
+    width: 150,
+    sorter: (a, b) => (a.qrCode || "").localeCompare(b.qrCode || ""),
+  },
+  Meter: {
+    dataIndex: "meter",
+    width: 150,
+    sorter: (a, b) => (a.meter || "").localeCompare(b.meter || ""),
+  },
+  Part: {
+    dataIndex: "part",
+    width: 150,
+    sorter: (a, b) => (a.part || "").localeCompare(b.part || ""),
+  },
+  Team: {
+    dataIndex: "team",
+    width: 150,
+    sorter: (a, b) => (a.team || "").localeCompare(b.team || ""),
+  },
+  "Updated At": {
+    dataIndex: "updatedAt",
+    width: 150,
+    sorter: (a, b) =>
+      new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
+  },
+  "Created At": {
+    dataIndex: "createdAt",
+    width: 150,
+    sorter: (a, b) =>
+      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  },
 };
 
 export function AssetTable({
   assets,
-  selectedAsset, // Yeh prop abhi use nahi ho raha, par rakha hai
+  selectedAsset,
   handleDeleteAsset,
   fetchAssetsData,
   setIsSettingsModalOpen,
@@ -134,17 +160,16 @@ export function AssetTable({
   fetchAssetsData: () => void;
   setIsSettingsModalOpen: (isOpen: boolean) => void;
   isSettingsModalOpen: boolean;
-  onEdit: (asset: Asset) => void;
+  onEdit: (asset: any) => void;
   onDelete: (id: string | number) => void;
-  fullAsset: any[];
   showDeleted: boolean;
-  setShowDeleted: boolean;
+  setShowDeleted: (value: boolean) => void;
 }) {
   const dispatch = useDispatch<AppDispatch>();
   const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
-  const [assetDetailsModal, setAssetDetailsModal] = useState(false);
+
   const [updateAssetModal, setUpdateAssetModal] = useState(false);
   const [selectedStatusAsset, setSelectedStatusAsset] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -154,22 +179,21 @@ export function AssetTable({
   const [selectedCriticality, setSelectedCriticality] = useState("");
   const [includeSubAssets, setIncludeSubAssets] = useState(false);
   const [isUpdatingCriticality, setIsUpdatingCriticality] = useState(false);
-  const [isOpenAssetDetailsMpdal, setIsOpenAssetDetailsModal] = useState(false);
+
+  const [isOpenAssetDetailsModal, setIsOpenAssetDetailsModal] = useState(false);
   const [isSelectedAssetTable, setIsSelectedAssetTable] = useState<any[]>([]);
   const popoverRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const [showDetailsSection, setShowDetailsSection] = useState("asset");
 
+  const [showDetailsSection, setShowDetailsSection] = useState("asset");
   const [visibleColumns, setVisibleColumns] =
     useState<string[]>(allAvailableColumns);
 
-  // ⭐ 3. Sorting State (ListView se)
   const [sortType, setSortType] = useState<string>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   const StatusModal = UpdateAssetStatusModal as any;
 
-  // ... (handleClickOutside useEffect... waisa hi hai)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -199,7 +223,6 @@ export function AssetTable({
       .join("")
       .toUpperCase();
 
-  // --- Selection Logic ---
   const allAssetIds = useMemo(() => assets.map((p) => p.id), [assets]);
   const selectedCount = selectedAssetIds.length;
   const isEditing = selectedCount > 0;
@@ -224,21 +247,21 @@ export function AssetTable({
     );
   };
 
-  const handleTableChange: TableProps<any>["onChange"] = (
-    pagination,
-    filters,
-    sorter
-  ) => {
+  // ⭐ Handle Table Sort
+  const handleTableChange: TableProps<any>["onChange"] = (_, __, sorter) => {
     const s = Array.isArray(sorter) ? sorter[0] : sorter;
-    if (s && s.field && s.order) {
-      setSortType(s.field as string);
-      setSortOrder(s.order === "ascend" ? "asc" : "desc");
-    } else if (s && s.field) {
-      // Agar sort order null hai (cycle complete), default par reset karein
-      setSortType(s.field as string);
-      setSortOrder("asc");
+
+    if (s && s.field) {
+      const field = s.field as string;
+
+      if (s.order) {
+        setSortType(field);
+        setSortOrder(s.order === "ascend" ? "asc" : "desc");
+      } else {
+        setSortType("name");
+        setSortOrder("asc");
+      }
     } else {
-      // Sorting clear ho gayi
       setSortType("name");
       setSortOrder("asc");
     }
@@ -260,7 +283,6 @@ export function AssetTable({
       console.error("Error bulk deleting assets:", err);
       toast.error("Failed to delete assets.");
     } finally {
-      // Always stop the loading spinner
       setIsDeleting(false);
     }
   };
@@ -294,11 +316,8 @@ export function AssetTable({
     setIsUpdatingCriticality(true);
     try {
       const payload = { criticality: selectedCriticality };
-      // Note: Antd table data source se 'id' ko string mein badalna pad sakta hai
       await assetService.updateAsset(selectedAssetIds.join(","), payload);
-      toast.success(
-        `${selectedAssetIds.length} asset(s) updated successfully!`
-      );
+      toast.success(`${selectedAssetIds.length} asset(s) updated!`);
       fetchAssetsData();
       setSelectedAssetIds([]);
       setIsCriticalityPopoverOpen(false);
@@ -311,7 +330,6 @@ export function AssetTable({
       setIsUpdatingCriticality(false);
     }
   };
-  // --- End Handlers ---
 
   const handleApplySettings = (settings: {
     resultsPerPage: number;
@@ -320,34 +338,28 @@ export function AssetTable({
     visibleColumns: string[];
   }) => {
     setVisibleColumns(settings.visibleColumns);
+    setShowDeleted(settings.showDeleted);
     setIsSettingsModalOpen(false);
   };
 
-  console.log(isSelectedAssetTable, "selected Asset");
-
-  // ⭐ 5. Columns Definition (`useMemo` mein)
   const columns: TableColumnType<any>[] = useMemo(() => {
-    // --- Name Column (Fixed Left) ---
     const nameColumn: TableColumnType<any> = {
       title: () => {
         if (!isEditing) {
-          // ⭐ BADLAAV 1: Yahaan se settings button hata diya gaya hai
           return (
-            <div className="flex items-center justify-between gap-2 h-full">
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  ref={headerCheckboxRef}
-                  checked={areAllSelected}
-                  onChange={handleSelectAllToggle}
-                  className="h-4 w-4 accent-orange-600 cursor-pointer"
-                />
-                <span className="text-gray-600">Name</span>
-              </div>
+            <div className="flex items-center gap-2 h-full">
+              <input
+                type="checkbox"
+                ref={headerCheckboxRef}
+                checked={areAllSelected}
+                onChange={handleSelectAllToggle}
+                className="h-4 w-4 accent-orange-600 cursor-pointer"
+              />
+              <span className="text-gray-600">Name</span>
             </div>
           );
         }
-        // --- Bulk Edit Header ---
+
         return (
           <div className="flex items-center gap-4 h-full">
             <input
@@ -360,7 +372,7 @@ export function AssetTable({
             <span className="text-sm font-medium text-gray-900">
               Edit {selectedCount} {selectedCount === 1 ? "Item" : "Items"}
             </span>
-            {/* Bulk Action Buttons */}
+
             <Tooltip text="Delete">
               <button
                 onClick={handleDelete}
@@ -371,119 +383,20 @@ export function AssetTable({
                     : "text-orange-600 hover:text-red-700"
                 }`}
               >
-                {isDeleting ? <Loader /> : <Trash2 size={16} />}
+                {isDeleting ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Trash2 size={16} />
+                )}
               </button>
             </Tooltip>
-            <Tooltip text="Edit Location">
-              <button
-                disabled={isDeleting}
-                className={`flex items-center gap-1 transition ${
-                  isDeleting
-                    ? "text-orange-400 cursor-not-allowed"
-                    : "text-orange-600 hover:text-red-700"
-                }`}
-              >
-                <MapPin size={16} />
-              </button>
-            </Tooltip>
-            <div className="relative">
-              <Tooltip text="Edit Criticality">
-                <button
-                  ref={triggerRef}
-                  onClick={() => setIsCriticalityPopoverOpen((prev) => !prev)}
-                  disabled={isDeleting}
-                  className={`flex items-center gap-1 mt-1 transition ${
-                    isDeleting
-                      ? "text-orange-400 cursor-not-allowed"
-                      : "text-orange-600 hover:text-red-700"
-                  }`}
-                >
-                  <MessageCircleWarning size={16} />
-                </button>
-              </Tooltip>
 
-              {/* ⭐⭐ START: FIXED POPOVER CODE ⭐⭐ */}
-              {isCriticalityPopoverOpen && (
-                <div
-                  ref={popoverRef}
-                  className="absolute top-full left-0 z-50 w-48 p-4 mt-2 bg-card border border-border rounded-md shadow-lg"
-                >
-                  <div className="flex flex-col gap-4">
-                    <h4 className="font-semibold text-sm text-foreground">
-                      Edit Criticality
-                    </h4>
-                    <div className="grid gap-2 text-sm text-foreground">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="criticality"
-                          value="low"
-                          checked={selectedCriticality === "low"}
-                          onChange={(e) =>
-                            setSelectedCriticality(e.target.value)
-                          }
-                          className="accent-orange-600"
-                        />
-                        Low
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="criticality"
-                          value="high"
-                          checked={selectedCriticality === "high"}
-                          onChange={(e) =>
-                            setSelectedCriticality(e.target.value)
-                          }
-                          className="accent-orange-600"
-                        />
-                        High
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="criticality"
-                          value="medium"
-                          checked={selectedCriticality === "medium"}
-                          onChange={(e) =>
-                            setSelectedCriticality(e.target.value)
-                          }
-                          className="accent-orange-600"
-                        />
-                        Normal
-                      </label>
-                    </div>
-                    <div className="border-t border-border -mx-4"></div>
-                    <div className="flex items-start gap-2 text-sm text-foreground">
-                      <input
-                        type="checkbox"
-                        id="sub-assets"
-                        checked={includeSubAssets}
-                        onChange={(e) => setIncludeSubAssets(e.target.checked)}
-                        className="mt-1 cursor-pointer accent-orange-600"
-                      />
-                      <label htmlFor="sub-assets" className="cursor-pointer">
-                        Edit Sub-Asset criticality as well
-                      </label>
-                    </div>
-                    <button
-                      onClick={handleApplyCriticalityChanges}
-                      disabled={!selectedCriticality || isUpdatingCriticality}
-                      className="w-full bg-orange-600 text-white px-3 py-1.5 text-sm rounded-md hover:bg-orange-700 disabled:bg-orange-300 disabled:cursor-not-allowed flex items-center justify-center"
-                    >
-                      {isUpdatingCriticality ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        "Apply Changes"
-                      )}
-                    </button>
-                  </div>
-                </div>
-              )}
-              {/* ⭐⭐ END: FIXED POPOVER CODE ⭐⭐ */}
-            </div>
-            <Tooltip text="Edit Status">
+            <Tooltip text="Edit Criticality">
               <button
+                ref={triggerRef}
+                onClick={() =>
+                  setIsCriticalityPopoverOpen((prev) => !prev)
+                }
                 disabled={isDeleting}
                 className={`flex items-center gap-1 transition ${
                   isDeleting
@@ -491,18 +404,81 @@ export function AssetTable({
                     : "text-orange-600 hover:text-red-700"
                 }`}
               >
-                <CircleCheck size={16} />
+                <MessageCircleWarning size={16} />
               </button>
             </Tooltip>
+
+            {isCriticalityPopoverOpen && (
+              <div
+                ref={popoverRef}
+                className="absolute top-full left-0 z-50 w-48 p-4 mt-2 bg-card border border-border rounded-md shadow-lg"
+              >
+                <div className="flex flex-col gap-4">
+                  <h4 className="font-semibold text-sm">Edit Criticality</h4>
+
+                  <div className="grid gap-2 text-sm">
+                    {["low", "medium", "high"].map((c) => (
+                      <label
+                        key={c}
+                        className="flex items-center gap-2 cursor-pointer"
+                      >
+                        <input
+                          type="radio"
+                          name="criticality"
+                          value={c}
+                          checked={selectedCriticality === c}
+                          onChange={(e) =>
+                            setSelectedCriticality(e.target.value)
+                          }
+                          className="accent-orange-600"
+                        />
+                        {c.charAt(0).toUpperCase() + c.slice(1)}
+                      </label>
+                    ))}
+                  </div>
+
+                  <div className="border-t"></div>
+
+                  <div className="flex items-start gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={includeSubAssets}
+                      onChange={(e) =>
+                        setIncludeSubAssets(e.target.checked)
+                      }
+                      className="mt-1 accent-orange-600"
+                    />
+                    <span>Edit Sub-Asset criticality</span>
+                  </div>
+
+                  <button
+                    onClick={handleApplyCriticalityChanges}
+                    disabled={
+                      !selectedCriticality || isUpdatingCriticality
+                    }
+                    className="w-full bg-orange-600 text-white px-3 py-1.5 text-sm rounded-md hover:bg-orange-700 disabled:bg-orange-300 disabled:cursor-not-allowed flex items-center justify-center"
+                  >
+                    {isUpdatingCriticality ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      "Apply Changes"
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         );
       },
+
       dataIndex: "name",
       key: "name",
       fixed: "left",
       width: 300,
       sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
-      sortOrder: sortType === "name" ? mapAntSortOrder(sortOrder) : undefined,
+      sortOrder:
+        sortType === "name" ? mapAntSortOrder(sortOrder) : undefined,
+
       render: (name: string, record: any) => {
         const isSelected = selectedAssetIds.includes(record.id);
         return (
@@ -529,12 +505,11 @@ export function AssetTable({
                 </ShadCNAvatar>
               )}
             </div>
+
             <span
               className="truncate cursor-pointer hover:text-orange-600 hover:underline"
               onClick={(e) => {
-                // Yahaan par aap asset detail view open kar sakte hain
                 e.stopPropagation();
-                // setSelectedAsset(record.fullAsset); // Jaise
                 setIsSelectedAssetTable(record);
                 setIsOpenAssetDetailsModal(true);
               }}
@@ -546,16 +521,14 @@ export function AssetTable({
       },
     };
 
-    // --- Dynamic Columns (visibleColumns se) ---
     const dynamicColumns: TableColumnType<any>[] = visibleColumns
       .map((colName) => {
         const config = columnConfig[colName];
         if (!config) return null;
 
-        // Custom render function
         let renderFunc:
           | ((value: any, record: any) => React.ReactNode)
-          | undefined = undefined;
+          | undefined;
 
         if (colName === "Status") {
           renderFunc = (status: string, record: any) => (
@@ -594,7 +567,7 @@ export function AssetTable({
             sortType === config.dataIndex
               ? mapAntSortOrder(sortOrder)
               : undefined,
-          render: renderFunc, // Default render use karega agar undefined hai
+          render: renderFunc,
         };
       })
       .filter(Boolean) as TableColumnType<any>[];
@@ -607,7 +580,7 @@ export function AssetTable({
     selectedAssetIds,
     areAllSelected,
     selectedCount,
-    visibleColumns, // ⭐ Yeh dependency zaroori hai
+    visibleColumns,
     isDeleting,
     isCriticalityPopoverOpen,
     selectedCriticality,
@@ -619,14 +592,16 @@ export function AssetTable({
       key: item.id,
       id: item.id || "—",
       name: item.name || "—",
-      icon: item.icon, // Avatar ke liye
+      icon: item.icon,
       status: item.status ?? "—",
       location: item.location?.name || "—",
       criticality: item.criticality || "—",
       manufacturer: item.manufacturer?.name || "—",
       type: item.assetTypes?.length
         ? `${item.assetTypes[0]?.name}${
-            item.assetTypes.length > 1 ? ` +${item.assetTypes.length - 1}` : ""
+            item.assetTypes.length > 1
+              ? ` +${item.assetTypes.length - 1}`
+              : ""
           }`
         : "—",
       qrCode: (item.qrCode && item.qrCode?.split("/").pop()) || "—",
@@ -647,7 +622,7 @@ export function AssetTable({
         : "—",
       createdAt: item.createdAt || "—",
       updatedAt: item.updatedAt || "—",
-      fullAsset: item, // Status modal jaise actions ke liye original object
+      fullAsset: item,
     }));
   }, [assets]);
 
@@ -655,35 +630,30 @@ export function AssetTable({
     <div className="flex p-2 w-full h-full overflow-x-auto">
       <style>{tableStyles}</style>
 
-      <Card className=" border rounded-lg overflow-hidden w-full">
+      <Card className="border rounded-lg overflow-hidden w-full">
         <CardContent className="p-0">
           <Table
             columns={columns}
             dataSource={dataSource}
             pagination={false}
-            scroll={{ x: "content", y: "75vh" }} // 'x' ko dynamic rakha
+            scroll={{ x: "content", y: "75vh" }}
             rowClassName={(record: any) =>
               selectedAssetIds.includes(record.id) ? "selected-row-class" : ""
             }
-            // onChange={handleTableChange}
+            onChange={handleTableChange}
             rowSelection={{
               selectedRowKeys: selectedAssetIds,
               columnWidth: 0,
               renderCell: () => null,
-
               columnTitle: " ",
             }}
             onRow={(record) => ({
-              onClick: () => {
-                // Row click par select/deselect karein
-                toggleRowSelection(record.id);
-              },
+              onClick: () => toggleRowSelection(record.id),
             })}
           />
         </CardContent>
       </Card>
 
-      {/* Status Modal (waisa hi hai) */}
       {updateAssetModal && selectedStatusAsset && (
         <StatusModal
           asset={selectedStatusAsset}
@@ -694,7 +664,6 @@ export function AssetTable({
         />
       )}
 
-      {/* Settings Modal (waisa hi hai) */}
       <SettingsModal
         isOpen={isSettingsModalOpen}
         onClose={() => setIsSettingsModalOpen(false)}
@@ -703,16 +672,9 @@ export function AssetTable({
         currentVisibleColumns={visibleColumns}
         componentName="Asset"
         currentShowDeleted={showDeleted}
-        onApply={(settings) => {
-          console.log("Settings applied:", settings);
-          setVisibleColumns(settings.visibleColumns);
-          setShowDeleted(settings.showDeleted);
-          setIsSettingsModalOpen(false);
-        }}
-        
       />
 
-      {isOpenAssetDetailsMpdal && (
+      {isOpenAssetDetailsModal && (
         <AssetTableModal
           data={isSelectedAssetTable.fullAsset}
           onClose={() => setIsOpenAssetDetailsModal(false)}
