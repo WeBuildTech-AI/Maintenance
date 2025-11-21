@@ -9,6 +9,7 @@ import {
   Trash2,
   Loader2,
   Settings,
+  ArchiveRestoreIcon,
 } from "lucide-react";
 import { formatDateOnly } from "../../utils/Date";
 import { UpdateAssetStatusModal } from "../AssetDetail/sections/AssetStatusReadings";
@@ -373,25 +374,39 @@ export function AssetTable({
               Edit {selectedCount} {selectedCount === 1 ? "Item" : "Items"}
             </span>
 
-            <Tooltip text="Delete">
-              <button
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className={`flex items-center gap-1 transition ${
-                  isDeleting
-                    ? "text-orange-400 cursor-not-allowed"
-                    : "text-orange-600 hover:text-red-700"
-                }`}
-              >
-                {isDeleting ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <Trash2 size={16} />
-                )}
-              </button>
-            </Tooltip>
+            {!showDeleted === true && (
+              <Tooltip text="Delete">
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className={`flex items-center gap-1 transition ${
+                    isDeleting
+                      ? "text-orange-400 cursor-not-allowed"
+                      : "text-orange-600 hover:text-red-700"
+                  }`}
+                >
+                  {isDeleting ? <Loader /> : <Trash2 size={16} />}
+                </button>
+              </Tooltip>
+            )}
 
-            <Tooltip text="Edit Criticality">
+            {showDeleted === true && (
+              <Tooltip text="Delete">
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className={`flex items-center gap-1 transition ${
+                    isDeleting
+                      ? "text-orange-400 cursor-not-allowed"
+                      : "text-orange-600 hover:text-red-700"
+                  }`}
+                >
+                  {isDeleting ? <Loader /> : <ArchiveRestoreIcon size={16} />}
+                </button>
+              </Tooltip>
+            )}
+
+            {/* <Tooltip text="Edit Criticality">
               <button
                 ref={triggerRef}
                 onClick={() =>
@@ -406,7 +421,7 @@ export function AssetTable({
               >
                 <MessageCircleWarning size={16} />
               </button>
-            </Tooltip>
+            </Tooltip> */}
 
             {isCriticalityPopoverOpen && (
               <div
@@ -443,9 +458,7 @@ export function AssetTable({
                     <input
                       type="checkbox"
                       checked={includeSubAssets}
-                      onChange={(e) =>
-                        setIncludeSubAssets(e.target.checked)
-                      }
+                      onChange={(e) => setIncludeSubAssets(e.target.checked)}
                       className="mt-1 accent-orange-600"
                     />
                     <span>Edit Sub-Asset criticality</span>
@@ -453,9 +466,7 @@ export function AssetTable({
 
                   <button
                     onClick={handleApplyCriticalityChanges}
-                    disabled={
-                      !selectedCriticality || isUpdatingCriticality
-                    }
+                    disabled={!selectedCriticality || isUpdatingCriticality}
                     className="w-full bg-orange-600 text-white px-3 py-1.5 text-sm rounded-md hover:bg-orange-700 disabled:bg-orange-300 disabled:cursor-not-allowed flex items-center justify-center"
                   >
                     {isUpdatingCriticality ? (
@@ -476,8 +487,7 @@ export function AssetTable({
       fixed: "left",
       width: 300,
       sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
-      sortOrder:
-        sortType === "name" ? mapAntSortOrder(sortOrder) : undefined,
+      sortOrder: sortType === "name" ? mapAntSortOrder(sortOrder) : undefined,
 
       render: (name: string, record: any) => {
         const isSelected = selectedAssetIds.includes(record.id);
@@ -599,9 +609,7 @@ export function AssetTable({
       manufacturer: item.manufacturer?.name || "—",
       type: item.assetTypes?.length
         ? `${item.assetTypes[0]?.name}${
-            item.assetTypes.length > 1
-              ? ` +${item.assetTypes.length - 1}`
-              : ""
+            item.assetTypes.length > 1 ? ` +${item.assetTypes.length - 1}` : ""
           }`
         : "—",
       qrCode: (item.qrCode && item.qrCode?.split("/").pop()) || "—",

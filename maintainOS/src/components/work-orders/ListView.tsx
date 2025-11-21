@@ -1,3 +1,4 @@
+"use client";
 import React, { useMemo, useState, useRef, useEffect } from "react";
 import { Card, CardContent } from "./../ui/card";
 import {
@@ -7,6 +8,7 @@ import {
   ClipboardList,
   Trash2,
   Loader2,
+  Settings, // Settings Icon Added
 } from "lucide-react";
 
 // Ant Design
@@ -17,7 +19,7 @@ import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store";
 import {
   deleteWorkOrder,
-  // batchDeleteWorkOrders,
+  // batchDeleteWorkOrders, // Keeping this commented out as per your original code
 } from "../../store/workOrders/workOrders.thunks";
 
 import DeleteWorkOrderModal from "./ToDoView/DeleteWorkOrderModal";
@@ -28,10 +30,13 @@ import { MoreActionsMenuWorkOrder } from "./Tableview/modals/MoreActionsMenuWork
 // DETAILS MODAL
 import WorkOrderDetailsModal from "./Tableview/modals/WorkOrderDetailModal";
 import toast from "react-hot-toast";
-import { workOrderService } from "../../store/workOrders";
+import { workOrderService } from "../../store/workOrders"; // Used for batch delete
+
+// ⭐ NEW IMPORT (Assuming it's available)
+import SettingsModal from "../utils/SettingsModal";
 
 // Format Dates
-function formatTableDate(dateString: string) {
+function formatTableDate(dateString: string | number | Date) {
   if (!dateString || dateString === "—") return "—";
   try {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -44,10 +49,97 @@ function formatTableDate(dateString: string) {
   }
 }
 
-type Sorter = Parameters<NonNullable<TableProps<any>["onChange"]>>[2];
-
-const mapAntSortOrder = (order: "asc" | "desc"): "ascend" | "descend" =>
+const mapAntSortOrder = (order: string) =>
   order === "asc" ? "ascend" : "descend";
+
+// --- NEW: Work Order Specific Column Configuration ---
+const allAvailableColumns = [
+  "ID",
+  "Status",
+  "Priority",
+  "Work Type",
+  "Assigned To",
+  "Categories",
+  "Asset",
+  "Location",
+  "Created On",
+  "Updated On",
+  "Procedure",
+];
+
+const columnConfig = {
+  ID: {
+    dataIndex: "id",
+    width: 120,
+    sorter: (a: { id: any }, b: { id: any }) =>
+      (a.id || "").localeCompare(b.id || ""),
+  },
+  Status: {
+    dataIndex: "status",
+    width: 150,
+    sorter: (a: { status: any }, b: { status: any }) =>
+      (a.status || "").localeCompare(b.status || ""),
+  },
+  Priority: {
+    dataIndex: "priority",
+    width: 130,
+    sorter: (a: { priority: any }, b: { priority: any }) =>
+      (a.priority || "").localeCompare(b.priority || ""),
+  },
+  "Work Type": {
+    dataIndex: "workType",
+    width: 150,
+    sorter: (a: { workType: any }, b: { workType: any }) =>
+      (a.workType || "").localeCompare(b.workType || ""),
+  },
+  "Assigned To": {
+    dataIndex: "assignedTo",
+    width: 170,
+    sorter: (a: { assignedTo: any }, b: { assignedTo: any }) =>
+      (a.assignedTo || "").localeCompare(b.assignedTo || ""),
+  },
+  Categories: {
+    dataIndex: "categories",
+    width: 150,
+    sorter: (a: { categories: any }, b: { categories: any }) =>
+      (a.categories || "").localeCompare(b.categories || ""),
+  },
+  Asset: {
+    dataIndex: "asset",
+    width: 150,
+    sorter: (a: { asset: any }, b: { asset: any }) =>
+      (a.asset || "").localeCompare(b.asset || ""),
+  },
+  Location: {
+    dataIndex: "location",
+    width: 150,
+    sorter: (a: { location: any }, b: { location: any }) =>
+      (a.location || "").localeCompare(b.location || ""),
+  },
+  "Created On": {
+    dataIndex: "createdOn",
+    width: 150,
+    sorter: (
+      a: { createdOn: string | number | Date },
+      b: { createdOn: string | number | Date }
+    ) => new Date(a.createdOn).getTime() - new Date(b.createdOn).getTime(),
+  },
+  "Updated On": {
+    dataIndex: "updatedOn",
+    width: 150,
+    sorter: (
+      a: { updatedOn: string | number | Date },
+      b: { updatedOn: string | number | Date }
+    ) => new Date(a.updatedOn).getTime() - new Date(b.updatedOn).getTime(),
+  },
+  Procedure: {
+    dataIndex: "attachedProcedure",
+    width: 200,
+    sorter: (a: { attachedProcedure: any }, b: { attachedProcedure: any }) =>
+      (a.attachedProcedure || "").localeCompare(b.attachedProcedure || ""),
+  },
+};
+// --- END NEW CONFIG ---
 
 // Row Styling & Custom Scrollbar
 const tableStyles = `
@@ -65,7 +157,6 @@ const tableStyles = `
   .ant-table-row:hover > td {
     background-color: #f9fafb !important;
   }
-
   /* ✅ CUSTOM SCROLLBAR STYLING FOR ANT TABLE */
   .ant-table-body::-webkit-scrollbar {
     width: 6px;
@@ -83,22 +174,31 @@ const tableStyles = `
   }
 `;
 
-export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
-  const dispatch = useDispatch<AppDispatch>();
-
-  const [modalWO, setModalWO] = useState<any | null>(null);
+export function ListView({
+  workOrders,
+  onRefreshWorkOrders,
+  setIsSettingsModalOpen,
+  isSettingsModalOpen,
+}: ListViewProps) {
+  const dispatch = useDispatch();
+  const [modalWO, setModalWO] = useState(null);
   const [selectedWorkOrderIds, setSelectedWorkOrderIds] = useState<string[]>(
     []
   );
-  const [sortType, setSortType] = useState<string>("Title");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  // ⭐ UPDATED STATE FOR DYNAMIC COLUMNS/SORTING
+  const [visibleColumns, setVisibleColumns] = useState(allAvailableColumns);
+  const [sortType, setSortType] = useState("title"); // Changed default sort to 'title'
+  const [sortOrder, setSortOrder] = useState("asc");
   const [isDeleting, setIsDeleting] = useState(false);
-
-  // VIEW MODAL
+  const [showDeleted, setShowDeleted] = useState(false); // New state for soft delete toggle
+  // VIEW MODAL (Details/Edit)
   const [viewModal, setViewModal] = useState(false);
-  const [selectedWO, setSelectedWO] = useState<any>(null);
+  const [selectedWO, setSelectedWO] = useState(null);
 
-  const headerCheckboxRef = useRef<HTMLInputElement>(null);
+  // ⭐ NEW STATE FOR SETTINGS MODAL
+  // const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+
+  const headerCheckboxRef = useRef(null);
 
   const allWorkOrderIds = useMemo(
     () => workOrders.map((p) => p.id),
@@ -128,6 +228,7 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
     );
   };
 
+  // ⭐ UPDATED handleDelete for Bulk Delete
   const handleDelete = async () => {
     if (selectedWorkOrderIds.length === 0) {
       toast.error("No work orders selected to delete.");
@@ -135,7 +236,6 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
     }
     setIsDeleting(true);
     try {
-      // await dispatch(batchDeleteWorkOrders(selectedWorkOrderIds)).unwrap();
       await workOrderService.batchDeleteWorkOrder(selectedWorkOrderIds);
       toast.success("Work orders deleted successfully!");
       setSelectedWorkOrderIds([]);
@@ -148,41 +248,60 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
     }
   };
 
-  const handleTableChange: TableProps<any>["onChange"] = (
-    pagination,
-    filters,
-    sorter
-  ) => {
-    const s = sorter as Sorter;
-    if (s.field && s.order) {
-      setSortType(s.field as string);
+  const handleTableChange = (pagination: any, filters: any, sorter: any[]) => {
+    const s = Array.isArray(sorter) ? sorter[0] : sorter;
+    if (s && s.field && s.order) {
+      setSortType(s.field);
       setSortOrder(s.order === "ascend" ? "asc" : "desc");
-    } else if (s.field) {
-      setSortType(s.field as string);
+    } else if (s && s.field) {
+      setSortType(s.field);
+      setSortOrder("asc");
+    } else {
+      setSortType("title");
       setSortOrder("asc");
     }
   };
 
+  // ⭐ NEW: Handle Apply Settings from Modal
+  const handleApplySettings = (settings: {
+    visibleColumns: React.SetStateAction<string[]>;
+    showDeleted: boolean | ((prevState: boolean) => boolean);
+  }) => {
+    setVisibleColumns(settings.visibleColumns);
+    setShowDeleted(settings.showDeleted);
+
+    // Close modal
+    setIsSettingsModalOpen(false);
+
+    // Refresh work orders to reflect the new showDeleted value
+    if (typeof onRefreshWorkOrders === "function") {
+      onRefreshWorkOrders();
+    }
+  };
+
   // Columns
-  const columns: TableColumnType<any>[] = useMemo(() => {
-    const titleColumn: TableColumnType<any> = {
+  const columns = useMemo(() => {
+    const titleColumn = {
       title: () => {
         if (!isEditing) {
           return (
-            <div className="flex items-center gap-2 h-full">
-              <input
-                type="checkbox"
-                ref={headerCheckboxRef}
-                checked={areAllSelected}
-                onChange={handleSelectAllToggle}
-                className="h-4 w-4 accent-blue-600 cursor-pointer"
-              />
-              <span className="text-gray-600">Title</span>
+            <div className="flex items-center justify-between gap-2 h-full">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  ref={headerCheckboxRef}
+                  checked={areAllSelected}
+                  onChange={handleSelectAllToggle}
+                  className="h-4 w-4 accent-blue-600 cursor-pointer"
+                />
+                <span className="text-gray-600">Title</span>
+              </div>
             </div>
           );
         }
+        // --- Bulk Edit Header ---
         return (
-          <div className="flex items-center gap-2 h-full">
+          <div className="flex items-center gap-4 h-full">
             <input
               type="checkbox"
               ref={headerCheckboxRef}
@@ -193,14 +312,16 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
             <span className="text-sm font-medium text-gray-900">
               Edit {selectedCount} {selectedCount === 1 ? "Item" : "Items"}
             </span>
-            <Tooltip text="Delete">
+
+            {/* ⭐ UPDATED: Bulk Delete Button (Like MeterTable) */}
+            <AntTooltip title="Delete" getPopupContainer={() => document.body}>
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className={`ml-1 transition ${
+                className={`flex items-center gap-1 transition ${
                   isDeleting
                     ? "text-gray-400 cursor-not-allowed"
-                    : "text-gray-600 hover:text-red-600"
+                    : "text-red-600 hover:text-red-700"
                 }`}
               >
                 {isDeleting ? (
@@ -209,7 +330,7 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
                   <Trash2 size={16} />
                 )}
               </button>
-            </Tooltip>
+            </AntTooltip>
           </div>
         );
       },
@@ -219,29 +340,51 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
       fixed: "left",
       width: 300,
 
-      sorter: (a, b) => (a.title || "").localeCompare(b.title || ""),
+      sorter: (a: { title: any }, b: { title: any }) =>
+        (a.title || "").localeCompare(b.title || ""),
       sortOrder: sortType === "title" ? mapAntSortOrder(sortOrder) : undefined,
 
-      render: (title: string, record: any) => {
+      render: (
+        title:
+          | string
+          | number
+          | bigint
+          | boolean
+          | React.ReactElement<
+              unknown,
+              string | React.JSXElementConstructor<any>
+            >
+          | Iterable<React.ReactNode>
+          | React.ReactPortal
+          | Promise<
+              | string
+              | number
+              | bigint
+              | boolean
+              | React.ReactPortal
+              | React.ReactElement<
+                  unknown,
+                  string | React.JSXElementConstructor<any>
+                >
+              | Iterable<React.ReactNode>
+              | null
+              | undefined
+            >
+          | null
+          | undefined,
+        record: { id: string; full: React.SetStateAction<null> }
+      ) => {
         const isSelected = selectedWorkOrderIds.includes(record.id);
 
         return (
           <div className="flex items-center gap-3 font-medium text-gray-800 h-full">
             {isEditing ? (
               // When in Editing mode, show the checkbox
-              <div
-                className="flex items-center justify-center h-8 w-8 cursor-pointer"
-                onClick={(e) => {
-                  // e.stopPropagation() prevents the row click from firing twice,
-                  // but we rely on onRow for selection, so we can omit it here
-                  // or keep it to make the click only on the checkbox area toggle selection.
-                  // Since the table's onRow handles the click, we'll keep the onRow logic.
-                }}
-              >
+              <div className="flex items-center justify-center h-8 w-8 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={isSelected}
-                  readOnly // Use readOnly since the row click is managing the state change
+                  readOnly
                   className="h-5 w-5 accent-blue-600 cursor-pointer"
                 />
               </div>
@@ -250,8 +393,8 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
               <div
                 className="flex items-center justify-center h-8 w-8 cursor-pointer"
                 onClick={(e) => {
-                  e.stopPropagation(); // Prevent opening view modal when clicking icon
-                  toggleRowSelection(record.id); // Allow clicking icon/area to start selection
+                  e.stopPropagation();
+                  toggleRowSelection(record.id);
                 }}
               >
                 <Avatar className="h-8 w-8 flex-shrink-0">
@@ -264,7 +407,7 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
             <span
               className="truncate cursor-pointer hover:text-blue-600 hover:underline"
               onClick={(e) => {
-                e.stopPropagation(); // Crucial to prevent row selection when opening modal
+                e.stopPropagation();
                 setSelectedWO(record.full);
                 setViewModal(true);
               }}
@@ -276,126 +419,80 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
       },
     };
 
-    const dynamicColumns: TableColumnType<any>[] = [
-      {
-        title: "ID",
-        dataIndex: "id",
-        key: "id",
-        width: 120,
-        sorter: (a, b) => (a.id || "").localeCompare(b.id || ""),
-        sortOrder: sortType === "id" ? mapAntSortOrder(sortOrder) : undefined,
-      },
-      {
-        title: "Status",
-        dataIndex: "status",
-        key: "status",
-        width: 150,
-        sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
-        sortOrder:
-          sortType === "status" ? mapAntSortOrder(sortOrder) : undefined,
-        render: (status: string) => <Badge variant="secondary">{status}</Badge>,
-      },
-      {
-        title: "Priority",
-        dataIndex: "priority",
-        key: "priority",
-        width: 130,
-        sorter: (a, b) => (a.priority || "").localeCompare(b.priority || ""),
-        sortOrder:
-          sortType === "priority" ? mapAntSortOrder(sortOrder) : undefined,
-      },
-      {
-        title: "Work Type",
-        dataIndex: "workType",
-        key: "workType",
-        width: 150,
-        sorter: (a, b) => (a.workType || "").localeCompare(b.workType || ""),
-        sortOrder:
-          sortType === "workType" ? mapAntSortOrder(sortOrder) : undefined,
-      },
-      {
-        title: "Assigned To",
-        dataIndex: "assignedTo",
-        key: "assignedTo",
-        width: 170,
-        sorter: (a, b) =>
-          (a.assignedTo || "").localeCompare(b.assignedTo || ""),
-        sortOrder:
-          sortType === "assignedTo" ? mapAntSortOrder(sortOrder) : undefined,
-      },
-      {
-        title: "Categories",
-        dataIndex: "categories",
-        key: "categories",
-        width: 150,
-        sorter: (a, b) =>
-          (a.categories || "").localeCompare(b.categories || ""),
-        sortOrder:
-          sortType === "categories" ? mapAntSortOrder(sortOrder) : undefined,
-      },
-      {
-        title: "Asset",
-        dataIndex: "asset",
-        key: "asset",
-        width: 150,
-        sorter: (a, b) => (a.asset || "").localeCompare(b.asset || ""),
-        sortOrder:
-          sortType === "asset" ? mapAntSortOrder(sortOrder) : undefined,
-      },
-      {
-        title: "Location",
-        dataIndex: "location",
-        key: "location",
-        width: 150,
-        sorter: (a, b) => (a.location || "").localeCompare(b.location || ""),
-        sortOrder:
-          sortType === "location" ? mapAntSortOrder(sortOrder) : undefined,
-      },
-      {
-        title: "Created On",
-        dataIndex: "createdOn",
-        key: "createdOn",
-        width: 150,
-        sorter: (a, b) =>
-          new Date(a.createdOn).getTime() - new Date(b.createdOn).getTime(),
-        sortOrder:
-          sortType === "createdOn" ? mapAntSortOrder(sortOrder) : undefined,
-        render: (text: string) => formatTableDate(text),
-      },
-      {
-        title: "Updated On",
-        dataIndex: "updatedOn",
-        key: "updatedOn",
-        width: 150,
-        sorter: (a, b) =>
-          new Date(a.updatedOn).getTime() - new Date(b.updatedOn).getTime(),
-        sortOrder:
-          sortType === "updatedOn" ? mapAntSortOrder(sortOrder) : undefined,
-        render: (text: string) => formatTableDate(text),
-      },
-      {
-        title: "Procedure",
-        dataIndex: "attachedProcedure",
-        key: "attachedProcedure",
-        width: 200,
-        sorter: (a, b) =>
-          (a.attachedProcedure || "").localeCompare(b.attachedProcedure || ""),
-        sortOrder:
-          sortType === "attachedProcedure"
-            ? mapAntSortOrder(sortOrder)
-            : undefined,
-      },
-    ];
+    // ⭐ UPDATED: Dynamically generate columns based on visibleColumns state
+    const dynamicColumns = visibleColumns
+      .filter((colName) => colName !== "Title") // Title is handled separately
+      .map((colName) => {
+        const config = columnConfig[colName];
+        if (!config) return null;
 
-    const actionColumn: TableColumnType<any> = {
+        let renderFunc;
+        // Apply special render functions for Status, Created On, Updated On
+        if (colName === "Status") {
+          renderFunc = (
+            status:
+              | string
+              | number
+              | bigint
+              | boolean
+              | React.ReactElement<
+                  unknown,
+                  string | React.JSXElementConstructor<any>
+                >
+              | Iterable<React.ReactNode>
+              | React.ReactPortal
+              | Promise<
+                  | string
+                  | number
+                  | bigint
+                  | boolean
+                  | React.ReactPortal
+                  | React.ReactElement<
+                      unknown,
+                      string | React.JSXElementConstructor<any>
+                    >
+                  | Iterable<React.ReactNode>
+                  | null
+                  | undefined
+                >
+              | null
+              | undefined
+          ) => <Badge variant="secondary">{status}</Badge>;
+        } else if (colName === "Created On" || colName === "Updated On") {
+          renderFunc = (text: any) => formatTableDate(text);
+        }
+
+        return {
+          title: colName,
+          dataIndex: config.dataIndex,
+          key: config.dataIndex,
+          width: config.width,
+          sorter: config.sorter,
+          sortOrder:
+            sortType === config.dataIndex.toLowerCase()
+              ? mapAntSortOrder(sortOrder)
+              : undefined,
+          render: renderFunc,
+        };
+      })
+      .filter(Boolean); // Remove nulls
+
+    const actionColumn = {
       title: "Actions",
       key: "operation",
       width: 120,
-      render: (text: any, record: any) => (
+      fixed: "right", // Added fixed right for action consistency
+      render: (
+        text: any,
+        record: { full: React.SetStateAction<null>; title: string }
+      ) => (
         <div className="flex items-center justify-end gap-4 h-full">
           <AntTooltip title="Edit">
             <button
-              onClick={() => alert("Edit " + record.title)}
+              onClick={() => {
+                setSelectedWO(record.full);
+                setViewModal(true); // Open modal for editing
+              }}
               className="text-gray-500 hover:text-blue-600"
             >
               <Pencil size={18} />
@@ -411,7 +508,13 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
             </button>
           </AntTooltip>
 
-          <MoreActionsMenuWorkOrder onDelete={() => setModalWO(record.full)}>
+          <MoreActionsMenuWorkOrder
+            onDelete={() => setModalWO(record.full)}
+            onEdit={() => {
+              setSelectedWO(record.full);
+              setViewModal(true);
+            }}
+          >
             <button className="text-gray-500 hover:text-blue-600">
               <MoreVertical size={18} />
             </button>
@@ -425,13 +528,14 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
     isEditing,
     sortType,
     sortOrder,
+    visibleColumns, // ⭐ NEW dependency
     selectedWorkOrderIds,
     areAllSelected,
     selectedCount,
     isDeleting,
-    handleSelectAllToggle, // Added dependency for handleSelectAllToggle
-    toggleRowSelection, // Added dependency for toggleRowSelection
-    handleDelete, // Added dependency for handleDelete
+    handleSelectAllToggle,
+    toggleRowSelection,
+    handleDelete,
   ]);
 
   // Map data
@@ -467,8 +571,8 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
             columns={columns}
             dataSource={dataSource}
             pagination={false}
-            scroll={{ x: "120%", y: "calc(100vh - 280px)" }}
-            rowClassName={(record: any) =>
+            scroll={{ x: "max-content", y: "calc(100vh - 280px)" }}
+            rowClassName={(record) =>
               selectedWorkOrderIds.includes(record.id)
                 ? "selected-row-class"
                 : ""
@@ -528,13 +632,25 @@ export function ListView({ workOrders, onRefreshWorkOrders }: ListViewProps) {
         </div>
       </Card>
 
+      {/* ⭐ NEW: Settings Modal (Like MeterTable) ⭐ */}
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        onApply={handleApplySettings}
+        allToggleableColumns={allAvailableColumns}
+        currentVisibleColumns={visibleColumns}
+        currentShowDeleted={showDeleted}
+        componentName="Work Order"
+      />
+
       {/* DELETE MODAL (Single) */}
       {modalWO && (
         <DeleteWorkOrderModal
           isOpen={!!modalWO}
           onClose={() => setModalWO(null)}
           onConfirm={async () => {
-            await dispatch(deleteWorkOrder(modalWO.id)).unwrap();
+            // await dispatch(deleteWorkOrder(modalWO.id)).unwrap();
+            await workOrderService.deleteWorkOrder(modalWO?.id);
             setModalWO(null);
             onRefreshWorkOrders();
           }}

@@ -23,6 +23,7 @@ export function WorkOrders() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   const navigate = useNavigate();
   const dispatch = useDispatch(); // ✅ Added
@@ -133,7 +134,8 @@ export function WorkOrders() {
         setSearchQuery,
         handleCreateClick,
         setShowSettings,
-        setIsModalOpen
+        setIsModalOpen,
+        setIsSettingsModalOpen,
       )}
 
       {/* Loader */}
@@ -164,6 +166,8 @@ export function WorkOrders() {
             <ListView 
               workOrders={filteredWorkOrders} 
               onRefresh={getWorkOrders} 
+              isSettingsModalOpen={isSettingsModalOpen}
+              setIsSettingsModalOpen={setIsSettingsModalOpen}
             />
           )}
 
