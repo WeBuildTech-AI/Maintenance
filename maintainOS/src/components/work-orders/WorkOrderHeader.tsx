@@ -13,7 +13,8 @@ export function WorkOrderHeaderComponent(
   setSearchQuery: Dispatch<SetStateAction<string>>,
   setIsCreatingForm: Dispatch<SetStateAction<boolean>>,
   setShowSettings: Dispatch<SetStateAction<boolean>>,
-  setIsModalOpen?: Dispatch<SetStateAction<boolean>> // ⬅️ modal opener (optional for backward compat)
+  setIsModalOpen?: Dispatch<SetStateAction<boolean>>, // ⬅️ modal opener (optional for backward compat)
+  setIsSettingsModalOpen?: Dispatch<SetStateAction<boolean>>
 ) {
   return <header className=" border-border bg-card px-6 py-4">
     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -106,7 +107,7 @@ export function WorkOrderHeaderComponent(
       {/* Right: Settings button (only for table view) */}
       {viewMode === "list" && (
         <button
-          onClick={() => setShowSettings(true)}
+          onClick={() => setIsSettingsModalOpen(true)}
           className="p-2 rounded-md border hover:bg-gray-100 transition"
         >
           <Settings className="h-5 w-5 text-orange-600" />

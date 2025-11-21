@@ -6,8 +6,11 @@ import type {
   CreateWorkOrderData,
   UpdateWorkOrderData,
   CreateOtherCostData,
-  CreateTimeEntryData, // ✅ added
+  CreateTimeEntryData,
+  AddCommentPayload,
 } from "./workOrders.types";
+
+// --- Work Orders ---
 
 export const fetchWorkOrders = createAsyncThunk(
   "workOrders/fetchWorkOrders",
@@ -48,15 +51,10 @@ export const createWorkOrder = createAsyncThunk(
   }
 );
 
-// ✅ UPDATED: includes authorId parameter in URL
 export const updateWorkOrder = createAsyncThunk(
   "workOrders/update",
   async (
-    {
-      id,
-      authorId,
-      data,
-    }: { id: string; authorId: string; data: UpdateWorkOrderData },
+    { id, authorId, data }: { id: string; authorId: string; data: UpdateWorkOrderData },
     { rejectWithValue }
   ) => {
     try {
@@ -82,6 +80,62 @@ export const deleteWorkOrder = createAsyncThunk(
   }
 );
 
+export const batchDeleteMeter = createAsyncThunk(
+  "workOrder/batchDeleteWorkOrder",
+  async (ids: string[], { rejectWithValue }) => {
+    try {
+      await workOrderService.batchDeleteWorkOrder(ids);
+      return ids;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete work orders"
+      );
+    }
+  }
+);
+
+// --- Status ---
+
+export const markWorkOrderCompleted = createAsyncThunk(
+  "workOrders/markCompleted",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      return await workOrderService.markCompleted(id);
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Failed to mark work order as completed"
+      );
+    }
+  }
+);
+
+export const patchWorkOrderComplete = createAsyncThunk(
+  "workOrders/patchComplete",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      return await workOrderService.patchWorkOrderComplete(id);
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to complete work order"
+      );
+    }
+  }
+);
+
+export const markWorkOrderInProgress = createAsyncThunk(
+  "workOrders/markInProgress",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      return await workOrderService.markInProgress(id);
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to mark in progress"
+      );
+    }
+  }
+);
+
 export const assignWorkOrder = createAsyncThunk(
   "workOrders/assign",
   async (
@@ -98,14 +152,17 @@ export const assignWorkOrder = createAsyncThunk(
   }
 );
 
+// --- Comments & Logs ---
+
 export const addWorkOrderComment = createAsyncThunk(
   "workOrders/addComment",
   async (
-    { id, data }: { id: string; data: AddWorkOrderCommentData },
+    { id, message }: { id: string; message: string },
     { rejectWithValue }
   ) => {
     try {
-      return await workOrderService.addWorkOrderComment(id, data);
+      const payload: AddCommentPayload = { message };
+      return await workOrderService.addWorkOrderComment(id, payload);
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to add comment"
@@ -114,33 +171,34 @@ export const addWorkOrderComment = createAsyncThunk(
   }
 );
 
-export const markWorkOrderCompleted = createAsyncThunk(
-  "workOrders/markCompleted",
+export const fetchWorkOrderComments = createAsyncThunk(
+  "workOrders/fetchComments",
   async (id: string, { rejectWithValue }) => {
     try {
-      return await workOrderService.markCompleted(id);
+      return await workOrderService.fetchWorkOrderComments(id);
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message ||
-          "Failed to mark work order as completed"
+        error.response?.data?.message || "Failed to fetch comments"
       );
     }
   }
 );
 
-export const markWorkOrderInProgress = createAsyncThunk(
-  "workOrders/markInProgress",
-  async (id: string, { rejectWithValue }) => {
+// ✅ Updated fetchWorkOrderLogs to accept ID
+export const fetchWorkOrderLogs = createAsyncThunk(
+  "workOrders/fetchLogs",
+  async (workOrderId: string, { rejectWithValue }) => {
     try {
-      return await workOrderService.markInProgress(id);
+      return await workOrderService.fetchWorkOrderLogs(workOrderId);
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message ||
-          "Failed to mark work order as in progress"
+        error.response?.data?.message || "Failed to fetch logs"
       );
     }
   }
 );
+
+// --- Costs & Time ---
 
 export const addOtherCost = createAsyncThunk(
   "workOrders/addOtherCost",
@@ -175,22 +233,17 @@ export const deleteOtherCost = createAsyncThunk(
   }
 );
 
-// ✅ ADD TIME ENTRY
 export const addTimeEntry = createAsyncThunk(
   "workOrders/addTimeEntry",
   async ({ id, data }: { id: string; data: any }, { rejectWithValue }) => {
     try {
       const payload = {
-        items: [
-          {
-            userId: data.userId,
-            totalMinutes: data.totalMinutes,
-            entryType: data.entryType?.toLowerCase() || "work", // ✅ FIXED HERE
-            rate: Number(data.rate || 0),
-          },
-        ],
+        userId: data.userId,
+        totalMinutes: data.totalMinutes,
+        entryType: data.entryType?.toLowerCase() || "work",
+        rate: Number(data.rate || 0),
       };
-      const res = await workOrdersService.addTimeEntry(id, payload);
+      const res = await workOrderService.addTimeEntry(id, payload);
       return res;
     } catch (error: any) {
       return rejectWithValue(error.message);
@@ -198,7 +251,6 @@ export const addTimeEntry = createAsyncThunk(
   }
 );
 
-// ✅ DELETE TIME ENTRY
 export const deleteTimeEntry = createAsyncThunk(
   "workOrders/deleteTimeEntry",
   async (
@@ -215,18 +267,3 @@ export const deleteTimeEntry = createAsyncThunk(
     }
   }
 );
-
-export const batchDeleteMeter = createAsyncThunk(
-  "workOrder/batchDeleteWorkOrder",
-  async (ids: string[], { rejectWithValue }) => {
-    try {
-      await workOrderService.batchDeleteWorkOrder(ids);
-      return ids;
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to delete work order"
-      );
-    }
-  }
-);
-

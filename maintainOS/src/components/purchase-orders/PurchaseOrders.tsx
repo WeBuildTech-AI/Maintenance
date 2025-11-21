@@ -1,3 +1,4 @@
+// FILE: PurchaseOrders.tsx
 "use client";
 import * as React from "react";
 import { useSelector } from "react-redux";
@@ -44,18 +45,25 @@ function getChangedFields(
   const keysToCompare: (keyof NewPOFormType)[] = [
     "poNumber",
     "vendorId",
-    "contactName",
-    "phoneOrMail",
+    // REMOVED: "contactName",
+    // REMOVED: "phoneOrMail",
     "dueDate",
     "notes",
     "extraCosts",
     "shippingAddressId",
     "billingAddressId",
     "sameShipBill",
+    "vendorContactIds", // <--- UPDATED: New field to compare
   ];
 
   for (const key of keysToCompare) {
-    if (original[key] !== current[key]) {
+    if (key === "vendorContactIds") {
+      // For arrays of IDs, we compare stringified versions
+      if (JSON.stringify(original[key]) !== JSON.stringify(current[key])) {
+        // @ts-ignore
+        changes[key] = current[key];
+      }
+    } else if (original[key] !== current[key]) {
       // @ts-ignore
       changes[key] = current[key];
     }
@@ -66,7 +74,7 @@ function getChangedFields(
     changes.items = current.items;
   }
 
-  // --- CHANGE 1: Check for Tax Lines changes ---
+  // Check for Tax Lines changes
   // @ts-ignore - assuming taxLines exists on your type now
   if (JSON.stringify(original.taxLines) !== JSON.stringify(current.taxLines)) {
     // @ts-ignore
@@ -116,7 +124,7 @@ export function PurchaseOrders() {
   const [originalPOForEdit, setOriginalPOForEdit] =
     useState<NewPOFormType | null>(null);
 
-  // --- CHANGE 2: Initialize taxLines in State ---
+  // --- INITIAL STATE WITH NEW VENDOR CONTACT IDS ARRAY ---
   const initialPOState: NewPOFormType = {
     id: null,
     vendorId: "",
@@ -130,7 +138,7 @@ export function PurchaseOrders() {
         unitCost: 0,
       },
     ],
-    // @ts-ignore - Assuming interface updated
+    // @ts-ignore
     taxLines: [],
     sameShipBill: true,
     shippingAddressId: "",
@@ -139,9 +147,10 @@ export function PurchaseOrders() {
     billingAddress: null,
     dueDate: "",
     notes: "",
-    extraCosts: 0, // (Legacy field, keep if needed, or remove if fully replaced)
-    contactName: "",
-    phoneOrMail: "",
+    extraCosts: 0, 
+    // REMOVED: contactName: "",
+    // REMOVED: phoneOrMail: "",
+    vendorContactIds: [], // <--- NEW FIELD
     poNumber: "",
   };
 
@@ -299,7 +308,7 @@ export function PurchaseOrders() {
     );
   };
 
-  // --- CHANGE 3: Handle Edit (Map Backend -> Frontend) ---
+  // --- Handle Edit (Map Backend -> Frontend) ---
   const handleEditPO = (poToEdit: any) => {
     // Type 'any' or update PurchaseOrder type
     if (!poToEdit) return;
@@ -308,13 +317,19 @@ export function PurchaseOrders() {
     const mappedTaxLines = poToEdit.taxesAndCosts
       ? poToEdit.taxesAndCosts.map((t: any) => ({
           id: cryptoId(), // Generate temp ID for React keys
-          label: t.taxLabel,
-          value: t.taxValue,
+          taxLabel: t.taxLabel,
+          taxValue: t.taxValue,
           // Convert "PERCENT" -> "percentage", "FIXED" -> "fixed"
-          type: t.taxCategory === "PERCENT" ? "PERCENTAGE" : "DOLLAR",
+          type: t.taxCategory === "PERCENTAGE" ? "percentage" : "fixed", // Ensure consistency: use lowercase in frontend state
           isTaxable: t.isTaxable,
         }))
       : [];
+      
+    // Handle Contacts: assuming backend returns an array of contact objects under a field, or we use a separate fetch.
+    // For now, mapping from a hypothetical 'contacts' array on the PO object to just IDs.
+    const mappedContactIds = poToEdit.contacts 
+      ? poToEdit.contacts.map((c: any) => c.id) 
+      : poToEdit.vendorContactIds || []; // Use vendorContactIds if available
 
     const formPO: NewPOFormType = {
       id: poToEdit.id,
@@ -355,8 +370,9 @@ export function PurchaseOrders() {
 
       notes: poToEdit.notes || "",
       extraCosts: poToEdit.extraCosts || 0,
-      contactName: poToEdit.contactName || "",
-      phoneOrMail: poToEdit.phoneOrMail || "",
+      // REMOVED: contactName: poToEdit.contactName || "",
+      // REMOVED: phoneOrMail: poToEdit.phoneOrMail || "",
+      vendorContactIds: mappedContactIds, // <--- NEW FIELD MAPPING
     };
 
     setNewPO(formPO);
@@ -373,8 +389,8 @@ export function PurchaseOrders() {
     return taxLines.map((tax) => ({
       taxLabel: tax.label,
       taxValue: Number(tax.value),
-      // Frontend "percentage" -> Backend "PERCENT"
-      // Frontend "fixed" -> Backend "FIXED" (Assuming default if not percent)
+      // Frontend "percentage" -> Backend "PERCENTAGE"
+      // Frontend "fixed" -> Backend "DOLLAR" (Assuming "DOLLAR" for fixed amount)
       taxCategory: tax.type === "percentage" ? "PERCENTAGE" : "DOLLAR",
       isTaxable: !!tax.isTaxable,
     }));
@@ -402,8 +418,13 @@ export function PurchaseOrders() {
       if (newPO.vendorId) payload.vendorId = newPO.vendorId;
       payload.status = "pending";
 
-      if (newPO.contactName) payload.contactName = newPO.contactName;
-      if (newPO.phoneOrMail) payload.phoneOrMail = newPO.phoneOrMail;
+      // --- NEW: Add vendorContactIds to payload ---
+      if (newPO.vendorContactIds && newPO.vendorContactIds.length > 0) {
+        payload.vendorContactIds = newPO.vendorContactIds;
+      }
+      // REMOVED: if (newPO.contactName) payload.contactName = newPO.contactName;
+      // REMOVED: if (newPO.phoneOrMail) payload.phoneOrMail = newPO.phoneOrMail;
+
       if (newPO.dueDate) payload.dueDate = newPO.dueDate;
       if (newPO.notes) payload.notes = newPO.notes;
       if (newPO.extraCosts) payload.extraCosts = Number(newPO.extraCosts);
@@ -428,7 +449,7 @@ export function PurchaseOrders() {
         payload.orderItems = formattedOrderItems;
       }
 
-      // --- CHANGE 4: Map Frontend taxLines to Backend taxesAndCosts ---
+      // Map Frontend taxLines to Backend taxesAndCosts
       // @ts-ignore
       const taxesPayload = formatTaxesForPayload(newPO.taxLines);
       if (taxesPayload) {
@@ -500,10 +521,17 @@ export function PurchaseOrders() {
         payload.poNumber = changedFormFields.poNumber;
       if (changedFormFields.vendorId !== undefined)
         payload.vendorId = changedFormFields.vendorId;
-      if (changedFormFields.contactName !== undefined)
-        payload.contactName = changedFormFields.contactName;
-      if (changedFormFields.phoneOrMail !== undefined)
-        payload.phoneOrMail = changedFormFields.phoneOrMail;
+      
+      // REMOVED: if (changedFormFields.contactName !== undefined)
+      // REMOVED:   payload.contactName = changedFormFields.contactName;
+      // REMOVED: if (changedFormFields.phoneOrMail !== undefined)
+      // REMOVED:   payload.phoneOrMail = changedFormFields.phoneOrMail;
+        
+      // --- NEW: Add vendorContactIds to payload if changed ---
+      if (changedFormFields.vendorContactIds) {
+        payload.vendorContactIds = changedFormFields.vendorContactIds;
+      }
+
       if (changedFormFields.dueDate !== undefined)
         payload.dueDate = changedFormFields.dueDate;
       if (changedFormFields.notes !== undefined)

@@ -36,6 +36,7 @@ interface NewPOFormDialogProps {
   isEditing: boolean; // <-- HAMARA NAYA PROP
   showCustomPoInput: boolean;
   setShowCustomPoInput: boolean;
+  // NOTE: contactName and phoneOrMail removed from NewPOFormType, so they are not needed here either.
 }
 
 export function NewPOFormDialog(props: NewPOFormDialogProps) {

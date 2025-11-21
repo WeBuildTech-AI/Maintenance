@@ -1,4 +1,4 @@
-import { type Dispatch,type SetStateAction } from "react";
+import { type Dispatch, type SetStateAction } from "react";
 
 export type ViewMode = "todo" | "list" | "calendar" | "workload";
 
@@ -26,10 +26,19 @@ export interface WorkOrder {
   isCompleted: boolean;
   wasDeleted?: boolean;
   deletedDate?: string;
+  assignees: string;
+  categories: [];
+  name: string;
+  workType: string;
+  assets: any[];
+  fullName: string;
 }
 
 export interface ListViewProps {
   workOrders: WorkOrder[];
+  onRefreshWorkOrders: any;
+  setIsSettingsModalOpen: boolean;
+  isSettingsModalOpen: boolean;
 }
 
 export interface ToDoViewProps {
