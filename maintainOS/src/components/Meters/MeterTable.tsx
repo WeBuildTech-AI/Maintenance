@@ -115,21 +115,25 @@ export function MeterTable({
   isSettingsModalOpen,
   setIsSettingsModalOpen,
   fetchMeters, // ⭐ NEW PROP: Add this to refresh data after delete
+  showDeleted,
+  setShowDeleted,
 }: {
   meter: any[];
   isSettingsModalOpen: any;
   setIsSettingsModalOpen: any;
   selectedMeter: any;
   fetchMeters: () => void; // ⭐ NEW PROP
+  showDeleted: boolean;
+  setShowDeleted: (v: boolean) => void;
 }) {
   const [visibleColumns, setVisibleColumns] =
     useState<string[]>(allAvailableColumns);
   const [sortType, setSortType] = useState<string>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [selectedMeterTable, setSelectedMeterTable] = useState<string[]>([]);
+  const [selectedMeterTable, setSelectedMeterTable] = useState<any | null>(null);
   const [selectedMeterIds, setSelectedMeterIds] = useState<string[]>([]);
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
-  const [isOpenMeterDetailsModal , setIsOpenMeterDetailsModal] = useState(false);
+  const [isOpenMeterDetailsModal, setIsOpenMeterDetailsModal] = useState(false);
 
   // ⭐ NEW: Deleting state
   const [isDeleting, setIsDeleting] = useState(false);
@@ -195,8 +199,6 @@ export function MeterTable({
     }
   };
 
-  console.log(selectedMeterTable, "selectedMeterTable");
-
   const handleTableChange: TableProps<any>["onChange"] = (
     pagination,
     filters,
@@ -221,8 +223,25 @@ export function MeterTable({
     sortColumn: string;
     visibleColumns: string[];
   }) => {
+    // Apply visible columns
     setVisibleColumns(settings.visibleColumns);
+    // Apply showDeleted toggle from modal and refresh list
+    try {
+      setShowDeleted(settings.showDeleted);
+    } catch (e) {
+      // defensive: if setShowDeleted isn't a function, ignore
+      // (but we've corrected the prop typing to a function)
+      // eslint-disable-next-line no-console
+      console.warn("setShowDeleted is not a function", e);
+    }
+
+    // Close modal
     setIsSettingsModalOpen(false);
+
+    // Refresh meters to reflect the new showDeleted value
+    if (typeof fetchMeters === "function") {
+      fetchMeters();
+    }
   };
 
   // ⭐ 5. Columns Definition (Updated with Delete Button)
@@ -431,18 +450,19 @@ export function MeterTable({
         onApply={handleApplySettings}
         allToggleableColumns={allAvailableColumns}
         currentVisibleColumns={visibleColumns}
+        currentShowDeleted={showDeleted}
         componentName="Meter"
       />
 
-      {
-        isOpenMeterDetailsModal && (
-          <AssetTableModal
+      {isOpenMeterDetailsModal && (
+        <AssetTableModal
           data={selectedMeterTable.fullMeter}
           onClose={() => setIsOpenMeterDetailsModal(false)}
           showDetailsSection={"meter"}
-          />
-        )
-      }
+          restoreData={"Restore"}
+          fetchData={fetchMeters}
+        />
+      )}
     </div>
   );
 }

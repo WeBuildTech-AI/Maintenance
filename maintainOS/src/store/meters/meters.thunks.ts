@@ -1,7 +1,11 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
 import { meterService } from "./meters.service";
-import type { CreateMeterData, UpdateMeterData, UpdateMeterReading } from "./meters.types";
+import type {
+  CreateMeterData,
+  UpdateMeterData,
+  UpdateMeterReading,
+} from "./meters.types";
 
 export const fetchMeters = createAsyncThunk(
   "meters/fetchMeters",
@@ -127,6 +131,41 @@ export const batchDeleteMeter = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to delete Meter"
+      );
+    }
+  }
+);
+
+export const fetchDeleteMeter = createAsyncThunk(
+  "meter/fetchDeleteMeter",
+  async (_, { rejectWithValue }) => {
+    try {
+      const assets = await meterService.fetchDeleteMeter();
+      return assets;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch Delete Meter "
+      );
+    }
+  }
+);
+
+export const restoreAssetData = createAsyncThunk(
+  "meter/restoreMeterData",
+  async (
+    {
+      id,
+    }: {
+      id: string;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const asset = await meterService.restoreMeterData(id);
+      return asset;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to restore Meter Data"
       );
     }
   }

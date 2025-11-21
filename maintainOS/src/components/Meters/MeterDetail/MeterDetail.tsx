@@ -29,6 +29,7 @@ import MeterDeleteModal from "../MeterDeleteModal";
 import RecordReadingModal from "./RecordReadingModal"; // 👈 Naya modal import karein
 import toast from "react-hot-toast";
 import { Tooltip } from "../../ui/tooltip";
+import { meterService } from "../../../store/meters";
 
 export function MeterDetail({
   selectedMeter,
@@ -36,6 +37,8 @@ export function MeterDetail({
   fetchMeters,
   setShowReadingMeter,
   setIsRecordModalOpen,
+  restoreData,
+  onClose,
 }: any) {
   const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
@@ -57,6 +60,16 @@ export function MeterDetail({
     });
     // Yahan aap API call ya Redux action dispatch kar sakte hain
     setIsRecordModalOpen(false); // Modal ko band kar dein
+  };
+
+  const handleRestoreData = async () => {
+    try {
+      await meterService.restoreMeterData(selectedMeter.id);
+      fetchMeters();
+      toast.success("successfully restore the data ");
+    } catch (err) {
+      toast.error("Failed to restore the Meter Data");
+    }
   };
 
   return (
@@ -113,6 +126,15 @@ export function MeterDetail({
                   >
                     Delete
                   </DropdownMenuItem>
+                  {restoreData && (
+                    <DropdownMenuItem
+                      onClick={() => {
+                        handleRestoreData(), onClose();
+                      }}
+                    >
+                      {restoreData}
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
