@@ -104,15 +104,12 @@ export const purchaseOrderService = {
     return res.data;
   },
 
-  FetchPurchaseOrderLog: async (
-    id: string
-  ): Promise<GetPurchaseOrderLog> => {
+  FetchPurchaseOrderLog: async (id: string): Promise<GetPurchaseOrderLog> => {
     const res = await api.get(`/purchase-orders/get/logs/${id}`);
     return res.data;
   },
 
-
-   deletePurchaseOrderComment: async (id: string): Promise<void> => {
+  deletePurchaseOrderComment: async (id: string): Promise<void> => {
     await api.delete(`/purchase-orders/comments/${id}`);
   },
 
@@ -122,4 +119,8 @@ export const purchaseOrderService = {
     });
   },
 
+  fetchDeletePurchaseOrder: async (): Promise<void> => {
+    const res = await api.get(`purchase-orders/deleted/all`);
+    return res.data;
+  },
 };

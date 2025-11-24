@@ -1,6 +1,12 @@
 import { Check, ChevronDown, ChevronUp } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 import { EmptyState } from "./EmptyState";
 import { InventoryHeaderComponent } from "./InventoryHeader";
 import { NewPartForm } from "./NewPartForm/NewPartForm";
@@ -28,13 +34,19 @@ export function Inventory() {
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const headerRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-  const [isSettingsModalOpen , setIsSettingsModalOpen] = useState(false)
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
 
   // ✅ Refresh helper function
-  const refreshParts = async () => {
+  const refreshParts = useCallback(async () => {
+    let res: any;
     try {
       setLoading(true);
-      const res = await partService.fetchParts(10, 1, 0);
+      if (showDeleted) {
+        res = await partService.fetchDeletePart();
+      } else {
+        res = await partService.fetchParts(10, 1, 0);
+      }
       console.log("📦 Parts API response:", res);
       setParts(res);
     } catch (err: any) {
@@ -43,12 +55,12 @@ export function Inventory() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showDeleted]);
 
   // ✅ Fetch on mount
   useEffect(() => {
     refreshParts();
-  }, []);
+  }, [showDeleted, viewMode]);
 
   // ✅ Refresh when coming back from delete/edit (fallback)
   useEffect(() => {
@@ -119,10 +131,11 @@ export function Inventory() {
         viewMode,
         setViewMode,
         "",
-        () => { },
+        () => {},
         () => navigate("/inventory/create"),
-        () => { },
+        () => {},
         setIsSettingsModalOpen,
+        setShowDeleted
       )}
 
       {/* 🟩 TABLE VIEW */}
@@ -142,7 +155,8 @@ export function Inventory() {
               fetchPartsData={refreshParts}
               isSettingsModalOpen={isSettingsModalOpen}
               setIsSettingsModalOpen={setIsSettingsModalOpen}
-
+              showDeleted={showDeleted}
+              setShowDeleted={setShowDeleted}
             />
           )}
         </div>
@@ -162,8 +176,7 @@ export function Inventory() {
                   onClick={() => setIsDropdownOpen((p) => !p)}
                   className="flex items-center gap-1 text-sm text-yellow-600 font-semibold focus:outline-none"
                 >
-                  {sortType}:{" "}
-                  {sortOrder === "asc" ? "Ascending" : "Descending"}
+                  {sortType}: {sortOrder === "asc" ? "Ascending" : "Descending"}
                   {isDropdownOpen ? (
                     <ChevronUp className="w-4 h-4 text-yellow-600" />
                   ) : (
@@ -206,19 +219,21 @@ export function Inventory() {
                       options: ["Lowest First", "Highest First"],
                     },
                   ].map((section) => (
-                    <div key={section.label} className="flex flex-col mt-1 mb-1">
+                    <div
+                      key={section.label}
+                      className="flex flex-col mt-1 mb-1"
+                    >
                       <button
                         onClick={() =>
                           setOpenSection(
-                            openSection === section.label
-                              ? null
-                              : section.label
+                            openSection === section.label ? null : section.label
                           )
                         }
-                        className={`flex items-center justify-between w-full px-4 py-3 text-sm transition-all rounded-md ${sortType === section.label
+                        className={`flex items-center justify-between w-full px-4 py-3 text-sm transition-all rounded-md ${
+                          sortType === section.label
                             ? "text-yellow-600 font-medium bg-gray-50"
                             : "text-gray-800 hover:bg-gray-50"
-                          }`}
+                        }`}
                       >
                         <span>{section.label}</span>
                         {openSection === section.label ? (
@@ -259,10 +274,11 @@ export function Inventory() {
                                       : "desc"
                                   );
                                 }}
-                                className={`flex items-center justify-between px-6 py-2 text-left text-sm transition rounded-md ${isSelected
+                                className={`flex items-center justify-between px-6 py-2 text-left text-sm transition rounded-md ${
+                                  isSelected
                                     ? "text-yellow-600 bg-white"
                                     : "text-gray-700 hover:text-yellow-500 hover:bg-white"
-                                  }`}
+                                }`}
                               >
                                 {opt}
                                 {isSelected && (
@@ -329,7 +345,10 @@ export function Inventory() {
                 element={<EditPartRoute onSuccess={refreshParts} />}
               />
               {/* ✅ Modified Restock Route */}
-              <Route path=":id/restock" element={<RestockRoute parts={parts} />} />
+              <Route
+                path=":id/restock"
+                element={<RestockRoute parts={parts} />}
+              />
             </Routes>
           </div>
         </div>
@@ -501,6 +520,5 @@ function RestockRoute({ parts }: { parts: any[] }) {
         navigate(`/inventory/${id}`, { state: { refresh: true } });
       }}
     />
-
   );
 }

@@ -83,15 +83,6 @@ export function DynamicSelect({
   // ✅ added local trigger to force re-render once new options arrive
   const [forceRender, setForceRender] = React.useState(0);
 
-  // 🧩 Debug logs
-  console.log("🔍 DynamicSelect:", {
-    name,
-    open,
-    optionsCount: options?.length,
-    loading,
-  });
-
-  // ✅ handle outside click close
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (

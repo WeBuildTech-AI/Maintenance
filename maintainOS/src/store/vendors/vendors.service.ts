@@ -82,9 +82,14 @@ export const vendorService = {
 
   fetchVendorContactData: async (
     vendorId: string,
-    contactId: string[],
+    contactId: string[]
   ): Promise<Contact> => {
     const res = await api.get(`/vendors/${vendorId}/contacts/${contactId}`);
+    return res.data;
+  },
+
+  fetchDeleteVendor: async (): Promise<void> => {
+    const res = await api.get(`vendors/deleted/all`);
     return res.data;
   },
 };

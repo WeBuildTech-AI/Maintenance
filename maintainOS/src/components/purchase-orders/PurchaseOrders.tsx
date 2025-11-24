@@ -102,7 +102,7 @@ export function PurchaseOrders() {
   const topRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState("details");
   const [isLoading, setIsLoading] = useState(false);
-
+  const [showDeleted, setShowDeleted] = useState(false);
   const scrollToTop = () => {
     if (topRef.current) {
       topRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -147,7 +147,7 @@ export function PurchaseOrders() {
     billingAddress: null,
     dueDate: "",
     notes: "",
-    extraCosts: 0, 
+    extraCosts: 0,
     // REMOVED: contactName: "",
     // REMOVED: phoneOrMail: "",
     vendorContactIds: [], // <--- NEW FIELD
@@ -167,10 +167,15 @@ export function PurchaseOrders() {
   const user = useSelector((state: RootState) => state.auth.user);
   const [showCustomPoInput, setShowCustomPoInput] = useState(false);
 
-  const fetchPurchaseOrder = async () => {
+  const fetchPurchaseOrder = React.useCallback(async () => {
+    let res: any;
     try {
       setIsLoading(true);
-      const res = await purchaseOrderService.fetchPurchaseOrders();
+      if (showDeleted) {
+        res = await purchaseOrderService.fetchDeletePurchaseOrder();
+      } else {
+        res = await purchaseOrderService.fetchPurchaseOrders();
+      }
       const sortedData = [...res].sort(
         (a: PurchaseOrder, b: PurchaseOrder) =>
           new Date(b.updatedAt).valueOf() - new Date(a.updatedAt).valueOf()
@@ -186,11 +191,11 @@ export function PurchaseOrders() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [showDeleted]);
 
   useEffect(() => {
     fetchPurchaseOrder();
-  }, []);
+  }, [showDeleted, viewMode]);
 
   const filteredPOs = useMemo(
     () =>
@@ -324,11 +329,11 @@ export function PurchaseOrders() {
           isTaxable: t.isTaxable,
         }))
       : [];
-      
+
     // Handle Contacts: assuming backend returns an array of contact objects under a field, or we use a separate fetch.
     // For now, mapping from a hypothetical 'contacts' array on the PO object to just IDs.
-    const mappedContactIds = poToEdit.contacts 
-      ? poToEdit.contacts.map((c: any) => c.id) 
+    const mappedContactIds = poToEdit.contacts
+      ? poToEdit.contacts.map((c: any) => c.id)
       : poToEdit.vendorContactIds || []; // Use vendorContactIds if available
 
     const formPO: NewPOFormType = {
@@ -521,12 +526,12 @@ export function PurchaseOrders() {
         payload.poNumber = changedFormFields.poNumber;
       if (changedFormFields.vendorId !== undefined)
         payload.vendorId = changedFormFields.vendorId;
-      
+
       // REMOVED: if (changedFormFields.contactName !== undefined)
       // REMOVED:   payload.contactName = changedFormFields.contactName;
       // REMOVED: if (changedFormFields.phoneOrMail !== undefined)
       // REMOVED:   payload.phoneOrMail = changedFormFields.phoneOrMail;
-        
+
       // --- NEW: Add vendorContactIds to payload if changed ---
       if (changedFormFields.vendorContactIds) {
         payload.vendorContactIds = changedFormFields.vendorContactIds;
@@ -667,7 +672,8 @@ export function PurchaseOrders() {
           setCreatingPO(true);
         },
         setShowSettings,
-        setIsSettingModalOpen
+        setIsSettingModalOpen,
+        setShowDeleted
       )}
 
       {viewMode === "table" ? (
@@ -680,6 +686,8 @@ export function PurchaseOrders() {
               isSettingModalOpen={isSettingModalOpen}
               setIsSettingModalOpen={setIsSettingModalOpen}
               fetchPurchaseOrders={fetchPurchaseOrder}
+              setShowDeleted={setShowDeleted}
+              showDeleted={showDeleted}
             />
           </div>
         </div>
@@ -871,7 +879,7 @@ export function PurchaseOrders() {
         setShowCustomPoInput={setShowCustomPoInput}
       />
 
-      {showSettings && (
+      {/* {showSettings && (
         <SettingsModal
           allColumns={allColumns}
           selectedColumns={selectedColumns}
@@ -879,7 +887,7 @@ export function PurchaseOrders() {
           onSave={handleSaveSettings}
           initialPageSize={pageSize}
         />
-      )}
+      )} */}
 
       <ConfirmationModal
         isOpen={modalAction !== null}

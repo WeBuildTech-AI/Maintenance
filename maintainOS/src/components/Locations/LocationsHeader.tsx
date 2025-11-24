@@ -28,6 +28,7 @@ export function LocationHeaderComponent(
   setIsCreatingForm: () => void, // 👈 UPDATED TYPE: now a void function for navigation
   setShowSettings: Dispatch<SetStateAction<boolean>>,
   setIsSettingsModalOpen: Dispatch<SetStateAction<boolean>>,
+  setShowDeleted: Dispatch<SetStateAction<boolean>>
 ) {
   return (
     <>
@@ -54,7 +55,12 @@ export function LocationHeaderComponent(
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
-                    <DropdownMenuItem onClick={() => setViewMode("panel")}>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setViewMode("panel");
+                        setShowDeleted(false);
+                      }}
+                    >
                       <PanelTop className="mr-2 h-4 w-4" /> Panel View
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setViewMode("table")}>

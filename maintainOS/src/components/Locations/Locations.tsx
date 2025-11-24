@@ -130,16 +130,17 @@ export function Locations() {
 
   console.log("showDeleted", showDeleted);
 
+  // Locations.tsx
+
   const fetchLocations = useCallback(
-    async (currentPage = 1) => {
+    // Remove currentPage argument since we always want to start at page 1 when showDeleted changes
+    async () => {
       setLoading(true);
 
-      // Clear selected when loading first page
-      if (currentPage === 1) {
-        setSelectedLocation(null);
-      }
-
-      let res; // ⭐ FIX: Declare here
+      // Always reset page to 1 when fetching due to a filter/toggle change
+      setPage(1);
+      setSelectedLocation(null);
+      let res: any;
 
       try {
         if (showDeleted) {
@@ -147,26 +148,19 @@ export function Locations() {
         } else {
           res = await locationService.fetchLocations(
             limit,
-            currentPage,
-            (currentPage - 1) * limit
+            1, // Always fetch page 1 when calling this due to showDeleted change
+            0
           );
         }
 
-        // First page logic
-        if (currentPage === 1) {
-          const reversedLocations = [...res].reverse();
-          setLocations(reversedLocations);
+        const reversedLocations = [...res].reverse();
+        setLocations(reversedLocations);
 
-          // Auto-select first item only on page 1
-          if (reversedLocations.length > 0) {
-            setSelectedLocation(reversedLocations[0]);
-          }
-        } else {
-          // Next pages → append
-          setLocations((prev) => [...prev, ...res]);
+        if (reversedLocations.length > 0) {
+          setSelectedLocation(reversedLocations[0]);
         }
 
-        // Check pagination end
+        // Update hasMore based on initial fetch
         if (!res || res.length < limit) {
           setHasMore(false);
         } else {
@@ -178,16 +172,16 @@ export function Locations() {
         setLocations([]);
       } finally {
         setLoading(false);
-        hasFetched.current = true;
       }
     },
-    [showDeleted, limit]
+    // ADD showDeleted to dependencies
+    [limit, showDeleted]
   );
 
   useEffect(() => {
     if (hasFetched.current) return;
     fetchLocations();
-  }, []);
+  }, [showDeleted]);
 
   // NEW: Combined filtering and sorting into a single useEffect for efficiency
   useEffect(() => {
@@ -397,6 +391,7 @@ export function Locations() {
               isSettingsModalOpen={isSettingsModalOpen}
               fetchLocations={fetchLocations}
               showDeleted={showDeleted}
+              setShowDeleted={setShowDeleted}
             />
           </>
         ) : (

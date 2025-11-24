@@ -141,7 +141,6 @@ export function LocationTable({
       .join("")
       .toUpperCase();
 
-  // Selection Logic
   const allLocationIds = useMemo(() => location.map((p) => p.id), [location]);
   const selectedCount = selectedLocationIds.length;
   const isEditing = selectedCount > 0;
@@ -215,6 +214,7 @@ export function LocationTable({
     visibleColumns: string[];
   }) => {
     setVisibleColumns(settings.visibleColumns);
+    // alert(settings.showDeleted);
     setShowDeleted(settings.showDeleted);
     setIsSettingsModalOpen(false);
   };
@@ -252,7 +252,6 @@ export function LocationTable({
               Edit {selectedCount} {selectedCount === 1 ? "Item" : "Items"}
             </span>
 
-            {/* ⭐ NEW: Delete Button */}
             <AntTooltip title="Delete" getPopupContainer={() => document.body}>
               <button
                 onClick={handleDelete}
