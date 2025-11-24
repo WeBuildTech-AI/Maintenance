@@ -2,23 +2,16 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Card, CardContent } from "../ui/card";
 import { Avatar as ShadCNAvatar, AvatarFallback } from "../ui/avatar";
-// ⭐ NEW: Imports for delete button
 import { Settings, Trash2, Loader2 } from "lucide-react";
-import { Tooltip } from "../ui/tooltip"; // ShadCN Tooltip
 import SettingsModal from "../utils/SettingsModal"; // Is path ko check kar lein
 import { formatDateOnly } from "../utils/Date"; // Path check kar lein
 
-// ⭐ 1. Ant Design Imports
 import { Table, Avatar, Tooltip as AntTooltip } from "antd";
 import type { TableProps, TableColumnType } from "antd";
 
-// ⭐ NEW: Import toast for notifications
 import toast from "react-hot-toast";
 import { locationService } from "../../store/locations";
 import AssetTableModal from "../Assets/AssetsTable/AssetTableModal";
-// ⭐ NEW: Import your location service (adjust path as needed)
-
-// --- Helper Functions ---
 
 type Sorter = Parameters<NonNullable<TableProps<any>["onChange"]>>[2];
 
@@ -53,8 +46,6 @@ const tableStyles = `
   }
 `;
 // --- End Helper Functions ---
-
-// ⭐ 2. Column Configuration
 const allAvailableColumns = [
   "ID",
   "Description",
@@ -116,15 +107,18 @@ export function LocationTable({
   setIsSettingsModalOpen,
   isSettingsModalOpen,
   selectedLocation,
-  fetchLocations, // ⭐ NEW PROP: Add this to refresh data
+  fetchLocations,
+  showDeleted,
+  setShowDeleted,
 }: {
   location: any[];
   setIsSettingsModalOpen: any;
   isSettingsModalOpen: any;
   selectedLocation: any;
-  fetchLocations: () => void; // ⭐ NEW PROP
+  fetchLocations: () => void;
+  showDeleted: boolean;
+  setShowDeleted: (value: boolean) => void;
 }) {
-  // ⭐ 3. State Management
   const [visibleColumns, setVisibleColumns] =
     useState<string[]>(allAvailableColumns);
   const [sortType, setSortType] = useState<string>("name");
@@ -137,7 +131,6 @@ export function LocationTable({
   const [selectedLocationIds, setSelectedLocationIds] = useState<string[]>([]);
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
 
-  // ⭐ NEW: Deleting state
   const [isDeleting, setIsDeleting] = useState(false);
 
   const renderInitials = (text: string) =>
@@ -148,7 +141,6 @@ export function LocationTable({
       .join("")
       .toUpperCase();
 
-  // Selection Logic
   const allLocationIds = useMemo(() => location.map((p) => p.id), [location]);
   const selectedCount = selectedLocationIds.length;
   const isEditing = selectedCount > 0;
@@ -172,11 +164,7 @@ export function LocationTable({
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
-  // --- End Selection Logic ---
 
-  // ⭐ 4. Handlers
-
-  // ⭐ NEW: Bulk Delete Handler
   const handleDelete = async () => {
     if (selectedLocationIds.length === 0) {
       toast.error("No locations selected to delete.");
@@ -186,14 +174,12 @@ export function LocationTable({
     setIsDeleting(true);
 
     try {
-      // Assume your service has a 'batchDeleteLocation' function
       await locationService.batchDeleteLocation(selectedLocationIds);
 
       toast.success("Locations deleted successfully!");
 
       setSelectedLocationIds([]);
 
-      // Call the new prop to refresh the list
       fetchLocations();
     } catch (err) {
       console.error("Error bulk deleting locations:", err);
@@ -228,10 +214,11 @@ export function LocationTable({
     visibleColumns: string[];
   }) => {
     setVisibleColumns(settings.visibleColumns);
+    // alert(settings.showDeleted);
+    setShowDeleted(settings.showDeleted);
     setIsSettingsModalOpen(false);
   };
 
-  // ⭐ 5. Columns Definition (Updated with Delete Button)
   const columns: TableColumnType<any>[] = useMemo(() => {
     const nameColumn: TableColumnType<any> = {
       title: () => {
@@ -265,7 +252,6 @@ export function LocationTable({
               Edit {selectedCount} {selectedCount === 1 ? "Item" : "Items"}
             </span>
 
-            {/* ⭐ NEW: Delete Button */}
             <AntTooltip title="Delete" getPopupContainer={() => document.body}>
               <button
                 onClick={handleDelete}
@@ -319,7 +305,7 @@ export function LocationTable({
               )}
             </div>
             <span
-               className="truncate cursor-pointer hover:text-orange-600 hover:underline"
+              className="truncate cursor-pointer hover:text-orange-600 hover:underline"
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedLocationTableData(record);
@@ -432,6 +418,7 @@ export function LocationTable({
         allToggleableColumns={allAvailableColumns}
         currentVisibleColumns={visibleColumns}
         componentName="Location"
+        currentShowDeleted={showDeleted}
       />
 
       {isLocationTableModalOpen && (

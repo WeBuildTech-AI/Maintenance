@@ -62,7 +62,15 @@ const tableStyles = `
 // --- End Helper Functions ---
 
 // Column Configuration
-const allAvailableColumns = ["ID", "Vendor", "Status", "Created By", "Created" , "Custom Number" , "Note"];
+const allAvailableColumns = [
+  "ID",
+  "Vendor",
+  "Status",
+  "Created By",
+  "Created",
+  "Custom Number",
+  "Note",
+];
 
 const columnConfig: {
   [key: string]: {
@@ -101,14 +109,12 @@ const columnConfig: {
   "Custom Number": {
     dataIndex: "customNumber",
     width: 150,
-    sorter: (a, b) =>
-      (a.poNumber || "").localeCompare(b.poNumber|| ""),
+    sorter: (a, b) => (a.poNumber || "").localeCompare(b.poNumber || ""),
   },
-  "Note": {
+  Note: {
     dataIndex: "note",
     width: 150,
-    sorter: (a, b) =>
-      (a.note || "").localeCompare(b.note|| ""),
+    sorter: (a, b) => (a.note || "").localeCompare(b.note || ""),
   },
 };
 
@@ -118,6 +124,8 @@ export interface PurchaseOrdersTableProps {
   isSettingModalOpen: boolean;
   setIsSettingModalOpen: (isOpen: boolean) => void;
   fetchPurchaseOrders: () => void; // Refresh ke liye
+  showDeleted: boolean;
+  setShowDeleted: (v: boolean) => void;
 }
 
 export default function PurchaseOrdersTable({
@@ -125,6 +133,8 @@ export default function PurchaseOrdersTable({
   isSettingModalOpen,
   setIsSettingModalOpen,
   fetchPurchaseOrders,
+  showDeleted,
+  setShowDeleted,
 }: PurchaseOrdersTableProps) {
   const user = useSelector((state: RootState) => state.auth.user);
 
@@ -133,7 +143,6 @@ export default function PurchaseOrdersTable({
     useState<string[]>(allAvailableColumns);
   const [sortType, setSortType] = useState<string>("poNumber");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [showDeleted, setShowDeleted] = useState(false);
   const [selectedPOIds, setSelectedPOIds] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
@@ -404,10 +413,9 @@ export default function PurchaseOrdersTable({
               <span className="text-foreground">{createdBy}</span>
             </div>
           );
-        }else if (colName === "Custom Number") {
+        } else if (colName === "Custom Number") {
           renderFunc = (poNumber: string) => poNumber;
-        }
-        else if (colName === "Note") {
+        } else if (colName === "Note") {
           renderFunc = (note: string) => note;
         }
         return {
@@ -436,7 +444,7 @@ export default function PurchaseOrdersTable({
     selectedPOIds,
     isDeleting,
     user, // User dependency
-  ])
+  ]);
 
   // Data Source for Antd Table
   const dataSource = useMemo(() => {

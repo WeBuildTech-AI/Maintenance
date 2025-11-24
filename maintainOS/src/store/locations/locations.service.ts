@@ -1,5 +1,5 @@
 import axios from "axios";
-import api from "../auth/auth.service"; 
+import api from "../auth/auth.service";
 import type { LocationResponse } from "./locations.types";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -8,7 +8,7 @@ export const locationService = {
   fetchLocations: async (
     limit: number,
     page: number,
-    offset: number 
+    offset: number
   ): Promise<LocationResponse[]> => {
     const res = await api.get("/locations", {
       params: { limit, page, offset },
@@ -49,5 +49,15 @@ export const locationService = {
     await api.delete(`locations/batch-delete`, {
       data: { ids: ids },
     });
+  },
+
+  fetchDeleteLocation: async (): Promise<void> => {
+    const res = await api.get(`locations/deleted/all`);
+    return res.data;
+  },
+
+  restoreLocationData: async (id: string): Promise<LocationResponse> => {
+    const res = await api.patch(`/locations/${id}/restore`);
+    return res.data;
   },
 };

@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, MapPin, Check, ChevronUp } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { NewLocationForm } from "./NewLocationForm/NewLocationForm";
@@ -23,7 +23,6 @@ import LocationDetails from "./LocationDetails";
 export function Locations() {
   const hasFetched = useRef(false);
   const dispatch = useDispatch<AppDispatch>();
-
   const [locations, setLocations] = useState<LocationResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,19 +35,15 @@ export function Locations() {
   const [filteredLocations, setFilteredLocations] = useState<
     LocationResponse[]
   >([]);
-  // const [sortBy, setSortBy] = useState("Name: Ascending Order"); // REMOVED: Replaced with new state
   const user = useSelector((state: RootState) => state.auth.user);
-  const [modalOpen, setModalOpen] = useState(false);
-
-  // --- NEW: State and Refs for the custom sorting dropdown ---
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [sortType, setSortType] = useState("Last Updated"); // e.g., "Name", "Creation Date"
-  const [sortOrder, setSortOrder] = useState("dsc"); // "asc" or "desc"
+  const [sortType, setSortType] = useState("Last Updated");
+  const [sortOrder, setSortOrder] = useState("dsc");
   const [openSection, setOpenSection] = useState<string | null>("Name");
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const headerRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-  // --- END NEW ---
+  const [showDeleted, setShowDeleted] = useState(false);
 
   const navigate = useNavigate();
   const isCreateRoute = useMatch("/locations/create");
@@ -133,55 +128,60 @@ export function Locations() {
   const [limit] = useState(10);
   const [hasMore, setHasMore] = useState(true);
 
-  const fetchLocations = async (currentPage = 1) => {
-    setLoading(true);
+  console.log("showDeleted", showDeleted);
 
-    // ⭐ YAHAN ADD KAREIN:
-    // Agar pehla page load ho raha hai, toh selectedLocation ko clear karein
-    if (currentPage === 1) {
+  // Locations.tsx
+
+  const fetchLocations = useCallback(
+    // Remove currentPage argument since we always want to start at page 1 when showDeleted changes
+    async () => {
+      setLoading(true);
+
+      // Always reset page to 1 when fetching due to a filter/toggle change
+      setPage(1);
       setSelectedLocation(null);
-    }
+      let res: any;
 
-    try {
-      const res = await locationService.fetchLocations(
-        limit,
-        currentPage,
-        (currentPage - 1) * limit
-      );
+      try {
+        if (showDeleted) {
+          res = await locationService.fetchDeleteLocation();
+        } else {
+          res = await locationService.fetchLocations(
+            limit,
+            1, // Always fetch page 1 when calling this due to showDeleted change
+            0
+          );
+        }
 
-      if (currentPage === 1) {
         const reversedLocations = [...res].reverse();
         setLocations(reversedLocations);
 
-        // ⭐ YAHAN BHI ADD KAREIN:
-        // Naya data aane ke baad, pehla item select karein
         if (reversedLocations.length > 0) {
           setSelectedLocation(reversedLocations[0]);
         }
-      } else {
-        // Page 2 ya uske baad, bas data add karein aur selection na badlein
-        setLocations((prev) => [...prev, ...res]);
-      }
 
-      if (res.length < limit) {
-        setHasMore(false);
-      } else {
-        setHasMore(true);
+        // Update hasMore based on initial fetch
+        if (!res || res.length < limit) {
+          setHasMore(false);
+        } else {
+          setHasMore(true);
+        }
+      } catch (err) {
+        console.error(err);
+        setError("Failed to fetch locations");
+        setLocations([]);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch locations");
-      setLocations([]); // Error par locations bhi clear kar dein
-    } finally {
-      setLoading(false);
-      hasFetched.current = true;
-    }
-  };
+    },
+    // ADD showDeleted to dependencies
+    [limit, showDeleted]
+  );
 
   useEffect(() => {
     if (hasFetched.current) return;
     fetchLocations();
-  }, []);
+  }, [showDeleted]);
 
   // NEW: Combined filtering and sorting into a single useEffect for efficiency
   useEffect(() => {
@@ -378,7 +378,8 @@ export function Locations() {
           setSearchQuery,
           handleShowNewLocationForm, // 👈 New URL-driven handler
           setShowSettings,
-          setIsSettingsModalOpen
+          setIsSettingsModalOpen,
+          setShowDeleted
         )}
 
         {viewMode === "table" ? (
@@ -389,6 +390,8 @@ export function Locations() {
               setIsSettingsModalOpen={setIsSettingsModalOpen}
               isSettingsModalOpen={isSettingsModalOpen}
               fetchLocations={fetchLocations}
+              showDeleted={showDeleted}
+              setShowDeleted={setShowDeleted}
             />
           </>
         ) : (

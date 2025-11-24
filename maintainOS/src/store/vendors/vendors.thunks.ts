@@ -8,7 +8,9 @@ export const fetchVendors = createAsyncThunk(
     try {
       return await vendorService.fetchVendors();
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to fetch vendors");
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch vendors"
+      );
     }
   }
 );
@@ -19,7 +21,9 @@ export const fetchVendorName = createAsyncThunk(
     try {
       return await vendorService.fetchVendorName();
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to fetch vendor names");
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch vendor names"
+      );
     }
   }
 );
@@ -30,7 +34,9 @@ export const fetchVendorById = createAsyncThunk(
     try {
       return await vendorService.fetchVendorById(id);
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to fetch vendor");
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch vendor"
+      );
     }
   }
 );
@@ -41,7 +47,9 @@ export const createVendor = createAsyncThunk(
     try {
       return await vendorService.createVendor(vendorData);
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to create vendor");
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to create vendor"
+      );
     }
   }
 );
@@ -52,7 +60,9 @@ export const updateVendor = createAsyncThunk(
     try {
       return await vendorService.updateVendor(id, data);
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to update vendor");
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update vendor"
+      );
     }
   }
 );
@@ -64,7 +74,9 @@ export const deleteVendor = createAsyncThunk(
       await vendorService.deleteVendor(id);
       return id;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to delete vendor");
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete vendor"
+      );
     }
   }
 );
@@ -73,17 +85,22 @@ export const deleteVendor = createAsyncThunk(
 export const updateVendorContact = createAsyncThunk(
   "vendors/updateVendorContact",
   async (
-    { vendorId, contactId, data }: { vendorId: string; contactId: string; data: Contact },
+    {
+      vendorId,
+      contactId,
+      data,
+    }: { vendorId: string; contactId: string; data: Contact },
     { rejectWithValue }
   ) => {
     try {
       return await vendorService.updateVendorContact(vendorId, contactId, data);
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to update contact");
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update contact"
+      );
     }
   }
 );
-
 
 export const batchDeleteVendor = createAsyncThunk(
   "vendor/batchDeleteVendor",
@@ -105,7 +122,9 @@ export const fetchVendorContact = createAsyncThunk(
     try {
       return await vendorService.fetchVendorContact(id);
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to fetch vendor contact");
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch vendor contact"
+      );
     }
   }
 );
@@ -113,13 +132,29 @@ export const fetchVendorContact = createAsyncThunk(
 export const updateVendorContactData = createAsyncThunk(
   "vendors/updateVendorContact",
   async (
-    { vendorId, contactId }: { vendorId: string; contactId: string[]; },
+    { vendorId, contactId }: { vendorId: string; contactId: string[] },
     { rejectWithValue }
   ) => {
     try {
-      return await vendorService.fetchVendorContactData(vendorId, contactId,);
+      return await vendorService.fetchVendorContactData(vendorId, contactId);
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to update contact Data");
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update contact Data"
+      );
+    }
+  }
+);
+
+export const fetchDeleteVendor = createAsyncThunk(
+  "vendor/fetchDeleteVendor",
+  async (_, { rejectWithValue }) => {
+    try {
+      const assets = await vendorService.fetchDeleteVendor();
+      return assets;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch Delete Vendor "
+      );
     }
   }
 );

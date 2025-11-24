@@ -74,10 +74,7 @@ export const partService = {
       formData.append("restockImages", JSON.stringify(payload.restockImages));
     }
 
-    const res = await api.post(
-      `/parts/${partId}/restock`,
-      formData
-    );
+    const res = await api.post(`/parts/${partId}/restock`, formData);
     return res.data;
   },
 
@@ -94,5 +91,10 @@ export const partService = {
     await api.delete(`parts/batch-delete`, {
       data: { ids: ids },
     });
+  },
+
+  fetchDeletePart: async (): Promise<void> => {
+    const res = await api.get(`parts/deleted/all`);
+    return res.data;
   },
 };

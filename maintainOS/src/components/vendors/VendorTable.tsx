@@ -3,16 +3,13 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Card, CardContent } from "../ui/card";
 import { Avatar as ShadCNAvatar, AvatarFallback } from "../ui/avatar";
 
-// ⭐ NEW: Imports for Antd, Icons, Services, and Toast
 import { Table, Tooltip as AntTooltip } from "antd";
 import type { TableProps, TableColumnType } from "antd";
-// ⭐ FIX 1: Settings icon import karein
-import { Trash2, Loader2, Settings } from "lucide-react";
+
+import { Trash2, Loader2 } from "lucide-react";
 import { formatDateOnly } from "../utils/Date"; // Path check kar lein
 import toast from "react-hot-toast";
 import SettingsModal from "../utils/SettingsModal";
-// ⭐ NEW: Service aur Type imports (path check kar lein)
-// import { vendorService } from "../../../store/vendors";
 import { type Vendor } from "./vendors.types";
 import { vendorService } from "../../store/vendors";
 
@@ -51,13 +48,7 @@ const tableStyles = `
 // --- End Helper Functions ---
 
 // Column Configuration
-const allAvailableColumns = [
-  "ID",
-  "Parts",
-  "Locations",
-  "Created",
-  "Updated",
-];
+const allAvailableColumns = ["ID", "Parts", "Locations", "Created", "Updated"];
 
 const columnConfig: {
   [key: string]: {
@@ -100,20 +91,21 @@ export function VendorTable({
   isSettingModalOpen,
   setIsSettingModalOpen,
   fetchVendors,
+  setShowDeleted,
+  showDeleted,
 }: {
   vendors: Vendor[];
   isSettingModalOpen: any; // Type 'any' rakha hai aapke code ke hisaab se
   setIsSettingModalOpen: (isOpen: boolean) => void;
   fetchVendors: () => void;
+  showDeleted: boolean;
+  setShowDeleted: (value: boolean) => void;
 }) {
   // State Management
   const [visibleColumns, setVisibleColumns] =
     useState<string[]>(allAvailableColumns);
   const [sortType, setSortType] = useState<string>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [showDeleted, setShowDeleted] = useState(false);
-
-  // Selection & Delete State
   const [selectedVendorIds, setSelectedVendorIds] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
@@ -163,7 +155,7 @@ export function VendorTable({
       await vendorService.batchDeleteVendor(selectedVendorIds);
       toast.success("Vendors deleted successfully!");
       setSelectedVendorIds([]);
-      fetchVendors(); // Refresh the list
+      fetchVendors();
     } catch (err) {
       console.error("Error bulk deleting vendors:", err);
       toast.error("Failed to delete vendors.");
@@ -200,6 +192,7 @@ export function VendorTable({
   }) => {
     setVisibleColumns(settings.visibleColumns);
     setShowDeleted(settings.showDeleted);
+    // fetchVendors();
     setIsSettingModalOpen(false);
   };
 
@@ -222,17 +215,6 @@ export function VendorTable({
                 />
                 <span className="text-gray-600">Name</span>
               </div>
-              
-              {/* ⭐ FIX 2: YAHAN SETTINGS BUTTON ADD KIYA GAYA HAI */}
-              <AntTooltip title="Settings" getPopupContainer={() => document.body}>
-                <button
-                  onClick={() => setIsSettingModalOpen(true)}
-                  className="text-gray-500 hover:text-gray-800"
-                >
-                  <Settings size={16} />
-                </button>
-              </AntTooltip>
-
             </div>
           );
         }
@@ -345,14 +327,15 @@ export function VendorTable({
     selectedVendorIds,
     isDeleting,
   ]);
-  
+
   const dataSource = useMemo(() => {
     return vendors.map((vendor) => ({
       key: vendor.id,
       id: vendor.id,
       name: vendor.name,
       parts: vendor.partsSummary ?? "—",
-      locations: vendor.locations.map((loc: any) => loc.name).join(", ") || "—",
+      locations:
+        vendor.locations?.map((loc: any) => loc.name).join(", ") || "—",
       createdAt: vendor.createdAt,
       updatedAt: vendor.updatedAt,
       fullVendor: vendor,
@@ -370,7 +353,7 @@ export function VendorTable({
             columns={columns}
             dataSource={dataSource}
             pagination={false}
-            scroll={{ x: "max-content", y: "75vh" }} 
+            scroll={{ x: "max-content", y: "75vh" }}
             rowClassName={(record: any) =>
               selectedVendorIds.includes(record.id) ? "selected-row-class" : ""
             }
@@ -379,7 +362,7 @@ export function VendorTable({
               selectedRowKeys: selectedVendorIds,
               columnWidth: 0,
               renderCell: () => null,
-              columnTitle: " ", 
+              columnTitle: " ",
             }}
             onRow={(record) => ({
               onClick: () => {

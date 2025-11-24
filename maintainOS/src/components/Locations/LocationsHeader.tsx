@@ -27,11 +27,11 @@ export function LocationHeaderComponent(
   setSearchQuery: Dispatch<SetStateAction<string>>,
   setIsCreatingForm: () => void, // 👈 UPDATED TYPE: now a void function for navigation
   setShowSettings: Dispatch<SetStateAction<boolean>>,
-  setIsSettingsModalOpen: Dispatch<SetStateAction<boolean>>
+  setIsSettingsModalOpen: Dispatch<SetStateAction<boolean>>,
+  setShowDeleted: Dispatch<SetStateAction<boolean>>
 ) {
   return (
     <>
-      
       <header className=" border-border bg-card px-6 py-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -55,7 +55,12 @@ export function LocationHeaderComponent(
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
-                    <DropdownMenuItem onClick={() => setViewMode("panel")}>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setViewMode("panel");
+                        setShowDeleted(false);
+                      }}
+                    >
                       <PanelTop className="mr-2 h-4 w-4" /> Panel View
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setViewMode("table")}>

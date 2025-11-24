@@ -132,18 +132,20 @@ export function PartTable({
   isSettingsModalOpen,
   setIsSettingsModalOpen,
   fetchPartsData,
+  showDeleted,
+  setShowDeleted,
 }: {
   inventory: any[];
   isSettingsModalOpen: boolean;
   setIsSettingsModalOpen: (isOpen: boolean) => void;
   fetchPartsData: () => void;
+  showDeleted: boolean;
+  setShowDeleted: (v: boolean) => void;
 }) {
   const [visibleColumns, setVisibleColumns] =
     useState<string[]>(allAvailableColumns);
   const [sortType, setSortType] = useState<string>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [showDeleted, setShowDeleted] = useState(false);
-
   const [selectedPartIds, setSelectedPartIds] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
