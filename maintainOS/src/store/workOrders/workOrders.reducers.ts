@@ -6,6 +6,7 @@ import type {
   WorkOrderLog 
 } from "./workOrders.types";
 import {
+  updateWorkOrderStatus, // ✅ Import new thunk
   addWorkOrderComment,
   fetchWorkOrderComments,
   fetchWorkOrderLogs,
@@ -128,6 +129,26 @@ const workOrdersSlice = createSlice({
         state.error = action.payload as string;
       })
 
+      // ✅ NEW: Update Status Reducer
+      .addCase(updateWorkOrderStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateWorkOrderStatus.fulfilled, (state, action: PayloadAction<WorkOrderResponse>) => {
+        state.loading = false;
+        const idx = state.workOrders.findIndex(w => w.id === action.payload.id);
+        if (idx !== -1) {
+          state.workOrders[idx] = action.payload;
+        }
+        if (state.selectedWorkOrder && state.selectedWorkOrder.id === action.payload.id) {
+          state.selectedWorkOrder = action.payload;
+        }
+      })
+      .addCase(updateWorkOrderStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+
       // --- Delete ---
       .addCase(deleteWorkOrder.pending, (state) => {
         state.loading = true;
@@ -183,7 +204,6 @@ const workOrdersSlice = createSlice({
         addWorkOrderComment.fulfilled,
         (state, action: PayloadAction<WorkOrderComment>) => {
           state.loading = false;
-          
           const newComment = action.payload;
           const workOrderId = (action.meta as any).arg.id;
 
@@ -223,13 +243,13 @@ const workOrdersSlice = createSlice({
         }
       })
 
-      // --- Fetch Logs (✅ Updated) ---
+      // --- Fetch Logs (✅ Fixed) ---
       .addCase(fetchWorkOrderLogs.pending, (state) => {
         state.loading = true;
       })
       .addCase(fetchWorkOrderLogs.fulfilled, (state, action: PayloadAction<WorkOrderLog[]>) => {
         state.loading = false;
-        // ✅ Store logs array directly
+        // Store logs array directly
         if (Array.isArray(action.payload)) {
           state.logs = action.payload;
         } else {

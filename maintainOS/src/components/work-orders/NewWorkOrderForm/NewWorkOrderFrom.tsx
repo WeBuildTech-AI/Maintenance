@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
+import { Loader2 } from "lucide-react"; // Added Loader Icon
 
 import { WorkOrderDetails } from "./WorkOrderDetails";
 import { AssetsAndProcedures } from "./AssetsAndProcedures";
@@ -27,6 +28,7 @@ import TimeOverviewPanel from "./../panels/TimeOverviewPanel";
 import OtherCostsPanel from "./../panels/OtherCostsPanel";
 import UpdatePartsPanel from "./../panels/UpdatePartsPanel";
 
+// Helper: Safe Date Parsing
 function parseDateInputToISO(input?: string): string | undefined {
   if (!input) return undefined;
   const v = input.trim();
@@ -72,7 +74,6 @@ export function NewWorkOrderForm({
 
   const isEditMode = propIsEditMode ?? location.pathname.includes("/edit");
   const id = editId ?? existingWorkOrder?.id ?? null;
-  // ✅ Fix Prefill: Check if we are on the create route
   const isCreateRoute = location.pathname.endsWith("/create");
 
   const [currentPanel, setCurrentPanel] = useState<'form' | 'time' | 'cost' | 'parts'>('form');
@@ -91,7 +92,7 @@ export function NewWorkOrderForm({
   const [dueDate, setDueDate] = useState("");
   const [startDate, setStartDate] = useState("");
   
-  // ✅ Default values
+  // Default values
   const [selectedWorkType, setSelectedWorkType] = useState("Reactive");
   const [selectedPriority, setSelectedPriority] = useState("None");
   const [qrCodeValue, setQrCodeValue] = useState("");
@@ -102,7 +103,7 @@ export function NewWorkOrderForm({
   const [partIds, setPartIds] = useState<string[]>([]);
   const [vendorIds, setVendorIds] = useState<string[]>([]);
 
-  // Options for Dropdowns
+  // Options
   const [locationOptions, setLocationOptions] = useState<SelectOption[]>([]);
   const [assetOptions, setAssetOptions] = useState<SelectOption[]>([]);
   const [teamOptions, setTeamOptions] = useState<SelectOption[]>([]);
@@ -130,37 +131,53 @@ export function NewWorkOrderForm({
     }
   };
 
-  // Load Procedure from URL
+  // --- ✅ CRITICAL FIX: Procedure Loading Logic ---
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const procedureId = params.get("procedureId");
+    
+    // If we already have it linked, don't do anything
+    if (linkedProcedure?.id === procedureId) return;
 
-    if (procedureId && !linkedProcedure) {
-      const fetchProcedure = async () => {
+    // 1. Priority: Check Location State (Fastest / Instant)
+    const stateProcedure = location.state?.procedureData;
+    if (stateProcedure && stateProcedure.id === procedureId) {
+      console.log("✅ [Prod Fix] Loaded procedure from Navigation State:", stateProcedure);
+      setLinkedProcedure(stateProcedure);
+      return;
+    }
+
+    // 2. Fallback: API Fetch (Slow but Reliable if ID exists)
+    if (procedureId) {
+      console.log("⚠️ [Prod Fix] State missing. Fetching from API...");
+      
+      const fetchSpecificProcedure = async () => {
         setIsProcedureLoading(true);
         try {
-          const allProcs = await procedureService.fetchProcedures();
-          const foundProc = allProcs.find((p: any) => p.id === procedureId);
+          const foundProc = await procedureService.fetchProcedureById(procedureId);
+          
           if (foundProc) {
+            console.log("✅ [Prod Fix] API Fetch Successful:", foundProc);
             setLinkedProcedure(foundProc);
-            navigate(location.pathname, { replace: true });
           } else {
-            toast.error("Could not find the selected procedure.");
+            console.error("❌ [Prod Fix] Procedure not found in API.");
+            toast.error("Could not load procedure.");
           }
         } catch (err) {
+          console.error("❌ [Prod Fix] API Error:", err);
           toast.error("Failed to load procedure.");
         } finally {
           setIsProcedureLoading(false);
         }
       };
-      fetchProcedure();
+      
+      fetchSpecificProcedure();
     }
-  }, [location.search, linkedProcedure, navigate, location.pathname]);
+  }, [location.search, location.state]); // Removed `linkedProcedure` to prevent loops
 
-  // Load Existing Data
+  // --- Load Existing Work Order (Edit Mode) ---
   useEffect(() => {
-    // ✅ FIX: If we are on CREATE route, DO NOT load existing data
-    if (isCreateRoute) return;
+    if (isCreateRoute) return; // Don't run in create mode
 
     const fillFields = (data: any) => {
       if (!data) return;
@@ -178,7 +195,6 @@ export function NewWorkOrderForm({
         data.priority ? data.priority.charAt(0).toUpperCase() + data.priority.slice(1) : "None"
       );
       
-      // ✅ Fill new fields
       setQrCodeValue(data.qrCode || "");
       setRecurrence(data.recurrence || "Does not repeat");
       setTeamIds(data.assignedTeamIds || []);
@@ -212,11 +228,13 @@ export function NewWorkOrderForm({
     };
 
     loadWorkOrder();
-  }, [dispatch, id, existingWorkOrder, isEditMode, isCreateRoute]); // Added isCreateRoute dependency
+  }, [dispatch, id, existingWorkOrder, isEditMode, isCreateRoute]);
 
-  // ✅ Reset form when explicitly creating
+  // --- Reset Form on Create Mode (Careful with Procedure) ---
   useEffect(() => {
-    if (isCreateRoute && !location.search.includes("procedureId")) {
+    const hasProcedure = location.search.includes("procedureId");
+    
+    if (isCreateRoute && !hasProcedure && !isEditMode) {
       setWorkOrderName("");
       setDescription("");
       setLocationId("");
@@ -234,7 +252,7 @@ export function NewWorkOrderForm({
       setVendorIds([]);
       setLinkedProcedure(null);
     }
-  }, [location.pathname, location.search, isCreateRoute]);
+  }, [location.pathname, location.search, isCreateRoute, isEditMode]);
 
   const handleSubmit = async () => {
     try {
@@ -245,34 +263,20 @@ export function NewWorkOrderForm({
 
       const formData = new FormData();
       
-      // ✅ Only append if value exists
       if (workOrderName) formData.append("title", workOrderName);
       if (description) formData.append("description", description);
-      
-      // Default status
       formData.append("status", "open");
-
-      // ✅ Only append Work Type if selected
       if (selectedWorkType) formData.append("workType", selectedWorkType);
-
-      // ❌ FIX: Backend throwing 400 error for recurrence. 
-      // Commenting this out until backend supports it.
-      // if (recurrence) formData.append("recurrence", recurrence);
-
-      // ✅ Only append QR Code if filled
       if (qrCodeValue) formData.append("qrCode", qrCodeValue);
 
-      // Priority mapping
       const priorityMap: Record<string, string> = {
         None: "low", Low: "low", Medium: "medium", High: "high", Urgent: "urgent",
       };
-      // Only send priority if not None (or send default low)
       const mappedPriority = priorityMap[selectedPriority] || "low";
       formData.append("priority", mappedPriority);
 
       if (locationId) formData.append("locationId", locationId);
 
-      // Arrays - Only append if length > 0
       if (assetIds.length > 0) assetIds.forEach((i) => i && formData.append("assetIds[]", i));
       if (vendorIds.length > 0) vendorIds.forEach((i) => i && formData.append("vendorIds[]", i));
       if (partIds.length > 0) partIds.forEach((i) => i && formData.append("partIds[]", i));
@@ -284,7 +288,6 @@ export function NewWorkOrderForm({
         formData.append("procedureIds[]", linkedProcedure.id);
       }
 
-      // Dates - Only append if valid
       const isoDue = parseDateInputToISO(dueDate);
       const isoStart = parseDateInputToISO(startDate);
       if (isoDue) formData.append("dueDate", isoDue);
@@ -295,18 +298,6 @@ export function NewWorkOrderForm({
         toast.error("User information missing. Please re-login.");
         return;
       }
-
-      // ✅ DEBUG LOG: See exactly what is being sent
-      const payloadObj: any = {};
-      formData.forEach((value, key) => {
-        if (payloadObj[key]) {
-            if (!Array.isArray(payloadObj[key])) payloadObj[key] = [payloadObj[key]];
-            payloadObj[key].push(value);
-        } else {
-            payloadObj[key] = value;
-        }
-      });
-      console.log("🚀 FINAL API PAYLOAD:", payloadObj);
 
       if (isEditMode && id) {
         await (dispatch as any)(
@@ -328,14 +319,19 @@ export function NewWorkOrderForm({
 
     } catch (err: any) {
       console.error("❌ Error saving work order:", err);
-      // Show backend error message if available
       const errorMsg = err?.message || (typeof err === 'string' ? err : "Failed to save work order");
       toast.error(errorMsg);
     }
   };
 
+  // ✅ Loading State UI
   if (loading || isProcedureLoading)
-    return <div className="flex items-center justify-center h-full"><p className="text-gray-600 text-sm">Loading...</p></div>;
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-500">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <p className="text-sm font-medium">Loading...</p>
+      </div>
+    );
 
   // Panel Switching
   if (currentPanel === 'time') return <TimeOverviewPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={existingWorkOrder} workOrderId={id} />;
@@ -382,6 +378,7 @@ export function NewWorkOrderForm({
             onRemoveProcedure={() => setLinkedProcedure(null)}
             onPreviewProcedure={() => setIsPreviewOpen(true)}
             onOpenProcedureModal={() => setIsAddProcModalOpen(true)}
+            setLinkedProcedure={setLinkedProcedure} 
           />
 
           <AssignmentAndScheduling
@@ -393,7 +390,6 @@ export function NewWorkOrderForm({
             setStartDate={setStartDate}
             selectedWorkType={selectedWorkType}
             setSelectedWorkType={setSelectedWorkType}
-            // ✅ Pass Recurrence Props
             recurrence={recurrence}
             setRecurrence={setRecurrence}
             onOpenInviteModal={() => toast("Invite modal open")}
@@ -402,7 +398,6 @@ export function NewWorkOrderForm({
           <WorkOrderClassificationAndLinks
             selectedPriority={selectedPriority}
             onPriorityChange={setSelectedPriority}
-            // ✅ Pass QR and Teams Props
             qrCodeValue={qrCodeValue}
             onQrCodeChange={setQrCodeValue}
             teamIds={teamIds}
@@ -471,6 +466,10 @@ export function NewWorkOrderForm({
       <AddProcedureModal
         isOpen={isAddProcModalOpen}
         onClose={() => setIsAddProcModalOpen(false)}
+        onSelect={(proc: any) => {
+            setLinkedProcedure(proc);
+            setIsAddProcModalOpen(false);
+        }}
       />
     </>
   );
