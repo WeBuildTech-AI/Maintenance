@@ -48,6 +48,7 @@ export function Locations() {
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const headerRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+  const [showDeleted, setShowDeleted] = useState(false);
   // --- END NEW ---
 
   const navigate = useNavigate();
@@ -133,50 +134,58 @@ export function Locations() {
   const [limit] = useState(10);
   const [hasMore, setHasMore] = useState(true);
 
-  const fetchLocations = async (currentPage = 1) => {
-    setLoading(true);
+  const fetchLocations =
+    (async (currentPage = 1) => {
+      setLoading(true);
 
-    // ⭐ YAHAN ADD KAREIN:
-    // Agar pehla page load ho raha hai, toh selectedLocation ko clear karein
-    if (currentPage === 1) {
-      setSelectedLocation(null);
-    }
-
-    try {
-      const res = await locationService.fetchLocations(
-        limit,
-        currentPage,
-        (currentPage - 1) * limit
-      );
-
+      // ⭐ YAHAN ADD KAREIN:
+      // Agar pehla page load ho raha hai, toh selectedLocation ko clear karein
       if (currentPage === 1) {
-        const reversedLocations = [...res].reverse();
-        setLocations(reversedLocations);
+        setSelectedLocation(null);
+      }
 
-        // ⭐ YAHAN BHI ADD KAREIN:
-        // Naya data aane ke baad, pehla item select karein
-        if (reversedLocations.length > 0) {
-          setSelectedLocation(reversedLocations[0]);
+      // let res;
+
+      try {
+        if (showDeleted) {
+          const res = await locationService.fetchDeleteLocation();
+        } else {
+          const res = await locationService.fetchLocations(
+            limit,
+            currentPage,
+            (currentPage - 1) * limit
+          );
         }
-      } else {
-        // Page 2 ya uske baad, bas data add karein aur selection na badlein
-        setLocations((prev) => [...prev, ...res]);
-      }
 
-      if (res.length < limit) {
-        setHasMore(false);
-      } else {
-        setHasMore(true);
+        if (currentPage === 1) {
+          const reversedLocations = [...res].reverse();
+          setLocations(reversedLocations);
+
+          // ⭐ YAHAN BHI ADD KAREIN:
+          // Naya data aane ke baad, pehla item select karein
+          if (reversedLocations.length > 0) {
+            setSelectedLocation(reversedLocations[0]);
+          }
+        } else {
+          // Page 2 ya uske baad, bas data add karein aur selection na badlein
+          setLocations((prev) => [...prev, ...res]);
+        }
+
+        if (res.length < limit) {
+          setHasMore(false);
+        } else {
+          setHasMore(true);
+        }
+      } catch (err) {
+        console.error(err);
+        setError("Failed to fetch locations");
+        setLocations([]); // Error par locations bhi clear kar dein
+      } finally {
+        setLoading(false);
+        hasFetched.current = true;
       }
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch locations");
-      setLocations([]); // Error par locations bhi clear kar dein
-    } finally {
-      setLoading(false);
-      hasFetched.current = true;
-    }
-  };
+    },
+    [showDeleted]);
 
   useEffect(() => {
     if (hasFetched.current) return;
@@ -378,7 +387,8 @@ export function Locations() {
           setSearchQuery,
           handleShowNewLocationForm, // 👈 New URL-driven handler
           setShowSettings,
-          setIsSettingsModalOpen
+          setIsSettingsModalOpen,
+          setShowDeleted
         )}
 
         {viewMode === "table" ? (
@@ -389,6 +399,7 @@ export function Locations() {
               setIsSettingsModalOpen={setIsSettingsModalOpen}
               isSettingsModalOpen={isSettingsModalOpen}
               fetchLocations={fetchLocations}
+              showDeleted={showDeleted}
             />
           </>
         ) : (

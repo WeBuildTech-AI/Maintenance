@@ -27,11 +27,11 @@ export function LocationHeaderComponent(
   setSearchQuery: Dispatch<SetStateAction<string>>,
   setIsCreatingForm: () => void, // 👈 UPDATED TYPE: now a void function for navigation
   setShowSettings: Dispatch<SetStateAction<boolean>>,
-  setIsSettingsModalOpen: Dispatch<SetStateAction<boolean>>
+  setIsSettingsModalOpen: Dispatch<SetStateAction<boolean>>,
+  setShowDeleted: Dispatch<SetStateAction<boolean>>
 ) {
   return (
     <>
-      
       <header className=" border-border bg-card px-6 py-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -96,7 +96,7 @@ export function LocationHeaderComponent(
           {/* Right: Settings button (only for table view) */}
           {viewMode === "table" && (
             <button
-              onClick={() => setIsSettingsModalOpen(true)}
+              onClick={() => setShowDeleted(true)}
               className="p-2 rounded-md border hover:bg-gray-100 transition"
             >
               <Settings className="h-5 w-5 text-orange-600" />
