@@ -37,7 +37,7 @@ export interface WorkOrder {
 export interface ListViewProps {
   workOrders: WorkOrder[];
   onRefreshWorkOrders: any;
-  setIsSettingsModalOpen: boolean;
+  setIsSettingsModalOpen: any;
   isSettingsModalOpen: boolean;
 }
 

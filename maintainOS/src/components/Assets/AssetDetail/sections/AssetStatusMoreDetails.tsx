@@ -40,8 +40,9 @@ export default function AssetStatusMoreDetails({
   const [selectedPeriod, setSelectedPeriod] = useState<Period>("1W");
   const [selectedEntry, setSelectedEntry] = useState<number>(0);
   const [updateAssetModal, setUpdateAssetModal] = useState(false);
-  const user = useSelector((state: RootState) => state.auth.user);
   const [isLoading, setIsLoading] = useState(false);
+  const user = useSelector((state: RootState) => state.auth.user);
+  // const [isLoading, setIsLoading] = useState(false);
   const [logData, setLogData] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showActionMenu, setShowActionMenu] = useState(false);
@@ -68,6 +69,7 @@ export default function AssetStatusMoreDetails({
 
   const getAssetStatusLog = async () => {
     try {
+      setIsLoading(true);
       setIsLoading(true);
       const res = await assetService.fetchAssetStatusLog(asset.id);
       setLogData(res.logs || []);
