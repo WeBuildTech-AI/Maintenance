@@ -26,6 +26,7 @@ import { formatDateOnly } from "../utils/Date"; // Path check kar lein
 import toast from "react-hot-toast";
 import SettingsModal from "../utils/SettingsModal"; // Path check kar lein
 import { purchaseOrderService } from "../../store/purchaseOrders";
+import AssetTableModal from "../Assets/AssetsTable/AssetTableModal";
 
 // --- Helper Functions ---
 
@@ -137,7 +138,6 @@ export default function PurchaseOrdersTable({
   setShowDeleted,
 }: PurchaseOrdersTableProps) {
   const user = useSelector((state: RootState) => state.auth.user);
-
   // State for Antd Table
   const [visibleColumns, setVisibleColumns] =
     useState<string[]>(allAvailableColumns);
@@ -146,8 +146,13 @@ export default function PurchaseOrdersTable({
   const [selectedPOIds, setSelectedPOIds] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
+  const [isOpenPurchaseOrderDetailsModal, setIsOpenPurchaseOrderDetailsModal] =
+    useState(false);
+  const [selectedPurchaseOrderTable, setSelectedPurchaseOrderTable] = useState<
+    string[]
+  >([]);
 
-  // ⭐ FIX 1: `renderStatus` function ko update kiya gaya
+  // FIX 1: `renderStatus` function ko update kiya gaya
   const renderStatus = (status: string) => {
     switch (status) {
       case "pending": // 'pemding' ko 'pending' kiya
@@ -371,7 +376,14 @@ export default function PurchaseOrdersTable({
                 </ShadCNAvatar>
               )}
             </div>
-            <span className="truncate capitalize">
+            <span
+              className="truncate cursor-pointer hover:text-orange-600 hover:underline"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpenPurchaseOrderDetailsModal(true);
+                setSelectedPurchaseOrderTable(record.fullOrder);
+              }}
+            >
               Purchase Order #{poNumber}
             </span>
           </div>
@@ -506,6 +518,16 @@ export default function PurchaseOrdersTable({
         currentShowDeleted={showDeleted}
         componentName="PurchaseOrder"
       />
+
+      {isOpenPurchaseOrderDetailsModal && (
+        <AssetTableModal
+          data={selectedPurchaseOrderTable}
+          onClose={() => setIsOpenPurchaseOrderDetailsModal(false)}
+          showDetailsSection={"purchase Order"}
+          restoreData={"Restore"}
+          fetchData={fetchPurchaseOrders}
+        />
+      )}
     </div>
   );
 }

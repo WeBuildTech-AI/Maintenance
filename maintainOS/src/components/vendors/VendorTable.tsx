@@ -12,6 +12,7 @@ import toast from "react-hot-toast";
 import SettingsModal from "../utils/SettingsModal";
 import { type Vendor } from "./vendors.types";
 import { vendorService } from "../../store/vendors";
+import AssetTableModal from "../Assets/AssetsTable/AssetTableModal";
 
 // --- Helper Functions ---
 
@@ -109,6 +110,11 @@ export function VendorTable({
   const [selectedVendorIds, setSelectedVendorIds] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
+  const [isOpenVendorDetailsModal, setIsOpenVendorDetailsModal] =
+    useState(false);
+  const [selectedVendorTable, setSelectedVendorTable] = useState<Vendor | null>(
+    null
+  );
 
   const renderInitials = (text: string) =>
     text
@@ -282,7 +288,16 @@ export function VendorTable({
                 </ShadCNAvatar>
               )}
             </div>
-            <span className="truncate capitalize">{name}</span>
+            <span
+              className="truncate cursor-pointer hover:text-orange-600 hover:underline"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpenVendorDetailsModal(true);
+                setSelectedVendorTable(record.fullVendor);
+              }}
+            >
+              {name}
+            </span>
           </div>
         );
       },
@@ -386,6 +401,16 @@ export function VendorTable({
         currentShowDeleted={showDeleted}
         componentName="Vendor"
       />
+
+      {isOpenVendorDetailsModal && selectedVendorTable && (
+        <AssetTableModal
+          data={selectedVendorTable}
+          onClose={() => setIsOpenVendorDetailsModal(false)}
+          showDetailsSection={"vendor"}
+          restoreData={"restore"}
+          fetchData={fetchVendors}
+        />
+      )}
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import toast from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../../store";
-import { deleteVendor } from "../../../store/vendors";
+import { deleteVendor, fetchVendors } from "../../../store/vendors";
 import {
   NewContactModal,
   type ContactFormData,
@@ -20,15 +20,21 @@ import { VendorImages } from "./VendorImages";
 import { VendorFiles } from "./VendorFiles";
 
 interface VendorDetailsProps {
-  vendor?: Vendor;
+  vendor?: any;
   onEdit: (vendor: Vendor) => void;
   onDeleteSuccess?: (id: string) => void;
+  restoreData: string;
+  onClose: () => void;
+  fetchVendors:() => void;
 }
 
 export default function VendorDetails({
   vendor,
   onEdit,
   onDeleteSuccess,
+  restoreData,
+  onClose,
+  fetchVendors,
 }: VendorDetailsProps) {
   if (!vendor) {
     return (
@@ -55,8 +61,9 @@ export default function VendorDetails({
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingContact, setEditingContact] =
-    useState<ContactFormData | null>(null);
+  const [editingContact, setEditingContact] = useState<ContactFormData | null>(
+    null
+  );
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteContactEmail, setDeleteContactEmail] = useState<string | null>(
     null
@@ -106,11 +113,16 @@ export default function VendorDetails({
         vendor={vendor}
         onEdit={onEdit}
         handleDeleteVendor={handleDeleteVendor}
+        restoreData={restoreData}
+        onClose={onClose}
+        fetchVendors={fetchVendors}
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto space-y-8 py-8 px-6 bg-white">
         <div>
-          <h3 className="text-sm font-semibold text-gray-800 mb-1">Description</h3>
+          <h3 className="text-sm font-semibold text-gray-800 mb-1">
+            Description
+          </h3>
           <p className="text-sm text-gray-600">
             {vendor.description || "No description available."}
           </p>
@@ -142,7 +154,9 @@ export default function VendorDetails({
           try {
             if (editingContact) {
               setContacts((prev) =>
-                prev.map((c) => (c.email === editingContact.email ? newContact : c))
+                prev.map((c) =>
+                  c.email === editingContact.email ? newContact : c
+                )
               );
               toast.success("Contact updated!");
             } else {
@@ -151,7 +165,9 @@ export default function VendorDetails({
             }
 
             // ✅ NEW — refresh vendor details from backend instantly
-            const updatedVendor = await vendorService.fetchVendorById(vendor.id);
+            const updatedVendor = await vendorService.fetchVendorById(
+              vendor.id
+            );
             if (updatedVendor) {
               // Replace current vendor’s contact list right away
               vendor.contacts = updatedVendor.contacts;
@@ -168,7 +184,6 @@ export default function VendorDetails({
           }
         }}
       />
-
 
       {showDeleteConfirm && (
         <DeleteModal

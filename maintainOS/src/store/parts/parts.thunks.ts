@@ -113,10 +113,7 @@ export const fetchPartsName = createAsyncThunk(
 
 export const restockPart = createAsyncThunk(
   "parts/restockPart",
-  async (
-    payload: RestockThunkArgs, 
-    { rejectWithValue }
-  ) => {
+  async (payload: RestockThunkArgs, { rejectWithValue }) => {
     try {
       const updated = await partService.restockPart(payload.partId, payload);
       return updated;
@@ -130,10 +127,7 @@ export const restockPart = createAsyncThunk(
 
 export const getAllRestockLogs = createAsyncThunk(
   "parts/getAllRestockLogs",
-  async (
-    { partId }: { partId: string },
-    { rejectWithValue }
-  ) => {
+  async ({ partId }: { partId: string }, { rejectWithValue }) => {
     try {
       const logs = await partService.getAllRestockLogs(partId);
       return logs;
@@ -147,10 +141,7 @@ export const getAllRestockLogs = createAsyncThunk(
 
 export const getRestockLogById = createAsyncThunk(
   "parts/getRestockLogById",
-  async (
-    { logId }: { logId: string },
-    { rejectWithValue }
-  ) => {
+  async ({ logId }: { logId: string }, { rejectWithValue }) => {
     try {
       const log = await partService.getRestockLogById(logId);
       return log;
@@ -185,6 +176,27 @@ export const fetchDeletePart = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch Delete Parts "
+      );
+    }
+  }
+);
+
+export const restorePartData = createAsyncThunk(
+  "part/restorePartData",
+  async (
+    {
+      id,
+    }: {
+      id: string;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const asset = await partService.restorePartData(id);
+      return asset;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to restore Part Data"
       );
     }
   }

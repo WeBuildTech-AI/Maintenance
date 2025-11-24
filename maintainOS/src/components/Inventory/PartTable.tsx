@@ -13,6 +13,7 @@ import toast from "react-hot-toast";
 import SettingsModal from "../utils/SettingsModal";
 import { formatDateOnly } from "../utils/Date";
 import { partService } from "../../store/parts";
+import AssetTableModal from "../Assets/AssetsTable/AssetTableModal";
 
 // --- Helper Functions ---
 
@@ -156,6 +157,8 @@ export function PartTable({
   const areAllSelected =
     allPartIds.length > 0 && selectedCount === allPartIds.length;
   const isIndeterminate = selectedCount > 0 && !areAllSelected;
+  const [isOpenPartDetailsModal, setIsOpenPartDetailsModal] = useState(false);
+  const [selectedPartTable, setSelectedPartTable] = useState<string[]>([]);
 
   useEffect(() => {
     if (headerCheckboxRef.current) {
@@ -305,7 +308,16 @@ export function PartTable({
                 </ShadCNAvatar>
               )}
             </div>
-            <span className="truncate capitalize">{name}</span>
+            <span
+              className="truncate cursor-pointer hover:text-orange-600 hover:underline"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedPartTable(record.fullPart);
+                setIsOpenPartDetailsModal(true);
+              }}
+            >
+              {name}
+            </span>
           </div>
         );
       },
@@ -481,6 +493,16 @@ export function PartTable({
         currentShowDeleted={showDeleted}
         componentName="Parts"
       />
+
+      {isOpenPartDetailsModal && (
+        <AssetTableModal
+          data={selectedPartTable}
+          onClose={() => setIsOpenPartDetailsModal(false)}
+          showDetailsSection={"part"}
+          restoreData={"Restore"}
+          fetchData={fetchPartsData}
+        />
+      )}
     </div>
   );
 }

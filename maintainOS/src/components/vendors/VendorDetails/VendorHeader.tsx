@@ -11,17 +11,24 @@ import {
 import { type Vendor } from "../vendors.types";
 import DeleteModal from "./DeleteModal";
 import { Tooltip } from "../../ui/tooltip";
+import { vendorService } from "../../../store/vendors";
 
 interface VendorHeaderProps {
   vendor: Vendor;
   onEdit: (vendor: Vendor) => void;
   handleDeleteVendor: (id: string) => void;
+  restoreData: string;
+  fetchVendors: () => void;
+  onClose: () => void;
 }
 
 export default function VendorHeader({
   vendor,
   onEdit,
   handleDeleteVendor,
+  restoreData,
+  fetchVendors,
+  onClose,
 }: VendorHeaderProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const modalRef = useRef<HTMLDivElement | null>(null);
@@ -51,6 +58,17 @@ export default function VendorHeader({
       toast.error("Failed to delete vendor."); // ✅ Added error toast
     } finally {
       setShowDeleteModal(false);
+    }
+  };
+
+  const handleRestoreVendorDeleteData = async (id) => {
+    try {
+      await vendorService.restoreVendorData(id);
+      fetchVendors();
+      onClose();
+      toast.success("Successfully Restore the Data");
+    } catch (err) {
+      toast.error("Failed to Restore the Vednor Data");
     }
   };
 
@@ -111,6 +129,13 @@ export default function VendorHeader({
                 <DropdownMenuItem onClick={() => setShowDeleteModal(true)}>
                   Delete
                 </DropdownMenuItem>
+                {restoreData && (
+                  <DropdownMenuItem
+                    onClick={() => handleRestoreVendorDeleteData(vendor.id)}
+                  >
+                    Restore
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

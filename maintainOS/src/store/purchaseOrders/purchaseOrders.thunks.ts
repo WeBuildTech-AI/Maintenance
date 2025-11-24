@@ -282,3 +282,24 @@ export const fetchDeletePart = createAsyncThunk(
     }
   }
 );
+
+export const restorePurchaseOrderData = createAsyncThunk(
+  "purchasrOrder/restorePurchaseOrderData",
+  async (
+    {
+      id,
+    }: {
+      id: string;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const asset = await purchaseOrderService.restorePurchaseOrderData(id);
+      return asset;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to restore Purchase Order Data"
+      );
+    }
+  }
+);

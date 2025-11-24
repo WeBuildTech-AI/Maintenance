@@ -97,4 +97,9 @@ export const partService = {
     const res = await api.get(`parts/deleted/all`);
     return res.data;
   },
+
+  restorePartData: async (id: string): Promise<PartResponse> => {
+    const res = await api.patch(`/parts/${id}/restore`);
+    return res.data;
+  },
 };

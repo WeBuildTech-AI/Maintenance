@@ -92,4 +92,9 @@ export const vendorService = {
     const res = await api.get(`vendors/deleted/all`);
     return res.data;
   },
+
+  restoreVendorData: async (id: string): Promise<VendorResponse> => {
+    const res = await api.patch(`/vendors/${id}/restore`);
+    return res.data;
+  },
 };

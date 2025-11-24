@@ -426,6 +426,8 @@ export function LocationTable({
           onClose={() => setIsLocationTableModalOpen(false)}
           data={selectedLocationTableData.fullLocation}
           showDetailsSection={"location"}
+
+          fetchData={fetchLocations}
         />
       )}
     </div>

@@ -23,6 +23,7 @@ import { LocationImages } from "./LocationImages";
 import { LocationFiles } from "./LocationFiles";
 import type { Location } from "./location.types";
 import { Tooltip } from "../ui/tooltip";
+import { locationService } from "../../store/locations";
 
 // Props interface
 interface LocationDetailsProps {
@@ -34,7 +35,10 @@ interface LocationDetailsProps {
     email: string;
   } | null;
   onEdit?: (location: Location) => void;
-  handleShowNewSubLocationForm;
+  handleShowNewSubLocationForm: boolean;
+  restoreData: string;
+  fetchLocation: () => void;
+  onClose: () => boolean;
 }
 
 const LocationDetails: React.FC<LocationDetailsProps> = ({
@@ -43,10 +47,24 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
   user,
   onEdit,
   handleShowNewSubLocationForm,
+  restoreData,
+  fetchLocation,
+  onClose,
 }) => {
   const navigate = useNavigate();
   const [openDeleteModal, setOpenDeleteModal] = React.useState(false);
   const modalRef = React.useRef<HTMLDivElement>(null);
+
+  const handleRestoreLocationData = async (id) => {
+    try {
+      await locationService.restoreLocationData(id);
+      fetchLocation();
+      onClose();
+      toast.success("Successfully Restore the Location Data");
+    } catch (err) {
+      toast.error("Failed to Restore the Location Data");
+    }
+  };
 
   return (
     <div className="mx-auto flex flex-col h-full bg-white">
@@ -87,12 +105,24 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="mt-2">
+                {/* {!restoreData && ( */}
                 <DropdownMenuItem
                   // onClick={() => handleDeleteLocation(selectedLocation.id)}
                   onClick={() => setOpenDeleteModal(true)}
                 >
                   Delete
                 </DropdownMenuItem>
+                {/* )} */}
+                {restoreData && (
+                  <DropdownMenuItem
+                    // onClick={() => handleDeleteLocation(selectedLocation.id)}
+                    onClick={() =>
+                      handleRestoreLocationData(selectedLocation?.id)
+                    }
+                  >
+                    {restoreData}
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

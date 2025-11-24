@@ -158,3 +158,24 @@ export const fetchDeleteVendor = createAsyncThunk(
     }
   }
 );
+
+export const restoreVendorData = createAsyncThunk(
+  "vendor/restoreVendorData",
+  async (
+    {
+      id,
+    }: {
+      id: string;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const asset = await vendorService.restoreVendorData(id);
+      return asset;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to restore Vendor Data"
+      );
+    }
+  }
+);
