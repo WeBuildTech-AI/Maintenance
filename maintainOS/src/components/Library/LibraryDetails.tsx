@@ -34,13 +34,12 @@ function formatDisplayDate(dateString: string) {
   }
 }
 
-// --- DetailsTabContent component (UPDATED) ---
+// --- DetailsTabContent component ---
 const DetailsTabContent = ({ procedure }: { procedure: any }) => {
   const createdDate = formatDisplayDate(procedure.createdAt);
   const updatedDate = formatDisplayDate(procedure.updatedAt);
   const procedureId = procedure.id || "N/A";
 
-  // --- Get the user's full name from the auth slice ---
   const user = useSelector((state: RootState) => state.auth.user);
   const fullName = user?.fullName;
 
@@ -55,13 +54,11 @@ const DetailsTabContent = ({ procedure }: { procedure: any }) => {
             {createdDate}
           </span>
         </div>
-        {/* --- 👇 [THE FIX] Added fullName to the "Last updated" line --- */}
         <div className="flex items-center text-sm text-gray-600 pl-8">
           <span>
             Last updated by <span className="font-semibold text-gray-900">{fullName || "Unknown User"}</span> on {updatedDate}
           </span>
         </div>
-        {/* --- END FIX --- */}
       </div>
       <div className="pt-6 border-t border-gray-200">
         <p className="text-sm text-gray-500 mb-2">Procedure ID</p>
@@ -130,9 +127,16 @@ export function LibraryDetails({
     }
   };
 
+  // --- ✅ FIX: Ensure data is passed correctly in state ---
   const handleUseInWorkOrder = () => {
     if (!selectedProcedure) return;
-    navigate(`/work-orders/create?procedureId=${selectedProcedure.id}`);
+    console.log("Navigating to Work Order with Procedure:", selectedProcedure);
+    
+    navigate(`/work-orders/create?procedureId=${selectedProcedure.id}`, {
+      state: { 
+        procedureData: selectedProcedure // This passes the full object instantly
+      }
+    });
   };
 
   if (!selectedProcedure) {
@@ -219,7 +223,7 @@ export function LibraryDetails({
         </div>
       </div>
 
-      {/* --- CONDITIONAL CONTENT --- */}
+      {/* --- CONTENT --- */}
       <div
         className="flex-1 overflow-y-auto"
         style={{ background: "#f9fafb" }}
@@ -268,7 +272,7 @@ export function LibraryDetails({
         </Button>
       </div>
 
-      {/* --- Confirmation Modal --- */}
+      {/* --- Modals --- */}
       <ConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}

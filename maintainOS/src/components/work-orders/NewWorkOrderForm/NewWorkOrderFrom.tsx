@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
+import { Loader2 } from "lucide-react"; // Added Loader Icon
 
 import { WorkOrderDetails } from "./WorkOrderDetails";
 import { AssetsAndProcedures } from "./AssetsAndProcedures";
@@ -27,7 +28,7 @@ import TimeOverviewPanel from "./../panels/TimeOverviewPanel";
 import OtherCostsPanel from "./../panels/OtherCostsPanel";
 import UpdatePartsPanel from "./../panels/UpdatePartsPanel";
 
-// Helper to parse date strings safely into ISO format
+// Helper: Safe Date Parsing
 function parseDateInputToISO(input?: string): string | undefined {
   if (!input) return undefined;
   const v = input.trim();
@@ -73,7 +74,6 @@ export function NewWorkOrderForm({
 
   const isEditMode = propIsEditMode ?? location.pathname.includes("/edit");
   const id = editId ?? existingWorkOrder?.id ?? null;
-  // Check if we are on the create route to handle resets properly
   const isCreateRoute = location.pathname.endsWith("/create");
 
   const [currentPanel, setCurrentPanel] = useState<'form' | 'time' | 'cost' | 'parts'>('form');
@@ -103,7 +103,7 @@ export function NewWorkOrderForm({
   const [partIds, setPartIds] = useState<string[]>([]);
   const [vendorIds, setVendorIds] = useState<string[]>([]);
 
-  // Options for Dropdowns
+  // Options
   const [locationOptions, setLocationOptions] = useState<SelectOption[]>([]);
   const [assetOptions, setAssetOptions] = useState<SelectOption[]>([]);
   const [teamOptions, setTeamOptions] = useState<SelectOption[]>([]);
@@ -131,45 +131,53 @@ export function NewWorkOrderForm({
     }
   };
 
-  // ✅ FIX: Load Procedure from URL using `fetchProcedureById`
+  // --- ✅ CRITICAL FIX: Procedure Loading Logic ---
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const procedureId = params.get("procedureId");
+    
+    // If we already have it linked, don't do anything
+    if (linkedProcedure?.id === procedureId) return;
 
-    // Only run if we have an ID in URL and haven't loaded it yet
-    if (procedureId && !linkedProcedure) {
+    // 1. Priority: Check Location State (Fastest / Instant)
+    const stateProcedure = location.state?.procedureData;
+    if (stateProcedure && stateProcedure.id === procedureId) {
+      console.log("✅ [Prod Fix] Loaded procedure from Navigation State:", stateProcedure);
+      setLinkedProcedure(stateProcedure);
+      return;
+    }
+
+    // 2. Fallback: API Fetch (Slow but Reliable if ID exists)
+    if (procedureId) {
+      console.log("⚠️ [Prod Fix] State missing. Fetching from API...");
+      
       const fetchSpecificProcedure = async () => {
         setIsProcedureLoading(true);
         try {
-          // 🔴 OLD BUGGY CODE: 
-          // const allProcs = await procedureService.fetchProcedures();
-          // const foundProc = allProcs.find((p: any) => p.id === procedureId);
-
-          // 🟢 NEW FIXED CODE: Directly fetch the specific ID
           const foundProc = await procedureService.fetchProcedureById(procedureId);
           
           if (foundProc) {
+            console.log("✅ [Prod Fix] API Fetch Successful:", foundProc);
             setLinkedProcedure(foundProc);
-            // Clean up the URL so we don't re-fetch on refresh if user navigates away
-            navigate(location.pathname, { replace: true });
           } else {
-            toast.error("Could not find the selected procedure.");
+            console.error("❌ [Prod Fix] Procedure not found in API.");
+            toast.error("Could not load procedure.");
           }
         } catch (err) {
-          console.error("Error fetching linked procedure:", err);
-          toast.error("Failed to load procedure template.");
+          console.error("❌ [Prod Fix] API Error:", err);
+          toast.error("Failed to load procedure.");
         } finally {
           setIsProcedureLoading(false);
         }
       };
+      
       fetchSpecificProcedure();
     }
-  }, [location.search, linkedProcedure, navigate, location.pathname]);
+  }, [location.search, location.state]); // Removed `linkedProcedure` to prevent loops
 
-  // Load Existing Data (Edit Mode)
+  // --- Load Existing Work Order (Edit Mode) ---
   useEffect(() => {
-    // If we are on CREATE route, DO NOT load existing data (unless it's a partial re-load logic)
-    if (isCreateRoute) return;
+    if (isCreateRoute) return; // Don't run in create mode
 
     const fillFields = (data: any) => {
       if (!data) return;
@@ -222,9 +230,11 @@ export function NewWorkOrderForm({
     loadWorkOrder();
   }, [dispatch, id, existingWorkOrder, isEditMode, isCreateRoute]);
 
-  // Reset form when explicitly creating (only if no procedureId is present to avoid wiping the linked procedure)
+  // --- Reset Form on Create Mode (Careful with Procedure) ---
   useEffect(() => {
-    if (isCreateRoute && !location.search.includes("procedureId")) {
+    const hasProcedure = location.search.includes("procedureId");
+    
+    if (isCreateRoute && !hasProcedure && !isEditMode) {
       setWorkOrderName("");
       setDescription("");
       setLocationId("");
@@ -242,7 +252,7 @@ export function NewWorkOrderForm({
       setVendorIds([]);
       setLinkedProcedure(null);
     }
-  }, [location.pathname, location.search, isCreateRoute]);
+  }, [location.pathname, location.search, isCreateRoute, isEditMode]);
 
   const handleSubmit = async () => {
     try {
@@ -255,18 +265,10 @@ export function NewWorkOrderForm({
       
       if (workOrderName) formData.append("title", workOrderName);
       if (description) formData.append("description", description);
-      
-      // Default status
       formData.append("status", "open");
-
       if (selectedWorkType) formData.append("workType", selectedWorkType);
-
-      // Note: Recurrence backend logic might need adjustment, ensure backend accepts this field
-      // if (recurrence) formData.append("recurrence", recurrence);
-
       if (qrCodeValue) formData.append("qrCode", qrCodeValue);
 
-      // Priority mapping
       const priorityMap: Record<string, string> = {
         None: "low", Low: "low", Medium: "medium", High: "high", Urgent: "urgent",
       };
@@ -275,7 +277,6 @@ export function NewWorkOrderForm({
 
       if (locationId) formData.append("locationId", locationId);
 
-      // Arrays - Only append if length > 0
       if (assetIds.length > 0) assetIds.forEach((i) => i && formData.append("assetIds[]", i));
       if (vendorIds.length > 0) vendorIds.forEach((i) => i && formData.append("vendorIds[]", i));
       if (partIds.length > 0) partIds.forEach((i) => i && formData.append("partIds[]", i));
@@ -283,12 +284,10 @@ export function NewWorkOrderForm({
       if (categoryIds.length > 0) categoryIds.forEach((i) => i && formData.append("categoryIds[]", i));
       if (selectedUsers.length > 0) selectedUsers.forEach((i) => i && formData.append("assigneeIds[]", i));
 
-      // ✅ Attach the Linked Procedure ID
       if (linkedProcedure) {
         formData.append("procedureIds[]", linkedProcedure.id);
       }
 
-      // Dates - Only append if valid
       const isoDue = parseDateInputToISO(dueDate);
       const isoStart = parseDateInputToISO(startDate);
       if (isoDue) formData.append("dueDate", isoDue);
@@ -299,18 +298,6 @@ export function NewWorkOrderForm({
         toast.error("User information missing. Please re-login.");
         return;
       }
-
-      // Debug payload
-      const payloadObj: any = {};
-      formData.forEach((value, key) => {
-        if (payloadObj[key]) {
-            if (!Array.isArray(payloadObj[key])) payloadObj[key] = [payloadObj[key]];
-            payloadObj[key].push(value);
-        } else {
-            payloadObj[key] = value;
-        }
-      });
-      console.log("🚀 FINAL API PAYLOAD:", payloadObj);
 
       if (isEditMode && id) {
         await (dispatch as any)(
@@ -337,8 +324,14 @@ export function NewWorkOrderForm({
     }
   };
 
+  // ✅ Loading State UI
   if (loading || isProcedureLoading)
-    return <div className="flex items-center justify-center h-full"><p className="text-gray-600 text-sm">Loading...</p></div>;
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-500">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <p className="text-sm font-medium">Loading...</p>
+      </div>
+    );
 
   // Panel Switching
   if (currentPanel === 'time') return <TimeOverviewPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={existingWorkOrder} workOrderId={id} />;
@@ -385,7 +378,6 @@ export function NewWorkOrderForm({
             onRemoveProcedure={() => setLinkedProcedure(null)}
             onPreviewProcedure={() => setIsPreviewOpen(true)}
             onOpenProcedureModal={() => setIsAddProcModalOpen(true)}
-            // ✅ Ensure setter is passed if needed by child, though AssetsAndProcedures uses callbacks
             setLinkedProcedure={setLinkedProcedure} 
           />
 
