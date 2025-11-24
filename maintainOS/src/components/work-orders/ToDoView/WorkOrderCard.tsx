@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Lock,
@@ -9,9 +9,9 @@ import {
   RefreshCcw,
   CheckCircle2,
   ChevronDown,
+  AlertCircle // Added icon for overdue
 } from "lucide-react";
 
-// ✅ Import Store & Thunks
 import type { AppDispatch } from "../../../store";
 import {
   patchWorkOrderComplete,
@@ -19,16 +19,6 @@ import {
   updateWorkOrder
 } from "../../../store/workOrders/workOrders.thunks";
 import toast from "react-hot-toast";
-
-// Helper to generate consistent colors from strings
-const stringToColor = (str: string) => {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const c = (hash & 0x00ffffff).toString(16).toUpperCase();
-  return "#" + "00000".substring(0, 6 - c.length) + c;
-};
 
 export function WorkOrderCard({
   wo,
@@ -40,7 +30,6 @@ export function WorkOrderCard({
   const user = useSelector((state: any) => state.auth?.user);
   const isSelected = selectedWorkOrder?.id === wo.id;
 
-  // 🧠 LOGICAL AVATAR: BASED ON TITLE (Not Assignee)
   const getTitleInitials = (title: string) => {
     if (!title) return "WO";
     const parts = title.trim().split(" ");
@@ -50,8 +39,6 @@ export function WorkOrderCard({
 
   const titleInitials = getTitleInitials(wo.title);
   
-  // Generate a soft background color based on the title so it's consistent but distinct
-  // We use a fixed set of colors for better UI than random hex
   const colors = [
     "bg-red-100 text-red-700 border-red-200",
     "bg-orange-100 text-orange-700 border-orange-200",
@@ -69,7 +56,6 @@ export function WorkOrderCard({
     "bg-rose-100 text-rose-700 border-rose-200",
   ];
   
-  // Simple hash function to pick a color index
   const hash = wo.title.split("").reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
   const colorClass = colors[hash % colors.length];
 
@@ -118,7 +104,16 @@ export function WorkOrderCard({
     }
   };
 
-  // ✅ Status Handler
+  // ✅ Check for Overdue
+  const isOverdue = useMemo(() => {
+    if (!wo.dueDate) return false;
+    if (wo.status === "done" || wo.status === "completed") return false;
+    
+    const due = new Date(wo.dueDate);
+    const now = new Date();
+    return due < now; 
+  }, [wo.dueDate, wo.status]);
+
   const handleStatusChange = async (newStatus: string) => {
     setStatusOpen(false);
     if (wo.status === newStatus) return;
@@ -155,6 +150,11 @@ export function WorkOrderCard({
     }
   };
 
+  // ✅ Prepare Assignees
+  const assignees = wo.assignees || [];
+  const displayAssignees = assignees.slice(0, 3); // Show max 3
+  const remainingAssignees = assignees.length - 3;
+
   return (
     <div
       onClick={() => onSelectWorkOrder(wo)}
@@ -164,7 +164,7 @@ export function WorkOrderCard({
       <div className="p-4">
         <div className="flex items-start gap-3">
 
-          {/* ✅ LOGICAL AVATAR: TITLE INITIALS */}
+          {/* Avatar (Title Initials) */}
           <div className="relative flex-shrink-0">
             <div
               className={`h-10 w-10 flex items-center justify-center rounded-full border overflow-hidden shadow-sm ${colorClass}`}
@@ -194,7 +194,7 @@ export function WorkOrderCard({
               )}
             </div>
 
-            {/* Status + Priority */}
+            {/* Status + Priority + Overdue + Assignees */}
             <div className="flex items-center gap-2 flex-wrap">
               {/* Status Dropdown */}
               <div className="relative" ref={dropdownRef}>
@@ -238,8 +238,39 @@ export function WorkOrderCard({
                 </span>
               )}
 
-              {/* Due Date */}
-              {wo.dueDate && (
+              {/* ✅ Overdue Chip */}
+              {isOverdue && (
+                <span className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium bg-red-100 text-red-700 border border-red-200 ml-auto">
+                   <AlertCircle size={10} /> Overdue
+                </span>
+              )}
+
+              {/* ✅ Assignee Avatar Group */}
+              {!isOverdue && assignees.length > 0 && (
+                 <div className="flex items-center -space-x-1.5 ml-auto">
+                    {displayAssignees.map((u: any, i: number) => (
+                        <div 
+                            key={u.id || i} 
+                            className="w-6 h-6 rounded-full border border-white bg-gray-100 flex items-center justify-center text-[9px] font-bold text-gray-600 overflow-hidden"
+                            title={u.fullName || u.name}
+                        >
+                            {u.avatar ? (
+                                <img src={u.avatar} alt={u.fullName} className="w-full h-full object-cover" />
+                            ) : (
+                                (u.fullName || u.name || "?")[0].toUpperCase()
+                            )}
+                        </div>
+                    ))}
+                    {remainingAssignees > 0 && (
+                        <div className="w-6 h-6 rounded-full border border-white bg-gray-200 flex items-center justify-center text-[9px] font-bold text-gray-600">
+                            +{remainingAssignees}
+                        </div>
+                    )}
+                 </div>
+              )}
+
+              {/* Due Date (Only if NOT overdue, else chip replaces it or sits next to it) */}
+              {!isOverdue && wo.dueDate && assignees.length === 0 && (
                 <span className="text-xs text-gray-400 flex items-center gap-1 ml-auto">
                   Due {formatDate(wo.dueDate)}
                 </span>

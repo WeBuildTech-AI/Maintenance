@@ -3,10 +3,10 @@
 export interface WorkOrderComment {
   id: string;
   workOrderId: string;
-  authorId: string; // ✅ Matches API
+  authorId: string;
   message: string;
   createdAt: string;
-  author?: {        // ✅ Matches API
+  author?: {
     id: string;
     fullName: string;
     email?: string;
@@ -23,15 +23,11 @@ export interface WorkOrderLog {
   oldValue?: string | null;
   newValue?: string | null;
   createdAt: string;
-  author?: {           // ✅ Matches API JSON "author"
+  author?: {
     id: string;
     fullName: string;
     avatarUrl?: string;
   };
-  // Optional legacy fields (can be kept for compatibility)
-  action?: string;
-  description?: string;
-  performedBy?: string;
 }
 
 export interface OtherCost {
@@ -68,7 +64,7 @@ export interface WorkOrderTimeEntry {
 export interface CreateTimeEntryData {
   userId: string;
   totalMinutes: number;
-  entryType: string; // 'work', 'travel', etc.
+  entryType: string;
   rate?: number;
 }
 
@@ -83,6 +79,7 @@ export interface WorkOrderResponse {
   startDate?: string;
   assigneeIds?: string[];
   assignedTeamIds?: string[];
+  
   // Expanded objects for UI
   assignees?: any[];
   teams?: any[];
@@ -96,7 +93,7 @@ export interface WorkOrderResponse {
   
   otherCosts?: OtherCost[];
   timeEntries?: WorkOrderTimeEntry[];
-  comments?: WorkOrderComment[]; // ✅ Added comments array
+  comments?: WorkOrderComment[];
   
   createdBy?: string;
   createdAt: string;
@@ -139,7 +136,6 @@ export interface AssignWorkOrderData {
   assigneeIds: string[];
 }
 
-// ✅ Payload for Adding Comment
 export interface AddCommentPayload {
   message: string;
 }
@@ -147,7 +143,7 @@ export interface AddCommentPayload {
 export interface WorkOrdersState {
   workOrders: WorkOrderResponse[];
   selectedWorkOrder: WorkOrderResponse | null;
-  logs: WorkOrderLog[]; // ✅ Added Logs State
+  logs: WorkOrderLog[];
   loading: boolean;
   error: string | null;
 }

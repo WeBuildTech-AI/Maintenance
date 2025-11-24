@@ -1,3 +1,4 @@
+// src/store/workOrders/workOrders.service.ts
 import api from "../auth/auth.service";
 import type {
   AssignWorkOrderData,
@@ -63,6 +64,16 @@ export const workOrderService = {
 
   // --- Status Updates ---
 
+  // ✅ NEW: Specific Status Update API
+  updateWorkOrderStatus: async (
+    id: string, 
+    authorId: string, 
+    status: string
+  ): Promise<WorkOrderResponse> => {
+    const res = await api.patch(`/work-orders/${id}/status/${authorId}`, { status });
+    return res.data;
+  },
+
   patchWorkOrderComplete: async (id: string): Promise<WorkOrderResponse> => {
     const res = await api.patch(`/work-orders/patch/${id}/complete`);
     return res.data;
@@ -96,9 +107,10 @@ export const workOrderService = {
     return res.data;
   },
 
-  // --- LOGS (Updated) ---
+  // --- LOGS ---
 
   fetchWorkOrderLogs: async (workOrderId: string): Promise<WorkOrderLog[]> => {
+    // ✅ Fetches logs for specific Work Order ID
     const res = await api.get(`/work-orders/get/work-order-logs/${workOrderId}`);
     
     // Safe Data Extraction
