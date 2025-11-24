@@ -18,6 +18,8 @@ interface VendorHeaderProps {
   onEdit: (vendor: Vendor) => void;
   handleDeleteVendor: (id: string) => void;
   restoreData: string;
+  fetchVendors: () => void;
+  onClose: () => void;
 }
 
 export default function VendorHeader({
@@ -25,6 +27,8 @@ export default function VendorHeader({
   onEdit,
   handleDeleteVendor,
   restoreData,
+  fetchVendors,
+  onClose,
 }: VendorHeaderProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const modalRef = useRef<HTMLDivElement | null>(null);
@@ -58,8 +62,14 @@ export default function VendorHeader({
   };
 
   const handleRestoreVendorDeleteData = async (id) => {
-    await vendorService.restoreVendorData(id);
-    
+    try {
+      await vendorService.restoreVendorData(id);
+      fetchVendors();
+      onClose();
+      toast.success("Successfully Restore the Data");
+    } catch (err) {
+      toast.error("Failed to Restore the Vednor Data");
+    }
   };
 
   return (

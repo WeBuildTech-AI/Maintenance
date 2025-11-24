@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import toast from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../../store";
-import { deleteVendor } from "../../../store/vendors";
+import { deleteVendor, fetchVendors } from "../../../store/vendors";
 import {
   NewContactModal,
   type ContactFormData,
@@ -24,7 +24,8 @@ interface VendorDetailsProps {
   onEdit: (vendor: Vendor) => void;
   onDeleteSuccess?: (id: string) => void;
   restoreData: string;
-  onClose: () => boolean;
+  onClose: () => void;
+  fetchVendors:() => void;
 }
 
 export default function VendorDetails({
@@ -33,6 +34,7 @@ export default function VendorDetails({
   onDeleteSuccess,
   restoreData,
   onClose,
+  fetchVendors,
 }: VendorDetailsProps) {
   if (!vendor) {
     return (
@@ -113,7 +115,7 @@ export default function VendorDetails({
         handleDeleteVendor={handleDeleteVendor}
         restoreData={restoreData}
         onClose={onClose}
-        
+        fetchVendors={fetchVendors}
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto space-y-8 py-8 px-6 bg-white">

@@ -20,17 +20,24 @@ import { deletePart } from "../../../store/parts/parts.thunks";
 import toast from "react-hot-toast";
 import { PartImages } from "./PartImages";
 import { PartFiles } from "./PartFiles";
+import { partService } from "../../../store/parts";
 
 export function PartDetails({
   item,
   stockStatus,
+  onClose,
+  restoreData,
   onEdit,
-  onDeleteSuccess, // ✅ added prop
+  onDeleteSuccess, //added prop
+  fetchPartData,
 }: {
   item: any;
+  restoreData: string;
+  onClose: () => Boolean;
   stockStatus?: { ok: boolean; delta: number } | null;
   onEdit: () => void;
   onDeleteSuccess: (id: string) => void; // ✅ added type
+  fetchPartData: () => void;
 }) {
   const [activeTab, setActiveTab] = useState<"details" | "history">("details");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -67,30 +74,39 @@ export function PartDetails({
       toast.success("Part deleted successfully!");
       setShowDeleteModal(false);
 
-      // ✅ instantly update list
+      //  instantly update list
       onDeleteSuccess(item.id);
 
-      // ✅ navigate back to inventory
+      //  navigate back to inventory
       navigate("/inventory");
     } catch (error: any) {
-      console.error("❌ Delete failed:", error);
+      console.error(" Delete failed:", error);
       toast.error(error || "Failed to delete part");
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ instant navigation + send data to edit route (prefill)
+  //  instant navigation + send data to edit route (prefill)
   const handleEditPart = () => {
     setEditLoading(true);
     navigate(`/inventory/${item.id}/edit`, {
       state: { partData: item },
     });
-    // small timeout just to show the overlay while the route mounts
     setTimeout(() => setEditLoading(false), 800);
   };
 
-  // ✅ Fallback handling for units and part type
+  const handleRestorePartData = async (id) => {
+    try {
+      await partService.restorePartData(id);
+      onClose();
+      fetchPartData();
+      toast.success("Successfully Restore the Data");
+    } catch (err) {
+      toast.error("Failed to Restore the Data");
+    }
+  };
+
   const availableUnits =
     item.unitsInStock ?? item.locations?.[0]?.unitsInStock ?? 0;
   const minUnits = item.minInStock ?? item.locations?.[0]?.minimumInStock ?? 0;
@@ -165,7 +181,7 @@ export function PartDetails({
               <MoreVertical className="h-5 w-5" />
             </Button>
 
-            {menuOpen && (
+            {menuOpen && !restoreData && (
               <div
                 ref={menuRef}
                 className="absolute mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50"
@@ -190,6 +206,31 @@ export function PartDetails({
                     className="px-4 py-2 text-red-500 hover:bg-red-50 cursor-pointer"
                   >
                     Delete
+                  </li>
+                </ul>
+              </div>
+            )}
+            {restoreData && menuOpen && (
+              <div
+                ref={menuRef}
+                className="absolute mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50"
+                style={{ right: "10px", transform: "translateX(-10%)" }}
+              >
+                <ul className="text-gray-800 text-sm">
+                  <li
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setShowDeleteModal(true);
+                    }}
+                    className="px-4 py-2 text-red-500 hover:bg-red-50 cursor-pointer"
+                  >
+                    Delete
+                  </li>
+                  <li
+                    className="px-4 py-2 text-red-500 hover:bg-red-50 cursor-pointer"
+                    onClick={() => handleRestorePartData(item.id)}
+                  >
+                    Restore
                   </li>
                 </ul>
               </div>

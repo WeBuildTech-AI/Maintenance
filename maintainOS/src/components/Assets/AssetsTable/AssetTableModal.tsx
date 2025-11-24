@@ -7,6 +7,9 @@ import type { Asset } from "../Assets";
 import { MeterDetail } from "../../Meters/MeterDetail/MeterDetail";
 import LocationDetails from "../../Locations/LocationDetails";
 import VendorDetails from "../../vendors/VendorDetails/VendorDetails";
+import { PartDetails } from "../../Inventory/PartDetail/PartDetails";
+import PurchaseOrderDetails from "../../purchase-orders/PurchaseOrderDetails";
+import { addressToLine, formatMoney } from "../../purchase-orders/helpers";
 
 // Define the props interface
 interface AssetTableModalProps {
@@ -94,8 +97,33 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
           )}
 
           {showDetailsSection === "vendor" && (
-            <VendorDetails vendor={data}  restoreData={restoreData} onClose={onClose}  />
+            <VendorDetails
+              vendor={data}
+              restoreData={restoreData}
+              onClose={onClose}
+              fetchVendors={fetchData}
+            />
           )}
+
+          {showDetailsSection === "part" && (
+            <PartDetails
+              onClose={onClose}
+              restoreData={restoreData}
+              item={data}
+              fetchPartData={fetchData}
+            />
+          )}
+
+          {/* {showDetailsSection === "purchaseOrder" && (
+            <PurchaseOrderDetails
+              onClose={onClose}
+              restoreData={restoreData}
+              selectedPO={data}
+              fetchPurchaseOrder={fetchData}
+              formatMoney={formatMoney}
+              addressToLine={addressToLine}
+            />
+          )} */}
         </div>
       </div>
     </div>

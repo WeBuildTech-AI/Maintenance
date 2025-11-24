@@ -70,13 +70,12 @@ interface TaxItems {
 
 // NEW INTERFACE FOR FETCHED CONTACT DETAILS
 interface VendorContact {
-    id: string;
-    fullName: string;
-    role?: string;
-    email?: string;
-    phoneNumber?: string;
+  id: string;
+  fullName: string;
+  role?: string;
+  email?: string;
+  phoneNumber?: string;
 }
-
 
 interface PurchaseOrder {
   id: string;
@@ -105,7 +104,7 @@ interface PurchaseOrder {
   phoneOrMail?: string;
   taxesAndCosts?: TaxItems[];
   // --- ADDED vendorContactIds TO PO INTERFACE ---
-  vendorContactIds?: string[]; 
+  vendorContactIds?: string[];
 }
 
 interface PurchaseOrderDetailsProps {
@@ -127,6 +126,8 @@ interface PurchaseOrderDetailsProps {
   setComment: (comment: string) => void;
   handleEditClick: () => void;
   fetchPurchaseOrder: () => void;
+  restoreData: String;
+  onClose:() => boolean;
 }
 
 const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
@@ -144,6 +145,8 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   setApproveModal,
   StatusBadge,
   fetchPurchaseOrder,
+  restoreData,
+  onClose,
 }) => {
   const [fullFillModal, setFullFillModal] = React.useState(false);
   const [continueModal, setContinueModal] = React.useState(false);
@@ -153,11 +156,12 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   const [log, setLog] = React.useState([]);
   const modalRef = React.useRef<HTMLDivElement>(null);
   const user = useSelector((state: RootState) => state.auth.user);
-  
-  // --- NEW STATE: To store detailed contact objects ---
-  const [contactDetails, setContactDetails] = React.useState<VendorContact[]>([]); 
-  const [isLoadingContacts, setIsLoadingContacts] = React.useState(false);
 
+  // --- NEW STATE: To store detailed contact objects ---
+  const [contactDetails, setContactDetails] = React.useState<VendorContact[]>(
+    []
+  );
+  const [isLoadingContacts, setIsLoadingContacts] = React.useState(false);
 
   //  Change the status in Purchase Order to approve
   const handleApprove = async (id: string) => {
@@ -211,30 +215,6 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
       setIsLoading(false);
     }
   };
-  
-  // --- NEW: Function to fetch contact details by IDs ---
-  // const fetchContactDetails = async (contactIds: string[]) => {
-  //   if (contactIds.length === 0) {
-  //     setContactDetails([]);
-  //     return;
-  //   }
-
-  //   setIsLoadingContacts(true);
-  //   try {
-  //     // ASSUMPTION: vendorService has a function like fetchContactsByIds
-  //     // If vendorService.fetchContactsByIds is not available, you would need
-  //     // to loop through IDs and call a single fetch function.
-      
-  //     const details = await vendorService.fetchVendorContactData(selectedPO.vendor.id ,contactIds); 
-  //     setContactDetails(details);
-  //   } catch (error) {
-  //     console.error("Failed to fetch contact details:", error);
-  //     setContactDetails([]);
-  //     toast.error("Failed to load contact details.");
-  //   } finally {
-  //     setIsLoadingContacts(false);
-  //   }
-  // };
 
   // delete Comment in purchase Order
 
@@ -247,7 +227,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
     // Fetch comments and log when PO changes
     fetchPurchaseOrderComments();
     fetchPurchaseOrderLog();
-    
+
     // --- NEW: Fetch contact details when PO or IDs change ---
     // fetchContactDetails(selectedPO.vendorContactIds || []);
   }, [selectedPO.id]);
@@ -298,9 +278,18 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
     }
   };
 
+  const handleRestorePurchaseOrderData = async (id) => {
+    try {
+      await purchaseOrderService.restorePurchaseOrderData(id);
+      fetchPurchaseOrder()
+      onClose();
+    } catch (err) {
+      toast.error("Failed to restore the Purchase order Data");
+    }
+  };
+
   return (
     <div className="h-full flex flex-col min-h-0">
-      {/* HEADER */}
       <div className="p-3 border-b border-border flex-shrink-0">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
@@ -340,38 +329,55 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {selectedPO.status === "pending" && (
+              {!restoreData && (
+                <DropdownMenuContent align="end">
+                  {selectedPO.status === "pending" && (
+                    <DropdownMenuItem
+                      onClick={() => {
+                        handleApprove(selectedPO.id);
+                      }}
+                    >
+                      <Check className="h-4 w-4 mr-2" /> Mark as Approved
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem
                     onClick={() => {
-                      handleApprove(selectedPO.id);
+                      const url = `${window.location.origin}/purchase-orders/${selectedPO?.id}`;
+                      navigator.clipboard.writeText(url);
+                      toast.success("Purchase Order link copied!");
                     }}
                   >
-                    <Check className="h-4 w-4 mr-2" /> Mark as Approved
+                    <CopyPlusIcon className="h-4 w-4 mr-2" /> Copy Link
                   </DropdownMenuItem>
-                )}
-                <DropdownMenuItem
-                  onClick={() => {
-                    const url = `${window.location.origin}/purchase-orders/${selectedPO?.id}`;
-                    navigator.clipboard.writeText(url);
-                    toast.success("Purchase Order link copied!");
-                  }}
-                >
-                  <CopyPlusIcon className="h-4 w-4 mr-2" /> Copy Link
-                </DropdownMenuItem>
-                {(selectedPO.status === "approved" ||
-                  selectedPO.status === "pending") && (
-                  <DropdownMenuItem onClick={() => setModalAction("cancelled")}>
-                    <X className="h-4 w-4 mr-2" /> Cancel
+                  {(selectedPO.status === "approved" ||
+                    selectedPO.status === "pending") && (
+                    <DropdownMenuItem
+                      onClick={() => setModalAction("cancelled")}
+                    >
+                      <X className="h-4 w-4 mr-2" /> Cancel
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem
+                    className="text-red-600"
+                    onClick={() => setModalAction("delete")}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" /> Delete
                   </DropdownMenuItem>
-                )}
-                <DropdownMenuItem
-                  className="text-red-600"
-                  onClick={() => setModalAction("delete")}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" /> Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
+                </DropdownMenuContent>
+              )}
+
+              {restoreData && (
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    className="text-red-600"
+                    onClick={() =>
+                      handleRestorePurchaseOrderData(selectedPO?.id)
+                    }
+                  >
+                    Restore
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              )}
             </DropdownMenu>
           </div>
         </div>
@@ -436,47 +442,57 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
           </div>
 
           {/* NEW CONTACTS SECTION */}
-          {(isLoadingContacts || (contactDetails && contactDetails.length > 0)) && (
+          {(isLoadingContacts ||
+            (contactDetails && contactDetails.length > 0)) && (
             <div>
-                <h3 className="font-medium mb-3 mt-4">Contacts ({contactDetails.length})</h3>
-                <div className="border rounded-lg p-4 space-y-3">
-                    {isLoadingContacts ? (
-                        <Loader />
-                    ) : (
-                        contactDetails.map((contact, index) => (
-                            <div key={contact.id || index} className="flex items-start gap-4 p-2 border-b last:border-b-0">
-                                {/* Initial Avatar */}
-                                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-semibold text-sm shrink-0">
-                                    {renderInitials(contact.fullName || contact.email || "?")}
-                                </div>
-                                
-                                <div className="flex-1">
-                                    <p className="font-medium text-sm">{contact.fullName || "Contact"}</p>
-                                    <div className="text-xs text-muted-foreground space-y-1 mt-0.5">
-                                        {contact.role && (
-                                            <div className="flex items-center gap-1">
-                                                <User className="h-3 w-3" />
-                                                <span>{contact.role}</span>
-                                            </div>
-                                        )}
-                                        {contact.email && (
-                                            <div className="flex items-center gap-1">
-                                                <Mail className="h-3 w-3" />
-                                                <span>{contact.email}</span>
-                                            </div>
-                                        )}
-                                        {contact.phoneNumber && (
-                                            <div className="flex items-center gap-1">
-                                                <PhoneCallIcon className="h-3 w-3" />
-                                                <span>{contact.phoneNumber}</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
+              <h3 className="font-medium mb-3 mt-4">
+                Contacts ({contactDetails.length})
+              </h3>
+              <div className="border rounded-lg p-4 space-y-3">
+                {isLoadingContacts ? (
+                  <Loader />
+                ) : (
+                  contactDetails.map((contact, index) => (
+                    <div
+                      key={contact.id || index}
+                      className="flex items-start gap-4 p-2 border-b last:border-b-0"
+                    >
+                      {/* Initial Avatar */}
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-semibold text-sm shrink-0">
+                        {renderInitials(
+                          contact.fullName || contact.email || "?"
+                        )}
+                      </div>
+
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">
+                          {contact.fullName || "Contact"}
+                        </p>
+                        <div className="text-xs text-muted-foreground space-y-1 mt-0.5">
+                          {contact.role && (
+                            <div className="flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              <span>{contact.role}</span>
                             </div>
-                        ))
-                    )}
-                </div>
+                          )}
+                          {contact.email && (
+                            <div className="flex items-center gap-1">
+                              <Mail className="h-3 w-3" />
+                              <span>{contact.email}</span>
+                            </div>
+                          )}
+                          {contact.phoneNumber && (
+                            <div className="flex items-center gap-1">
+                              <PhoneCallIcon className="h-3 w-3" />
+                              <span>{contact.phoneNumber}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           )}
 
@@ -593,23 +609,22 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                 </div>
               </div>
             </Card>
-            
+
             {/* OLD SINGLE CONTACT CARD - KEPT FOR LEGACY DISPLAY IF FIELDS EXIST */}
             {(selectedPO.contactName || selectedPO.phoneOrMail) && (
-                <Card className="p-4 rounded-lg">
-                    <div className="text-sm text-muted-foreground mb-2">
-                    Shipping Contact (Legacy)
-                    </div>
-                    <div className="flex items-start gap-2">
-                        <div className="text-sm">{selectedPO.contactName}</div>
-                        <div className="text-sm flex items-center gap-1">
-                            <PhoneCallIcon size={12} />
-                            {selectedPO.phoneOrMail}
-                        </div>
-                    </div>
-                </Card>
+              <Card className="p-4 rounded-lg">
+                <div className="text-sm text-muted-foreground mb-2">
+                  Shipping Contact (Legacy)
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="text-sm">{selectedPO.contactName}</div>
+                  <div className="text-sm flex items-center gap-1">
+                    <PhoneCallIcon size={12} />
+                    {selectedPO.phoneOrMail}
+                  </div>
+                </div>
+              </Card>
             )}
-
           </div>
 
           <div className="grid grid-cols-2 gap-6 mt-4">
@@ -670,11 +685,13 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                           {/* Comment Content */}
                           <div className="flex-1">
                             <div className="flex justify-between text-xs  mb-1">
-                              <div className="font-medium text-black capitalize ">{item.author?.name || "Unknown User"}</div>
+                              <div className="font-medium text-black capitalize ">
+                                {item.author?.name || "Unknown User"}
+                              </div>
                               <div className="flex justify-center itme-center">
                                 <span className="mr-2">{formattedDate}</span>
                                 <button
-                                  onClick={() => handleDeleteComment(item.id)} 
+                                  onClick={() => handleDeleteComment(item.id)}
                                   className=" text-red-600"
                                 >
                                   <Trash2 className="w-4 h-4 pt-3 " />

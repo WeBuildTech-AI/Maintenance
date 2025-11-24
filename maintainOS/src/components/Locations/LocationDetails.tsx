@@ -56,9 +56,14 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
   const modalRef = React.useRef<HTMLDivElement>(null);
 
   const handleRestoreLocationData = async (id) => {
-    await locationService.restoreLocationData(id);
-    fetchLocation();
-    onClose();
+    try {
+      await locationService.restoreLocationData(id);
+      fetchLocation();
+      onClose();
+      toast.success("Successfully Restore the Location Data");
+    } catch (err) {
+      toast.error("Failed to Restore the Location Data");
+    }
   };
 
   return (
