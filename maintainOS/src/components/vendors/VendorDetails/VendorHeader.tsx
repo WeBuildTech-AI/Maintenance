@@ -11,17 +11,20 @@ import {
 import { type Vendor } from "../vendors.types";
 import DeleteModal from "./DeleteModal";
 import { Tooltip } from "../../ui/tooltip";
+import { vendorService } from "../../../store/vendors";
 
 interface VendorHeaderProps {
   vendor: Vendor;
   onEdit: (vendor: Vendor) => void;
   handleDeleteVendor: (id: string) => void;
+  restoreData: string;
 }
 
 export default function VendorHeader({
   vendor,
   onEdit,
   handleDeleteVendor,
+  restoreData,
 }: VendorHeaderProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const modalRef = useRef<HTMLDivElement | null>(null);
@@ -52,6 +55,11 @@ export default function VendorHeader({
     } finally {
       setShowDeleteModal(false);
     }
+  };
+
+  const handleRestoreVendorDeleteData = async (id) => {
+    await vendorService.restoreVendorData(id);
+    
   };
 
   return (
@@ -111,6 +119,13 @@ export default function VendorHeader({
                 <DropdownMenuItem onClick={() => setShowDeleteModal(true)}>
                   Delete
                 </DropdownMenuItem>
+                {restoreData && (
+                  <DropdownMenuItem
+                    onClick={() => handleRestoreVendorDeleteData(vendor.id)}
+                  >
+                    Restore
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

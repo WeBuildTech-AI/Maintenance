@@ -1,3 +1,4 @@
+import { PurchaseOrder } from './../../components/purchase-orders/po.types';
 import axios from "axios";
 
 import type {
@@ -121,6 +122,11 @@ export const purchaseOrderService = {
 
   fetchDeletePurchaseOrder: async (): Promise<void> => {
     const res = await api.get(`purchase-orders/deleted/all`);
+    return res.data;
+  },
+
+  restorePurchaseOrderData: async (id: string): Promise<PurchaseOrderResponse> => {
+    const res = await api.patch(`/purchase_orders/${id}/restore`);
     return res.data;
   },
 };
