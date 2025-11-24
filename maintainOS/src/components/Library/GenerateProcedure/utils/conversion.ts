@@ -65,7 +65,8 @@ function transformField(field: FieldData, order: number): any {
     id: field.id, 
     fieldName: field.label,
     fieldType: mapFieldType(field.selectedType),
-    required: !!field.isRequired,
+    // --- 🔴 FIX: Backend rejects 'required'. Commenting out until backend DTO is updated. ---
+    // required: !!field.isRequired, 
     order: order,
   };
 
@@ -125,11 +126,8 @@ export function convertStateToJSON(
     locationIds: settings.locations, 
     visibility: settings.visibility,
 
-    // --- 👇 [FIX] Conditionally add 'priority' ---
-    // Only add the priority field if it has a value (is not null)
-    // This prevents sending `priority: null` during a PATCH/Update
+    // --- Conditionally add 'priority' ---
     ...(settings.priority && { priority: settings.priority }),
-    // --- END FIX ---
 
     headings: [],
     rootFields: [],

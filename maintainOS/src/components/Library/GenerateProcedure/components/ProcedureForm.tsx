@@ -1,7 +1,766 @@
-import React, { useState, useCallback, memo, useEffect } from "react";
-import { Camera, Check, Trash2 } from "lucide-react";
-import { ChevronDown } from "lucide-react";
-import type { ConditionData } from "../types"; // Make sure this path is correct
+import React, { useState, useCallback, memo, useEffect, useRef } from "react";
+import { Camera, Check, Trash2, ChevronDown, Plus, Upload, X, Calendar as CalendarIcon, FileText } from "lucide-react";
+import type { ConditionData } from "../types";
+
+// --- External Libraries for Work Order Runner ---
+// Ensure you have installed: npm install react-signature-canvas react-day-picker date-fns
+import SignatureCanvas from "react-signature-canvas";
+import { DayPicker } from "react-day-picker";
+import "react-day-picker/dist/style.css";
+import { format, isValid } from "date-fns";
+
+// ==========================================
+// 1. INTERNAL RUNNER COMPONENTS (Merged Here)
+// ==========================================
+
+// --- Inspection Check Runner ---
+function InspectionCheckRunner({ value, onChange }: { value: any; onChange: (val: any) => void }) {
+  const safeValue =
+    typeof value === "object" && value !== null
+      ? value
+      : { status: value || null, note: "", files: [] };
+
+  const status = safeValue.status;
+
+  const [showNote, setShowNote] = React.useState(false);
+  const [showFileBox, setShowFileBox] = React.useState(false);
+
+  const colors = {
+    pass: { border: "#10b981", text: "#10b981", bg: "#f0fdf4" },
+    flag: { border: "#f59e0b", text: "#f59e0b", bg: "#fffbeb" },
+    fail: { border: "#ef4444", text: "#ef4444", bg: "#fef2f2" },
+  };
+
+  const handleStatusClick = (newStatus: string) => {
+    onChange({ ...safeValue, status: newStatus });
+
+    // reset extra fields on status change
+    setShowNote(false);
+    setShowFileBox(false);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+      {/* ----------------- TOP BUTTONS ----------------- */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr 1fr",
+          gap: "10px",
+        }}
+      >
+        {["pass", "flag", "fail"].map((opt) => {
+          const selected = status === opt;
+          const style = colors[opt as keyof typeof colors];
+
+          return (
+            <button
+              key={opt}
+              onClick={() => handleStatusClick(opt)}
+              style={{
+                padding: "10px",
+                border: `1px solid ${selected ? style.border : "#d1d5db"}`,
+                borderRadius: "6px",
+                background: selected ? style.bg : "white",
+                color: selected ? style.text : "#374151",
+                fontWeight: 600,
+                fontSize: "0.9rem",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "6px",
+              }}
+            >
+              {selected && <Check size={16} />}
+              {opt.charAt(0).toUpperCase() + opt.slice(1)}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ----------------- FLAG UI ----------------- */}
+      {status === "flag" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          <p style={{ fontSize: "0.9rem", color: "#4b5563" }}>
+            You can upload a picture/file to show the flagged issue
+          </p>
+
+          {/* Upload Box */}
+          <div
+            style={{
+              border: "2px dashed #60a5fa",
+              background: "#eff6ff",
+              borderRadius: "8px",
+              padding: "24px",
+              textAlign: "center",
+              cursor: "pointer",
+            }}
+          >
+            <Upload size={16} style={{ color: "#3b82f6", marginBottom: 8 }} />
+            <div style={{ color: "#3b82f6", fontWeight: 600 }}>Add Pictures/Files</div>
+          </div>
+
+          {/* Note Box */}
+          <textarea
+            placeholder="Enter note"
+            value={safeValue.note}
+            onChange={(e) => onChange({ ...safeValue, note: e.target.value })}
+            style={{
+              width: "100%",
+              border: "1px solid #d1d5db",
+              borderRadius: "6px",
+              padding: "8px 10px",
+              minHeight: "80px",
+              fontSize: "0.9rem",
+            }}
+          />
+        </div>
+      )}
+
+      {/* ----------------- FAIL UI ----------------- */}
+      {status === "fail" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          <p style={{ fontSize: "0.9rem", color: "#4b5563" }}>
+            You can upload a picture/file to show the failure
+          </p>
+
+          {/* Upload Box */}
+          <div
+            style={{
+              border: "2px dashed #60a5fa",
+              background: "#eff6ff",
+              borderRadius: "8px",
+              padding: "24px",
+              textAlign: "center",
+              cursor: "pointer",
+            }}
+          >
+            <Upload size={16} style={{ color: "#3b82f6", marginBottom: 8 }} />
+            <div style={{ color: "#3b82f6", fontWeight: 600 }}>Add Pictures/Files</div>
+          </div>
+
+          {/* Note Box */}
+          <textarea
+            placeholder="Enter note"
+            value={safeValue.note}
+            onChange={(e) => onChange({ ...safeValue, note: e.target.value })}
+            style={{
+              width: "100%",
+              border: "1px solid #d1d5db",
+              borderRadius: "6px",
+              padding: "8px 10px",
+              minHeight: "80px",
+              fontSize: "0.9rem",
+            }}
+          />
+        </div>
+      )}
+
+      {/* ----------------- PASS → Dynamic Add Fields ----------------- */}
+      {status === "pass" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div style={{ display: "flex", gap: "20px" }}>
+            {/* ADD NOTES LINK */}
+            <button
+              style={{
+                color: "#2563eb",
+                fontSize: "0.9rem",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+              }}
+              onClick={() => setShowNote(true)}
+            >
+              <Plus size={14} /> Add notes
+            </button>
+
+            {/* ADD PICTURES LINK */}
+            <button
+              style={{
+                color: "#2563eb",
+                fontSize: "0.9rem",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+              }}
+              onClick={() => setShowFileBox(true)}
+            >
+              <Plus size={14} /> Add Pictures/Files
+            </button>
+          </div>
+
+          {/* SHOW NOTE WHEN CLICKED */}
+          {showNote && (
+            <textarea
+              placeholder="Enter note"
+              value={safeValue.note}
+              onChange={(e) => onChange({ ...safeValue, note: e.target.value })}
+              style={{
+                width: "100%",
+                border: "1px solid #d1d5db",
+                borderRadius: "6px",
+                padding: "8px 10px",
+                minHeight: "80px",
+                fontSize: "0.9rem",
+              }}
+            />
+          )}
+
+          {/* SHOW IMAGE BOX WHEN CLICKED */}
+          {showFileBox && (
+            <div
+              style={{
+                border: "2px dashed #60a5fa",
+                background: "#eff6ff",
+                borderRadius: "8px",
+                padding: "24px",
+                textAlign: "center",
+                cursor: "pointer",
+              }}
+            >
+              <Upload size={16} style={{ color: "#3b82f6", marginBottom: 8 }} />
+              <div style={{ color: "#3b82f6", fontWeight: 600 }}>Add Pictures/Files</div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+
+
+// --- Signature Runner ---
+function SignatureRunner({ value, onChange }: { value: string | null; onChange: (val: string | null) => void }) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const sigCanvas = useRef<any>({});
+
+  const handleSave = () => {
+    if (sigCanvas.current) {
+      const dataURL = sigCanvas.current.getTrimmedCanvas().toDataURL("image/png");
+      onChange(dataURL);
+      setIsModalOpen(false);
+    }
+  };
+
+  const handleClear = () => {
+    if (sigCanvas.current) sigCanvas.current.clear();
+  };
+
+  return (
+    <>
+      {/* ===== OUTER SIGNATURE BLOCK (CASE STYLE EXACT) ===== */}
+      <div
+        onClick={() => setIsModalOpen(true)}
+        style={{
+          width: "100%",
+          padding: "40px 12px",
+          border: "1px dashed #d1d5db",
+          borderRadius: "6px",
+          background: "#fff",
+          textAlign: "center",
+          color: value ? "#111827" : "#6b7280",
+          fontStyle: value ? "normal" : "italic",
+          cursor: "pointer",
+          marginTop: "8px",
+        }}
+      >
+        {value ? (
+          <img
+            src={value}
+            alt="Signature"
+            style={{
+              maxHeight: "110px",
+              width: "100%",
+              objectFit: "contain",
+              padding: "8px",
+            }}
+          />
+        ) : (
+          "Tap to sign"
+        )}
+      </div>
+
+      {/* ===== MODAL (same as before) ===== */}
+      {isModalOpen && (
+        <div
+          onClick={() => setIsModalOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+            zIndex: 999999,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: "600px",           // <<< FIX: modal no longer huge
+              background: "white",
+              borderRadius: "10px",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+
+            {/* HEADER */}
+            <div
+              style={{
+                padding: "14px 18px",
+                borderBottom: "1px solid #eee",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <h3 style={{ fontSize: "1.1rem", fontWeight: 600 }}>Sign below:</h3>
+
+              <button
+                onClick={() => setIsModalOpen(false)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#6b7280",
+                }}
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* SIGNATURE AREA */}
+            <div
+              style={{
+                padding: "16px",
+                background: "#f9fafb",
+                minHeight: "260px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <div
+                style={{
+                  background: "white",
+                  border: "1px solid #ddd",
+                  borderRadius: "8px",
+                  width: "100%",
+                  height: "240px",
+                  overflow: "hidden",
+                  cursor: "crosshair",
+                }}
+              >
+                <SignatureCanvas
+                  ref={sigCanvas}
+                  penColor="black"
+                  backgroundColor="white"
+                  canvasProps={{ style: { width: "100%", height: "240px" } }}
+                />
+              </div>
+            </div>
+
+            {/* FOOTER BUTTONS */}
+            <div
+              style={{
+                padding: "14px 18px",
+                borderTop: "1px solid #eee",
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "12px",
+                background: "white",
+              }}
+            >
+              <button
+                onClick={handleClear}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#2563eb",
+                  cursor: "pointer",
+                  fontSize: "0.9rem",
+                  fontWeight: 500,
+                }}
+              >
+                Clear
+              </button>
+
+              <button
+                onClick={handleSave}
+                style={{
+                  background: "#2563eb",
+                  color: "white",
+                  border: "none",
+                  padding: "8px 20px",
+                  borderRadius: "6px",
+                  fontSize: "0.9rem",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </>
+  );
+}
+
+
+// --- Upload Runner ---
+function UploadRunner({
+  value,
+  onChange,
+}: {
+  value: string | null;
+  onChange: (val: string | null) => void;
+}) {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      onChange(ev.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // ---------------- PREVIEW MODE ----------------
+  if (value) {
+    return (
+      <div style={{ position: "relative", width: "100%", marginTop: "10px" }}>
+        {/* Image preview */}
+        <img
+          src={value}
+          alt="Uploaded preview"
+          style={{
+            width: "100%",
+            borderRadius: "6px",
+            border: "1px solid #e5e7eb",
+            objectFit: "cover",
+          }}
+        />
+
+        {/* delete button */}
+        <button
+          onClick={() => onChange(null)}
+          style={{
+            position: "absolute",
+            top: "8px",
+            right: "8px",
+            background: "rgba(0,0,0,0.55)",
+            color: "white",
+            border: "none",
+            borderRadius: "50%",
+            width: "30px",
+            height: "30px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            backdropFilter: "blur(2px)",
+          }}
+          title="Remove file"
+        >
+          <X size={16} />
+        </button>
+      </div>
+    );
+  }
+
+  // ---------------- UPLOAD BOX MODE ----------------
+  return (
+    <label
+      style={{
+        width: "100%",
+        marginTop: "10px",
+        padding: "24px",
+        border: "2px dashed #007AFF",
+        background: "#f0f7ff",
+        borderRadius: "6px",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "10px",
+        cursor: "pointer",
+      }}
+    >
+      <Camera size={26} color="#007AFF" />
+
+      <span
+        style={{
+          color: "#007AFF",
+          fontWeight: 500,
+          fontSize: "0.9rem",
+        }}
+      >
+        Add Pictures/Files
+      </span>
+
+      <input
+        type="file"
+        accept="image/*,application/pdf"
+        style={{ display: "none" }}
+        onChange={handleFileChange}
+      />
+    </label>
+  );
+}
+
+// --- Date Runner ---
+function DateRunner({ value, onChange }: { value: string | null; onChange: (val: string | null) => void }) {
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsCalendarOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedDate = value ? new Date(value) : undefined;
+  const handleSelect = (date: Date | undefined) => {
+    if (date) {
+      onChange(date.toISOString());
+      setIsCalendarOpen(false);
+    }
+  };
+
+  const displayDate =
+    value && isValid(new Date(value)) ? format(new Date(value), "MM/dd/yyyy") : "";
+
+  return (
+    <div style={{ position: "relative", marginTop: "8px" }} ref={containerRef}>
+      {/* ---------- INPUT BOX (EXACT CASE UI) ---------- */}
+      <div
+        onClick={() => setIsCalendarOpen(true)}
+        style={{
+          width: "100%",
+          padding: "10px 12px",
+          border: "1px solid #d1d5db",
+          borderRadius: "6px",
+          fontSize: "0.9rem",
+          color: displayDate ? "#111827" : "#6b7280",
+          background: "#fff",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <input
+          readOnly
+          placeholder="mm/dd/yyyy"
+          value={displayDate}
+          style={{
+            flex: 1,
+            background: "transparent",
+            outline: "none",
+            border: "none",
+            fontSize: "0.9rem",
+            color: displayDate ? "#111827" : "#6b7280",
+            cursor: "pointer",
+          }}
+        />
+
+        {/* Clear button if date selected */}
+        {value && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onChange(null);
+            }}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "#9ca3af",
+              marginRight: "6px",
+            }}
+          >
+            <X size={16} />
+          </button>
+        )}
+
+        {/* Calendar icon */}
+        <CalendarIcon size={18} style={{ color: "#2563eb" }} />
+      </div>
+
+      {/* ---------- DATE PICKER ---------- */}
+      {isCalendarOpen && (
+        <div
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            marginTop: "8px",
+            zIndex: 999,
+            background: "white",
+            border: "1px solid #e5e7eb",
+            borderRadius: "8px",
+            padding: "8px",
+            boxShadow: "0px 4px 12px rgba(0,0,0,0.1)",
+          }}
+        >
+          <DayPicker
+            mode="single"
+            selected={selectedDate}
+            onSelect={handleSelect}
+            styles={{
+              head_cell: {
+                width: "40px",
+                color: "#6b7280",
+                fontSize: "0.75rem",
+                fontWeight: 600,
+              },
+              cell: { width: "40px" },
+              day: { margin: "auto", borderRadius: "6px" },
+              day_selected: { backgroundColor: "#2563eb", color: "white" },
+              day_today: { fontWeight: "bold", color: "#2563eb" },
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+function YesNoRunner({ value, onChange }: { value: any; onChange: (val: any) => void }) {
+  const safeValue = typeof value === 'object' && value !== null ? value : { status: value || null, note: '', file: null };
+  const status = safeValue.status;
+  const note = safeValue.note || "";
+  const file = safeValue.file || null;
+
+  const [showNote, setShowNote] = useState(!!note);
+  const [showUpload, setShowUpload] = useState(!!file);
+
+  useEffect(() => {
+    if (note) setShowNote(true);
+    if (file) setShowUpload(true);
+  }, [note, file]);
+
+  const handleStatusClick = (newStatus: string) => {
+    onChange({ ...safeValue, status: newStatus });
+    setShowNote(!!note);
+    setShowUpload(!!file);
+  };
+
+  const handleNoteChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    onChange({ ...safeValue, note: e.target.value });
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) {
+      const r = new FileReader();
+      r.onload = ev => onChange({ ...safeValue, file: ev.target?.result });
+      r.readAsDataURL(f);
+    }
+  };
+
+  const removeFile = () => {
+    onChange({ ...safeValue, file: null });
+    setShowUpload(false);
+  };
+
+  const statusConfig: any = {
+    yes: { label: "Yes", active: "bg-emerald-50 border-emerald-500 text-emerald-700 ring-1 ring-emerald-500", inactive: "bg-white border-gray-200 text-emerald-600 hover:border-emerald-300" },
+    no: { label: "No", active: "bg-red-50 border-red-500 text-red-700 ring-1 ring-red-500", inactive: "bg-white border-gray-200 text-red-500 hover:border-red-300" },
+    "n/a": { label: "N/A", active: "bg-gray-100 border-gray-500 text-gray-800 ring-1 ring-gray-500", inactive: "bg-white border-gray-200 text-gray-600 hover:border-gray-300" },
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-3 gap-3">
+        {["yes", "no", "n/a"].map((key) => {
+          const isActive = status === key;
+          const config = statusConfig[key];
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => handleStatusClick(key)}
+              className={`flex items-center justify-center h-12 rounded-md border text-base font-medium transition-all duration-200 ${isActive ? config.active : config.inactive
+                }`}
+            >
+              {config.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {showUpload && (
+        <div className="animate-in fade-in slide-in-from-top-2 pt-1">
+          {file ? (
+            <div className="relative w-fit group">
+              <img src={file} alt="Proof" className="h-32 w-auto rounded-md border border-gray-200 shadow-sm object-cover" />
+              <button onClick={removeFile} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors" type="button"><X size={12} /></button>
+            </div>
+          ) : (
+            <label className="border-2 border-dashed border-blue-300 bg-blue-50/50 rounded-lg p-6 flex flex-col items-center justify-center text-blue-500 cursor-pointer hover:bg-blue-50 transition-colors w-full h-32">
+              <div className="bg-blue-500 text-white p-1.5 rounded-md mb-2 shadow-sm"><Upload size={16} /></div>
+              <span className="text-sm font-medium">Add Pictures/Files</span>
+              <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+            </label>
+          )}
+        </div>
+      )}
+
+      {showNote && (
+        <div className="animate-in fade-in slide-in-from-top-2 pt-1">
+          <textarea
+            placeholder="Enter note"
+            value={note}
+            onChange={handleNoteChange}
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px] resize-none placeholder:text-gray-400 bg-white"
+          />
+        </div>
+      )}
+
+      {status && (
+        <div className="flex gap-6 pt-1">
+          {!showNote && (
+            <button type="button" onClick={() => setShowNote(true)} className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"><Plus size={16} /> Add notes</button>
+          )}
+          {!showUpload && (
+            <button type="button" onClick={() => setShowUpload(true)} className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"><Plus size={16} /> Add Pictures/Files</button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ==========================================
+// 2. MAIN PROCEDURE FORM LOGIC
+// ==========================================
 
 // --- Helper: checkCondition (Full logic - NO CHANGE) ---
 function checkCondition(
@@ -10,10 +769,16 @@ function checkCondition(
 ): boolean {
   const op = condition.conditionOperator || condition.type;
 
+  // --- [FIX FOR RUNNER]: Handle Object answers (Inspection Check) ---
+  let valToCheck = parentAnswer;
+  if (typeof parentAnswer === 'object' && parentAnswer !== null && 'status' in parentAnswer) {
+    valToCheck = parentAnswer.status;
+  }
+
   if (
-    parentAnswer === undefined ||
-    parentAnswer === null ||
-    parentAnswer === ""
+    valToCheck === undefined ||
+    valToCheck === null ||
+    valToCheck === ""
   ) {
     if (op === "is not checked" || op === "is_not_checked") {
       return true;
@@ -23,26 +788,26 @@ function checkCondition(
 
   const val = condition.conditionValue || condition.value;
   const val2 = condition.conditionValue2;
-  const values = condition.values; 
+  const values = condition.values;
 
-  if (op === "is") return parentAnswer === val;
-  if (op === "one_of") return values?.includes(parentAnswer); 
+  if (op === "is") return valToCheck === val;
+  if (op === "one_of") return values?.includes(valToCheck);
 
-  if (op === "is not") return parentAnswer !== val;
-  if (op === "not_one_of") return !values?.includes(parentAnswer); 
+  if (op === "is not") return valToCheck !== val;
+  if (op === "not_one_of") return !values?.includes(valToCheck);
 
-  if (op === "is checked" || op === "is_checked") return parentAnswer === true;
+  if (op === "is checked" || op === "is_checked") return valToCheck === true;
   if (op === "is not checked" || op === "is_not_checked")
-    return parentAnswer === false;
+    return valToCheck === false;
 
   if (op === "contains") {
-    return Array.isArray(parentAnswer) && parentAnswer.includes(val);
+    return Array.isArray(valToCheck) && valToCheck.includes(val);
   }
   if (op === "does not contain") {
-    return !Array.isArray(parentAnswer) || !parentAnswer.includes(val);
+    return !Array.isArray(valToCheck) || !valToCheck.includes(val);
   }
 
-  const numAnswer = parseFloat(parentAnswer);
+  const numAnswer = parseFloat(valToCheck);
   const numVal = parseFloat(val || "");
   const numVal2 = parseFloat(val2 || "");
   if (isNaN(numAnswer)) return false;
@@ -63,14 +828,16 @@ function checkCondition(
 
 // --- Helper Components (Internal to this file) ---
 interface RenderItemProps {
-  item: any; 
+  item: any;
   answers: Record<string, any>;
   updateAnswer: (fieldId: string, value: any) => void;
   renderAllItems: (
     items: any[],
     allFieldsInScope: any[]
   ) => React.ReactNode[];
-  allFieldsInScope: any[]; 
+  allFieldsInScope: any[];
+  // ✅ [ADDED]: Variant prop for passing down
+  variant?: "preview" | "runner";
 }
 
 // Renders a single interactive Field
@@ -78,18 +845,18 @@ const PreviewField = memo(function PreviewField({
   item: field,
   answers,
   updateAnswer,
+  variant, // ✅ [ADDED]
 }: Omit<RenderItemProps, "renderAllItems" | "allFieldsInScope">) {
   // --- Normalize Builder vs API props ---
-  const fieldId = field.id.toString(); 
+  const fieldId = field.id.toString();
   const currentValue = answers[fieldId];
   const fieldLabel = field.fieldName || field.label;
   const fieldType = field.fieldType || field.selectedType;
   const fieldDesc = field.fieldDescription || field.description;
   const fieldOptions = field.config?.options || field.options;
-  
+
   // --- [NEW] Meter reading ke liye specific data normalize karein ---
   const fieldUnit = field.config?.meterUnit || field.meterUnit;
-  // Yeh properties builder state se (via conversion) ya direct API se aa sakti hain
   const meterName = field.selectedMeterName || field.config?.meterName;
   const lastReading = field.lastReading !== undefined ? field.lastReading : field.config?.lastReading;
 
@@ -107,6 +874,76 @@ const PreviewField = memo(function PreviewField({
   };
 
   const renderFieldInput = () => {
+    // ✅ [ADDED]: RUNNER MODE LOGIC (Work Order)
+    if (variant === "runner") {
+      switch (fieldType) {
+        case "inspection_check": case "Inspection Check":
+          return <InspectionCheckRunner value={currentValue} onChange={(val) => updateAnswer(fieldId, val)} />;
+        case "signature_block": case "Signature Block":
+          return <SignatureRunner value={currentValue} onChange={(val) => updateAnswer(fieldId, val)} />;
+        case "picture_file": case "Picture/File Field":
+          return <UploadRunner value={currentValue} onChange={(val) => updateAnswer(fieldId, val)} />;
+        case "Date":
+          return <DateRunner value={currentValue} onChange={(val) => updateAnswer(fieldId, val)} />;
+        case "yes_no_NA": case "Yes, No, N/A": return <YesNoRunner value={currentValue} onChange={(val) => updateAnswer(fieldId, val)} />;
+
+        // Interactive inputs for standard fields
+        case "text_field": case "Text Field":
+          return <input type="text" value={currentValue || ""} onChange={e => updateAnswer(fieldId, e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" placeholder="Enter Text" />;
+        case "number_field": case "Number Field":
+          return <input type="number" value={currentValue || ""} onChange={e => updateAnswer(fieldId, e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" placeholder="Enter Number" />;
+        case "amount":
+        case "Amount ($)":
+          return (
+            <div style={{ position: "relative" }}>
+              {/* $ SIGN */}
+              <span
+                style={{
+                  position: "absolute",
+                  left: "12px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "#6b7280",
+                  fontSize: "0.9rem",
+                }}
+              >
+                $
+              </span>
+
+              {/* INPUT BOX */}
+              <input
+                type="number"
+                value={currentValue || ""}
+                onChange={(e) => updateAnswer(fieldId, e.target.value)}
+                placeholder="Enter Amount"
+                style={{
+                  width: "100%",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "6px",
+                  padding: "10px 12px",
+                  paddingLeft: "35px", // <-- FIXED PADDING
+                  fontSize: "0.9rem",
+                  color: "#111827",
+                }}
+              />
+            </div>
+          );
+
+        case "checkbox": case "Checkbox":
+          return <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={currentValue === true} onChange={e => updateAnswer(fieldId, e.target.checked)} className="rounded border-gray-300 text-blue-600" /><span className="text-sm">{fieldLabel}</span></label>;
+        case "mulitple_choice": case "Multiple Choice":
+          return <div className="flex flex-col gap-2">{fieldOptions?.map((opt: any, idx: number) => <label key={idx} className="flex items-center gap-2 cursor-pointer"><input type="radio" name={fieldId} checked={currentValue === opt} onChange={() => updateAnswer(fieldId, opt)} /><span className="text-sm">{opt}</span></label>)}</div>;
+        case "checklist": case "Checklist":
+          const cl = currentValue || [];
+          return <div className="flex flex-col gap-2">{fieldOptions?.map((opt: any, idx: number) => <label key={idx} className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={cl.includes(opt)} onChange={e => { const nl = e.target.checked ? [...cl, opt] : cl.filter((x: any) => x !== opt); updateAnswer(fieldId, nl); }} /><span className="text-sm">{opt}</span></label>)}</div>;
+        case "meter_reading": case "Meter Reading":
+          return <><div className="mb-1 text-xs text-gray-500">Last: {lastReading ?? 'N/A'}</div><div className="relative"><input type="number" value={currentValue || ""} onChange={e => updateAnswer(fieldId, e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" placeholder="Enter Reading" /><span className="absolute right-3 top-2 text-gray-400 text-xs">{fieldUnit}</span></div></>;
+        case "yes_no_NA": case "Yes, No, N/A":
+          return <div className="flex gap-2">{["Yes", "No", "N/A"].map(opt => <button key={opt} onClick={() => updateAnswer(fieldId, opt.toLowerCase())} className={`flex-1 py-2 border rounded text-sm ${currentValue === opt.toLowerCase() ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white"}`}>{opt}</button>)}</div>;
+      }
+    }
+
+    // ✅ [EXISTING LOGIC]: Standard Preview Mode (Your original design)
     switch (fieldType) {
       case "number_field":
       case "Number Field":
@@ -124,6 +961,7 @@ const PreviewField = memo(function PreviewField({
             }}
             value={currentValue || ""}
             onChange={(e) => updateAnswer(fieldId, e.target.value)}
+            disabled // Disabled in preview
           />
         );
       case "text_field":
@@ -142,11 +980,12 @@ const PreviewField = memo(function PreviewField({
             }}
             value={currentValue || ""}
             onChange={(e) => updateAnswer(fieldId, e.target.value)}
+            disabled
           />
         );
 
-      case "amount": 
-      case "Amount ($)": 
+      case "amount":
+      case "Amount ($)":
         return (
           <div style={{ position: "relative" }}>
             <span
@@ -174,11 +1013,12 @@ const PreviewField = memo(function PreviewField({
               }}
               value={currentValue || ""}
               onChange={(e) => updateAnswer(fieldId, e.target.value)}
+              disabled
             />
           </div>
         );
 
-      case "Date": 
+      case "Date":
         return (
           <div style={{ position: "relative" }}>
             <input
@@ -195,13 +1035,13 @@ const PreviewField = memo(function PreviewField({
               }}
               value={currentValue || ""}
               onChange={(e) => updateAnswer(fieldId, e.target.value)}
+              disabled
             />
           </div>
         );
 
       case "meter_reading":
       case "Meter Reading":
-        // --- 👇 [FIX] Yahaan par Last Reading aur Meter Name add karein ---
         return (
           <>
             {/* Last Reading (View mode jaisa) */}
@@ -231,6 +1071,7 @@ const PreviewField = memo(function PreviewField({
                 }}
                 value={currentValue || ""}
                 onChange={(e) => updateAnswer(fieldId, e.target.value)}
+                disabled
               />
               {fieldUnit && (
                 <span
@@ -250,7 +1091,6 @@ const PreviewField = memo(function PreviewField({
             </div>
           </>
         );
-        // --- END FIX ---
 
       case "signature_block":
       case "Signature Block":
@@ -272,8 +1112,8 @@ const PreviewField = memo(function PreviewField({
           </div>
         );
 
-      case "checkbox": 
-      case "Checkbox": 
+      case "checkbox":
+      case "Checkbox":
         return (
           <label
             style={{
@@ -292,6 +1132,7 @@ const PreviewField = memo(function PreviewField({
               className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               checked={currentValue === true}
               onChange={(e) => updateAnswer(fieldId, e.target.checked)}
+              disabled
             />
             <span style={{ fontSize: "0.9rem" }}>{fieldLabel}</span>
           </label>
@@ -339,8 +1180,8 @@ const PreviewField = memo(function PreviewField({
             style={{
               width: "100%",
               padding: "24px",
-              border: "2px dashed #007AFF", 
-              background: "#f0f7ff", 
+              border: "2px dashed #007AFF",
+              background: "#f0f7ff",
               borderRadius: "6px",
               display: "flex",
               flexDirection: "column",
@@ -353,7 +1194,7 @@ const PreviewField = memo(function PreviewField({
             <Camera size={24} color="#007AFF" />
             <span
               style={{
-                color: "#007AFF", 
+                color: "#007AFF",
                 fontWeight: 500,
                 fontSize: "0.9rem",
               }}
@@ -365,6 +1206,7 @@ const PreviewField = memo(function PreviewField({
               accept="image/*"
               style={{ display: "none" }}
               onChange={handleImageUpload}
+              disabled
             />
           </label>
         );
@@ -386,7 +1228,7 @@ const PreviewField = memo(function PreviewField({
             }}
           >
             {options.map((opt) => {
-              const isSelected = currentValue === opt.toLowerCase(); 
+              const isSelected = currentValue === opt.toLowerCase();
               const style = colors[opt as keyof typeof colors];
               return (
                 <button
@@ -394,9 +1236,8 @@ const PreviewField = memo(function PreviewField({
                   onClick={() => updateAnswer(fieldId, opt.toLowerCase())}
                   style={{
                     padding: "10px",
-                    border: `1px solid ${
-                      isSelected ? style.border : "#d1d5db"
-                    }`,
+                    border: `1px solid ${isSelected ? style.border : "#d1d5db"
+                      }`,
                     borderRadius: "6px",
                     background: isSelected ? style.bg : "white",
                     color: isSelected ? style.text : "#374151",
@@ -408,6 +1249,7 @@ const PreviewField = memo(function PreviewField({
                     justifyContent: "center",
                     gap: "6px",
                   }}
+                  disabled // Disabled
                 >
                   {isSelected && <Check size={16} />}
                   {opt}
@@ -429,23 +1271,23 @@ const PreviewField = memo(function PreviewField({
             }}
           >
             {ynnOptions.map((opt) => {
-              const isSelected = currentValue === opt.toLowerCase(); 
+              const isSelected = currentValue === opt.toLowerCase();
               return (
                 <button
                   key={opt}
                   onClick={() => updateAnswer(fieldId, opt.toLowerCase())}
                   style={{
                     padding: "10px",
-                    border: `1px solid ${
-                      isSelected ? "#007AFF" : "#d1d5db" 
-                    }`,
+                    border: `1px solid ${isSelected ? "#007AFF" : "#d1d5db"
+                      }`,
                     borderRadius: "6px",
-                    background: isSelected ? "#f0f7ff" : "white", 
-                    color: isSelected ? "#007AFF" : "#374151", 
+                    background: isSelected ? "#f0f7ff" : "white",
+                    color: isSelected ? "#007AFF" : "#374151",
                     fontWeight: 600,
                     fontSize: "0.9rem",
                     cursor: "pointer",
                   }}
+                  disabled // Disabled
                 >
                   {opt}
                 </button>
@@ -454,8 +1296,8 @@ const PreviewField = memo(function PreviewField({
           </div>
         );
 
-      case "mulitple_choice": 
-      case "Multiple Choice": 
+      case "mulitple_choice":
+      case "Multiple Choice":
         return (
           <div
             style={{ display: "flex", flexDirection: "column", gap: "8px" }}
@@ -475,6 +1317,7 @@ const PreviewField = memo(function PreviewField({
                   name={`field-${fieldId}`}
                   checked={currentValue === opt}
                   onChange={() => updateAnswer(fieldId, opt)}
+                  disabled
                 />
                 <span>{opt}</span>
               </label>
@@ -484,7 +1327,7 @@ const PreviewField = memo(function PreviewField({
 
       case "checklist":
       case "Checklist":
-        const currentList: string[] = currentValue || [];
+        const currentList = currentValue || [];
         const handleChecklistChange = (opt: string, isChecked: boolean) => {
           const newList = isChecked
             ? [...currentList, opt]
@@ -511,6 +1354,7 @@ const PreviewField = memo(function PreviewField({
                   onChange={(e) =>
                     handleChecklistChange(opt, e.target.checked)
                   }
+                  disabled
                 />
                 <span>{opt}</span>
               </label>
@@ -576,16 +1420,17 @@ const PreviewField = memo(function PreviewField({
 // Renders a Section (with collapse)
 const PreviewSection = memo(function PreviewSection({
   item: section,
+  variant, // ✅ [ADDED]
   ...props
 }: RenderItemProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  
+
   const sectionFields = section.fields || [];
   const sectionHeadings = section.headings || [];
   const combinedSectionItems = [...sectionFields, ...sectionHeadings]
     .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-  const fieldCount = sectionFields.length; // Still show count of *fields*
+  const fieldCount = sectionFields.length;
   const sectionLabel = section.sectionName || section.label;
 
   return (
@@ -643,8 +1488,8 @@ const PreviewSection = memo(function PreviewSection({
           }}
         >
           {props.renderAllItems(
-            combinedSectionItems, 
-            props.allFieldsInScope 
+            combinedSectionItems,
+            props.allFieldsInScope
           )}
         </div>
       )}
@@ -693,16 +1538,20 @@ const RenderPreviewItem = memo(function RenderPreviewItem(
 // --- Main Reusable Component ---
 interface ProcedureFormProps {
   rootFields: any[];
-  rootHeadings: any[]; 
+  rootHeadings: any[];
   sections: any[];
   resetKey: string;
+  onAnswersChange?: (answers: Record<string, any>) => void;
+  variant?: "preview" | "runner"; // ✅ [ADDED] Default is Preview
 }
 
 export function ProcedureForm({
   rootFields,
-  rootHeadings, 
+  rootHeadings,
   sections,
   resetKey,
+  onAnswersChange,
+  variant = "preview" // ✅ [ADDED] Pass variant down
 }: ProcedureFormProps) {
   const [answers, setAnswers] = useState<Record<string, any>>({});
 
@@ -712,14 +1561,18 @@ export function ProcedureForm({
   }, [resetKey]);
 
   const updateAnswer = useCallback((fieldId: string, value: any) => {
-    setAnswers((prev) => ({ ...prev, [fieldId]: value }));
-  }, []);
+    setAnswers((prev) => {
+      const next = { ...prev, [fieldId]: value };
+      if (onAnswersChange) onAnswersChange(next);
+      return next;
+    });
+  }, [onAnswersChange]);
 
   // --- This function renders a list of fields (from root or section) ---
   const renderAllItems = useCallback(
     (
-      items: any[], 
-      allFieldsInScope: any[] 
+      items: any[],
+      allFieldsInScope: any[]
     ): React.ReactNode[] => {
       const visibleItems: React.ReactNode[] = [];
       const parentFields = items.filter((f) => !f.parentId); // Top-level fields
@@ -735,6 +1588,7 @@ export function ProcedureForm({
             updateAnswer={updateAnswer}
             renderAllItems={renderAllItems}
             allFieldsInScope={allFieldsInScope}
+            variant={variant} // ✅ [ADDED] Pass variant down
           />
         );
 
@@ -748,14 +1602,16 @@ export function ProcedureForm({
           );
           if (isMet) {
             visibleItems.push(
-              <RenderPreviewItem
-                key={child.id}
-                item={child}
-                answers={answers}
-                updateAnswer={updateAnswer}
-                renderAllItems={renderAllItems}
-                allFieldsInScope={allFieldsInScope}
-              />
+              <div key={child.id} className="pl-6 border-l-2 border-blue-100 ml-2 animate-in fade-in slide-in-from-left-2">
+                <RenderPreviewItem
+                  item={child}
+                  answers={answers}
+                  updateAnswer={updateAnswer}
+                  renderAllItems={renderAllItems}
+                  allFieldsInScope={allFieldsInScope}
+                  variant={variant} // ✅ [ADDED] Pass variant down
+                />
+              </div>
             );
           }
         });
@@ -763,13 +1619,13 @@ export function ProcedureForm({
 
       return visibleItems;
     },
-    [answers, updateAnswer]
+    [answers, updateAnswer, variant] // ✅ [ADDED] Depend on variant
   );
 
   const combinedRootItems = [...(rootFields || []), ...(rootHeadings || [])]
     .sort((a, b) => (a.order || 0) - (b.order || 0));
-    
-  const allRootFieldsForLogic = rootFields || []; 
+
+  const allRootFieldsForLogic = rootFields || [];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
@@ -784,6 +1640,7 @@ export function ProcedureForm({
           updateAnswer={updateAnswer}
           renderAllItems={renderAllItems}
           allFieldsInScope={section.fields || []} // Pass section's fields
+          variant={variant} // ✅ [ADDED] Pass variant down
         />
       ))}
     </div>
