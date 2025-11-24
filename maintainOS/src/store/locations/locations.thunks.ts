@@ -115,3 +115,38 @@ export const batchDeleteLocation = createAsyncThunk(
     }
   }
 );
+
+export const fetchDeleteLocation = createAsyncThunk(
+  "location/fetchDeleteLocation",
+  async (_, { rejectWithValue }) => {
+    try {
+      const assets = await locationService.fetchDeleteLocation();
+      return assets;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch Delete assets "
+      );
+    }
+  }
+);
+
+export const restoreLocationData = createAsyncThunk(
+  "location/restoreLocationData",
+  async (
+    {
+      id,
+    }: {
+      id: string;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const asset = await locationService.restoreLocationData(id);
+      return asset;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to restore Location Data"
+      );
+    }
+  }
+);

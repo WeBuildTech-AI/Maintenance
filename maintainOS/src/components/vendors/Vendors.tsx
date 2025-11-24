@@ -19,7 +19,7 @@ export function Vendors() {
   const [loading, setLoading] = useState(false);
   const [selectedVendorId, setSelectedVendorId] = useState();
   const [isSettingModalOpen, setIsSettingModalOpen] = useState(false);
-
+  const [showDeleted, setShowDeleted] = useState(false);
 
   // ✅ ADDED FILTER STATE
   const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>(
@@ -58,8 +58,9 @@ export function Vendors() {
 
   // ✅ ADDED: refresh vendors helper (keeps sidebar in sync after create/edit)
   const refreshVendors = async () => {
+    let res: any;
     try {
-      const res = await vendorService.fetchVendors();
+      res = await vendorService.fetchVendors();
       setVendors(() => [...res]); //  force re-render with new array reference
     } catch (err) {
       console.error(err);
@@ -69,8 +70,14 @@ export function Vendors() {
   // Fetch vendors on mount
   const fetchVendors = async () => {
     setLoading(true);
+    let res: any;
     try {
-      const res = await vendorService.fetchVendors();
+      if (showDeleted) {
+        res = await vendorService.fetchDeleteVendor();
+        console.log("hello", showDeleted);
+      } else {
+        res = await vendorService.fetchVendors();
+      }
       // console.log("📦 Vendor API response:", res);
       setVendors(res);
     } catch (err) {
@@ -81,7 +88,7 @@ export function Vendors() {
   };
   useEffect(() => {
     fetchVendors();
-  }, []);
+  }, [viewMode, showDeleted]);
 
   // ✅ UPDATED FILTER LOGIC (location-based filter)
   const filteredVendors = useMemo(() => {
@@ -197,6 +204,7 @@ export function Vendors() {
         setSearchQuery,
         handleShowCreateForm,
         setIsSettingModalOpen,
+        setShowDeleted,
         setShowSettings,
         setActiveFilters,
       )}
@@ -261,6 +269,8 @@ export function Vendors() {
             setIsSettingModalOpen={setIsSettingModalOpen}
             isSettingModalOpen={isSettingModalOpen}
             fetchVendors={fetchVendors}
+            setShowDeleted={setShowDeleted}
+            showDeleted={showDeleted}
           />
         )}
       </div>

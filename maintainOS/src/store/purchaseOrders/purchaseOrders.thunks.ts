@@ -233,13 +233,11 @@ export const fetchPurchaseOrderLog = createAsyncThunk(
       return await purchaseOrderService.FetchPurchaseOrderLog;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message ||
-          "Failed to fetch purchase orders log"
+        error.response?.data?.message || "Failed to fetch purchase orders log"
       );
     }
   }
 );
-
 
 export const deletePurchaseOrderComment = createAsyncThunk(
   "purchaseOrders/deletePurchaseOrderComment",
@@ -249,7 +247,8 @@ export const deletePurchaseOrderComment = createAsyncThunk(
       return id;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to delete purchase order comment"
+        error.response?.data?.message ||
+          "Failed to delete purchase order comment"
       );
     }
   }
@@ -264,6 +263,21 @@ export const batchDeletePurchaseOrder = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to delete Purchase Order"
+      );
+    }
+  }
+);
+
+export const fetchDeletePart = createAsyncThunk(
+  "purchaseOrder/fetchDeletePurchaseOrder",
+  async (_, { rejectWithValue }) => {
+    try {
+      const assets = await purchaseOrderService.fetchDeletePurchaseOrder();
+      return assets;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Failed to fetch Delete Purchase Order "
       );
     }
   }

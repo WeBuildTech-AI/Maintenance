@@ -175,3 +175,17 @@ export const batchDeletePart = createAsyncThunk(
     }
   }
 );
+
+export const fetchDeletePart = createAsyncThunk(
+  "parts/fetchDeletePart",
+  async (_, { rejectWithValue }) => {
+    try {
+      const assets = await partService.fetchDeletePart();
+      return assets;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch Delete Parts "
+      );
+    }
+  }
+);

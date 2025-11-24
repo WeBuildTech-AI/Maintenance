@@ -25,6 +25,7 @@ export function VendorHeaderComponent(
   setSearchQuery: Dispatch<SetStateAction<string>>,
   setIsCreatingForm: () => void,
   setIsSettingModalOpen: Dispatch<SetStateAction<boolean>>,
+  setShowDeleted: Dispatch<SetStateAction<boolean>>,
   setShowSettings: Dispatch<SetStateAction<boolean>>,
   setActiveFilters: Dispatch<SetStateAction<Record<string, string[]>>>
 ) {
@@ -52,7 +53,12 @@ export function VendorHeaderComponent(
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
-                  <DropdownMenuItem onClick={() => setViewMode("panel")}>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setViewMode("panel");
+                      setShowDeleted(false);
+                    }}
+                  >
                     <PanelTop className="mr-2 h-4 w-4" /> Panel View
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setViewMode("table")}>
@@ -94,7 +100,7 @@ export function VendorHeaderComponent(
         {/* Right: Settings button (only for table view) */}
         {viewMode === "table" && (
           <button
-           onClick={() => setIsSettingModalOpen(true)}
+            onClick={() => setIsSettingModalOpen(true)}
             className="p-2 rounded-md border cursor-pointer  hover:bg-gray-100 transition"
           >
             <Settings className="h-5 w-5 text-orange-600" />
