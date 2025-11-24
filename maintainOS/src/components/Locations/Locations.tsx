@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, MapPin, Check, ChevronUp } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { NewLocationForm } from "./NewLocationForm/NewLocationForm";
@@ -23,7 +23,6 @@ import LocationDetails from "./LocationDetails";
 export function Locations() {
   const hasFetched = useRef(false);
   const dispatch = useDispatch<AppDispatch>();
-
   const [locations, setLocations] = useState<LocationResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,20 +35,15 @@ export function Locations() {
   const [filteredLocations, setFilteredLocations] = useState<
     LocationResponse[]
   >([]);
-  // const [sortBy, setSortBy] = useState("Name: Ascending Order"); // REMOVED: Replaced with new state
   const user = useSelector((state: RootState) => state.auth.user);
-  const [modalOpen, setModalOpen] = useState(false);
-
-  // --- NEW: State and Refs for the custom sorting dropdown ---
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [sortType, setSortType] = useState("Last Updated"); // e.g., "Name", "Creation Date"
-  const [sortOrder, setSortOrder] = useState("dsc"); // "asc" or "desc"
+  const [sortType, setSortType] = useState("Last Updated");
+  const [sortOrder, setSortOrder] = useState("dsc");
   const [openSection, setOpenSection] = useState<string | null>("Name");
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const headerRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const [showDeleted, setShowDeleted] = useState(false);
-  // --- END NEW ---
 
   const navigate = useNavigate();
   const isCreateRoute = useMatch("/locations/create");
@@ -134,44 +128,46 @@ export function Locations() {
   const [limit] = useState(10);
   const [hasMore, setHasMore] = useState(true);
 
-  const fetchLocations =
-    (async (currentPage = 1) => {
+  console.log("showDeleted", showDeleted);
+
+  const fetchLocations = useCallback(
+    async (currentPage = 1) => {
       setLoading(true);
 
-      // ⭐ YAHAN ADD KAREIN:
-      // Agar pehla page load ho raha hai, toh selectedLocation ko clear karein
+      // Clear selected when loading first page
       if (currentPage === 1) {
         setSelectedLocation(null);
       }
 
-      // let res;
+      let res; // ⭐ FIX: Declare here
 
       try {
         if (showDeleted) {
-          const res = await locationService.fetchDeleteLocation();
+          res = await locationService.fetchDeleteLocation();
         } else {
-          const res = await locationService.fetchLocations(
+          res = await locationService.fetchLocations(
             limit,
             currentPage,
             (currentPage - 1) * limit
           );
         }
 
+        // First page logic
         if (currentPage === 1) {
           const reversedLocations = [...res].reverse();
           setLocations(reversedLocations);
 
-          // ⭐ YAHAN BHI ADD KAREIN:
-          // Naya data aane ke baad, pehla item select karein
+          // Auto-select first item only on page 1
           if (reversedLocations.length > 0) {
             setSelectedLocation(reversedLocations[0]);
           }
         } else {
-          // Page 2 ya uske baad, bas data add karein aur selection na badlein
+          // Next pages → append
           setLocations((prev) => [...prev, ...res]);
         }
 
-        if (res.length < limit) {
+        // Check pagination end
+        if (!res || res.length < limit) {
           setHasMore(false);
         } else {
           setHasMore(true);
@@ -179,13 +175,14 @@ export function Locations() {
       } catch (err) {
         console.error(err);
         setError("Failed to fetch locations");
-        setLocations([]); // Error par locations bhi clear kar dein
+        setLocations([]);
       } finally {
         setLoading(false);
         hasFetched.current = true;
       }
     },
-    [showDeleted]);
+    [showDeleted, limit]
+  );
 
   useEffect(() => {
     if (hasFetched.current) return;

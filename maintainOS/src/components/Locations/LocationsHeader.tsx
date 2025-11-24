@@ -28,7 +28,6 @@ export function LocationHeaderComponent(
   setIsCreatingForm: () => void, // 👈 UPDATED TYPE: now a void function for navigation
   setShowSettings: Dispatch<SetStateAction<boolean>>,
   setIsSettingsModalOpen: Dispatch<SetStateAction<boolean>>,
-  setShowDeleted: Dispatch<SetStateAction<boolean>>
 ) {
   return (
     <>
@@ -96,7 +95,7 @@ export function LocationHeaderComponent(
           {/* Right: Settings button (only for table view) */}
           {viewMode === "table" && (
             <button
-              onClick={() => setShowDeleted(true)}
+              onClick={() => setIsSettingsModalOpen(true)}
               className="p-2 rounded-md border hover:bg-gray-100 transition"
             >
               <Settings className="h-5 w-5 text-orange-600" />

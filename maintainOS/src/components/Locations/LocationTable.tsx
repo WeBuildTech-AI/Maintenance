@@ -3,7 +3,6 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Card, CardContent } from "../ui/card";
 import { Avatar as ShadCNAvatar, AvatarFallback } from "../ui/avatar";
 import { Settings, Trash2, Loader2 } from "lucide-react";
-import { Tooltip } from "../ui/tooltip"; // ShadCN Tooltip
 import SettingsModal from "../utils/SettingsModal"; // Is path ko check kar lein
 import { formatDateOnly } from "../utils/Date"; // Path check kar lein
 
@@ -216,11 +215,10 @@ export function LocationTable({
     visibleColumns: string[];
   }) => {
     setVisibleColumns(settings.visibleColumns);
-    setIsSettingsModalOpen(false);
     setShowDeleted(settings.showDeleted);
+    setIsSettingsModalOpen(false);
   };
 
-  // ⭐ 5. Columns Definition (Updated with Delete Button)
   const columns: TableColumnType<any>[] = useMemo(() => {
     const nameColumn: TableColumnType<any> = {
       title: () => {
