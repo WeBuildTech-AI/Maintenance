@@ -106,6 +106,7 @@ interface PurchaseOrder {
   phoneOrMail?: string;
   taxesAndCosts?: TaxItems[];
   vendorContactIds?: string[];
+  vendorContacts: string[];
 }
 
 interface PurchaseOrderDetailsProps {
@@ -437,14 +438,58 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                 )}
               </div>
             </Card>
+          </div>
 
-            <Card className="p-4 rounded-lg">
+          <div>
+            <Card className="p-3 rounded-lg mt-4">
               <div className="text-sm text-muted-foreground mb-1">Vendor</div>
-              <div className="flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">
-                  {selectedPO.vendor?.name || "-"}
-                </span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">
+                    {selectedPO.vendor?.name || "-"}
+                  </span>
+                </div>
+                <div className="w-64">
+                  {selectedPO.vendorContacts.length > 0 && (
+                    <>
+                      <div className="p-3  rounded-lg bg-gray-50 mb-2">
+                        <div className="font-medium">
+                          Name :- {selectedPO.vendorContacts[0]?.fullName}
+                        </div>
+                        <div
+                          className="text-sm text-oa-600 cursor-pointer"
+                          onClick={() => {
+                            const email = selectedPO.vendorContacts[0]?.email;
+                            if (email) window.location.href = `mailto:${email}`;
+                          }}
+                        >
+                          Email :-{" "}
+                          <span className="text-orange-600">
+                            {selectedPO.vendorContacts[0]?.email}
+                          </span>
+                        </div>
+
+                        <div className="text-sm text-gray-600">
+                          Phone :-
+                          <span className="text-orange-600">
+                            {selectedPO.vendorContacts[0]?.phoneNumber}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Extra Contacts */}
+                      {/* {selectedPO.vendorContacts.slice(1).map((c, index) => (
+                        <div
+                          key={c.id}
+                          className="text-sm text-orange-600 cursor-pointer hover:underline"
+                        >
+                          +{selectedPO.vendorContacts.length - 1} more
+                        </div>
+                      ))} */}
+                    </>
+                  )}
+                </div>
               </div>
             </Card>
           </div>
