@@ -33,6 +33,7 @@ import type { RootState } from "../../store";
 import { useSelector } from "react-redux";
 import { renderInitials } from "../utils/renderInitials";
 import { vendorService } from "../../store/vendors";
+import { addressToLine, formatMoney } from "./helpers";
 
 interface OrderItem {
   id: string;
@@ -86,7 +87,8 @@ interface PurchaseOrder {
     | "sent"
     | "cancelled"
     | "fulfilled"
-    | "partially_fulfilled";
+    | "partially_fulfilled"
+    | "completed";
   vendorId: string;
   vendor: {
     id: string;
@@ -103,8 +105,8 @@ interface PurchaseOrder {
   contactName?: string;
   phoneOrMail?: string;
   taxesAndCosts?: TaxItems[];
-  // --- ADDED vendorContactIds TO PO INTERFACE ---
   vendorContactIds?: string[];
+  vendorContacts: string[];
 }
 
 interface PurchaseOrderDetailsProps {
@@ -127,7 +129,7 @@ interface PurchaseOrderDetailsProps {
   handleEditClick: () => void;
   fetchPurchaseOrder: () => void;
   restoreData: String;
-  onClose:() => boolean;
+  onClose: () => void;
 }
 
 const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
@@ -136,8 +138,8 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   handleConfirm,
   setModalAction,
   topRef,
-  formatMoney,
-  addressToLine,
+  // formatMoney,
+  // addressToLine,
   commentsRef,
   showCommentBox,
   setShowCommentBox,
@@ -281,8 +283,9 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   const handleRestorePurchaseOrderData = async (id) => {
     try {
       await purchaseOrderService.restorePurchaseOrderData(id);
-      fetchPurchaseOrder()
+      fetchPurchaseOrder();
       onClose();
+      toast.success("Successfully Restore the Purchase Order");
     } catch (err) {
       toast.error("Failed to restore the Purchase order Data");
     }
@@ -396,47 +399,97 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                   </div>
                   <StatusBadge status={selectedPO.status} />
                 </div>
-                {selectedPO.dueDate && (
-                  <div className="capitalize">
-                    <div className="text-sm text-muted-foreground mb-1">
-                      Due Date
-                    </div>
-                    {(() => {
-                      const dueDate = new Date(selectedPO?.dueDate);
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
+                {selectedPO.status === "completed" ? null : (
+                  <>
+                    {selectedPO.dueDate && (
+                      <div className="capitalize">
+                        <div className="text-sm text-muted-foreground mb-1">
+                          Due Date
+                        </div>
+                        {(() => {
+                          const dueDate = new Date(selectedPO?.dueDate);
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
 
-                      const isOverdue = dueDate < today;
+                          const isOverdue = dueDate < today;
 
-                      return (
-                        <span
-                          className={`capitalize text-sm font-medium ${
-                            isOverdue ? "text-red-600 font-semibold" : ""
-                          }`}
-                        >
-                          {isOverdue ? (
-                            <div className="">
-                              <span>{formatDateOnly(selectedPO.dueDate)}</span>
-                              <p>Overdue</p>
-                            </div>
-                          ) : (
-                            formatDateOnly(selectedPO.dueDate)
-                          )}
-                        </span>
-                      );
-                    })()}
-                  </div>
+                          return (
+                            <span
+                              className={`capitalize text-sm font-medium ${
+                                isOverdue ? "text-red-600 font-semibold" : ""
+                              }`}
+                            >
+                              {isOverdue ? (
+                                <div className="">
+                                  <span>
+                                    {formatDateOnly(selectedPO.dueDate)}
+                                  </span>
+                                  <p>Overdue</p>
+                                </div>
+                              ) : (
+                                formatDateOnly(selectedPO.dueDate)
+                              )}
+                            </span>
+                          );
+                        })()}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </Card>
+          </div>
 
-            <Card className="p-4 rounded-lg">
+          <div>
+            <Card className="p-3 rounded-lg mt-4">
               <div className="text-sm text-muted-foreground mb-1">Vendor</div>
-              <div className="flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">
-                  {selectedPO.vendor?.name || "-"}
-                </span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">
+                    {selectedPO.vendor?.name || "-"}
+                  </span>
+                </div>
+                <div className="w-64">
+                  {selectedPO.vendorContacts.length > 0 && (
+                    <>
+                      <div className="p-3  rounded-lg bg-gray-50 mb-2">
+                        <div className="font-medium">
+                          Name :- {selectedPO.vendorContacts[0]?.fullName}
+                        </div>
+                        <div
+                          className="text-sm text-oa-600 cursor-pointer"
+                          onClick={() => {
+                            const email = selectedPO.vendorContacts[0]?.email;
+                            if (email) window.location.href = `mailto:${email}`;
+                          }}
+                        >
+                          Email :-{" "}
+                          <span className="text-orange-600">
+                            {selectedPO.vendorContacts[0]?.email}
+                          </span>
+                        </div>
+
+                        <div className="text-sm text-gray-600">
+                          Phone :-
+                          <span className="text-orange-600">
+                            {selectedPO.vendorContacts[0]?.phoneNumber}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Extra Contacts */}
+                      {/* {selectedPO.vendorContacts.slice(1).map((c, index) => (
+                        <div
+                          key={c.id}
+                          className="text-sm text-orange-600 cursor-pointer hover:underline"
+                        >
+                          +{selectedPO.vendorContacts.length - 1} more
+                        </div>
+                      ))} */}
+                    </>
+                  )}
+                </div>
               </div>
             </Card>
           </div>

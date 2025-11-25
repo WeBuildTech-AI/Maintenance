@@ -126,7 +126,7 @@ export const purchaseOrderService = {
   },
 
   restorePurchaseOrderData: async (id: string): Promise<PurchaseOrderResponse> => {
-    const res = await api.patch(`/purchase_orders/${id}/restore`);
+    const res = await api.patch(`/purchase-orders/${id}/restore`);
     return res.data;
   },
 };

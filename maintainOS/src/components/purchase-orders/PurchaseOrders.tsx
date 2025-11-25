@@ -102,6 +102,7 @@ export function PurchaseOrders() {
   const topRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState("details");
   const [isLoading, setIsLoading] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
 
   const scrollToTop = () => {
     if (topRef.current) {
@@ -147,7 +148,7 @@ export function PurchaseOrders() {
     billingAddress: null,
     dueDate: "",
     notes: "",
-    extraCosts: 0, 
+    extraCosts: 0,
     // REMOVED: contactName: "",
     // REMOVED: phoneOrMail: "",
     vendorContactIds: [], // <--- NEW FIELD
@@ -167,10 +168,15 @@ export function PurchaseOrders() {
   const user = useSelector((state: RootState) => state.auth.user);
   const [showCustomPoInput, setShowCustomPoInput] = useState(false);
 
-  const fetchPurchaseOrder = async () => {
+  const fetchPurchaseOrder = React.useCallback(async () => {
+    setIsLoading(true);
+    let res: any;
     try {
-      setIsLoading(true);
-      const res = await purchaseOrderService.fetchPurchaseOrders();
+      if (showDeleted) {
+        res = await purchaseOrderService.fetchDeletePurchaseOrder();
+      } else {
+        res = await purchaseOrderService.fetchPurchaseOrders();
+      }
       const sortedData = [...res].sort(
         (a: PurchaseOrder, b: PurchaseOrder) =>
           new Date(b.updatedAt).valueOf() - new Date(a.updatedAt).valueOf()
@@ -186,11 +192,11 @@ export function PurchaseOrders() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [showDeleted]);
 
   useEffect(() => {
     fetchPurchaseOrder();
-  }, []);
+  }, [showDeleted]);
 
   const filteredPOs = useMemo(
     () =>
@@ -324,11 +330,11 @@ export function PurchaseOrders() {
           isTaxable: t.isTaxable,
         }))
       : [];
-      
+
     // Handle Contacts: assuming backend returns an array of contact objects under a field, or we use a separate fetch.
     // For now, mapping from a hypothetical 'contacts' array on the PO object to just IDs.
-    const mappedContactIds = poToEdit.contacts 
-      ? poToEdit.contacts.map((c: any) => c.id) 
+    const mappedContactIds = poToEdit.contacts
+      ? poToEdit.contacts.map((c: any) => c.id)
       : poToEdit.vendorContactIds || []; // Use vendorContactIds if available
 
     const formPO: NewPOFormType = {
@@ -422,8 +428,8 @@ export function PurchaseOrders() {
       if (newPO.vendorContactIds && newPO.vendorContactIds.length > 0) {
         payload.vendorContactIds = newPO.vendorContactIds;
       }
-      // REMOVED: if (newPO.contactName) payload.contactName = newPO.contactName;
-      // REMOVED: if (newPO.phoneOrMail) payload.phoneOrMail = newPO.phoneOrMail;
+      if (newPO.contactName) payload.contactName = newPO.contactName;
+      if (newPO.phoneOrMail) payload.phoneOrMail = newPO.phoneOrMail;
 
       if (newPO.dueDate) payload.dueDate = newPO.dueDate;
       if (newPO.notes) payload.notes = newPO.notes;
@@ -521,12 +527,12 @@ export function PurchaseOrders() {
         payload.poNumber = changedFormFields.poNumber;
       if (changedFormFields.vendorId !== undefined)
         payload.vendorId = changedFormFields.vendorId;
-      
-      // REMOVED: if (changedFormFields.contactName !== undefined)
-      // REMOVED:   payload.contactName = changedFormFields.contactName;
-      // REMOVED: if (changedFormFields.phoneOrMail !== undefined)
-      // REMOVED:   payload.phoneOrMail = changedFormFields.phoneOrMail;
-        
+
+      if (changedFormFields.contactName !== undefined)
+        payload.contactName = changedFormFields.contactName;
+      if (changedFormFields.phoneOrMail !== undefined)
+        payload.phoneOrMail = changedFormFields.phoneOrMail;
+
       // --- NEW: Add vendorContactIds to payload if changed ---
       if (changedFormFields.vendorContactIds) {
         payload.vendorContactIds = changedFormFields.vendorContactIds;
@@ -667,7 +673,8 @@ export function PurchaseOrders() {
           setCreatingPO(true);
         },
         setShowSettings,
-        setIsSettingModalOpen
+        setIsSettingModalOpen,
+        setShowDeleted
       )}
 
       {viewMode === "table" ? (
@@ -680,6 +687,8 @@ export function PurchaseOrders() {
               isSettingModalOpen={isSettingModalOpen}
               setIsSettingModalOpen={setIsSettingModalOpen}
               fetchPurchaseOrders={fetchPurchaseOrder}
+              showDeleted={showDeleted}
+              setShowDeleted={setShowDeleted}
             />
           </div>
         </div>
@@ -739,34 +748,38 @@ export function PurchaseOrders() {
                               <div className="mt-2 capitalize">
                                 <StatusBadge status={po.status as POStatus} />
                               </div>
-                              <div className="mt-1">
-                                {(() => {
-                                  const today = new Date();
-                                  const dueDate = new Date(po.dueDate);
+                              {po.status === "completed" ? null : (
+                                <>
+                                  <div className="mt-1">
+                                    {(() => {
+                                      const today = new Date();
+                                      const dueDate = new Date(po.dueDate);
 
-                                  // reset times for accurate comparison
-                                  today.setHours(0, 0, 0, 0);
-                                  dueDate.setHours(0, 0, 0, 0);
+                                      // reset times for accurate comparison
+                                      today.setHours(0, 0, 0, 0);
+                                      dueDate.setHours(0, 0, 0, 0);
 
-                                  if (dueDate < today) {
-                                    return (
-                                      <span className="text-red-600 font-medium text-sm mt-1">
-                                        Overdue
-                                      </span>
-                                    );
-                                  } else if (
-                                    dueDate.getTime() === today.getTime()
-                                  ) {
-                                    return (
-                                      <span className="text-red-600 font-medium text-sm mt-1">
-                                        Overdue
-                                      </span>
-                                    );
-                                  } else {
-                                    return null;
-                                  }
-                                })()}
-                              </div>
+                                      if (dueDate < today) {
+                                        return (
+                                          <span className="text-red-600 font-medium text-sm mt-1">
+                                            Overdue
+                                          </span>
+                                        );
+                                      } else if (
+                                        dueDate.getTime() === today.getTime()
+                                      ) {
+                                        return (
+                                          <span className="text-red-600 font-medium text-sm mt-1">
+                                            Overdue
+                                          </span>
+                                        );
+                                      } else {
+                                        return null;
+                                      }
+                                    })()}
+                                  </div>
+                                </>
+                              )}
                             </div>
                           </div>
                         </CardContent>

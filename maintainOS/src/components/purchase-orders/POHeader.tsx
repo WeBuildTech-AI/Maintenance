@@ -26,7 +26,7 @@ export function POHeaderComponent(
   setIsCreatingForm: Dispatch<SetStateAction<boolean>>,
   setShowSettings: Dispatch<SetStateAction<boolean>>,
   setIsSettingModalOpen: Dispatch<SetStateAction<boolean>>,
-  setShowDeleted: Dispatch<SetStateAction<boolean>>
+  setShowDeleted: Dispatch<SetStateAction<boolean>>,
 ) {
   return (
     <header className=" border-border bg-card px-6 py-4">

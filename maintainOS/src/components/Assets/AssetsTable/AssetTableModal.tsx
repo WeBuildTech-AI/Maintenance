@@ -1,15 +1,12 @@
 import React, { type Dispatch, type SetStateAction } from "react";
 import { X } from "lucide-react"; // Assuming you use lucide-react for icons
 import { AssetDetail } from "../AssetDetail/AssetDetail";
-// Import your Asset type definition here.
-// If you don't have a shared type file, I've defined a placeholder below.
 import type { Asset } from "../Assets";
 import { MeterDetail } from "../../Meters/MeterDetail/MeterDetail";
 import LocationDetails from "../../Locations/LocationDetails";
 import VendorDetails from "../../vendors/VendorDetails/VendorDetails";
 import { PartDetails } from "../../Inventory/PartDetail/PartDetails";
 import PurchaseOrderDetails from "../../purchase-orders/PurchaseOrderDetails";
-import { addressToLine, formatMoney } from "../../purchase-orders/helpers";
 
 // Define the props interface
 interface AssetTableModalProps {
@@ -114,16 +111,26 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
             />
           )}
 
-          {/* {showDetailsSection === "purchaseOrder" && (
+          {showDetailsSection === "purchaseorder" && (
             <PurchaseOrderDetails
-              onClose={onClose}
-              restoreData={restoreData}
               selectedPO={data}
+              updateState={() => {}}
+              handleConfirm={() => {}}
+              setModalAction={() => {}}
+              topRef={{ current: null }}
+              commentsRef={{ current: null }}
+              formatMoney={(v) => v.toString()}
+              addressToLine={() => ""}
+              showCommentBox={false}
+              setShowCommentBox={() => {}}
+              handleEditClick={() => {}}
+              setApproveModal={() => {}}
+              StatusBadge={() => null}
               fetchPurchaseOrder={fetchData}
-              formatMoney={formatMoney}
-              addressToLine={addressToLine}
+              restoreData={restoreData}
+              onClose={onClose}
             />
-          )} */}
+          )}
         </div>
       </div>
     </div>
