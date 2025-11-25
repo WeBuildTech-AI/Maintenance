@@ -38,7 +38,7 @@ interface LocationDetailsProps {
   handleShowNewSubLocationForm: boolean;
   restoreData: string;
   fetchLocation: () => void;
-  onClose: () => boolean;
+  onClose: () => void;
 }
 
 const LocationDetails: React.FC<LocationDetailsProps> = ({

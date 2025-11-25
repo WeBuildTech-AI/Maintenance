@@ -33,6 +33,7 @@ import type { RootState } from "../../store";
 import { useSelector } from "react-redux";
 import { renderInitials } from "../utils/renderInitials";
 import { vendorService } from "../../store/vendors";
+import { addressToLine, formatMoney } from "./helpers";
 
 interface OrderItem {
   id: string;
@@ -86,7 +87,8 @@ interface PurchaseOrder {
     | "sent"
     | "cancelled"
     | "fulfilled"
-    | "partially_fulfilled";
+    | "partially_fulfilled"
+    | "completed";
   vendorId: string;
   vendor: {
     id: string;
@@ -103,7 +105,6 @@ interface PurchaseOrder {
   contactName?: string;
   phoneOrMail?: string;
   taxesAndCosts?: TaxItems[];
-  // --- ADDED vendorContactIds TO PO INTERFACE ---
   vendorContactIds?: string[];
 }
 
@@ -127,7 +128,7 @@ interface PurchaseOrderDetailsProps {
   handleEditClick: () => void;
   fetchPurchaseOrder: () => void;
   restoreData: String;
-  onClose:() => boolean;
+  onClose: () => void;
 }
 
 const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
@@ -136,8 +137,8 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   handleConfirm,
   setModalAction,
   topRef,
-  formatMoney,
-  addressToLine,
+  // formatMoney,
+  // addressToLine,
   commentsRef,
   showCommentBox,
   setShowCommentBox,
@@ -281,8 +282,9 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   const handleRestorePurchaseOrderData = async (id) => {
     try {
       await purchaseOrderService.restorePurchaseOrderData(id);
-      fetchPurchaseOrder()
+      fetchPurchaseOrder();
       onClose();
+      toast.success("Successfully Restore the Purchase Order");
     } catch (err) {
       toast.error("Failed to restore the Purchase order Data");
     }
@@ -396,36 +398,42 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                   </div>
                   <StatusBadge status={selectedPO.status} />
                 </div>
-                {selectedPO.dueDate && (
-                  <div className="capitalize">
-                    <div className="text-sm text-muted-foreground mb-1">
-                      Due Date
-                    </div>
-                    {(() => {
-                      const dueDate = new Date(selectedPO?.dueDate);
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
+                {selectedPO.status === "completed" ? null : (
+                  <>
+                    {selectedPO.dueDate && (
+                      <div className="capitalize">
+                        <div className="text-sm text-muted-foreground mb-1">
+                          Due Date
+                        </div>
+                        {(() => {
+                          const dueDate = new Date(selectedPO?.dueDate);
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
 
-                      const isOverdue = dueDate < today;
+                          const isOverdue = dueDate < today;
 
-                      return (
-                        <span
-                          className={`capitalize text-sm font-medium ${
-                            isOverdue ? "text-red-600 font-semibold" : ""
-                          }`}
-                        >
-                          {isOverdue ? (
-                            <div className="">
-                              <span>{formatDateOnly(selectedPO.dueDate)}</span>
-                              <p>Overdue</p>
-                            </div>
-                          ) : (
-                            formatDateOnly(selectedPO.dueDate)
-                          )}
-                        </span>
-                      );
-                    })()}
-                  </div>
+                          return (
+                            <span
+                              className={`capitalize text-sm font-medium ${
+                                isOverdue ? "text-red-600 font-semibold" : ""
+                              }`}
+                            >
+                              {isOverdue ? (
+                                <div className="">
+                                  <span>
+                                    {formatDateOnly(selectedPO.dueDate)}
+                                  </span>
+                                  <p>Overdue</p>
+                                </div>
+                              ) : (
+                                formatDateOnly(selectedPO.dueDate)
+                              )}
+                            </span>
+                          );
+                        })()}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </Card>

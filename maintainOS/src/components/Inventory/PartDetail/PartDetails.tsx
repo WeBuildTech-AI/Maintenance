@@ -33,7 +33,7 @@ export function PartDetails({
 }: {
   item: any;
   restoreData: string;
-  onClose: () => Boolean;
+  onClose: () => void;
   stockStatus?: { ok: boolean; delta: number } | null;
   onEdit: () => void;
   onDeleteSuccess: (id: string) => void; // ✅ added type

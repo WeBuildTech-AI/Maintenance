@@ -40,6 +40,7 @@ export type NewPOForm = {
   contactName: string;
   contactEmailOrPhone: string;
   taxLines: string;
+  vendorContactIds: [];
 };
 
 export type NewPOFormProps = {
@@ -73,7 +74,8 @@ export type POStatus =
   | "Approved"
   | "pending"
   | "Received"
-  | "Cancelled";
+  | "Cancelled"
+  | "completed";
 
 export type PurchaseOrder = {
   id: string; // internal id
