@@ -1,3 +1,4 @@
+// src/store/workOrders/workOrders.thunks.ts
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { workOrderService } from "./workOrders.service";
 import type {
@@ -5,7 +6,6 @@ import type {
   CreateWorkOrderData,
   UpdateWorkOrderData,
   CreateOtherCostData,
-  CreateTimeEntryData,
   AddCommentPayload,
 } from "./workOrders.types";
 
@@ -95,7 +95,7 @@ export const batchDeleteMeter = createAsyncThunk(
 
 // --- Status ---
 
-// ✅ NEW THUNK for Open, In Progress, On Hold
+// ✅ NEW THUNK: Uses Specific Status API
 export const updateWorkOrderStatus = createAsyncThunk(
   "workOrders/updateStatus",
   async (
@@ -116,7 +116,6 @@ export const markWorkOrderCompleted = createAsyncThunk(
   "workOrders/markCompleted",
   async (id: string, { rejectWithValue }) => {
     try {
-      // Deprecated potentially, but kept for safety
       return await workOrderService.patchWorkOrderComplete(id);
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || "Failed");
@@ -141,7 +140,7 @@ export const markWorkOrderInProgress = createAsyncThunk(
   "workOrders/markInProgress",
   async (id: string, { rejectWithValue }) => {
     try {
-      return await workOrderService.markInProgress(id);
+      return await workOrderService.markWorkOrderInProgress(id);
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to mark in progress"
@@ -198,7 +197,6 @@ export const fetchWorkOrderComments = createAsyncThunk(
   }
 );
 
-// ✅ Thunk accepts workOrderId string
 export const fetchWorkOrderLogs = createAsyncThunk(
   "workOrders/fetchLogs",
   async (workOrderId: string, { rejectWithValue }) => {

@@ -29,9 +29,7 @@ export const workOrderService = {
   createWorkOrder: async (
     data: CreateWorkOrderData
   ): Promise<WorkOrderResponse> => {
-    const res = await api.post(`/work-orders`, data, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const res = await api.post(`/work-orders`, data);
     return res.data;
   },
 
@@ -44,10 +42,6 @@ export const workOrderService = {
       method: "PATCH",
       url: `/work-orders/${id}/${authorId}`, 
       data,
-      headers: {
-        "Content-Type": "multipart/form-data", 
-        Accept: "application/json",
-      },
     });
     return res.data;
   },
@@ -64,7 +58,7 @@ export const workOrderService = {
 
   // --- Status Updates ---
 
-  // ✅ NEW: Specific Status Update API
+  // ✅ NEW: Specific Status Update API (PATCH /work-orders/{id}/status/{authorId})
   updateWorkOrderStatus: async (
     id: string, 
     authorId: string, 
@@ -110,10 +104,7 @@ export const workOrderService = {
   // --- LOGS ---
 
   fetchWorkOrderLogs: async (workOrderId: string): Promise<WorkOrderLog[]> => {
-    // ✅ Fetches logs for specific Work Order ID
     const res = await api.get(`/work-orders/get/work-order-logs/${workOrderId}`);
-    
-    // Safe Data Extraction
     if (Array.isArray(res.data)) {
         return res.data;
     } else if (res.data && Array.isArray(res.data.data)) {

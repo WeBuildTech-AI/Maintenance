@@ -18,7 +18,7 @@ export interface WorkOrderLog {
   id: string;
   workOrderId: string;
   authorId: string;
-  responseLog: string; // ✅ Matches API JSON "responseLog"
+  responseLog: string;
   activityType: string;
   oldValue?: string | null;
   newValue?: string | null;
@@ -80,7 +80,6 @@ export interface WorkOrderResponse {
   assigneeIds?: string[];
   assignedTeamIds?: string[];
   
-  // Expanded objects for UI
   assignees?: any[];
   teams?: any[];
   location?: any;
@@ -101,11 +100,11 @@ export interface WorkOrderResponse {
   deletedDate?: string;
   wasDeleted?: boolean;
   
-  // Cost totals
   grandTotalCost?: string;
   otherCostTotal?: string;
   partsCostTotal?: string;
   timeCostTotal?: string;
+  recurrenceRule?: any;
 }
 
 export interface CreateWorkOrderData {
@@ -126,6 +125,7 @@ export interface CreateWorkOrderData {
   qrCode?: string;
   workType?: string;
   recurrence?: string;
+  recurrenceRule?: any;
 }
 
 export interface UpdateWorkOrderData extends Partial<CreateWorkOrderData> {
@@ -138,6 +138,11 @@ export interface AssignWorkOrderData {
 
 export interface AddCommentPayload {
   message: string;
+}
+
+// ✅ NEW TYPE
+export interface UpdateWorkOrderStatusPayload {
+  status: string;
 }
 
 export interface WorkOrdersState {
