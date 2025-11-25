@@ -523,7 +523,7 @@ export default function PurchaseOrdersTable({
         <AssetTableModal
           data={selectedPurchaseOrderTable}
           onClose={() => setIsOpenPurchaseOrderDetailsModal(false)}
-          showDetailsSection={"purchase Order"}
+          showDetailsSection={"purchaseorder"}
           restoreData={"Restore"}
           fetchData={fetchPurchaseOrders}
         />
