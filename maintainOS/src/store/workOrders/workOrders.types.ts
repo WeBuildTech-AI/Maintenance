@@ -89,6 +89,7 @@ export interface WorkOrderResponse {
   categories?: any[];
   procedures?: any[];
   meters?: any[];
+  submissions?: any[]; // Added for procedure submissions
   
   otherCosts?: OtherCost[];
   timeEntries?: WorkOrderTimeEntry[];
@@ -140,9 +141,24 @@ export interface AddCommentPayload {
   message: string;
 }
 
-// ✅ NEW TYPE
 export interface UpdateWorkOrderStatusPayload {
   status: string;
+}
+
+// ✅ NEW TYPES FOR PROCEDURE FIELD RESPONSES
+export interface CreateFieldResponseData {
+  submissionId: string;
+  fieldId: string;
+  value: string | number | boolean;
+  notes?: string;
+}
+
+export interface FieldResponseResponse {
+  id: string;
+  submissionId: string;
+  fieldId: string;
+  value: any;
+  createdAt: string;
 }
 
 export interface WorkOrdersState {

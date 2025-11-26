@@ -7,6 +7,7 @@ import type {
   UpdateWorkOrderData,
   CreateOtherCostData,
   AddCommentPayload,
+  CreateFieldResponseData // ✅ Imported
 } from "./workOrders.types";
 
 // --- Work Orders ---
@@ -95,7 +96,6 @@ export const batchDeleteMeter = createAsyncThunk(
 
 // --- Status ---
 
-// ✅ NEW THUNK: Uses Specific Status API
 export const updateWorkOrderStatus = createAsyncThunk(
   "workOrders/updateStatus",
   async (
@@ -275,6 +275,22 @@ export const deleteTimeEntry = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to delete time entry"
+      );
+    }
+  }
+);
+
+// --- Procedure Field Responses ---
+
+// ✅ NEW THUNK: Submit field response
+export const submitFieldResponse = createAsyncThunk(
+  "workOrders/submitFieldResponse",
+  async (data: CreateFieldResponseData, { rejectWithValue }) => {
+    try {
+      return await workOrderService.createFieldResponse(data);
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to save field response"
       );
     }
   }

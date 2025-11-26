@@ -22,10 +22,12 @@ export function ToDoView({
   creatingWorkOrder,
   onCancelCreate,
   onRefreshWorkOrders,
+  onOptimisticUpdate, // ✅ Added Prop
 }: ToDoViewProps & {
   creatingWorkOrder?: boolean;
   onCancelCreate?: () => void;
   onRefreshWorkOrders?: () => void;
+  onOptimisticUpdate?: (id: string, updates: any) => void; // ✅ Typed
 }) {
   const [activeTab, setActiveTab] = useState<"todo" | "done">("todo");
   const [activeStatus, setActiveStatus] = useState<StatusKey>("open");
@@ -159,10 +161,7 @@ export function ToDoView({
 
   const getInitials = (name: string | undefined | null): string =>
     typeof name === "string" && name.trim().length > 0
-      ? name
-          .split(" ")
-          .map((n) => n[0])
-          .join("")
+      ? name.split(" ").map((n) => n[0]).join("")
       : "U";
 
   // --------------------------------------------------
@@ -234,6 +233,8 @@ export function ToDoView({
                   safeAssignee={safeAssignee}
                   getInitials={getInitials}
                   activeTab={activeTab}
+                  onRefresh={onRefreshWorkOrders} // Passed refresh function
+                  onOptimisticUpdate={onOptimisticUpdate} // ✅ Passed Optimistic function
                 />
               ))}
             </div>
@@ -283,6 +284,7 @@ export function ToDoView({
               CopyPageU={CopyPageU}
               onEdit={handleEditWorkOrder}
               onRefreshWorkOrders={onRefreshWorkOrders}
+              onOptimisticUpdate={onOptimisticUpdate} // ✅ Passed to Details as well if needed
               /* new line added */
               activePanel={activePanel}
               setActivePanel={setActivePanel}

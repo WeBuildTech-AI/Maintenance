@@ -7,7 +7,7 @@ import type {
   WorkOrderLog 
 } from "./workOrders.types";
 import {
-  updateWorkOrderStatus, // ✅ Import new thunk
+  updateWorkOrderStatus,
   addWorkOrderComment,
   fetchWorkOrderComments,
   fetchWorkOrderLogs,
@@ -24,6 +24,8 @@ import {
   addTimeEntry,
   deleteTimeEntry,
   patchWorkOrderComplete,
+  // ✅ Import the new thunk
+  submitFieldResponse,
 } from "./workOrders.thunks";
 
 const initialState: WorkOrdersState = {
@@ -130,7 +132,7 @@ const workOrdersSlice = createSlice({
         state.error = action.payload as string;
       })
 
-      // ✅ NEW: Update Status Reducer
+      // --- Update Status (New) ---
       .addCase(updateWorkOrderStatus.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -454,6 +456,20 @@ const workOrdersSlice = createSlice({
       .addCase(deleteTimeEntry.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+
+      // ✅ NEW: Submit Field Response Cases
+      // We deliberately DO NOT set loading=true here to avoid full screen blocking/flicker
+      // This runs in the background while the user types/moves focus
+      .addCase(submitFieldResponse.pending, (state) => {
+         // No global loading state change
+      })
+      .addCase(submitFieldResponse.fulfilled, (state, action) => {
+         // Success - UI already updated by local state in component
+      })
+      .addCase(submitFieldResponse.rejected, (state, action) => {
+         state.error = action.payload as string;
+         // Optional: You can log this error
       });
   },
 });

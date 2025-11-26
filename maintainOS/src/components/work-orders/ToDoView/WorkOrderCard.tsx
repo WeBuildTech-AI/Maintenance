@@ -91,18 +91,7 @@ export function WorkOrderCard({
     Daily: "bg-emerald-100 text-emerald-700 border-emerald-200",
   };
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "—";
-    try {
-      return new Date(dateString).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
-    } catch {
-      return dateString;
-    }
-  };
+  // Removed formatDate helper as it is no longer used for Due Date display in this card
 
   const isOverdue = useMemo(() => {
     if (!wo.dueDate) return false;
@@ -154,6 +143,7 @@ export function WorkOrderCard({
         toast.success(`Status updated to ${newStatus.replace("_", " ")}`);
       }
 
+      // ✅ Force Refresh immediately after successful API call
       if (onRefresh) {
         onRefresh();
       }
@@ -251,7 +241,7 @@ export function WorkOrderCard({
               )}
 
               {!isOverdue && assignees.length > 0 && (
-                  <div className="flex items-center -space-x-1.5 ml-auto">
+                  <div className="flex items-center -space-x-2 ml-auto">
                      {displayAssignees.map((u: any, i: number) => (
                          <div 
                             key={u.id || i} 
@@ -271,12 +261,6 @@ export function WorkOrderCard({
                          </div>
                      )}
                   </div>
-              )}
-
-              {!isOverdue && wo.dueDate && assignees.length === 0 && (
-                <span className="text-xs text-gray-400 flex items-center gap-1 ml-auto">
-                  Due {formatDate(wo.dueDate)}
-                </span>
               )}
             </div>
           </div>
