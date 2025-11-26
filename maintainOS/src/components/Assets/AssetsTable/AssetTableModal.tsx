@@ -7,6 +7,7 @@ import LocationDetails from "../../Locations/LocationDetails";
 import VendorDetails from "../../vendors/VendorDetails/VendorDetails";
 import { PartDetails } from "../../Inventory/PartDetail/PartDetails";
 import PurchaseOrderDetails from "../../purchase-orders/PurchaseOrderDetails";
+import { StatusBadge } from "../../purchase-orders/StatusBadge";
 
 // Define the props interface
 interface AssetTableModalProps {
@@ -20,6 +21,7 @@ interface AssetTableModalProps {
   setShowReadingMeter: Dispatch<SetStateAction<boolean>>;
   setIsRecordModalOpen: Dispatch<SetStateAction<boolean>>;
   restoreData: string;
+  showDeleted:boolean;
 }
 
 const AssetTableModal: React.FC<AssetTableModalProps> = ({
@@ -31,11 +33,14 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
   setSeeMoreAssetStatus,
   showDetailsSection,
   restoreData,
+  showDeleted
 }) => {
   // Prevent click inside modal content from closing the modal
   const handleContentClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
+
+  
 
   return (
     <div
@@ -125,10 +130,10 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
               setShowCommentBox={() => {}}
               handleEditClick={() => {}}
               setApproveModal={() => {}}
-              StatusBadge={() => null}
               fetchPurchaseOrder={fetchData}
               restoreData={restoreData}
               onClose={onClose}
+              showDeleted={showDeleted}
             />
           )}
         </div>

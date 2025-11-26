@@ -11,7 +11,6 @@ import { Badge } from "../ui/badge";
 import { Link as LinkIcon, Building2, Mail, Phone } from "lucide-react";
 
 import {
-  mockPOsSeed,
   mockVendors,
   type Address,
   type POItem,
@@ -33,7 +32,7 @@ import toast from "react-hot-toast";
 import PurchaseOrderDetails from "./PurchaseOrderDetails";
 import Loader from "../Loader/Loader";
 import { useNavigate } from "react-router-dom";
-import { formatDateOnly } from "../utils/Date";
+import { StatusBadge } from "./StatusBadge";
 
 // --- Helper to deep compare arrays ---
 function getChangedFields(
@@ -163,7 +162,7 @@ export function PurchaseOrders() {
   const [isSettingModalOpen, setIsSettingModalOpen] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [modalAction, setModalAction] = useState<
-    "reject" | "approve" | "delete" | null
+    "reject" | "approve" | "delete" | "fullfill" | "cancelled" | null
   >(null);
   const user = useSelector((state: RootState) => state.auth.user);
   const [showCustomPoInput, setShowCustomPoInput] = useState(false);
@@ -825,7 +824,7 @@ export function PurchaseOrders() {
                 formatMoney={formatMoney}
                 addressToLine={addressToLine}
                 commentsRef={commentsRef}
-                StatusBadge={StatusBadge}
+                // StatusBadge={StatusBadge}
                 showCommentBox={showCommentBox}
                 setShowCommentBox={setShowCommentBox}
                 handleEditClick={() => handleEditPO(selectedPO)}
@@ -913,23 +912,7 @@ export function PurchaseOrders() {
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    pending: "bg-orange-50 text-orange-700 border-orange-200",
-    approved: "bg-green-50 text-green-700 border-green-200",
-    partially_fulfilled: "bg-blue-50 text-blue-700 border-blue-200",
-    received: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    cancelled: "bg-red-50 text-red-700 border-red-200",
-    Draft: "bg-gray-50 text-gray-700 border-gray-200",
-    completed: "bg-orange-50 text-orange-600 border-orange-600",
-  };
-  const className = map[status] || map["Draft"];
-  return (
-    <Badge variant="outline" className={`capitalize ${className}`}>
-      {status}
-    </Badge>
-  );
-}
+
 
 function VendorPill({ vendorId }: { vendorId: string }) {
   const vendor = mockVendors.find((v) => v.id === vendorId);

@@ -275,6 +275,8 @@ export default function PurchaseOrdersTable({
     }
   };
 
+  // console.log(selectedPurchaseOrderTable, "purchase order");
+
   const handleApplySettings = (settings: {
     resultsPerPage: number;
     showDeleted: boolean;
@@ -526,6 +528,7 @@ export default function PurchaseOrdersTable({
           showDetailsSection={"purchaseorder"}
           restoreData={"Restore"}
           fetchData={fetchPurchaseOrders}
+          showDeleted={showDeleted}
         />
       )}
     </div>
