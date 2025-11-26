@@ -131,6 +131,7 @@ interface PurchaseOrderDetailsProps {
   fetchPurchaseOrder: () => void;
   restoreData: String;
   onClose: () => void;
+  showDeleted: boolean;
 }
 
 const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
@@ -150,6 +151,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   fetchPurchaseOrder,
   restoreData,
   onClose,
+  showDeleted,
 }) => {
   console.log(selectedPO.status, "purchase Order Data ");
   const [fullFillModal, setFullFillModal] = React.useState(false);
@@ -334,7 +336,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              {!restoreData && (
+              {!showDeleted && (
                 <DropdownMenuContent align="end">
                   {selectedPO.status === "pending" && (
                     <DropdownMenuItem
@@ -371,7 +373,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                 </DropdownMenuContent>
               )}
 
-              {restoreData && (
+              {showDeleted && (
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
                     className="text-red-600"
