@@ -1,7 +1,7 @@
 "use client";
 
 import { forwardRef, useEffect, useState, useMemo } from "react";
-import { Paperclip, X, Loader2 } from "lucide-react";
+import { Paperclip, X, Loader2, Filter } from "lucide-react";
 import { formatBytes } from "../../../utils/formatBytes";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import {
@@ -10,7 +10,7 @@ import {
   fetchWorkOrderLogs,
 } from "../../../store/workOrders/workOrders.thunks";
 import toast from "react-hot-toast";
-import { User as UserIcon } from "lucide-react"; // Added UserIcon import for the avatar fallback
+import { User as UserIcon } from "lucide-react"; 
 
 const formatCommentDate = (dateString?: string) => {
   if (!dateString) return "";
@@ -31,44 +31,44 @@ interface CommentsSectionProps {
   attachment: File | null;
   setAttachment: (file: File | null) => void;
   fileRef: React.RefObject<HTMLInputElement>;
+  refreshTrigger?: number; 
 }
 
 export const CommentsSection = forwardRef<
   HTMLTextAreaElement,
   CommentsSectionProps
 >(function CommentsSection(
-  { comment, setComment, attachment, setAttachment, fileRef, selectedWorkOrder },
+  { comment, setComment, attachment, setAttachment, fileRef, selectedWorkOrder, refreshTrigger },
   ref
 ) {
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector((state) => state.auth.user);
 
-  // ✅ LOCAL STATE for immediate UI updates
   const [localLogs, setLocalLogs] = useState<any[]>([]);
   const [localComments, setLocalComments] = useState<any[]>(selectedWorkOrder?.comments || []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Sync prop changes (when switching Work Orders)
+  // ✅ FILTER STATE
+  const [filter, setFilter] = useState<'all' | 'comments' | 'logs'>('all');
+
+  // Sync prop changes
   useEffect(() => {
     if (selectedWorkOrder?.comments) {
         setLocalComments(selectedWorkOrder.comments);
     }
   }, [selectedWorkOrder]);
 
-
-  // ✅ Fetch Data (Logs and Comments) on Mount/Change
+  // Fetch Data
   useEffect(() => {
     if (selectedWorkOrder?.id) {
-      setIsLoading(true);
+      if (!refreshTrigger || refreshTrigger === 0) setIsLoading(true);
 
       Promise.all([
-        // 1. Fetch Comments & Update Local State
         dispatch(fetchWorkOrderComments(selectedWorkOrder.id))
           .unwrap()
-          .then((res) => setLocalComments(res)), // Updates UI immediately
+          .then((res) => setLocalComments(res)),
 
-        // 2. Fetch Logs & Update Local State
         dispatch(fetchWorkOrderLogs(selectedWorkOrder.id))
           .unwrap()
           .then((res) => {
@@ -77,7 +77,7 @@ export const CommentsSection = forwardRef<
       ])
         .finally(() => setIsLoading(false));
     }
-  }, [dispatch, selectedWorkOrder?.id]);
+  }, [dispatch, selectedWorkOrder?.id, refreshTrigger]);
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
@@ -91,7 +91,6 @@ export const CommentsSection = forwardRef<
     if (!comment.trim()) return;
     if (!selectedWorkOrder?.id) return;
 
-    // --- OPTIMISTIC UI / IMMEDIATE REFETCH ---
     try {
       setIsSubmitting(true);
 
@@ -102,12 +101,13 @@ export const CommentsSection = forwardRef<
         })
       ).unwrap();
 
-      // 1. Clear input/UI state
       setComment("");
       setAttachment(null);
       toast.success("Comment added");
+      
+      // ✅ Switch to comments tab to see new message
+      setFilter('comments');
 
-      // 2. ✅ FORCE REFETCH & UPDATE LOCAL STATE: This is the definitive fix.
       const updatedComments = await dispatch(fetchWorkOrderComments(selectedWorkOrder.id)).unwrap();
       setLocalComments(updatedComments);
       
@@ -121,17 +121,23 @@ export const CommentsSection = forwardRef<
   const timelineItems = useMemo(() => {
     const currentLogs = Array.isArray(localLogs) ? localLogs : [];
     
-    // ✅ Use localComments for merge
-    const items = [
+    let items = [
       ...localComments.map((c: any) => ({ ...c, type: "comment" })),
       ...currentLogs.map((l: any) => ({ ...l, type: "log" })),
     ];
+
+    // ✅ Filter Logic
+    if (filter === 'comments') {
+      items = items.filter(i => i.type === 'comment');
+    } else if (filter === 'logs') {
+      items = items.filter(i => i.type === 'log');
+    }
 
     return items.sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
-  }, [localComments, localLogs]);
+  }, [localComments, localLogs, filter]);
 
   return (
     <>
@@ -202,10 +208,30 @@ export const CommentsSection = forwardRef<
         </div>
       </div>
 
+      {/* ✅ FILTER TABS */}
+      <div className="flex items-center gap-6 px-6 border-b border-gray-100 bg-white">
+        {[
+          { id: 'all', label: 'All Activity' },
+          { id: 'comments', label: 'Comments' },
+          { id: 'logs', label: 'Logs' }
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setFilter(tab.id as any)}
+            className={`py-3 text-xs font-medium border-b-2 transition-colors ${
+              filter === tab.id 
+                ? 'border-blue-600 text-blue-600' 
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {/* TIMELINE */}
       <div className="space-y-6 p-6 bg-white">
 
-        {/* 🟦 SKELETON LOADER */}
         {isLoading ? (
           <div className="space-y-6">
             {[1, 2, 3, 4].map((i) => (
@@ -222,11 +248,10 @@ export const CommentsSection = forwardRef<
           </div>
         ) : timelineItems.length === 0 ? (
           <p className="text-sm text-gray-400 text-center py-4">
-            No activity yet.
+            No activity found.
           </p>
         ) : (
           timelineItems.map((item: any, index: number) => {
-            // 🔥 Unified Author Handling
             const author = item.author || currentUser || {};
             const authorName = author.fullName || "Unknown User";
             const authorAvatar = author.avatarUrl || null;
@@ -235,7 +260,6 @@ export const CommentsSection = forwardRef<
 
             const isLog = item.type === "log";
 
-            // Message Builder
             let messageText = "";
             if (isLog) {
               let msg = item.responseLog || "Activity logged";
@@ -284,7 +308,7 @@ export const CommentsSection = forwardRef<
                     className={`text-sm leading-relaxed w-fit max-w-full break-words ${
                       isLog
                         ? "text-gray-700 italic px-1"
-                        : "text-gray-800 bg-gray-100 rounded-lg "
+                        : "text-gray-800 bg-gray-100 rounded-lg px-3 py-2"
                     }`}
                   >
                     {messageText?.split("\n").map((line: string, i: number) => (

@@ -11,6 +11,8 @@ import type {
   WorkOrderComment,
   WorkOrderLog,
   AddCommentPayload,
+  CreateFieldResponseData, // ✅ Imported
+  FieldResponseResponse    // ✅ Imported
 } from "./workOrders.types";
 
 export const workOrderService = {
@@ -58,7 +60,6 @@ export const workOrderService = {
 
   // --- Status Updates ---
 
-  // ✅ NEW: Specific Status Update API (PATCH /work-orders/{id}/status/{authorId})
   updateWorkOrderStatus: async (
     id: string, 
     authorId: string, 
@@ -138,6 +139,17 @@ export const workOrderService = {
     entryId: string
   ): Promise<{ success: boolean }> => {
     const res = await api.delete(`/work-orders/${id}/time/${entryId}`);
+    return res.data;
+  },
+
+  // --- Procedure Field Responses ---
+  
+  // ✅ NEW: Save a single field response
+  createFieldResponse: async (
+    data: CreateFieldResponseData
+  ): Promise<FieldResponseResponse> => {
+    // Assuming API is relative to baseURL, otherwise use full path
+    const res = await api.post(`/procedure-field-responses`, data);
     return res.data;
   },
 };

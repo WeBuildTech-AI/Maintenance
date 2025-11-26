@@ -16,6 +16,11 @@ import {
   Layers,
   ClipboardList,
   Gauge,
+  // ✅ Added missing icons for status
+  CheckCircle2,
+  PauseCircle,
+  RefreshCcw,
+  Activity, 
 } from "lucide-react";
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -183,6 +188,8 @@ export function WorkOrderDetails({
   CopyPageU,
   onEdit,
   onRefreshWorkOrders,
+  onOptimisticUpdate, // ✅ Receive Prop
+  onRefreshLogs,      // ✅ Receive Log Refresh Handler
   activePanel,
   setActivePanel,
 }: any) {
@@ -247,6 +254,7 @@ export function WorkOrderDetails({
     }
   };
 
+  // ✅ Status Change Handler (Added logic for real-time refresh)
   const handleStatusChange = async (newStatus: string) => {
     if (activeStatus === newStatus) return;
 
@@ -259,12 +267,16 @@ export function WorkOrderDetails({
         return;
     }
 
+    // ✅ Optimistic Update Parent List
+    if (onOptimisticUpdate && selectedWorkOrder?.id) {
+        onOptimisticUpdate(selectedWorkOrder.id, { status: newStatus });
+    }
+
     try {
       if (newStatus === "done" || newStatus === "completed") {
         await dispatch(patchWorkOrderComplete(selectedWorkOrder.id)).unwrap();
         toast.success("Work order completed");
       } 
-      // ✅ Use New Status API for "in_progress", "on_hold", "open"
       else if (
           newStatus === "in_progress" || 
           newStatus === "on_hold" || 
@@ -277,7 +289,8 @@ export function WorkOrderDetails({
             status: newStatus,
           })
         ).unwrap();
-        toast.success(`Status updated to ${newStatus.replace("_", " ")}`);
+        const label = newStatus.replace("_", " ");
+        toast.success(`Status updated to ${label.charAt(0).toUpperCase() + label.slice(1)}`);
       } 
       else {
         // Fallback to update full object if needed
@@ -288,12 +301,19 @@ export function WorkOrderDetails({
             data: { status: newStatus as any },
           })
         ).unwrap();
-        toast.success(`Status updated to ${newStatus.replace("_", " ")}`);
+        const label = newStatus.replace("_", " ");
+        toast.success(`Status updated to ${label.charAt(0).toUpperCase() + label.slice(1)}`);
       }
 
       if (onRefreshWorkOrders) {
         onRefreshWorkOrders();
       }
+
+      // ✅ Refresh Logs
+      if (onRefreshLogs) {
+        onRefreshLogs();
+      }
+
     } catch (error: any) {
       console.error("Status update failed", error);
       toast.error(error?.message || "Failed to update status");
@@ -460,30 +480,29 @@ export function WorkOrderDetails({
       )}
 
       <div className="flex-1 p-6 space-y-6">
+        {/* ✅ Status Buttons Added Here */}
         <div>
           <h3 className="text-sm font-medium mb-2">Status</h3>
           <div className="flex items-start justify-between gap-6 border rounded-lg p-4 bg-white sm:flex-row flex-col" role="group">
             <div className="flex gap-4">
               {[
                 { key: "open", label: "Open", Icon: MessageSquare },
-                { key: "on_hold", label: "On hold", Icon: Edit },
+                { key: "on_hold", label: "On hold", Icon: PauseCircle },
                 { key: "in_progress", label: "In Progress", Icon: Clock },
-                { key: "done", label: "Done", Icon: CalendarDays },
+                { key: "done", label: "Done", Icon: CheckCircle2 },
               ].map(({ key, label, Icon }) => {
-                const currentStatus = (selectedWorkOrder.status || "open").toLowerCase();
-                const isCurrent = currentStatus === key;
-                const isSelected = activeStatus === key;
-                const active = isSelected || isCurrent;
+                const currentStatus = (activeStatus || "open").toLowerCase();
+                const isActive = currentStatus === key;
 
                 return (
                   <button
                     key={key}
                     type="button"
                     onClick={() => handleStatusChange(key)}
-                    aria-pressed={active}
+                    aria-pressed={isActive}
                     disabled={isDeleting}
                     className={`h-16 w-20 rounded-lg border shadow-md inline-flex flex-col items-center justify-center gap-2 transition-all outline-none focus-visible:ring-[3px] focus-visible:border-ring ${
-                      active
+                      isActive
                         ? "bg-orange-600 text-white border-orange-600"
                         : "bg-orange-50 text-sidebar-foreground border-gray-200 hover:bg-orange-100"
                     }`}
@@ -676,6 +695,7 @@ export function WorkOrderDetails({
                     href={originId ? `/procedures/${originId}` : "#"}
                     className="text-blue-600 underline"
                     onClick={(e) => {
+                      e.preventDefault(); 
                     }}
                   >
                     {originTitle}
