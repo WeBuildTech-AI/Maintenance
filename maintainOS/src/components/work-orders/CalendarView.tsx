@@ -30,7 +30,7 @@ import {
 } from 'date-fns';
 import WorkOrderDetailModal from './Tableview/modals/WorkOrderDetailModal';
 
-// --- 1. Day List Modal (Updated: No Blur) ---
+// --- 1. Day List Modal (Unchanged) ---
 function DayListModal({
   date,
   workOrders,
@@ -48,8 +48,7 @@ function DayListModal({
 
   return createPortal(
     <div 
-      // ❌ Removed 'backdrop-blur-sm' 
-      className="fixed inset-0 z-[99999] flex items-center justify-center  p-4" 
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-4" 
       onClick={onClose}
     >
       <div 
@@ -135,8 +134,16 @@ function DayListModal({
   );
 }
 
-// --- 2. Hover Popover (Unchanged) ---
-function EventDetailPopover({ workOrder, anchorRect }: { workOrder: WorkOrder; anchorRect: DOMRect; }) {
+// --- 2. Hover Popover (UPDATED: Hide Status/Due Date for Future) ---
+function EventDetailPopover({ 
+  workOrder, 
+  anchorRect,
+  eventDate // ✅ Passed from Parent to know context date
+}: { 
+  workOrder: WorkOrder; 
+  anchorRect: DOMRect; 
+  eventDate?: Date; 
+}) {
   const formatDate = (date?: string) => date ? format(new Date(date), 'MMM d, yyyy') : '-';
   const assignee = workOrder.assignees?.[0] || workOrder.assignedTo;
   const assigneeName = typeof assignee === 'object' ? (assignee.fullName || assignee.name) : '-';
@@ -151,6 +158,12 @@ function EventDetailPopover({ workOrder, anchorRect }: { workOrder: WorkOrder; a
   };
 
   const statusLabel = workOrder.status ? workOrder.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Open';
+
+  // ✅ Future Check Logic
+  const today = startOfDay(new Date());
+  // Use passed eventDate or fallback to workOrder due date or today
+  const targetDate = eventDate ? startOfDay(eventDate) : (workOrder.dueDate ? startOfDay(new Date(workOrder.dueDate)) : today);
+  const isFuture = isAfter(targetDate, today);
 
   const POPOVER_HEIGHT = 320; 
   const POPOVER_WIDTH = 300;
@@ -190,21 +203,39 @@ function EventDetailPopover({ workOrder, anchorRect }: { workOrder: WorkOrder; a
         <h3 className="font-semibold text-gray-900 line-clamp-2 leading-tight">
           {workOrder.title || "Untitled Work Order"}
         </h3>
+        {/* Optional: Show Lock icon in header for future */}
+        {isFuture && <Lock size={16} className="text-amber-500 flex-shrink-0 mt-1" />}
       </div>
+      
       <div className="p-4 space-y-3">
-        <div className="flex justify-between items-center">
-          <span className="text-gray-500">Status</span>
-          <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusStyle(workOrder.status)}`}>
-            {workOrder.status === 'in_progress' && <RefreshCcw size={10} className="animate-spin-slow" />}
-            {workOrder.status === 'done' && <CheckCircle2 size={10} />}
-            {statusLabel}
-          </span>
-        </div>
-        <div className="h-px bg-gray-100 my-2" />
-        <div className="flex justify-between items-center">
-          <span className="text-gray-500">Due Date</span>
-          <span className="text-gray-900 font-medium">{formatDate(workOrder.dueDate)}</span>
-        </div>
+        
+        {/* ✅ HIDE STATUS IF FUTURE */}
+        {!isFuture && (
+          <>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-500">Status</span>
+              <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusStyle(workOrder.status)}`}>
+                {workOrder.status === 'in_progress' && <RefreshCcw size={10} className="animate-spin-slow" />}
+                {workOrder.status === 'done' && <CheckCircle2 size={10} />}
+                {statusLabel}
+              </span>
+            </div>
+            <div className="h-px bg-gray-100 my-2" />
+          </>
+        )}
+
+        {/* ✅ HIDE DUE DATE IF FUTURE (or show 'Locked') */}
+        {isFuture ? (
+           <div className="flex justify-center items-center p-2 bg-amber-50 text-amber-700 text-xs font-medium rounded border border-amber-100">
+              Locked until {formatDate(targetDate.toISOString())}
+           </div>
+        ) : (
+           <div className="flex justify-between items-center">
+             <span className="text-gray-500">Due Date</span>
+             <span className="text-gray-900 font-medium">{formatDate(workOrder.dueDate)}</span>
+           </div>
+        )}
+
         <div className="flex justify-between items-center">
           <span className="text-gray-500">Estimated Time</span>
           <span className="text-gray-900">{workOrder.estimatedTimeHours ? `${workOrder.estimatedTimeHours}h` : '-'}</span>
@@ -269,6 +300,7 @@ export function CalendarView({ workOrders, onRefreshWorkOrders }: CalendarViewPr
   const today = startOfDay(new Date());
 
   const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
+  const [hoveredEventDate, setHoveredEventDate] = useState<Date | undefined>(undefined); // ✅ Track Date for Hover
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
   
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrder | null>(null);
@@ -300,15 +332,18 @@ export function CalendarView({ workOrders, onRefreshWorkOrders }: CalendarViewPr
     setDayListModalData({ date, events });
   };
 
-  const handleMouseEnter = (e: React.MouseEvent, id: string) => {
+  // ✅ Updated Hover Handler to capture Date
+  const handleMouseEnter = (e: React.MouseEvent, id: string, date: Date) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setAnchorRect(rect);
     setHoveredEventId(id);
+    setHoveredEventDate(date);
   };
 
   const handleMouseLeave = () => {
     setHoveredEventId(null);
     setAnchorRect(null);
+    setHoveredEventDate(undefined);
   };
 
   const handlePrev = () => {
@@ -362,6 +397,7 @@ export function CalendarView({ workOrders, onRefreshWorkOrders }: CalendarViewPr
         <EventDetailPopover
           workOrder={workOrders.find(w => w.id === hoveredEventId)!}
           anchorRect={anchorRect}
+          eventDate={hoveredEventDate} // ✅ Pass date to popover
         />
       )}
 
@@ -413,12 +449,11 @@ export function CalendarView({ workOrders, onRefreshWorkOrders }: CalendarViewPr
                   return (
                     <div
                       key={day.fullDate.toISOString()}
-                      // ✅ 2. CLICK ONLY OPENS MODAL IF CLICKING THE NUMBER CIRCLE (Logic moved below)
+                      // CLICK: Opens Modal ONLY on Number
                       className={`relative p-2 overflow-y-auto border-r border-b border-gray-200 transition-all ${day.isCurrentMonth ? 'bg-white hover:bg-gray-50' : 'bg-gray-50 text-gray-400'} ${isSelected ? 'bg-blue-50/10' : ''}`}
                       style={{ height: '7rem' }}
                     >
                       <div className="flex justify-end p-1">
-                        {/* ✅ CLICK HANDLER ON SPAN ONLY */}
                         <span
                             onClick={(e) => {
                                 e.stopPropagation(); // Prevent row click
@@ -426,7 +461,7 @@ export function CalendarView({ workOrders, onRefreshWorkOrders }: CalendarViewPr
                             }}
                             className={`text-xs font-medium flex items-center justify-center h-7 w-7 p-2 rounded-full cursor-pointer transition-all ${
                             day.isToday ? 'bg-blue-600 text-white' : 
-                            isSelected ? 'bg-yellow-400 text-black font-bold shadow-sm' : // Yellow Active
+                            isSelected ? 'bg-yellow-400 text-black font-bold shadow-sm' : 
                             day.isCurrentMonth ? 'text-gray-700 hover:bg-gray-200' : 'text-gray-400'
                             }`}
                         >
@@ -440,7 +475,7 @@ export function CalendarView({ workOrders, onRefreshWorkOrders }: CalendarViewPr
                             <div 
                               key={`${evt.id}-${day.date}`} 
                               onClick={(e) => handleEventClick(e, evt.id, day.fullDate)} 
-                              onMouseEnter={(e) => handleMouseEnter(e, evt.id)}
+                              onMouseEnter={(e) => handleMouseEnter(e, evt.id, day.fullDate)} // ✅ Pass Date
                               onMouseLeave={handleMouseLeave}
                               className={`flex items-center gap-1.5 p-1 rounded-md border shadow-sm transition group 
                                 ${isFuture 
@@ -474,13 +509,12 @@ export function CalendarView({ workOrders, onRefreshWorkOrders }: CalendarViewPr
                       style={{ minHeight: '24rem' }}
                     >
                       <div className="flex justify-center mb-2">
-                        {/* ✅ CLICK HANDLER ON SPAN ONLY */}
                         <span 
                            onClick={(e) => {
                                 e.stopPropagation();
                                 handleDayClick(day.fullDate, day.events);
                            }}
-                           className={`text-sm font-medium flex items-center justify-center h-8 w-8 p-2 rounded-full cursor-pointer transition-all ${
+                           className={`text-sm font-medium flex items-center justify-center h-8 w-8 rounded-full cursor-pointer transition-all ${
                             day.isToday ? 'bg-blue-600 text-white' : 
                             isSelected ? 'bg-yellow-400 text-black font-bold shadow-sm' : 
                             'text-gray-900 hover:bg-gray-200'
@@ -495,7 +529,7 @@ export function CalendarView({ workOrders, onRefreshWorkOrders }: CalendarViewPr
                             <div 
                               key={`${evt.id}-${day.date}`} 
                               onClick={(e) => handleEventClick(e, evt.id, day.fullDate)}
-                              onMouseEnter={(e) => handleMouseEnter(e, evt.id)}
+                              onMouseEnter={(e) => handleMouseEnter(e, evt.id, day.fullDate)} // ✅ Pass Date
                               onMouseLeave={handleMouseLeave}
                               className={`flex items-center gap-1.5 p-1 rounded-md border shadow-sm transition group 
                                 ${isFuture 
