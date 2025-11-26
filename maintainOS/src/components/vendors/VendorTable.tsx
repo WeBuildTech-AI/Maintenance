@@ -13,6 +13,7 @@ import SettingsModal from "../utils/SettingsModal";
 import { type Vendor } from "./vendors.types";
 import { vendorService } from "../../store/vendors";
 import AssetTableModal from "../Assets/AssetsTable/AssetTableModal";
+import { Tooltip } from "../ui/tooltip";
 
 // --- Helper Functions ---
 
@@ -238,14 +239,14 @@ export function VendorTable({
               Edit {selectedCount} {selectedCount === 1 ? "Item" : "Items"}
             </span>
             {/* Delete Button */}
-            <AntTooltip title="Delete" getPopupContainer={() => document.body}>
+            <Tooltip text="Delete" >
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
                 className={`flex items-center gap-1 transition ${
                   isDeleting
                     ? "text-gray-400 cursor-not-allowed"
-                    : "text-red-600 hover:text-red-700"
+                    : "text-orange-600 hover:text-orange-600 cursor-pointer"
                 }`}
               >
                 {isDeleting ? (
@@ -254,7 +255,7 @@ export function VendorTable({
                   <Trash2 size={16} />
                 )}
               </button>
-            </AntTooltip>
+            </Tooltip>
           </div>
         );
       },

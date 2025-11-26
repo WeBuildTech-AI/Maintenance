@@ -14,6 +14,7 @@ import SettingsModal from "../utils/SettingsModal";
 import { formatDateOnly } from "../utils/Date";
 import { partService } from "../../store/parts";
 import AssetTableModal from "../Assets/AssetsTable/AssetTableModal";
+import { Tooltip } from "../ui/tooltip";
 
 // --- Helper Functions ---
 
@@ -258,14 +259,14 @@ export function PartTable({
             <span className="text-sm font-medium text-gray-900">
               Edit {selectedCount} {selectedCount === 1 ? "Item" : "Items"}
             </span>
-            <AntTooltip title="Delete" getPopupContainer={() => document.body}>
+            <Tooltip text="Delete" >
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
                 className={`flex items-center gap-1 transition ${
                   isDeleting
                     ? "text-gray-400 cursor-not-allowed"
-                    : "text-red-600 hover:text-red-700"
+                    : "text-orange-600 hover:text-orange-600 cursor-pointer"
                 }`}
               >
                 {isDeleting ? (
@@ -274,7 +275,7 @@ export function PartTable({
                   <Trash2 size={16} />
                 )}
               </button>
-            </AntTooltip>
+            </Tooltip>
           </div>
         );
       },

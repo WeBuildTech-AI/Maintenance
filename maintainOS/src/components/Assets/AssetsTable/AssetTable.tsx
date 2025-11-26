@@ -17,7 +17,6 @@ import { assetService } from "../../../store/assets";
 import { Tooltip } from "../../ui/tooltip";
 import toast from "react-hot-toast";
 import SettingsModal from "../../utils/SettingsModal";
-
 import { Table } from "antd";
 import type { TableProps, TableColumnType } from "antd";
 import type { AppDispatch } from "../../../store";
@@ -386,22 +385,6 @@ export function AssetTable({
                   }`}
                 >
                   {isDeleting ? <Loader /> : <Trash2 size={16} />}
-                </button>
-              </Tooltip>
-            )}
-
-            {showDeleted === true && (
-              <Tooltip text="Delete">
-                <button
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className={`flex items-center gap-1 transition ${
-                    isDeleting
-                      ? "text-orange-400 cursor-not-allowed"
-                      : "text-orange-600 hover:text-red-700"
-                  }`}
-                >
-                  {isDeleting ? <Loader /> : <ArchiveRestoreIcon size={16} />}
                 </button>
               </Tooltip>
             )}

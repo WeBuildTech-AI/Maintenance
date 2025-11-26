@@ -130,7 +130,9 @@ export function MeterTable({
     useState<string[]>(allAvailableColumns);
   const [sortType, setSortType] = useState<string>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [selectedMeterTable, setSelectedMeterTable] = useState<any | null>(null);
+  const [selectedMeterTable, setSelectedMeterTable] = useState<any | null>(
+    null
+  );
   const [selectedMeterIds, setSelectedMeterIds] = useState<string[]>([]);
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
   const [isOpenMeterDetailsModal, setIsOpenMeterDetailsModal] = useState(false);
@@ -257,7 +259,7 @@ export function MeterTable({
                   ref={headerCheckboxRef}
                   checked={areAllSelected}
                   onChange={handleSelectAllToggle}
-                  className="h-4 w-4 accent-blue-600 cursor-pointer"
+                  className="h-4 w-4 bg-orange-600 cursor-pointer"
                 />
                 <span className="text-gray-600">Name</span>
               </div>
@@ -278,15 +280,15 @@ export function MeterTable({
               Edit {selectedCount} {selectedCount === 1 ? "Item" : "Items"}
             </span>
 
-            {/* ⭐ NEW: Delete Button */}
-            <AntTooltip title="Delete" getPopupContainer={() => document.body}>
+            {/* NEW: Delete Button */}
+            <Tooltip text="Delete">
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
                 className={`flex items-center gap-1 transition ${
                   isDeleting
                     ? "text-gray-400 cursor-not-allowed"
-                    : "text-red-600 hover:text-red-700"
+                    : "text-orange-600 hover:text-orange-600 cursor-pointer"
                 }`}
               >
                 {isDeleting ? (
@@ -295,7 +297,7 @@ export function MeterTable({
                   <Trash2 size={16} />
                 )}
               </button>
-            </AntTooltip>
+            </Tooltip>
           </div>
         );
       },
@@ -463,8 +465,6 @@ export function MeterTable({
           fetchData={fetchMeters}
         />
       )}
-
-      
     </div>
   );
 }

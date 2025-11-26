@@ -12,6 +12,7 @@ import type { TableProps, TableColumnType } from "antd";
 import toast from "react-hot-toast";
 import { locationService } from "../../store/locations";
 import AssetTableModal from "../Assets/AssetsTable/AssetTableModal";
+import { Tooltip } from "../ui/tooltip";
 
 type Sorter = Parameters<NonNullable<TableProps<any>["onChange"]>>[2];
 
@@ -252,14 +253,14 @@ export function LocationTable({
               Edit {selectedCount} {selectedCount === 1 ? "Item" : "Items"}
             </span>
 
-            <AntTooltip title="Delete" getPopupContainer={() => document.body}>
+            <Tooltip text="Delete" >
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
                 className={`flex items-center gap-1 transition ${
                   isDeleting
                     ? "text-gray-400 cursor-not-allowed"
-                    : "text-red-600 hover:text-red-700"
+                    : "text-orange-600 hover:text-orange-600 cursor-pointer"
                 }`}
               >
                 {isDeleting ? (
@@ -268,7 +269,7 @@ export function LocationTable({
                   <Trash2 size={16} />
                 )}
               </button>
-            </AntTooltip>
+            </Tooltip>
           </div>
         );
       },

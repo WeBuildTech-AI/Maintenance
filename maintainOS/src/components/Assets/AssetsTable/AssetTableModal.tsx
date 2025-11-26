@@ -121,7 +121,7 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
               selectedPO={data}
               updateState={() => {}}
               handleConfirm={() => {}}
-              setModalAction={() => {}}
+              setModalAction={(() => "delete")}
               topRef={{ current: null }}
               commentsRef={{ current: null }}
               formatMoney={(v) => v.toString()}
