@@ -21,6 +21,7 @@ interface AssetTableModalProps {
   setShowReadingMeter: Dispatch<SetStateAction<boolean>>;
   setIsRecordModalOpen: Dispatch<SetStateAction<boolean>>;
   restoreData: string;
+  showDeleted:boolean;
 }
 
 const AssetTableModal: React.FC<AssetTableModalProps> = ({
@@ -32,6 +33,7 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
   setSeeMoreAssetStatus,
   showDetailsSection,
   restoreData,
+  showDeleted
 }) => {
   // Prevent click inside modal content from closing the modal
   const handleContentClick = (e: React.MouseEvent) => {
@@ -131,6 +133,7 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
               fetchPurchaseOrder={fetchData}
               restoreData={restoreData}
               onClose={onClose}
+              showDeleted={showDeleted}
             />
           )}
         </div>

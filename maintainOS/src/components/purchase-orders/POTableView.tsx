@@ -528,6 +528,7 @@ export default function PurchaseOrdersTable({
           showDetailsSection={"purchaseorder"}
           restoreData={"Restore"}
           fetchData={fetchPurchaseOrders}
+          showDeleted={showDeleted}
         />
       )}
     </div>
