@@ -1,3 +1,4 @@
+// src/store/workOrders/workOrders.reducers.ts
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { 
   WorkOrderResponse, 
@@ -243,13 +244,12 @@ const workOrdersSlice = createSlice({
         }
       })
 
-      // --- Fetch Logs (✅ Fixed) ---
+      // --- Fetch Logs ---
       .addCase(fetchWorkOrderLogs.pending, (state) => {
         state.loading = true;
       })
       .addCase(fetchWorkOrderLogs.fulfilled, (state, action: PayloadAction<WorkOrderLog[]>) => {
         state.loading = false;
-        // Store logs array directly
         if (Array.isArray(action.payload)) {
           state.logs = action.payload;
         } else {

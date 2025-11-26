@@ -1,11 +1,10 @@
 import { useState } from "react";
-// --- (NEW) Icons import kiye gaye ---
 import { Plus, ClipboardList, Pencil, Trash2 } from "lucide-react";
 import { DynamicSelect, type SelectOption } from "./DynamicSelect";
 import AddAssetsModal from "../WorkloadView/Modal/AddAssetsModal";
-import { useNavigate } from "react-router-dom";
+// Remove unused useNavigate since navigation is lifted up
+// import { useNavigate } from "react-router-dom"; 
 
-// NEW IMPORTS for procedures
 import AddProcedureModal from "../WorkloadView/Modal/AddProcedureModal";
 
 interface Props {
@@ -18,12 +17,13 @@ interface Props {
   activeDropdown: string | null;
   setActiveDropdown: (name: string | null) => void;
 
-  // --- Props jo pichle step mein add kiye the ---
   linkedProcedure: any | null;
   onRemoveProcedure: () => void;
   onPreviewProcedure: () => void;
   onOpenProcedureModal: () => void;
-  setLinkedProcedure: (p: any) => void;  // 👈 REQUIRED
+  setLinkedProcedure: (p: any) => void;
+  // --- ✅ FIX: Added prop for handling edit navigation ---
+  onEditProcedure?: () => void;
 }
 
 export function AssetsAndProcedures({
@@ -35,28 +35,21 @@ export function AssetsAndProcedures({
   onCreateAsset,
   activeDropdown,
   setActiveDropdown,
-  // --- Procedure props ---
+  
   linkedProcedure,
   onRemoveProcedure,
   onPreviewProcedure,
   onOpenProcedureModal,
-  setLinkedProcedure
+  setLinkedProcedure,
+  onEditProcedure // Destructure the new prop
 }: Props) {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showProcedureModal, setShowProcedureModal] = useState(false);
 
-  const navigate = useNavigate();
-
   const handleAddAssets = (selected: { id: string; name: string }[]) => {
     const newIds = selected.map((a) => a.id);
     onAssetSelect([...assetIds, ...newIds]);
-  };
-
-  const handleEditProcedure = () => {
-    if (linkedProcedure) {
-      navigate(`/library`);
-    }
   };
 
   return (
@@ -124,8 +117,12 @@ export function AssetsAndProcedures({
 
                 <span>|</span>
 
+                {/* --- ✅ FIX: Use the passed prop for Edit --- */}
                 <button
-                  onClick={handleEditProcedure}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onEditProcedure) onEditProcedure();
+                  }}
                   type="button"
                   className="text-gray-600 hover:text-blue-600"
                 >
@@ -133,7 +130,10 @@ export function AssetsAndProcedures({
                 </button>
 
                 <button
-                  onClick={onRemoveProcedure}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemoveProcedure();
+                  }}
                   type="button"
                   className="text-gray-600 hover:text-red-600"
                 >

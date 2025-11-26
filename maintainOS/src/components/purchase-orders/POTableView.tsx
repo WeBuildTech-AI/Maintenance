@@ -275,6 +275,8 @@ export default function PurchaseOrdersTable({
     }
   };
 
+  // console.log(selectedPurchaseOrderTable, "purchase order");
+
   const handleApplySettings = (settings: {
     resultsPerPage: number;
     showDeleted: boolean;

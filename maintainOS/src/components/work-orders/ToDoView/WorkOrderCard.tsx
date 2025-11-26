@@ -9,14 +9,15 @@ import {
   RefreshCcw,
   CheckCircle2,
   ChevronDown,
-  AlertCircle // Added icon for overdue
+  AlertCircle
 } from "lucide-react";
 
 import type { AppDispatch } from "../../../store";
 import {
   patchWorkOrderComplete,
   markWorkOrderInProgress,
-  updateWorkOrder
+  updateWorkOrder,
+  updateWorkOrderStatus // ✅ Import new thunk
 } from "../../../store/workOrders/workOrders.thunks";
 import toast from "react-hot-toast";
 
@@ -59,7 +60,6 @@ export function WorkOrderCard({
   const hash = wo.title.split("").reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
   const colorClass = colors[hash % colors.length];
 
-  // --- Status Dropdown Logic ---
   const [statusOpen, setStatusOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -104,7 +104,6 @@ export function WorkOrderCard({
     }
   };
 
-  // ✅ Check for Overdue
   const isOverdue = useMemo(() => {
     if (!wo.dueDate) return false;
     if (wo.status === "done" || wo.status === "completed") return false;
@@ -118,19 +117,34 @@ export function WorkOrderCard({
     setStatusOpen(false);
     if (wo.status === newStatus) return;
 
+    if (!user?.id) {
+        toast.error("User not found. Cannot update status.");
+        return;
+    }
+
     try {
       if (newStatus === "done" || newStatus === "completed") {
         await dispatch(patchWorkOrderComplete(wo.id)).unwrap();
         toast.success("Work order completed");
-      } else if (newStatus === "in_progress") {
-        await dispatch(markWorkOrderInProgress(wo.id)).unwrap();
-        toast.success("Work order in progress");
-      } else {
-        if (!user?.id) {
-          toast.error("User not found. Cannot update status.");
-          return;
-        }
+      } 
+      // ✅ Use New Status API
+      else if (
+          newStatus === "in_progress" || 
+          newStatus === "on_hold" || 
+          newStatus === "open"
+      ) {
         await dispatch(
+            updateWorkOrderStatus({
+                id: wo.id,
+                authorId: user.id,
+                status: newStatus
+            })
+        ).unwrap();
+        toast.success(`Status updated to ${newStatus.replace("_", " ")}`);
+      }
+      else {
+        // Fallback
+         await dispatch(
           updateWorkOrder({
             id: wo.id,
             authorId: user.id,
@@ -150,9 +164,8 @@ export function WorkOrderCard({
     }
   };
 
-  // ✅ Prepare Assignees
   const assignees = wo.assignees || [];
-  const displayAssignees = assignees.slice(0, 3); // Show max 3
+  const displayAssignees = assignees.slice(0, 3);
   const remainingAssignees = assignees.length - 3;
 
   return (
@@ -164,7 +177,6 @@ export function WorkOrderCard({
       <div className="p-4">
         <div className="flex items-start gap-3">
 
-          {/* Avatar (Title Initials) */}
           <div className="relative flex-shrink-0">
             <div
               className={`h-10 w-10 flex items-center justify-center rounded-full border overflow-hidden shadow-sm ${colorClass}`}
@@ -175,10 +187,8 @@ export function WorkOrderCard({
             </div>
           </div>
 
-          {/* Content */}
           <div className="flex-1 min-w-0 space-y-2">
             <div className="flex items-start justify-between gap-2">
-              {/* TITLE */}
               <p
                 className="font-medium text-sm text-gray-900 truncate leading-tight"
                 title={wo.title || "Untitled Work Order"}
@@ -186,7 +196,6 @@ export function WorkOrderCard({
                 {wo.title || "Untitled Work Order"}
               </p>
 
-              {/* WO Badge */}
               {wo.code && (
                 <span className="flex-shrink-0 inline-flex items-center justify-center rounded border px-1.5 py-0.5 text-[10px] font-medium bg-gray-100 text-gray-600 border-gray-200">
                   {wo.code}
@@ -194,9 +203,7 @@ export function WorkOrderCard({
               )}
             </div>
 
-            {/* Status + Priority + Overdue + Assignees */}
             <div className="flex items-center gap-2 flex-wrap">
-              {/* Status Dropdown */}
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={(e) => {
@@ -229,7 +236,6 @@ export function WorkOrderCard({
                 )}
               </div>
 
-              {/* Priority */}
               {wo.priority && wo.priority !== "None" && (
                 <span
                   className={`inline-flex items-center rounded px-2 py-1 text-xs font-medium border ${priorityStyles[wo.priority] ?? "bg-gray-100 text-gray-600 border-gray-200"}`}
@@ -238,38 +244,35 @@ export function WorkOrderCard({
                 </span>
               )}
 
-              {/* ✅ Overdue Chip */}
               {isOverdue && (
                 <span className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium bg-red-100 text-red-700 border border-red-200 ml-auto">
-                   <AlertCircle size={10} /> Overdue
+                    <AlertCircle size={10} /> Overdue
                 </span>
               )}
 
-              {/* ✅ Assignee Avatar Group */}
               {!isOverdue && assignees.length > 0 && (
-                 <div className="flex items-center -space-x-1.5 ml-auto">
-                    {displayAssignees.map((u: any, i: number) => (
-                        <div 
+                  <div className="flex items-center -space-x-1.5 ml-auto">
+                     {displayAssignees.map((u: any, i: number) => (
+                         <div 
                             key={u.id || i} 
                             className="w-6 h-6 rounded-full border border-white bg-gray-100 flex items-center justify-center text-[9px] font-bold text-gray-600 overflow-hidden"
                             title={u.fullName || u.name}
-                        >
-                            {u.avatar ? (
-                                <img src={u.avatar} alt={u.fullName} className="w-full h-full object-cover" />
-                            ) : (
-                                (u.fullName || u.name || "?")[0].toUpperCase()
-                            )}
-                        </div>
-                    ))}
-                    {remainingAssignees > 0 && (
-                        <div className="w-6 h-6 rounded-full border border-white bg-gray-200 flex items-center justify-center text-[9px] font-bold text-gray-600">
+                         >
+                             {u.avatar ? (
+                                 <img src={u.avatar} alt={u.fullName} className="w-full h-full object-cover" />
+                             ) : (
+                                 (u.fullName || u.name || "?")[0].toUpperCase()
+                             )}
+                         </div>
+                     ))}
+                     {remainingAssignees > 0 && (
+                         <div className="w-6 h-6 rounded-full border border-white bg-gray-200 flex items-center justify-center text-[9px] font-bold text-gray-600">
                             +{remainingAssignees}
-                        </div>
-                    )}
-                 </div>
+                         </div>
+                     )}
+                  </div>
               )}
 
-              {/* Due Date (Only if NOT overdue, else chip replaces it or sits next to it) */}
               {!isOverdue && wo.dueDate && assignees.length === 0 && (
                 <span className="text-xs text-gray-400 flex items-center gap-1 ml-auto">
                   Due {formatDate(wo.dueDate)}

@@ -10,12 +10,12 @@ import {
   MapPin,
   MessageSquare,
   MoreHorizontal,
-  Users,        // Icon for Assignees/Teams
-  Wrench,       // Icon for Parts
-  Briefcase,    // Icon for Vendors
-  Layers,       // Icon for Categories
-  ClipboardList,// Icon for Procedures
-  Gauge,        // Icon for Meters
+  Users,
+  Wrench,
+  Briefcase,
+  Layers,
+  ClipboardList,
+  Gauge,
 } from "lucide-react";
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -23,23 +23,20 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import toast from "react-hot-toast";
 
-// Store Actions
 import {
   deleteWorkOrder,
   patchWorkOrderComplete,
   markWorkOrderInProgress,
-  updateWorkOrder
+  updateWorkOrder,
+  updateWorkOrderStatus // ✅ Import new thunk
 } from "../../../store/workOrders/workOrders.thunks";
 
 import DeleteWorkOrderModal from "./DeleteWorkOrderModal";
 
-// Panels
 import UpdatePartsPanel from "../panels/UpdatePartsPanel";
 import TimeOverviewPanel from "../panels/TimeOverviewPanel";
 import OtherCostsPanel from "../panels/OtherCostsPanel";
 
-
-// Helper to render list of names from an array
 const renderList = (items: any[], key = "name") => {
   if (!items || !Array.isArray(items) || items.length === 0) return "—";
   return items.map((item) => item[key] || "Unknown").join(", ");
@@ -71,6 +68,112 @@ function formatModalDateTime(isoString: string) {
   }
 }
 
+/* ---------------------- Recurrence parsing helpers ---------------------- */
+
+const dayNames = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+
+function ordinal(n: number) {
+  if (n % 100 >= 11 && n % 100 <= 13) return `${n}th`;
+  switch (n % 10) {
+    case 1: return `${n}st`;
+    case 2: return `${n}nd`;
+    case 3: return `${n}rd`;
+    default: return `${n}th`;
+  }
+}
+
+function parseRecurrenceRule(raw: any, startDateIso?: string, dueDateIso?: string) {
+  if (!raw) return null;
+  let rule: any = raw;
+  try {
+    if (typeof raw === "string") rule = JSON.parse(raw);
+  } catch (e) {
+    rule = raw;
+  }
+
+  if (!rule || !rule.type) return null;
+  const type = String(rule.type).toLowerCase();
+
+  if (type === "daily" || type === "day" || type === "daily_by_date") {
+    return {
+      title: "Repeats every day after completion of this Work Order.",
+      short: "Repeats every day after completion of this Work Order."
+    };
+  }
+
+  if (type === "weekly") {
+    const days = Array.isArray(rule.daysOfWeek) ? rule.daysOfWeek : (rule.days || []);
+    const mapped = days
+      .map((d: number) => (typeof d === "number" ? dayNames[d] : String(d)))
+      .filter(Boolean);
+    const daysStr = mapped.length ? mapped.join(", ") : "the selected day(s)";
+    return {
+      title: `Repeats every week on ${daysStr} after completion of this Work Order.`,
+      short: `Repeats every week on ${daysStr} after completion of this Work Order.`
+    };
+  }
+
+  if (type === "monthly_by_date" || type === "monthly") {
+    const dayOfMonth = rule.dayOfMonth ?? rule.day ?? null;
+    if (dayOfMonth) {
+      return {
+        title: `Repeats every month on the ${ordinal(Number(dayOfMonth))} day of the month after completion of this Work Order.`,
+        short: `Repeats every month on the ${ordinal(Number(dayOfMonth))} day of the month after completion of this Work Order.`
+      };
+    }
+    if (startDateIso) {
+      try {
+        const d = new Date(startDateIso);
+        const day = d.getDate();
+        return {
+          title: `Repeats every month on the ${ordinal(day)} day of the month after completion of this Work Order.`,
+          short: `Repeats every month on the ${ordinal(day)} day of the month after completion of this Work Order.`
+        };
+      } catch {}
+    }
+    return {
+      title: `Repeats every month after completion of this Work Order.`,
+      short: `Repeats every month after completion of this Work Order.`
+    };
+  }
+
+  if (type === "monthly_by_weekday") {
+    const weekOfMonth = rule.weekOfMonth ?? rule.week ?? null;
+    const weekday = rule.weekdayOfMonth ?? rule.weekday ?? null; 
+    const weekLabel = weekOfMonth === 5 ? "Last" : `${ordinal(Number(weekOfMonth))}`;
+    const weekdayLabel = typeof weekday === "number" ? dayNames[weekday] : weekday;
+    return {
+      title: `Repeats every month on the ${weekLabel} ${weekdayLabel} after completion of this Work Order.`,
+      short: `Repeats every month on the ${weekLabel} ${weekdayLabel} after completion of this Work Order.`
+    };
+  }
+
+  if (type === "yearly") {
+    const years = rule.intervalYears ?? rule.interval ?? 1;
+    let dateLabel = null;
+    const iso = startDateIso ?? dueDateIso;
+    if (iso) {
+      try {
+        const d = new Date(iso);
+        const mm = String(d.getMonth() + 1).padStart(2,"0");
+        const dd = String(d.getDate()).padStart(2,"0");
+        dateLabel = `${mm}/${dd}`;
+      } catch {}
+    }
+    const every = years && Number(years) > 1 ? `every ${years} years` : "every year";
+    const onLabel = dateLabel ? ` on ${dateLabel}` : "";
+    return {
+      title: `Repeats ${every}${onLabel} after completion of this Work Order.`,
+      short: `Repeats ${every}${onLabel} after completion of this Work Order.`
+    };
+  }
+
+  return {
+    title: `Repeats based on configured schedule.`,
+    short: `Repeats based on configured schedule.`
+  };
+}
+
 export function WorkOrderDetails({
   selectedWorkOrder,
   selectedAvatarUrl,
@@ -93,13 +196,6 @@ export function WorkOrderDetails({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  // Refs for comments
-  const commentTextAreaRef = useRef<HTMLTextAreaElement>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [comment, setComment] = useState("");
-  const [attachment, setAttachment] = useState<File | null>(null);
-
-  // Sync local activeStatus with selectedWorkOrder
   useEffect(() => {
     if (selectedWorkOrder?.status) {
       setActiveStatus(selectedWorkOrder.status.toLowerCase());
@@ -157,19 +253,34 @@ export function WorkOrderDetails({
     const prevStatus = activeStatus;
     setActiveStatus(newStatus);
 
+    if (!user?.id) {
+        toast.error("User not authenticated");
+        setActiveStatus(prevStatus);
+        return;
+    }
+
     try {
-      if (newStatus === "done") {
+      if (newStatus === "done" || newStatus === "completed") {
         await dispatch(patchWorkOrderComplete(selectedWorkOrder.id)).unwrap();
         toast.success("Work order completed");
-      } else if (newStatus === "in_progress") {
-        await dispatch(markWorkOrderInProgress(selectedWorkOrder.id)).unwrap();
-        toast.success("Work order in progress");
-      } else {
-        if (!user?.id) {
-          toast.error("User not authenticated");
-          setActiveStatus(prevStatus);
-          return;
-        }
+      } 
+      // ✅ Use New Status API for "in_progress", "on_hold", "open"
+      else if (
+          newStatus === "in_progress" || 
+          newStatus === "on_hold" || 
+          newStatus === "open"
+      ) {
+        await dispatch(
+          updateWorkOrderStatus({
+            id: selectedWorkOrder.id,
+            authorId: user.id,
+            status: newStatus,
+          })
+        ).unwrap();
+        toast.success(`Status updated to ${newStatus.replace("_", " ")}`);
+      } 
+      else {
+        // Fallback to update full object if needed
         await dispatch(
           updateWorkOrder({
             id: selectedWorkOrder.id,
@@ -183,9 +294,9 @@ export function WorkOrderDetails({
       if (onRefreshWorkOrders) {
         onRefreshWorkOrders();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Status update failed", error);
-      toast.error("Failed to update status");
+      toast.error(error?.message || "Failed to update status");
       setActiveStatus(prevStatus);
     }
   };
@@ -220,15 +331,21 @@ export function WorkOrderDetails({
     );
   }
 
-  // Logic for assignees list
   const assigneesList = selectedWorkOrder.assignees || [];
   if (assigneesList.length === 0 && selectedWorkOrder.assignedTo) {
     assigneesList.push(selectedWorkOrder.assignedTo);
   }
 
+  const recurrenceParsed = parseRecurrenceRule(
+    selectedWorkOrder.recurrenceRule,
+    selectedWorkOrder.startDate,
+    selectedWorkOrder.dueDate
+  );
+  const originTitle = selectedWorkOrder?.title || null;
+  const originId = selectedWorkOrder?.id || null;
+
   return (
     <>
-      {/* HEADER */}
       <div className="p-6 border-b border-border relative">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -409,14 +526,14 @@ export function WorkOrderDetails({
             {assigneesList.length > 0 ? (
               assigneesList.map((assignee: any, index: number) => (
                 <div key={index} className="flex items-center gap-2 bg-gray-50 px-2 py-1 rounded-full border border-gray-100">
-                   <div className="h-6 w-6 rounded-full overflow-hidden bg-gray-200 border border-gray-300">
-                     <div className="w-full h-full flex items-center justify-center text-xs font-semibold text-gray-600">
-                       {(assignee.fullName || assignee.name || "U").charAt(0).toUpperCase()}
-                     </div>
-                   </div>
-                   <span className="text-sm text-gray-800">
-                     {assignee.fullName || assignee.name || "Unknown"}
-                   </span>
+                    <div className="h-6 w-6 rounded-full overflow-hidden bg-gray-200 border border-gray-300">
+                      <div className="w-full h-full flex items-center justify-center text-xs font-semibold text-gray-600">
+                        {(assignee.fullName || assignee.name || "U").charAt(0).toUpperCase()}
+                      </div>
+                    </div>
+                    <span className="text-sm text-gray-800">
+                      {assignee.fullName || assignee.name || "Unknown"}
+                    </span>
                 </div>
               ))
             ) : (
@@ -432,9 +549,7 @@ export function WorkOrderDetails({
           </p>
         </div>
 
-        {/* --- DETAILS GRID (2 Columns) --- */}
         <div className="border-t p-6 grid grid-cols-2 gap-6">
-          {/* ASSETS */}
           <div>
             <h3 className="text-sm font-medium mb-2">Assets</h3>
             <div className="flex items-start gap-2">
@@ -445,19 +560,16 @@ export function WorkOrderDetails({
             </div>
           </div>
 
-          {/* LOCATION */}
           <div>
             <h3 className="text-sm font-medium mb-2">Location</h3>
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm">
-                {/* Location is a single object in your JSON */}
                 {selectedWorkOrder.location?.name || selectedWorkOrder.location || "N/A"}
               </span>
             </div>
           </div>
 
-          {/* ESTIMATED TIME */}
           <div>
             <h3 className="text-sm font-medium mb-2">Estimated Time</h3>
             <div className="flex items-center gap-2">
@@ -468,7 +580,6 @@ export function WorkOrderDetails({
             </div>
           </div>
 
-          {/* WORK TYPE */}
           <div>
             <h3 className="text-sm font-medium mb-2">Work Type</h3>
             <div className="flex items-center gap-2">
@@ -479,7 +590,6 @@ export function WorkOrderDetails({
             </div>
           </div>
 
-          {/* TEAMS */}
           <div>
             <h3 className="text-sm font-medium mb-2">Teams</h3>
             <div className="flex items-start gap-2">
@@ -490,7 +600,6 @@ export function WorkOrderDetails({
             </div>
           </div>
 
-          {/* VENDORS */}
           <div>
             <h3 className="text-sm font-medium mb-2">Vendors</h3>
             <div className="flex items-start gap-2">
@@ -501,7 +610,6 @@ export function WorkOrderDetails({
             </div>
           </div>
 
-          {/* PARTS */}
           <div>
             <h3 className="text-sm font-medium mb-2">Parts</h3>
             <div className="flex items-start gap-2">
@@ -512,8 +620,7 @@ export function WorkOrderDetails({
             </div>
           </div>
 
-           {/* CATEGORIES */}
-           <div>
+          <div>
             <h3 className="text-sm font-medium mb-2">Categories</h3>
             <div className="flex items-start gap-2">
               <Layers className="h-4 w-4 text-muted-foreground mt-0.5" />
@@ -523,20 +630,17 @@ export function WorkOrderDetails({
             </div>
           </div>
 
-           {/* PROCEDURES */}
-           <div>
+          <div>
             <h3 className="text-sm font-medium mb-2">Procedures</h3>
             <div className="flex items-start gap-2">
               <ClipboardList className="h-4 w-4 text-muted-foreground mt-0.5" />
               <span className="text-sm">
-                {/* Assuming procedure object has a title or name */}
                 {renderList(selectedWorkOrder.procedures, "title")}
               </span>
             </div>
           </div>
 
-           {/* METERS */}
-           <div>
+          <div>
             <h3 className="text-sm font-medium mb-2">Meters</h3>
             <div className="flex items-start gap-2">
               <Gauge className="h-4 w-4 text-muted-foreground mt-0.5" />
@@ -545,7 +649,6 @@ export function WorkOrderDetails({
               </span>
             </div>
           </div>
-
         </div>
 
         <div className="border-t p-6">
@@ -555,11 +658,34 @@ export function WorkOrderDetails({
               This Work Order will repeat based on time.
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <CalendarDays className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">
-               {selectedWorkOrder.recurrenceRule || "Does not repeat"}
-            </span>
+
+          <div className="flex items-start gap-3">
+            <div style={{ minWidth: 24 }}>
+              <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            </div>
+
+            <div className="flex-1">
+              <div className="text-sm text-gray-800 mb-2">
+                {recurrenceParsed ? recurrenceParsed.title : "Does not repeat"}
+              </div>
+
+              {originTitle && (
+                <div className="text-sm mt-1">
+                  <span className="text-muted-foreground">Automatically created from </span>
+                  <a
+                    href={originId ? `/procedures/${originId}` : "#"}
+                    className="text-blue-600 underline"
+                    onClick={(e) => {
+                    }}
+                  >
+                    {originTitle}
+                  </a>
+                  {selectedWorkOrder.dueDate && (
+                    <span className="text-muted-foreground"> (due {new Date(selectedWorkOrder.dueDate).toLocaleDateString()})</span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -639,7 +765,7 @@ export function WorkOrderDetails({
             <div className="ml-2 mr-2 h-6 w-6 inline-flex rounded-full overflow-hidden bg-gray-100">
               <img
                 src={selectedAvatarUrl}
-                alt={selectedWorkOrder.createdBy || "Creator"} 
+                alt={selectedWorkOrder.createdBy || "Creator"}
                 className="h-full w-full object-cover"
                 onError={(e) => {
                   (e.currentTarget as HTMLImageElement).style.display = "none";

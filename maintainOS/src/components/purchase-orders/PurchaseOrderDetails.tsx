@@ -34,6 +34,7 @@ import { useSelector } from "react-redux";
 import { renderInitials } from "../utils/renderInitials";
 import { vendorService } from "../../store/vendors";
 import { addressToLine, formatMoney } from "./helpers";
+import { StatusBadge } from "./StatusBadge";
 
 interface OrderItem {
   id: string;
@@ -106,7 +107,7 @@ interface PurchaseOrder {
   phoneOrMail?: string;
   taxesAndCosts?: TaxItems[];
   vendorContactIds?: string[];
-  vendorContacts: string[];
+  vendorContacts: VendorContact[];
 }
 
 interface PurchaseOrderDetailsProps {
@@ -122,7 +123,7 @@ interface PurchaseOrderDetailsProps {
   addressToLine: (address: Address | null | undefined) => string;
   comment?: string;
   showCommentBox: boolean;
-  StatusBadge: React.ComponentType<{ status: PurchaseOrder["status"] }>;
+  // StatusBadge: React.ComponentType<{ status: PurchaseOrder["status"] }>;
   setApproveModal: () => void;
   setShowCommentBox: (show: boolean) => void;
   setComment: (comment: string) => void;
@@ -145,11 +146,12 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   setShowCommentBox,
   handleEditClick,
   setApproveModal,
-  StatusBadge,
+  // StatusBadge,
   fetchPurchaseOrder,
   restoreData,
   onClose,
 }) => {
+  console.log(selectedPO.status, "purchase Order Data ");
   const [fullFillModal, setFullFillModal] = React.useState(false);
   const [continueModal, setContinueModal] = React.useState(false);
   const [commentData, setCommentData] = React.useState([]);
@@ -451,44 +453,36 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                   </span>
                 </div>
                 <div className="w-64">
-                  {selectedPO.vendorContacts.length > 0 && (
-                    <>
-                      <div className="p-3  rounded-lg bg-gray-50 mb-2">
-                        <div className="font-medium">
-                          Name :- {selectedPO.vendorContacts[0]?.fullName}
-                        </div>
-                        <div
-                          className="text-sm text-oa-600 cursor-pointer"
-                          onClick={() => {
-                            const email = selectedPO.vendorContacts[0]?.email;
-                            if (email) window.location.href = `mailto:${email}`;
-                          }}
-                        >
-                          Email :-{" "}
-                          <span className="text-orange-600">
-                            {selectedPO.vendorContacts[0]?.email}
-                          </span>
-                        </div>
+                  {selectedPO.vendorContacts &&
+                    selectedPO.vendorContacts.length > 0 && (
+                      <>
+                        <div className="p-3  rounded-lg bg-gray-50 mb-2">
+                          <div className="font-medium">
+                            Name :- {selectedPO.vendorContacts[0]?.fullName}
+                          </div>
+                          <div
+                            className="text-sm text-oa-600 cursor-pointer"
+                            onClick={() => {
+                              const email = selectedPO.vendorContacts[0]?.email;
+                              if (email)
+                                window.location.href = `mailto:${email}`;
+                            }}
+                          >
+                            Email :-{" "}
+                            <span className="text-orange-600">
+                              {selectedPO.vendorContacts[0]?.email}
+                            </span>
+                          </div>
 
-                        <div className="text-sm text-gray-600">
-                          Phone :-
-                          <span className="text-orange-600">
-                            {selectedPO.vendorContacts[0]?.phoneNumber}
-                          </span>
+                          <div className="text-sm text-gray-600">
+                            Phone :-
+                            <span className="text-orange-600">
+                              {selectedPO.vendorContacts[0]?.phoneNumber}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-
-                      {/* Extra Contacts */}
-                      {/* {selectedPO.vendorContacts.slice(1).map((c, index) => (
-                        <div
-                          key={c.id}
-                          className="text-sm text-orange-600 cursor-pointer hover:underline"
-                        >
-                          +{selectedPO.vendorContacts.length - 1} more
-                        </div>
-                      ))} */}
-                    </>
-                  )}
+                      </>
+                    )}
                 </div>
               </div>
             </Card>
@@ -550,104 +544,106 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
           )}
 
           {/* ORDER ITEMS */}
-          <div>
-            <h3 className="font-medium mb-3 mt-4">Order Items</h3>
-            <div className="overflow-x-auto border rounded-lg">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50">
-                  <tr className="text-left">
-                    <th className="p-3">Item Name</th>
-                    <th className="p-3">Part Number</th>
-                    <th className="p-3">Units Ordered</th>
-                    <th className="p-3">Units Received</th>
-                    <th className="p-3">Unit Cost</th>
-                    <th className="p-3">Cost of Units Ordered</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedPO.orderItems?.map((it) => (
-                    <tr key={it.id} className="border-t">
-                      <td className="p-3">
-                        {it.itemName || it.part?.name || "-"}
-                      </td>
-                      <td className="p-3">
-                        {it.partNumber || it.part?.partNumber || "-"}
-                      </td>
-                      <td className="p-3 text-center">{it.unitsOrdered}</td>
-                      <td className="p-3 text-center">
-                        {it.unitsReceived || 0}
-                      </td>
-                      <td className="p-3 text-right">
-                        {formatMoney(it.unitCost)}
-                      </td>
-                      <td className="p-3 text-right">
-                        {formatMoney(
-                          it.price
-                            ? Number(it.price)
-                            : Number(it.unitCost) * Number(it.unitsOrdered)
-                        )}
-                      </td>
+          {selectedPO.orderItems && (
+            <div>
+              <h3 className="font-medium mb-3 mt-4">Order Items</h3>
+              <div className="overflow-x-auto border rounded-lg">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50">
+                    <tr className="text-left">
+                      <th className="p-3">Item Name</th>
+                      <th className="p-3">Part Number</th>
+                      <th className="p-3">Units Ordered</th>
+                      <th className="p-3">Units Received</th>
+                      <th className="p-3">Unit Cost</th>
+                      <th className="p-3">Cost of Units Ordered</th>
                     </tr>
-                  ))}
-
-                  {/* Subtotal */}
-                  <tr className="border-t">
-                    <td colSpan={5} className="p-3 text-right font-medium">
-                      Subtotal
-                    </td>
-                    <td className="p-3 text-right font-medium">
-                      {formatMoney(subtotal)}
-                    </td>
-                  </tr>
-
-                  {/* Taxes and Costs */}
-                  {taxesAndCosts?.length > 0 &&
-                    taxesAndCosts.map((tax) => (
-                      <tr key={tax.id} className="border-t">
-                        <td
-                          colSpan={5}
-                          className="p-3 text-right font-medium capitalize"
-                        >
-                          {tax.taxLabel}{" "}
-                          {tax.taxCategory === "PERCENTAGE"
-                            ? `(${tax.taxValue}%)`
-                            : ""}
+                  </thead>
+                  <tbody>
+                    {selectedPO.orderItems?.map((it) => (
+                      <tr key={it.id} className="border-t">
+                        <td className="p-3">
+                          {it.itemName || it.part?.name || "-"}
                         </td>
-                        <td className="p-3 font-medium text-right">
-                          {tax.taxCategory === "PERCENTAGE"
-                            ? formatMoney(
-                                (subtotal * Number(tax.taxValue || 0)) / 100
-                              )
-                            : formatMoney(Number(tax.taxValue || 0))}
+                        <td className="p-3">
+                          {it.partNumber || it.part?.partNumber || "-"}
+                        </td>
+                        <td className="p-3 text-center">{it.unitsOrdered}</td>
+                        <td className="p-3 text-center">
+                          {it.unitsReceived || 0}
+                        </td>
+                        <td className="p-3 text-right">
+                          {formatMoney(it.unitCost)}
+                        </td>
+                        <td className="p-3 text-right">
+                          {formatMoney(
+                            it.price
+                              ? Number(it.price)
+                              : Number(it.unitCost) * Number(it.unitsOrdered)
+                          )}
                         </td>
                       </tr>
                     ))}
 
-                  {/* Extra Costs */}
-                  {extraCosts > 0 && (
+                    {/* Subtotal */}
                     <tr className="border-t">
                       <td colSpan={5} className="p-3 text-right font-medium">
-                        Extra Costs
+                        Subtotal
                       </td>
-                      <td className="p-3 font-medium">
-                        {formatMoney(extraCosts)}
+                      <td className="p-3 text-right font-medium">
+                        {formatMoney(subtotal)}
                       </td>
                     </tr>
-                  )}
 
-                  {/* Total */}
-                  <tr className="border-t bg-muted/30">
-                    <td colSpan={5} className="p-3 text-right font-semibold">
-                      Total
-                    </td>
-                    <td className="p-3 font-semibold text-right">
-                      {formatMoney(total)}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                    {/* Taxes and Costs */}
+                    {taxesAndCosts?.length > 0 &&
+                      taxesAndCosts.map((tax) => (
+                        <tr key={tax.id} className="border-t">
+                          <td
+                            colSpan={5}
+                            className="p-3 text-right font-medium capitalize"
+                          >
+                            {tax.taxLabel}{" "}
+                            {tax.taxCategory === "PERCENTAGE"
+                              ? `(${tax.taxValue}%)`
+                              : ""}
+                          </td>
+                          <td className="p-3 font-medium text-right">
+                            {tax.taxCategory === "PERCENTAGE"
+                              ? formatMoney(
+                                  (subtotal * Number(tax.taxValue || 0)) / 100
+                                )
+                              : formatMoney(Number(tax.taxValue || 0))}
+                          </td>
+                        </tr>
+                      ))}
+
+                    {/* Extra Costs */}
+                    {extraCosts > 0 && (
+                      <tr className="border-t">
+                        <td colSpan={5} className="p-3 text-right font-medium">
+                          Extra Costs
+                        </td>
+                        <td className="p-3 font-medium">
+                          {formatMoney(extraCosts)}
+                        </td>
+                      </tr>
+                    )}
+
+                    {/* Total */}
+                    <tr className="border-t bg-muted/30">
+                      <td colSpan={5} className="p-3 text-right font-semibold">
+                        Total
+                      </td>
+                      <td className="p-3 font-semibold text-right">
+                        {formatMoney(total)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* ADDRESSES */}
           <div className="grid grid-cols-2 gap-6 mt-4">
