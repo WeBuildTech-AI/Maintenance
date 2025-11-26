@@ -7,6 +7,7 @@ import LocationDetails from "../../Locations/LocationDetails";
 import VendorDetails from "../../vendors/VendorDetails/VendorDetails";
 import { PartDetails } from "../../Inventory/PartDetail/PartDetails";
 import PurchaseOrderDetails from "../../purchase-orders/PurchaseOrderDetails";
+import { StatusBadge } from "../../purchase-orders/StatusBadge";
 
 // Define the props interface
 interface AssetTableModalProps {
@@ -36,6 +37,8 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
   const handleContentClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
+
+  
 
   return (
     <div
@@ -125,7 +128,6 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
               setShowCommentBox={() => {}}
               handleEditClick={() => {}}
               setApproveModal={() => {}}
-              StatusBadge={() => null}
               fetchPurchaseOrder={fetchData}
               restoreData={restoreData}
               onClose={onClose}

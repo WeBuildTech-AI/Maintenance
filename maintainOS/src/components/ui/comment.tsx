@@ -5,7 +5,7 @@ type CommentProps = {
   showCommentBox: boolean;
   comment: string;
   handleSend: () => void; // Logic parent se aayega
-  setShowCommentBox: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowCommentBox: React.Dispatch<React.SetStateAction<void>>;
   setComment: React.Dispatch<React.SetStateAction<string>>;
   isLoading: boolean; // Loading state receive karein
 };
