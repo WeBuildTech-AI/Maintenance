@@ -13,6 +13,10 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 const api = axios.create({
   baseURL: API_URL,
+  headers: {
+    "Content-Type": "application/json",
+    "X-Client-Type": "web"
+  }
   //  withCredentials: true, // No longer needed
 });
 
@@ -32,49 +36,6 @@ api.interceptors.request.use(
   }
 );
 
-//  2. UPDATE THE RESPONSE INTERCEPTOR
-// api.interceptors.response.use(
-//   (response) => response,
-//   async (error) => {
-//     const originalRequest = error.config;
-
-//     if (error.response.status === 401 && !originalRequest._retry) {
-//       originalRequest._retry = true;
-
-//       try {
-//         // 3. GET REFRESH TOKEN FROM LOCALSTORAGE
-//         const refreshToken = localStorage.getItem('refreshToken');
-//         if (!refreshToken) {
-//           window.location.href = '/login';
-//           return Promise.reject(error);
-//         }
-
-//         // 4. SEND REFRESH TOKEN IN THE HEADER
-//         const res = await api.post('/auth/refresh', {}, {
-//           headers: { Authorization: `Bearer ${refreshToken}` }
-//         });
-
-//         // 5. SAVE NEW TOKENS
-//         const { accessToken, refreshToken: newRefreshToken } = res.data;
-//         localStorage.setItem('accessToken', accessToken);
-//         localStorage.setItem('refreshToken', newRefreshToken);
-
-//         // 6. UPDATE HEADER FOR ORIGINAL REQUEST
-//         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-//         return api(originalRequest);
-        
-//       } catch (refreshError) {
-//         // If refresh fails, clear storage and log out
-//         localStorage.removeItem('accessToken');
-//         localStorage.removeItem('refreshToken');
-//         localStorage.removeItem('user');
-//         window.location.href = '/login'; 
-//         return Promise.reject(refreshError);
-//       }
-//     }
-//     return Promise.reject(error);
-//   }
-// );
 let isRefreshing = false;
 let failedQueue: { resolve: (token: string | null) => void; reject: (error: any) => void }[] = [];
 
@@ -94,7 +55,7 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry) {
       
       if (isRefreshing) {
         // If a refresh is already in progress, "pause" this request
@@ -169,35 +130,6 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-// const api = axios.create({
-//   baseURL: import.meta.env.VITE_API_URL,
-//   withCredentials: true, 
-// });
-
-// api.interceptors.response.use(
-//   (response) => {
-//     return response;
-//   },
-//   async (error) => {
-//     const originalRequest = error.config;
-
-//     if (error.response.status === 401 && !originalRequest._retry) {
-//       originalRequest._retry = true; 
-
-//       try {
-//         await api.post("/auth/refresh");
-
-//         return api(originalRequest);
-        
-//       } catch (refreshError) {
-//         console.error("Session expired, logging out.");
-//         window.location.href = '/login'; 
-//         return Promise.reject(refreshError);
-//       }
-//     }
-//     return Promise.reject(error);
-//   }
-// );
 
 
 export interface User {
