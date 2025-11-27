@@ -1,16 +1,13 @@
 import { useState, useEffect } from "react";
-import { Plus, Rocket, Loader2 } from "lucide-react"; // <-- Loader add kiya
+import { Plus, Rocket, Loader2 } from "lucide-react"; 
 import CreateProcedureModal from "./CreateProcedureModal";
 import ProcedureBuilder from "./ProcedureBuilder";
 import { ProcedureBuilderProvider } from "./ProcedureBuilderContext"; 
 
 import { procedureService } from "../../../store/procedures/procedures.service";
-// --- (FIX) Import path ko update kiya ---
 import { convertJSONToState } from "./utils/conversion"; 
 import type { FieldData, ProcedureSettingsState } from "./types";
-// --- End Imports ---
 
-// --- 👇 [CHANGE] Props update karein ---
 export default function GenerateProcedure({ 
   onBack, 
   editingProcedureId 
@@ -21,7 +18,6 @@ export default function GenerateProcedure({
   const [openModal, setOpenModal] = useState(false);
   const [builderData, setBuilderData] = useState<{ name: string; desc: string } | null>(null);
 
-  // --- 👇 [CHANGE] Edit mode ke liye state ---
   const [isLoading, setIsLoading] = useState(false);
   const [prefetchedData, setPrefetchedData] = useState<{
     fields: FieldData[];
@@ -37,22 +33,18 @@ export default function GenerateProcedure({
     };
   }, [openModal]);
   
-  // --- 👇 [CHANGE] Edit mode ke liye data fetching logic ---
+  // --- DATA FETCHING ---
   useEffect(() => {
     if (editingProcedureId) {
       const fetchAndConvertData = async () => {
         setIsLoading(true);
         try {
-          // 1. API se data fetch karein
           const apiData = await procedureService.fetchProcedureById(editingProcedureId);
           console.log("Fetched API data for edit:", apiData);
           
-          // 2. Data ko builder state mein convert karein
-          // @ts-ignore (Kyunki API type poori tarah se defined nahi hai)
+          // @ts-ignore 
           const convertedState = convertJSONToState(apiData); 
-          console.log("Converted to builder state:", convertedState);
           
-          // 3. State ko set karein
           setPrefetchedData({
             ...convertedState,
             name: apiData.title,
@@ -62,7 +54,7 @@ export default function GenerateProcedure({
         } catch (error) {
           console.error("Failed to fetch procedure for editing:", error);
           alert("Failed to load procedure for editing.");
-          onBack(); // Error hone par wapas bhej dein
+          onBack(); 
         } finally {
           setIsLoading(false);
         }
@@ -70,10 +62,12 @@ export default function GenerateProcedure({
       
       fetchAndConvertData();
     }
-  }, [editingProcedureId, onBack]);
-  // --- End Edit logic ---
+    // ✅ CRITICAL FIX: Removed 'onBack' from dependencies. 
+    // This prevents infinite refetching loops if the parent component re-renders.
+  }, [editingProcedureId]); 
   
-  // --- 👇 [CHANGE] Render logic ko update karein ---
+  
+  // --- RENDER ---
 
   // 1. Edit Mode (Loading)
   if (editingProcedureId && isLoading) {
@@ -91,14 +85,13 @@ export default function GenerateProcedure({
       <ProcedureBuilderProvider
         name={prefetchedData.name}
         description={prefetchedData.description}
-        // Prefetched state ko provider mein pass karein
         initialState={prefetchedData} 
       >
         <ProcedureBuilder
           name={prefetchedData.name}
           description={prefetchedData.description}
-          onBack={onBack} // 'onBack' ko seedha pass karein (Library.tsx manage karega)
-          editingProcedureId={editingProcedureId} // ID ko update ke liye pass karein
+          onBack={onBack} 
+          editingProcedureId={editingProcedureId} 
         />
       </ProcedureBuilderProvider>
     );
@@ -110,7 +103,6 @@ export default function GenerateProcedure({
       <ProcedureBuilderProvider
         name={builderData.name}
         description={builderData.desc}
-        // Create mode mein koi initial state nahi hai
       >
         <ProcedureBuilder
           name={builderData.name}
@@ -119,14 +111,13 @@ export default function GenerateProcedure({
             setBuilderData(null); 
             onBack(); 
           }}
-          editingProcedureId={null} // Create mode mein ID null hai
+          editingProcedureId={null} 
         />
       </ProcedureBuilderProvider>
     );
   }
   
   // 4. Create Mode (Initial view - Modal dikhayein)
-  // (Yeh tabhi dikhega jab editingProcedureId null ho)
   if (!editingProcedureId) {
     return (
       <div

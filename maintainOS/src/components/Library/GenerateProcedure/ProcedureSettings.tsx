@@ -1,59 +1,52 @@
 "use client";
 
-// --- 👇 [CHANGE] Added useState and useCallback ---
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react"; // ✅ Added useEffect
 import LibDynamicSelect, {
   type LibSelectOption,
 } from "./components/LibDynamicSelect";
 import { useProcedureBuilder } from "./ProcedureBuilderContext"; 
 import { ProcedureSettingsState } from "./types"; 
-// --- 👇 [CHANGE] Added import for the data fetcher ---
 import { fetchFilterData } from "../../utils/filterDataFetcher";
 
 /**
  * ProcedureSettings.tsx
- * - (FIXED) Now fetches live data for dropdowns
+ * - Fixed: Automatically hydrates dropdown options if values exist (Edit Mode Fix)
  */
 
 export default function ProcedureSettings() {
   const { settings, setSettings } = useProcedureBuilder(); 
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
-  // --- 👇 [CHANGE] State to hold dynamic options ---
   const [categoryOptions, setCategoryOptions] = useState<LibSelectOption[]>([]);
   const [assetOptions, setAssetOptions] = useState<LibSelectOption[]>([]);
   const [locationOptions, setLocationOptions] = useState<LibSelectOption[]>([]);
   const [teamOptions, setTeamOptions] = useState<LibSelectOption[]>([]);
 
-  // --- 👇 [CHANGE] State to hold loading status for each dropdown ---
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [loadingAssets, setLoadingAssets] = useState(false);
   const [loadingLocations, setLoadingLocations] = useState(false);
   const [loadingTeams, setLoadingTeams] = useState(false);
   
-  // --- 👇 [CHANGE] Mock data (categories, assets, etc.) has been removed ---
-
-  // --- 👇 [CHANGE] New function to load data on demand ---
+  // --- Data Fetcher ---
   const loadOptions = useCallback(async (filterType: string) => {
     const key = filterType.toLowerCase();
     
-    // 1. Set loading state
     if (key === 'categories') setLoadingCategories(true);
     if (key === 'assets') setLoadingAssets(true);
     if (key === 'locations') setLoadingLocations(true);
     if (key === 'team members') setLoadingTeams(true);
 
     try {
-      // 2. Fetch data (will use cache if available)
       const result = await fetchFilterData(key);
       
-      // 3. Map data from { id, name } to { id, label }
-      const options = result.data.map((item: any) => ({
-        id: item.id,
-        label: item.name,
-      }));
+      // Map to { id, label }
+      const options = Array.isArray(result.data) 
+        ? result.data.map((item: any) => ({
+            id: item.id,
+            label: item.name || item.title || item.fullName || "Unknown",
+          }))
+        : [];
 
-      // 4. Set options state
       if (key === 'categories') setCategoryOptions(options);
       if (key === 'assets') setAssetOptions(options);
       if (key === 'locations') setLocationOptions(options);
@@ -62,14 +55,46 @@ export default function ProcedureSettings() {
     } catch (error) {
       console.error(`Failed to load ${filterType}:`, error);
     } finally {
-      // 5. Set loading state to false
       if (key === 'categories') setLoadingCategories(false);
       if (key === 'assets') setLoadingAssets(false);
       if (key === 'locations') setLoadingLocations(false);
       if (key === 'team members') setLoadingTeams(false);
     }
-  }, []); // Empty dependency array, as `fetchFilterData` is a stable import
-  // --- END OF NEW FUNCTION ---
+  }, []); 
+
+  // =========================================================
+  // ✅ HYDRATION FIX: Auto-fetch options if values exist
+  // =========================================================
+
+  // 1. Categories
+  useEffect(() => {
+    if (settings.categories.length > 0 && categoryOptions.length === 0 && !loadingCategories) {
+      loadOptions('categories');
+    }
+  }, [settings.categories, categoryOptions.length, loadingCategories, loadOptions]);
+
+  // 2. Assets
+  useEffect(() => {
+    if (settings.assets.length > 0 && assetOptions.length === 0 && !loadingAssets) {
+      loadOptions('assets');
+    }
+  }, [settings.assets, assetOptions.length, loadingAssets, loadOptions]);
+
+  // 3. Locations
+  useEffect(() => {
+    if (settings.locations.length > 0 && locationOptions.length === 0 && !loadingLocations) {
+      loadOptions('locations');
+    }
+  }, [settings.locations, locationOptions.length, loadingLocations, loadOptions]);
+
+  // 4. Teams
+  useEffect(() => {
+    if (settings.teamsInCharge.length > 0 && teamOptions.length === 0 && !loadingTeams) {
+      loadOptions('team members');
+    }
+  }, [settings.teamsInCharge, teamOptions.length, loadingTeams, loadOptions]);
+
+  // =========================================================
 
   const handleVisibilityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSettings((p) => ({
@@ -78,7 +103,7 @@ export default function ProcedureSettings() {
     }));
   };
 
-  // --- All style objects (pageStyle, cardStyle, etc.) remain unchanged ---
+  // Styles (Unchanged)
   const pageStyle: React.CSSProperties = {
     display: "flex",
     justifyContent: "center",
@@ -146,7 +171,6 @@ export default function ProcedureSettings() {
     marginTop: 6,
     lineHeight: 1.4,
   };
-  // --- End of style objects ---
 
   return (
     <div style={pageStyle}>
@@ -162,7 +186,6 @@ export default function ProcedureSettings() {
             <div>
               <label style={labelStyle}>Categories</label>
               <LibDynamicSelect
-                // --- 👇 [CHANGE] Updated props ---
                 options={categoryOptions}
                 value={settings.categories} 
                 onChange={(v) =>
@@ -170,7 +193,6 @@ export default function ProcedureSettings() {
                 } 
                 fetchOptions={() => loadOptions('categories')}
                 loading={loadingCategories}
-                // --- End of updated props ---
                 placeholder="Start typing..."
                 name="lib-categories"
                 activeDropdown={activeDropdown}
@@ -184,7 +206,6 @@ export default function ProcedureSettings() {
             <div>
               <label style={labelStyle}>Assets</label>
               <LibDynamicSelect
-                // --- 👇 [CHANGE] Updated props ---
                 options={assetOptions}
                 value={settings.assets} 
                 onChange={(v) =>
@@ -192,7 +213,6 @@ export default function ProcedureSettings() {
                 } 
                 fetchOptions={() => loadOptions('assets')}
                 loading={loadingAssets}
-                // --- End of updated props ---
                 placeholder="Start typing..."
                 name="lib-assets"
                 activeDropdown={activeDropdown}
@@ -204,7 +224,6 @@ export default function ProcedureSettings() {
             <div>
               <label style={labelStyle}>Locations</label>
               <LibDynamicSelect
-                // --- 👇 [CHANGE] Updated props ---
                 options={locationOptions}
                 value={settings.locations} 
                 onChange={(v) =>
@@ -212,7 +231,6 @@ export default function ProcedureSettings() {
                 }
                 fetchOptions={() => loadOptions('locations')}
                 loading={loadingLocations}
-                // --- End of updated props ---
                 placeholder="Start typing..."
                 name="lib-locations"
                 activeDropdown={activeDropdown}
@@ -233,16 +251,13 @@ export default function ProcedureSettings() {
           <div>
             <label style={labelStyle}>Select team</label>
             <LibDynamicSelect
-              // --- 👇 [CHANGE] Updated props ---
               options={teamOptions}
               value={settings.teamsInCharge}
               onChange={(v) =>
                 setSettings((p) => ({ ...p, teamsInCharge: v as string[] }))
               } 
-              // --- Note: 'team members' must match the key in filterDataFetcher.ts ---
               fetchOptions={() => loadOptions('team members')}
               loading={loadingTeams}
-              // --- End of updated props ---
               name="lib-teams"
               activeDropdown={activeDropdown}
               setActiveDropdown={setActiveDropdown}
@@ -254,7 +269,7 @@ export default function ProcedureSettings() {
           </div>
         </div>
 
-        {/* Card 3 - Procedure Visibility (No Change) */}
+        {/* Card 3 - Procedure Visibility */}
         <div style={cardStyle}>
           <div style={sectionTitle}>Procedure Visibility</div>
 

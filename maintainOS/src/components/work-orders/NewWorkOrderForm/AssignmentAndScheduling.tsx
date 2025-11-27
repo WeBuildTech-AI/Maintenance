@@ -21,6 +21,9 @@ interface Props {
   // Legacy
   recurrence?: string;
   setRecurrence?: (value: string) => void;
+
+  // ✅ NEW PROP: Pass pre-loaded assignees here
+  initialAssignees?: { id: string; name: string }[];
 }
 
 export function AssignmentAndScheduling({
@@ -35,6 +38,7 @@ export function AssignmentAndScheduling({
   onOpenInviteModal,
   recurrenceRule,
   setRecurrenceRule,
+  initialAssignees = [], // ✅ Default to empty array
 }: Props) {
   const [assignedOpen, setAssignedOpen] = useState(false);
   const [assignedSearch, setAssignedSearch] = useState("");
@@ -43,7 +47,9 @@ export function AssignmentAndScheduling({
   const [recurrenceOpen, setRecurrenceOpen] = useState(false);
   const [selectedFreq, setSelectedFreq] = useState("Does not repeat");
 
-  const [users, setUsers] = useState<{ id: string; name: string }[]>([]);
+  // ✅ FIX: Initialize users with initialAssignees
+  const [users, setUsers] = useState<{ id: string; name: string }[]>(initialAssignees);
+  
   const [isLoading, setIsLoading] = useState(false);
   const workTypes = ["Reactive", "Preventive", "Other"];
 
@@ -54,26 +60,34 @@ export function AssignmentAndScheduling({
 
   const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-  // WEEKLY State
   const [selectedWeekDays, setSelectedWeekDays] = useState<number[]>([]); 
-
-  // MONTHLY State
   const [monthMode, setMonthMode] = useState<"date" | "weekday">("date");
   const [dayOfMonth, setDayOfMonth] = useState(1);
   const [weekOfMonth, setWeekOfMonth] = useState(1);
   const [weekdayOfMonth, setWeekdayOfMonth] = useState(1); 
-
-  // YEARLY State
   const [yearInterval, setYearInterval] = useState(1);
 
   const monthDaysList = Array.from({length: 31}, (_, i) => i + 1);
 
-  // --- Initialize from Prop ---
+  // ✅ FIX: Update users list if initialAssignees changes (e.g., after API load)
+  useEffect(() => {
+    if (initialAssignees.length > 0) {
+      setUsers((prev) => {
+        // Merge to avoid duplicates
+        const existingIds = new Set(prev.map(u => u.id));
+        const newUsers = initialAssignees.filter(u => !existingIds.has(u.id));
+        return [...prev, ...newUsers];
+      });
+    }
+  }, [initialAssignees]);
+
+  // ... (Rest of the logic remains exactly the same)
+
   useEffect(() => {
     if (recurrenceRule) {
       try {
         const rule = typeof recurrenceRule === 'string' ? JSON.parse(recurrenceRule) : recurrenceRule;
-        const type = rule.type?.toLowerCase(); // Ensure we check lowercase
+        const type = rule.type?.toLowerCase();
 
         if (type === 'daily') {
             setSelectedFreq("Daily");
@@ -106,36 +120,29 @@ export function AssignmentAndScheduling({
     }
   }, []);
 
-  // --- Build Payload (Clean Objects - LOWERCASE TYPES, NO EXTRA INTERVALS) ---
   useEffect(() => {
     let rule = null;
 
     if (selectedFreq === "Daily") {
-      // ✅ DAILY: lowercase 'daily', NO interval
       rule = { type: "daily" };
     } 
     else if (selectedFreq === "Weekly") {
       if (selectedWeekDays.length > 0) {
         const sortedDays = [...selectedWeekDays].sort((a,b) => a-b);
-        // ✅ WEEKLY: lowercase 'weekly', NO interval
         rule = { type: "weekly", daysOfWeek: sortedDays };
       }
     }
     else if (selectedFreq === "Monthly") {
       if (monthMode === "date") {
-        // ✅ MONTHLY DATE: lowercase, NO interval
         rule = { type: "monthly_by_date", dayOfMonth: dayOfMonth };
       } else {
-        // ✅ MONTHLY WEEKDAY: lowercase, NO interval
         rule = { type: "monthly_by_weekday", weekOfMonth: weekOfMonth, weekdayOfMonth: weekdayOfMonth };
       }
     }
     else if (selectedFreq === "Yearly") {
-      // ✅ YEARLY: lowercase, HAS intervalYears
       rule = { type: "yearly", intervalYears: yearInterval };
     }
 
-    // Pass Object to parent
     setRecurrenceRule(rule);
   }, [
     selectedFreq, selectedWeekDays, 
@@ -161,7 +168,12 @@ export function AssignmentAndScheduling({
       const normalized = Array.isArray(data) && data.length
           ? data.map((u: any) => ({ id: u.id, name: u.fullName || u.name || "Unnamed User" }))
           : [];
-      setUsers(normalized);
+      // Merge fetched users with initial ones to preserve selection names
+      setUsers((prev) => {
+         const existingIds = new Set(prev.map(u => u.id));
+         const newUsers = normalized.filter((u: any) => !existingIds.has(u.id));
+         return [...prev, ...newUsers];
+      });
     } catch (err) {
       console.error("❌ Error fetching users:", err);
     } finally {
@@ -170,7 +182,7 @@ export function AssignmentAndScheduling({
   };
 
   useEffect(() => {
-    if (assignedOpen && users.length === 0) fetchUsers();
+    if (assignedOpen && users.length <= (initialAssignees?.length || 0)) fetchUsers();
   }, [assignedOpen]);
 
   const filteredUsers = users.filter((u) =>
@@ -249,7 +261,7 @@ export function AssignmentAndScheduling({
         </div>
       </div>
 
-      {/* Estimated Time */}
+      {/* ... (Rest of the UI remains exactly the same) */}
       <div className="mt-4">
         <h3 className="mb-4 text-base font-medium text-gray-900">Estimated Time</h3>
         <div className="grid grid-cols-2 gap-4">
@@ -264,7 +276,6 @@ export function AssignmentAndScheduling({
         </div>
       </div>
 
-      {/* Due & Start Date */}
       <div className="mt-4" ref={dueRef}>
         <h3 className="mb-4 text-base font-medium text-gray-900">Due Date</h3>
         <div style={{ position: "relative" }}>
@@ -287,7 +298,6 @@ export function AssignmentAndScheduling({
       <div className="mt-4">
         <h3 className="mb-4 text-base font-medium text-gray-900">Recurrence</h3>
         <div className="grid grid-cols-2 gap-4">
-          {/* Recurrence Dropdown */}
           <div className="relative">
             <div onClick={() => { setRecurrenceOpen(!recurrenceOpen); setWorkTypeOpen(false); }} className={`flex items-center justify-between w-full h-12 px-4 border rounded-md bg-white cursor-pointer text-gray-900 ${recurrenceOpen ? "border-yellow-400 ring-2 ring-yellow-300" : "border-gray-300"}`}>
               <span>{selectedFreq}</span>
@@ -313,7 +323,6 @@ export function AssignmentAndScheduling({
             )}
           </div>
 
-          {/* Work Type Dropdown */}
           <div className="relative">
             <div onClick={() => { setWorkTypeOpen(!workTypeOpen); setRecurrenceOpen(false); }} className={`flex items-center justify-between w-full h-12 px-4 border rounded-md bg-white cursor-pointer text-gray-900 ${workTypeOpen ? "border-blue-400 ring-2 ring-blue-300" : "border-gray-300"}`}>
               <span>Work Type: <span className="font-semibold">{selectedWorkType}</span></span>
@@ -332,14 +341,12 @@ export function AssignmentAndScheduling({
           </div>
         </div>
 
-        {/* DAILY */}
         {selectedFreq === "Daily" && (
           <div className="mt-4 p-4 bg-gray-50 rounded-md">
             <p className="text-sm text-gray-600">Repeats daily after completion.</p>
           </div>
         )}
 
-        {/* WEEKLY */}
         {selectedFreq === "Weekly" && (
           <div className="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200">
             <div className="flex items-center gap-2 text-sm text-gray-700 mb-3">
@@ -358,7 +365,6 @@ export function AssignmentAndScheduling({
           </div>
         )}
 
-        {/* MONTHLY */}
         {selectedFreq === "Monthly" && (
           <div className="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200">
             <div className="flex gap-4 mb-4 text-sm">
@@ -404,7 +410,6 @@ export function AssignmentAndScheduling({
           </div>
         )}
 
-        {/* YEARLY */}
         {selectedFreq === "Yearly" && (
           <div className="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200">
             <div className="flex items-center gap-2 text-sm text-gray-700 mb-3">

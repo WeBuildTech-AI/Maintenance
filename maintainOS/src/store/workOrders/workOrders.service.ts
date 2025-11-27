@@ -11,8 +11,9 @@ import type {
   WorkOrderComment,
   WorkOrderLog,
   AddCommentPayload,
-  CreateFieldResponseData, // ✅ Imported
-  FieldResponseResponse    // ✅ Imported
+  CreateFieldResponseData,
+  FieldResponseResponse,
+  CreatePartUsageData // ✅ Imported
 } from "./workOrders.types";
 
 export const workOrderService = {
@@ -142,13 +143,23 @@ export const workOrderService = {
     return res.data;
   },
 
+  // --- ✅ PARTS USAGE (New) ---
+
+  addPartUsage: async (id: string, data: CreatePartUsageData) => {
+    const res = await api.post(`/work-orders/${id}/parts`, data);
+    return res.data; 
+  },
+
+  deletePartUsage: async (id: string, usageId: string) => {
+    await api.delete(`/work-orders/${id}/parts/${usageId}`);
+    return { id, usageId };
+  },
+
   // --- Procedure Field Responses ---
   
-  // ✅ NEW: Save a single field response
   createFieldResponse: async (
     data: CreateFieldResponseData
   ): Promise<FieldResponseResponse> => {
-    // Assuming API is relative to baseURL, otherwise use full path
     const res = await api.post(`/procedure-field-responses`, data);
     return res.data;
   },

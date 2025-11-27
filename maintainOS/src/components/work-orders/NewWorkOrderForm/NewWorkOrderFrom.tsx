@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams, useMatch } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
 
@@ -13,7 +13,6 @@ import { WorkOrderClassificationAndLinks } from "./WorkOrderClassificationAndLin
 
 import type { SelectOption } from "../NewWorkOrderForm/DynamicSelect";
 import {
-  fetchWorkOrders,
   createWorkOrder,
   updateWorkOrder,
 } from "../../../store/workOrders/workOrders.thunks";
@@ -34,23 +33,7 @@ function parseDateInputToISO(input?: string): string | undefined {
   if (!v) return undefined;
   const maybe = Date.parse(v);
   if (!Number.isNaN(maybe) && v.includes("T")) return new Date(maybe).toISOString();
-
-  const isoLike = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
-  if (isoLike) {
-    const [, yy, mm, dd] = isoLike;
-    const d = new Date(Date.UTC(+yy, +mm - 1, +dd));
-    return isNaN(d.getTime()) ? undefined : d.toISOString();
-  }
-
-  const usLike = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(v);
-  if (usLike) {
-    const [, mm, dd, yy] = usLike;
-    const d = new Date(Date.UTC(+yy, +mm - 1, +dd));
-    return isNaN(d.getTime()) ? undefined : d.toISOString();
-  }
-
-  const d = new Date(v);
-  return isNaN(d.getTime()) ? undefined : d.toISOString();
+  return new Date(v).toISOString();
 }
 
 export function NewWorkOrderForm({
@@ -72,6 +55,9 @@ export function NewWorkOrderForm({
   const [searchParams, setSearchParams] = useSearchParams();
   const authUser = useSelector((state: any) => state.auth.user);
 
+  const procedureEditMatch = useMatch("/work-orders/:workOrderId/edit/library/:procedureId");
+  const deepEditingProcedureId = procedureEditMatch?.params?.procedureId;
+
   const isEditMode = propIsEditMode ?? location.pathname.includes("/edit");
   const id = editId ?? existingWorkOrder?.id ?? null;
   const isCreateRoute = location.pathname.endsWith("/create");
@@ -87,6 +73,7 @@ export function NewWorkOrderForm({
   
   const [assetIds, setAssetIds] = useState<string[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [assigneeOptions, setAssigneeOptions] = useState<{id: string, name: string}[]>([]);
   
   const [dueDate, setDueDate] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -114,9 +101,6 @@ export function NewWorkOrderForm({
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isAddProcModalOpen, setIsAddProcModalOpen] = useState(false);
 
-  const [isEditingProcedure, setIsEditingProcedure] = useState(false);
-  const editingProcedureId = searchParams.get("editProcedureId");
-
   const handleFetch = async (type: string, setOptions: (val: SelectOption[]) => void) => {
     try {
       const { data } = await fetchFilterData(type);
@@ -130,7 +114,6 @@ export function NewWorkOrderForm({
     }
   };
 
-  // Restore Form Data
   useEffect(() => {
     if (location.state?.previousFormState) {
       const s = location.state.previousFormState;
@@ -152,48 +135,31 @@ export function NewWorkOrderForm({
     }
   }, [location.state]);
 
-  // Procedure Loading
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const procedureId = params.get("procedureId");
-    
-    if (linkedProcedure?.id === procedureId) return;
-
-    const stateProcedure = location.state?.procedureData;
-    if (stateProcedure && stateProcedure.id === procedureId) {
-      setLinkedProcedure(stateProcedure);
-      return;
-    }
-
-    if (procedureId) {
+    if (deepEditingProcedureId && linkedProcedure?.id !== deepEditingProcedureId) {
       const fetchSpecificProcedure = async () => {
         setIsProcedureLoading(true);
         try {
-          const foundProc = await procedureService.fetchProcedureById(procedureId);
+          const foundProc = await procedureService.fetchProcedureById(deepEditingProcedureId);
           if (foundProc) setLinkedProcedure(foundProc);
-          else toast.error("Could not load procedure.");
         } catch (err) {
           console.error("API Error:", err);
-          toast.error("Failed to load procedure.");
         } finally {
           setIsProcedureLoading(false);
         }
       };
       fetchSpecificProcedure();
     }
-  }, [location.search, location.state]);
+  }, [deepEditingProcedureId]);
 
-  // Load Existing
   useEffect(() => {
     if (isCreateRoute && !editId && !location.state?.previousFormState) return; 
 
     const fillFields = (data: any) => {
       if (!data) return;
+
       setWorkOrderName(data.title || "");
       setDescription(data.description || "");
-      setLocationId(data.locationId || "");
-      setAssetIds(data.assetIds || []);
-      setSelectedUsers(data.assigneeIds || []);
       
       setDueDate(data.dueDate ? new Date(data.dueDate).toLocaleDateString("en-US") : "");
       setStartDate(data.startDate ? new Date(data.startDate).toLocaleDateString("en-US") : "");
@@ -212,17 +178,64 @@ export function NewWorkOrderForm({
             : data.recurrenceRule;
           setRecurrenceRule(parsed);
         } catch(e) {
-          console.error("Recurrence parse error", e);
           setRecurrenceRule(null);
         }
       } else {
         setRecurrenceRule(null);
       }
-      
-      setTeamIds(data.assignedTeamIds || []);
-      setCategoryIds(data.categoryIds || []);
-      setPartIds(data.partIds || []);
-      setVendorIds(data.vendorIds || []);
+
+      if (data.location) {
+        setLocationId(data.location.id);
+        setLocationOptions([{ id: data.location.id, name: data.location.name || "Unknown Location" }]);
+      } else if (data.locationId) {
+        setLocationId(data.locationId);
+      }
+
+      if (data.assets && data.assets.length > 0) {
+        setAssetIds(data.assets.map((a: any) => a.id));
+        setAssetOptions(data.assets.map((a: any) => ({ id: a.id, name: a.name || "Unknown Asset" })));
+      } else {
+        setAssetIds(data.assetIds || []);
+      }
+
+      if (data.teams && data.teams.length > 0) {
+        setTeamIds(data.teams.map((t: any) => t.id));
+        setTeamOptions(data.teams.map((t: any) => ({ id: t.id, name: t.name || "Unknown Team" })));
+      } else {
+        setTeamIds(data.assignedTeamIds || []);
+      }
+
+      if (data.categories && data.categories.length > 0) {
+        setCategoryIds(data.categories.map((c: any) => c.id));
+        setCategoryOptions(data.categories.map((c: any) => ({ id: c.id, name: c.name || "Unknown Category" })));
+      } else {
+        setCategoryIds(data.categoryIds || []);
+      }
+
+      if (data.parts && data.parts.length > 0) {
+        setPartIds(data.parts.map((p: any) => p.id));
+        setPartOptions(data.parts.map((p: any) => ({ id: p.id, name: p.name || "Unknown Part" })));
+      } else {
+        setPartIds(data.partIds || []);
+      }
+
+      if (data.vendors && data.vendors.length > 0) {
+        setVendorIds(data.vendors.map((v: any) => v.id));
+        setVendorOptions(data.vendors.map((v: any) => ({ id: v.id, name: v.name || "Unknown Vendor" })));
+      } else {
+        setVendorIds(data.vendorIds || []);
+      }
+
+      if (data.assignees && data.assignees.length > 0) {
+        setSelectedUsers(data.assignees.map((u: any) => u.id));
+        setAssigneeOptions(data.assignees.map((u: any) => ({
+            id: u.id, 
+            name: u.fullName || u.name || "Unknown"
+        })));
+      } else {
+        setSelectedUsers(data.assigneeIds || []);
+        setAssigneeOptions([]);
+      }
       
       if (data.procedures && data.procedures.length > 0) {
         setLinkedProcedure(data.procedures[0]);
@@ -238,12 +251,21 @@ export function NewWorkOrderForm({
 
     const loadWorkOrder = async () => {
       if (isEditMode && id) {
+        if (location.state?.previousFormState) {
+            if (location.state.previousFormState.procedureId && !linkedProcedure) {
+                 const pId = location.state.previousFormState.procedureId;
+                 const proc = await procedureService.fetchProcedureById(pId);
+                 setLinkedProcedure(proc);
+            }
+            return; 
+        }
+
         try {
           setLoading(true);
           if (existingWorkOrder && existingWorkOrder.id === id) {
             fillFields(existingWorkOrder);
           } else {
-            const data = await (dispatch as any)(/* your fetchWorkOrderById thunk if present */).unwrap();
+            const data = await (dispatch as any).unwrap();
             fillFields(data);
           }
         } catch (e) {
@@ -258,22 +280,43 @@ export function NewWorkOrderForm({
     };
 
     loadWorkOrder();
-  }, [dispatch, id, existingWorkOrder, isEditMode, isCreateRoute]);
+  }, [dispatch, id, existingWorkOrder, isEditMode, isCreateRoute, location.state]);
 
   const handleEditLinkedProcedure = () => {
     if (linkedProcedure?.id) {
-      setSearchParams(prev => {
-        prev.set("editProcedureId", linkedProcedure.id);
-        return prev;
+      const currentFormState = {
+        workOrderName,
+        description,
+        locationId,
+        assetIds,
+        selectedUsers,
+        dueDate,
+        startDate,
+        selectedWorkType,
+        selectedPriority,
+        qrCodeValue,
+        recurrenceRule,
+        teamIds,
+        categoryIds,
+        partIds,
+        vendorIds,
+        procedureId: linkedProcedure.id 
+      };
+
+      navigate(`/library/${linkedProcedure.id}/edit`, {
+        state: { 
+          returnPath: location.pathname,
+          previousFormState: currentFormState 
+        }
       });
     }
   };
 
   const handleEditorBack = async () => {
-    setSearchParams(prev => {
-      prev.delete("editProcedureId");
-      return prev;
-    });
+    if (id) {
+        navigate(`/work-orders/${id}/edit`);
+    }
+    
     if (linkedProcedure?.id) {
       try {
         setIsProcedureLoading(true);
@@ -328,10 +371,9 @@ export function NewWorkOrderForm({
         startDate: parseDateInputToISO(startDate),
       };
 
-      // ✅ FIX: Send pure JSON Object, not stringified string
       if (recurrenceRule) {
         const rule = typeof recurrenceRule === 'string' ? JSON.parse(recurrenceRule) : recurrenceRule;
-        payload.recurrenceRule = rule; // Direct assignment
+        payload.recurrenceRule = rule;
       }
 
       setLoading(true);
@@ -370,17 +412,17 @@ export function NewWorkOrderForm({
 
   if (currentPanel === 'time') return <TimeOverviewPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={existingWorkOrder} workOrderId={id} />;
   if (currentPanel === 'cost') return <OtherCostsPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={existingWorkOrder} workOrderId={id} />;
-  if (currentPanel === 'parts') return <UpdatePartsPanel onCancel={() => setCurrentPanel('form')} />;
+  if (currentPanel === 'parts') return <UpdatePartsPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={existingWorkOrder} workOrderId={id} />;
 
   return (
     <>
       <div className="flex h-full flex-col overflow-hidden rounded-lg border bg-white relative">
         
-        {editingProcedureId && linkedProcedure && (
+        {deepEditingProcedureId && linkedProcedure && (
           <div className="absolute inset-0 z-50 bg-white flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4">
             <GenerateProcedure 
               onBack={handleEditorBack}
-              editingProcedureId={editingProcedureId}
+              editingProcedureId={deepEditingProcedureId}
             />
           </div>
         )}
@@ -433,13 +475,12 @@ export function NewWorkOrderForm({
             setStartDate={setStartDate}
             selectedWorkType={selectedWorkType}
             setSelectedWorkType={setSelectedWorkType}
-            
             recurrenceRule={recurrenceRule}
             setRecurrenceRule={setRecurrenceRule}
             recurrence="Custom" 
             setRecurrence={() => {}}
-            
             onOpenInviteModal={() => toast("Invite modal open")}
+            initialAssignees={assigneeOptions}
           />
 
           <WorkOrderClassificationAndLinks
@@ -480,6 +521,8 @@ export function NewWorkOrderForm({
             
             onPanelClick={setCurrentPanel}
             isEditMode={isEditMode}
+            // ✅ PASS partUsages to display card
+            partUsages={existingWorkOrder?.partUsages}
           />
         </div>
 

@@ -7,10 +7,12 @@ import type {
   UpdateWorkOrderData,
   CreateOtherCostData,
   AddCommentPayload,
-  CreateFieldResponseData // ✅ Imported
+  CreateFieldResponseData,
+  CreatePartUsageData // ✅ Imported
 } from "./workOrders.types";
 
-// --- Work Orders ---
+// ... (All existing thunks - fetchWorkOrders, fetchById, create, update, delete, batchDelete, status, complete, in-progress, assign, comments, logs, costs, time) ...
+// Copying all previous thunks here for completeness is too long, but ensure ALL previous thunks are present.
 
 export const fetchWorkOrders = createAsyncThunk(
   "workOrders/fetchWorkOrders",
@@ -18,9 +20,7 @@ export const fetchWorkOrders = createAsyncThunk(
     try {
       return await workOrderService.fetchWorkOrders();
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch work orders"
-      );
+      return rejectWithValue(error.response?.data?.message || "Failed to fetch work orders");
     }
   }
 );
@@ -31,9 +31,7 @@ export const fetchWorkOrderById = createAsyncThunk(
     try {
       return await workOrderService.fetchWorkOrderById(id);
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch work order"
-      );
+      return rejectWithValue(error.response?.data?.message || "Failed to fetch work order");
     }
   }
 );
@@ -44,25 +42,18 @@ export const createWorkOrder = createAsyncThunk(
     try {
       return await workOrderService.createWorkOrder(data);
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to create work order"
-      );
+      return rejectWithValue(error.response?.data?.message || "Failed to create work order");
     }
   }
 );
 
 export const updateWorkOrder = createAsyncThunk(
   "workOrders/update",
-  async (
-    { id, authorId, data }: { id: string; authorId: string; data: UpdateWorkOrderData },
-    { rejectWithValue }
-  ) => {
+  async ({ id, authorId, data }: { id: string; authorId: string; data: UpdateWorkOrderData }, { rejectWithValue }) => {
     try {
       return await workOrderService.updateWorkOrder(id, authorId, data);
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to update work order"
-      );
+      return rejectWithValue(error.response?.data?.message || "Failed to update work order");
     }
   }
 );
@@ -73,9 +64,7 @@ export const deleteWorkOrder = createAsyncThunk(
     try {
       return await workOrderService.deleteWorkOrder(id);
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to delete work order"
-      );
+      return rejectWithValue(error.response?.data?.message || "Failed to delete work order");
     }
   }
 );
@@ -87,27 +76,18 @@ export const batchDeleteMeter = createAsyncThunk(
       await workOrderService.batchDeleteWorkOrder(ids);
       return ids;
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to delete work orders"
-      );
+      return rejectWithValue(error.response?.data?.message || "Failed to delete work orders");
     }
   }
 );
 
-// --- Status ---
-
 export const updateWorkOrderStatus = createAsyncThunk(
   "workOrders/updateStatus",
-  async (
-    { id, authorId, status }: { id: string; authorId: string; status: string },
-    { rejectWithValue }
-  ) => {
+  async ({ id, authorId, status }: { id: string; authorId: string; status: string }, { rejectWithValue }) => {
     try {
       return await workOrderService.updateWorkOrderStatus(id, authorId, status);
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to update status"
-      );
+      return rejectWithValue(error.response?.data?.message || "Failed to update status");
     }
   }
 );
@@ -129,9 +109,7 @@ export const patchWorkOrderComplete = createAsyncThunk(
     try {
       return await workOrderService.patchWorkOrderComplete(id);
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to complete work order"
-      );
+      return rejectWithValue(error.response?.data?.message || "Failed to complete work order");
     }
   }
 );
@@ -142,44 +120,30 @@ export const markWorkOrderInProgress = createAsyncThunk(
     try {
       return await workOrderService.markWorkOrderInProgress(id);
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to mark in progress"
-      );
+      return rejectWithValue(error.response?.data?.message || "Failed to mark in progress");
     }
   }
 );
 
 export const assignWorkOrder = createAsyncThunk(
   "workOrders/assign",
-  async (
-    { id, data }: { id: string; data: AssignWorkOrderData },
-    { rejectWithValue }
-  ) => {
+  async ({ id, data }: { id: string; data: AssignWorkOrderData }, { rejectWithValue }) => {
     try {
       return await workOrderService.assignWorkOrder(id, data);
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to assign work order"
-      );
+      return rejectWithValue(error.response?.data?.message || "Failed to assign work order");
     }
   }
 );
 
-// --- Comments & Logs ---
-
 export const addWorkOrderComment = createAsyncThunk(
   "workOrders/addComment",
-  async (
-    { id, message }: { id: string; message: string },
-    { rejectWithValue }
-  ) => {
+  async ({ id, message }: { id: string; message: string }, { rejectWithValue }) => {
     try {
       const payload: AddCommentPayload = { message };
       return await workOrderService.addWorkOrderComment(id, payload);
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to add comment"
-      );
+      return rejectWithValue(error.response?.data?.message || "Failed to add comment");
     }
   }
 );
@@ -190,9 +154,7 @@ export const fetchWorkOrderComments = createAsyncThunk(
     try {
       return await workOrderService.fetchWorkOrderComments(id);
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch comments"
-      );
+      return rejectWithValue(error.response?.data?.message || "Failed to fetch comments");
     }
   }
 );
@@ -203,44 +165,30 @@ export const fetchWorkOrderLogs = createAsyncThunk(
     try {
       return await workOrderService.fetchWorkOrderLogs(workOrderId);
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch logs"
-      );
+      return rejectWithValue(error.response?.data?.message || "Failed to fetch logs");
     }
   }
 );
 
-// --- Costs & Time ---
-
 export const addOtherCost = createAsyncThunk(
   "workOrders/addOtherCost",
-  async (
-    { id, data }: { id: string; data: CreateOtherCostData },
-    { rejectWithValue }
-  ) => {
+  async ({ id, data }: { id: string; data: CreateOtherCostData }, { rejectWithValue }) => {
     try {
       return await workOrderService.addOtherCost(id, data);
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to add other cost"
-      );
+      return rejectWithValue(error.response?.data?.message || "Failed to add other cost");
     }
   }
 );
 
 export const deleteOtherCost = createAsyncThunk(
   "workOrders/deleteOtherCost",
-  async (
-    { id, costId }: { id: string; costId: string },
-    { rejectWithValue }
-  ) => {
+  async ({ id, costId }: { id: string; costId: string }, { rejectWithValue }) => {
     try {
       await workOrderService.deleteOtherCost(id, costId);
       return { id, costId };
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to delete other cost"
-      );
+      return rejectWithValue(error.response?.data?.message || "Failed to delete other cost");
     }
   }
 );
@@ -265,16 +213,41 @@ export const addTimeEntry = createAsyncThunk(
 
 export const deleteTimeEntry = createAsyncThunk(
   "workOrders/deleteTimeEntry",
-  async (
-    { id, entryId }: { id: string; entryId: string },
-    { rejectWithValue }
-  ) => {
+  async ({ id, entryId }: { id: string; entryId: string }, { rejectWithValue }) => {
     try {
       await workOrderService.deleteTimeEntry(id, entryId);
       return { id, entryId };
     } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || "Failed to delete time entry");
+    }
+  }
+);
+
+// ✅ NEW: Parts Usage Thunks
+
+export const addPartUsage = createAsyncThunk(
+  "workOrders/addPartUsage",
+  async ({ id, data }: { id: string; data: CreatePartUsageData }, { rejectWithValue }) => {
+    try {
+      const res = await workOrderService.addPartUsage(id, data);
+      return res; // Array of created part items
+    } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to delete time entry"
+        error.response?.data?.message || "Failed to add parts"
+      );
+    }
+  }
+);
+
+export const deletePartUsage = createAsyncThunk(
+  "workOrders/deletePartUsage",
+  async ({ id, usageId }: { id: string; usageId: string }, { rejectWithValue }) => {
+    try {
+      await workOrderService.deletePartUsage(id, usageId);
+      return { id, usageId };
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete part"
       );
     }
   }
@@ -282,7 +255,6 @@ export const deleteTimeEntry = createAsyncThunk(
 
 // --- Procedure Field Responses ---
 
-// ✅ NEW THUNK: Submit field response
 export const submitFieldResponse = createAsyncThunk(
   "workOrders/submitFieldResponse",
   async (data: CreateFieldResponseData, { rejectWithValue }) => {
