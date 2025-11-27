@@ -16,6 +16,7 @@ import {
   ArrowLeft,
   User,
   CheckCircle2, 
+  Wrench // Imported icon
 } from "lucide-react";
 
 import { useDispatch, useSelector } from "react-redux"; 
@@ -84,7 +85,7 @@ export default function WorkOrderDetailModal({
   const [isProcedureVisible, setIsProcedureVisible] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null); 
   const procedureRef = useRef<HTMLDivElement>(null);       
-  const commentTextAreaRef = useRef<HTMLTextAreaElement>(null); // ✅ Ref for Comments
+  const commentTextAreaRef = useRef<HTMLTextAreaElement>(null); 
 
   const hasProcedure = (workOrder.procedures && workOrder.procedures.length > 0) || 
                        (workOrder.procedureIds && workOrder.procedureIds.length > 0);
@@ -100,7 +101,6 @@ export default function WorkOrderDetailModal({
     if (workOrder) setActiveStatus(workOrder.status || "open");
   }, [workOrder]);
 
-  // --- SCROLL LISTENER ---
   useEffect(() => {
     const container = scrollContainerRef.current;
     const target = procedureRef.current;
@@ -132,7 +132,6 @@ export default function WorkOrderDetailModal({
     }
   };
 
-  // ✅ SCROLL TO COMMENTS HANDLER
   const handleScrollToComments = () => {
     if (commentTextAreaRef.current) {
       commentTextAreaRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -145,6 +144,13 @@ export default function WorkOrderDetailModal({
     (sum: number, c: any) => sum + Number(c.amount ?? 0),
     0
   );
+
+  // ✅ CALCULATE PARTS & TOTAL
+  const partUsages = workOrder.partUsages || [];
+  const partsTotalCost = partUsages.reduce((sum: number, p: any) => {
+     return sum + (Number(p.totalCost) || (Number(p.unitCost || 0) * Number(p.quantity || 0)));
+  }, 0);
+
 
   const handleClose = () => {
     setPanel("details");
@@ -269,7 +275,6 @@ export default function WorkOrderDetailModal({
               <h2 className="text-2xl font-semibold text-gray-900">{workOrder.title}</h2>
               
               <div className="flex items-center gap-2">
-                {/* ✅ SCROLL TO COMMENTS BUTTON */}
                 <button 
                   onClick={handleScrollToComments}
                   className="bg-white rounded-md px-4 py-2 border border-blue-500 text-blue-600 flex items-center gap-2 cursor-pointer hover:bg-blue-50 font-medium"
@@ -315,12 +320,13 @@ export default function WorkOrderDetailModal({
             </div>
           ) : (
             <>
-              {panel === "parts" && <UpdatePartsPanel onCancel={() => setPanel("details")} />}
+              {panel === "parts" && <UpdatePartsPanel onCancel={() => setPanel("details")} selectedWorkOrder={workOrder} workOrderId={workOrder.id} />}
               {panel === "time" && <TimeOverviewPanel onCancel={() => setPanel("details")} selectedWorkOrder={workOrder} workOrderId={workOrder.id} />}
               {panel === "cost" && <OtherCostsPanel onCancel={() => setPanel("details")} selectedWorkOrder={workOrder} workOrderId={workOrder.id} />}
 
               {panel === "details" && (
                 <>
+                  {/* Status */}
                   <div className="p-6 border-b">
                     <h3 className="text-sm font-medium mb-2.5 text-gray-700">Status</h3>
                     <div className="flex items-start justify-between gap-6 border rounded-lg p-4 bg-white sm:flex-row flex-col">
@@ -348,22 +354,6 @@ export default function WorkOrderDetailModal({
                     </div>
                   </div>
 
-                  <div className="p-6 flex justify-between border-b bg-white">
-                    <div><h4 className="text-sm font-medium text-gray-700">Due Date</h4><p className="text-sm text-gray-500">{workOrder.dueDate || "—"}</p></div>
-                    <div><h4 className="text-sm font-medium text-gray-700">Priority</h4><p className="text-sm text-gray-500">{safeRender(workOrder.priority)}</p></div>
-                    <div><h4 className="text-sm font-medium text-gray-700">Work Order ID</h4><p className="text-sm text-gray-500">{workOrder.id}</p></div>
-                  </div>
-
-                  <div className="p-6 border-b bg-white">
-                    <h4 className="text-sm font-medium mb-2 text-gray-700">Assigned To</h4>
-                    <div className="flex items-center gap-2"><div className="w-6 h-6 bg-gray-200 rounded-full"></div><span className="text-sm text-gray-800">{safeRenderAssignee(workOrder)}</span></div>
-                  </div>
-
-                  <div className="p-6 border-b bg-white">
-                    <h4 className="text-sm font-medium mb-2 text-gray-700">Description</h4>
-                    <p className="text-sm text-gray-500 whitespace-pre-line">{workOrder.description || "No description provided."}</p>
-                  </div>
-
                   <div className="p-6 grid grid-cols-2 gap-6 border-b bg-white">
                     <div><h4 className="text-sm font-medium mb-1.5 text-gray-700">Asset</h4><span className="flex items-center gap-1.5 text-sm text-gray-800"><Factory size={16} className="text-gray-500" />{safeRender(workOrder.asset)}</span></div>
                     <div><h4 className="text-sm font-medium mb-1.5 text-gray-700">Location</h4><span className="flex items-center gap-1.5 text-sm text-gray-800"><MapPin size={16} className="text-gray-500" />{safeRender(workOrder.location)}</span></div>
@@ -373,15 +363,57 @@ export default function WorkOrderDetailModal({
 
                   <div className="p-6 border-b bg-white">
                     <h2 className="text-xl font-semibold mb-3 text-gray-900">Time & Cost Tracking</h2>
-                    <div className="space-y-2">
-                      <div onClick={() => setPanel("parts")} className="flex justify-between items-center py-3 border-b-2 border-yellow-400 cursor-pointer group">
-                        <span className="text-sm font-medium text-gray-700">Parts</span>
-                        <div className="flex items-center text-sm text-gray-500 group-hover:text-blue-600">Add <ChevronRight className="w-4 h-4 ml-1" /></div>
-                      </div>
+                    <div className="space-y-4">
+                      
+                      {/* ✅ CONDITIONALLY RENDER PARTS CARD */}
+                      {partUsages.length > 0 ? (
+                        <div 
+                          onClick={() => setPanel("parts")}
+                          className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm cursor-pointer hover:border-blue-400 transition-all group"
+                        >
+                          <div className="flex justify-between items-center mb-3">
+                             <div className="flex items-center gap-2">
+                                <Wrench size={18} className="text-gray-500" />
+                                <h3 className="font-semibold text-gray-900">Parts Used</h3>
+                             </div>
+                             <span className="text-blue-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">Edit</span>
+                          </div>
+
+                          <div className="space-y-3 mb-3">
+                             {partUsages.map((p: any, i: number) => (
+                                <div key={i} className="flex justify-between items-start text-sm border-b border-gray-50 pb-2 last:border-0 last:pb-0">
+                                   <div>
+                                      <div className="font-medium text-gray-800">{p.part?.name || "Unknown Part"}</div>
+                                      <div className="text-xs text-gray-500 flex items-center gap-1">
+                                        <MapPin size={10} /> {p.location?.name || "Unknown Location"}
+                                      </div>
+                                   </div>
+                                   <div className="text-right">
+                                      <div className="text-gray-900 font-medium">x{p.quantity || 0}</div>
+                                      <div className="text-xs text-gray-500">${Number(p.totalCost || (Number(p.unitCost) * Number(p.quantity)) || 0).toFixed(2)}</div>
+                                   </div>
+                                </div>
+                             ))}
+                          </div>
+
+                          <div className="border-t border-gray-100 pt-3 flex justify-between items-center bg-gray-50 -mx-4 -mb-4 px-4 py-2 mt-2 rounded-b-lg">
+                             <span className="text-sm font-medium text-gray-600">Total Parts Cost</span>
+                             <span className="text-base font-bold text-gray-900">${partsTotalCost.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        // Empty State Row
+                        <div onClick={() => setPanel("parts")} className="flex justify-between items-center py-3 border-b-2 border-yellow-400 cursor-pointer group">
+                          <span className="text-sm font-medium text-gray-700">Parts</span>
+                          <div className="flex items-center text-sm text-gray-500 group-hover:text-blue-600">Add <ChevronRight className="w-4 h-4 ml-1" /></div>
+                        </div>
+                      )}
+
                       <div onClick={() => setPanel("time")} className="flex justify-between items-center py-3 border-b-2 border-yellow-400 cursor-pointer group">
                         <span className="text-sm font-medium text-gray-700">Time</span>
                         <div className="flex items-center text-sm text-gray-500 group-hover:text-blue-600">Add <ChevronRight className="w-4 h-4 ml-1" /></div>
                       </div>
+
                       <div onClick={() => setPanel("cost")} className="flex justify-between items-start py-3 border-b-2 border-yellow-400 cursor-pointer group">
                         <span className="text-sm font-medium text-gray-700">Other Costs</span>
                         <div className="text-right">
@@ -403,7 +435,6 @@ export default function WorkOrderDetailModal({
                     <div>Last updated on {formatModalDateTime(workOrder.updatedAt)}</div>
                   </div>
 
-                  {/* ✅ Pass Ref to CommentsSection */}
                   <CommentsSection 
                     ref={commentTextAreaRef} 
                     comment={comment} 

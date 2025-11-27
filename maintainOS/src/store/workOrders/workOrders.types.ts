@@ -68,6 +68,28 @@ export interface CreateTimeEntryData {
   rate?: number;
 }
 
+// ✅ NEW: Part Usage Types
+export interface PartUsage {
+  id: string;
+  partId: string;
+  locationId: string;
+  quantity: number;
+  part?: { id: string; name: string };       
+  location?: { id: string; name: string };   
+  cost?: number;                 
+  createdAt?: string;
+}
+
+export interface CreatePartUsageItem {
+  partId: string;
+  locationId: string;
+  quantity: number;
+}
+
+export interface CreatePartUsageData {
+  items: CreatePartUsageItem[];
+}
+
 export interface WorkOrderResponse {
   id: string;
   organizationId: string;
@@ -84,12 +106,15 @@ export interface WorkOrderResponse {
   teams?: any[];
   location?: any;
   assets?: any[];
-  parts?: any[];
+  
+  // ✅ Updated to include PartUsage[]
+  parts?: PartUsage[];
+  
   vendors?: any[];
   categories?: any[];
   procedures?: any[];
   meters?: any[];
-  submissions?: any[]; // Added for procedure submissions
+  submissions?: any[]; 
   
   otherCosts?: OtherCost[];
   timeEntries?: WorkOrderTimeEntry[];
@@ -145,7 +170,6 @@ export interface UpdateWorkOrderStatusPayload {
   status: string;
 }
 
-// ✅ NEW TYPES FOR PROCEDURE FIELD RESPONSES
 export interface CreateFieldResponseData {
   submissionId: string;
   fieldId: string;

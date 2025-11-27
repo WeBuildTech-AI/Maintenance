@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux"; 
 import { procedureService } from "../../../store/procedures/procedures.service";
+// ✅ Import new thunk
 import { submitFieldResponse } from "../../../store/workOrders/workOrders.thunks"; 
 import { ProcedureForm } from "../../Library/GenerateProcedure/components/ProcedureForm";
 import type { AppDispatch } from "../../../store"; 
@@ -30,8 +31,6 @@ export function LinkedProcedurePreview({
   const [isLoading, setIsLoading] = useState(false);
 
   const procedureSummary = selectedWorkOrder?.procedures?.[0];
-
-  // ✅ Extract submissionId properly
   const submissionId = selectedWorkOrder?.submissions?.[0]?.id;
 
   useEffect(() => {
@@ -50,7 +49,6 @@ export function LinkedProcedurePreview({
 
   // ✅ Handler: Triggered when input loses focus (onBlur)
   const handleFieldSave = async (fieldId: string, value: any, notes?: string) => {
-    // Debugging logs
     console.log("➡️ Saving Field:", { fieldId, value, notes, submissionId });
 
     if (!submissionId) {
@@ -67,7 +65,7 @@ export function LinkedProcedurePreview({
         notes
       })).unwrap();
       
-      // console.log("✅ Field Saved Successfully");
+      // Success (Silent or Toast)
     } catch (error: any) {
       console.error("❌ Failed to save field", error);
       toast.error(error?.message || "Failed to save response");

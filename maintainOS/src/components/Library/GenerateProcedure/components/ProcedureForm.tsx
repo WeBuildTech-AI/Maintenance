@@ -238,8 +238,6 @@ function InspectionCheckRunner({ value, onChange }: { value: any; onChange: (val
 }
 
 
-
-
 // --- Signature Runner ---
 function SignatureRunner({ value, onChange }: { value: string | null; onChange: (val: string | null) => void }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -838,6 +836,8 @@ interface RenderItemProps {
   allFieldsInScope: any[];
   // ✅ [ADDED]: Variant prop for passing down
   variant?: "preview" | "runner";
+  // ✅ [ADDED]: Prop for saving
+  onFieldSave?: (fieldId: string, value: any) => void;
 }
 
 // Renders a single interactive Field
@@ -846,6 +846,7 @@ const PreviewField = memo(function PreviewField({
   answers,
   updateAnswer,
   variant, // ✅ [ADDED]
+  onFieldSave, // ✅ [ADDED]
 }: Omit<RenderItemProps, "renderAllItems" | "allFieldsInScope">) {
   // --- Normalize Builder vs API props ---
   const fieldId = field.id.toString();
@@ -873,25 +874,36 @@ const PreviewField = memo(function PreviewField({
     }
   };
 
+  // ✅ Wrappers to trigger save events
+  const handleImmediateChange = (val: any) => {
+    updateAnswer(fieldId, val);
+    if (onFieldSave) onFieldSave(fieldId, val); // 🔥 Log immediately
+  };
+
+  const handleBlur = () => {
+    if (onFieldSave) onFieldSave(fieldId, currentValue); // 🔥 Log on blur (text/number)
+  };
+
   const renderFieldInput = () => {
     // ✅ [ADDED]: RUNNER MODE LOGIC (Work Order)
     if (variant === "runner") {
       switch (fieldType) {
         case "inspection_check": case "Inspection Check":
-          return <InspectionCheckRunner value={currentValue} onChange={(val) => updateAnswer(fieldId, val)} />;
+          return <InspectionCheckRunner value={currentValue} onChange={handleImmediateChange} />;
         case "signature_block": case "Signature Block":
-          return <SignatureRunner value={currentValue} onChange={(val) => updateAnswer(fieldId, val)} />;
+          return <SignatureRunner value={currentValue} onChange={handleImmediateChange} />;
         case "picture_file": case "Picture/File Field":
-          return <UploadRunner value={currentValue} onChange={(val) => updateAnswer(fieldId, val)} />;
+          return <UploadRunner value={currentValue} onChange={handleImmediateChange} />;
         case "Date":
-          return <DateRunner value={currentValue} onChange={(val) => updateAnswer(fieldId, val)} />;
-        case "yes_no_NA": case "Yes, No, N/A": return <YesNoRunner value={currentValue} onChange={(val) => updateAnswer(fieldId, val)} />;
+          return <DateRunner value={currentValue} onChange={handleImmediateChange} />;
+        case "yes_no_NA": case "Yes, No, N/A": 
+          return <YesNoRunner value={currentValue} onChange={handleImmediateChange} />;
 
         // Interactive inputs for standard fields
         case "text_field": case "Text Field":
-          return <input type="text" value={currentValue || ""} onChange={e => updateAnswer(fieldId, e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" placeholder="Enter Text" />;
+          return <input type="text" value={currentValue || ""} onChange={e => updateAnswer(fieldId, e.target.value)} onBlur={handleBlur} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" placeholder="Enter Text" />;
         case "number_field": case "Number Field":
-          return <input type="number" value={currentValue || ""} onChange={e => updateAnswer(fieldId, e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" placeholder="Enter Number" />;
+          return <input type="number" value={currentValue || ""} onChange={e => updateAnswer(fieldId, e.target.value)} onBlur={handleBlur} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" placeholder="Enter Number" />;
         case "amount":
         case "Amount ($)":
           return (
@@ -915,6 +927,7 @@ const PreviewField = memo(function PreviewField({
                 type="number"
                 value={currentValue || ""}
                 onChange={(e) => updateAnswer(fieldId, e.target.value)}
+                onBlur={handleBlur}
                 placeholder="Enter Amount"
                 style={{
                   width: "100%",
@@ -930,16 +943,17 @@ const PreviewField = memo(function PreviewField({
           );
 
         case "checkbox": case "Checkbox":
-          return <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={currentValue === true} onChange={e => updateAnswer(fieldId, e.target.checked)} className="rounded border-gray-300 text-blue-600" /><span className="text-sm">{fieldLabel}</span></label>;
+          return <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={currentValue === true} onChange={e => handleImmediateChange(e.target.checked)} className="rounded border-gray-300 text-blue-600" /><span className="text-sm">{fieldLabel}</span></label>;
         case "mulitple_choice": case "Multiple Choice":
-          return <div className="flex flex-col gap-2">{fieldOptions?.map((opt: any, idx: number) => <label key={idx} className="flex items-center gap-2 cursor-pointer"><input type="radio" name={fieldId} checked={currentValue === opt} onChange={() => updateAnswer(fieldId, opt)} /><span className="text-sm">{opt}</span></label>)}</div>;
+          return <div className="flex flex-col gap-2">{fieldOptions?.map((opt: any, idx: number) => <label key={idx} className="flex items-center gap-2 cursor-pointer"><input type="radio" name={fieldId} checked={currentValue === opt} onChange={() => handleImmediateChange(opt)} /><span className="text-sm">{opt}</span></label>)}</div>;
         case "checklist": case "Checklist":
           const cl = currentValue || [];
-          return <div className="flex flex-col gap-2">{fieldOptions?.map((opt: any, idx: number) => <label key={idx} className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={cl.includes(opt)} onChange={e => { const nl = e.target.checked ? [...cl, opt] : cl.filter((x: any) => x !== opt); updateAnswer(fieldId, nl); }} /><span className="text-sm">{opt}</span></label>)}</div>;
+          return <div className="flex flex-col gap-2">{fieldOptions?.map((opt: any, idx: number) => <label key={idx} className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={cl.includes(opt)} onChange={e => { const nl = e.target.checked ? [...cl, opt] : cl.filter((x: any) => x !== opt); handleImmediateChange(nl); }} /><span className="text-sm">{opt}</span></label>)}</div>;
         case "meter_reading": case "Meter Reading":
-          return <><div className="mb-1 text-xs text-gray-500">Last: {lastReading ?? 'N/A'}</div><div className="relative"><input type="number" value={currentValue || ""} onChange={e => updateAnswer(fieldId, e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" placeholder="Enter Reading" /><span className="absolute right-3 top-2 text-gray-400 text-xs">{fieldUnit}</span></div></>;
-        case "yes_no_NA": case "Yes, No, N/A":
-          return <div className="flex gap-2">{["Yes", "No", "N/A"].map(opt => <button key={opt} onClick={() => updateAnswer(fieldId, opt.toLowerCase())} className={`flex-1 py-2 border rounded text-sm ${currentValue === opt.toLowerCase() ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-white"}`}>{opt}</button>)}</div>;
+          return <><div className="mb-1 text-xs text-gray-500">Last: {lastReading ?? 'N/A'}</div><div className="relative"><input type="number" value={currentValue || ""} onChange={e => updateAnswer(fieldId, e.target.value)} onBlur={handleBlur} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" placeholder="Enter Reading" /><span className="absolute right-3 top-2 text-gray-400 text-xs">{fieldUnit}</span></div></>;
+        
+        default:
+          return <p className="text-xs text-gray-400">Field type not supported in runner: {fieldType}</p>;
       }
     }
 
@@ -1421,6 +1435,7 @@ const PreviewField = memo(function PreviewField({
 const PreviewSection = memo(function PreviewSection({
   item: section,
   variant, // ✅ [ADDED]
+  onFieldSave, // ✅ [ADDED]
   ...props
 }: RenderItemProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -1543,6 +1558,7 @@ interface ProcedureFormProps {
   resetKey: string;
   onAnswersChange?: (answers: Record<string, any>) => void;
   variant?: "preview" | "runner"; // ✅ [ADDED] Default is Preview
+  onFieldSave?: (fieldId: string, value: any) => void; // ✅ [ADDED] Save Callback
 }
 
 export function ProcedureForm({
@@ -1551,7 +1567,8 @@ export function ProcedureForm({
   sections,
   resetKey,
   onAnswersChange,
-  variant = "preview" // ✅ [ADDED] Pass variant down
+  variant = "preview", // ✅ [ADDED] Pass variant down
+  onFieldSave // ✅ [ADDED]
 }: ProcedureFormProps) {
   const [answers, setAnswers] = useState<Record<string, any>>({});
 
@@ -1589,6 +1606,7 @@ export function ProcedureForm({
             renderAllItems={renderAllItems}
             allFieldsInScope={allFieldsInScope}
             variant={variant} // ✅ [ADDED] Pass variant down
+            onFieldSave={onFieldSave} // ✅ [ADDED] Pass callback down
           />
         );
 
@@ -1610,6 +1628,7 @@ export function ProcedureForm({
                   renderAllItems={renderAllItems}
                   allFieldsInScope={allFieldsInScope}
                   variant={variant} // ✅ [ADDED] Pass variant down
+                  onFieldSave={onFieldSave} // ✅ [ADDED] Pass callback down
                 />
               </div>
             );
@@ -1619,7 +1638,7 @@ export function ProcedureForm({
 
       return visibleItems;
     },
-    [answers, updateAnswer, variant] // ✅ [ADDED] Depend on variant
+    [answers, updateAnswer, variant, onFieldSave] // ✅ [ADDED] Depend on variant
   );
 
   const combinedRootItems = [...(rootFields || []), ...(rootHeadings || [])]
@@ -1641,6 +1660,7 @@ export function ProcedureForm({
           renderAllItems={renderAllItems}
           allFieldsInScope={section.fields || []} // Pass section's fields
           variant={variant} // ✅ [ADDED] Pass variant down
+          onFieldSave={onFieldSave} // ✅ [ADDED] Pass callback down
         />
       ))}
     </div>
