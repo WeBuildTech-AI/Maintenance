@@ -29,7 +29,7 @@ export const procedureService = {
     return res.data;
   },
 
-  // ✅ PATCH: Update an existing procedure template
+  //  PATCH: Update an existing procedure template
   updateProcedure: async (
     id: string,
     data: UpdateProcedureData
