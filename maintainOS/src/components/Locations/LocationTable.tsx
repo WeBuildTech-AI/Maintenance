@@ -253,7 +253,7 @@ export function LocationTable({
               Edit {selectedCount} {selectedCount === 1 ? "Item" : "Items"}
             </span>
 
-            <Tooltip text="Delete" >
+            <Tooltip text="Delete">
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
@@ -329,7 +329,13 @@ export function LocationTable({
           | ((value: any, record: any) => React.ReactNode)
           | undefined = undefined;
 
-        if (colName === "CreatedAt" || colName === "UpdatedAt") {
+        if (colName === "ID") {
+          renderFunc = (id: string) => (
+            <Tooltip text={id}>
+              <span>#{id.substring(0, 8)}...</span>
+            </Tooltip>
+          );
+        } else if (colName === "CreatedAt" || colName === "UpdatedAt") {
           renderFunc = (text: string) => formatDateOnly(text) || "—";
         }
 
@@ -427,7 +433,6 @@ export function LocationTable({
           onClose={() => setIsLocationTableModalOpen(false)}
           data={selectedLocationTableData.fullLocation}
           showDetailsSection={"location"}
-
           fetchData={fetchLocations}
         />
       )}

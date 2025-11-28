@@ -259,7 +259,7 @@ export function PartTable({
             <span className="text-sm font-medium text-gray-900">
               Edit {selectedCount} {selectedCount === 1 ? "Item" : "Items"}
             </span>
-            <Tooltip text="Delete" >
+            <Tooltip text="Delete">
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
@@ -337,9 +337,9 @@ export function PartTable({
         // Custom Renders
         if (colName === "Part ID") {
           renderFunc = (id: string) => (
-            <span className="font-mono text-muted-foreground">
-              #{id.substring(0, 8)}...
-            </span>
+            <Tooltip text={id}>
+              <span>#{id.substring(0, 8)}...</span>
+            </Tooltip>
           );
         } else if (colName === "Unit Cost") {
           renderFunc = (val: number) => (

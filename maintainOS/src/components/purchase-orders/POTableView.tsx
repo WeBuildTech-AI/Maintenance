@@ -325,7 +325,7 @@ export default function PurchaseOrdersTable({
               Edit {selectedCount} {selectedCount === 1 ? "Item" : "Items"}
             </span>
             {/* Delete Button */}
-            <Tooltip text="Delete" >
+            <Tooltip text="Delete">
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
@@ -406,7 +406,9 @@ export default function PurchaseOrdersTable({
 
         if (colName === "ID") {
           renderFunc = (id: string) => (
-            <span className="font-mono text-muted-foreground">#{id}</span>
+            <Tooltip text={id}>
+              <span>#{id.substring(0, 8)}...</span>
+            </Tooltip>
           );
         } else if (colName === "Vendor") {
           renderFunc = (vendor: any) => (
