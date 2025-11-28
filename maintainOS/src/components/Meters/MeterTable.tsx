@@ -6,7 +6,7 @@ import { Settings, Trash2, Loader2 } from "lucide-react";
 import { Tooltip } from "../ui/tooltip"; // ShadCN Tooltip
 import SettingsModal from "../utils/SettingsModal";
 import { formatDateOnly } from "../utils/Date";
-import { Table, Avatar, Tooltip as AntTooltip } from "antd";
+import { Table, Avatar, Tooltip as AntTooltip, Collapse } from "antd";
 import type { TableProps, TableColumnType } from "antd";
 import toast from "react-hot-toast";
 import { meterService } from "../../store/meters";
@@ -355,7 +355,13 @@ export function MeterTable({
           | ((value: any, record: any) => React.ReactNode)
           | undefined = undefined;
 
-        if (colName === "Status") {
+        if (colName === "ID") {
+          renderFunc = (id: string) => (
+            <Tooltip text={id}>
+              <span className="">#{id.substring(0, 8)}...</span>
+            </Tooltip>
+          );
+        } else if (colName === "Status") {
           renderFunc = (status: string, record: any) => (
             <span
               className={`font-medium ${

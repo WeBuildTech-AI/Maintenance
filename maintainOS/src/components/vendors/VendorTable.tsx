@@ -239,7 +239,7 @@ export function VendorTable({
               Edit {selectedCount} {selectedCount === 1 ? "Item" : "Items"}
             </span>
             {/* Delete Button */}
-            <Tooltip text="Delete" >
+            <Tooltip text="Delete">
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
@@ -313,7 +313,13 @@ export function VendorTable({
           | ((value: any, record: any) => React.ReactNode)
           | undefined = undefined;
 
-        if (colName === "Created" || colName === "Updated") {
+        if (colName === "ID") {
+          renderFunc = (id: string) => (
+            <Tooltip text={id}>
+              <span>#{id.substring(0, 8)}...</span>
+            </Tooltip>
+          );
+        } else if (colName === "Created" || colName === "Updated") {
           renderFunc = (text: string) => formatDateOnly(text) || "—";
         }
 

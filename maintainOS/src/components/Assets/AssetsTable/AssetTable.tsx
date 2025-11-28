@@ -523,7 +523,13 @@ export function AssetTable({
           | ((value: any, record: any) => React.ReactNode)
           | undefined;
 
-        if (colName === "Status") {
+        if (colName === "ID") {
+          renderFunc = (id: string) => (
+            <Tooltip text={id}>
+              <span>#{id.substring(0, 8)}...</span>
+            </Tooltip>
+          );
+        } else if (colName === "Status") {
           renderFunc = (status: string, record: any) => (
             <span
               className="flex items-center gap-2 capitalize hover:text-orange-600 cursor-pointer"
