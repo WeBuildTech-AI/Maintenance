@@ -1,6 +1,4 @@
-import { PurchaseOrder } from './../../components/purchase-orders/po.types';
-import axios from "axios";
-
+// import { PurchaseOrder } from '../../components/purchase-orders/po.types';
 import type {
   CreateAddressData,
   CreatePurchaseOrderComment,
@@ -10,13 +8,12 @@ import type {
   UpdatePurchaseOrderData,
 } from "./purchaseOrders.types";
 import api from "../auth/auth.service";
-const API_URL = import.meta.env.VITE_API_URL;
 
 export const purchaseOrderService = {
   // 🔹 Fetch all purchase orders
   fetchPurchaseOrders: async (): Promise<PurchaseOrderResponse[]> => {
     const res = await api.get(`/purchase-orders`);
-    return res.data;
+    return res.data.items;
   },
 
   // 🔹 Fetch a single purchase order by ID

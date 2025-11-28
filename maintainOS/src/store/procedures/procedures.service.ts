@@ -10,7 +10,7 @@ export const procedureService = {
   // ✅ GET: Fetch all procedure templates
   fetchProcedures: async (): Promise<ProcedureResponse[]> => {
     const res = await api.get(`procedures`);
-    return res.data;
+    return res.data.items;
   },
 
   // ✅ GET: Fetch a single procedure template by ID
@@ -29,7 +29,7 @@ export const procedureService = {
     return res.data;
   },
 
-  // ✅ PATCH: Update an existing procedure template
+  //  PATCH: Update an existing procedure template
   updateProcedure: async (
     id: string,
     data: UpdateProcedureData

@@ -55,7 +55,7 @@ export const Assets: FC = () => {
       if (showDeleted && viewMode === "table") {
         assets = await assetService.fetchDeleteAsset();
       } else {
-        assets = await assetService.fetchAssets(10, 1, 0);
+        assets = await assetService.fetchAssets(10, 1, );
       }
 
       if (assets && assets.length > 0) {

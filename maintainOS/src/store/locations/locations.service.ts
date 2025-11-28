@@ -8,14 +8,13 @@ export const locationService = {
   fetchLocations: async (
     limit: number,
     page: number,
-    offset: number
   ): Promise<LocationResponse[]> => {
     const res = await api.get("/locations", {
-      params: { limit, page, offset },
+      params: { limit, page },
       // headers: { Accept: "application/json" },
     });
 
-    return res.data;
+    return res.data.items;
   },
   fetchLocationsName: async (): Promise<LocationResponse[]> => {
     const res = await api.get("/locations/summary");
