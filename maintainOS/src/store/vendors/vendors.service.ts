@@ -9,7 +9,7 @@ export const vendorService = {
     const res = await api.get(`/vendors`, {
       headers: { Accept: "application/json" },
     });
-    return res.data;
+    return res.data.items;
   },
 
   // ✅ Fetch vendor summary (names)

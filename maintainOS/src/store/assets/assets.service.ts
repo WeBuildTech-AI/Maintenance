@@ -14,13 +14,12 @@ export const assetService = {
   fetchAssets: async (
     limit: number,
     page: number,
-    offset: number
   ): Promise<AssetResponse[]> => {
     const res = await api.get(`/assets`, {
-      params: { limit, page, offset },
+      params: { limit, page,},
       headers: { Accept: "application/json" },
     });
-    return res.data;
+    return res.data.items;
   },
 
   fetchAssetsName: async (): Promise<AssetResponse[]> => {

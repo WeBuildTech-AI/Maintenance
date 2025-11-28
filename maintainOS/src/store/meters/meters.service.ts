@@ -13,13 +13,12 @@ export const meterService = {
   fetchMeters: async (
     limit: number,
     page: number,
-    offset: number
   ): Promise<MeterResponse[]> => {
     const res = await api.get(`/meters`, {
-      params: { limit, page, offset },
+      params: { limit, page},
       headers: { Accept: "application/json" },
     });
-    return res.data;
+    return res.data.items;
   },
 
   fetchMeterById: async (id: string): Promise<MeterResponse> => {

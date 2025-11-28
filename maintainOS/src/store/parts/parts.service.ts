@@ -10,7 +10,7 @@ export const partService = {
     const res = await api.get(`/parts`, {
       headers: { Accept: "application/json" },
     });
-    return res.data;
+    return res.data.items;
   },
 
   fetchPartById: async (id: string): Promise<PartResponse> => {

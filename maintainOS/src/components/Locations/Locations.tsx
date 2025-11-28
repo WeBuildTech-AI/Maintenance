@@ -136,8 +136,6 @@ export function Locations() {
     // Remove currentPage argument since we always want to start at page 1 when showDeleted changes
     async () => {
       setLoading(true);
-
-      // Always reset page to 1 when fetching due to a filter/toggle change
       setPage(1);
       setSelectedLocation(null);
       let res: any;
@@ -148,10 +146,11 @@ export function Locations() {
         } else {
           res = await locationService.fetchLocations(
             limit,
-            1, // Always fetch page 1 when calling this due to showDeleted change
-            0
+            1 // Always fetch page 1 when calling this due to showDeleted change
           );
         }
+
+        console.log(res, "res location");
 
         const reversedLocations = [...res].reverse();
         setLocations(reversedLocations);

@@ -73,13 +73,13 @@ export function Meters() {
   const fetchMeters = useCallback(async () => {
     setLoading(true);
     setSelectedMeter(null);
-    let res;
+    let res: any;
 
     try {
       if (showDeleted) {
         res = await meterService.fetchDeleteMeter();
       } else {
-        res = await meterService.fetchMeters(10, 1, 0);
+        res = await meterService.fetchMeters(10, 1, );
       }
 
       const sortedData = [...res].sort(

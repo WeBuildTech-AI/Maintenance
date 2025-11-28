@@ -21,7 +21,7 @@ export const workOrderService = {
 
   fetchWorkOrders: async (): Promise<WorkOrderResponse[]> => {
     const res = await api.get("/work-orders");
-    return res.data;
+    return res.data.items
   },
 
   fetchWorkOrderById: async (id: string): Promise<WorkOrderResponse> => {
