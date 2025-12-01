@@ -3,14 +3,22 @@ import type {
   CreateProcedureData,
   ProcedureResponse,
   UpdateProcedureData,
+  FetchProceduresParams // ✅ Imported
 } from "./procedures.types";
 
 
 export const procedureService = {
-  // ✅ GET: Fetch all procedure templates
-  fetchProcedures: async (): Promise<ProcedureResponse[]> => {
-    const res = await api.get(`procedures`);
-    return res.data.items;
+  // ✅ GET: Fetch all procedure templates (Updated with Params)
+  fetchProcedures: async (params?: FetchProceduresParams): Promise<ProcedureResponse[]> => {
+    const res = await api.get(`procedures`, { 
+      params,
+      // Ensure commas are not encoded (id1,id2 remains id1,id2)
+      paramsSerializer: { indexes: null } 
+    });
+    
+    if (res.data && Array.isArray(res.data.items)) return res.data.items;
+    if (Array.isArray(res.data)) return res.data;
+    return [];
   },
 
   // ✅ GET: Fetch a single procedure template by ID
@@ -71,7 +79,6 @@ export const procedureService = {
     return res.data;
   },
 
-  // --- 👇 [CHANGE] YEH NAYA FUNCTION ADD KIYA GAYA HAI ---
   /**
    * Restores a soft-deleted procedure template.
    * @param {string} id - The ID of the procedure to restore.
@@ -82,5 +89,4 @@ export const procedureService = {
     const res = await api.patch(`procedures/${id}/restore`);
     return res.data;
   },
-  // --- END OF NEW FUNCTION ---
 };

@@ -25,7 +25,6 @@ import {
   deleteTimeEntry,
   patchWorkOrderComplete,
   submitFieldResponse,
-  // ✅ NEW IMPORTS
   addPartUsage,
   deletePartUsage,
 } from "./workOrders.thunks";
@@ -134,7 +133,7 @@ const workOrdersSlice = createSlice({
         state.error = action.payload as string;
       })
 
-      // --- Update Status (New) ---
+      // --- Update Status ---
       .addCase(updateWorkOrderStatus.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -460,10 +459,6 @@ const workOrdersSlice = createSlice({
         state.error = action.payload as string;
       })
 
-      // ====================================================
-      // ✅ NEW: PARTS USAGE CASES
-      // ====================================================
-
       // --- Add Part Usage ---
       .addCase(addPartUsage.pending, (state) => {
         state.loading = true;
@@ -471,18 +466,14 @@ const workOrdersSlice = createSlice({
       })
       .addCase(addPartUsage.fulfilled, (state, action) => {
         state.loading = false;
-        // API returns an array of created items
-        // Assuming action.payload is PartUsage[]
         const newParts = Array.isArray(action.payload) ? action.payload : [action.payload];
         const workOrderId = (action.meta.arg as any).id;
 
-        // Update List
         const wo = state.workOrders.find((w) => w.id === workOrderId);
         if (wo) {
           wo.parts = [...(wo.parts || []), ...newParts];
         }
         
-        // Update Selected Work Order
         if (state.selectedWorkOrder && state.selectedWorkOrder.id === workOrderId) {
           state.selectedWorkOrder.parts = [
             ...(state.selectedWorkOrder.parts || []), 
@@ -504,13 +495,11 @@ const workOrdersSlice = createSlice({
         state.loading = false;
         const { id, usageId } = action.payload; 
 
-        // Update List
         const wo = state.workOrders.find((w) => w.id === id);
         if (wo && wo.parts) {
           wo.parts = wo.parts.filter((p) => p.id !== usageId);
         }
 
-        // Update Selected Work Order
         if (state.selectedWorkOrder && state.selectedWorkOrder.id === id && state.selectedWorkOrder.parts) {
           state.selectedWorkOrder.parts = state.selectedWorkOrder.parts.filter((p) => p.id !== usageId);
         }
@@ -519,20 +508,16 @@ const workOrdersSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-      // ====================================================
 
-      // ✅ NEW: Submit Field Response Cases
-      // We deliberately DO NOT set loading=true here to avoid full screen blocking/flicker
-      // This runs in the background while the user types/moves focus
+      // --- Submit Field Response ---
       .addCase(submitFieldResponse.pending, (state) => {
          // No global loading state change
       })
       .addCase(submitFieldResponse.fulfilled, (state, action) => {
-         // Success - UI already updated by local state in component
+         // Success 
       })
       .addCase(submitFieldResponse.rejected, (state, action) => {
          state.error = action.payload as string;
-         // Optional: You can log this error
       });
   },
 });

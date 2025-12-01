@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Input } from "../ui/input";
 import MetersFilterBar from "./MetersFilterBar";
+import { FetchMetersParams } from "../../store/meters/meters.types";
 
 export function MetersHeaderComponent(
   viewMode: ViewMode,
@@ -26,7 +27,9 @@ export function MetersHeaderComponent(
   setIsCreatingForm: () => void,
   setShowSettings: Dispatch<SetStateAction<boolean>>,
   setIsSettingsModalOpen: Dispatch<SetStateAction<boolean>>,
-  setShowDeleted: Dispatch<SetStateAction<boolean>>
+  setShowDeleted: Dispatch<SetStateAction<boolean>>,
+  // 👇 NEW: Accept filter callback
+  onFilterChange?: (params: FetchMetersParams) => void
 ) {
   return (
     <header className=" border-border bg-card px-6 py-4">
@@ -91,8 +94,8 @@ export function MetersHeaderComponent(
         </div>
       </div>
       <div className="flex items-center mt-4 p-1 h-10 justify-between">
-        {/* Left: Filter bar */}
-        <MetersFilterBar />
+        {/* Left: Filter bar - Passed callback */}
+        <MetersFilterBar onParamsChange={onFilterChange} />
         {viewMode === "table" && (
           <button
             onClick={() => setIsSettingsModalOpen(true)}

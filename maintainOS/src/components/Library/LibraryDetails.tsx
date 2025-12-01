@@ -1,285 +1,317 @@
+"use client";
+import { useState, useEffect, useRef } from "react";
+import toast from "react-hot-toast";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import type { AppDispatch, RootState } from "../../../store";
+import { deleteVendor, vendorService } from "../../../store/vendors";
+import {
+  NewContactModal,
+  type ContactFormData,
+} from "../VendorsForm/NewContactModal";
+import { type Vendor } from "../vendors.types";
+
+import { Button } from "../../ui/button";
 import {
   Building2,
-  ClipboardList,
-  MoreVertical,
-  Pencil,
-  User,
+  Briefcase,
+  AlertTriangle,
+  Factory,
+  Truck,
 } from "lucide-react";
-import { Button } from "../ui/button";
-import { useState, useEffect } from "react";
-import { ProcedureForm } from "./GenerateProcedure/components/ProcedureForm";
-import { MoreActionsMenu } from "./GenerateProcedure/components/MoreActionsMenu";
 
-import { useDispatch, useSelector } from "react-redux"; 
-import { useNavigate } from "react-router-dom";
-import { batchDeleteProcedures, duplicateProcedure } from "../../store/procedures/procedures.thunks"; 
-import type { AppDispatch, RootState } from "../../store"; 
+import VendorHeader from "./VendorHeader";
+import VendorContactList from "./VendorContactList";
+import VendorPartsSection from "./VendorPartsSection";
+import VendorLocationsSection from "./VendorLocationsSection";
+import VendorFooter from "./VendorFooter";
+import DeleteModal from "./DeleteModal";
+import { VendorImages } from "./VendorImages";
+import { VendorFiles } from "./VendorFiles";
 
-import { ConfirmationModal } from "./GenerateProcedure/components/ConfirmationModal";
+// ✅ Newly created sections
+import VendorAssetsSection from "./VendorAssetsSection";
 
-// --- Helper function to format dates ---
-function formatDisplayDate(dateString: string) {
-  if (!dateString) return "N/A";
-  try {
-    return new Intl.DateTimeFormat("en-US", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    }).format(new Date(dateString));
-  } catch (error) {
-    return dateString;
-  }
+interface VendorDetailsProps {
+  vendor?: any;
+  onEdit: (vendor: Vendor) => void;
+  onDeleteSuccess?: (id: string) => void;
+  restoreData: string;
+  onClose: () => void;
+  fetchVendors: () => void;
 }
 
-// --- DetailsTabContent component ---
-const DetailsTabContent = ({ procedure }: { procedure: any }) => {
-  const createdDate = formatDisplayDate(procedure.createdAt);
-  const updatedDate = formatDisplayDate(procedure.updatedAt);
-  const procedureId = procedure.id || "N/A";
-
-  const user = useSelector((state: RootState) => state.auth.user);
-  const fullName = user?.fullName;
-
-  return (
-    <div className="p-6 space-y-6">
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <User size={16} className="text-blue-600" />
-          <span>
-            Created By{" "}
-            <span className="font-semibold text-gray-900">{fullName || "Unknown User"}</span> on{" "}
-            {createdDate}
-          </span>
-        </div>
-        <div className="flex items-center text-sm text-gray-600 pl-8">
-          <span>
-            Last updated by <span className="font-semibold text-gray-900">{fullName || "Unknown User"}</span> on {updatedDate}
-          </span>
-        </div>
-      </div>
-      <div className="pt-6 border-t border-gray-200">
-        <p className="text-sm text-gray-500 mb-2">Procedure ID</p>
-        <span
-          title={procedureId}
-          className="inline-block max-w-full bg-gray-100 text-gray-800 text-sm font-medium px-3 py-1 rounded-full truncate"
-        >
-          #{procedureId}
-        </span>
-      </div>
-    </div>
-  );
-};
-
-// --- Main LibraryDetails Component ---
-export function LibraryDetails({
-  selectedProcedure,
-  onRefresh, 
+export default function VendorDetails({
+  vendor,
   onEdit,
-}: {
-  selectedProcedure: any;
-  onRefresh: () => void; 
-  onEdit: (id: string) => void;
-}) {
-  const [activeTab, setActiveTab] = useState<"fields" | "details" | "history">(
-    "fields"
-  );
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-
-  const dispatch = useDispatch<AppDispatch>();
-  const navigate = useNavigate(); 
-
-  useEffect(() => {
-    setActiveTab("fields");
-  }, [selectedProcedure]);
-
-  const handleConfirmDelete = async () => {
-    if (!selectedProcedure) return;
-
-    try {
-      await dispatch(batchDeleteProcedures([selectedProcedure.id])).unwrap();
-      onRefresh(); 
-      navigate("/library");
-    } catch (error) {
-      console.error("Failed to delete procedure:", error);
-      alert("Failed to delete procedure.");
-    } finally {
-      setIsDeleteModalOpen(false);
-    }
-  };
-
-  const handleDeleteClick = () => {
-    if (!selectedProcedure) return;
-    setIsDeleteModalOpen(true);
-  };
-
-  const handleDuplicate = async () => {
-    if (!selectedProcedure) return;
-
-    try {
-      await dispatch(duplicateProcedure(selectedProcedure.id)).unwrap();
-      onRefresh();
-    } catch (error) {
-      console.error("Failed to duplicate procedure:", error);
-      alert("Failed to duplicate procedure.");
-    }
-  };
-
-  // --- ✅ FIX: Ensure data is passed correctly in state ---
-  const handleUseInWorkOrder = () => {
-    if (!selectedProcedure) return;
-    console.log("Navigating to Work Order with Procedure:", selectedProcedure);
-    
-    navigate(`/work-orders/create?procedureId=${selectedProcedure.id}`, {
-      state: { 
-        procedureData: selectedProcedure // This passes the full object instantly
-      }
-    });
-  };
-
-  if (!selectedProcedure) {
+  onDeleteSuccess,
+  restoreData,
+  onClose,
+  fetchVendors,
+}: VendorDetailsProps) {
+  if (!vendor) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-gray-500">Select a template from the left panel</p>
+      <div className="flex flex-1 items-center justify-center text-muted-foreground">
+        Select a vendor to view details.
       </div>
     );
   }
 
-  const rootFields = selectedProcedure.fields || [];
-  const rootHeadings = selectedProcedure.headings || [];
-  const sections = selectedProcedure.sections || [];
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
+  const user = useSelector((state: RootState) => state.auth.user);
+
+  // Parse Contacts safely
+  const [contacts, setContacts] = useState<any[]>(() => {
+    try {
+      if (Array.isArray(vendor.contacts)) return vendor.contacts;
+      if (typeof vendor.contacts === "string")
+        return JSON.parse(vendor.contacts) || [];
+      if (vendor.contacts && typeof vendor.contacts === "object")
+        return [vendor.contacts];
+      return [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingContact, setEditingContact] = useState<ContactFormData | null>(
+    null
+  );
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteContactEmail, setDeleteContactEmail] = useState<string | null>(
+    null
+  );
+  const modalRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        showDeleteConfirm &&
+        modalRef.current &&
+        !modalRef.current.contains(e.target as Node)
+      ) {
+        setShowDeleteConfirm(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showDeleteConfirm]);
+
+  const openDeleteModal = (email: string) => {
+    setDeleteContactEmail(email);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteContact = () => {
+    if (deleteContactEmail) {
+      setContacts((prev) => prev.filter((c) => c.email !== deleteContactEmail));
+      toast.success("Contact deleted!");
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  const handleDeleteVendor = (id: string) => {
+    dispatch(deleteVendor(id))
+      .unwrap()
+      .then(() => {
+        toast.success("Vendor deleted successfully!");
+        if (onDeleteSuccess) onDeleteSuccess(id);
+      })
+      .catch(() => toast.error("Failed to delete vendor."));
+  };
+
+  const handleUseInWorkOrder = () => {
+    navigate(`/work-orders/create?vendorId=${vendor.id}`);
+  };
+
+  // ✅ Helper to get styles for the "Linked Assets" list style
+  const getVendorTypeListItemStyles = (type?: string) => {
+    const t = type?.toLowerCase();
+    if (t === "manufacturer") {
+      return {
+        iconContainer: "border-emerald-100 bg-emerald-50",
+        iconColor: "text-emerald-600",
+        icon: <Factory className="h-5 w-5" />,
+        label: "Manufacturer",
+      };
+    }
+    if (t === "distributor") {
+      return {
+        iconContainer: "border-blue-100 bg-blue-50",
+        iconColor: "text-blue-600",
+        icon: <Truck className="h-5 w-5" />,
+        label: "Distributor",
+      };
+    }
+    // Default/Fallback
+    return {
+      iconContainer: "border-gray-200 bg-gray-100",
+      iconColor: "text-gray-500",
+      icon: <Briefcase className="h-5 w-5" />,
+      label: type ? type.charAt(0).toUpperCase() + type.slice(1) : "Standard",
+    };
+  };
+
+  const vendorTypeStyle = getVendorTypeListItemStyles(vendor.vendorType);
 
   return (
-    <div className="flex flex-col h-full relative bg-transparent">
-      {/* --- HEADER --- */}
-      <div className="pt-6 border-b border-border relative px-6">
-        <div className="flex items-center justify-between">
-          {/* Title */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 text-blue-400">
-              <ClipboardList size={20} />
-            </div>
-            <h2 className="text-lg font-medium">
-              {selectedProcedure?.title || "Untitled Procedure"}
-            </h2>
-          </div>
+    // ✅ Main Container: Relative is crucial for absolute positioning the button
+    <div className="flex h-full flex-col overflow-hidden rounded-lg border relative bg-white">
 
-          {/* Buttons */}
-          <div className="flex items-center gap-2 relative">
-            <button 
-              onClick={() => onEdit(selectedProcedure.id)}
-              className="inline-flex items-center rounded border border-blue-500 text-blue-600 px-4 py-1.5 text-sm font-medium hover:bg-blue-50"
-            >
-              <Pencil className="h-4 w-4 mr-2" />
-              Edit
-            </button>
-            <MoreActionsMenu 
-              onDelete={handleDeleteClick}
-              onDuplicate={handleDuplicate}
-            >
-              <button className="inline-flex items-center rounded p-2 text-blue-600 hover:text-blue-700 relative">
-                <MoreVertical className="h-4 w-4" />
-              </button>
-            </MoreActionsMenu>
-          </div>
-        </div>
-
-        {/* --- TABS --- */}
-        <div className="border-b pt-2 border-gray-200">
-          <nav className="flex" aria-label="Tabs">
-            <button
-              onClick={() => setActiveTab("fields")}
-              className={`flex-1 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-center ${
-                activeTab === "fields"
-                  ? "text-blue-600 border-blue-600"
-                  : "text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              Fields
-            </button>
-            <button
-              onClick={() => setActiveTab("details")}
-              className={`flex-1 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-center ${
-                activeTab === "details"
-                  ? "text-blue-600 border-blue-600"
-                  : "text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              Details
-            </button>
-            <button
-              onClick={() => setActiveTab("history")}
-              className={`flex-1 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-center ${
-                activeTab === "history"
-                  ? "text-blue-600 border-blue-600"
-                  : "text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              History
-            </button>
-          </nav>
-        </div>
+      {/* ✅ FIXED HEADER */}
+      <div className="flex-none z-20 border-b bg-white shadow-sm">
+        <VendorHeader
+          vendor={vendor}
+          onEdit={onEdit}
+          handleDeleteVendor={handleDeleteVendor}
+          restoreData={restoreData}
+          onClose={onClose}
+          fetchVendors={fetchVendors}
+        />
       </div>
 
-      {/* --- CONTENT --- */}
-      <div
-        className="flex-1 overflow-y-auto"
-        style={{ background: "#f9fafb" }}
-      >
-        {activeTab === "fields" && (
-          <div className="p-6">
-            <ProcedureForm
-              rootFields={rootFields}
-              rootHeadings={rootHeadings}
-              sections={sections}
-              resetKey={selectedProcedure.id}
-            />
+      {/* ✅ SCROLLABLE CONTENT */}
+      <div className="flex-1 overflow-y-auto space-y-8 py-8 px-6 bg-white">
+
+        {/* Display IS DELETED Status if true */}
+        {vendor.isDeleted && (
+          <div className="flex items-center gap-2 p-3 mb-4 text-sm text-red-700 bg-red-50 rounded-md border border-red-200">
+            <AlertTriangle className="h-4 w-4" />
+            <span>
+              This vendor is currently marked as deleted. Restore to edit.
+            </span>
           </div>
         )}
 
-        {activeTab === "details" && (
-          <DetailsTabContent procedure={selectedProcedure} />
-        )}
-
-        {activeTab === "history" && (
-          <div className="p-6 text-center text-gray-500">
-            Loading
+        <div className="space-y-6">
+          {/* Vendor Type */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-800 mb-3">
+              Vendor Type
+            </h3>
+            <div className="flex items-center gap-3 bg-gray-50 rounded-md p-3">
+              {/* Icon Container */}
+              <div
+                className={`flex items-center justify-center h-10 w-10 rounded-full border ${vendorTypeStyle.iconContainer}`}
+              >
+                <span className={vendorTypeStyle.iconColor}>
+                  {vendorTypeStyle.icon}
+                </span>
+              </div>
+              {/* Text */}
+              <span className="text-gray-900 text-sm font-medium">
+                {vendorTypeStyle.label}
+              </span>
+            </div>
           </div>
-        )}
 
+          {/* Description */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-800 mb-1">
+              Description
+            </h3>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              {vendor.description || "No description available."}
+            </p>
+          </div>
+        </div>
+
+        {/* Contacts */}
+        <VendorContactList
+          contacts={vendor.contacts}
+          setEditingContact={setEditingContact}
+          setIsModalOpen={setIsModalOpen}
+          openDeleteModal={openDeleteModal}
+        />
+
+        {/* Assets Section */}
+        <VendorAssetsSection vendor={vendor} />
+
+        {/* Locations */}
+        <VendorLocationsSection vendor={vendor} />
+
+        {/* Parts */}
+        <VendorPartsSection vendor={vendor} />
+
+        {/* Images */}
+        <VendorImages vendor={vendor} />
+
+        {/* Files */}
+        <VendorFiles vendor={vendor} />
+        {/* ✅ FLOATING BUTTON (Bottom Center) using Inline CSS */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: "24px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 10,
+          }}
+        >
+          <Button
+            variant="outline"
+            onClick={handleUseInWorkOrder}
+            className="text-yellow-600 border-2 border-yellow-400 hover:bg-yellow-50 px-8 py-3 rounded-full shadow-lg bg-white font-medium whitespace-nowrap flex items-center gap-2"
+          >
+            <Building2 className="w-5 h-5" />
+            Use in New Work Order
+          </Button>
+        </div>
+
+        {/* ✅ Spacer Div: Prevents content from hiding behind floating button */}
         <div style={{ height: 96 }} />
       </div>
 
-      {/* --- FLOATING BUTTON --- */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: "24px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 10,
-        }}
-      >
-        <Button
-          variant="outline"
-          onClick={handleUseInWorkOrder}
-          className="text-yellow-600 border-2 border-yellow-400 hover:bg-yellow-50 px-8 py-3 rounded-full shadow-lg bg-white font-medium whitespace-nowrap"
-        >
-          <Building2 className="w-5 h-5 mr-2" />
-          Use in New Work Order
-        </Button>
-      </div>
 
-      {/* --- Modals --- */}
-      <ConfirmationModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        onConfirm={handleConfirmDelete}
-        title="Delete Procedure" 
-        message={`Are you sure you want to delete "${selectedProcedure?.title}"?`}
+
+      {/* Modals */}
+      <NewContactModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        initialData={editingContact}
+        vendorId={vendor.id}
+        onSave={async (newContact) => {
+          try {
+            if (editingContact) {
+              setContacts((prev) =>
+                prev.map((c) =>
+                  c.email === editingContact.email ? newContact : c
+                )
+              );
+              toast.success("Contact updated!");
+            } else {
+              setContacts((prev) => [...prev, newContact]);
+              toast.success("New contact added!");
+            }
+
+            const updatedVendor = await vendorService.fetchVendorById(
+              vendor.id
+            );
+            if (updatedVendor) {
+              vendor.contacts = updatedVendor.contacts;
+              setContacts(
+                Array.isArray(updatedVendor.contacts)
+                  ? updatedVendor.contacts
+                  : [updatedVendor.contacts]
+              );
+            }
+
+            setIsModalOpen(false);
+          } catch (error) {
+            console.error("❌ Error refreshing vendor:", error);
+          }
+        }}
       />
+
+      {showDeleteConfirm && (
+        <DeleteModal
+          modalRef={modalRef}
+          onClose={() => setShowDeleteConfirm(false)}
+          onConfirm={confirmDeleteContact}
+        />
+      )}
     </div>
   );
 }

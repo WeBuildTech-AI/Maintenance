@@ -1,27 +1,32 @@
+"use client";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import { Card, CardContent } from "../../ui/card";
 import { Avatar, AvatarFallback } from "../../ui/avatar";
 import {
   Pencil,
   Copy,
   MoreVertical,
-  ChevronUp,
   ClipboardList,
-  ChevronDown,
-  ChevronsUpDown,
   Trash2,
+  Loader2,
 } from "lucide-react";
-import { useState, useEffect, useRef, useMemo } from "react";
-import { MoreActionsMenu } from "../GenerateProcedure/components/MoreActionsMenu";
-import { ConfirmationModal } from "../GenerateProcedure/components/ConfirmationModal";
+
+// Ant Design
+import { Table, Tooltip as AntTooltip } from "antd";
+import type { TableProps } from "antd";
+
 import { useDispatch } from "react-redux";
 import {
   duplicateProcedure,
   batchDeleteProcedures,
   restoreProcedure,
 } from "../../../store/procedures/procedures.thunks";
-import type { AppDispatch } from "../../../store"; 
+import type { AppDispatch } from "../../../store";
 import { Tooltip } from "../../ui/tooltip";
+import { MoreActionsMenu } from "../GenerateProcedure/components/MoreActionsMenu";
+import { ConfirmationModal } from "../GenerateProcedure/components/ConfirmationModal";
 
+// Format Dates
 function formatTableDate(dateString: string) {
   if (!dateString) return "—";
   try {
@@ -35,6 +40,42 @@ function formatTableDate(dateString: string) {
   }
 }
 
+const mapAntSortOrder = (order: string) =>
+  order === "asc" ? "ascend" : "descend";
+
+// --- Styles ---
+const tableStyles = `
+  .selected-row-class > td {
+    background-color: #eff6ff !important;
+  }
+  .selected-row-class:hover > td {
+    background-color: #f9fafb !important;
+  }
+  .ant-table-cell-fix-left, 
+  .ant-table-cell-fix-right {
+    background-color: #fff !important; 
+    z-index: 3 !important;
+  }
+  .ant-table-row:hover > td {
+    background-color: #f9fafb !important;
+  }
+  /* ✅ CUSTOM SCROLLBAR STYLING FOR ANT TABLE */
+  .ant-table-body::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .ant-table-body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .ant-table-body::-webkit-scrollbar-thumb {
+    background: #d1d5db; /* gray-300 */
+    border-radius: 9999px;
+  }
+  .ant-table-body::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af; /* gray-400 */
+  }
+`;
+
 interface LibraryTableProps {
   procedures: any[];
   sortType: string;
@@ -42,30 +83,10 @@ interface LibraryTableProps {
   onSortChange: (type: string, order: "asc" | "desc") => void;
   onRefresh: () => void;
   visibleColumns: string[];
-  onViewProcedure: (procedure: any) => void; 
-  showDeleted: boolean; 
-  // --- 👇 [CHANGE] Naya prop add karein ---
+  onViewProcedure: (procedure: any) => void;
+  showDeleted: boolean;
   onEdit: (id: string) => void;
 }
-
-const RenderTableCell = ({
-  proc,
-  columnName,
-}: {
-  proc: any;
-  columnName: string;
-}) => {
-  switch (columnName) {
-    case "Last updated":
-      return <>{formatTableDate(proc.updatedAt)}</>;
-    case "Category":
-      return <>{proc.categories?.[0] ?? "—"}</>;
-    case "Created At":
-      return <>{formatTableDate(proc.createdAt)}</>;
-    default:
-      return null;
-  }
-};
 
 export function LibraryTable({
   procedures,
@@ -74,24 +95,27 @@ export function LibraryTable({
   onSortChange,
   onRefresh,
   visibleColumns,
-  onViewProcedure, 
+  onViewProcedure,
   showDeleted,
-  // --- 👇 [CHANGE] Naya prop read karein ---
   onEdit,
 }: LibraryTableProps) {
-  const [modalProc, setModalProc] = useState<any | null>(null);
-  const [isBatchDeleteModalOpen, setIsBatchDeleteModalOpen] = useState(false);
-  
-  const [selectedProcedures, setSelectedProcedures] = useState<string[]>([]);
   const dispatch = useDispatch<AppDispatch>();
 
+  // Selection State
+  const [selectedProcedures, setSelectedProcedures] = useState<string[]>([]);
+
+  // Modals
+  const [modalProc, setModalProc] = useState<any | null>(null);
+  const [isBatchDeleteModalOpen, setIsBatchDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
+
+  // Derived Selection Logic
   const allProcedureIds = useMemo(
     () => procedures.map((p) => p.id),
     [procedures]
   );
-
   const selectedCount = selectedProcedures.length;
   const isEditing = selectedCount > 0;
   const areAllSelected =
@@ -112,41 +136,28 @@ export function LibraryTable({
     }
   };
 
-  const handleHeaderClick = (columnName: string) => {
-    if (sortType === columnName) {
-      onSortChange(columnName, sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      onSortChange(columnName, "asc");
-    }
-  };
-
-  const SortIcon = ({ column }: { column: string }) => {
-    if (sortType !== column)
-      return <ChevronsUpDown size={14} className="text-gray-400" />;
-    return sortOrder === "asc" ? (
-      <ChevronUp size={14} className="text-blue-600" />
-    ) : (
-      <ChevronDown size={14} className="text-blue-600" />
-    );
-  };
-
   const toggleRowSelection = (id: string) => {
     setSelectedProcedures((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
 
+  // --- Handlers ---
+
   const handleDeleteClick = (proc: any) => setModalProc(proc);
+
   const handleConfirmDelete = async () => {
     if (!modalProc) return;
     try {
       await dispatch(batchDeleteProcedures([modalProc.id])).unwrap();
-      onRefresh(); 
+      onRefresh();
     } catch (error: any) {
       if (error?.statusCode !== 404) alert("Failed to delete procedure.");
     } finally {
       setModalProc(null);
-      setSelectedProcedures([]); 
+      setSelectedProcedures((prev) =>
+        prev.filter((id) => id !== modalProc?.id)
+      );
     }
   };
 
@@ -160,12 +171,12 @@ export function LibraryTable({
       alert("Failed to duplicate procedure.");
     }
   };
-  
+
   const handleRestore = async (proc: any) => {
     if (!proc) return;
     try {
       await dispatch(restoreProcedure(proc.id)).unwrap();
-      onRefresh(); 
+      onRefresh();
     } catch (error) {
       console.error("Failed to restore procedure:", error);
       alert("Failed to restore procedure.");
@@ -174,203 +185,261 @@ export function LibraryTable({
 
   const handleConfirmBatchDelete = async () => {
     if (selectedProcedures.length === 0) return;
+    setIsDeleting(true);
     try {
       await dispatch(batchDeleteProcedures(selectedProcedures)).unwrap();
       onRefresh();
+      setSelectedProcedures([]);
     } catch (error: any) {
       alert("Failed to delete selected procedures.");
     } finally {
-      setIsBatchDeleteModalOpen(false); 
-      setSelectedProcedures([]); 
+      setIsDeleting(false);
+      setIsBatchDeleteModalOpen(false);
     }
   };
 
-  const getColumnWidth = (columnName: string): string => {
-    switch (columnName) {
-      case "Last updated":
-        return "20%";
-      case "Category":
-        return "15%";
-      case "Created At":
-        return "15%";
-      default:
-        return "auto";
+  // Handle Table Changes (Sorting)
+  const handleTableChange = (pagination: any, filters: any, sorter: any) => {
+    const s = Array.isArray(sorter) ? sorter[0] : sorter;
+    if (s && s.field && s.order) {
+      // Map dataIndex back to SortType string if needed, or simple pass field
+      // Here assuming backend expects specific strings
+      let sortField = s.field;
+      if (s.field === "updatedAt") sortField = "Last updated";
+      if (s.field === "createdAt") sortField = "Created At";
+      if (s.field === "title") sortField = "Title";
+      if (s.field === "category") sortField = "Category";
+
+      onSortChange(sortField, s.order === "ascend" ? "asc" : "desc");
+    } else {
+      // Default
+      onSortChange("Title", "asc");
     }
   };
 
-  const totalColumns = visibleColumns.length + 2;
+  // --- Columns Configuration ---
+  const columns = useMemo(() => {
+    // 1. Title Column (Left Fixed)
+    const titleColumn = {
+      title: () => {
+        if (!isEditing) {
+          return (
+            <div className="flex items-center gap-2 h-full">
+              <input
+                type="checkbox"
+                ref={headerCheckboxRef}
+                checked={areAllSelected}
+                onChange={handleSelectAllToggle}
+                className="h-4 w-4 accent-blue-600 cursor-pointer"
+              />
+              <span className="text-gray-600">Title</span>
+            </div>
+          );
+        }
+        // Bulk Edit Header
+        return (
+          <div className="flex items-center gap-4 h-full">
+            <input
+              type="checkbox"
+              ref={headerCheckboxRef}
+              checked={areAllSelected}
+              onChange={handleSelectAllToggle}
+              className="h-4 w-4 accent-blue-600 cursor-pointer"
+            />
+            <span className="text-sm font-medium text-gray-900">
+              Edit {selectedCount} {selectedCount === 1 ? "Procedure" : "Procedures"}
+            </span>
+            <AntTooltip title="Delete">
+              <button
+                onClick={() => setIsBatchDeleteModalOpen(true)}
+                className={`flex items-center gap-1 transition ${
+                  isDeleting
+                    ? "text-gray-400 cursor-not-allowed"
+                    : "text-red-600 hover:text-red-700"
+                }`}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Trash2 size={16} />
+                )}
+              </button>
+            </AntTooltip>
+          </div>
+        );
+      },
+      dataIndex: "title",
+      key: "title",
+      fixed: "left" as const,
+      width: 300,
+      sorter: true,
+      sortOrder: sortType === "Title" ? mapAntSortOrder(sortOrder) : null,
+      render: (title: string, record: any) => {
+        const isSelected = selectedProcedures.includes(record.key);
+        return (
+          <div className="flex items-center gap-3 font-medium text-gray-800 h-full">
+            <div
+              className="flex items-center justify-center h-8 w-8 cursor-pointer transition-all duration-200"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleRowSelection(record.key);
+              }}
+            >
+              {isEditing ? (
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  readOnly
+                  className="h-5 w-5 accent-blue-600 cursor-pointer"
+                />
+              ) : (
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="bg-blue-50 text-blue-500">
+                    <ClipboardList size={18} />
+                  </AvatarFallback>
+                </Avatar>
+              )}
+            </div>
+            <span
+              className="truncate cursor-pointer hover:text-blue-600 hover:underline"
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewProcedure(record.fullData);
+              }}
+            >
+              {title}
+            </span>
+          </div>
+        );
+      },
+    };
+
+    // 2. Dynamic Columns
+    const dynamicColumns = visibleColumns.map((col) => {
+      let dataIndex = "";
+      let width = 150;
+      let render = (val: any) => val;
+
+      if (col === "Last updated") {
+        dataIndex = "updatedAt";
+        width = 180;
+        render = (val) => formatTableDate(val);
+      } else if (col === "Category") {
+        dataIndex = "category";
+        width = 150;
+      } else if (col === "Created At") {
+        dataIndex = "createdAt";
+        width = 150;
+        render = (val) => formatTableDate(val);
+      }
+
+      return {
+        title: col,
+        dataIndex,
+        key: dataIndex,
+        width,
+        sorter: true,
+        sortOrder: sortType === col ? mapAntSortOrder(sortOrder) : null,
+        render,
+      };
+    });
+
+    // 3. Actions Column
+    const actionColumn = {
+      title: " ",
+      key: "actions",
+      width: 120,
+      fixed: "right" as const,
+      render: (_: any, record: any) => (
+        <div className="flex items-center justify-end gap-2 text-gray-500">
+          <button
+            onClick={() => onEdit(record.key)}
+            className="hover:text-blue-600"
+          >
+            <Pencil size={18} />
+          </button>
+          <button
+            onClick={() => handleDuplicate(record.fullData)}
+            className="hover:text-blue-600"
+          >
+            <Copy size={18} />
+          </button>
+          <MoreActionsMenu
+            onDelete={() => handleDeleteClick(record.fullData)}
+            onDuplicate={() => handleDuplicate(record.fullData)}
+            onRestore={
+              showDeleted ? () => handleRestore(record.fullData) : undefined
+            }
+          >
+            <button className="hover:text-blue-600">
+              <MoreVertical size={18} />
+            </button>
+          </MoreActionsMenu>
+        </div>
+      ),
+    };
+
+    return [titleColumn, ...dynamicColumns, actionColumn];
+  }, [
+    visibleColumns,
+    selectedProcedures,
+    sortType,
+    sortOrder,
+    isEditing,
+    areAllSelected,
+    selectedCount,
+    isDeleting,
+  ]);
+
+  // Data Source Mapping
+  const dataSource = useMemo(() => {
+    return procedures.map((p) => ({
+      key: p.id,
+      title: p.title || "Untitled Procedure",
+      updatedAt: p.updatedAt,
+      createdAt: p.createdAt,
+      category: p.categories?.[0] || "—",
+      fullData: p,
+    }));
+  }, [procedures]);
 
   return (
-    <div className="flex-1 p-3 flex flex-col overflow-hidden">
-      
-      <Card className={`flex-1 flex flex-col overflow-hidden shadow-sm border ${
-        showDeleted ? "border-yellow-300" : "border-gray-200"
-      }`}>
-        
-        <CardContent className="p-0 flex-1 overflow-auto">
-          <table className="w-full table-fixed text-sm">
-            <thead className={`text-xs font-semibold uppercase tracking-wide text-gray-500 border-b sticky top-0 z-10 ${
-              showDeleted ? "bg-yellow-100 border-yellow-300" : "bg-gray-50 border-gray-200"
-            }`}>
-              <tr>
-                <th className="w-[35%] px-4 py-3 text-left">
-                  {!isEditing ? (
-                    <button
-                      onClick={() => handleHeaderClick("Title")}
-                      className="flex items-center gap-1 text-gray-600"
-                    >
-                      Title <SortIcon column="Title" />
-                    </button>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        ref={headerCheckboxRef}
-                        checked={areAllSelected}
-                        onChange={handleSelectAllToggle}
-                        className="h-4 w-4 accent-blue-600 cursor-pointer"
-                      />
-                      <span className="text-sm font-medium text-gray-900">
-                        Edit {selectedCount}{" "}
-                        {selectedCount === 1 ? "Procedure" : "Procedures"}
-                      </span>
-                      <Tooltip text="Delete">
-                        <button
-                          onClick={() => setIsBatchDeleteModalOpen(true)} 
-                          className="ml-1 text-gray-600 hover:text-red-600 transition"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </Tooltip>
-                    </div>
-                  )}
-                </th>
+    <div className="h-full flex flex-col p-4">
+      <style>{tableStyles}</style>
 
-                {/* Dynamic Columns */}
-                {visibleColumns.map((colName) => (
-                  <th
-                    key={colName}
-                    className="px-4 py-3 text-left"
-                    style={{ width: getColumnWidth(colName) }}
-                  >
-                    <button
-                      onClick={() => handleHeaderClick(colName)}
-                      className="flex items-center gap-1 text-gray-600"
-                    >
-                      {colName} <SortIcon column={colName} />
-                    </button>
-                  </th>
-                ))}
-
-                {/* Actions Column */}
-                <th className="w-[15%] px-4 py-3 text-right"></th>
-              </tr>
-            </thead>
-
-            {/* Body */}
-            <tbody>
-              {procedures.map((proc) => {
-                const isSelected = selectedProcedures.includes(proc.id);
-                return (
-                  <tr
-                    key={proc.id}
-                    className={`border-b transition hover:bg-gray-50 ${
-                      showDeleted ? "border-yellow-200" : "border-gray-200"
-                    } ${
-                      isSelected ? "bg-blue-50/70" : (showDeleted ? "bg-yellow-50" : "bg-white")
-                    }`}
-                  >
-                    {/* Title Cell */}
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="flex items-center justify-center h-8 w-8 cursor-pointer transition-all duration-200"
-                          onClick={() => toggleRowSelection(proc.id)}
-                        >
-                          {!isEditing ? (
-                            <Avatar className="h-8 w-8">
-                              <AvatarFallback className="bg-blue-50 text-blue-500">
-                                <ClipboardList size={18} />
-                              </AvatarFallback>
-                            </Avatar>
-                          ) : (
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => {}}
-                              readOnly
-                              className={`h-5 w-5 accent-blue-600 cursor-pointer ${
-                                isSelected
-                                  ? "transition-transform duration-150 scale-110"
-                                  : ""
-                              }`}
-                            />
-                          )}
-                        </div>
-                        <span
-                          className="font-medium text-gray-800 select-none cursor-pointer hover:text-blue-600 hover:underline"
-                          onClick={() => onViewProcedure(proc)} 
-                        >
-                          {proc.title || "Untitled Procedure"}
-                        </span>
-                      </div>
-                    </td>
-
-                    {/* Dynamic Cells */}
-                    {visibleColumns.map((colName) => (
-                      <td className="px-4 py-3 text-gray-600">
-                        <RenderTableCell proc={proc} columnName={colName} />
-                      </td>
-                    ))}
-
-                    {/* Actions Cell */}
-                    <td className="px-4 py-3 text-gray-600">
-                      <div className="flex items-center justify-end gap-4">
-                        {/* --- 👇 [CHANGE] onClick handler add karein --- */}
-                        <button 
-                          onClick={() => onEdit(proc.id)} 
-                          className="hover:text-blue-600"
-                        >
-                          <Pencil size={18} />
-                        </button>
-                        <button 
-                          onClick={() => handleDuplicate(proc)} 
-                          className="hover:text-blue-600"
-                        >
-                          <Copy size={18} />
-                        </button>
-                        <MoreActionsMenu
-                          onDelete={() => handleDeleteClick(proc)}
-                          onDuplicate={() => handleDuplicate(proc)}
-                          onRestore={showDeleted ? () => handleRestore(proc) : undefined}
-                        >
-                          <button className="hover:text-blue-600">
-                            <MoreVertical size={18} />
-                          </button>
-                        </MoreActionsMenu>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-
-              {procedures.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={totalColumns}
-                    className="text-center text-gray-500 py-6 italic"
-                  >
-                    {showDeleted ? "No deleted procedures found." : "No procedures found."}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+      {/* Main Table Card */}
+      <Card
+        className={`flex-1 flex flex-col shadow-sm border rounded-lg overflow-hidden ${
+          showDeleted ? "border-yellow-300" : "border-gray-200"
+        }`}
+      >
+        <CardContent className="flex-1 p-0 overflow-hidden">
+          <Table
+            columns={columns as any}
+            dataSource={dataSource}
+            pagination={false}
+            scroll={{ x: "max-content", y: "calc(100vh - 280px)" }}
+            rowClassName={(record: any) =>
+              selectedProcedures.includes(record.key)
+                ? "selected-row-class"
+                : ""
+            }
+            onChange={handleTableChange}
+            onRow={(record: any) => ({
+              onClick: () => toggleRowSelection(record.key),
+            })}
+          />
         </CardContent>
-        
-        <div className={`flex-shrink-0 flex items-center justify-end p-3 border-t ${
-          showDeleted ? "border-yellow-200 bg-yellow-50" : "border-gray-100 bg-white"
-        }`}>
+
+        {/* Pagination Footer */}
+        <div
+          className={`flex-shrink-0 flex items-center justify-end p-3 border-t ${
+            showDeleted
+              ? "bg-yellow-50 border-yellow-200"
+              : "bg-white border-gray-100"
+          }`}
+        >
           <div className="inline-flex items-center gap-4 rounded-md border bg-white p-2 shadow-sm">
             <span className="text-sm text-gray-600">
               1 – {procedures.length} of {procedures.length}
@@ -409,7 +478,7 @@ export function LibraryTable({
         </div>
       </Card>
 
-      {/* Delete Modal (NO CHANGE) */}
+      {/* Modals */}
       <ConfirmationModal
         isOpen={!!modalProc}
         onClose={() => setModalProc(null)}
@@ -418,7 +487,6 @@ export function LibraryTable({
         message={`Are you sure you want to delete "${modalProc?.title}"?`}
       />
 
-      {/* Batch Delete Modal (NO CHANGE) */}
       <ConfirmationModal
         isOpen={isBatchDeleteModalOpen}
         onClose={() => setIsBatchDeleteModalOpen(false)}

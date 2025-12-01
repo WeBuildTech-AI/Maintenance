@@ -5,13 +5,15 @@ import type {
   CreateMeterData,
   UpdateMeterData,
   UpdateMeterReading,
+  FetchMetersParams, // ✅ Imported
 } from "./meters.types";
 
+// ✅ Updated to accept params
 export const fetchMeters = createAsyncThunk(
   "meters/fetchMeters",
-  async (_, { rejectWithValue }) => {
+  async (params: FetchMetersParams | undefined, { rejectWithValue }) => {
     try {
-      const meters = await meterService.fetchMeters();
+      const meters = await meterService.fetchMeters(params);
       return meters;
     } catch (error: any) {
       return rejectWithValue(

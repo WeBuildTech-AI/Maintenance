@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Input } from "../ui/input";
 import VendorFilterBar from "./VendorFilterBar";
+import { FetchVendorsParams } from "../../store/vendors/vendors.types";
 
 export function VendorHeaderComponent(
   viewMode: ViewMode,
@@ -27,7 +28,8 @@ export function VendorHeaderComponent(
   setIsSettingModalOpen: Dispatch<SetStateAction<boolean>>,
   setShowDeleted: Dispatch<SetStateAction<boolean>>,
   setShowSettings: Dispatch<SetStateAction<boolean>>,
-  setActiveFilters: Dispatch<SetStateAction<Record<string, string[]>>>
+  // 👇 NEW: Accept filter callback
+  onFilterChange?: (params: FetchVendorsParams) => void
 ) {
   return (
     <header className="border-border bg-card px-6 py-4">
@@ -94,7 +96,7 @@ export function VendorHeaderComponent(
       <div className="flex items-center mt-4 p-1 h-10 justify-between">
         {/* Left: Filter bar */}
         <VendorFilterBar
-          onFilterChange={(filters) => setActiveFilters(filters)}
+          onParamsChange={onFilterChange}
         />
 
         {/* Right: Settings button (only for table view) */}

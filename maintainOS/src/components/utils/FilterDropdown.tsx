@@ -9,101 +9,129 @@ import {
   Wrench,
   UserCog,
   FileText,
+  Tag,
+  AlertCircle,
+  Briefcase
 } from "lucide-react";
 import { fetchFilterData } from "../utils/filterDataFetcher";
 
+// ✅ Updated Interface to support Label/Value pairs
+export interface DropdownOption {
+  label: string;
+  value: string;
+}
+
 interface FilterDropdownProps {
   title: string;
-  options: string[];
+  // Options can be simple strings OR objects with label/value
+  options: (string | DropdownOption)[]; 
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   onSelect: (option: string) => void;
   onDelete: () => void;
   selectedOptions: string[];
   onClose?: () => void;
+  currentCondition?: string;
+  onConditionChange: (condition: string) => void;
+  hideCondition?: boolean; // ✅ New prop to hide "One of" menu
 }
 
 export function FilterDropdown({
   title,
-  options,
+  options = [],
   searchQuery,
   setSearchQuery,
   onSelect,
   onDelete,
   selectedOptions,
   onClose,
+  currentCondition = "One of",
+  onConditionChange,
+  hideCondition = false, // Default show
 }: FilterDropdownProps) {
-  const [condition, setCondition] = useState("One of");
+  const [condition, setCondition] = useState(currentCondition);
   const [showConditionMenu, setShowConditionMenu] = useState(false);
   const [dynamicOptions, setDynamicOptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(true);
 
-  // ✅ Auto-fetch data for all supported dropdowns
+  // List of keys that fetch data from API
+  const API_KEYS = [
+    "location", "locations",
+    "asset", "assets",
+    "part", "parts",
+    "vendor", "vendors",
+    "procedure", "procedures",
+    "category", "categories",
+    "assigned to", "assignedto",
+    "completed by", "completedby",
+    "requested by", "requestedby",
+    "team", "teams",
+    "user", "users"
+  ];
+
+  const shouldFetchFromApi = API_KEYS.includes(title.toLowerCase());
+
+  // ✅ Auto-fetch data ONLY for API keys
   useEffect(() => {
     const fetchData = async () => {
-      const type = title.toLowerCase();
-      if (
-        [
-          "location",
-          "asset",
-          "assets",
-          "parts",
-          "part",
-          "vendor",
-          "vendors",
-          "procedure",
-          "procedures",
-        ].includes(type)
-      ) {
+      if (shouldFetchFromApi) {
         setLoading(true);
-        const { data } = await fetchFilterData(type);
+        let fetchType = title.toLowerCase();
+        if(fetchType.includes("assigned") || fetchType.includes("completed") || fetchType.includes("requested")) {
+            fetchType = "users"; 
+        }
+
+        const { data } = await fetchFilterData(fetchType);
         setDynamicOptions(data || []);
         setLoading(false);
       }
     };
     fetchData();
-  }, [title]);
+  }, [title, shouldFetchFromApi]);
 
-  // ✅ Filter results
-  const filtered =
-    [
-      "location",
-      "asset",
-      "assets",
-      "parts",
-      "part",
-      "vendor",
-      "vendors",
-      "procedure",
-      "procedures",
-    ].includes(title.toLowerCase())
-      ? dynamicOptions.filter((opt) =>
-          (opt.name || "").toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      : options
-          .filter((o) => o.toLowerCase().includes(searchQuery.toLowerCase()))
-          .map((o) => ({ name: o, image: null }));
+  useEffect(() => {
+    setCondition(currentCondition);
+  }, [currentCondition]);
+
+  const handleConditionClick = (newCondition: string) => {
+    setCondition(newCondition);
+    onConditionChange(newCondition);
+    setShowConditionMenu(false);
+  };
+
+  // ✅ NORMALIZE OPTIONS: Convert everything to { name, id } format
+  // name = What shows in UI
+  // id = What sends to API
+  const sourceData = shouldFetchFromApi 
+    ? dynamicOptions 
+    : options.map(o => {
+        if (typeof o === 'string') return { name: o, id: o, image: null };
+        return { name: o.label, id: o.value, image: null };
+    });
+
+  // ✅ FILTER RESULTS based on Search
+  const filtered = sourceData.filter((opt) => 
+    (opt.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
 
   const getFallbackIcon = () => {
     const t = title.toLowerCase();
-    if (t.includes("location"))
-      return <MapPin size={16} className="text-blue-600" />;
-    if (t.includes("asset"))
-      return <Package size={16} className="text-green-600" />;
-    if (t.includes("part"))
-      return <Wrench size={16} className="text-amber-600" />;
-    if (t.includes("vendor"))
-      return <UserCog size={16} className="text-orange-600" />;
-    if (t.includes("procedure"))
-      return <FileText size={16} className="text-purple-600" />;
-    return <MapPin size={16} className="text-gray-400" />;
+    if (t.includes("location")) return <MapPin size={16} className="text-blue-600" />;
+    if (t.includes("asset")) return <Package size={16} className="text-green-600" />;
+    if (t.includes("part")) return <Wrench size={16} className="text-amber-600" />;
+    if (t.includes("vendor")) return <UserCog size={16} className="text-orange-600" />;
+    if (t.includes("procedure")) return <FileText size={16} className="text-purple-600" />;
+    if (t.includes("priority")) return <AlertCircle size={16} className="text-red-600" />;
+    if (t.includes("status")) return <Tag size={16} className="text-blue-500" />;
+    if (t.includes("work type")) return <Briefcase size={16} className="text-gray-600" />;
+    return <Search size={16} className="text-gray-400" />;
   };
 
-  // Prevent accidental close when clicking inside
+  // Close handlers...
   useEffect(() => {
     const preventClose = (e: MouseEvent) => {
       if (dropdownRef.current?.contains(e.target as Node)) e.stopPropagation();
@@ -112,7 +140,6 @@ export function FilterDropdown({
     return () => document.removeEventListener("mousedown", preventClose, true);
   }, []);
 
-  // Close on outside click or ESC
   useEffect(() => {
     const handleOutside = (e: MouseEvent) => {
       const inside = dropdownRef.current?.contains(e.target as Node);
@@ -149,49 +176,50 @@ export function FilterDropdown({
         <div className="flex items-center gap-2">
           <span className="text-gray-500">{title}</span>
 
-          {/* Condition Selector */}
-          <div className="relative">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowConditionMenu((p) => !p);
-              }}
-              className="text-blue-600 flex items-center gap-1 font-medium focus:outline-none"
-            >
-              {condition}
-              {showConditionMenu ? (
-                <ChevronUp size={14} className="text-gray-500" />
-              ) : (
-                <ChevronDown size={14} className="text-gray-500" />
-              )}
-            </button>
-
-            {showConditionMenu && (
-              <div
-                className="absolute top-[115%] left-1/2 -translate-x-1/2 bg-white border rounded-md shadow-md z-50"
-                style={{ width: "200px" }}
-                onClick={stopPropagation}
+          {/* ✅ CONDITION SELECTOR (Hidden if hideCondition is true) */}
+          {!hideCondition && (
+            <div className="relative">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowConditionMenu((p) => !p);
+                }}
+                className="text-blue-600 flex items-center gap-1 font-medium focus:outline-none"
               >
-                {["One of", "None of", "Is empty", "Is not empty"].map((c) => (
-                  <div
-                    key={c}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setCondition(c);
-                      setShowConditionMenu(false);
-                    }}
-                    className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 ${
-                      condition === c
-                        ? "text-blue-600 font-medium"
-                        : "text-gray-700"
-                    }`}
-                  >
-                    {c}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                {condition}
+                {showConditionMenu ? (
+                  <ChevronUp size={14} className="text-gray-500" />
+                ) : (
+                  <ChevronDown size={14} className="text-gray-500" />
+                )}
+              </button>
+
+              {showConditionMenu && (
+                <div
+                  className="absolute top-[115%] left-1/2 -translate-x-1/2 bg-white border rounded-md shadow-md z-50"
+                  style={{ width: "200px" }}
+                  onClick={stopPropagation}
+                >
+                  {["One of", "None of", "Is empty", "Is not empty"].map((c) => (
+                    <div
+                      key={c}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleConditionClick(c);
+                      }}
+                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 ${
+                        condition === c
+                          ? "text-blue-600 font-medium"
+                          : "text-gray-700"
+                      }`}
+                    >
+                      {c}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Delete Icon */}
@@ -226,13 +254,17 @@ export function FilterDropdown({
           <div className="px-3 py-2 text-sm text-gray-500">Loading...</div>
         ) : filtered.length > 0 ? (
           filtered.map((opt: any, idx: number) => {
+            // ✅ Use ID for value, Name for display
             const valueForSelect = opt.id ?? opt.name;
+            const isSelected = selectedOptions.includes(valueForSelect);
+
             return (
               <div
-                key={opt.id || opt.name}
+                key={valueForSelect}
                 className={`flex items-center justify-between px-3 py-2 text-sm cursor-pointer ${
                   idx !== filtered.length - 1 ? "border-b" : ""
                 } hover:bg-gray-50`}
+                onClick={() => onSelect(valueForSelect)}
               >
                 <div className="flex items-center gap-2">
                   {opt.image ? (
@@ -249,17 +281,13 @@ export function FilterDropdown({
 
                 <input
                   type="checkbox"
-                  checked={selectedOptions.includes(valueForSelect)}
-                  onChange={() => {
-                    console.log(
-                      "%c🟢 SELECTED OPTION:",
-                      "color:#10b981;font-weight:bold;",
-                      { id: opt.id, name: opt.name }
-                    );
+                  checked={isSelected}
+                  readOnly
+                  className="h-4 w-4 cursor-pointer accent-blue-500"
+                  onClick={(e) => {
+                    e.stopPropagation();
                     onSelect(valueForSelect);
                   }}
-                  className="h-4 w-4 cursor-pointer accent-blue-500"
-                  onClick={(e) => e.stopPropagation()}
                 />
               </div>
             );

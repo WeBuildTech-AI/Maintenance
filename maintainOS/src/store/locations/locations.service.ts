@@ -1,24 +1,28 @@
-import axios from "axios";
-import api from "../auth/auth.service";
-import type { LocationResponse } from "./locations.types";
 
-const API_URL = import.meta.env.VITE_API_URL;
+import api from "../auth/auth.service";
+import type { LocationResponse, FetchLocationsParams } from "./locations.types"; // ✅ Imported Types
+
 
 export const locationService = {
+  // ✅ Updated to accept params object
   fetchLocations: async (
-    limit: number,
-    page: number,
+    params?: FetchLocationsParams
   ): Promise<LocationResponse[]> => {
     const res = await api.get("/locations", {
-      params: { limit, page },
+      params,
+      // Ensure arrays are serialized correctly (e.g. teamsOneOf=id1,id2)
+      paramsSerializer: { indexes: null },
       // headers: { Accept: "application/json" },
     });
 
-    return res.data.items;
+    // Handle potential response structures
+    if (res.data && Array.isArray(res.data.items)) return res.data.items;
+    if (Array.isArray(res.data)) return res.data;
+    return [];
   },
+
   fetchLocationsName: async (): Promise<LocationResponse[]> => {
     const res = await api.get("/locations/summary");
-
     return res.data;
   },
 

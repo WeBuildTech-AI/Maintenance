@@ -28,12 +28,14 @@ type Props = {
   onCancel: () => void;
   workOrderId?: string;
   selectedWorkOrder?: any;
+  onSaveSuccess?: () => void; // ✅ Added prop
 };
 
 export default function OtherCostsPanel({
   onCancel,
   workOrderId,
   selectedWorkOrder,
+  onSaveSuccess, // ✅ Destructure prop
 }: Props) {
   const dispatch = useAppDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -103,15 +105,12 @@ export default function OtherCostsPanel({
       const res = await dispatch(addOtherCost({ id: workOrderId!, data: payload })).unwrap();
       toast.success("✅ Cost added successfully");
 
-      const assignee =
-        selectedWorkOrder?.assignees?.find((a: any) => a.id === userId);
+      // ✅ Trigger Parent Refresh
+      if (onSaveSuccess) onSaveSuccess();
 
-      addLocal({
-        ...payload.items[0],
-        id: res.id || crypto.randomUUID?.() || String(Math.random()),
-        user: { fullName: assignee?.fullName || "Unknown" },
-        createdAt: new Date().toISOString(),
-      });
+      // Close modal
+      setIsModalOpen(false);
+
     } catch (err: any) {
       toast.error(err?.message || "Failed to add cost");
     }
@@ -122,6 +121,10 @@ export default function OtherCostsPanel({
     try {
       await dispatch(deleteOtherCost({ id: workOrderId!, costId: id })).unwrap();
       toast.success("🗑️ Cost deleted successfully");
+      
+      // ✅ Trigger Parent Refresh
+      if (onSaveSuccess) onSaveSuccess();
+      
       deleteLocal(id);
     } catch (err: any) {
       toast.error(err?.message || "Failed to delete cost");
@@ -320,7 +323,11 @@ export default function OtherCostsPanel({
           selectedWorkOrder={selectedWorkOrder}
           initialCost={modalInitial}
           onAdd={handleAdd}
-          onUpdate={(upd) => updateLocal(upd)}
+          onUpdate={(upd) => {
+              // If AddCostModal handles updates internally via API:
+              if (onSaveSuccess) onSaveSuccess();
+              updateLocal(upd);
+          }}
           onDelete={handleDelete}
         />
       )}

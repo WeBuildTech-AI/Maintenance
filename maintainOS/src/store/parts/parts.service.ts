@@ -1,16 +1,23 @@
 import axios from "axios";
-import type { PartResponse } from "./parts.types";
+import type { PartResponse, FetchPartsParams } from "./parts.types"; // ✅ Imported Types
 import type { RestockThunkArgs, PartRestockLog } from "./parts.types";
 import api from "../auth/auth.service";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 export const partService = {
-  fetchParts: async (): Promise<PartResponse[]> => {
+  // ✅ Updated to accept params object
+  fetchParts: async (params?: FetchPartsParams): Promise<PartResponse[]> => {
     const res = await api.get(`/parts`, {
+      params,
+      // Ensure arrays are serialized correctly
+      paramsSerializer: { indexes: null },
       headers: { Accept: "application/json" },
     });
-    return res.data.items;
+    
+    if (res.data && Array.isArray(res.data.items)) return res.data.items;
+    if (Array.isArray(res.data)) return res.data;
+    return [];
   },
 
   fetchPartById: async (id: string): Promise<PartResponse> => {
@@ -41,23 +48,6 @@ export const partService = {
 
   // RESTOCK API THUNKS BELOW
 
-  // ✅ RESTOCK PART - ID goes in URL
-  // restockPart: async (
-  //   partId: string,
-  //   locationId: string,
-  //   addedUnits: number
-  // ): Promise<PartResponse> => {
-  //   const formData = new FormData();
-  //   formData.append("locationId", locationId);
-  //   formData.append("addedUnits", String(addedUnits));
-
-  //   const res = await axios.post(
-  //     `${API_URL}/parts/${partId}/restock`,
-  //     formData,
-  //     { headers: { Accept: "application/json" } }
-  //   );
-  //   return res.data;
-  // },
   restockPart: async (
     partId: string,
     payload: RestockThunkArgs

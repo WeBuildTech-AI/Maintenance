@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Input } from "../ui/input";
 import POFilterBar from "./POFilterBar";
+import { FetchPurchaseOrdersParams } from "../../store/purchaseOrders/purchaseOrders.types";
 
 export function POHeaderComponent(
   viewMode: ViewMode,
@@ -27,6 +28,8 @@ export function POHeaderComponent(
   setShowSettings: Dispatch<SetStateAction<boolean>>,
   setIsSettingModalOpen: Dispatch<SetStateAction<boolean>>,
   setShowDeleted: Dispatch<SetStateAction<boolean>>,
+  // 👇 NEW: Accept filter callback
+  onFilterChange?: (params: FetchPurchaseOrdersParams) => void
 ) {
   return (
     <header className=" border-border bg-card px-6 py-4">
@@ -91,8 +94,8 @@ export function POHeaderComponent(
         </div>
       </div>
       <div className="flex items-center mt-4 p-1 h-10 justify-between">
-        {/* Left: Filter bar */}
-        <POFilterBar />
+        {/* Left: Filter bar - 👇 Updated to pass onFilterChange */}
+        <POFilterBar onParamsChange={onFilterChange} />
 
         {/* Right: Settings button (only for table view) */}
         {viewMode === "table" && (

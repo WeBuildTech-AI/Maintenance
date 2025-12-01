@@ -21,7 +21,11 @@ const ALL_FILTERS = [
   { key: "year", label: "Year", icon: <Calendar size={16} /> },
 ];
 
-export default function AssetFilterBar() {
+interface AssetFilterBarProps {
+  onParamsChange?: (params: any) => void;
+}
+
+export default function AssetFilterBar({ onParamsChange }: AssetFilterBarProps) {
   return (
     <FilterBar
       allFilters={ALL_FILTERS}
@@ -31,6 +35,7 @@ export default function AssetFilterBar() {
         "asset",
         "location"
       ]}
+      onParamsChange={onParamsChange}
     />
   );
 }

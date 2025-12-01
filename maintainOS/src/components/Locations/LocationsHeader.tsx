@@ -18,17 +18,19 @@ import {
 import { Input } from "../ui/input";
 
 import LocationsFilterBar from "./LocationsFilterBar";
-import toast, { Toaster } from "react-hot-toast";
+import { FetchLocationsParams } from "../../store/locations/locations.types";
 
 export function LocationHeaderComponent(
   viewMode: ViewMode,
   setViewMode: Dispatch<SetStateAction<ViewMode>>,
   searchQuery: string,
   setSearchQuery: Dispatch<SetStateAction<string>>,
-  setIsCreatingForm: () => void, // 👈 UPDATED TYPE: now a void function for navigation
+  setIsCreatingForm: () => void,
   setShowSettings: Dispatch<SetStateAction<boolean>>,
   setIsSettingsModalOpen: Dispatch<SetStateAction<boolean>>,
-  setShowDeleted: Dispatch<SetStateAction<boolean>>
+  setShowDeleted: Dispatch<SetStateAction<boolean>>,
+  // 👇 NEW: Accept filter callback
+  onFilterChange?: (params: FetchLocationsParams) => void
 ) {
   return (
     <>
@@ -84,9 +86,8 @@ export function LocationHeaderComponent(
             <Button
               className="gap-2 cursor-pointer bg-orange-600 hover:outline-none"
               onClick={() => {
-                setIsCreatingForm(); // 👈 Function call without 'true'
+                setIsCreatingForm();
                 setViewMode("panel");
-                // toast.success("congrulation");
               }}
             >
               <Plus className="mr-2 h-4 w-4" />
@@ -95,8 +96,8 @@ export function LocationHeaderComponent(
           </div>
         </div>
         <div className="flex items-center mt-4 p-1 h-10 justify-between">
-          {/* Left: Filter bar */}
-          <LocationsFilterBar />
+          {/* Left: Filter bar - Passed callback */}
+          <LocationsFilterBar onParamsChange={onFilterChange} />
 
           {/* Right: Settings button (only for table view) */}
           {viewMode === "table" && (

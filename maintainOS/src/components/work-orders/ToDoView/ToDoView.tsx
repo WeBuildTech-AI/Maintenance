@@ -10,7 +10,7 @@ import { WorkOrderDetails } from "./WorkOrderDetails";
 import { CommentsSection } from "./CommentsSection";
 import { NewWorkOrderForm } from "../NewWorkOrderForm/NewWorkOrderFrom";
 import { useNavigate, useMatch } from "react-router-dom";
-import { LinkedProcedurePreview } from "./LinkedProcedurePreview"; // ✅ 1. IMPORTED NEW COMPONENT
+import { LinkedProcedurePreview } from "./LinkedProcedurePreview";
 
 export type StatusKey = "open" | "on_hold" | "in_progress" | "done";
 
@@ -44,6 +44,10 @@ export function ToDoView({
   // ✅ New state added for activePanel tracking
   const [activePanel, setActivePanel] = useState<"details" | "parts" | "time" | "cost">("details");
 
+  // ✅ PAGINATION STATE ADDED HERE
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // Ek page par kitne items dikhane hain yaha change karein
+
   const isEditRoute = useMatch("/work-orders/:workOrderId/edit");
   const isCreateRoute = useMatch("/work-orders/create");
   const isDetailRoute = useMatch("/work-orders/:workOrderId");
@@ -62,7 +66,7 @@ export function ToDoView({
     if (unreadFlag !== undefined) setUnreadFirst(unreadFlag);
   };
 
-  // 🧩 Core sorting logic — now supports Unread First
+  // 🧩 Core sorting logic
   const sortList = (list: any[]) => {
     const priorityRank: Record<string, number> = { high: 3, medium: 2, low: 1 };
 
@@ -113,7 +117,6 @@ export function ToDoView({
       return 0;
     });
 
-    // ✅ Unread First toggle
     if (unreadFirst) {
       sorted = sorted.sort((a, b) => {
         const aRead = a.isRead || false;
@@ -135,6 +138,24 @@ export function ToDoView({
   );
 
   const activeList = lists[activeTab];
+
+  // ✅ PAGINATION LOGIC
+  useEffect(() => {
+    setCurrentPage(1); // Reset page when tab or sort changes
+  }, [activeTab, sortType, sortOrder, unreadFirst]);
+
+  const totalItems = activeList.length;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+  const currentItems = activeList.slice(startIndex, endIndex);
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) setCurrentPage((p) => p - 1);
+  };
+
+  const handleNextPage = () => {
+    if (endIndex < totalItems) setCurrentPage((p) => p + 1);
+  };
 
   // --------------------------------------------------
   // 🧠 ASSIGNEE LOGIC
@@ -216,6 +237,7 @@ export function ToDoView({
           }
         />
 
+        {/* LIST CONTAINER */}
         <div className="flex-1 overflow-auto relative z-0 bg-white">
           {activeList.length === 0 ? (
             <EmptyState
@@ -225,7 +247,8 @@ export function ToDoView({
             />
           ) : (
             <div className="space-y-2 p-4">
-              {activeList.map((wo) => (
+              {/* ✅ Render CURRENT ITEMS (Sliced) instead of activeList */}
+              {currentItems.map((wo) => (
                 <WorkOrderCard
                   key={wo.id}
                   wo={wo}
@@ -239,6 +262,73 @@ export function ToDoView({
             </div>
           )}
         </div>
+
+        {/* ✅ PAGINATION UI (Bottom Right Bubble with Inline CSS) */}
+        {totalItems > 0 && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end", // Right aligned
+              padding: "8px 12px",
+              borderTop: "1px solid #e5e7eb",
+              backgroundColor: "#fff",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                border: "1px solid #fbbf24", // Yellow border from screenshot
+                borderRadius: "999px", // Bubble shape
+                padding: "4px 12px",
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#374151",
+              }}
+            >
+              <span>
+                {startIndex + 1} – {endIndex} of {totalItems}
+              </span>
+              
+              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                <button
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 1}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                    opacity: currentPage === 1 ? 0.3 : 1,
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "2px",
+                  }}
+                >
+                  {/* Left Arrow SVG */}
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                </button>
+
+                <button
+                  onClick={handleNextPage}
+                  disabled={endIndex >= totalItems}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: endIndex >= totalItems ? "not-allowed" : "pointer",
+                    opacity: endIndex >= totalItems ? 0.3 : 1,
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "2px",
+                  }}
+                >
+                  {/* Right Arrow SVG */}
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Right Panel */}
@@ -283,15 +373,12 @@ export function ToDoView({
               CopyPageU={CopyPageU}
               onEdit={handleEditWorkOrder}
               onRefreshWorkOrders={onRefreshWorkOrders}
-              /* new line added */
               activePanel={activePanel}
               setActivePanel={setActivePanel}
             />
 
-            {/* ✅ 2. RENDER NEW COMPONENT (it will only show if a procedure exists) */}
             <LinkedProcedurePreview selectedWorkOrder={selectedWorkOrder} />
 
-            {/* ✅ CommentsSection will show only when activePanel === "details" */}
             {activePanel === "details" && (
               <CommentsSection
                 ref={ref}

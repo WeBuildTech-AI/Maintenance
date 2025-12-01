@@ -41,6 +41,16 @@ export interface UpdateMeterReading {
   meterId: string;
 }
 
+// ✅ API FILTER PARAMETERS
+export interface FetchMetersParams {
+  page?: number | string;
+  limit?: number | string;
+  name?: string; // API uses 'name' for fuzzy search
+  
+  // Dynamic Keys from QueryBuilder (e.g. assetOneOf, locationIsEmpty)
+  [key: string]: any; 
+}
+
 export interface MetersState {
   meters: MeterResponse[];
   selectedMeter: MeterResponse | null;

@@ -7,6 +7,7 @@ import { AssetTable } from "./AssetsTable/AssetTable";
 import { AssetHeaderComponent } from "./AssetsHeader/AssetsHeader";
 import type { ViewMode } from "../purchase-orders/po.types";
 import { assetService, deleteAsset } from "../../store/assets";
+import { FetchAssetsParams } from "../../store/assets/assets.types"; // ✅ Imported Types
 import toast, { Toaster } from "react-hot-toast";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store";
@@ -31,6 +32,7 @@ export interface Asset {
 // --- Component Start ---
 export const Assets: FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState(""); // ✅ Debounce
   const [seeMoreAssetStatus, setSeeMoreAssetStatus] = useState(false);
   const [showNewAssetForm, setShowNewAssetForm] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
@@ -45,9 +47,25 @@ export const Assets: FC = () => {
   const [showDeleted, setShowDeleted] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
 
+  // ✅ FILTER PARAMETERS STATE
+  const [filterParams, setFilterParams] = useState<FetchAssetsParams>({
+    page: 1, 
+    limit: 50 
+  });
+
+  // ✅ DEBOUNCE EFFECT
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const fetchAssetsData = useCallback(async () => {
     setLoading(true);
-    setSelectedAsset(null);
+    // Note: Don't clear selectedAsset immediately here if you want to preserve selection across background refreshes,
+    // but clearing it on search change is usually expected.
+    // setSelectedAsset(null); 
 
     try {
       let assets: Asset[] = [];
@@ -55,18 +73,28 @@ export const Assets: FC = () => {
       if (showDeleted && viewMode === "table") {
         assets = await assetService.fetchDeleteAsset();
       } else {
-        assets = await assetService.fetchAssets(10, 1, );
+        // ✅ USE API PAYLOAD WITH FILTERS
+        // Note: API uses 'name' for search
+        const apiPayload = {
+          ...filterParams,
+          name: debouncedSearch || undefined
+        };
+        // console.log("🔥 Assets API Call:", apiPayload);
+        assets = await assetService.fetchAssets(apiPayload);
       }
 
       if (assets && assets.length > 0) {
         setAssetData(assets);
 
-        const mostRecent = [...assets].sort(
-          (a, b) =>
-            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-        );
-
-        setSelectedAsset(mostRecent[0]);
+        // Optional: Pre-select if nothing selected
+        if(!selectedAsset) {
+             const mostRecent = [...assets].sort(
+                (a, b) =>
+                    new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+            );
+            setSelectedAsset(mostRecent[0]);
+        }
+       
       } else {
         setAssetData([]);
         setSelectedAsset(null);
@@ -79,10 +107,9 @@ export const Assets: FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [showDeleted]);
+  }, [showDeleted, viewMode, filterParams, debouncedSearch]); // Removed selectedAsset to avoid loop
 
   const fetchAllLocationData = useCallback(async () => {
-    // ... (fetchAllLocationData logic is unchanged and correct)
     try {
       const locations: Location[] = await locationService.fetchLocations();
       setAllLocationData(locations);
@@ -92,12 +119,19 @@ export const Assets: FC = () => {
   }, []);
 
   useEffect(() => {
-    // if (viewMode !== "panel") return;
     fetchAssetsData();
-
     fetchAllLocationData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchAssetsData, fetchAllLocationData, viewMode]);
+  }, [fetchAssetsData, fetchAllLocationData]); // viewMode is inside fetchAssetsData dep
+
+  // ✅ HANDLER: Filter Change
+  const handleFilterChange = useCallback((newParams: Partial<FetchAssetsParams>) => {
+    setFilterParams((prev) => {
+      const merged = { ...prev, ...newParams };
+      if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
+      return merged;
+    });
+  }, []);
+
 
   const handleEditAsset = useCallback((assetToEdit: Asset) => {
     setEditingAsset(assetToEdit);
@@ -105,7 +139,6 @@ export const Assets: FC = () => {
   }, []);
 
   const sortedAndFilteredAssets = useMemo(() => {
-    // ... (sorting and filtering logic is unchanged and correct)
     let processedAssets = [...assetData];
 
     processedAssets.sort((a, b) => {
@@ -131,19 +164,13 @@ export const Assets: FC = () => {
       return sortOrder === "desc" ? comparison : -comparison;
     });
 
-    if (!searchQuery) return processedAssets;
-
-    const q = searchQuery.toLowerCase();
-    return processedAssets.filter(
-      (asset) =>
-        asset.name.toLowerCase().includes(q) ||
-        asset.location?.name.toLowerCase().includes(q)
-    );
-  }, [assetData, sortType, sortOrder, searchQuery]);
+    // Client-side filtering removed as backend handles it now. 
+    // Just return the sorted API data.
+    return processedAssets;
+  }, [assetData, sortType, sortOrder]);
 
   const handleDeleteAsset = useCallback(
     (id: string | number) => {
-      // ... (handleDeleteAsset logic is unchanged and correct)
       const currentIndex = assetData.findIndex((a) => a.id === id);
       dispatch(deleteAsset(id))
         .unwrap()
@@ -175,7 +202,6 @@ export const Assets: FC = () => {
       <div className="flex h-full flex-col">
         {seeMoreAssetStatus === false ? (
           <>
-            {/* 🛑 ISSUE FIXED HERE: AssetHeaderComponent must be a JSX tag */}
             <AssetHeaderComponent
               viewMode={viewMode}
               setViewMode={setViewMode}
@@ -185,6 +211,8 @@ export const Assets: FC = () => {
               setSelectedAsset={setSelectedAsset}
               setIsSettingsModalOpen={setIsSettingsModalOpen}
               setShowDeleted={setShowDeleted}
+              // ✅ Pass Filter Handler
+              onFilterChange={handleFilterChange}
             />
 
             {viewMode === "table" ? (

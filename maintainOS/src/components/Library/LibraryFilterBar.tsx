@@ -1,21 +1,48 @@
-import { User, MapPin, Tag, Settings } from "lucide-react";
+import { User, MapPin, Tag, Settings, Repeat, Layers, FileText, ClipboardList } from "lucide-react";
 import FilterBar from "../utils/FilterBar";
 
+// ✅ EXACT OPTIONS FOR PROCEDURES
 const ALL_FILTERS = [
-  { key: "vendor", label: "Vendor", icon: <Settings size={16} /> },
-  { key: "status", label: "Status", icon: <Tag size={16} /> },
-  { key: "part", label: "Part", icon: <Settings size={16} /> },
-  { key: "shipping", label: "Shipping Address", icon: <MapPin size={16} /> },
-  { key: "assigned", label: "Assigned To", icon: <User size={16} /> },
-  { key: "billing", label: "Billing Address", icon: <MapPin size={16} /> },
-  { key: "createdBy", label: "Created By", icon: <User size={16} /> },
+  // --- API FILTERS (Fetch data dynamically) ---
+  { key: "asset", label: "Asset", icon: <Settings size={16} /> }, 
+  { key: "category", label: "Category", icon: <Layers size={16} /> },
+  { key: "createdBy", label: "Created By", icon: <User size={16} /> }, // Maps to 'user' in fetcher
+  
+  // --- HARDCODED FILTERS (Based on Procedure Types) ---
+  { 
+    key: "type", 
+    label: "Type", 
+    icon: <ClipboardList size={16} />,
+    options: [
+      { label: "Maintenance", value: "maintenance" },
+      { label: "Inspection", value: "inspection" },
+      { label: "Safety Check", value: "safety_check" }
+    ]
+  },
+  { 
+    key: "frequency", 
+    label: "Frequency", 
+    icon: <Repeat size={16} />,
+    options: [
+      { label: "Daily", value: "daily" },
+      { label: "Weekly", value: "weekly" },
+      { label: "Monthly", value: "monthly" },
+      { label: "Quarterly", value: "quarterly" },
+      { label: "Yearly", value: "yearly" }
+    ]
+  },
 ];
 
-export default function LibraryFilterBar() {
+interface LibraryFilterBarProps {
+  onParamsChange?: (params: any) => void;
+}
+
+export default function LibraryFilterBar({ onParamsChange }: LibraryFilterBarProps) {
   return (
     <FilterBar
       allFilters={ALL_FILTERS}
-      defaultKeys={["vendor", "status", "part"]}
+      defaultKeys={["type", "frequency", "asset"]}
+      onParamsChange={onParamsChange}
     />
   );
 }

@@ -6,17 +6,24 @@ import type {
   GetPurchaseOrderLog,
   PurchaseOrderResponse,
   UpdatePurchaseOrderData,
+  FetchPurchaseOrdersParams // ✅ Imported
 } from "./purchaseOrders.types";
 import api from "../auth/auth.service";
 
 export const purchaseOrderService = {
-  // 🔹 Fetch all purchase orders
-  fetchPurchaseOrders: async (): Promise<PurchaseOrderResponse[]> => {
-    const res = await api.get(`/purchase-orders`);
-    return res.data.items;
+  // ✅ Fetch all purchase orders (Updated with Params)
+  fetchPurchaseOrders: async (params?: FetchPurchaseOrdersParams): Promise<PurchaseOrderResponse[]> => {
+    const res = await api.get(`/purchase-orders`, { 
+      params,
+      paramsSerializer: { indexes: null } 
+    });
+    
+    if (res.data && Array.isArray(res.data.items)) return res.data.items;
+    if (Array.isArray(res.data)) return res.data;
+    return [];
   },
 
-  // 🔹 Fetch a single purchase order by ID
+  // 隼 Fetch a single purchase order by ID
   fetchPurchaseOrderById: async (
     id: string
   ): Promise<PurchaseOrderResponse> => {
@@ -24,7 +31,7 @@ export const purchaseOrderService = {
     return res.data;
   },
 
-  // 🔹 Create a new purchase order
+  // 隼 Create a new purchase order
   createPurchaseOrder: async (
     data: CreatePurchaseOrderData
   ): Promise<PurchaseOrderResponse> => {
@@ -32,7 +39,7 @@ export const purchaseOrderService = {
     return res.data;
   },
 
-  // 🔹 Update a purchase order
+  // 隼 Update a purchase order
   updatePurchaseOrder: async (
     id: string,
     data: UpdatePurchaseOrderData
@@ -41,12 +48,12 @@ export const purchaseOrderService = {
     return res.data;
   },
 
-  // 🔹 Delete a purchase order
+  // 隼 Delete a purchase order
   deletePurchaseOrder: async (id: string): Promise<void> => {
     await api.delete(`/purchase-orders/${id}`);
   },
 
-  // 🔹 Create or add an address for a purchase order
+  // 隼 Create or add an address for a purchase order
   createAddressOrder: async (
     data: CreateAddressData
   ): Promise<PurchaseOrderResponse> => {

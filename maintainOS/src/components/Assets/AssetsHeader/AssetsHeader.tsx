@@ -1,4 +1,4 @@
-import { FC, Dispatch, SetStateAction } from "react"; // Added FC
+import { FC, Dispatch, SetStateAction } from "react"; 
 import type { ViewMode } from "../../purchase-orders/po.types";
 import {
   DropdownMenu,
@@ -18,8 +18,8 @@ import {
 import { Input } from "../../ui/input";
 import AssetFilterBar from "./AssetFilterBar";
 import { useNavigate } from "react-router-dom";
+import { FetchAssetsParams } from "../../../store/assets/assets.types";
 
-// 1. Define the Props interface for clarity and correct structure
 interface AssetHeaderProps {
   viewMode: ViewMode;
   setViewMode: Dispatch<SetStateAction<ViewMode>>;
@@ -29,18 +29,20 @@ interface AssetHeaderProps {
   setSelectedAsset: Dispatch<SetStateAction<any | null>>;
   setIsSettingsModalOpen: Dispatch<SetStateAction<boolean>>;
   setShowDeleted: Dispatch<SetStateAction<boolean>>;
+  // 👇 NEW: Accept filter callback
+  onFilterChange?: (params: FetchAssetsParams) => void;
 }
 
-// 2. Convert to a proper React Functional Component (FC)
 export const AssetHeaderComponent: FC<AssetHeaderProps> = ({
   viewMode,
   setViewMode,
   searchQuery,
   setSearchQuery,
   setShowNewAssetForm,
-  setSelectedAsset, // Destructured prop
+  setSelectedAsset, 
   setIsSettingsModalOpen,
   setShowDeleted,
+  onFilterChange
 }) => {
   const navigate = useNavigate();
   const currentPath = window.location.pathname;
@@ -69,12 +71,11 @@ export const AssetHeaderComponent: FC<AssetHeaderProps> = ({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
-                  {/* View Mode Switch Logic is correct */}
                   <DropdownMenuItem
                     onClick={() => {
                       setViewMode("panel");
                       setShowDeleted(false);
-                      setSelectedAsset(null); // Clear selection when changing view to panel, if desired
+                      setSelectedAsset(null); 
                     }}
                   >
                     <PanelTop className="mr-2 h-4 w-4" /> Panel View
@@ -102,7 +103,7 @@ export const AssetHeaderComponent: FC<AssetHeaderProps> = ({
             onClick={() => {
               setShowNewAssetForm(true);
               setViewMode("panel");
-              setSelectedAsset(null); // Ensure no asset is selected when creating a new one
+              setSelectedAsset(null); 
               navigate(`${currentPath}?create`, { replace: true });
             }}
           >
@@ -112,8 +113,8 @@ export const AssetHeaderComponent: FC<AssetHeaderProps> = ({
         </div>
       </div>
       <div className="flex items-center mt-4 p-1 h-10 justify-between">
-        {/* Left: Filter bar */}
-        <AssetFilterBar />
+        {/* Left: Filter bar - Passed callback */}
+        <AssetFilterBar onParamsChange={onFilterChange} />
 
         {/* Right: Settings button (only for table view) */}
         {viewMode === "table" && (

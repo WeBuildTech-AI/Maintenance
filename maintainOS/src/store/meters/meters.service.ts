@@ -5,20 +5,27 @@ import type {
   MeterResponse,
   UpdateMeterData,
   UpdateMeterReading,
+  FetchMetersParams, // ✅ Imported
 } from "./meters.types";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 export const meterService = {
+  // ✅ Updated to accept params object
   fetchMeters: async (
-    limit: number,
-    page: number,
+    params?: FetchMetersParams
   ): Promise<MeterResponse[]> => {
     const res = await api.get(`/meters`, {
-      params: { limit, page},
+      params,
+      // Ensure arrays are serialized correctly (e.g. assetOneOf=id1,id2)
+      paramsSerializer: { indexes: null },
       headers: { Accept: "application/json" },
     });
-    return res.data.items;
+    
+    // Handle both potential response structures just in case
+    if (res.data && Array.isArray(res.data.items)) return res.data.items;
+    if (Array.isArray(res.data)) return res.data;
+    return [];
   },
 
   fetchMeterById: async (id: string): Promise<MeterResponse> => {

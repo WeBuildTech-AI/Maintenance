@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Input } from "../ui/input";
 import InventoryFilterBar from "./InventoryFilterBar";
+import { FetchPartsParams } from "../../store/parts/parts.types";
 
 export function InventoryHeaderComponent(
   viewMode: ViewMode,
@@ -26,7 +27,9 @@ export function InventoryHeaderComponent(
   setIsCreatingForm: Dispatch<SetStateAction<boolean>>,
   setShowSettings: Dispatch<SetStateAction<boolean>>,
   setIsSettingsModalOpen: Dispatch<SetStateAction<boolean>>,
-  setShowDeleted: Dispatch<SetStateAction<boolean>>
+  setShowDeleted: Dispatch<SetStateAction<boolean>>,
+  // 👇 NEW: Accept filter callback
+  onFilterChange?: (params: FetchPartsParams) => void
 ) {
   return (
     <header className=" border-border bg-card px-6 py-4">
@@ -91,8 +94,8 @@ export function InventoryHeaderComponent(
         </div>
       </div>
       <div className="flex items-center mt-4 p-1 h-10 justify-between">
-        {/* Left: Filter bar */}
-        <InventoryFilterBar />
+        {/* Left: Filter bar - Passed callback */}
+        <InventoryFilterBar onParamsChange={onFilterChange} />
 
         {/* Right: Settings button (only for table view) */}
         {viewMode === "table" && (

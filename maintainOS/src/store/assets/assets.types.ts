@@ -1,4 +1,3 @@
-
 export interface AssetResponse {
   id: string;
   organizationId: string;
@@ -55,6 +54,16 @@ export interface UpdateAssetStatus {
   since: string;
   downtimeType: string;
   userId: string;
+}
+
+// ✅ API FILTER PARAMETERS
+export interface FetchAssetsParams {
+  page?: number | string;
+  limit?: number | string;
+  name?: string; // API uses 'name' for fuzzy search
+
+  // Dynamic Keys from QueryBuilder
+  [key: string]: any; 
 }
 
 export interface AssetsState {

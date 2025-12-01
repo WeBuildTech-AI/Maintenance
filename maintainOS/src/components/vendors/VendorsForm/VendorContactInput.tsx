@@ -1,26 +1,32 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Edit3, Trash2, Plus, X } from "lucide-react";
 import { Button } from "../../ui/button";
 import { NewContactModal, type ContactFormData } from "./NewContactModal";
 
 interface VendorContactInputProps {
+  initialContacts?: ContactFormData[]; // ✅ Added for Edit Mode
   onContactsChange?: (contacts: ContactFormData[]) => void;
 }
 
-export function VendorContactInput({ onContactsChange }: VendorContactInputProps) {
+export function VendorContactInput({ initialContacts = [], onContactsChange }: VendorContactInputProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [contacts, setContacts] = useState<ContactFormData[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // ✅ sync contacts upward (to VendorForm)
+  // ✅ Sync initial data when editing
+  useEffect(() => {
+    if (initialContacts && initialContacts.length > 0) {
+      setContacts(initialContacts);
+    }
+  }, [initialContacts]);
+
   const syncUp = (next: ContactFormData[]) => {
     setContacts(next);
     if (onContactsChange) onContactsChange(next);
   };
 
-  // ✅ save contact (add or edit)
   const handleSaveContact = (newContact: ContactFormData) => {
     const normalized: ContactFormData = {
       fullName: newContact.fullName || "",
@@ -40,7 +46,6 @@ export function VendorContactInput({ onContactsChange }: VendorContactInputProps
       const next = [...contacts, normalized];
       syncUp(next);
     }
-    console.log("✅ Contact saved:", normalized);
   };
 
   const handleEditContact = (index: number) => {
@@ -69,6 +74,7 @@ export function VendorContactInput({ onContactsChange }: VendorContactInputProps
 
   const getInitials = (fullName: string) => {
     const parts = fullName.trim().split(" ");
+    if (parts.length === 0) return "U";
     if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
     return (parts[0][0] + parts[1][0]).toUpperCase();
   };
@@ -98,52 +104,47 @@ export function VendorContactInput({ onContactsChange }: VendorContactInputProps
                 }
               `}</style>
 
-              <table className="min-w-full text-sm border-collapse">
+              <table className="min-w-full text-sm border-collapse table-fixed">
                 <thead className="bg-gray-50 text-gray-600 text-xs uppercase">
                   <tr>
-                    <th className="px-6 py-3 text-left font-medium">FULL NAME</th>
-                    <th className="px-6 py-3 text-left font-medium">ROLE</th>
-                    <th className="px-6 py-3 text-left font-medium">EMAIL</th>
-                    <th className="px-6 py-3 text-left font-medium">PHONE NUMBER</th>
-                    <th className="px-6 py-3 text-right font-medium">ACTIONS</th>
+                    {/* ✅ Assigned Widths to prevent awkward spacing */}
+                    <th className="px-6 py-3 text-left font-medium w-1/4">FULL NAME</th>
+                    <th className="px-6 py-3 text-left font-medium w-1/6">ROLE</th>
+                    <th className="px-6 py-3 text-left font-medium w-1/3">EMAIL</th>
+                    <th className="px-6 py-3 text-left font-medium w-1/6">PHONE NUMBER</th>
+                    {/* ✅ Fixed Actions Column Width & Reduced Padding */}
+                    <th className="pl-6 pr-4 py-3 text-right font-medium w-[1%] whitespace-nowrap">ACTIONS</th>
                   </tr>
                 </thead>
 
                 <tbody className="divide-y divide-gray-100">
                   {contacts.map((c, index) => {
-                    const initials = c.fullName
-                      ? c.fullName
-                          .split(" ")
-                          .map((n: string) => n[0])
-                          .slice(0, 2)
-                          .join("")
-                          .toUpperCase()
-                      : "U";
+                    const initials = getInitials(c.fullName || "");
                     const color = c.contactColor || "#EC4899";
                     const phone = c.phoneNumber || "";
                     const extension = c.phoneExtension?.replace(/^x?/, "") || "";
 
                     return (
                       <tr key={index} className="hover:bg-gray-50 transition-colors duration-150">
-                        <td className="px-6 py-3 whitespace-nowrap">
+                        <td className="px-6 py-3 whitespace-nowrap truncate">
                           <div className="flex items-center gap-3">
                             <div
                               className="flex items-center justify-center text-white font-medium text-sm rounded-full h-8 w-8 flex-shrink-0"
                               style={{ backgroundColor: color }}
                             >
-                              {getInitials(c.fullName || "C")}
+                              {initials}
                             </div>
-                            <span className="text-gray-900 text-sm font-medium capitalize">
+                            <span className="text-gray-900 text-sm font-medium capitalize truncate">
                               {c.fullName || "-"}
                             </span>
                           </div>
                         </td>
 
-                        <td className="px-6 py-3 text-gray-800 font-normal whitespace-nowrap">
+                        <td className="px-6 py-3 text-gray-800 font-normal whitespace-nowrap truncate">
                           {c.role || "-"}
                         </td>
 
-                        <td className="px-6 py-3 text-blue-600 font-medium break-all">
+                        <td className="px-6 py-3 text-blue-600 font-medium break-all truncate">
                           {c.email ? (
                             <a href={`mailto:${c.email}`} className="hover:underline">
                               {c.email}
@@ -154,7 +155,7 @@ export function VendorContactInput({ onContactsChange }: VendorContactInputProps
                         </td>
 
                         {/* 📞 Phone Number + Extension */}
-                        <td className="px-6 py-3 text-blue-600 font-medium whitespace-nowrap">
+                        <td className="px-6 py-3 text-blue-600 font-medium whitespace-nowrap truncate">
                           {phone ? (
                             <div className="flex flex-col leading-tight">
                               <a href={`tel:${phone}`} className="hover:underline text-blue-600 font-medium">
@@ -171,18 +172,18 @@ export function VendorContactInput({ onContactsChange }: VendorContactInputProps
                           )}
                         </td>
 
-                        {/* ✏️🗑️ Actions */}
-                        <td className="px-6 py-3 text-right whitespace-nowrap">
+                        {/* ✏️🗑️ Actions - Fixed Alignment */}
+                        <td className="pl-6 pr-4 py-3 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-3">
                             <button
-                              type="button"
+                              type="button" // ✅ Prevent submit
                               onClick={() => handleEditContact(index)}
                               className="text-gray-500 hover:text-blue-600 transition-colors"
                             >
                               <Edit3 className="h-4 w-4" />
                             </button>
                             <button
-                              type="button"
+                              type="button" // ✅ Prevent submit
                               onClick={() => handleDeleteContact(index)}
                               className="text-gray-500 hover:text-red-600 transition-colors"
                             >
@@ -200,7 +201,9 @@ export function VendorContactInput({ onContactsChange }: VendorContactInputProps
         )}
 
         {/* ➕ New Contact Button */}
+        {/* ✅ CRITICAL FIX: added type="button" to prevent form submission */}
         <Button
+          type="button" 
           variant="link"
           size="sm"
           onClick={() => {
@@ -242,12 +245,14 @@ export function VendorContactInput({ onContactsChange }: VendorContactInputProps
             </p>
             <div className="flex justify-end gap-3">
               <button
+                type="button" // ✅ Prevent submit
                 onClick={cancelDelete}
                 className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100 transition-all"
               >
                 Cancel
               </button>
               <button
+                type="button" // ✅ Prevent submit
                 onClick={confirmDelete}
                 className="px-4 py-2 text-sm font-medium text-black bg-gray-300 border border-gray-300 rounded-md hover:bg-red-600 hover:text-white transition-all duration-200"
               >

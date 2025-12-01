@@ -1,51 +1,35 @@
-import { MapPin, Tag, Settings } from "lucide-react";
+import { MapPin, Tag, Settings, Briefcase } from "lucide-react";
 import FilterBar from "../utils/FilterBar";
 
 const ALL_FILTERS = [
+  // --- API FILTERS ---
+  { key: "asset", label: "Asset", icon: <Settings size={16} /> },
+  { key: "part", label: "Part", icon: <Tag size={16} /> },
+  { key: "location", label: "Location", icon: <MapPin size={16} /> },
+
+  // --- HARDCODED FILTERS ---
   {
-    key: "asset",
-    label: "Asset",
-    icon: <Settings size={16} />,
-    options: ["HVAC", "Boiler", "Generator", "Pump"],
-  },
-  {
-    key: "part",
-    label: "Part",
-    icon: <Tag size={16} />,
-    options: ["Switch", "Cable", "Sensor", "Panel"],
-  },
-  {
-    key: "vendorTypes",
-    label: "Vendor Types",
-    icon: <Settings size={16} />,
-    options: ["Manufacturer", "Distributor"],
-  },
-  {
-    key: "location",
-    label: "Location",
-    icon: <MapPin size={16} />,
-    options: ["Mumbai", "Delhi", "Bangalore", "Hyderabad"], // static fallback (dynamic list is handled inside FilterDropdown already)
+    key: "vendorType", // Key matches API param base (e.g. vendorTypeOneOf)
+    label: "Vendor Type",
+    icon: <Briefcase size={16} />,
+    options: [
+      { label: "Manufacturer", value: "manufacturer" },
+      { label: "Distributor", value: "distributor" },
+    ],
   },
 ];
 
-export default function VendorFilterBar({
-  onFilterChange,
-}: {
-  onFilterChange?: (filters: Record<string, string[]>) => void;
-}) {
-  // keep a local accumulator so every onFilterSelect call pushes latest state up
-  const filtersState: Record<string, string[]> = {};
+interface VendorFilterBarProps {
+  onParamsChange?: (params: any) => void;
+}
 
+export default function VendorFilterBar({ onParamsChange }: VendorFilterBarProps) {
   return (
     <div className="px-0 py-4">
       <FilterBar
         allFilters={ALL_FILTERS}
-        defaultKeys={["asset", "part", "vendorTypes", "location"]}
-        onFilterSelect={(key, selectedIds) => {
-          filtersState[key] = selectedIds; // IDs for location, strings for others
-          console.log("🟣 VendorFilterBar (bubbling up):", filtersState);
-          if (onFilterChange) onFilterChange({ ...filtersState });
-        }}
+        defaultKeys={["vendorType", "location", "asset"]}
+        onParamsChange={onParamsChange}
       />
     </div>
   );

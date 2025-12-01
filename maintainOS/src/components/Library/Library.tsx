@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react"; // ✅ Added useCallback
+import { useState, useEffect, useRef, useMemo, useCallback } from "react"; 
 import { useNavigate, useMatch, useLocation } from "react-router-dom";
+import { useDispatch } from "react-redux"; 
 
 // --- API & Store ---
 import { procedureService } from "../../store/procedures/procedures.service";
@@ -8,6 +9,8 @@ import type { ViewMode } from "../purchase-orders/po.types";
 import GenerateProcedure from "./GenerateProcedure/GenerateProcedure";
 import { ChevronDown } from "lucide-react";
 import SettingsModal from "../utils/SettingsModal"; 
+import type { AppDispatch } from "../../store";
+import { FetchProceduresParams } from "../../store/procedures/procedures.types";
 
 // --- Components ---
 import { LibraryCard } from "./LibraryCard";
@@ -33,6 +36,7 @@ const allToggleableColumns = ["Last updated", "Category", "Created At"];
 export function Library() {
   const navigate = useNavigate();
   const location = useLocation(); 
+  const dispatch = useDispatch<AppDispatch>();
 
   // --- Router State ---
   const isCreateRoute = useMatch("/library/create");
@@ -47,12 +51,20 @@ export function Library() {
   // --- Local State ---
   const [viewMode, setViewMode] = useState<ViewMode>("panel"); 
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState(""); 
+
   const [showSettings, setShowSettings] = useState(false);
 
   const [selectedProcedure, setSelectedProcedure] = useState<any>(null);
   const [procedures, setProcedures] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // ✅ 1. Filter Params State
+  const [filterParams, setFilterParams] = useState<FetchProceduresParams>({
+    page: 1, 
+    limit: 50 
+  });
 
   const [modalProcedure, setModalProcedure] = useState<any>(null); 
   const [showDeleted, setShowDeleted] = useState(false);
@@ -64,24 +76,40 @@ export function Library() {
 
   const [visibleColumns, setVisibleColumns] = useState<string[]>(allToggleableColumns);
 
-  // --- FETCH LIST (Memoized) ---
-  const fetchData = useMemo(() => {
-    return async () => {
-      // Only show full loading if we have no data (prevents flicker on refresh)
+  // ✅ Debounce Search Effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // --- FETCH LIST (Memoized & Updated with Filters) ---
+  const fetchData = useCallback(async () => {
       if (procedures.length === 0) {
         setLoading(true);
       }
       
       try {
         setError(null);
-        let res;
+        let data = [];
+
         if (showDeleted) {
-          res = await procedureService.fetchDeletedProcedures();
+          const res = await procedureService.fetchDeletedProcedures();
+          data = Array.isArray(res) ? res : res?.data || [];
         } else {
-          res = await procedureService.fetchProcedures();
+          // ✅ FIX: Use 'search' instead of 'title' as per API requirements
+          const apiPayload = {
+            ...filterParams,
+            search: debouncedSearch || undefined 
+          };
+
+          console.log("🔥 Library API Call:", apiPayload);
+          
+          const res = await procedureService.fetchProcedures(apiPayload);
+          data = Array.isArray(res) ? res : (res as any)?.data?.items || [];
         }
         
-        const data = Array.isArray(res) ? res : res?.data || res?.data?.data || [];
         setProcedures(data);
 
       } catch (err: any) {
@@ -90,12 +118,22 @@ export function Library() {
       } finally {
         setLoading(false);
       }
-    };
-  }, [showDeleted]); // Dependencies stable
+  }, [showDeleted, filterParams, debouncedSearch]); 
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // ✅ Handle Filter Change Callback
+  const handleFilterChange = useCallback((newParams: Partial<FetchProceduresParams>) => {
+    setFilterParams((prevParams) => {
+      const merged = { ...prevParams, ...newParams };
+      if (JSON.stringify(prevParams) === JSON.stringify(merged)) {
+        return prevParams; 
+      }
+      return merged; 
+    });
+  }, []);
 
   // --- SYNC SELECTION ---
   useEffect(() => {
@@ -119,7 +157,7 @@ export function Library() {
         setModalProcedure(null);
       }
     }
-  }, [routeId, procedures, viewMode, isFormOpen]);
+  }, [routeId, procedures, viewMode, isFormOpen]); 
 
   // --- SORTING ---
   const sortedProcedures = useMemo(() => {
@@ -169,17 +207,12 @@ export function Library() {
     if (routeId !== proc.id) navigate(`/library/${proc.id}`);
   };
 
-  // ✅ CRITICAL FIX: Wrapped in useCallback to prevent infinite loop in GenerateProcedure
   const handleBackFromBuilder = useCallback(() => {
-    // 1. Check if we came from Work Order (via state)
     if (location.state?.returnPath) {
-        // Navigate back to Work Order Edit page
         navigate(location.state.returnPath, {
-            // Pass back form data to rehydrate Work Order form
             state: { previousFormState: location.state.previousFormState } 
         });
     } else {
-        // 2. Standard Library Behavior
         if (routeId) {
             navigate(`/library/${routeId}`);
         } else {
@@ -227,6 +260,8 @@ export function Library() {
             setSearchQuery={setSearchQuery}
             setIsCreatingForm={handleCreateClick}
             setShowSettings={setShowSettings}
+            // ✅ Pass Filter Handler
+            onFilterChange={handleFilterChange}
           />
 
           <div className="flex-1 flex flex-col overflow-hidden border-t border-gray-200">

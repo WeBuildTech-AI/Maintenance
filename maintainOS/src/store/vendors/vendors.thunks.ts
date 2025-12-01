@@ -1,12 +1,13 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { vendorService } from "./vendors.service";
-import type { Contact } from "./vendors.types";
+import type { Contact, FetchVendorsParams } from "./vendors.types";
 
+// ✅ Updated to accept params
 export const fetchVendors = createAsyncThunk(
   "vendors/fetchVendors",
-  async (_, { rejectWithValue }) => {
+  async (params: FetchVendorsParams | undefined, { rejectWithValue }) => {
     try {
-      return await vendorService.fetchVendors();
+      return await vendorService.fetchVendors(params);
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch vendors"
@@ -81,7 +82,6 @@ export const deleteVendor = createAsyncThunk(
   }
 );
 
-// ✅ New thunk for contacts (PUT)
 export const updateVendorContact = createAsyncThunk(
   "vendors/updateVendorContact",
   async (

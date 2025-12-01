@@ -1,21 +1,48 @@
-import { User, MapPin, Tag, Settings } from "lucide-react";
+import { User, MapPin, Tag, Settings, Layers, Repeat, FileText, ClipboardList } from "lucide-react";
 import FilterBar from "../utils/FilterBar";
 
 const ALL_FILTERS = [
+  // --- API FILTERS ---
+  { key: "location", label: "Location", icon: <MapPin size={16} /> },
+  { key: "asset", label: "Asset", icon: <Settings size={16} /> },
   { key: "vendor", label: "Vendor", icon: <Settings size={16} /> },
-  { key: "status", label: "Status", icon: <Tag size={16} /> },
-  { key: "part", label: "Part", icon: <Settings size={16} /> },
-  { key: "shipping", label: "Shipping Address", icon: <MapPin size={16} /> },
-  { key: "assigned", label: "Assigned To", icon: <User size={16} /> },
-  { key: "billing", label: "Billing Address", icon: <MapPin size={16} /> },
-  { key: "createdBy", label: "Created By", icon: <User size={16} /> },
+  
+  // --- PART SPECIFIC FILTERS ---
+  {
+    key: "stockStatus",
+    label: "Stock Status",
+    icon: <ClipboardList size={16} />,
+    options: [
+      { label: "Needs Restock", value: "needs_restock" },
+      { label: "In Stock", value: "in_stock" },
+      { label: "Out of Stock", value: "out_of_stock" }
+    ]
+  },
+  { key: "partType", label: "Part Type", icon: <Tag size={16} /> }, // Maps to partTypeContains
+  { key: "area", label: "Area", icon: <MapPin size={16} /> }, // Maps to areaContains
+  { key: "description", label: "Description", icon: <FileText size={16} /> },
+  
+  { 
+    key: "workOrderRecurrence", 
+    label: "Recurrence", 
+    icon: <Repeat size={16} />,
+    options: [
+      { label: "Repeating", value: "has_repeating" },
+      { label: "Non-Repeating", value: "no_repeating" }
+    ]
+  },
 ];
 
-export default function InventoryFilterBar() {
+interface InventoryFilterBarProps {
+  onParamsChange?: (params: any) => void;
+}
+
+export default function InventoryFilterBar({ onParamsChange }: InventoryFilterBarProps) {
   return (
     <FilterBar
       allFilters={ALL_FILTERS}
-      defaultKeys={["vendor", "status", "part"]}
+      defaultKeys={["stockStatus", "partType", "location"]}
+      onParamsChange={onParamsChange}
     />
   );
 }

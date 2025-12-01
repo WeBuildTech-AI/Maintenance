@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Copy, Link, MoreHorizontal } from "lucide-react";
-import toast, { Toaster } from "react-hot-toast";
+import { useNavigate } from "react-router-dom"; // ✅ Added navigation hook
+import toast from "react-hot-toast";
 import { Button } from "../../ui/button";
 import {
   DropdownMenu,
@@ -32,6 +33,7 @@ export default function VendorHeader({
 }: VendorHeaderProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const modalRef = useRef<HTMLDivElement | null>(null);
+  const navigate = useNavigate(); // ✅ Initialize navigation
 
   // ✅ Close modal on outside click
   useEffect(() => {
@@ -52,23 +54,23 @@ export default function VendorHeader({
   const handleConfirmDelete = () => {
     try {
       handleDeleteVendor(vendor.id);
-      toast.success("Vendor deleted successfully!"); // ✅ Restored toast
+      toast.success("Vendor deleted successfully!");
     } catch (error) {
       console.error("Delete failed:", error);
-      toast.error("Failed to delete vendor."); // ✅ Added error toast
+      toast.error("Failed to delete vendor.");
     } finally {
       setShowDeleteModal(false);
     }
   };
 
-  const handleRestoreVendorDeleteData = async (id) => {
+  const handleRestoreVendorDeleteData = async (id: string) => {
     try {
       await vendorService.restoreVendorData(id);
       fetchVendors();
       onClose();
       toast.success("Successfully Restore the Data");
     } catch (err) {
-      toast.error("Failed to Restore the Vednor Data");
+      toast.error("Failed to Restore the Vendor Data");
     }
   };
 
@@ -91,7 +93,7 @@ export default function VendorHeader({
                 onClick={() => {
                   const url = `${window.location.origin}/vendors/${vendor.id}`;
                   navigator.clipboard.writeText(url);
-                  toast.success("Vendor link copied!"); // ✅ Added toast here too
+                  toast.success("Vendor link copied!");
                 }}
                 className="p-2 hover:text-blue-800 flex items-center justify-center"
                 title="Copy Vendor Link"
@@ -100,8 +102,11 @@ export default function VendorHeader({
               </button>
             </Tooltip>
 
-            {/* New Purchase Order */}
-            <button className="flex items-center gap-1 border border-blue-600 text-blue-600 rounded-md px-3 py-1.5 text-sm font-medium hover:bg-blue-50">
+            {/* ✅ New Purchase Order Button with Navigation */}
+            <button 
+              onClick={() => navigate(`/purchase-orders/create?vendorId=${vendor.id}`)}
+              className="flex items-center gap-1 border border-blue-600 text-blue-600 rounded-md px-3 py-1.5 text-sm font-medium hover:bg-blue-50"
+            >
               + New Purchase Order
             </button>
 
