@@ -2,10 +2,10 @@ import type { Dispatch, SetStateAction } from "react";
 import type { ViewMode } from "../purchase-orders/po.types";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
-// --- (FIX) Trash2 icon hata diya gaya hai ---
 import { ChevronDown, PanelTop, Plus, Search, Settings, Table } from "lucide-react"; 
 import { Input } from "../ui/input";
 import LibraryFilterBar from "./LibraryFilterBar";
+import { FetchProceduresParams } from "../../store/procedures/procedures.types";
 
 interface LibraryHeaderProps {
   viewMode: ViewMode;
@@ -14,7 +14,8 @@ interface LibraryHeaderProps {
   setSearchQuery: Dispatch<SetStateAction<string>>;
   setIsCreatingForm: Dispatch<SetStateAction<boolean>>;
   setShowSettings: Dispatch<SetStateAction<boolean>>;
-  // --- (FIX) 'showDeleted' props yahaan se hata diye gaye hain ---
+  // 👇 NEW: Accept the filter callback
+  onFilterChange?: (params: FetchProceduresParams) => void;
 }
 
 export function LibraryHeaderComponent({
@@ -24,6 +25,7 @@ export function LibraryHeaderComponent({
   setSearchQuery,
   setIsCreatingForm,
   setShowSettings,
+  onFilterChange
 }: LibraryHeaderProps) {
   return (
     <header className="border-border bg-card px-6 py-4">
@@ -81,11 +83,9 @@ export function LibraryHeaderComponent({
       </div>
 
       <div className="flex items-center mt-4 p-1 h-10 justify-between">
-        <LibraryFilterBar />
+        {/* Left: Filter bar - 👇 NEW: Pass the callback here! */}
+        <LibraryFilterBar onParamsChange={onFilterChange} />
         
-        {/* --- (FIX) 'Show Deleted' toggle section yahaan se hata diya gaya hai --- */}
-        
-        {/* --- Settings button ab justify-end ke bajaye yahaan hai --- */}
         <div className="flex items-center gap-2">
           {viewMode === "table" && (
             <button
@@ -96,7 +96,6 @@ export function LibraryHeaderComponent({
             </button>
           )}
         </div>
-        {/* --- END OF FIX --- */}
 
       </div>
     </header>

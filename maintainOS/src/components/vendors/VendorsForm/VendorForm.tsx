@@ -8,19 +8,10 @@ import type { SelectOption } from "./DynamicSelect";
 import { fetchLocationsName } from "../../../store/locations/locations.thunks";
 import { fetchAssetsName } from "../../../store/assets/assets.thunks";
 import { VendorPrimaryDetails } from "./VendorPrimaryDetails";
-import { VendorContactInput } from "./VendorContactInput";
+import { VendorContactInput, type ContactFormData } from "./VendorContactInput";
 import { VendorLinkedItems } from "./VendorLinkedItems";
 import { saveVendor } from "./vendorService";
 import { BlobUpload, type BUD } from "../../utils/BlobUpload";
-
-export interface ContactFormData {
-  fullName: string;
-  role: string;
-  email: string;
-  phoneNumber: string;
-  phoneExtension: string;
-  contactColour: string;
-}
 
 export function VendorForm({
   onCancel,
@@ -36,7 +27,7 @@ export function VendorForm({
     createdBy: "",
     partsSummary: "",
     color: "#2563eb",
-    vendorType: "Manufacturer",
+    vendorType: "manufacturer",
   });
 
   const dispatch = useDispatch<AppDispatch>();
@@ -45,13 +36,12 @@ export function VendorForm({
 
   const [vendorImages, setVendorImages] = useState<BUD[]>([]);
   const [vendorDocs, setVendorDocs] = useState<BUD[]>([]);
-  const [contact, setContact] = useState({ email: "", phone: "" });
-  const [contacts, setContacts] = useState<ContactFormData[]>([]);
-  const [showInputs, setShowInputs] = useState(false);
 
-  const [availableLocations, setAvailableLocations] = useState<SelectOption[]>(
-    []
-  );
+  // Contacts
+  const [contacts, setContacts] = useState<ContactFormData[]>([]);
+
+  // Dropdown States
+  const [availableLocations, setAvailableLocations] = useState<SelectOption[]>([]);
   const [locationsLoading, setLocationsLoading] = useState(false);
   const [selectedLocationIds, setSelectedLocationIds] = useState<string[]>([]);
 
@@ -65,6 +55,7 @@ export function VendorForm({
 
   const [submitting, setSubmitting] = useState(false);
 
+  // ✅ INITIALIZATION & PREFILL LOGIC
   useEffect(() => {
     if (initialData) {
       setForm((f) => ({
@@ -75,46 +66,80 @@ export function VendorForm({
         services: initialData.services || "",
         partsSummary: initialData.partsSummary || "",
         color: initialData.color || "#2563eb",
-        vendorType: initialData.vendorType || "Manufacturer",
+        vendorType: initialData.vendorType || "manufacturer",
       }));
 
-      // Set existing vendor images and docs
-      if (initialData.vendorImages) {
-        setVendorImages(initialData.vendorImages);
-      }
-      if (initialData.vendorDocs) {
-        setVendorDocs(initialData.vendorDocs);
-      }
+      if (initialData.vendorImages) setVendorImages(initialData.vendorImages);
+      if (initialData.vendorDocs) setVendorDocs(initialData.vendorDocs);
 
-      // Set existing contacts
+      // ✅ PREFILL CONTACTS
       if (initialData.contacts) {
         try {
-          const contactsArray = Array.isArray(initialData.contacts)
+          const c = Array.isArray(initialData.contacts)
             ? initialData.contacts
             : typeof initialData.contacts === "string"
-            ? JSON.parse(initialData.contacts)
-            : [initialData.contacts];
-          setContacts(contactsArray);
+              ? JSON.parse(initialData.contacts)
+              : [initialData.contacts];
+          setContacts(c);
         } catch {
           setContacts([]);
         }
       }
+
+      // ✅ PREFILL LOCATIONS (IDs + Options for badges)
+      if (initialData.locations && Array.isArray(initialData.locations)) {
+        // 1. Set IDs
+        const ids = initialData.locations.map((loc: any) =>
+          typeof loc === "string" ? loc : loc.id
+        );
+        setSelectedLocationIds(ids);
+
+        // 2. Set Options (Important for displaying names immediately)
+        const opts = initialData.locations
+          .filter((loc: any) => typeof loc === "object")
+          .map((loc: any) => ({
+            id: loc.id,
+            name: loc.name || "Unknown Location"
+          }));
+        if (opts.length > 0) setAvailableLocations(opts);
+      }
+
+      // ✅ PREFILL ASSETS
+      if (initialData.assets && Array.isArray(initialData.assets)) {
+        const ids = initialData.assets.map((a: any) => a.id);
+        setSelectedAssetIds(ids);
+
+        const opts = initialData.assets.map((a: any) => ({
+          id: a.id,
+          name: a.name || "Unknown Asset"
+        }));
+        setAvailableAssets(opts);
+      } else if (initialData.assetIds) {
+        setSelectedAssetIds(initialData.assetIds);
+      }
+
+      // ✅ PREFILL PARTS
+      if (initialData.parts && Array.isArray(initialData.parts)) {
+        const ids = initialData.parts.map((p: any) => p.id);
+        setSelectedPartIds(ids);
+
+        const opts = initialData.parts.map((p: any) => ({
+          id: p.id,
+          name: p.name || "Unknown Part"
+        }));
+        setAvailableParts(opts);
+      } else if (initialData.partIds) {
+        setSelectedPartIds(initialData.partIds);
+      }
     }
   }, [initialData]);
 
-  // ✅ Fetch handlers
   const handleFetchLocations = () => {
     setLocationsLoading(true);
     dispatch(fetchLocationsName())
       .unwrap()
       .then((response) => {
-        console.log("📦 Raw locations API response:", response);
         const list = response || [];
-        if (!Array.isArray(list)) {
-          console.error("❌ Unexpected locations response format:", list);
-          setAvailableLocations([]);
-          return;
-        }
         const options = list.map((loc: any) => ({
           id: loc.id || loc._id || String(loc),
           name: loc.name || loc.location_name || "Unnamed",
@@ -123,7 +148,6 @@ export function VendorForm({
       })
       .catch((err) => {
         console.error("🚨 Fetch locations failed:", err);
-        setAvailableLocations([]);
       })
       .finally(() => setLocationsLoading(false));
   };
@@ -133,13 +157,7 @@ export function VendorForm({
     dispatch(fetchAssetsName())
       .unwrap()
       .then((response) => {
-        console.log("📦 Raw assets API response:", response);
         const list = response || [];
-        if (!Array.isArray(list)) {
-          console.error("❌ Unexpected assets response format:", list);
-          setAvailableAssets([]);
-          return;
-        }
         const options = list.map((asset: any) => ({
           id: asset.id || asset._id || String(asset),
           name: asset.name || asset.asset_name || "Unnamed",
@@ -148,152 +166,65 @@ export function VendorForm({
       })
       .catch((err) => {
         console.error("🚨 Fetch assets failed:", err);
-        setAvailableAssets([]);
       })
       .finally(() => setAssetsLoading(false));
   };
 
   const handleFetchParts = () => {
     setPartsLoading(true);
-    // TODO: Uncomment when fetchPartsName is available
-    dispatch(fetchPartsName())
-      .unwrap()
-      .then((response: any) => {
-        console.log("📦 Raw parts API response:", response);
-        const list = response || [];
-        if (!Array.isArray(list)) {
-          console.error("❌ Unexpected parts response format:", list);
-          setAvailableParts([]);
-          return;
-        }
-        const options = list.map((part: any) => ({
-          id: part.id || part._id || String(part),
-          name: part.name || part.part_name || "Unnamed",
-        }));
-        setAvailableParts(options);
-      })
-      .catch((err: any) => {
-        console.error("🚨 Fetch parts failed:", err);
-        setAvailableParts([]);
-      })
-      .finally(() => setPartsLoading(false));
-
+    // Mock or implement fetchPartsName thunk here
     setPartsLoading(false);
   };
 
-  const handleCtaClick = (path: string) => {
-    navigate(path);
-  };
+  const handleCtaClick = (path: string) => navigate(path);
 
   const handleBlobChange = (data: { formId: string; buds: BUD[] }) => {
-    console.log("Upload complete for:", data.formId);
-    console.table(data.buds);
-
-    if (data.formId === "vendor_profile") {
-      setVendorImages(data.buds);
-    } else if (data.formId === "vendor_docs") {
-      setVendorDocs(data.buds);
-    }
+    if (data.formId === "vendor_profile") setVendorImages(data.buds);
+    else if (data.formId === "vendor_docs") setVendorDocs(data.buds);
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!user) return;
-    if (submitting) return;
+    if (!user || submitting) return;
     setSubmitting(true);
 
     const formData = new FormData();
     const appendIfPresent = (key: string, value: any) => {
-      if (
-        value !== undefined &&
-        value !== null &&
-        value !== "" &&
-        !(Array.isArray(value) && value.length === 0)
-      ) {
-        formData.append(key, value);
-      }
+      if (value !== undefined && value !== null && value !== "") formData.append(key, value);
     };
 
-    // appendIfPresent("organizationId", user.organizationId);
     appendIfPresent("name", form.name.trim());
     appendIfPresent("description", form.description);
     appendIfPresent("color", form.color);
     appendIfPresent("vendorType", form.vendorType?.toLowerCase());
 
-    const contactsArray: any[] = [];
-
-    if (Array.isArray(contacts) && contacts.length > 0) {
-      contacts.forEach((contact) => {
-        if (contact.fullName || contact.email || contact.phoneNumber) {
-          let formattedPhone = contact.phoneNumber || "";
-          if (formattedPhone && !formattedPhone.startsWith("+")) {
-            formattedPhone = contact.phoneExtension?.startsWith("+")
-              ? contact.phoneExtension + formattedPhone
-              : "+91" + formattedPhone;
-          }
-          contactsArray.push({
-            fullName: contact.fullName || "",
-            role: contact.role || "",
-            email: contact.email || "",
-            phoneNumber: formattedPhone,
-            phoneExtension: contact.phoneExtension || "",
-            contactColour: contact.contactColour || "#EC4899",
-          });
-        }
-      });
-    } else if (contact && (contact.email.trim() || contact.phone.trim())) {
-      let formattedPhone = contact.phone || "";
-      if (formattedPhone && !formattedPhone.startsWith("+")) {
-        formattedPhone = "+91" + formattedPhone;
-      }
-      contactsArray.push({
-        fullName: "",
-        role: "",
-        email: contact.email || "",
-        phoneNumber: formattedPhone,
-        phoneExtension: "",
-        contactColour: "#EC4899",
+    // Contacts
+    if (Array.isArray(contacts)) {
+      contacts.forEach((contact, index) => {
+        formData.append(`contacts[${index}][fullName]`, contact.fullName || "");
+        formData.append(`contacts[${index}][role]`, contact.role || "");
+        formData.append(`contacts[${index}][email]`, contact.email || "");
+        formData.append(`contacts[${index}][phoneNumber]`, contact.phoneNumber || "");
+        formData.append(`contacts[${index}][phoneExtension]`, contact.phoneExtension || "");
+        formData.append(`contacts[${index}][contactColor]`, contact.contactColour || "#EC4899");
       });
     }
 
-    if (contactsArray.length > 0) {
-      contactsArray.forEach((contact, index) => {
-        formData.append(`contacts[${index}][fullName]`, contact.fullName);
-        formData.append(`contacts[${index}][role]`, contact.role);
-        formData.append(`contacts[${index}][email]`, contact.email);
-        formData.append(`contacts[${index}][phoneNumber]`, contact.phoneNumber);
-        formData.append(
-          `contacts[${index}][phoneExtension]`,
-          contact.phoneExtension
-        );
-        formData.append(
-          `contacts[${index}][contactColor]`,
-          contact.contactColour
-        );
-      });
-    }
+    // Dropdowns
+    if (selectedLocationIds) selectedLocationIds.forEach((id) => formData.append("locations[]", id));
+    if (selectedAssetIds) selectedAssetIds.forEach((id) => formData.append("assetIds[]", id));
+    if (selectedPartIds) selectedPartIds.forEach((id) => formData.append("partIds[]", id));
 
-    if (Array.isArray(selectedLocationIds) && selectedLocationIds.length > 0) {
-      selectedLocationIds.forEach((id) => formData.append("locations[]", id));
-    }
-    if (Array.isArray(selectedAssetIds) && selectedAssetIds.length > 0) {
-      selectedAssetIds.forEach((id) => formData.append("assetIds[]", id));
-    }
-    if (Array.isArray(selectedPartIds) && selectedPartIds.length > 0) {
-      selectedPartIds.forEach((id) => formData.append("partIds[]", id));
-    }
-
+    // Images & Docs
     vendorImages.forEach((img, i) => {
       formData.append(`vendorImages[${i}][key]`, img.key);
       formData.append(`vendorImages[${i}][fileName]`, img.fileName);
     });
-
     vendorDocs.forEach((doc, i) => {
       formData.append(`vendorDocs[${i}][key]`, doc.key);
       formData.append(`vendorDocs[${i}][fileName]`, doc.fileName);
     });
 
-    // ✅ Centralized saveVendor logic
     await saveVendor({
       dispatch,
       formData,
@@ -302,7 +233,6 @@ export function VendorForm({
       onSuccess,
       onCancel,
     });
-
     setSubmitting(false);
   };
 
@@ -314,10 +244,7 @@ export function VendorForm({
         </h2>
       </div>
 
-      <form
-        className="min-h-0 flex-1 overflow-y-auto space-y-8 py-8"
-        onSubmit={handleSubmit}
-      >
+      <form className="min-h-0 flex-1 overflow-y-auto space-y-8 py-8" onSubmit={handleSubmit}>
         <VendorPrimaryDetails form={form} setForm={setForm} />
 
         <BlobUpload
@@ -326,17 +253,10 @@ export function VendorForm({
           initialBuds={vendorImages}
           onChange={handleBlobChange}
         />
-        {/* <VendorPicturesInput
-          files={pictures}
-          setFiles={setPictures}
-          onFilesSelected={handleFilesSelected}
-        /> */}
 
+        {/* ✅ Updated Contact Input with Initial Data Support */}
         <VendorContactInput
-          contact={contact}
-          setContact={setContact}
-          showInputs={showInputs}
-          setShowInputs={setShowInputs}
+          initialContacts={contacts}
           onContactsChange={setContacts}
         />
 
@@ -347,27 +267,25 @@ export function VendorForm({
           onChange={handleBlobChange}
         />
 
-        {/* <VendorAttachmentsInput
-          attachedDocs={attachedDocs}
-          setAttachedDocs={setAttachedDocs}
-          onFilesSelected={handleFilesSelected}
-        /> */}
         <VendorLinkedItems
           availableLocations={availableLocations}
           selectedLocationIds={selectedLocationIds}
           onLocationsChange={setSelectedLocationIds}
           onFetchLocations={handleFetchLocations}
           locationsLoading={locationsLoading}
+
           availableAssets={availableAssets}
           selectedAssetIds={selectedAssetIds}
           onAssetsChange={setSelectedAssetIds}
           onFetchAssets={handleFetchAssets}
           assetsLoading={assetsLoading}
+
           availableParts={availableParts}
           selectedPartIds={selectedPartIds}
           onPartsChange={setSelectedPartIds}
           onFetchParts={handleFetchParts}
           partsLoading={partsLoading}
+
           onCtaClick={handleCtaClick}
         />
       </form>

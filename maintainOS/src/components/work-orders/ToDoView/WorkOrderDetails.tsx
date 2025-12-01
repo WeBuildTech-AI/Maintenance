@@ -16,7 +16,6 @@ import {
   Layers,
   ClipboardList,
   Gauge,
-  // ✅ Added missing icons for status
   CheckCircle2,
   PauseCircle,
   RefreshCcw,
@@ -33,7 +32,7 @@ import {
   patchWorkOrderComplete,
   markWorkOrderInProgress,
   updateWorkOrder,
-  updateWorkOrderStatus // ✅ Import new thunk
+  updateWorkOrderStatus
 } from "../../../store/workOrders/workOrders.thunks";
 
 import DeleteWorkOrderModal from "./DeleteWorkOrderModal";
@@ -188,8 +187,8 @@ export function WorkOrderDetails({
   CopyPageU,
   onEdit,
   onRefreshWorkOrders,
-  onOptimisticUpdate, // ✅ Receive Prop
-  onRefreshLogs,      // ✅ Receive Log Refresh Handler
+  onOptimisticUpdate,
+  onRefreshLogs,
   activePanel,
   setActivePanel,
 }: any) {
@@ -254,7 +253,6 @@ export function WorkOrderDetails({
     }
   };
 
-  // ✅ Status Change Handler (Added logic for real-time refresh)
   const handleStatusChange = async (newStatus: string) => {
     if (activeStatus === newStatus) return;
 
@@ -267,7 +265,6 @@ export function WorkOrderDetails({
         return;
     }
 
-    // ✅ Optimistic Update Parent List
     if (onOptimisticUpdate && selectedWorkOrder?.id) {
         onOptimisticUpdate(selectedWorkOrder.id, { status: newStatus });
     }
@@ -293,7 +290,6 @@ export function WorkOrderDetails({
         toast.success(`Status updated to ${label.charAt(0).toUpperCase() + label.slice(1)}`);
       } 
       else {
-        // Fallback to update full object if needed
         await dispatch(
           updateWorkOrder({
             id: selectedWorkOrder.id,
@@ -309,7 +305,6 @@ export function WorkOrderDetails({
         onRefreshWorkOrders();
       }
 
-      // ✅ Refresh Logs
       if (onRefreshLogs) {
         onRefreshLogs();
       }
@@ -327,6 +322,12 @@ export function WorkOrderDetails({
         onCancel={() => setActivePanel("details")}
         workOrderId={selectedWorkOrder?.id}
         selectedWorkOrder={selectedWorkOrder}
+        // ✅ ADDED: Refresh handler for realtime updates
+        onSaveSuccess={() => {
+            if (onRefreshWorkOrders) onRefreshWorkOrders();
+            if (onRefreshLogs) onRefreshLogs();
+            setActivePanel("details");
+        }}
       />
     );
   }
@@ -337,6 +338,12 @@ export function WorkOrderDetails({
         onCancel={() => setActivePanel("details")}
         workOrderId={selectedWorkOrder?.id}
         selectedWorkOrder={selectedWorkOrder}
+        // ✅ ADDED: Refresh handler for realtime updates
+        onSaveSuccess={() => {
+            if (onRefreshWorkOrders) onRefreshWorkOrders();
+            if (onRefreshLogs) onRefreshLogs();
+            setActivePanel("details");
+        }}
       />
     );
   }
@@ -347,6 +354,12 @@ export function WorkOrderDetails({
         onCancel={() => setActivePanel("details")}
         workOrderId={selectedWorkOrder?.id}
         selectedWorkOrder={selectedWorkOrder}
+        // ✅ ADDED: Refresh handler for realtime updates
+        onSaveSuccess={() => {
+            if (onRefreshWorkOrders) onRefreshWorkOrders();
+            if (onRefreshLogs) onRefreshLogs();
+            setActivePanel("details");
+        }}
       />
     );
   }
@@ -480,7 +493,6 @@ export function WorkOrderDetails({
       )}
 
       <div className="flex-1 p-6 space-y-6">
-        {/* ✅ Status Buttons Added Here */}
         <div>
           <h3 className="text-sm font-medium mb-2">Status</h3>
           <div className="flex items-start justify-between gap-6 border rounded-lg p-4 bg-white sm:flex-row flex-col" role="group">
@@ -712,6 +724,83 @@ export function WorkOrderDetails({
         <div className="border-t p-6">
           <h3 className="text-2xl font-medium mb-2">Time & Cost Tracking</h3>
           {["Parts", "Time", "Other Costs"].map((label) => {
+            
+            // ✅ SPECIAL HANDLING FOR PARTS
+            if (label === "Parts") {
+                const partUsages = selectedWorkOrder?.partUsages || [];
+                
+                // ✅ Manually calculate total from visible parts to ensure match
+                const calculatedPartTotal = partUsages.reduce(
+                  (sum: number, item: any) => sum + (Number(item.totalCost) || 0), 
+                  0
+                );
+  
+                return (
+                  <div key={label} className="border-b last:border-none mb-2">
+                    {/* Header Row */}
+                    <div className="flex justify-between items-center p-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">Parts</span>
+                        {partUsages.length > 0 && (
+                          <span className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">
+                            ${calculatedPartTotal.toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* ✅ ALWAYS SHOW "Add" to allow multiple parts */}
+                      <button
+                        className="flex text-sm text-blue-600 items-center gap-1 hover:underline"
+                        onClick={() => setActivePanel("parts")}
+                      >
+                        Add
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+  
+                    {/* ✅ Part Cards List */}
+                    {partUsages.length > 0 && (
+                      <div className="px-3 pb-3 space-y-2">
+                        {partUsages.map((usage: any) => (
+                          <div 
+                            key={usage.id} 
+                            className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm shadow-sm"
+                          >
+                            {/* Part Name & Location */}
+                            <div className="mb-2">
+                              <div className="font-semibold text-gray-900 flex items-center gap-2">
+                                  <Wrench className="h-3 w-3 text-gray-500"/>
+                                  {usage.part?.name || "Unknown Part"}
+                              </div>
+                              <div className="text-xs text-gray-500 ml-5 flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  {usage.location?.name || "No Location"}
+                              </div>
+                            </div>
+  
+                            {/* Stats Grid (Qty, Unit Cost, Total) */}
+                            <div className="grid grid-cols-3 gap-2 bg-white rounded border border-gray-100 p-2 text-xs">
+                              <div className="flex flex-col">
+                                  <span className="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Qty</span>
+                                  <span className="font-medium text-gray-700">{usage.quantity}</span>
+                              </div>
+                              <div className="flex flex-col border-l pl-2">
+                                  <span className="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Unit Cost</span>
+                                  <span className="font-medium text-gray-700">${Number(usage.unitCost).toFixed(2)}</span>
+                              </div>
+                              <div className="flex flex-col text-right border-l pl-2">
+                                  <span className="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Total</span>
+                                  <span className="font-bold text-green-700">${Number(usage.totalCost).toFixed(2)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
             const isOtherCosts = label === "Other Costs";
             const otherCosts = selectedWorkOrder?.otherCosts || [];
             const totalEntries = otherCosts.length;

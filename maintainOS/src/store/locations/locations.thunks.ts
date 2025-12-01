@@ -1,19 +1,16 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-
 import { locationService } from "./locations.service";
+import { FetchLocationsParams } from "./locations.types"; // ✅ Imported
 
+// ✅ Updated to accept params
 export const fetchLocations = createAsyncThunk(
   "locations/fetchLocations",
   async (
-    { limit, page, offset }: { limit: number; page: number; offset: number },
+    params: FetchLocationsParams | undefined, 
     { rejectWithValue }
   ) => {
     try {
-      const locations = await locationService.fetchLocations(
-        limit,
-        page,
-        offset
-      );
+      const locations = await locationService.fetchLocations(params);
       return locations;
     } catch (error: any) {
       return rejectWithValue(

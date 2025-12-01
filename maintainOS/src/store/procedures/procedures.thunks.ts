@@ -4,13 +4,15 @@ import { procedureService } from "./procedures.service";
 import type {
   CreateProcedureData,
   UpdateProcedureData,
+  FetchProceduresParams // ✅ Imported
 } from "./procedures.types";
 
+// ✅ Updated to accept params
 export const fetchProcedures = createAsyncThunk(
   "procedures/fetchProcedures",
-  async (_, { rejectWithValue }) => {
+  async (params: FetchProceduresParams | undefined, { rejectWithValue }) => {
     try {
-      const procedures = await procedureService.fetchProcedures();
+      const procedures = await procedureService.fetchProcedures(params);
       return procedures;
     } catch (error: any) {
       return rejectWithValue(
@@ -130,14 +132,11 @@ export const fetchDeletedProcedures = createAsyncThunk(
   }
 );
 
-// --- 👇 [CHANGE] YEH NAYA THUNK ADD KIYA GAYA HAI ---
 export const restoreProcedure = createAsyncThunk(
   "procedures/restoreProcedure",
   async (id: string, { rejectWithValue }) => {
     try {
-      // API call karein
       await procedureService.restoreProcedure(id);
-      // Success hone par ID return karein taaki reducer use list se hata sake
       return id;
     } catch (error: any) {
       return rejectWithValue(
@@ -146,4 +145,3 @@ export const restoreProcedure = createAsyncThunk(
     }
   }
 );
-// --- END OF NEW THUNK ---

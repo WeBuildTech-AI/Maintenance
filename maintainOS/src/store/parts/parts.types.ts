@@ -59,6 +59,16 @@ export interface UpdatePartData {
   partDocs?: BUD[];
 }
 
+// ✅ API FILTER PARAMETERS
+export interface FetchPartsParams {
+  page?: number | string;
+  limit?: number | string;
+  name?: string; // Fuzzy search on part name
+  
+  // Dynamic Keys from QueryBuilder
+  [key: string]: any; 
+}
+
 export interface PartsState {
   parts: PartResponse[];
   selectedPart: PartResponse | null;

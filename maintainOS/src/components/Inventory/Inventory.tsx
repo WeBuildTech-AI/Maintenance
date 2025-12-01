@@ -15,8 +15,9 @@ import { PartDetails } from "./PartDetail/PartDetails";
 import RestockModal from "./PartDetail/RestockModal";
 import { PartTable } from "./PartTable";
 
-/* ✅ Import partService like vendorService */
+/* ✅ Import partService */
 import { partService } from "../../store/parts/parts.service";
+import { FetchPartsParams } from "../../store/parts/parts.types"; // ✅ Import Params
 
 export function Inventory() {
   const [parts, setParts] = useState<any[]>([]);
@@ -26,7 +27,11 @@ export function Inventory() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 🟡 Sorting states (VendorSidebar-style)
+  // Search State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState(""); // ✅ Debounce
+
+  // 🟡 Sorting states
   const [sortType, setSortType] = useState("Name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -37,7 +42,21 @@ export function Inventory() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
 
-  // ✅ Refresh helper function
+  // ✅ FILTER PARAMETERS STATE
+  const [filterParams, setFilterParams] = useState<FetchPartsParams>({
+    page: 1, 
+    limit: 50 
+  });
+
+  // ✅ DEBOUNCE EFFECT
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // ✅ Refresh helper function (Memoized with Filters)
   const refreshParts = useCallback(async () => {
     let res: any;
     try {
@@ -45,30 +64,47 @@ export function Inventory() {
       if (showDeleted) {
         res = await partService.fetchDeletePart();
       } else {
-        res = await partService.fetchParts(10, 1, 0);
+        // ✅ USE API PAYLOAD WITH FILTERS
+        // Note: API uses 'name' for search
+        const apiPayload = {
+          ...filterParams,
+          name: debouncedSearch || undefined 
+        };
+        // console.log("🔥 Parts API Call:", apiPayload);
+        res = await partService.fetchParts(apiPayload);
       }
-      console.log("📦 Parts API response:", res);
-      setParts(res);
+      
+      setParts(res || []);
     } catch (err: any) {
       console.error("Error fetching parts:", err);
       setError("Failed to load parts");
+      setParts([]);
     } finally {
       setLoading(false);
     }
-  }, [showDeleted]);
+  }, [showDeleted, filterParams, debouncedSearch]);
 
   // ✅ Fetch on mount
   useEffect(() => {
     refreshParts();
-  }, [showDeleted, viewMode]);
+  }, [refreshParts, viewMode]);
 
-  // ✅ Refresh when coming back from delete/edit (fallback)
+  // ✅ HANDLER: Filter Change
+  const handleFilterChange = useCallback((newParams: Partial<FetchPartsParams>) => {
+    setFilterParams((prev) => {
+      const merged = { ...prev, ...newParams };
+      if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
+      return merged;
+    });
+  }, []);
+
+  // ✅ Refresh when coming back from delete/edit
   useEffect(() => {
     if (location.state?.refresh) {
       refreshParts();
       navigate(location.pathname, { replace: true });
     }
-  }, [location.state, location.pathname, navigate]);
+  }, [location.state, location.pathname, navigate, refreshParts]);
 
   // 🟡 Handle dropdown positioning
   useEffect(() => {
@@ -98,7 +134,7 @@ export function Inventory() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 🟡 Sort parts
+  // 🟡 Sort parts (Client side sort of server returned data)
   const sortedParts = useMemo(() => {
     const sorted = [...parts].sort((a, b) => {
       let valA: any = a.name;
@@ -130,12 +166,13 @@ export function Inventory() {
       {InventoryHeaderComponent(
         viewMode,
         setViewMode,
-        "",
-        () => {},
-        () => navigate("/inventory/create"),
-        () => {},
+        searchQuery,
+        setSearchQuery,
+        () => {}, // setIsCreatingForm prop used in sub-routes mostly, or handle here if needed
+        () => navigate("/inventory/create"), // action for new button
         setIsSettingsModalOpen,
-        setShowDeleted
+        setShowDeleted,
+        handleFilterChange // ✅ Pass Filter Handler
       )}
 
       {/* 🟩 TABLE VIEW */}
@@ -344,7 +381,6 @@ export function Inventory() {
                 path=":id/edit"
                 element={<EditPartRoute onSuccess={refreshParts} />}
               />
-              {/* ✅ Modified Restock Route */}
               <Route
                 path=":id/restock"
                 element={<RestockRoute parts={parts} />}

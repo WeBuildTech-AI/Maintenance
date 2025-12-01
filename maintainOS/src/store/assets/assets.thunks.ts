@@ -6,14 +6,16 @@ import type {
   CreateAssetType,
   UpdateAssetData,
   UpdateAssetStatus,
+  FetchAssetsParams, // ✅ Imported
 } from "./assets.types";
 import { assetService } from "./assets.service";
 
+// ✅ Updated to accept params
 export const fetchAssets = createAsyncThunk(
   "assets/fetchAssets",
-  async (_, { rejectWithValue }) => {
+  async (params: FetchAssetsParams | undefined, { rejectWithValue }) => {
     try {
-      const assets = await assetService.fetchAssets();
+      const assets = await assetService.fetchAssets(params);
       return assets;
     } catch (error: any) {
       return rejectWithValue(
@@ -23,7 +25,7 @@ export const fetchAssets = createAsyncThunk(
   }
 );
 export const fetchAssetsName = createAsyncThunk(
-  "assets/fetchAssets",
+  "assets/fetchAssetsName",
   async (_, { rejectWithValue }) => {
     try {
       const assets = await assetService.fetchAssetsName();
@@ -116,7 +118,7 @@ export const fetchAssetsType = createAsyncThunk(
 );
 
 export const createAssetType = createAsyncThunk(
-  "assets/createAsset",
+  "assets/createAssetType",
   async (assetDataType: CreateAssetType, { rejectWithValue }) => {
     try {
       const asset = await assetService.createAssetType(assetDataType);
@@ -195,7 +197,7 @@ export const fetchAssetStatusLog = createAsyncThunk(
 );
 
 export const deleteAssetStatus = createAsyncThunk(
-  "assets/deleteAsset",
+  "assets/deleteAssetStatus",
   async (id: string, { rejectWithValue }) => {
     try {
       await assetService.deleteAssetStatus(id);

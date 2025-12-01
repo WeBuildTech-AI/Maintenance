@@ -30,6 +30,16 @@ export interface UpdateProcedureData {
   files?: string[];
 }
 
+// ✅ UPDATED: Changed 'title' to 'search' to match API
+export interface FetchProceduresParams {
+  page?: number | string;
+  limit?: number | string;
+  search?: string; 
+  
+  // Dynamic Keys from QueryBuilder (e.g. statusOneOf, assetIsEmpty)
+  [key: string]: any; 
+}
+
 export interface ProceduresState {
   procedures: ProcedureResponse[];
   selectedProcedure: ProcedureResponse | null;

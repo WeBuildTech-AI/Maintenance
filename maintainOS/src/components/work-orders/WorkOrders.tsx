@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate, useMatch } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { workOrderService } from "../../store/workOrders/workOrders.service";
+import { FetchWorkOrdersParams } from "../../store/workOrders/workOrders.types";
 import { fetchWorkOrders } from "../../store/workOrders/workOrders.thunks";
 import { CalendarView } from "./CalendarView";
 import { ListView } from "./ListView";
@@ -12,23 +12,36 @@ import type { ViewMode, WorkOrder } from "./types";
 import { WorkloadView } from "./WorkloadView/WorkloadView";
 import { WorkOrderHeaderComponent } from "./WorkOrderHeader";
 import { ToDoView } from "./ToDoView/ToDoView";
+import type { AppDispatch } from "../../store";
 
 export function WorkOrders() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrder | null>(null);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrder | null>(
+    null
+  );
   const [viewMode, setViewMode] = useState<ViewMode>("todo");
   const [workloadWeekOffset, setWorkloadWeekOffset] = useState(0);
   const [creatingWorkOrder, setCreatingWorkOrder] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
-  const [loading, setLoading] = useState(true);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
+  // ✅ 1. Refresh Key State
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  // ✅ Router Hooks
+  const [filterParams, setFilterParams] = useState<FetchWorkOrdersParams>({
+    page: 1,
+    limit: 20,
+  });
+
+  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
+
   const isCreateRoute = useMatch("/work-orders/create");
   const editMatch = useMatch("/work-orders/:id/edit");
   const viewMatch = useMatch("/work-orders/:id");
@@ -37,144 +50,130 @@ export function WorkOrders() {
   const editingId = editMatch?.params?.id;
   const viewingId = viewMatch?.params?.id;
 
-  // ✅ Centralized Fetch
-  const getWorkOrders = async () => {
-    try {
-      setLoading(true);
-      const res = await workOrderService.fetchWorkOrders();
-      console.log("✅ API Response:", res);
-      
-      // Map API response if necessary (though your JSON fits the interface well)
-      setWorkOrders(res || []);
-      
-      if (res.length > 0 && !selectedWorkOrder) {
-        // If on a specific ID route, select that one, otherwise first
-        if (viewingId) {
-            const match = res.find((r: any) => r.id === viewingId);
-            if(match) setSelectedWorkOrder(match);
-            else setSelectedWorkOrder(res[0]);
-        } else {
-            setSelectedWorkOrder(res[0]);
-        }
-      }
-    } catch (error) {
-      console.error("❌ Error fetching work orders:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ✅ Initial fetch
+  // Debounce Search
   useEffect(() => {
-    getWorkOrders();
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // ✅ 2. Main Fetch (Added refreshKey & Selected Work Order Update Logic)
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const apiPayload = {
+          ...filterParams,
+          title: debouncedSearch || undefined,
+        };
+
+        console.log("🔥 WorkOrders API Call:", apiPayload);
+
+        const result = await dispatch(fetchWorkOrders(apiPayload)).unwrap();
+
+        if (Array.isArray(result)) {
+          // @ts-ignore
+          setWorkOrders(result);
+
+          // 🔥 REAL-TIME UPDATE FIX:
+          if (selectedWorkOrder) {
+            const freshData = result.find(
+              (w: any) => w.id === selectedWorkOrder.id
+            );
+            if (freshData) {
+              // @ts-ignore
+              setSelectedWorkOrder(freshData);
+            }
+          }
+        } else {
+          setWorkOrders([]);
+        }
+      } catch (error) {
+        console.error("❌ Error fetching work orders:", error);
+        setWorkOrders([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [dispatch, filterParams, debouncedSearch, refreshKey]);
+
+  // Stable Callback for Filters & Pagination
+  const handleFilterChange = useCallback(
+    (newParams: Partial<FetchWorkOrdersParams>) => {
+      setFilterParams((prevParams) => {
+        const merged = { ...prevParams, ...newParams };
+        if (JSON.stringify(prevParams) === JSON.stringify(merged)) {
+          return prevParams;
+        }
+        return merged;
+      });
+    },
+    []
+  );
+
+  // ✅ 3. Update Handle Refresh Function
+  const handleRefreshWorkOrders = useCallback(() => {
+    console.log("🔄 Refreshing Work Orders List...");
+    setRefreshKey((prev) => prev + 1); // Trigger re-fetch
   }, []);
 
-  // ✅ Select active work order based on route changes
-  useEffect(() => {
-    if (!workOrders.length) return;
-    if (viewingId) {
-      const found = workOrders.find((wo) => wo.id === viewingId);
-      if (found) setSelectedWorkOrder(found);
-    }
-  }, [viewingId, workOrders]);
-
-  // ✅ Filter based on search
-  const filteredWorkOrders = useMemo(() => {
-    if (!searchQuery.trim()) return workOrders;
-    const query = searchQuery.toLowerCase();
-
-    return workOrders.filter((wo) => {
-      // Safe navigation for null fields in your JSON
-      const title = wo.title?.toLowerCase() || "";
-      const description = wo.description?.toLowerCase() || "";
-      
-      // Handle complex objects that might be null in JSON
-      const location = (wo.location as any)?.name?.toLowerCase() || "";
-      const asset = wo.assets?.[0]?.name?.toLowerCase() || "";
-      const assignee = wo.assignees?.[0]?.fullName?.toLowerCase() || "";
-      
-      // Handle vendors array safely
-      const vendor = wo.vendors?.map((v: any) => v.name?.toLowerCase()).join(" ") || "";
-
-      return (
-        title.includes(query) ||
-        description.includes(query) ||
-        location.includes(query) ||
-        asset.includes(query) ||
-        assignee.includes(query) ||
-        vendor.includes(query)
-      );
-    });
-  }, [searchQuery, workOrders]);
-
-  // ✅ Categorize for ToDo View based on JSON "status"
-  const todoWorkOrders = useMemo(
-    () =>
-      filteredWorkOrders.filter((wo) => {
-        const s = wo.status?.toLowerCase();
-        // Include: null, undefined, open, in_progress, on_hold
-        return !s || s === "open" || s === "in_progress" || s === "on_hold";
-      }),
-    [filteredWorkOrders]
-  );
-
-  const doneWorkOrders = useMemo(
-    () =>
-      filteredWorkOrders.filter((wo) => {
-        const s = wo.status?.toLowerCase();
-        // Include: done, completed
-        return s === "done" || s === "completed";
-      }),
-    [filteredWorkOrders]
-  );
-
-  // ✅ Navigation Handlers
+  // ... (Assign/Edit/Create Handlers) ...
   const handleCreateClick = () => {
     navigate("/work-orders/create");
     setCreatingWorkOrder(true);
     setIsModalOpen(false);
   };
-
   const handleCancelCreate = () => {
     navigate("/work-orders");
     setCreatingWorkOrder(false);
     setIsModalOpen(false);
   };
-
   const handleSelectWorkOrder = (wo: WorkOrder) => {
     navigate(`/work-orders/${wo.id}`);
     setSelectedWorkOrder(wo);
     setCreatingWorkOrder(false);
   };
 
-  // ✅ Realtime refresh function
-  const handleRefreshWorkOrders = async () => {
-    await getWorkOrders(); // Re-fetch latest list
-    dispatch(fetchWorkOrders() as any); // Sync Redux
-  };
+  const todoWorkOrders = useMemo(
+    () =>
+      workOrders.filter(
+        (wo) => !["done", "completed"].includes(wo.status?.toLowerCase())
+      ),
+    [workOrders]
+  );
+  const doneWorkOrders = useMemo(
+    () =>
+      workOrders.filter((wo) =>
+        ["done", "completed"].includes(wo.status?.toLowerCase())
+      ),
+    [workOrders]
+  );
 
   return (
     <div className="flex flex-col h-full bg-background">
-      {WorkOrderHeaderComponent(
-        viewMode,
-        setViewMode,
-        searchQuery,
-        setSearchQuery,
-        handleCreateClick,
-        setShowSettings,
-        setIsModalOpen,
-        setIsSettingsModalOpen,
-      )}
+      {/* ✅ Use as Component, not function call */}
+      <WorkOrderHeaderComponent
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        setIsCreatingForm={setCreatingWorkOrder}
+        setShowSettings={setShowSettings}
+        setIsModalOpen={setIsModalOpen}
+        setIsSettingsModalOpen={setIsSettingsModalOpen}
+        onFilterChange={handleFilterChange}
+      />
 
-      {/* Loader */}
-      {loading && (
+      {loading && workOrders.length === 0 && (
         <div className="flex items-center justify-center h-full text-muted-foreground">
           Loading work orders...
         </div>
       )}
 
-      {/* Main View Logic */}
-      {!loading && (
+      {(!loading || workOrders.length > 0) && (
         <div className="flex-1 overflow-auto">
           {viewMode === "todo" && (
             <ToDoView
@@ -185,25 +184,28 @@ export function WorkOrders() {
               creatingWorkOrder={creatingWorkOrder}
               onCancelCreate={handleCancelCreate}
               onRefreshWorkOrders={handleRefreshWorkOrders}
+              // ✅ PASSING PAGINATION PROPS
+              currentPage={filterParams.page || 1}
+              itemsPerPage={filterParams.limit || 20}
+              onParamsChange={handleFilterChange}
             />
           )}
 
           {viewMode === "list" && (
-            <ListView 
-              workOrders={filteredWorkOrders} 
-              onRefreshWorkOrders={handleRefreshWorkOrders} 
+            <ListView
+              // @ts-ignore
+              workOrders={workOrders}
+              onRefreshWorkOrders={handleRefreshWorkOrders}
               isSettingsModalOpen={isSettingsModalOpen}
               setIsSettingsModalOpen={setIsSettingsModalOpen}
             />
           )}
 
-          {viewMode === "calendar" && (
-            <CalendarView workOrders={filteredWorkOrders} />
-          )}
+          {viewMode === "calendar" && <CalendarView workOrders={workOrders} />}
 
           {viewMode === "workload" && (
             <WorkloadView
-              workOrders={filteredWorkOrders}
+              workOrders={workOrders}
               weekOffset={workloadWeekOffset}
               setWeekOffset={setWorkloadWeekOffset}
             />
@@ -211,7 +213,6 @@ export function WorkOrders() {
         </div>
       )}
 
-      {/* New Work Order Modal */}
       <NewWorkOrderModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

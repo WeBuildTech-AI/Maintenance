@@ -3,16 +3,16 @@
 import * as React from "react";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../store";
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
+
+import { useNavigate, useMatch, useLocation, useParams } from "react-router-dom";
 
 import { Link as LinkIcon, Building2, Mail, Phone } from "lucide-react";
 
 import {
   mockVendors,
-  type Address,
   type POItem,
   type POStatus,
   type PurchaseOrder,
@@ -31,8 +31,8 @@ import ConfirmationModal from "./ConfirmationModal";
 import toast from "react-hot-toast";
 import PurchaseOrderDetails from "./PurchaseOrderDetails";
 import Loader from "../Loader/Loader";
-import { useNavigate } from "react-router-dom";
 import { StatusBadge } from "./StatusBadge";
+import { FetchPurchaseOrdersParams } from "../../store/purchaseOrders/purchaseOrders.types";
 
 // --- Helper to deep compare arrays ---
 function getChangedFields(
@@ -44,20 +44,17 @@ function getChangedFields(
   const keysToCompare: (keyof NewPOFormType)[] = [
     "poNumber",
     "vendorId",
-    // REMOVED: "contactName",
-    // REMOVED: "phoneOrMail",
     "dueDate",
     "notes",
     "extraCosts",
     "shippingAddressId",
     "billingAddressId",
     "sameShipBill",
-    "vendorContactIds", // <--- UPDATED: New field to compare
+    "vendorContactIds", 
   ];
 
   for (const key of keysToCompare) {
     if (key === "vendorContactIds") {
-      // For arrays of IDs, we compare stringified versions
       if (JSON.stringify(original[key]) !== JSON.stringify(current[key])) {
         // @ts-ignore
         changes[key] = current[key];
@@ -68,13 +65,11 @@ function getChangedFields(
     }
   }
 
-  // Items array check
   if (JSON.stringify(original.items) !== JSON.stringify(current.items)) {
     changes.items = current.items;
   }
 
-  // Check for Tax Lines changes
-  // @ts-ignore - assuming taxLines exists on your type now
+  // @ts-ignore 
   if (JSON.stringify(original.taxLines) !== JSON.stringify(current.taxLines)) {
     // @ts-ignore
     changes.taxLines = current.taxLines;
@@ -85,13 +80,31 @@ function getChangedFields(
 
 /* ---------------------------- Purchase Orders UI -------------------------- */
 export function PurchaseOrders() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // --- Router State ---
+  const isCreateRoute = useMatch("/purchase-orders/create");
+  const editMatch = useMatch("/purchase-orders/:id/edit");
+  const viewMatch = useMatch("/purchase-orders/:id");
+
+  // Determine active ID from URL
+  const routeId = editMatch?.params?.id || viewMatch?.params?.id;
+
+  // Determine if Form Dialog should be open based on URL
+  const isFormOpen = !!(isCreateRoute || editMatch);
+
   const [getPurchaseOrderData, setGetPurchaseOrderData] = useState<
     PurchaseOrder[]
   >([]);
+  
+  // Search State
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
   const [selectedPOId, setSelectedPOId] = useState<string | null>(null);
   const [approveModal, setApproveModal] = useState(false);
-  const [creatingPO, setCreatingPO] = useState(false);
+  
   const [viewMode, setViewMode] = useState<ViewMode>("panel");
   const [selectedColumns, setSelectedColumns] = useState(allColumns);
   const [pageSize, setPageSize] = useState(25);
@@ -102,6 +115,12 @@ export function PurchaseOrders() {
   const [activeTab, setActiveTab] = useState("details");
   const [isLoading, setIsLoading] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
+
+  // ✅ FILTER PARAMETERS STATE
+  const [filterParams, setFilterParams] = useState<FetchPurchaseOrdersParams>({
+    page: 1, 
+    limit: 50 
+  });
 
   const scrollToTop = () => {
     if (topRef.current) {
@@ -124,7 +143,6 @@ export function PurchaseOrders() {
   const [originalPOForEdit, setOriginalPOForEdit] =
     useState<NewPOFormType | null>(null);
 
-  // --- INITIAL STATE WITH NEW VENDOR CONTACT IDS ARRAY ---
   const initialPOState: NewPOFormType = {
     id: null,
     vendorId: "",
@@ -148,14 +166,12 @@ export function PurchaseOrders() {
     dueDate: "",
     notes: "",
     extraCosts: 0,
-    // REMOVED: contactName: "",
-    // REMOVED: phoneOrMail: "",
-    vendorContactIds: [], // <--- NEW FIELD
+    vendorContactIds: [], 
     poNumber: "",
   };
 
   const [newPO, setNewPO] = useState<NewPOFormType>(initialPOState);
-  const navigate = useNavigate();
+  
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -167,49 +183,86 @@ export function PurchaseOrders() {
   const user = useSelector((state: RootState) => state.auth.user);
   const [showCustomPoInput, setShowCustomPoInput] = useState(false);
 
+  // ✅ DEBOUNCE SEARCH
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // ✅ FETCH POs
   const fetchPurchaseOrder = React.useCallback(async () => {
-    setIsLoading(true);
+    if (getPurchaseOrderData.length === 0) setIsLoading(true);
+    
     let res: any;
     try {
       if (showDeleted) {
         res = await purchaseOrderService.fetchDeletePurchaseOrder();
       } else {
-        res = await purchaseOrderService.fetchPurchaseOrders();
+        const apiPayload = {
+          ...filterParams,
+          search: debouncedSearch || undefined 
+        };
+        res = await purchaseOrderService.fetchPurchaseOrders(apiPayload);
       }
-      const sortedData = [...res].sort(
+      
+      const data = Array.isArray(res) ? res : (res as any)?.data?.items || [];
+      const sortedData = [...data].sort(
         (a: PurchaseOrder, b: PurchaseOrder) =>
           new Date(b.updatedAt).valueOf() - new Date(a.updatedAt).valueOf()
       );
       setGetPurchaseOrderData(sortedData);
-
-      if (!selectedPOId && sortedData.length > 0) {
-        setSelectedPOId(sortedData[0].id);
-        // navigate(`${sortedData[0].id}`)
-      }
     } catch (err) {
       console.error(err);
     } finally {
       setIsLoading(false);
     }
-  }, [showDeleted]);
+  }, [showDeleted, filterParams, debouncedSearch, getPurchaseOrderData.length]);
 
   useEffect(() => {
     fetchPurchaseOrder();
-  }, [showDeleted]);
+  }, [fetchPurchaseOrder]);
 
-  const filteredPOs = useMemo(
-    () =>
-      getPurchaseOrderData.filter((po) => {
-        const vendor = po.vendor?.name ?? "";
-        const q = searchQuery.toLowerCase();
-        return (
-          (po.poNumber && po.poNumber.toLowerCase().includes(q)) ||
-          vendor.toLowerCase().includes(q) ||
-          po.status.toLowerCase().includes(q)
-        );
-      }),
-    [getPurchaseOrderData, searchQuery]
-  );
+  // 👇 3. SYNC SELECTION & EDIT STATE WITH URL
+  useEffect(() => {
+    if (getPurchaseOrderData.length === 0) return;
+
+    if (routeId) {
+      // Avoid matching "create" keyword as an ID
+      if (routeId === "create") return; 
+
+      const found = getPurchaseOrderData.find((p) => p.id === routeId);
+      if (found) {
+        setSelectedPOId(found.id);
+
+        if (editMatch) {
+            if (newPO.id !== found.id) {
+                handleEditPO(found);
+            }
+        }
+      }
+    } else {
+      if (viewMode === "panel") {
+        if (!selectedPOId && getPurchaseOrderData.length > 0) {
+            navigate(`/purchase-orders/${getPurchaseOrderData[0].id}`, { replace: true });
+        }
+      } else {
+        setSelectedPOId(null);
+      }
+    }
+  }, [routeId, getPurchaseOrderData, viewMode, editMatch, newPO.id]);
+
+  // ✅ HANDLER: Filter Change
+  const handleFilterChange = useCallback((newParams: Partial<FetchPurchaseOrdersParams>) => {
+    setFilterParams((prev) => {
+      const merged = { ...prev, ...newParams };
+      if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
+      return merged;
+    });
+  }, []);
+
+  const filteredPOs = getPurchaseOrderData;
 
   const selectedPO = useMemo(
     () => getPurchaseOrderData.find((po) => po.id === selectedPOId) || null,
@@ -219,7 +272,6 @@ export function PurchaseOrders() {
   const totals = useMemo(() => {
     return Object.fromEntries(
       getPurchaseOrderData.map((po) => {
-        // Calculate Items Total
         const totalItemsCost =
           po.orderItems?.reduce((acc, it) => {
             const price = Number(it.price) || 0;
@@ -227,9 +279,6 @@ export function PurchaseOrders() {
             const unitsOrdered = Number(it.unitsOrdered) || 0;
             return acc + (price || unitCost * unitsOrdered);
           }, 0) ?? 0;
-
-        // Note: If you want the total in the list to include taxes,
-        // you would need to sum up po.taxesAndCosts here too.
 
         return [po.id, totalItemsCost];
       })
@@ -279,7 +328,7 @@ export function PurchaseOrders() {
     (acc, it) => acc + (Number(it.quantity) || 0) * (Number(it.unitCost) || 0),
     0
   );
-  // Only using extraCosts for legacy support, main calculation logic is in NewPOForm now
+  
   const newPOTotal = newPOSubtotal + (Number(newPO.extraCosts) || 0);
 
   const updateStatus = (status: POStatus) => {
@@ -313,28 +362,23 @@ export function PurchaseOrders() {
     );
   };
 
-  // --- Handle Edit (Map Backend -> Frontend) ---
   const handleEditPO = (poToEdit: any) => {
-    // Type 'any' or update PurchaseOrder type
     if (!poToEdit) return;
 
     console.log("Editing PO:", poToEdit);
     const mappedTaxLines = poToEdit.taxesAndCosts
       ? poToEdit.taxesAndCosts.map((t: any) => ({
-          id: cryptoId(), // Generate temp ID for React keys
+          id: cryptoId(), 
           taxLabel: t.taxLabel,
           taxValue: t.taxValue,
-          // Convert "PERCENT" -> "percentage", "FIXED" -> "fixed"
-          type: t.taxCategory === "PERCENTAGE" ? "percentage" : "fixed", // Ensure consistency: use lowercase in frontend state
+          type: t.taxCategory === "PERCENTAGE" ? "percentage" : "fixed", 
           isTaxable: t.isTaxable,
         }))
       : [];
 
-    // Handle Contacts: assuming backend returns an array of contact objects under a field, or we use a separate fetch.
-    // For now, mapping from a hypothetical 'contacts' array on the PO object to just IDs.
     const mappedContactIds = poToEdit.contacts
       ? poToEdit.contacts.map((c: any) => c.id)
-      : poToEdit.vendorContactIds || []; // Use vendorContactIds if available
+      : poToEdit.vendorContactIds || []; 
 
     const formPO: NewPOFormType = {
       id: poToEdit.id,
@@ -375,9 +419,7 @@ export function PurchaseOrders() {
 
       notes: poToEdit.notes || "",
       extraCosts: poToEdit.extraCosts || 0,
-      // REMOVED: contactName: poToEdit.contactName || "",
-      // REMOVED: phoneOrMail: poToEdit.phoneOrMail || "",
-      vendorContactIds: mappedContactIds, // <--- NEW FIELD MAPPING
+      vendorContactIds: mappedContactIds, 
     };
 
     setNewPO(formPO);
@@ -385,25 +427,19 @@ export function PurchaseOrders() {
     setIsEditingPO(true);
     setApiError(null);
     setAttachedFiles([]);
-    setCreatingPO(true);
   };
 
-  // --- Helper to format Taxes for Backend ---
   const formatTaxesForPayload = (taxLines: any[]) => {
     if (!taxLines || taxLines.length === 0) return undefined;
     return taxLines.map((tax) => ({
       taxLabel: tax.label,
       taxValue: Number(tax.value),
-      // Frontend "percentage" -> Backend "PERCENTAGE"
-      // Frontend "fixed" -> Backend "DOLLAR" (Assuming "DOLLAR" for fixed amount)
       taxCategory: tax.type === "percentage" ? "PERCENTAGE" : "DOLLAR",
       isTaxable: !!tax.isTaxable,
     }));
   };
 
-  // --- Create Handler ---
   const handleCreatePurchaseOrder = async () => {
-    console.log("Create button CLICKED!");
     setIsCreating(true);
     setApiError(null);
 
@@ -415,7 +451,6 @@ export function PurchaseOrders() {
           100000 + Math.random() * 900000
         ).toString();
         payload.poNumber = randomNumber;
-        console.log("RANDOM PO APPLIED:", randomNumber);
       } else {
         payload.poNumber = newPO.poNumber || "";
       }
@@ -423,7 +458,6 @@ export function PurchaseOrders() {
       if (newPO.vendorId) payload.vendorId = newPO.vendorId;
       payload.status = "pending";
 
-      // --- NEW: Add vendorContactIds to payload ---
       if (newPO.vendorContactIds && newPO.vendorContactIds.length > 0) {
         payload.vendorContactIds = newPO.vendorContactIds;
       }
@@ -454,7 +488,6 @@ export function PurchaseOrders() {
         payload.orderItems = formattedOrderItems;
       }
 
-      // Map Frontend taxLines to Backend taxesAndCosts
       // @ts-ignore
       const taxesPayload = formatTaxesForPayload(newPO.taxLines);
       if (taxesPayload) {
@@ -469,19 +502,18 @@ export function PurchaseOrders() {
       }
 
       if (purchaseOrderService?.createPurchaseOrder) {
-        console.log("Create Payload:", payload);
         const response = await purchaseOrderService.createPurchaseOrder(
           payload
         );
-        console.log("Successfully created PO:", response);
 
-        setCreatingPO(false);
+        navigate("/purchase-orders");
+
         resetNewPO();
         fetchPurchaseOrder();
         toast.success("Purchase Order created!");
 
         if (response && response.id) {
-          setSelectedPOId(response.id);
+          navigate(`/purchase-orders/${response.id}`);
         }
       } else {
         setApiError("Client Error: Service not initialized.");
@@ -494,9 +526,7 @@ export function PurchaseOrders() {
     }
   };
 
-  // --- Update Handler ---
   const handleUpdatePurchaseOrder = async () => {
-    console.log("Update button CLICKED!");
     if (!newPO.id) {
       setApiError("Error: Purchase Order ID not found.");
       return;
@@ -511,7 +541,7 @@ export function PurchaseOrders() {
 
     if (Object.keys(changedFormFields).length === 0) {
       toast.success("No changes detected.");
-      setCreatingPO(false);
+      navigate(`/purchase-orders/${newPO.id}`);
       resetNewPO();
       return;
     }
@@ -532,7 +562,6 @@ export function PurchaseOrders() {
       if (changedFormFields.phoneOrMail !== undefined)
         payload.phoneOrMail = changedFormFields.phoneOrMail;
 
-      // --- NEW: Add vendorContactIds to payload if changed ---
       if (changedFormFields.vendorContactIds) {
         payload.vendorContactIds = changedFormFields.vendorContactIds;
       }
@@ -569,20 +598,16 @@ export function PurchaseOrders() {
       }
 
       if (purchaseOrderService?.updatePurchaseOrder) {
-        console.log("Update Payload (ID: " + newPO.id + "):", payload);
-
         const response = await purchaseOrderService.updatePurchaseOrder(
           newPO.id,
           payload
         );
-        console.log("Successfully updated PO:", response);
 
         toast.success("Purchase Order updated!");
+        navigate(`/purchase-orders/${newPO.id}`);
 
-        setCreatingPO(false);
         resetNewPO();
         fetchPurchaseOrder();
-        setSelectedPOId(newPO.id);
       } else {
         setApiError("Client Error: Update service not initialized.");
       }
@@ -616,7 +641,9 @@ export function PurchaseOrders() {
       } else if (modalAction === "delete") {
         await purchaseOrderService.deletePurchaseOrder(id);
         toast.success("Deleted Successfully");
-        setSelectedPOId(null);
+        
+        navigate("/purchase-orders");
+        
       } else if (modalAction === "cancelled") {
         await purchaseOrderService.cancelPurchaseOrder(id);
         toast.success("Cancelled Successfully");
@@ -669,11 +696,13 @@ export function PurchaseOrders() {
         setSearchQuery,
         () => {
           resetNewPO();
-          setCreatingPO(true);
+          // 👇 Navigate to Create Route
+          navigate("/purchase-orders/create");
         },
         setShowSettings,
         setIsSettingModalOpen,
-        setShowDeleted
+        setShowDeleted,
+        handleFilterChange 
       )}
 
       {viewMode === "table" ? (
@@ -717,7 +746,8 @@ export function PurchaseOrders() {
                             ? "border-l-4 border-l-orange-600 bg-orange-50/50 bg-muted/50"
                             : "hover:bg-muted/50  border-l-4 border-l-transparent"
                         }`}
-                        onClick={() => setSelectedPOId(po.id)}
+                        // 👇 Navigate to PO ID
+                        onClick={() => navigate(`/purchase-orders/${po.id}`)}
                       >
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between">
@@ -752,20 +782,20 @@ export function PurchaseOrders() {
                                   <div className="mt-1">
                                     {(() => {
                                       const today = new Date();
-                                      const dueDate = new Date(po.dueDate);
+                                      const dueDate = new Date(po.dueDate || "");
 
                                       // reset times for accurate comparison
                                       today.setHours(0, 0, 0, 0);
                                       dueDate.setHours(0, 0, 0, 0);
 
-                                      if (dueDate < today) {
+                                      if (po.dueDate && dueDate < today) {
                                         return (
                                           <span className="text-red-600 font-medium text-sm mt-1">
                                             Overdue
                                           </span>
                                         );
                                       } else if (
-                                        dueDate.getTime() === today.getTime()
+                                        po.dueDate && dueDate.getTime() === today.getTime()
                                       ) {
                                         return (
                                           <span className="text-red-600 font-medium text-sm mt-1">
@@ -799,7 +829,8 @@ export function PurchaseOrders() {
                         className="text-primary p-0"
                         onClick={() => {
                           resetNewPO();
-                          setCreatingPO(true);
+                          // 👇 Navigate to Create Route
+                          navigate("/purchase-orders/create");
                         }}
                       >
                         Create your first Purchase Order
@@ -827,8 +858,12 @@ export function PurchaseOrders() {
                 // StatusBadge={StatusBadge}
                 showCommentBox={showCommentBox}
                 setShowCommentBox={setShowCommentBox}
-                handleEditClick={() => handleEditPO(selectedPO)}
+                // 👇 Navigate to Edit Route
+                handleEditClick={() => navigate(`/purchase-orders/${selectedPO.id}/edit`)}
                 fetchPurchaseOrder={fetchPurchaseOrder}
+                restoreData="Restore"
+                onClose={() => setModalAction(null)}
+                showDeleted={showDeleted}
               />
             ) : (
               <div className="flex items-center justify-center h-full">
@@ -850,12 +885,20 @@ export function PurchaseOrders() {
       )}
 
       <NewPOFormDialog
-        open={creatingPO}
+        // 👇 Controls open state via URL
+        open={isFormOpen}
         onOpenChange={(isOpen) => {
           if (!isOpen) {
             resetNewPO();
+            // 👇 FIX: Check creating state first to avoid infinite loop
+            if (isCreateRoute) {
+                navigate("/purchase-orders");
+            } else if (routeId) {
+                navigate(`/purchase-orders/${routeId}`);
+            } else {
+                navigate("/purchase-orders");
+            }
           }
-          setCreatingPO(isOpen);
         }}
         newPO={newPO}
         setNewPO={setNewPO}
@@ -866,8 +909,15 @@ export function PurchaseOrders() {
         updateItemField={updateItemField}
         isEditing={isEditingPO}
         onCancel={() => {
-          setCreatingPO(false);
           resetNewPO();
+          // 👇 FIX: Check creating state first to avoid infinite loop
+          if (isCreateRoute) {
+             navigate("/purchase-orders");
+          } else if (routeId) {
+             navigate(`/purchase-orders/${routeId}`);
+          } else {
+             navigate("/purchase-orders");
+          }
         }}
         handleCreatePurchaseOrder={
           isEditingPO ? handleUpdatePurchaseOrder : handleCreatePurchaseOrder
@@ -911,8 +961,6 @@ export function PurchaseOrders() {
     </div>
   );
 }
-
-
 
 function VendorPill({ vendorId }: { vendorId: string }) {
   const vendor = mockVendors.find((v) => v.id === vendorId);

@@ -38,10 +38,14 @@ export interface CreateLocationData {
   parentLocationId?: string; 
 }
 
-export interface fetchLocationData {
-  limit: number;
-  page: number;
-  offset: number;
+// ✅ API FILTER PARAMETERS
+export interface FetchLocationsParams {
+  page?: number | string;
+  limit?: number | string;
+  search?: string; // Fuzzy search on location name or address
+  
+  // Dynamic Keys from QueryBuilder (e.g. teamsOneOf, assetIsEmpty)
+  [key: string]: any; 
 }
 
 export interface UpdateLocationData {

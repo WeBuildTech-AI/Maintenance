@@ -7,13 +7,15 @@ import type {
   CreateAddressData,
   PurchaseOrderResponse,
   CreatePurchaseOrderComment,
+  FetchPurchaseOrdersParams // ✅ Imported
 } from "./purchaseOrders.types";
 
+// ✅ Updated to accept params
 export const fetchPurchaseOrders = createAsyncThunk(
   "purchaseOrders/fetchPurchaseOrders",
-  async (_, { rejectWithValue }) => {
+  async (params: FetchPurchaseOrdersParams | undefined, { rejectWithValue }) => {
     try {
-      return await purchaseOrderService.fetchPurchaseOrders();
+      return await purchaseOrderService.fetchPurchaseOrders(params);
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch purchase orders"

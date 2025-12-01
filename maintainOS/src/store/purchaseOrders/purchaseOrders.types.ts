@@ -32,6 +32,10 @@ export interface PurchaseOrderResponse {
   files?: string[];
   createdAt: string;
   updatedAt: string;
+  poNumber?: string;
+  vendor?: { name: string; id: string; email?: string; phone?: string }; // Added for type safety in UI
+  orderItems?: any[];
+  extraCosts?: number;
 }
 
 export interface CreatePurchaseOrderData {
@@ -92,6 +96,16 @@ export interface CreateAddressData {
   // optional type: 'shipping' | 'billing'
   type?: "shipping" | "billing";
   contact?: Record<string, any>;
+}
+
+// ✅ API FILTER PARAMETERS
+export interface FetchPurchaseOrdersParams {
+  page?: number | string;
+  limit?: number | string;
+  search?: string; 
+  
+  // Dynamic Keys from QueryBuilder 
+  [key: string]: any; 
 }
 
 export interface PurchaseOrdersState {

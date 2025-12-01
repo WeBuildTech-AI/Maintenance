@@ -1,12 +1,16 @@
+// src/components/utils/FilterBar.tsx
+
 import React, { useState, useEffect, useRef } from "react";
 import { Plus, Search, CheckCircle } from "lucide-react";
-import { FilterDropdown } from "./FilterDropdown";
+import { FilterDropdown, DropdownOption } from "./FilterDropdown";
+import { buildQueryParams, FilterStateItem } from "./../utils/queryBuilder";
 
 type FilterOption = {
   key: string;
   label: string;
   icon?: React.ReactNode;
-  options?: string[];
+  options?: (string | DropdownOption)[]; 
+  hideCondition?: boolean; // ✅ Added support for hiding condition
 };
 
 const MAX_VISIBLE = 4;
@@ -14,78 +18,96 @@ const MAX_VISIBLE = 4;
 export default function FilterBar({
   allFilters,
   defaultKeys = [],
-  onFilterSelect,
+  onParamsChange,
 }: {
   allFilters: FilterOption[];
   defaultKeys?: string[];
-  onFilterSelect?: (key: string, selected: string[]) => void;
+  onParamsChange?: (params: Record<string, any>) => void;
 }) {
   const [activeFilters, setActiveFilters] = useState<string[]>(defaultKeys);
   const [openFilterKey, setOpenFilterKey] = useState<string | null>(null);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedValues, setSelectedValues] = useState<Record<string, string[]>>({});
+  
+  const [filterState, setFilterState] = useState<Record<string, FilterStateItem>>({});
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const addMenuRef = useRef<HTMLDivElement>(null);
-  const modalRef = useRef<HTMLDivElement>(null); // ✅ Added ref for dropdown modal
+  const modalRef = useRef<HTMLDivElement>(null);
 
+  // ... (useEffect for outside click - No Change)
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      // ✅ Improved outside click detection
-      const clickedInsideDropdown =
-        dropdownRef.current && dropdownRef.current.contains(target);
-      const clickedInsideModal =
-        modalRef.current && modalRef.current.contains(target);
-      const clickedInsideAddMenu =
-        addMenuRef.current && addMenuRef.current.contains(target);
+      const handleClickOutside = (event: MouseEvent) => {
+        const target = event.target as Node;
+        const clickedInsideDropdown = dropdownRef.current && dropdownRef.current.contains(target);
+        const clickedInsideModal = modalRef.current && modalRef.current.contains(target);
+        const clickedInsideAddMenu = addMenuRef.current && addMenuRef.current.contains(target);
+  
+        if (!clickedInsideDropdown && !clickedInsideAddMenu && !clickedInsideModal) {
+          setOpenFilterKey(null);
+          setShowAddMenu(false);
+        }
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
-      if (!clickedInsideDropdown && !clickedInsideAddMenu && !clickedInsideModal) {
-        setOpenFilterKey(null);
-        setShowAddMenu(false);
+  // ... (useEffect for onParamsChange - No Change)
+  useEffect(() => {
+      const apiParams = buildQueryParams(filterState);
+      if (onParamsChange) {
+        onParamsChange(apiParams);
       }
-    };
+    }, [filterState, onParamsChange]);
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
+  // ... (Handlers - No Change)
   const toggleDropdown = (key: string) => {
-    setShowAddMenu(false);
-    setOpenFilterKey((prev) => (prev === key ? null : key));
-  };
-
-  const handleSelect = (filterKey: string, optionId: string) => {
-    setSelectedValues((prev) => {
-      const current = prev[filterKey] || [];
-      const next = current.includes(optionId)
-        ? current.filter((o) => o !== optionId)
-        : [...current, optionId];
-      if (onFilterSelect) onFilterSelect(filterKey, next);
-      return { ...prev, [filterKey]: next };
-    });
-  };
-
-  const handleDelete = (filterKey: string) => {
-    setActiveFilters((prev) => {
-      const updated = prev.filter((key) => key !== filterKey);
-      if (updated.length < MAX_VISIBLE) setShowAddMenu(true);
-      return updated;
-    });
-    setOpenFilterKey(null);
-  };
-
-  const handleAddFilter = (key: string) => {
-    setActiveFilters((prev) => {
-      let next = [...prev];
-      if (next.includes(key)) return next;
-      if (next.length >= MAX_VISIBLE) next.shift();
-      next.push(key);
-      return next;
-    });
-    setShowAddMenu(false);
-  };
+      setShowAddMenu(false);
+      setOpenFilterKey((prev) => (prev === key ? null : key));
+    };
+  
+    const handleSelect = (filterKey: string, optionId: string) => {
+      setFilterState((prev) => {
+        const current = prev[filterKey] || { values: [], condition: "One of" };
+        const currentValues = current.values || [];
+        const nextValues = currentValues.includes(optionId)
+          ? currentValues.filter((o) => o !== optionId)
+          : [...currentValues, optionId];
+        return { ...prev, [filterKey]: { ...current, values: nextValues } };
+      });
+    };
+  
+    const handleConditionChange = (filterKey: string, newCondition: string) => {
+      setFilterState((prev) => {
+        const current = prev[filterKey] || { values: [], condition: "One of" };
+        return { ...prev, [filterKey]: { ...current, condition: newCondition } };
+      });
+    };
+  
+    const handleDelete = (filterKey: string) => {
+      setActiveFilters((prev) => {
+        const updated = prev.filter((key) => key !== filterKey);
+        if (updated.length < MAX_VISIBLE) setShowAddMenu(true);
+        return updated;
+      });
+      setFilterState((prev) => {
+          const next = { ...prev };
+          delete next[filterKey];
+          return next;
+      });
+      setOpenFilterKey(null);
+    };
+  
+    const handleAddFilter = (key: string) => {
+      setActiveFilters((prev) => {
+        let next = [...prev];
+        if (next.includes(key)) return next;
+        if (next.length >= MAX_VISIBLE) next.shift();
+        next.push(key);
+        return next;
+      });
+      setShowAddMenu(false);
+    };
 
   const visibleFilters = activeFilters.slice(-MAX_VISIBLE);
   const hiddenFilters = allFilters.filter((f) => !visibleFilters.includes(f.key));
@@ -107,13 +129,14 @@ export default function FilterBar({
       {visibleFilters.map((key) => {
         const filter = allFilters.find((f) => f.key === key)!;
         const isOpen = openFilterKey === key;
+        const currentState = filterState[key] || { values: [], condition: "One of" };
 
         return (
           <div key={key} className="relative" ref={isOpen ? dropdownRef : null}>
             <FilterChip filter={filter} onClick={() => toggleDropdown(key)} />
             {isOpen && (
               <div
-                ref={modalRef} // ✅ attached to the modal container
+                ref={modalRef} 
                 className="absolute top-full mt-1 left-1/2 -translate-x-1/2 w-80 z-50"
               >
                 <FilterDropdown
@@ -121,9 +144,12 @@ export default function FilterBar({
                   options={filter.options || []}
                   searchQuery={searchQuery}
                   setSearchQuery={setSearchQuery}
+                  selectedOptions={currentState.values}
+                  currentCondition={currentState.condition}
                   onSelect={(optId) => handleSelect(key, optId)}
                   onDelete={() => handleDelete(key)}
-                  selectedOptions={selectedValues[key] || []}
+                  onConditionChange={(cond) => handleConditionChange(key, cond)}
+                  hideCondition={filter.hideCondition} // ✅ PASSING THE NEW PROP
                 />
               </div>
             )}
@@ -133,7 +159,8 @@ export default function FilterBar({
 
       {shouldShowAdd && (
         <div className="relative" ref={addMenuRef}>
-          <button
+          {/* ... Add Menu Button & Dropdown (Same as before) ... */}
+           <button
             className="flex items-center gap-2 border rounded-md px-3 py-1 text-sm bg-white hover:bg-accent transition"
             onClick={() => {
               setOpenFilterKey(null);
@@ -148,18 +175,7 @@ export default function FilterBar({
               className="absolute top-full mt-1 left-1/2 -translate-x-1/2 bg-white border rounded-lg shadow-xl w-80 z-50 flex flex-col"
               style={{ maxHeight: "340px" }}
             >
-              <style>{`
-                ::-webkit-scrollbar { width: 6px; }
-                ::-webkit-scrollbar-thumb {
-                  background-color: rgba(100,116,139,0.4);
-                  border-radius: 10px;
-                }
-                ::-webkit-scrollbar-thumb:hover {
-                  background-color: rgba(100,116,139,0.6);
-                }
-              `}</style>
-
-              <div className="p-3 border-b sticky top-0 bg-white z-10 shadow-sm">
+             <div className="p-3 border-b sticky top-0 bg-white z-10 shadow-sm">
                 <div className="flex items-center gap-2 border border-blue-400 rounded-md px-2 py-1 focus-within:ring-1 focus-within:ring-blue-500">
                   <Search size={14} className="text-gray-400" />
                   <input
@@ -185,7 +201,7 @@ export default function FilterBar({
                         <span className="text-blue-600">{f.icon}</span>
                         {f.label}
                       </div>
-                      {selectedValues[f.key]?.length > 0 && (
+                      {filterState[f.key]?.values?.length > 0 && (
                         <CheckCircle size={14} className="text-green-500 flex-shrink-0" />
                       )}
                     </div>

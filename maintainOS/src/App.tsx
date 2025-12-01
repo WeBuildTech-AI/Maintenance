@@ -118,7 +118,7 @@ export default function App() {
 
             {/* Actual modules */}
             <Route path="/work-orders/*" element={<WorkOrders />} />
-            <Route path="/purchase-orders" element={<PurchaseOrders />} />
+            <Route path="/purchase-orders/*" element={<PurchaseOrders />} />
             <Route path="/reporting" element={<Reporting />} />
             <Route path="/assets" element={<Assets />} />
             <Route path="/messages" element={<Messages />} />

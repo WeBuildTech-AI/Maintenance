@@ -1,4 +1,3 @@
-import axios from "axios";
 import api from "../auth/auth.service";
 
 import type {
@@ -6,20 +5,26 @@ import type {
   CreateAssetData,
   UpdateAssetData,
   UpdateAssetStatus,
+  FetchAssetsParams, // ✅ Imported
 } from "./assets.types";
 
-const API_URL = import.meta.env.VITE_API_URL;
 
 export const assetService = {
+  // ✅ Updated to accept params object
   fetchAssets: async (
-    limit: number,
-    page: number,
+    params?: FetchAssetsParams
   ): Promise<AssetResponse[]> => {
     const res = await api.get(`/assets`, {
-      params: { limit, page,},
+      params,
+      // Ensure arrays are serialized correctly (e.g. statusOneOf=id1,id2)
+      paramsSerializer: { indexes: null },
       headers: { Accept: "application/json" },
     });
-    return res.data.items;
+    
+    // Handle both potential response structures
+    if (res.data && Array.isArray(res.data.items)) return res.data.items;
+    if (Array.isArray(res.data)) return res.data;
+    return [];
   },
 
   fetchAssetsName: async (): Promise<AssetResponse[]> => {

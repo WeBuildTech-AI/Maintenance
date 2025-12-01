@@ -68,28 +68,6 @@ export interface CreateTimeEntryData {
   rate?: number;
 }
 
-// ✅ NEW: Part Usage Types
-export interface PartUsage {
-  id: string;
-  partId: string;
-  locationId: string;
-  quantity: number;
-  part?: { id: string; name: string };       
-  location?: { id: string; name: string };   
-  cost?: number;                 
-  createdAt?: string;
-}
-
-export interface CreatePartUsageItem {
-  partId: string;
-  locationId: string;
-  quantity: number;
-}
-
-export interface CreatePartUsageData {
-  items: CreatePartUsageItem[];
-}
-
 export interface WorkOrderResponse {
   id: string;
   organizationId: string;
@@ -101,36 +79,27 @@ export interface WorkOrderResponse {
   startDate?: string;
   assigneeIds?: string[];
   assignedTeamIds?: string[];
-  
   assignees?: any[];
   teams?: any[];
   location?: any;
   assets?: any[];
-  
-  // ✅ Updated to include PartUsage[]
-  parts?: PartUsage[];
-  
+  parts?: any[];
   vendors?: any[];
   categories?: any[];
   procedures?: any[];
   meters?: any[];
-  submissions?: any[]; 
-  
   otherCosts?: OtherCost[];
   timeEntries?: WorkOrderTimeEntry[];
   comments?: WorkOrderComment[];
-  
   createdBy?: string;
   createdAt: string;
   updatedAt: string;
   deletedDate?: string;
   wasDeleted?: boolean;
-  
   grandTotalCost?: string;
   otherCostTotal?: string;
   partsCostTotal?: string;
   timeCostTotal?: string;
-  recurrenceRule?: any;
 }
 
 export interface CreateWorkOrderData {
@@ -151,7 +120,6 @@ export interface CreateWorkOrderData {
   qrCode?: string;
   workType?: string;
   recurrence?: string;
-  recurrenceRule?: any;
 }
 
 export interface UpdateWorkOrderData extends Partial<CreateWorkOrderData> {
@@ -166,12 +134,19 @@ export interface AddCommentPayload {
   message: string;
 }
 
-export interface UpdateWorkOrderStatusPayload {
-  status: string;
+// ✅ API FILTER PARAMETERS
+export interface FetchWorkOrdersParams {
+  page?: number | string;
+  limit?: number | string;
+  title?: string;
+  
+  // Dynamic Keys from QueryBuilder (e.g. statusOneOf, assetIsEmpty)
+  [key: string]: any; 
 }
 
 export interface CreateFieldResponseData {
-  submissionId: string;
+  workOrderId: string;
+  procedureId: string;
   fieldId: string;
   value: string | number | boolean;
   notes?: string;
@@ -179,10 +154,15 @@ export interface CreateFieldResponseData {
 
 export interface FieldResponseResponse {
   id: string;
-  submissionId: string;
+  workOrderId: string;
   fieldId: string;
   value: any;
   createdAt: string;
+}
+
+export interface CreatePartUsageData {
+  partId: string;
+  quantity: number;
 }
 
 export interface WorkOrdersState {

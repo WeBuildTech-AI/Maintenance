@@ -1,4 +1,3 @@
-// src/store/workOrders/workOrders.service.ts
 import api from "../auth/auth.service";
 import type {
   AssignWorkOrderData,
@@ -13,15 +12,22 @@ import type {
   AddCommentPayload,
   CreateFieldResponseData,
   FieldResponseResponse,
-  CreatePartUsageData // ✅ Imported
+  CreatePartUsageData,
+  FetchWorkOrdersParams 
 } from "./workOrders.types";
 
 export const workOrderService = {
-  // --- Work Orders ---
-
-  fetchWorkOrders: async (): Promise<WorkOrderResponse[]> => {
-    const res = await api.get("/work-orders");
-    return res.data.items
+  // ✅ FIX: Accept params argument and pass to API
+  fetchWorkOrders: async (params?: FetchWorkOrdersParams): Promise<WorkOrderResponse[]> => {
+    const res = await api.get("/work-orders", { 
+      params, 
+      // Ensure commas are not encoded (id1,id2 remains id1,id2)
+      paramsSerializer: { indexes: null } 
+    });
+    
+    if (res.data && Array.isArray(res.data.items)) return res.data.items;
+    if (Array.isArray(res.data)) return res.data;
+    return [];
   },
 
   fetchWorkOrderById: async (id: string): Promise<WorkOrderResponse> => {
@@ -29,23 +35,13 @@ export const workOrderService = {
     return res.data;
   },
 
-  createWorkOrder: async (
-    data: CreateWorkOrderData
-  ): Promise<WorkOrderResponse> => {
+  createWorkOrder: async (data: CreateWorkOrderData): Promise<WorkOrderResponse> => {
     const res = await api.post(`/work-orders`, data);
     return res.data;
   },
 
-  updateWorkOrder: async (
-    id: string,
-    authorId: string,
-    data: UpdateWorkOrderData
-  ): Promise<WorkOrderResponse> => {
-    const res = await api.request({
-      method: "PATCH",
-      url: `/work-orders/${id}/${authorId}`, 
-      data,
-    });
+  updateWorkOrder: async (id: string, authorId: string, data: UpdateWorkOrderData): Promise<WorkOrderResponse> => {
+    const res = await api.request({ method: "PATCH", url: `/work-orders/${id}/${authorId}`, data });
     return res.data;
   },
 
@@ -54,18 +50,10 @@ export const workOrderService = {
   },
 
   batchDeleteWorkOrder: async (ids: string[]): Promise<void> => {
-    await api.delete(`work-orders/batch-delete`, {
-      data: { ids: ids },
-    });
+    await api.delete(`work-orders/batch-delete`, { data: { ids: ids } });
   },
 
-  // --- Status Updates ---
-
-  updateWorkOrderStatus: async (
-    id: string, 
-    authorId: string, 
-    status: string
-  ): Promise<WorkOrderResponse> => {
+  updateWorkOrderStatus: async (id: string, authorId: string, status: string): Promise<WorkOrderResponse> => {
     const res = await api.patch(`/work-orders/${id}/status/${authorId}`, { status });
     return res.data;
   },
@@ -80,42 +68,29 @@ export const workOrderService = {
     return res.data;
   },
 
-  assignWorkOrder: async (
-    id: string,
-    data: AssignWorkOrderData
-  ): Promise<WorkOrderResponse> => {
+  assignWorkOrder: async (id: string, data: AssignWorkOrderData): Promise<WorkOrderResponse> => {
     const res = await api.post(`/work-orders/${id}/assign`, data);
     return res.data;
   },
 
-  // --- COMMENTS ---
-
-  addWorkOrderComment: async (
-    id: string,
-    data: AddCommentPayload
-  ): Promise<WorkOrderComment> => {
+  addWorkOrderComment: async (id: string, data: AddCommentPayload): Promise<WorkOrderComment> => {
     const res = await api.post(`/work-orders/${id}/comment`, data);
     return res.data;
   },
 
   fetchWorkOrderComments: async (id: string): Promise<WorkOrderComment[]> => {
     const res = await api.get(`/work-orders/${id}/comments`);
-    return res.data;
-  },
-
-  // --- LOGS ---
-
-  fetchWorkOrderLogs: async (workOrderId: string): Promise<WorkOrderLog[]> => {
-    const res = await api.get(`/work-orders/get/work-order-logs/${workOrderId}`);
-    if (Array.isArray(res.data)) {
-        return res.data;
-    } else if (res.data && Array.isArray(res.data.data)) {
-        return res.data.data;
-    }
+    if (Array.isArray(res.data)) return res.data;
+    if (res.data?.data && Array.isArray(res.data.data)) return res.data.data;
     return [];
   },
 
-  // --- Costs & Time ---
+  fetchWorkOrderLogs: async (workOrderId: string): Promise<WorkOrderLog[]> => {
+    const res = await api.get(`/work-orders/get/work-order-logs/${workOrderId}`);
+    if (Array.isArray(res.data)) return res.data;
+    if (res.data && Array.isArray(res.data.data)) return res.data.data;
+    return [];
+  },
 
   addOtherCost: async (id: string, data: CreateOtherCostData) => {
     const res = await api.post(`/work-orders/${id}/other-costs`, data);
@@ -127,23 +102,15 @@ export const workOrderService = {
     return res.data;
   },
 
-  addTimeEntry: async (
-    id: string,
-    data: CreateTimeEntryData
-  ): Promise<WorkOrderTimeEntry> => {
+  addTimeEntry: async (id: string, data: CreateTimeEntryData): Promise<WorkOrderTimeEntry> => {
     const res = await api.post(`/work-orders/${id}/time`, data);
     return res.data;
   },
 
-  deleteTimeEntry: async (
-    id: string,
-    entryId: string
-  ): Promise<{ success: boolean }> => {
+  deleteTimeEntry: async (id: string, entryId: string): Promise<{ success: boolean }> => {
     const res = await api.delete(`/work-orders/${id}/time/${entryId}`);
     return res.data;
   },
-
-  // --- ✅ PARTS USAGE (New) ---
 
   addPartUsage: async (id: string, data: CreatePartUsageData) => {
     const res = await api.post(`/work-orders/${id}/parts`, data);
@@ -155,11 +122,7 @@ export const workOrderService = {
     return { id, usageId };
   },
 
-  // --- Procedure Field Responses ---
-  
-  createFieldResponse: async (
-    data: CreateFieldResponseData
-  ): Promise<FieldResponseResponse> => {
+  createFieldResponse: async (data: CreateFieldResponseData): Promise<FieldResponseResponse> => {
     const res = await api.post(`/procedure-field-responses`, data);
     return res.data;
   },

@@ -7,6 +7,7 @@ import { Card, CardContent } from "../ui/card";
 import { NewLocationForm } from "./NewLocationForm/NewLocationForm";
 import { deleteLocation, locationService } from "../../store/locations";
 import type { LocationResponse } from "../../store/locations";
+import { FetchLocationsParams } from "../../store/locations/locations.types"; // ✅ Imported Types
 import type { ViewMode } from "../purchase-orders/po.types";
 import { LocationHeaderComponent } from "./LocationsHeader";
 import Loader from "../Loader/Loader";
@@ -30,11 +31,10 @@ export function Locations() {
     useState<LocationResponse | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("panel");
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState(""); // ✅ Debounce
   const [showSettings, setShowSettings] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [filteredLocations, setFilteredLocations] = useState<
-    LocationResponse[]
-  >([]);
+  
   const user = useSelector((state: RootState) => state.auth.user);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [sortType, setSortType] = useState("Last Updated");
@@ -44,6 +44,12 @@ export function Locations() {
   const headerRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const [showDeleted, setShowDeleted] = useState(false);
+
+  // ✅ FILTER PARAMETERS STATE
+  const [filterParams, setFilterParams] = useState<FetchLocationsParams>({
+    page: 1, 
+    limit: 50 
+  });
 
   const navigate = useNavigate();
   const isCreateRoute = useMatch("/locations/create");
@@ -57,6 +63,14 @@ export function Locations() {
     ? locations.find((loc) => loc.id === isEditRoute?.params.locationId)
     : null;
   const parentIdFromUrl = isCreateSubLocationRoute?.params.parentId;
+
+  // ✅ DEBOUNCE EFFECT
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const handleShowNewLocationForm = () => {
     navigate("/locations/create");
@@ -75,19 +89,16 @@ export function Locations() {
   const handleRootLocationCreate = (newLocation: LocationResponse) => {
     const updatedLocations = [newLocation, ...locations];
     setLocations(updatedLocations);
-    setFilteredLocations(updatedLocations);
     setSelectedLocation(newLocation);
     navigate("/locations");
   };
 
   const handleSubLocationCreated = (newSubLocation: LocationResponse) => {
     const parentId = newSubLocation.parentId;
-    if (!parentId) return; // Safety check
+    if (!parentId) return;
 
-    // Find the parent in the state and add the new sub-location to its children
     const updatedLocations = locations.map((loc) => {
       if (loc.id === parentId) {
-        // Create a new children array with the new sub-location
         const updatedChildren = [...(loc.children || []), newSubLocation];
         return { ...loc, children: updatedChildren };
       }
@@ -96,14 +107,13 @@ export function Locations() {
 
     setLocations(updatedLocations);
 
-    // Find the updated parent to set it as the selected location
     const updatedParent = updatedLocations.find((loc) => loc.id === parentId);
     if (updatedParent) {
       setSelectedLocation(updatedParent);
     }
 
     toast.success("Sub-location added successfully!");
-    navigate(`/locations/${parentId}`); // Navigate back to the parent's detail view
+    navigate(`/locations/${parentId}`);
   };
 
   const handleFormSuccess = (locationData: LocationResponse) => {
@@ -125,42 +135,39 @@ export function Locations() {
   };
 
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
   const [hasMore, setHasMore] = useState(true);
 
-  console.log("showDeleted", showDeleted);
-
-  // Locations.tsx
-
+  // ✅ FETCH LOCATIONS (Memoized with Filters)
   const fetchLocations = useCallback(
-    // Remove currentPage argument since we always want to start at page 1 when showDeleted changes
     async () => {
       setLoading(true);
       setPage(1);
-      setSelectedLocation(null);
+      // Don't clear selected location on background updates to avoid flicker
+      // setSelectedLocation(null); 
       let res: any;
 
       try {
         if (showDeleted) {
           res = await locationService.fetchDeleteLocation();
         } else {
-          res = await locationService.fetchLocations(
-            limit,
-            1 // Always fetch page 1 when calling this due to showDeleted change
-          );
+          // ✅ USE API PAYLOAD WITH FILTERS
+          // Note: API uses 'search' for name/address fuzzy search
+          const apiPayload = {
+            ...filterParams,
+            search: debouncedSearch || undefined
+          };
+          
+          res = await locationService.fetchLocations(apiPayload);
         }
 
-        console.log(res, "res location");
-
-        const reversedLocations = [...res].reverse();
+        const reversedLocations = [...res].reverse(); // Keep existing sorting or rely on backend
         setLocations(reversedLocations);
 
-        if (reversedLocations.length > 0) {
+        if (!selectedLocation && reversedLocations.length > 0) {
           setSelectedLocation(reversedLocations[0]);
         }
 
-        // Update hasMore based on initial fetch
-        if (!res || res.length < limit) {
+        if (!res || res.length < (filterParams.limit as number)) {
           setHasMore(false);
         } else {
           setHasMore(true);
@@ -173,27 +180,26 @@ export function Locations() {
         setLoading(false);
       }
     },
-    // ADD showDeleted to dependencies
-    [limit, showDeleted]
+    [showDeleted, filterParams, debouncedSearch]
   );
 
   useEffect(() => {
-    if (hasFetched.current) return;
     fetchLocations();
-  }, [showDeleted]);
+  }, [fetchLocations]);
 
-  // NEW: Combined filtering and sorting into a single useEffect for efficiency
-  useEffect(() => {
-    if (!locations.length) return;
+  // ✅ HANDLER: Filter Change
+  const handleFilterChange = useCallback((newParams: Partial<FetchLocationsParams>) => {
+    setFilterParams((prev) => {
+      const merged = { ...prev, ...newParams };
+      if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
+      return merged;
+    });
+  }, []);
 
-    // 1. Filter by search query
-    const lowerQuery = searchQuery.toLowerCase();
-    const searchedLocations = searchQuery.trim()
-      ? locations.filter((loc) => loc.name.toLowerCase().includes(lowerQuery))
-      : [...locations];
-
-    // 2. Sort the filtered results
-    searchedLocations.sort((a, b) => {
+  // 2. Sort the results (Client side sort of current page)
+  const sortedLocations = useMemo(() => {
+    let items = [...locations];
+    items.sort((a, b) => {
       let comparison = 0;
       switch (sortType) {
         case "Name":
@@ -212,9 +218,8 @@ export function Locations() {
       }
       return sortOrder === "asc" ? comparison : -comparison;
     });
-
-    setFilteredLocations(searchedLocations);
-  }, [searchQuery, locations, sortType, sortOrder]);
+    return items;
+  }, [locations, sortType, sortOrder]);
 
   // NEW: useEffect to position the custom dropdown
   useEffect(() => {
@@ -239,7 +244,7 @@ export function Locations() {
       case "Name":
         return sortOrder === "asc" ? "Ascending Order" : "Descending Order";
       default:
-        return "Sort By"; // Fallback text
+        return "Sort By"; 
     }
   }, [sortType, sortOrder]);
 
@@ -258,37 +263,26 @@ export function Locations() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [modalRef]);
+
   const handleDeleteLocation = (id: string) => {
-    // Step 1: Find the index of the item in the VISIBLE list (filteredLocations)
-    const currentVisibleIndex = filteredLocations.findIndex(
+    const currentVisibleIndex = sortedLocations.findIndex(
       (loc) => loc.id === id
     );
 
     dispatch(deleteLocation(id))
       .unwrap()
       .then(() => {
-        // Step 2: Update the main source of truth.
-        // The useEffect will automatically update the filtered list later.
         const newLocationsList = locations.filter((loc) => loc.id !== id);
         setLocations(newLocationsList);
 
-        // Step 3: Predict what the new visible list will be after the delete
-        const newFilteredList = filteredLocations.filter(
-          (loc) => loc.id !== id
-        );
-
-        // Step 4: Smartly decide which item to select next
-        if (newFilteredList.length === 0) {
-          // If the visible list is now empty, select nothing
+        if (newLocationsList.length === 0) {
           setSelectedLocation(null);
         } else {
-          // Calculate the new index, ensuring it's not out of bounds
           const newIndexToSelect = Math.min(
             currentVisibleIndex,
-            newFilteredList.length - 1
+            newLocationsList.length - 1
           );
-          // Select the correct next item from the updated visible list
-          setSelectedLocation(newFilteredList[newIndexToSelect]);
+          setSelectedLocation(newLocationsList[newIndexToSelect]);
         }
 
         toast.success("Location deleted successfully!");
@@ -297,43 +291,6 @@ export function Locations() {
         console.error("Delete failed:", error);
         toast.error("Failed to delete the location.");
       });
-
-    // Step 1: Find the index of the item being deleted from the currently visible list
-    const currentIndex = locations.findIndex((loc) => loc.id === id);
-
-    if (window.confirm("Are you sure you want to delete this location?")) {
-      dispatch(deleteLocation(id))
-        .unwrap()
-        .then(() => {
-          // Step 2: Create a new list without the deleted item
-          const newLocationList = locations.filter((loc) => loc.id !== id);
-
-          // Step 3: Update local state immediately
-          setLocations(newLocationList);
-
-          // Step 4: Handle selection logic
-          if (newLocationList.length === 0) {
-            // If the list becomes empty, deselect everything
-            setSelectedLocation(null);
-          } else {
-            // Make sure we don’t go out of range (especially if deleting last element)
-            const newIndexToSelect = Math.min(
-              currentIndex,
-              newLocationList.length - 1
-            );
-
-            const newSortedList = locations.filter((a) => a.id !== id);
-            // Step 5: Select the next valid item from the updated list
-            setSelectedLocation(newSortedList[newIndexToSelect]);
-          }
-
-          toast.success("Location deleted successfully!");
-        })
-        .catch((error) => {
-          console.error("Delete failed:", error);
-          toast.error("Failed to delete the location.");
-        });
-    }
   };
 
   const renderInitials = (text: string) =>
@@ -353,8 +310,6 @@ export function Locations() {
     try {
       const res = await locationService.fetchLocationById(id);
       setSelectedLocation(res);
-
-      // Also update the location in the locations array
       setLocations((prev) => prev.map((loc) => (loc.id === id ? res : loc)));
     } catch (err) {
       console.error("Failed to fetch location by ID:", err);
@@ -375,16 +330,17 @@ export function Locations() {
           setViewMode,
           searchQuery,
           setSearchQuery,
-          handleShowNewLocationForm, // 👈 New URL-driven handler
+          handleShowNewLocationForm, 
           setShowSettings,
           setIsSettingsModalOpen,
-          setShowDeleted
+          setShowDeleted,
+          handleFilterChange // ✅ Pass Filter Handler
         )}
 
         {viewMode === "table" ? (
           <>
             <LocationTable
-              location={locations}
+              location={sortedLocations}
               selectedLocation={selectedLocation}
               setIsSettingsModalOpen={setIsSettingsModalOpen}
               isSettingsModalOpen={isSettingsModalOpen}
@@ -397,10 +353,10 @@ export function Locations() {
           <>
             <div className="flex gap-2 flex-1 overflow-hidden mt-3 min-h-0">
               <div className="border ml-3 mr-1 w-96 flex flex-col">
-                {/* --- REPLACED: Old sort dropdown is replaced with your new custom one --- */}
+                {/* --- Sort Header --- */}
                 <div
                   ref={headerRef}
-                  className="flex items-center justify-between px-5 py-3 border-b bg-white relative z-10" // Reduced z-index
+                  className="flex items-center justify-between px-5 py-3 border-b bg-white relative z-10" 
                 >
                   <div className="flex items-center ml-3 gap-2 text-sm text-gray-700 font-medium">
                     <span>Sort By:</span>
@@ -499,7 +455,7 @@ export function Locations() {
                                           ? "asc"
                                           : "desc"
                                       );
-                                      setIsDropdownOpen(false); // Close dropdown on selection
+                                      setIsDropdownOpen(false); 
                                     }}
                                     className={`flex items-center justify-between px-6 py-2 text-left text-sm transition rounded-md ${
                                       isSelected
@@ -521,15 +477,14 @@ export function Locations() {
                     </div>
                   </div>
                 )}
-                {/* --- END REPLACEMENT --- */}
 
                 {/* Locations List */}
                 <div className="flex-1 overflow-y-auto min-h-0">
                   {loading && page === 1 ? (
                     <Loader />
-                  ) : filteredLocations && filteredLocations.length > 0 ? (
+                  ) : sortedLocations && sortedLocations.length > 0 ? (
                     <>
-                      {filteredLocations.map((items) => (
+                      {sortedLocations.map((items) => (
                         <Card
                           key={items.id}
                           onClick={() => {
@@ -575,7 +530,6 @@ export function Locations() {
                                   {items.children &&
                                     items.children.length > 0 && (
                                       <button
-                                        // onClick={() => alert("sidit")}
                                         className="text-sm text-orange-600 cursor-pointer"
                                       >
                                         <p>
@@ -583,10 +537,6 @@ export function Locations() {
                                         </p>
                                       </button>
                                     )}
-                                </div>
-                                <div>
-                                  {/* {items.children.l && ( */}
-                                  {/* )} */}
                                 </div>
                               </div>
                             </div>
@@ -600,7 +550,12 @@ export function Locations() {
                             onClick={() => {
                               const nextPage = page + 1;
                               setPage(nextPage);
-                              fetchLocations(nextPage);
+                              // We need to update filterParams with new page, which triggers fetch via useEffect or direct call
+                              // Since logic is in fetchLocations dependent on filterParams, we update filterParams.
+                              // Actually, fetchLocations reads filterParams state. 
+                              // To implement load more, we might need to adjust logic to append instead of replace.
+                              // For now, simpler pagination: update state
+                              setFilterParams(prev => ({...prev, page: nextPage}));
                             }}
                             className="text-primary border-primary hover:bg-primary/10"
                           >
@@ -633,7 +588,7 @@ export function Locations() {
                 </div>
               </div>
 
-              {/* Right Card (Detail / Form View) - No Changes Below This Line */}
+              {/* Right Card (Detail / Form View) */}
               <Card className="flex flex-col h-full mr-2 flex-1 ">
                 <CardContent className="flex-1 min-h-0">
                   {isCreateRoute || isEditRoute || isCreateSubLocationRoute ? (

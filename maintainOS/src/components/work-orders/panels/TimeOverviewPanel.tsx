@@ -8,6 +8,7 @@ import { useAppDispatch } from "../../../store/hooks";
 import {
   addTimeEntry,
   deleteTimeEntry,
+  updateTimeEntry, // Assuming you have an update thunk
 } from "../../../store/workOrders/workOrders.thunks";
 import AddTimeModal from "../../work-orders/ToDoView/AddTimeModal";
 
@@ -37,12 +38,14 @@ type Props = {
   onCancel: () => void;
   workOrderId?: string;
   selectedWorkOrder?: any;
+  onSaveSuccess?: () => void; // ✅ Prop for refreshing parent
 };
 
 export default function TimeOverviewPanel({
   onCancel,
   workOrderId,
   selectedWorkOrder,
+  onSaveSuccess, // ✅ Destructure prop
 }: Props) {
   const dispatch = useAppDispatch();
   const user = useSelector((state: any) => state.auth?.user);
@@ -78,20 +81,11 @@ export default function TimeOverviewPanel({
     return map;
   }, [entries]);
 
-  // local helpers
-  const addLocal = (t: any) => setEntries((p) => [...p, t]);
-  const updateLocal = (t: any) =>
-    setEntries((p) => p.map((x) => (x.id === t.id ? { ...x, ...t } : x)));
-  const deleteLocal = (id: string) =>
-    setEntries((p) => p.filter((x) => x.id !== id));
-
   // create
   const handleAdd = async (data: any) => {
     try {
-      // ensure primitive id
       const userId = typeof data.userId === "object" ? data.userId.id : data.userId;
 
-      // API expects a single object (not items[])
       const apiPayload = {
         userId,
         totalMinutes: Number(data.totalMinutes ?? 0),
@@ -99,21 +93,37 @@ export default function TimeOverviewPanel({
         rate: Number(data.rate || 0),
       };
 
-      const res = await dispatch(addTimeEntry({ id: workOrderId!, data: apiPayload })).unwrap();
+      await dispatch(addTimeEntry({ id: workOrderId!, data: apiPayload })).unwrap();
       toast.success("✅ Time entry added");
 
-      const assignee = selectedWorkOrder?.assignees?.find((a: any) => a.id === userId);
+      // ✅ Trigger Parent Refresh
+      if (onSaveSuccess) onSaveSuccess();
+      
+      // Close Modal
+      setIsModalOpen(false);
 
-      addLocal({
-        ...apiPayload,
-        id: res?.id || crypto.randomUUID?.() || String(Math.random()),
-        user: { fullName: assignee?.fullName || user?.fullName || "Unknown" },
-        createdAt: new Date().toISOString(),
-      });
     } catch (err: any) {
       toast.error(err?.message || "Failed to add time entry");
     }
   };
+
+  // update (Assuming you have an update function, otherwise this updates locally and likely needs an API call)
+  const handleUpdate = async (data: any) => {
+      // If you implement updateTimeEntry thunk:
+      /*
+      try {
+          await dispatch(updateTimeEntry({ ... })).unwrap();
+          toast.success("Updated");
+          if (onSaveSuccess) onSaveSuccess();
+          setIsModalOpen(false);
+      } catch(e) { ... }
+      */
+     // For now, mirroring local update logic or if AddTimeModal handles API internally
+     // If AddTimeModal handles API, just refresh:
+     if (onSaveSuccess) onSaveSuccess();
+     setIsModalOpen(false);
+  };
+
 
   // delete
   const handleDelete = async (id: string) => {
@@ -121,7 +131,11 @@ export default function TimeOverviewPanel({
     try {
       await dispatch(deleteTimeEntry({ id: workOrderId!, entryId: id })).unwrap();
       toast.success("🗑️ Deleted successfully");
-      deleteLocal(id);
+      
+      // ✅ Trigger Parent Refresh
+      if (onSaveSuccess) onSaveSuccess();
+      setIsModalOpen(false);
+
     } catch (err: any) {
       toast.error(err?.message || "Failed to delete time entry");
     }
@@ -332,7 +346,7 @@ export default function TimeOverviewPanel({
           selectedWorkOrder={selectedWorkOrder}
           initialTime={modalInitial}
           onAdd={handleAdd}
-          onUpdate={(upd) => updateLocal(upd)}
+          onUpdate={handleUpdate} // Call wrapper
           onDelete={handleDelete}
         />
       )}

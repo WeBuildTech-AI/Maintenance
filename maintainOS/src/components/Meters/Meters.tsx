@@ -10,6 +10,7 @@ import {
   meterService,
   type MeterResponse,
 } from "../../store/meters";
+import { FetchMetersParams } from "../../store/meters/meters.types"; // ✅ Imported Types
 import type { ViewMode } from "../purchase-orders/po.types";
 import { useNavigate, useMatch } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
@@ -21,6 +22,8 @@ import RecordReadingModal from "./MeterDetail/RecordReadingModal";
 
 export function Meters() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState(""); // ✅ Debounce
+  
   const [showSettings, setShowSettings] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("panel");
   const [meterData, setMeterData] = useState<MeterResponse[]>([]);
@@ -37,6 +40,12 @@ export function Meters() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
 
+  // ✅ FILTER PARAMETERS STATE
+  const [filterParams, setFilterParams] = useState<FetchMetersParams>({
+    page: 1, 
+    limit: 50 
+  });
+
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const isCreateRoute = useMatch("/meters/create");
@@ -47,6 +56,14 @@ export function Meters() {
     ? meterData.find((m) => m.id === isEditRoute?.params.meterId)
     : null;
 
+  // ✅ DEBOUNCE EFFECT
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const handleShowNewMeterForm = () => {
     navigate("/meters/create");
   };
@@ -55,33 +72,34 @@ export function Meters() {
     navigate("/meters");
   };
 
-  // 🔍 Derived: Filtered meter list based on search
-  const filteredMeters = meterData.filter((meter) => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return true; // show all if search empty
-
-    // Choose what fields to search on
-    return meter.name?.toLowerCase().includes(q);
-  });
-
   const handleCreateForm = async () => {
     console.log("Meter operation complete!");
     navigate("/meters");
     await fetchMeters();
   };
 
+  // ✅ FETCH METERS (Memoized with Filters)
   const fetchMeters = useCallback(async () => {
     setLoading(true);
-    setSelectedMeter(null);
+    // Keep selected if possible, else logic below handles it
     let res: any;
 
     try {
       if (showDeleted) {
         res = await meterService.fetchDeleteMeter();
       } else {
-        res = await meterService.fetchMeters(10, 1, );
+        // ✅ USE API PAYLOAD WITH FILTERS
+        // Note: API uses 'name' for search
+        const apiPayload = {
+          ...filterParams,
+          name: debouncedSearch || undefined 
+        };
+
+        // console.log("🔥 Meters API Call:", apiPayload);
+        res = await meterService.fetchMeters(apiPayload);
       }
 
+      // Keep existing sort or rely on backend
       const sortedData = [...res].sort(
         (a, b) =>
           new Date(b.updatedAt).valueOf() - new Date(a.updatedAt).valueOf()
@@ -89,7 +107,8 @@ export function Meters() {
 
       setMeterData(sortedData);
 
-      if (sortedData.length > 0) {
+      // Only select first if nothing selected
+      if (!selectedMeter && sortedData.length > 0) {
         setSelectedMeter(sortedData[0]);
       }
     } catch (err) {
@@ -98,11 +117,21 @@ export function Meters() {
     } finally {
       setLoading(false);
     }
-  }, [showDeleted]);
+  }, [showDeleted, filterParams, debouncedSearch]); // Removed 'selectedMeter' to prevent loop
 
+  // Initial Fetch
   useEffect(() => {
     fetchMeters();
-  }, [fetchMeters , viewMode]); // This still runs only once on mount
+  }, [fetchMeters, viewMode]); 
+
+  // ✅ HANDLER: Filter Change
+  const handleFilterChange = useCallback((newParams: Partial<FetchMetersParams>) => {
+    setFilterParams((prev) => {
+      const merged = { ...prev, ...newParams };
+      if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
+      return merged;
+    });
+  }, []);
 
   useEffect(() => {
     if (isDropdownOpen && headerRef.current) {
@@ -114,7 +143,6 @@ export function Meters() {
     }
   }, [isDropdownOpen]);
 
-  // NEW: useEffect to close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(event) {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
@@ -126,8 +154,6 @@ export function Meters() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [modalRef]);
-
-  // handle
 
   const handleDeleteMeter = (id) => {
     dispatch(deleteMeter(id))
@@ -151,7 +177,7 @@ export function Meters() {
       });
   };
 
-  console.log(showDeleted, "showDeleted");
+  // console.log(showDeleted, "showDeleted");
 
   return (
     <>
@@ -168,6 +194,7 @@ export function Meters() {
           setShowSettings,
           setIsSettingsModalOpen,
           setShowDeleted,
+          handleFilterChange // ✅ Pass Filter Handler
         )}
 
         {viewMode === "table" ? (
@@ -186,7 +213,7 @@ export function Meters() {
           <>
             <div className="flex flex-1 overflow-hidden">
               <MetersList
-                filteredMeters={filteredMeters}
+                filteredMeters={meterData} // Use fetched data directly (filtering is now backend)
                 selectedMeter={selectedMeter}
                 setSelectedMeter={setSelectedMeter}
                 loading={loading}

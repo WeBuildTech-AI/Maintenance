@@ -1,4 +1,3 @@
-// src/store/workOrders/workOrders.thunks.ts
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { workOrderService } from "./workOrders.service";
 import type {
@@ -8,17 +7,19 @@ import type {
   CreateOtherCostData,
   AddCommentPayload,
   CreateFieldResponseData,
-  CreatePartUsageData // ✅ Imported
+  CreatePartUsageData,
+  FetchWorkOrdersParams // ✅ Imported
 } from "./workOrders.types";
 
-// ... (All existing thunks - fetchWorkOrders, fetchById, create, update, delete, batchDelete, status, complete, in-progress, assign, comments, logs, costs, time) ...
-// Copying all previous thunks here for completeness is too long, but ensure ALL previous thunks are present.
+// --- Work Orders ---
 
+// ✅ FIX: Ensure thunk accepts 'params'
 export const fetchWorkOrders = createAsyncThunk(
   "workOrders/fetchWorkOrders",
-  async (_, { rejectWithValue }) => {
+  async (params: FetchWorkOrdersParams | undefined, { rejectWithValue }) => {
     try {
-      return await workOrderService.fetchWorkOrders();
+      // ✅ Pass params to service
+      return await workOrderService.fetchWorkOrders(params);
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || "Failed to fetch work orders");
     }
@@ -69,7 +70,7 @@ export const deleteWorkOrder = createAsyncThunk(
   }
 );
 
-export const batchDeleteMeter = createAsyncThunk(
+export const batchDeleteWorkOrder = createAsyncThunk(
   "workOrder/batchDeleteWorkOrder",
   async (ids: string[], { rejectWithValue }) => {
     try {
@@ -80,6 +81,8 @@ export const batchDeleteMeter = createAsyncThunk(
     }
   }
 );
+
+// --- Status ---
 
 export const updateWorkOrderStatus = createAsyncThunk(
   "workOrders/updateStatus",
@@ -136,6 +139,8 @@ export const assignWorkOrder = createAsyncThunk(
   }
 );
 
+// --- Comments & Logs ---
+
 export const addWorkOrderComment = createAsyncThunk(
   "workOrders/addComment",
   async ({ id, message }: { id: string; message: string }, { rejectWithValue }) => {
@@ -169,6 +174,8 @@ export const fetchWorkOrderLogs = createAsyncThunk(
     }
   }
 );
+
+// --- Costs & Time ---
 
 export const addOtherCost = createAsyncThunk(
   "workOrders/addOtherCost",
@@ -223,18 +230,16 @@ export const deleteTimeEntry = createAsyncThunk(
   }
 );
 
-// ✅ NEW: Parts Usage Thunks
+// --- Parts ---
 
 export const addPartUsage = createAsyncThunk(
   "workOrders/addPartUsage",
   async ({ id, data }: { id: string; data: CreatePartUsageData }, { rejectWithValue }) => {
     try {
       const res = await workOrderService.addPartUsage(id, data);
-      return res; // Array of created part items
+      return res; 
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to add parts"
-      );
+      return rejectWithValue(error.response?.data?.message || "Failed to add parts");
     }
   }
 );
@@ -246,9 +251,7 @@ export const deletePartUsage = createAsyncThunk(
       await workOrderService.deletePartUsage(id, usageId);
       return { id, usageId };
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to delete part"
-      );
+      return rejectWithValue(error.response?.data?.message || "Failed to delete part");
     }
   }
 );
@@ -261,9 +264,7 @@ export const submitFieldResponse = createAsyncThunk(
     try {
       return await workOrderService.createFieldResponse(data);
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to save field response"
-      );
+      return rejectWithValue(error.response?.data?.message || "Failed to save field response");
     }
   }
 );

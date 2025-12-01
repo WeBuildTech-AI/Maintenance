@@ -1,15 +1,21 @@
 import axios from "axios";
-import type { VendorResponse, Contact } from "./vendors.types";
+import type { VendorResponse, Contact, FetchVendorsParams } from "./vendors.types";
 
 const API_URL = import.meta.env.VITE_API_URL;
 import api from "../auth/auth.service";
+
 export const vendorService = {
-  // ✅ Fetch all vendors
-  fetchVendors: async (): Promise<VendorResponse[]> => {
+  // ✅ Fetch all vendors with Filters
+  fetchVendors: async (params?: FetchVendorsParams): Promise<VendorResponse[]> => {
     const res = await api.get(`/vendors`, {
-      headers: { Accept: "application/json" },
+      params,
+      // Ensure arrays (e.g. locationOneOf) are serialized correctly
+      paramsSerializer: { indexes: null }, 
     });
-    return res.data.items;
+    
+    if (res.data && Array.isArray(res.data.items)) return res.data.items;
+    if (Array.isArray(res.data)) return res.data;
+    return [];
   },
 
   // ✅ Fetch vendor summary (names)
