@@ -31,7 +31,6 @@ import { VendorFiles } from "./VendorFiles";
 
 // ✅ Newly created sections
 import VendorAssetsSection from "./VendorAssetsSection";
-// Removed VendorWorkOrdersSection
 
 interface VendorDetailsProps {
   vendor?: any;
@@ -158,19 +157,25 @@ export default function VendorDetails({
   const vendorTypeStyle = getVendorTypeListItemStyles(vendor.vendorType);
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-lg border relative">
-      <VendorHeader
-        vendor={vendor}
-        onEdit={onEdit}
-        handleDeleteVendor={handleDeleteVendor}
-        restoreData={restoreData}
-        onClose={onClose}
-        fetchVendors={fetchVendors}
-      />
+    // ✅ Main Container: Relative is crucial for absolute positioning the button
+    <div className="flex h-full flex-col overflow-hidden rounded-lg border relative bg-white">
 
-      {/* Content Area */}
-      <div className="min-h-0 flex-1 overflow-y-auto space-y-8 py-8 px-6 bg-white">
-        {/* ✅ Display IS DELETED Status if true */}
+      {/* ✅ FIXED HEADER */}
+      <div className="flex-none z-20 border-b bg-white shadow-sm">
+        <VendorHeader
+          vendor={vendor}
+          onEdit={onEdit}
+          handleDeleteVendor={handleDeleteVendor}
+          restoreData={restoreData}
+          onClose={onClose}
+          fetchVendors={fetchVendors}
+        />
+      </div>
+
+      {/* ✅ SCROLLABLE CONTENT */}
+      <div className="flex-1 overflow-y-auto space-y-8 py-8 px-6 bg-white">
+
+        {/* Display IS DELETED Status if true */}
         {vendor.isDeleted && (
           <div className="flex items-center gap-2 p-3 mb-4 text-sm text-red-700 bg-red-50 rounded-md border border-red-200">
             <AlertTriangle className="h-4 w-4" />
@@ -181,7 +186,7 @@ export default function VendorDetails({
         )}
 
         <div className="space-y-6">
-          {/* ✅ Vendor Type - Designed like Linked Assets */}
+          {/* Vendor Type */}
           <div>
             <h3 className="text-sm font-semibold text-gray-800 mb-3">
               Vendor Type
@@ -221,7 +226,7 @@ export default function VendorDetails({
           openDeleteModal={openDeleteModal}
         />
 
-        {/* ✅ Assets Section */}
+        {/* Assets Section */}
         <VendorAssetsSection vendor={vendor} />
 
         {/* Locations */}
@@ -230,40 +235,36 @@ export default function VendorDetails({
         {/* Parts */}
         <VendorPartsSection vendor={vendor} />
 
-        {/* ✅ REMOVED: Work Orders Section as requested */}
-
         {/* Images */}
         <VendorImages vendor={vendor} />
 
         {/* Files */}
         <VendorFiles vendor={vendor} />
+        {/* ✅ FLOATING BUTTON (Bottom Center) using Inline CSS */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: "24px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 10,
+          }}
+        >
+          <Button
+            variant="outline"
+            onClick={handleUseInWorkOrder}
+            className="text-yellow-600 border-2 border-yellow-400 hover:bg-yellow-50 px-8 py-3 rounded-full shadow-lg bg-white font-medium whitespace-nowrap flex items-center gap-2"
+          >
+            <Building2 className="w-5 h-5" />
+            Use in New Work Order
+          </Button>
+        </div>
 
-        {/* Footer Text (Created/Updated) */}
-        <VendorFooter user={user} vendor={vendor} />
-
-        {/* Spacer for sticky button */}
+        {/* ✅ Spacer Div: Prevents content from hiding behind floating button */}
         <div style={{ height: 96 }} />
       </div>
 
-      {/* Sticky Bottom Action */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: "24px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 50,
-        }}
-      >
-        <Button
-          variant="outline"
-          onClick={handleUseInWorkOrder}
-          className="text-yellow-600 border-2 border-yellow-400 bg-white hover:bg-yellow-50 px-8 py-3 rounded-full shadow-lg font-medium whitespace-nowrap flex items-center gap-2"
-        >
-          <Building2 className="w-5 h-5" />
-          Use in New Work Order
-        </Button>
-      </div>
+
 
       {/* Modals */}
       <NewContactModal
