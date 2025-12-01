@@ -27,7 +27,7 @@ export function VendorForm({
     createdBy: "",
     partsSummary: "",
     color: "#2563eb",
-    vendorType: "manufacturer",
+    vendorType: "manufacturer", // Default Value
   });
 
   const dispatch = useDispatch<AppDispatch>();
@@ -66,7 +66,7 @@ export function VendorForm({
         services: initialData.services || "",
         partsSummary: initialData.partsSummary || "",
         color: initialData.color || "#2563eb",
-        vendorType: initialData.vendorType || "manufacturer",
+        vendorType: initialData.vendorType || "manufacturer", // ✅ Pre-fill
       }));
 
       if (initialData.vendorImages) setVendorImages(initialData.vendorImages);
@@ -78,15 +78,15 @@ export function VendorForm({
           const c = Array.isArray(initialData.contacts)
             ? initialData.contacts
             : typeof initialData.contacts === "string"
-              ? JSON.parse(initialData.contacts)
-              : [initialData.contacts];
+            ? JSON.parse(initialData.contacts)
+            : [initialData.contacts];
           setContacts(c);
         } catch {
           setContacts([]);
         }
       }
 
-      // ✅ PREFILL LOCATIONS (IDs + Options for badges)
+      // ✅ PREFILL LOCATIONS (IDs + Options)
       if (initialData.locations && Array.isArray(initialData.locations)) {
         // 1. Set IDs
         const ids = initialData.locations.map((loc: any) =>
@@ -94,12 +94,12 @@ export function VendorForm({
         );
         setSelectedLocationIds(ids);
 
-        // 2. Set Options (Important for displaying names immediately)
+        // 2. Set Options (Important for display)
         const opts = initialData.locations
           .filter((loc: any) => typeof loc === "object")
           .map((loc: any) => ({
             id: loc.id,
-            name: loc.name || "Unknown Location"
+            name: loc.name || "Unknown Location",
           }));
         if (opts.length > 0) setAvailableLocations(opts);
       }
@@ -111,7 +111,7 @@ export function VendorForm({
 
         const opts = initialData.assets.map((a: any) => ({
           id: a.id,
-          name: a.name || "Unknown Asset"
+          name: a.name || "Unknown Asset",
         }));
         setAvailableAssets(opts);
       } else if (initialData.assetIds) {
@@ -125,7 +125,7 @@ export function VendorForm({
 
         const opts = initialData.parts.map((p: any) => ({
           id: p.id,
-          name: p.name || "Unknown Part"
+          name: p.name || "Unknown Part",
         }));
         setAvailableParts(opts);
       } else if (initialData.partIds) {
@@ -190,12 +190,15 @@ export function VendorForm({
 
     const formData = new FormData();
     const appendIfPresent = (key: string, value: any) => {
-      if (value !== undefined && value !== null && value !== "") formData.append(key, value);
+      if (value !== undefined && value !== null && value !== "")
+        formData.append(key, value);
     };
 
     appendIfPresent("name", form.name.trim());
     appendIfPresent("description", form.description);
     appendIfPresent("color", form.color);
+    
+    // ✅ Include Vendor Type in Payload
     appendIfPresent("vendorType", form.vendorType?.toLowerCase());
 
     // Contacts
@@ -204,16 +207,28 @@ export function VendorForm({
         formData.append(`contacts[${index}][fullName]`, contact.fullName || "");
         formData.append(`contacts[${index}][role]`, contact.role || "");
         formData.append(`contacts[${index}][email]`, contact.email || "");
-        formData.append(`contacts[${index}][phoneNumber]`, contact.phoneNumber || "");
-        formData.append(`contacts[${index}][phoneExtension]`, contact.phoneExtension || "");
-        formData.append(`contacts[${index}][contactColor]`, contact.contactColour || "#EC4899");
+        formData.append(
+          `contacts[${index}][phoneNumber]`,
+          contact.phoneNumber || ""
+        );
+        formData.append(
+          `contacts[${index}][phoneExtension]`,
+          contact.phoneExtension || ""
+        );
+        formData.append(
+          `contacts[${index}][contactColor]`,
+          contact.contactColour || "#EC4899"
+        );
       });
     }
 
     // Dropdowns
-    if (selectedLocationIds) selectedLocationIds.forEach((id) => formData.append("locations[]", id));
-    if (selectedAssetIds) selectedAssetIds.forEach((id) => formData.append("assetIds[]", id));
-    if (selectedPartIds) selectedPartIds.forEach((id) => formData.append("partIds[]", id));
+    if (selectedLocationIds)
+      selectedLocationIds.forEach((id) => formData.append("locations[]", id));
+    if (selectedAssetIds)
+      selectedAssetIds.forEach((id) => formData.append("assetIds[]", id));
+    if (selectedPartIds)
+      selectedPartIds.forEach((id) => formData.append("partIds[]", id));
 
     // Images & Docs
     vendorImages.forEach((img, i) => {
@@ -244,7 +259,10 @@ export function VendorForm({
         </h2>
       </div>
 
-      <form className="min-h-0 flex-1 overflow-y-auto space-y-8 py-8" onSubmit={handleSubmit}>
+      <form
+        className="min-h-0 flex-1 overflow-y-auto space-y-8 py-8"
+        onSubmit={handleSubmit}
+      >
         <VendorPrimaryDetails form={form} setForm={setForm} />
 
         <BlobUpload
@@ -254,7 +272,7 @@ export function VendorForm({
           onChange={handleBlobChange}
         />
 
-        {/* ✅ Updated Contact Input with Initial Data Support */}
+        {/* ✅ Updated Contact Input */}
         <VendorContactInput
           initialContacts={contacts}
           onContactsChange={setContacts}
@@ -267,26 +285,31 @@ export function VendorForm({
           onChange={handleBlobChange}
         />
 
+        {/* ✅ VendorLinkedItems with Lifted State */}
         <VendorLinkedItems
           availableLocations={availableLocations}
           selectedLocationIds={selectedLocationIds}
           onLocationsChange={setSelectedLocationIds}
           onFetchLocations={handleFetchLocations}
           locationsLoading={locationsLoading}
-
+          
           availableAssets={availableAssets}
           selectedAssetIds={selectedAssetIds}
           onAssetsChange={setSelectedAssetIds}
           onFetchAssets={handleFetchAssets}
           assetsLoading={assetsLoading}
-
+          
           availableParts={availableParts}
           selectedPartIds={selectedPartIds}
           onPartsChange={setSelectedPartIds}
           onFetchParts={handleFetchParts}
           partsLoading={partsLoading}
-
+          
           onCtaClick={handleCtaClick}
+
+          // ✅ Pass Lifted State & Handler
+          vendorType={form.vendorType}
+          onVendorTypeChange={(val) => setForm((f) => ({ ...f, vendorType: val }))}
         />
       </form>
 

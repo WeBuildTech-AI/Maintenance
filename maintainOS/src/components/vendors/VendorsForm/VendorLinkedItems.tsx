@@ -21,6 +21,10 @@ interface VendorLinkedItemsProps {
   partsLoading: boolean;
 
   onCtaClick: (path: string) => void;
+
+  // ✅ NEW PROPS: Controlled from Parent (VendorForm)
+  vendorType: string;
+  onVendorTypeChange: (val: string) => void;
 }
 
 export function VendorLinkedItems({
@@ -40,6 +44,9 @@ export function VendorLinkedItems({
   onFetchParts,
   partsLoading,
   onCtaClick,
+  // ✅ Destructure New Props
+  vendorType,
+  onVendorTypeChange,
 }: VendorLinkedItemsProps) {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
@@ -47,7 +54,6 @@ export function VendorLinkedItems({
     { id: "manufacturer", name: "Manufacturer" },
     { id: "distributor", name: "Distributor" },
   ];
-  const [selectedVendorType, setSelectedVendorType] = useState<string[]>([]);
 
   return (
     <div className="space-y-6 px-6">
@@ -111,7 +117,7 @@ export function VendorLinkedItems({
         />
       </div>
 
-      {/* Vendor Type Dropdown */}
+      {/* Vendor Type Dropdown (Now Controlled) */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-4">
           Vendor Type
@@ -121,8 +127,8 @@ export function VendorLinkedItems({
           placeholder="Select vendor type..."
           options={vendorTypeOptions}
           loading={false}
-          value={selectedVendorType}
-          onSelect={(val) => setSelectedVendorType(val as string[])}
+          value={vendorType} // ✅ Uses Parent State
+          onSelect={(val) => onVendorTypeChange(val as string)} // ✅ Updates Parent State
           onFetch={() => {}}
           activeDropdown={activeDropdown}
           setActiveDropdown={setActiveDropdown}
