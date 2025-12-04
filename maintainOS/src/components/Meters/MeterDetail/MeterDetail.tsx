@@ -166,8 +166,8 @@ export function MeterDetail({
           setShowReadingMeter={setShowReadingMeter}
         />
         <MeterDetailsSection selectedMeter={selectedMeter} />
-        <MeterAutomations />
-        <MeterWorkOrders selectedMeter={selectedMeter} />
+        {/* <MeterAutomations /> */}
+        {/* <MeterWorkOrders selectedMeter={selectedMeter} /> */}
         {selectedMeter.createdAt === selectedMeter.updatedAt ? (
           <>
             <div className="text-sm text-gray-500 mt-6">
