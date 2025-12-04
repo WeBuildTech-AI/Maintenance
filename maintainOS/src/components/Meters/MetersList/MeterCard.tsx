@@ -92,7 +92,7 @@ export function MeterCard({
       }`}
       onClick={() => {
         setSelectedMeter(meter);
-        navigate(`/meters/${meter.id}`);
+        // navigate(`/meters/${meter.id}`);
         setShowReadingMeter(false);
       }}
     >

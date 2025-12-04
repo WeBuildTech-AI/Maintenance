@@ -86,7 +86,7 @@ export function MeterDetail({
               <button
                 title="Copy Link"
                 onClick={() => {
-                  const url = `${window.location.origin}/meters/${selectedMeter.id}`;
+                  const url = `${window.location.origin}/meters?meterId=${selectedMeter.id}`;
                   navigator.clipboard.writeText(url);
                   toast.success("Meter link copied!");
                 }}

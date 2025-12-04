@@ -793,18 +793,18 @@ export default function AssetStatusMoreDetails({
                 <div className="mt-4 w-130 ">
                   <h6 className="font-bold">Meter Reading</h6>
                   {asset.meters && asset.meters.length > 0 ? (
-                    <div className="border border-orange-600 mt-2 p-4 rounded-lg">
+                    <div className=" flex justify-between gap-6 item-center ">
                       {asset.meters.map((meter) => (
-                        <div>
+                        <div className="border border-orange-600 mt-2 p-4 rounded-lg">
                           <div>
                             <p className="text-sm font-medium">{meter?.name}</p>
                           </div>
+                          <br></br>
                           <MeterReadings
                             selectedMeter={meter}
-                            setShowReadingMeter={() => {}} // Placeholder
+                            setShowReadingMeter={() => {}} 
                           />
-                          <div>
-                            </div>
+                          <div></div>
                         </div>
                       ))}
                     </div>
