@@ -51,9 +51,9 @@ export function Reporting() {
   };
 
   const handleFilterChange = useCallback((params: Record<string, any>) => {
-  setFilterParams(params);
-  console.log("Filter params:", params);
-}, []); 
+    setFilterParams(params);
+    console.log("Filter params:", params);
+  }, []);
 
   const monthNames = [
     "January",
@@ -205,13 +205,21 @@ export function Reporting() {
       </div>
 
       {/* Filters */}
-      <div className="border-b border-border bg-white px-6 py-3" style={{ position: 'relative', zIndex: 999, overflow: 'visible' }}>
+      <div
+        className="border-b border-border bg-white px-6 py-3"
+        style={{ position: "relative", zIndex: 999, overflow: "visible" }}
+      >
         <ReportingFilterBar onParamsChange={handleFilterChange} />
       </div>
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto px-6 py-6 relative z-0">
-        {activeTab === "work-orders" && <WorkOrdersTab />}
+        {activeTab === "work-orders" && (
+          <WorkOrdersTab
+            filters={filterParams}
+            dateRange={{ startDate, endDate }}
+          />
+        )}
         {activeTab === "asset-health" && (
           <div className="text-center py-12 text-gray-500">
             Asset Health tab is locked. Upgrade to access this feature.

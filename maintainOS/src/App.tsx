@@ -8,6 +8,9 @@ import { login, logout } from "./store/userSlice";
 import { lazyImport } from "./utils/lazyImport";
 import InviteUsers from "./components/Users/InviteUser/InviteUser";
 import CreateTeamForm from "./components/Users/CreateTeam/CreateTeam";
+import { client } from "./lib/apollo"; // Import the client you just created
+import { AppConfigContext } from "antd/es/app/context";
+import { ApolloProvider } from "@apollo/client/react";
 
 // ✅ Lazy imports
 const Login = lazyImport(() => import("./components/Login"), "Login");
@@ -112,6 +115,7 @@ export default function App() {
     <>
       <MainLayout user={user} onLogout={handleLogout}>
         <Suspense fallback={<div className="p-4">Loading...</div>}>
+        <ApolloProvider client = {client}>
           <Routes>
             {/* Redirect root to /work-orders */}
             <Route path="/" element={<Navigate to="/work-orders" replace />} />
@@ -137,6 +141,8 @@ export default function App() {
             <Route path="/teams/create" element={<CreateTeamForm />} />
             <Route path="/users/profile/:id" element={<ManageUser />} />
           </Routes>
+          </ApolloProvider>
+
         </Suspense>
       </MainLayout>
     </>

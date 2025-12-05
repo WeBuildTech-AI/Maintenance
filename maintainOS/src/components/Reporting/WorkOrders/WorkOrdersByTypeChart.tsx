@@ -27,7 +27,15 @@ const workOrdersByTypeData = [
   { date: "12/7/2025", preventive: 0, reactive: 2, other: 0 },
 ];
 
-export function WorkOrdersByTypeChart() {
+interface WorkOrdersByTypeChartProps {
+  filters: Record<string, any>;
+  dateRange: { startDate: string; endDate: string };
+}
+
+export function WorkOrdersByTypeChart({
+  filters,
+  dateRange,
+}: WorkOrdersByTypeChartProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-4">
