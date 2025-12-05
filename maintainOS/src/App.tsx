@@ -25,7 +25,7 @@ const Inventory = lazyImport(
   "Inventory"
 );
 const Reporting = lazyImport(
-  () => import("./components/Reporting"),
+  () => import("./components/Reporting/Reporting"),
   "Reporting"
 );
 const Messages = lazyImport(
