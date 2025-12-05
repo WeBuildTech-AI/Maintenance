@@ -13,6 +13,9 @@ import { AssetVendor } from "./sections/AssetVendor";
 import { AssetType } from "./sections/AssetType";
 import { AssetPart } from "./sections/AssetPart";
 import { AssetTeams } from "./sections/AssetTeams";
+import { Button } from "../../ui/button";
+import { Building2, Upload } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 // import { AssetWorkOrders } from "./sections/AssetWorkOrders";
 
 // You should import this interface from a shared types file
@@ -40,27 +43,49 @@ export function AssetDetailContent({
   fetchAssetsData,
   setSeeMoreAssetStatus,
 }: AssetDetailContentProps) {
+  const navigate = useNavigate();
   return (
-    <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-6">
-      {/* 3. Now the prop can be passed down successfully */}
-      <AssetStatusReadings
-        asset={asset}
-        fetchAssetsData={fetchAssetsData}
-        setSeeMoreAssetStatus={setSeeMoreAssetStatus}
-      />
+    <div className="relative flex flex-col flex-1 min-h-0">
+      {/* Scrollable content */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <AssetStatusReadings
+          asset={asset}
+          fetchAssetsData={fetchAssetsData}
+          setSeeMoreAssetStatus={setSeeMoreAssetStatus}
+        />
+        <AssetLocation asset={asset} />
+        <AssetCriticality asset={asset} />
+        <AssetManufacturer asset={asset} />
+        <AssetDescription asset={asset} />
+        <AssetQrCode asset={asset} />
+        <AssetTeams asset={asset} />
+        <AssetType asset={asset} />
+        <AssetSubAssets />
+        <AssetVendor asset={asset} />
+        <AssetPart asset={asset} />
+        <AssetAutomations />
+        <AssetCreatedUpdated asset={asset} />
+      </div>
 
-      <AssetLocation asset={asset} />
-      <AssetCriticality asset={asset} />
-      <AssetManufacturer asset={asset} />
-      <AssetDescription asset={asset} />
-      <AssetQrCode asset={asset} />
-      <AssetTeams asset={asset}/>
-      <AssetType asset={asset} />
-      <AssetSubAssets />
-      <AssetVendor asset={asset} />
-      <AssetPart asset={asset} />
-      <AssetAutomations />
-      <AssetCreatedUpdated asset={asset} />
+      {/* Center bottom floating button */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: "24px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 10,
+        }}
+      >
+        <Button
+          variant="outline"
+          onClick={() => navigate("/work-orders/create")}
+          className="text-yellow-600 cursor-pointer border-2 border-yellow-400 hover:bg-yellow-50 px-8 py-3 rounded-full shadow-lg bg-white font-medium whitespace-nowrap"
+        >
+          <Building2 className="w-5 h-5 mr-2" />
+          Use in New Work Order
+        </Button>
+      </div>
     </div>
   );
 }

@@ -153,6 +153,7 @@ export function AssetTable({
   onDelete,
   showDeleted,
   setShowDeleted,
+  setSeeMoreAssetStatus,
 }: {
   assets: any[];
   selectedAsset: any;
@@ -164,6 +165,7 @@ export function AssetTable({
   onDelete: (id: string | number) => void;
   showDeleted: boolean;
   setShowDeleted: (value: boolean) => void;
+  setSeeMoreAssetStatus: (value: boolean) => void;
 }) {
   const dispatch = useDispatch<AppDispatch>();
   const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
@@ -389,12 +391,10 @@ export function AssetTable({
               </Tooltip>
             )}
 
-            {/* <Tooltip text="Edit Criticality">
+            <Tooltip text="Edit Criticality">
               <button
                 ref={triggerRef}
-                onClick={() =>
-                  setIsCriticalityPopoverOpen((prev) => !prev)
-                }
+                onClick={() => setIsCriticalityPopoverOpen((prev) => !prev)}
                 disabled={isDeleting}
                 className={`flex items-center gap-1 transition ${
                   isDeleting
@@ -404,7 +404,7 @@ export function AssetTable({
               >
                 <MessageCircleWarning size={16} />
               </button>
-            </Tooltip> */}
+            </Tooltip>
 
             {isCriticalityPopoverOpen && (
               <div
@@ -680,6 +680,8 @@ export function AssetTable({
           showDetailsSection={showDetailsSection}
           restoreData={"Restore"}
           fetchData={fetchAssetsData}
+          showDeleted={showDeleted}
+          setSeeMoreAssetStatus={setSeeMoreAssetStatus}
         />
       )}
     </div>

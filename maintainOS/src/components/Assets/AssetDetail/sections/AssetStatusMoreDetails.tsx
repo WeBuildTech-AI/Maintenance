@@ -46,6 +46,7 @@ export default function AssetStatusMoreDetails({
   const [logData, setLogData] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showActionMenu, setShowActionMenu] = useState(false);
+  const [hideSeeReadingFlag, setHideSeeReadingFlag] = useState(false);
 
   useEffect(() => {
     setShowActionMenu(false);
@@ -790,25 +791,31 @@ export default function AssetStatusMoreDetails({
                     </div>
                   )}
                 </div>
-                <div className="mt-4 w-130 ">
+                <div className="mt-4 ">
                   <h6 className="font-bold">Meter Reading</h6>
-                  {asset.meters && asset.meters.length > 0 ? (
-                    <div className=" flex justify-between gap-6 item-center ">
+
+                  {asset.meters?.length > 0 && (
+                    <div className="flex-wrap justify-between items-center ">
                       {asset.meters.map((meter) => (
-                        <div className="border border-orange-600 mt-2 p-4 rounded-lg">
-                          <div>
-                            <p className="text-sm font-medium">{meter?.name}</p>
-                          </div>
-                          <br></br>
+                        <div
+                          key={meter.id || meter.name}
+                          className="border border-orange-600 mt-2 rounded-lg"
+                        >
+                          <p className="text-sm font-medium p-2">
+                            {meter?.name || "-"}
+                          </p>
+
+                          <br />
+
                           <MeterReadings
                             selectedMeter={meter}
-                            setShowReadingMeter={() => {}} 
+                            setShowReadingMeter={() => {}}
+                            hideSeeReadingFlag={hideSeeReadingFlag}
                           />
-                          <div></div>
                         </div>
                       ))}
                     </div>
-                  ) : null}
+                  )}
                 </div>
               </div>
             </div>

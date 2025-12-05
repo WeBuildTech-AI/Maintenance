@@ -7,34 +7,60 @@ import { Card, CardContent } from "../ui/card";
 import { NewLocationForm } from "./NewLocationForm/NewLocationForm";
 import { deleteLocation, locationService } from "../../store/locations";
 import type { LocationResponse } from "../../store/locations";
-import { FetchLocationsParams } from "../../store/locations/locations.types"; // ✅ Imported Types
+import { FetchLocationsParams } from "../../store/locations/locations.types";
 import type { ViewMode } from "../purchase-orders/po.types";
 import { LocationHeaderComponent } from "./LocationsHeader";
 import Loader from "../Loader/Loader";
-
 import { LocationTable } from "./LocationTable";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import type { AppDispatch, RootState } from "../../store";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate, useMatch } from "react-router-dom";
-
+// ✅ useSearchParams import kiya gaya hai URL sync ke liye
+import {
+  useNavigate,
+  useMatch,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import LocationDetails from "./LocationDetails";
+import SubLocation from "./SubLocation";
 
 export function Locations() {
-  const hasFetched = useRef(false);
   const dispatch = useDispatch<AppDispatch>();
+
+  // ✅ 1. URL Search Params Setup
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // ✅ 2. Initialize State from URL (Refresh hone par yahan se value uthayega)
+  const [searchQuery, setSearchQuery] = useState(
+    () => searchParams.get("search") || ""
+  );
+  const [debouncedSearch, setDebouncedSearch] = useState(
+    () => searchParams.get("search") || ""
+  );
+
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    return (searchParams.get("viewMode") as ViewMode) || "panel";
+  });
+
+  const [filterParams, setFilterParams] = useState<FetchLocationsParams>({
+    page: Number(searchParams.get("page")) || 1,
+    limit: 50,
+  });
+
   const [locations, setLocations] = useState<LocationResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [detailsLoading, setDetailsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] =
     useState<LocationResponse | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>("panel");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState(""); // ✅ Debounce
+
+  const { locationId } = useParams();
+
   const [showSettings, setShowSettings] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  
+
   const user = useSelector((state: RootState) => state.auth.user);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [sortType, setSortType] = useState("Last Updated");
@@ -44,13 +70,7 @@ export function Locations() {
   const headerRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const [showDeleted, setShowDeleted] = useState(false);
-
-  // ✅ FILTER PARAMETERS STATE
-  const [filterParams, setFilterParams] = useState<FetchLocationsParams>({
-    page: 1, 
-    limit: 50 
-  });
-
+  const [showSubLocation, setShowSubLocation] = useState(false);
   const navigate = useNavigate();
   const isCreateRoute = useMatch("/locations/create");
   const isEditRoute = useMatch("/locations/:locationId/edit");
@@ -64,7 +84,20 @@ export function Locations() {
     : null;
   const parentIdFromUrl = isCreateSubLocationRoute?.params.parentId;
 
-  // ✅ DEBOUNCE EFFECT
+  // ✅ 3. Sync State TO URL (State change hone par URL update karega)
+  useEffect(() => {
+    const params: any = {};
+
+    // if (viewMode) params.viewMode = viewMode;
+    if (debouncedSearch) params.search = debouncedSearch;
+    if (filterParams.page && filterParams.page > 1)
+      params.page = filterParams.page.toString();
+
+    // Existing query params ko maintain karte hue naye set karein
+    setSearchParams(params, { replace: true });
+  }, [viewMode, debouncedSearch, filterParams.page, setSearchParams]);
+
+  // Debounce Effect
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
@@ -72,46 +105,126 @@ export function Locations() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const handleShowNewLocationForm = () => {
-    navigate("/locations/create");
-  };
+  const fetchLocationById = useCallback(
+    async (id: string) => {
+      if (!id) return;
+      setDetailsLoading(true);
+      try {
+        const res = await locationService.fetchLocationById(id);
+        setSelectedLocation(res);
+        setLocations((prev) => {
+          const exists = prev.find((l) => l.id === id);
+          return exists ? prev : [res, ...prev];
+        });
+      } catch (err) {
+        console.error("Failed to fetch location by ID:", err);
+        navigate("/locations");
+      } finally {
+        setDetailsLoading(false);
+      }
+    },
+    [navigate]
+  );
+
+  // ✅ Main List Fetch Function (Updated dependencies)
+  const fetchLocations = useCallback(async () => {
+    setLoading(true);
+    try {
+      let res: any;
+      if (showDeleted) {
+        res = await locationService.fetchDeleteLocation();
+      } else {
+        const apiPayload = {
+          ...filterParams,
+          search: debouncedSearch || undefined,
+        };
+        res = await locationService.fetchLocations(apiPayload);
+      }
+      const reversedLocations = [...res].reverse();
+      setLocations(reversedLocations);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to fetch locations");
+      setLocations([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [showDeleted, filterParams, debouncedSearch]);
+
+  // Initial Fetch
+  useEffect(() => {
+    fetchLocations();
+  }, [fetchLocations]);
+
+  // ✅ CORE FIX: Selection Logic (Deep Linking + Default Selection)
+  // Yeh useEffect ensure karta hai ki agar URL mein ID hai to wahi open ho, chahe refresh karein
+  useEffect(() => {
+    // 1. Create/Edit Mode check (Skip logic if creating new)
+    if (isCreateRoute || isCreateSubLocationRoute) {
+      return;
+    }
+
+    // 2. URL ID Logic (High Priority)
+    if (locationId) {
+      // Agar already wahi location selected hai to kuch mat karo
+      if (selectedLocation?.id === locationId) return;
+
+      // Check karo ki kya ye ID loaded list mein hai?
+      const foundInList = locations.find((l) => l.id === locationId);
+
+      if (foundInList) {
+        // List mein mil gaya -> Select kar lo
+        setSelectedLocation(foundInList);
+      } else {
+        // 🔴 List mein nahi mila (Refresh Case) -> API se fetch karo
+        // Hum yahan 'loading' ka wait nahi karenge taaki URL wala data turant dikhe.
+        fetchLocationById(locationId);
+      }
+    }
+    // 3. Default Selection (Sirf tab jab URL mein koi ID nahi hai)
+    else if (!loading && locations.length > 0 && !selectedLocation) {
+      const firstLocation = locations[0];
+      setSelectedLocation(firstLocation);
+      navigate(`/locations/${firstLocation.id}`, { replace: true });
+    }
+  }, [
+    locationId,
+    locations,
+    // loading, // Loading dependency hata di gayi hai taaki refresh par turant ID check ho
+    isCreateRoute,
+    isCreateSubLocationRoute,
+    fetchLocationById,
+    navigate,
+    selectedLocation,
+  ]);
+
+  // Handlers
+  const handleShowNewLocationForm = () => navigate("/locations/create");
 
   const handleCancelForm = () => {
-    navigate("/locations");
-  };
-
-  const handleShowNewSubLocationForm = () => {
-    if (selectedLocation) {
-      navigate(`/locations/${selectedLocation.id}/create-sublocation`);
-    }
+    if (selectedLocation) navigate(`/locations/${selectedLocation.id}`);
+    else navigate("/locations");
   };
 
   const handleRootLocationCreate = (newLocation: LocationResponse) => {
     const updatedLocations = [newLocation, ...locations];
     setLocations(updatedLocations);
     setSelectedLocation(newLocation);
-    navigate("/locations");
+    navigate(`/locations/${newLocation.id}`);
   };
 
   const handleSubLocationCreated = (newSubLocation: LocationResponse) => {
     const parentId = newSubLocation.parentId;
     if (!parentId) return;
-
     const updatedLocations = locations.map((loc) => {
       if (loc.id === parentId) {
-        const updatedChildren = [...(loc.children || []), newSubLocation];
-        return { ...loc, children: updatedChildren };
+        return { ...loc, children: [...(loc.children || []), newSubLocation] };
       }
       return loc;
     });
-
     setLocations(updatedLocations);
-
     const updatedParent = updatedLocations.find((loc) => loc.id === parentId);
-    if (updatedParent) {
-      setSelectedLocation(updatedParent);
-    }
-
+    if (updatedParent) setSelectedLocation(updatedParent);
     toast.success("Sub-location added successfully!");
     navigate(`/locations/${parentId}`);
   };
@@ -121,82 +234,29 @@ export function Locations() {
       (loc) => loc.id === locationData.id
     );
     let updatedLocations;
-
     if (locationIndex > -1) {
       updatedLocations = [...locations];
       updatedLocations[locationIndex] = locationData;
     } else {
       updatedLocations = [locationData, ...locations];
     }
-
     setLocations(updatedLocations);
     setSelectedLocation(locationData);
-    navigate("/locations");
+    navigate(`/locations/${locationData.id}`);
   };
 
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-
-  // ✅ FETCH LOCATIONS (Memoized with Filters)
-  const fetchLocations = useCallback(
-    async () => {
-      setLoading(true);
-      setPage(1);
-      // Don't clear selected location on background updates to avoid flicker
-      // setSelectedLocation(null); 
-      let res: any;
-
-      try {
-        if (showDeleted) {
-          res = await locationService.fetchDeleteLocation();
-        } else {
-          // ✅ USE API PAYLOAD WITH FILTERS
-          // Note: API uses 'search' for name/address fuzzy search
-          const apiPayload = {
-            ...filterParams,
-            search: debouncedSearch || undefined
-          };
-          
-          res = await locationService.fetchLocations(apiPayload);
-        }
-
-        const reversedLocations = [...res].reverse(); // Keep existing sorting or rely on backend
-        setLocations(reversedLocations);
-
-        if (!selectedLocation && reversedLocations.length > 0) {
-          setSelectedLocation(reversedLocations[0]);
-        }
-
-        if (!res || res.length < (filterParams.limit as number)) {
-          setHasMore(false);
-        } else {
-          setHasMore(true);
-        }
-      } catch (err) {
-        console.error(err);
-        setError("Failed to fetch locations");
-        setLocations([]);
-      } finally {
-        setLoading(false);
-      }
+  // ✅ Updated handleFilterChange to work with State->URL flow
+  const handleFilterChange = useCallback(
+    (newParams: Partial<FetchLocationsParams>) => {
+      setFilterParams((prev) => {
+        const merged = { ...prev, ...newParams };
+        if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
+        return merged;
+      });
     },
-    [showDeleted, filterParams, debouncedSearch]
+    []
   );
 
-  useEffect(() => {
-    fetchLocations();
-  }, [fetchLocations]);
-
-  // ✅ HANDLER: Filter Change
-  const handleFilterChange = useCallback((newParams: Partial<FetchLocationsParams>) => {
-    setFilterParams((prev) => {
-      const merged = { ...prev, ...newParams };
-      if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
-      return merged;
-    });
-  }, []);
-
-  // 2. Sort the results (Client side sort of current page)
   const sortedLocations = useMemo(() => {
     let items = [...locations];
     items.sort((a, b) => {
@@ -221,7 +281,7 @@ export function Locations() {
     return items;
   }, [locations, sortType, sortOrder]);
 
-  // NEW: useEffect to position the custom dropdown
+  // Dropdown positioning & Clicks
   useEffect(() => {
     if (isDropdownOpen && headerRef.current) {
       const rect = headerRef.current.getBoundingClientRect();
@@ -232,23 +292,6 @@ export function Locations() {
     }
   }, [isDropdownOpen]);
 
-  // show the name in sortbar
-  const sortLabel = useMemo(() => {
-    switch (sortType) {
-      case "Last Updated":
-        return sortOrder === "desc"
-          ? "Most Recent First"
-          : "Least Recent First";
-      case "Creation Date":
-        return sortOrder === "desc" ? "Newest First" : "Oldest First";
-      case "Name":
-        return sortOrder === "asc" ? "Ascending Order" : "Descending Order";
-      default:
-        return "Sort By"; 
-    }
-  }, [sortType, sortOrder]);
-
-  // NEW: useEffect to close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -259,36 +302,37 @@ export function Locations() {
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [modalRef]);
 
-  const handleDeleteLocation = (id: string) => {
-    const currentVisibleIndex = sortedLocations.findIndex(
-      (loc) => loc.id === id
-    );
+  const sortLabel = useMemo(() => {
+    if (sortType === "Last Updated")
+      return sortOrder === "desc" ? "Most Recent First" : "Least Recent First";
+    if (sortType === "Creation Date")
+      return sortOrder === "desc" ? "Newest First" : "Oldest First";
+    if (sortType === "Name")
+      return sortOrder === "asc" ? "Ascending Order" : "Descending Order";
+    return "Sort By";
+  }, [sortType, sortOrder]);
 
+  const handleDeleteLocation = (id: string) => {
     dispatch(deleteLocation(id))
       .unwrap()
       .then(() => {
         const newLocationsList = locations.filter((loc) => loc.id !== id);
         setLocations(newLocationsList);
-
         if (newLocationsList.length === 0) {
           setSelectedLocation(null);
+          navigate("/locations");
         } else {
-          const newIndexToSelect = Math.min(
-            currentVisibleIndex,
-            newLocationsList.length - 1
-          );
-          setSelectedLocation(newLocationsList[newIndexToSelect]);
+          // Select next available
+          const nextLoc = newLocationsList[0];
+          setSelectedLocation(nextLoc);
+          navigate(`/locations/${nextLoc.id}`);
         }
-
         toast.success("Location deleted successfully!");
       })
       .catch((error) => {
-        console.error("Delete failed:", error);
         toast.error("Failed to delete the location.");
       });
   };
@@ -301,24 +345,7 @@ export function Locations() {
       .join("")
       .toUpperCase();
 
-  const fetchLocationById = async (id?: string) => {
-    if (!id) {
-      await fetchLocations();
-      return;
-    }
-
-    try {
-      const res = await locationService.fetchLocationById(id);
-      setSelectedLocation(res);
-      setLocations((prev) => prev.map((loc) => (loc.id === id ? res : loc)));
-    } catch (err) {
-      console.error("Failed to fetch location by ID:", err);
-      toast.error("Failed to refresh location data");
-    }
-  };
-
-  // -------------------- JSX Rendering --------------------
-
+  // -------------------- JSX --------------------
   return (
     <>
       <div>
@@ -330,33 +357,31 @@ export function Locations() {
           setViewMode,
           searchQuery,
           setSearchQuery,
-          handleShowNewLocationForm, 
+          handleShowNewLocationForm,
           setShowSettings,
           setIsSettingsModalOpen,
           setShowDeleted,
-          handleFilterChange // ✅ Pass Filter Handler
+          handleFilterChange
         )}
 
         {viewMode === "table" ? (
-          <>
-            <LocationTable
-              location={sortedLocations}
-              selectedLocation={selectedLocation}
-              setIsSettingsModalOpen={setIsSettingsModalOpen}
-              isSettingsModalOpen={isSettingsModalOpen}
-              fetchLocations={fetchLocations}
-              showDeleted={showDeleted}
-              setShowDeleted={setShowDeleted}
-            />
-          </>
+          <LocationTable
+            location={sortedLocations}
+            selectedLocation={selectedLocation}
+            setIsSettingsModalOpen={setIsSettingsModalOpen}
+            isSettingsModalOpen={isSettingsModalOpen}
+            fetchLocations={fetchLocations}
+            showDeleted={showDeleted}
+            setShowDeleted={setShowDeleted}
+          />
         ) : (
           <>
             <div className="flex gap-2 flex-1 overflow-hidden mt-3 min-h-0">
               <div className="border ml-3 mr-1 w-96 flex flex-col">
-                {/* --- Sort Header --- */}
+                {/* SORT HEADER */}
                 <div
                   ref={headerRef}
-                  className="flex items-center justify-between px-5 py-3 border-b bg-white relative z-10" 
+                  className="flex items-center justify-between px-5 py-3 border-b bg-white relative z-10"
                 >
                   <div className="flex items-center ml-3 gap-2 text-sm text-gray-700 font-medium">
                     <span>Sort By:</span>
@@ -366,24 +391,24 @@ export function Locations() {
                     >
                       {sortType}: {sortLabel}
                       {isDropdownOpen ? (
-                        <ChevronUp className="w-4 h-4 mt-1 text-orange-600" />
+                        <ChevronUp className="w-4 h-4 mt-1" />
                       ) : (
-                        <ChevronDown className="w-4 h-4 mt-1 text-orange-600" />
+                        <ChevronDown className="w-4 h-4 mt-1" />
                       )}
                     </button>
                   </div>
                 </div>
 
+                {/* Dropdown Menu */}
                 {isDropdownOpen && (
                   <div
                     ref={modalRef}
-                    className="fixed z-50 text-sm rounded-md border border-gray-200 bg-white shadow-lg animate-fade-in p-2"
+                    className="fixed z-50 text-sm rounded-md border border-gray-200 bg-white shadow-lg p-2"
                     style={{
                       top: dropdownPos.top,
                       left: dropdownPos.left,
                       transform: "translateX(-50%)",
                       width: "300px",
-                      maxWidth: "90vw",
                     }}
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -414,62 +439,63 @@ export function Locations() {
                                   : section.label
                               )
                             }
-                            className={`flex items-center justify-between w-full px-4 py-3 text-sm transition-all rounded-md ${
+                            className={`flex items-center justify-between w-full px-4 py-3 text-sm rounded-md ${
                               sortType === section.label
-                                ? "text-orange-600 font-medium bg-gray-50"
-                                : "text-gray-800 hover:bg-gray-50"
+                                ? "text-orange-600 bg-gray-50"
+                                : "text-gray-800"
                             }`}
                           >
                             <span>{section.label}</span>
                             {openSection === section.label ? (
-                              <ChevronUp className="w-3.5 h-3.5 text-gray-400" />
+                              <ChevronUp className="w-3.5" />
                             ) : (
-                              <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                              <ChevronDown className="w-3.5" />
                             )}
                           </button>
-
                           {openSection === section.label && (
                             <div className="flex flex-col bg-gray-50 border-t border-gray-100 py-1">
-                              {section.options.map((opt) => {
-                                const isSelected =
-                                  (section.label === sortType &&
-                                    sortOrder === "asc" &&
-                                    (opt.includes("Asc") ||
-                                      opt.includes("Oldest") ||
-                                      opt.includes("Least"))) ||
-                                  (section.label === sortType &&
-                                    sortOrder === "desc" &&
-                                    (opt.includes("Desc") ||
-                                      opt.includes("Newest") ||
-                                      opt.includes("Most")));
-
-                                return (
-                                  <button
-                                    key={opt}
-                                    onClick={() => {
-                                      setSortType(section.label);
-                                      setSortOrder(
-                                        opt.includes("Asc") ||
-                                          opt.includes("Oldest") ||
-                                          opt.includes("Least")
-                                          ? "asc"
-                                          : "desc"
-                                      );
-                                      setIsDropdownOpen(false); 
-                                    }}
-                                    className={`flex items-center justify-between px-6 py-2 text-left text-sm transition rounded-md ${
-                                      isSelected
-                                        ? "text-orange-600  bg-white"
-                                        : "text-gray-700 hover:text-blue-300 hover:bg-white"
-                                    }`}
-                                  >
-                                    {opt}
-                                    {isSelected && (
-                                      <Check className="w-3.5 h-3.5 text-orange-600" />
+                              {section.options.map((opt) => (
+                                <button
+                                  key={opt}
+                                  onClick={() => {
+                                    setSortType(section.label);
+                                    setSortOrder(
+                                      opt.includes("Asc") ||
+                                        opt.includes("Oldest") ||
+                                        opt.includes("Least")
+                                        ? "asc"
+                                        : "desc"
+                                    );
+                                    setIsDropdownOpen(false);
+                                  }}
+                                  className={`flex items-center justify-between px-6 py-2 text-left text-sm ${
+                                    section.label === sortType &&
+                                    ((sortOrder === "asc" &&
+                                      (opt.includes("Asc") ||
+                                        opt.includes("Oldest") ||
+                                        opt.includes("Least"))) ||
+                                      (sortOrder === "desc" &&
+                                        (opt.includes("Desc") ||
+                                          opt.includes("Newest") ||
+                                          opt.includes("Most"))))
+                                      ? "text-orange-600 bg-white"
+                                      : "text-gray-700 hover:bg-white"
+                                  }`}
+                                >
+                                  {opt}
+                                  {section.label === sortType &&
+                                    ((sortOrder === "asc" &&
+                                      (opt.includes("Asc") ||
+                                        opt.includes("Oldest") ||
+                                        opt.includes("Least"))) ||
+                                      (sortOrder === "desc" &&
+                                        (opt.includes("Desc") ||
+                                          opt.includes("Newest") ||
+                                          opt.includes("Most")))) && (
+                                      <Check className="w-3.5" />
                                     )}
-                                  </button>
-                                );
-                              })}
+                                </button>
+                              ))}
                             </div>
                           )}
                         </div>
@@ -480,8 +506,10 @@ export function Locations() {
 
                 {/* Locations List */}
                 <div className="flex-1 overflow-y-auto min-h-0">
-                  {loading && page === 1 ? (
-                    <Loader />
+                  {loading && filterParams.page === 1 ? (
+                    <div className="flex h-full items-center justify-center">
+                      <Loader />
+                    </div>
                   ) : sortedLocations && sortedLocations.length > 0 ? (
                     <>
                       {sortedLocations.map((items) => (
@@ -489,10 +517,12 @@ export function Locations() {
                           key={items.id}
                           onClick={() => {
                             setSelectedLocation(items);
+                            // Navigate to ID on click
                             navigate(`/locations/${items.id}`);
                           }}
                           className={`border-b cursor-pointer border-border transition hover:bg-muted/40 ${
-                            items?.id === selectedLocation?.id
+                            items.id === selectedLocation?.id ||
+                            items.id === locationId
                               ? "bg-primary/5"
                               : ""
                           }`}
@@ -507,7 +537,7 @@ export function Locations() {
                                         <AvatarImage
                                           className="w-6"
                                           src={`data:${items.photoUrls[0].mimetype};base64,${items.photoUrls[0].base64}`}
-                                          alt={items?.name || "Location Image"}
+                                          alt={items.name}
                                         />
                                       ) : (
                                         renderInitials(items.name)
@@ -521,7 +551,7 @@ export function Locations() {
                                   </h4>
                                   {items.address && (
                                     <div className="flex items-center gap-1 mt-1 text-muted-foreground">
-                                      <MapPin className="h-3 w-3 text-muted-foreground" />
+                                      <MapPin className="h-3 w-3" />
                                       <span className="text-sm truncate max-w-[200px] capitalize">
                                         {items.address}
                                       </span>
@@ -529,9 +559,7 @@ export function Locations() {
                                   )}
                                   {items.children &&
                                     items.children.length > 0 && (
-                                      <button
-                                        className="text-sm text-orange-600 cursor-pointer"
-                                      >
+                                      <button className="text-sm text-orange-600">
                                         <p>
                                           Sub Location: {items.children.length}
                                         </p>
@@ -543,43 +571,15 @@ export function Locations() {
                           </CardContent>
                         </Card>
                       ))}
-                      {!loading && hasMore && (
-                        <div className="text-center py-4">
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              const nextPage = page + 1;
-                              setPage(nextPage);
-                              // We need to update filterParams with new page, which triggers fetch via useEffect or direct call
-                              // Since logic is in fetchLocations dependent on filterParams, we update filterParams.
-                              // Actually, fetchLocations reads filterParams state. 
-                              // To implement load more, we might need to adjust logic to append instead of replace.
-                              // For now, simpler pagination: update state
-                              setFilterParams(prev => ({...prev, page: nextPage}));
-                            }}
-                            className="text-primary border-primary hover:bg-primary/10"
-                          >
-                            Load More
-                          </Button>
-                        </div>
-                      )}
-                      {loading && page > 1 && (
-                        <div className="text-center py-4">
-                          <Loader />
-                        </div>
-                      )}
                     </>
                   ) : (
                     <div className="text-center py-8">
-                      <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
-                        <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed"></div>
-                      </div>
                       <p className="text-muted-foreground mb-2">
                         Start adding Location on MaintainOS
                       </p>
                       <Button
                         onClick={handleShowNewLocationForm}
-                        className="text-primary p-0 bg-white cursor-pointer"
+                        className="text-primary p-0 bg-white"
                       >
                         Create the first Location
                       </Button>
@@ -591,6 +591,7 @@ export function Locations() {
               {/* Right Card (Detail / Form View) */}
               <Card className="flex flex-col h-full mr-2 flex-1 ">
                 <CardContent className="flex-1 min-h-0">
+                  {/* 1️⃣ Create / Edit / Create SubLocation Form */}
                   {isCreateRoute || isEditRoute || isCreateSubLocationRoute ? (
                     <NewLocationForm
                       onCancel={handleCancelForm}
@@ -606,29 +607,40 @@ export function Locations() {
                       editData={locationToEdit}
                       initialParentId={parentIdFromUrl}
                       isSubLocation={!!isCreateSubLocationRoute}
-                      fetchLocationById={fetchLocationById}
+                      fetchLocationById={(id) => fetchLocationById(id || "")}
+                    />
+                  ) : showSubLocation ? (
+                    /* 2️⃣ SHOW SUBLOCATION VIEW WHEN showSubLocation === true */
+                    <SubLocation
+                      selectedLocation={selectedLocation}
+                      onClose={() => setShowSubLocation(false)}
                     />
                   ) : selectedLocation ? (
+                    /* 3️⃣ Normal Location Details View */
                     <LocationDetails
                       selectedLocation={selectedLocation}
-                      onEdit={(v) => navigate(`/vendors/${v.id}/edit`)}
+                      onEdit={(v) => navigate(`/locations/${v.id}/edit`)}
                       handleDeleteLocation={handleDeleteLocation}
-                      handleShowNewSubLocationForm={
-                        handleShowNewSubLocationForm
-                      }
+                      handleShowNewSubLocationForm={() => {
+                        setShowSetLocation(true); // 👈 yeh toggle karega SubLocation view
+                      }}
                       user={user}
+                      restoreData={""}
+                      fetchLocation={fetchLocations}
+                      onClose={() => setSelectedLocation(null)}
+                      setShowSubLocation={setShowSubLocation}
                     />
+                  ) : detailsLoading ? (
+                    /* 4️⃣ Loader when fetching */
+                    <div className="flex items-center justify-center h-full">
+                      <Loader />
+                    </div>
                   ) : (
+                    /* 5️⃣ Empty State */
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center">
-                        <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
-                          <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed"></div>
-                        </div>
                         <p className="text-muted-foreground mb-2">
                           Select a Location to view details
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          or create a new Location to get started
                         </p>
                       </div>
                     </div>
