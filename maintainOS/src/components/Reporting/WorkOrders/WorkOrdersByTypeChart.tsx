@@ -116,11 +116,16 @@ export function WorkOrdersByTypeChart({
       .map(([dateStr, data]) => {
         let formattedDate = dateStr;
         try {
-          const dateObj = parseISO(dateStr);
-          if (isValid(dateObj)) {
-            formattedDate = format(dateObj, "MMM dd");
+          // Handle both ISO date strings and timestamps
+          const dateValue = !isNaN(Number(dateStr))
+            ? new Date(Number(dateStr))
+            : parseISO(dateStr);
+          if (isValid(dateValue)) {
+            formattedDate = format(dateValue, "MMM dd");
           }
-        } catch (e) {}
+        } catch (e) {
+          console.error("Date parsing error:", e, dateStr);
+        }
 
         return {
           date: formattedDate,
