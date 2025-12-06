@@ -4,6 +4,17 @@ import { GET_CHART_DATA } from "../../../graphql/reporting.queries";
 import { mapFilters } from "../filterUtils";
 import { Button } from "../../ui/button";
 import { Loader2 } from "lucide-react";
+import { format, parseISO, isValid } from "date-fns";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 interface Props {
   filters: Record<string, any>;
@@ -46,6 +57,22 @@ export function WorkOrdersByTypeDetail({ filters, dateRange }: Props) {
     return mapFilters(filters, dateRange);
   }, [filters, dateRange]);
 
+  // Query for chart data (date-based, independent of groupBy selection)
+  const { data: chartData } = useQuery<{
+    getChartData: Array<{ groupValues: string[]; value: number }>;
+  }>(GET_CHART_DATA, {
+    variables: {
+      input: {
+        dataset: "WORK_ORDERS",
+        groupByFields: ["createdAt", "workType"],
+        metric: "COUNT",
+        filters: apiFilters,
+      },
+    },
+    fetchPolicy: "cache-and-network",
+  });
+
+  // Query for table data (grouped by selected field)
   const { data, loading } = useQuery<{
     getChartData: Array<{ groupValues: string[]; value: number }>;
   }>(GET_CHART_DATA, {
@@ -117,6 +144,58 @@ export function WorkOrdersByTypeDetail({ filters, dateRange }: Props) {
     });
   }, [data]);
 
+  // Process chart data by date
+  const chartDataForChart = useMemo(() => {
+    if (!chartData?.getChartData) return [];
+
+    const dateMap = new Map<
+      string,
+      { preventive: number; reactive: number; other: number }
+    >();
+
+    chartData.getChartData.forEach((item) => {
+      const [dateLabel, workType] = item.groupValues || [];
+      if (!dateLabel || dateLabel === "Unassigned") return;
+
+      if (!dateMap.has(dateLabel)) {
+        dateMap.set(dateLabel, { preventive: 0, reactive: 0, other: 0 });
+      }
+
+      const entry = dateMap.get(dateLabel)!;
+      const workTypeLower = workType?.toLowerCase();
+      if (workTypeLower === "preventive") entry.preventive = item.value;
+      else if (workTypeLower === "reactive") entry.reactive = item.value;
+      else if (workTypeLower === "other") entry.other = item.value;
+    });
+
+    return Array.from(dateMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([dateStr, data]) => {
+        let formatted = dateStr;
+        try {
+          const dateValue = !isNaN(Number(dateStr))
+            ? new Date(Number(dateStr))
+            : parseISO(dateStr);
+          if (isValid(dateValue)) {
+            formatted = format(dateValue, "MMM dd");
+          }
+        } catch (e) {
+          console.error("Date parsing error:", e, dateStr);
+        }
+        return { name: formatted, ...data };
+      });
+  }, [chartData]);
+
+  const totals = useMemo(() => {
+    const preventive = tableData.reduce((sum, row) => sum + row.preventive, 0);
+    const reactive = tableData.reduce((sum, row) => sum + row.reactive, 0);
+    const other = tableData.reduce((sum, row) => sum + row.other, 0);
+    const total = preventive + reactive + other;
+    const preventiveRatio =
+      total > 0 ? Math.round((preventive / total) * 100) : 0;
+    return { preventive, reactive, other, preventiveRatio };
+  }, [tableData]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -127,6 +206,82 @@ export function WorkOrdersByTypeDetail({ filters, dateRange }: Props) {
 
   return (
     <div className="space-y-6">
+      {/* Chart Section */}
+      <div className="bg-white border rounded-lg p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold">Work Orders by Type</h3>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-2 border-gray-300"
+          >
+            <span className="text-xl">+</span>
+          </Button>
+        </div>
+
+        {/* Horizontal Layout: Stats Left, Chart Right */}
+        <div className="flex items-center gap-8">
+          {/* Left Side: Stats */}
+          <div className="flex flex-col gap-8">
+            <div className="flex items-center gap-4">
+              <span className="text-6xl font-bold min-w-[80px] text-right">
+                {totals.preventive}
+              </span>
+              <div className="px-6 py-2 border-2 border-teal-400 rounded-md bg-teal-50 text-teal-600 font-semibold text-sm whitespace-nowrap">
+                Preventive
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <span className="text-6xl font-bold min-w-[80px] text-right">
+                {totals.reactive}
+              </span>
+              <div className="px-6 py-2 border-2 border-blue-400 rounded-md bg-blue-50 text-blue-600 font-semibold text-sm whitespace-nowrap">
+                Reactive
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <span className="text-6xl font-bold min-w-[80px] text-right">
+                {totals.other}
+              </span>
+              <div className="px-6 py-2 border-2 border-gray-400 rounded-md bg-gray-50 text-gray-600 font-semibold text-sm whitespace-nowrap">
+                Other
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <span className="text-6xl font-bold min-w-[80px] text-right">
+                {totals.preventiveRatio}
+                <span className="text-3xl">%</span>
+              </span>
+              <div className="text-sm text-gray-600">Preventive Ratio</div>
+            </div>
+          </div>
+
+          {/* Right Side: Chart */}
+          <div className="flex-1 pl-8 border-l">
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={chartDataForChart}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="name"
+                  angle={-45}
+                  textAnchor="end"
+                  height={100}
+                />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="preventive" fill="#14b8a6" name="Preventive" />
+                <Bar dataKey="reactive" fill="#3b82f6" name="Reactive" />
+                <Bar dataKey="other" fill="#9ca3af" name="Other" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-sm font-medium text-gray-700 mr-2">
           Grouped by:

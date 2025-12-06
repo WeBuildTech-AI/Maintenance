@@ -4,6 +4,14 @@ import { GET_CHART_DATA } from "../../../graphql/reporting.queries";
 import { mapFilters } from "../filterUtils";
 import { Button } from "../../ui/button";
 import { Loader2 } from "lucide-react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  Legend,
+} from "recharts";
 
 interface Props {
   filters: Record<string, any>;
@@ -46,6 +54,22 @@ export function StatusDetail({ filters, dateRange }: Props) {
     return mapFilters(filters, dateRange);
   }, [filters, dateRange]);
 
+  // Query for chart data (status totals, independent of groupBy)
+  const { data: chartData } = useQuery<{
+    getChartData: Array<{ groupValues: string[]; value: number }>;
+  }>(GET_CHART_DATA, {
+    variables: {
+      input: {
+        dataset: "WORK_ORDERS",
+        groupByFields: ["status"],
+        metric: "COUNT",
+        filters: apiFilters,
+      },
+    },
+    fetchPolicy: "cache-and-network",
+  });
+
+  // Query for table data (grouped by selected field)
   const { data, loading } = useQuery<{
     getChartData: Array<{ groupValues: string[]; value: number }>;
   }>(GET_CHART_DATA, {
@@ -109,6 +133,40 @@ export function StatusDetail({ filters, dateRange }: Props) {
     return Array.from(grouped.values());
   }, [data]);
 
+  const totals = useMemo(() => {
+    if (!chartData?.getChartData)
+      return { open: 0, onHold: 0, inProgress: 0, done: 0 };
+
+    const rows = chartData.getChartData;
+    const open =
+      rows.find((r) => r.groupValues?.[0]?.toLowerCase() === "open")?.value ||
+      0;
+    const onHold =
+      rows.find((r) => r.groupValues?.[0]?.toLowerCase() === "on_hold")
+        ?.value || 0;
+    const inProgress =
+      rows.find((r) => r.groupValues?.[0]?.toLowerCase() === "in_progress")
+        ?.value || 0;
+    const done =
+      rows.find(
+        (r) =>
+          r.groupValues?.[0]?.toLowerCase() === "done" ||
+          r.groupValues?.[0]?.toLowerCase() === "completed"
+      )?.value || 0;
+
+    return { open, onHold, inProgress, done };
+  }, [chartData]);
+
+  const pieData = useMemo(
+    () => [
+      { name: "Open", value: totals.open, color: "#3B82F6" },
+      { name: "On Hold", value: totals.onHold, color: "#880808" },
+      { name: "In Progress", value: totals.inProgress, color: "#E1C16E" },
+      { name: "Done", value: totals.done, color: "#10B981" },
+    ],
+    [totals]
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -119,6 +177,92 @@ export function StatusDetail({ filters, dateRange }: Props) {
 
   return (
     <div className="space-y-6">
+      {/* Chart Section */}
+      <div className="bg-white border rounded-lg p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold">Status</h3>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-2 border-gray-300"
+          >
+            <span className="text-xl">+</span>
+          </Button>
+        </div>
+
+        {/* Horizontal Layout: Stats Left, Chart Right */}
+        <div className="flex items-center gap-8">
+          {/* Left Side: Stats */}
+          <div className="grid grid-cols-2 gap-6">
+            <div className="text-center">
+              <div className="text-6xl font-bold">{totals.open}</div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2 text-blue-600 border-blue-300 hover:bg-blue-50"
+              >
+                Open
+              </Button>
+            </div>
+
+            <div className="text-center">
+              <div className="text-6xl font-bold">{totals.onHold}</div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2 text-red-600 border-red-300 hover:bg-red-50"
+              >
+                On Hold
+              </Button>
+            </div>
+
+            <div className="text-center">
+              <div className="text-6xl font-bold">{totals.inProgress}</div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2 text-yellow-600 border-yellow-300 hover:bg-yellow-50"
+              >
+                In Progress
+              </Button>
+            </div>
+
+            <div className="text-center">
+              <div className="text-6xl font-bold">{totals.done}</div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2 text-green-600 border-green-300 hover:bg-green-50"
+              >
+                Done
+              </Button>
+            </div>
+          </div>
+
+          {/* Right Side: Pie Chart */}
+          <div className="flex-1 pl-8 border-l">
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={4}
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={index} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-sm font-medium text-gray-700 mr-2">
           Grouped by:

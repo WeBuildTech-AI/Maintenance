@@ -27,10 +27,28 @@ export function WorkOrdersTab({
           onNavigateToDetails?.("created-vs-completed")
         }
       />
-      <WorkOrdersByTypeChart filters={filters} dateRange={dateRange} />
-      <WorkOrdersRepeatingChart filters={filters} dateRange={dateRange} />
-      <WorkOrdersStatusChart filters={filters} dateRange={dateRange} />
-      <WorkOrdersPriorityChart filters={filters} dateRange={dateRange} />
+      <WorkOrdersByTypeChart
+        filters={filters}
+        dateRange={dateRange}
+        onNavigateToDetails={() => onNavigateToDetails?.("work-orders-by-type")}
+      />
+      <WorkOrdersRepeatingChart
+        filters={filters}
+        dateRange={dateRange}
+        onNavigateToDetails={() =>
+          onNavigateToDetails?.("non-repeating-vs-repeating")
+        }
+      />
+      <WorkOrdersStatusChart
+        filters={filters}
+        dateRange={dateRange}
+        onNavigateToDetails={() => onNavigateToDetails?.("status")}
+      />
+      <WorkOrdersPriorityChart
+        filters={filters}
+        dateRange={dateRange}
+        onNavigateToDetails={() => onNavigateToDetails?.("priority")}
+      />
     </div>
   );
 }

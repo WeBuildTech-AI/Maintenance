@@ -4,6 +4,14 @@ import { GET_CHART_DATA } from "../../../graphql/reporting.queries";
 import { mapFilters } from "../filterUtils";
 import { Button } from "../../ui/button";
 import { Loader2 } from "lucide-react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  Legend,
+} from "recharts";
 
 interface Props {
   filters: Record<string, any>;
@@ -46,6 +54,22 @@ export function PriorityDetail({ filters, dateRange }: Props) {
     return mapFilters(filters, dateRange);
   }, [filters, dateRange]);
 
+  // Query for chart data (priority totals, independent of groupBy)
+  const { data: chartData } = useQuery<{
+    getChartData: Array<{ groupValues: string[]; value: number }>;
+  }>(GET_CHART_DATA, {
+    variables: {
+      input: {
+        dataset: "WORK_ORDERS",
+        groupByFields: ["priority"],
+        metric: "COUNT",
+        filters: apiFilters,
+      },
+    },
+    fetchPolicy: "cache-and-network",
+  });
+
+  // Query for table data (grouped by selected field)
   const { data, loading } = useQuery<{
     getChartData: Array<{ groupValues: string[]; value: number }>;
   }>(GET_CHART_DATA, {
@@ -102,6 +126,36 @@ export function PriorityDetail({ filters, dateRange }: Props) {
     return Array.from(grouped.values());
   }, [data]);
 
+  const totals = useMemo(() => {
+    if (!chartData?.getChartData)
+      return { none: 0, low: 0, medium: 0, high: 0 };
+
+    const rows = chartData.getChartData;
+    const none =
+      rows.find((r) => r.groupValues?.[0]?.toLowerCase() === "none")?.value ||
+      0;
+    const low =
+      rows.find((r) => r.groupValues?.[0]?.toLowerCase() === "low")?.value || 0;
+    const medium =
+      rows.find((r) => r.groupValues?.[0]?.toLowerCase() === "medium")?.value ||
+      0;
+    const high =
+      rows.find((r) => r.groupValues?.[0]?.toLowerCase() === "high")?.value ||
+      0;
+
+    return { none, low, medium, high };
+  }, [chartData]);
+
+  const pieData = useMemo(
+    () => [
+      { name: "None", value: totals.none, color: "#3B82F6" },
+      { name: "Low", value: totals.low, color: "#10B981" },
+      { name: "Medium", value: totals.medium, color: "#F59E0B" },
+      { name: "High", value: totals.high, color: "#EF4444" },
+    ],
+    [totals]
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -112,6 +166,92 @@ export function PriorityDetail({ filters, dateRange }: Props) {
 
   return (
     <div className="space-y-6">
+      {/* Chart Section */}
+      <div className="bg-white border rounded-lg p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold">Priority</h3>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-2 border-gray-300"
+          >
+            <span className="text-xl">+</span>
+          </Button>
+        </div>
+
+        {/* Horizontal Layout: Stats Left, Chart Right */}
+        <div className="flex items-center gap-8">
+          {/* Left Side: Stats */}
+          <div className="grid grid-cols-2 gap-6">
+            <div className="text-center">
+              <div className="text-6xl font-bold">{totals.none}</div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2 text-blue-600 border-blue-300 hover:bg-blue-50"
+              >
+                None
+              </Button>
+            </div>
+
+            <div className="text-center">
+              <div className="text-6xl font-bold">{totals.low}</div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2 text-green-600 border-green-300 hover:bg-green-50"
+              >
+                Low
+              </Button>
+            </div>
+
+            <div className="text-center">
+              <div className="text-6xl font-bold">{totals.medium}</div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2 text-orange-600 border-orange-300 hover:bg-orange-50"
+              >
+                Medium
+              </Button>
+            </div>
+
+            <div className="text-center">
+              <div className="text-6xl font-bold">{totals.high}</div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2 text-red-600 border-red-300 hover:bg-red-50"
+              >
+                High
+              </Button>
+            </div>
+          </div>
+
+          {/* Right Side: Pie Chart */}
+          <div className="flex-1 pl-8 border-l">
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={4}
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={index} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-sm font-medium text-gray-700 mr-2">
           Grouped by:
