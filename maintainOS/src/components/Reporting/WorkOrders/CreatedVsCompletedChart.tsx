@@ -36,12 +36,13 @@ export function CreatedVsCompletedChart({
 
   // 1. Fetch Status Counts (For Big Numbers)
   const { data: statusData, loading: statusLoading } = useQuery<{
-    getChartData?: { label: string; value: number }[];
+    getChartData?: { groupValues: string[]; value: number }[];
   }>(GET_CHART_DATA, {
     variables: {
       input: {
         dataset: "WORK_ORDERS",
-        groupByField: "status",
+        groupByFields: ["status"],
+        metric: "COUNT",
         filters: apiFilters,
       },
     },
@@ -51,12 +52,13 @@ export function CreatedVsCompletedChart({
   // 2. Fetch Created By Date (For Blue Line)
   const {
     data: createdData,
-  }: { data?: { getChartData?: { label: string; value: number }[] } } =
+  }: { data?: { getChartData?: { groupValues: string[]; value: number }[] } } =
     useQuery(GET_CHART_DATA, {
       variables: {
         input: {
           dataset: "WORK_ORDERS",
-          groupByField: "createdAt", // Requires 'createdAt' to be type: 'date' in backend config
+          groupByFields: ["createdAt"],
+          metric: "COUNT",
           filters: apiFilters,
         },
       },
@@ -94,8 +96,10 @@ export function CreatedVsCompletedChart({
 
     // Total Completed = Only those with status 'COMPLETED' (Adjust string based on your DB enum)
     const totalCompleted =
-      rows.find((r: any) => r.label === "COMPLETED" || r.label === "done")
-        ?.value || 0;
+      rows.find(
+        (r: any) =>
+          r.groupValues?.[0] === "COMPLETED" || r.groupValues?.[0] === "done"
+      )?.value || 0;
 
     return {
       created: totalCreated,
@@ -116,9 +120,10 @@ export function CreatedVsCompletedChart({
     // Process Created
     createdData?.getChartData?.forEach((item: any) => {
       // Backend returns date string, e.g., "2025-10-01"
-      if (item.label && item.label !== "Unassigned") {
-        createdMap.set(item.label, item.value);
-        allDates.add(item.label);
+      const dateLabel = item.groupValues?.[0];
+      if (dateLabel && dateLabel !== "Unassigned") {
+        createdMap.set(dateLabel, item.value);
+        allDates.add(dateLabel);
       }
     });
 

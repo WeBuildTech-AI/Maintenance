@@ -35,12 +35,13 @@ export function WorkOrdersByTypeChart({
   }, [filters, dateRange]);
 
   const { data: workTypeData, loading: workTypeLoading } = useQuery<{
-    getChartData: Array<{ label: string; value: number }>;
+    getChartData: Array<{ groupValues: string[]; value: number }>;
   }>(GET_CHART_DATA, {
     variables: {
       input: {
         dataset: "WORK_ORDERS",
-        groupByField: "workType",
+        groupByFields: ["workType"],
+        metric: "COUNT",
         filters: apiFilters,
       },
     },
@@ -48,12 +49,13 @@ export function WorkOrdersByTypeChart({
   });
 
   const { data: workTypeByDateData } = useQuery<{
-    getChartData: Array<{ label: string; value: number }>;
+    getChartData: Array<{ groupValues: string[]; value: number }>;
   }>(GET_CHART_DATA, {
     variables: {
       input: {
         dataset: "WORK_ORDERS",
-        groupByField: "createdAt",
+        groupByFields: ["createdAt", "workType"],
+        metric: "COUNT",
         filters: apiFilters,
       },
     },
@@ -66,12 +68,14 @@ export function WorkOrdersByTypeChart({
 
     const rows = workTypeData.getChartData;
     const preventive =
-      rows.find((r: any) => r.label?.toLowerCase() === "preventive")?.value ||
-      0;
+      rows.find((r: any) => r.groupValues?.[0]?.toLowerCase() === "preventive")
+        ?.value || 0;
     const reactive =
-      rows.find((r: any) => r.label?.toLowerCase() === "reactive")?.value || 0;
+      rows.find((r: any) => r.groupValues?.[0]?.toLowerCase() === "reactive")
+        ?.value || 0;
     const other =
-      rows.find((r: any) => r.label?.toLowerCase() === "other")?.value || 0;
+      rows.find((r: any) => r.groupValues?.[0]?.toLowerCase() === "other")
+        ?.value || 0;
 
     const total = preventive + reactive + other;
     const preventiveRatio =
@@ -89,13 +93,21 @@ export function WorkOrdersByTypeChart({
     >();
 
     workTypeByDateData.getChartData.forEach((item: any) => {
-      if (item.label && item.label !== "Unassigned") {
-        if (!dateMap.has(item.label)) {
-          dateMap.set(item.label, { preventive: 0, reactive: 0, other: 0 });
+      const [dateLabel, workType] = item.groupValues || [];
+      if (dateLabel && dateLabel !== "Unassigned" && workType) {
+        if (!dateMap.has(dateLabel)) {
+          dateMap.set(dateLabel, { preventive: 0, reactive: 0, other: 0 });
         }
-        const entry = dateMap.get(item.label)!;
-        entry.reactive = item.value;
-        
+        const entry = dateMap.get(dateLabel)!;
+        const workTypeLower = workType.toLowerCase();
+
+        if (workTypeLower === "preventive") {
+          entry.preventive = item.value;
+        } else if (workTypeLower === "reactive") {
+          entry.reactive = item.value;
+        } else if (workTypeLower === "other") {
+          entry.other = item.value;
+        }
       }
     });
 

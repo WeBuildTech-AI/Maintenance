@@ -1,9 +1,9 @@
-import { gql } from '@apollo/client';
+import { gql } from "@apollo/client";
 
 export const GET_CHART_DATA = gql`
   query GetChartData($input: ChartDataInput!) {
     getChartData(input: $input) {
-      label
+      groupValues
       value
     }
   }

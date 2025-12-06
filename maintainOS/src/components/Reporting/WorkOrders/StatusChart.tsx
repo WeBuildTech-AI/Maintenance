@@ -29,12 +29,13 @@ export function WorkOrdersStatusChart({
   );
 
   const { data, loading } = useQuery<{
-    getChartData: Array<{ label: string; value: number }>;
+    getChartData: Array<{ groupValues: string[]; value: number }>;
   }>(GET_CHART_DATA, {
     variables: {
       input: {
         dataset: "WORK_ORDERS",
-        groupByField: "status",
+        groupByFields: ["status"],
+        metric: "COUNT",
         filters: apiFilters,
       },
     },
@@ -52,13 +53,17 @@ export function WorkOrdersStatusChart({
   const rows = data?.getChartData || [];
 
   const open =
-    rows.find((r: any) => r.label?.toLowerCase() === "open")?.value || 0;
+    rows.find((r: any) => r.groupValues?.[0]?.toLowerCase() === "open")
+      ?.value || 0;
   const onHold =
-    rows.find((r: any) => r.label?.toLowerCase() === "on_hold")?.value || 0;
+    rows.find((r: any) => r.groupValues?.[0]?.toLowerCase() === "on_hold")
+      ?.value || 0;
   const inProgress =
-    rows.find((r: any) => r.label?.toLowerCase() === "in_progress")?.value || 0;
+    rows.find((r: any) => r.groupValues?.[0]?.toLowerCase() === "in_progress")
+      ?.value || 0;
   const done =
-    rows.find((r: any) => r.label?.toLowerCase() === "done")?.value || 0;
+    rows.find((r: any) => r.groupValues?.[0]?.toLowerCase() === "done")
+      ?.value || 0;
 
   const pieData = [
     { name: "Open", value: open, color: "#3B82F6" },

@@ -29,12 +29,13 @@ export function WorkOrdersPriorityChart({
   );
 
   const { data, loading } = useQuery<{
-    getChartData: Array<{ label: string; value: number }>;
+    getChartData: Array<{ groupValues: string[]; value: number }>;
   }>(GET_CHART_DATA, {
     variables: {
       input: {
         dataset: "WORK_ORDERS",
-        groupByField: "priority",
+        groupByFields: ["priority"],
+        metric: "COUNT",
         filters: apiFilters,
       },
     },
@@ -52,13 +53,17 @@ export function WorkOrdersPriorityChart({
   const rows = data?.getChartData || [];
 
   const none =
-    rows.find((r: any) => r.label?.toLowerCase() === "none")?.value || 0;
+    rows.find((r: any) => r.groupValues?.[0]?.toLowerCase() === "none")
+      ?.value || 0;
   const low =
-    rows.find((r: any) => r.label?.toLowerCase() === "low")?.value || 0;
+    rows.find((r: any) => r.groupValues?.[0]?.toLowerCase() === "low")?.value ||
+    0;
   const medium =
-    rows.find((r: any) => r.label?.toLowerCase() === "medium")?.value || 0;
+    rows.find((r: any) => r.groupValues?.[0]?.toLowerCase() === "medium")
+      ?.value || 0;
   const high =
-    rows.find((r: any) => r.label?.toLowerCase() === "high")?.value || 0;
+    rows.find((r: any) => r.groupValues?.[0]?.toLowerCase() === "high")
+      ?.value || 0;
 
   const pieData = [
     { name: "None", value: none, color: "#3B82F6" },
