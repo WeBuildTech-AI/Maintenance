@@ -9,7 +9,6 @@ import { lazyImport } from "./utils/lazyImport";
 import InviteUsers from "./components/Users/InviteUser/InviteUser";
 import CreateTeamForm from "./components/Users/CreateTeam/CreateTeam";
 import { client } from "./lib/apollo"; // Import the client you just created
-import { AppConfigContext } from "antd/es/app/context";
 import { ApolloProvider } from "@apollo/client/react";
 
 // ✅ Lazy imports
@@ -77,7 +76,7 @@ const InviteUser = lazyImport(
 );
 
 export default function App() {
-  const { user, accessToken } = useSelector((state: RootState) => state.auth);
+  const { user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch<AppDispatch>();
 
   // Socket connection lifecycle management

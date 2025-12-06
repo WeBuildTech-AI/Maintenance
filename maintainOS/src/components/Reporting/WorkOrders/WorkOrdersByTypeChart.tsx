@@ -1,3 +1,6 @@
+import { useMemo } from "react";
+import { useQuery } from "@apollo/client/react";
+import { GET_CHART_DATA } from "../../../graphql/reporting.queries";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 import { Button } from "../../ui/button";
 import {
@@ -10,22 +13,9 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { Info, ChevronRight, Plus } from "lucide-react";
-
-// Mock data for Work Orders by Type
-const workOrdersByTypeData = [
-  { date: "9/28/2025", preventive: 0, reactive: 0, other: 0 },
-  { date: "10/5/2025", preventive: 0, reactive: 0, other: 0 },
-  { date: "10/12/2025", preventive: 0, reactive: 0, other: 0 },
-  { date: "10/19/2025", preventive: 0, reactive: 0, other: 0 },
-  { date: "10/26/2025", preventive: 0, reactive: 0, other: 0 },
-  { date: "11/2/2025", preventive: 0, reactive: 0, other: 0 },
-  { date: "11/9/2025", preventive: 0, reactive: 0, other: 0 },
-  { date: "11/16/2025", preventive: 0, reactive: 0, other: 0 },
-  { date: "11/23/2025", preventive: 0, reactive: 0, other: 0 },
-  { date: "11/30/2025", preventive: 0, reactive: 0, other: 0 },
-  { date: "12/7/2025", preventive: 0, reactive: 2, other: 0 },
-];
+import { Info, ChevronRight, Plus, Loader2 } from "lucide-react";
+import { format, parseISO, isValid } from "date-fns";
+import { mapFilters } from "../filterUtils";
 
 interface WorkOrdersByTypeChartProps {
   filters: Record<string, any>;
@@ -36,6 +26,105 @@ export function WorkOrdersByTypeChart({
   filters,
   dateRange,
 }: WorkOrdersByTypeChartProps) {
+  const apiFilters = useMemo(() => {
+    const mapped = mapFilters(filters, dateRange);
+    console.log("📊 Filters:", filters);
+    console.log("📊 Date range:", dateRange);
+    console.log("📊 Mapped Filters:", mapped);
+    return mapped;
+  }, [filters, dateRange]);
+
+  const { data: workTypeData, loading: workTypeLoading } = useQuery<{
+    getChartData: Array<{ label: string; value: number }>;
+  }>(GET_CHART_DATA, {
+    variables: {
+      input: {
+        dataset: "WORK_ORDERS",
+        groupByField: "workType",
+        filters: apiFilters,
+      },
+    },
+    fetchPolicy: "cache-and-network",
+  });
+
+  const { data: workTypeByDateData } = useQuery<{
+    getChartData: Array<{ label: string; value: number }>;
+  }>(GET_CHART_DATA, {
+    variables: {
+      input: {
+        dataset: "WORK_ORDERS",
+        groupByField: "createdAt",
+        filters: apiFilters,
+      },
+    },
+    fetchPolicy: "cache-and-network",
+  });
+
+  const stats = useMemo(() => {
+    if (!workTypeData?.getChartData)
+      return { preventive: 0, reactive: 0, other: 0, preventiveRatio: 0 };
+
+    const rows = workTypeData.getChartData;
+    const preventive =
+      rows.find((r: any) => r.label?.toLowerCase() === "preventive")?.value ||
+      0;
+    const reactive =
+      rows.find((r: any) => r.label?.toLowerCase() === "reactive")?.value || 0;
+    const other =
+      rows.find((r: any) => r.label?.toLowerCase() === "other")?.value || 0;
+
+    const total = preventive + reactive + other;
+    const preventiveRatio =
+      total > 0 ? ((preventive / total) * 100).toFixed(1) : 0;
+
+    return { preventive, reactive, other, preventiveRatio };
+  }, [workTypeData]);
+
+  const chartData = useMemo(() => {
+    if (!workTypeByDateData?.getChartData) return [];
+
+    const dateMap = new Map<
+      string,
+      { preventive: number; reactive: number; other: number }
+    >();
+
+    workTypeByDateData.getChartData.forEach((item: any) => {
+      if (item.label && item.label !== "Unassigned") {
+        if (!dateMap.has(item.label)) {
+          dateMap.set(item.label, { preventive: 0, reactive: 0, other: 0 });
+        }
+        const entry = dateMap.get(item.label)!;
+        entry.reactive = item.value;
+        
+      }
+    });
+
+    return Array.from(dateMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([dateStr, data]) => {
+        let formattedDate = dateStr;
+        try {
+          const dateObj = parseISO(dateStr);
+          if (isValid(dateObj)) {
+            formattedDate = format(dateObj, "MMM dd");
+          }
+        } catch (e) {}
+
+        return {
+          date: formattedDate,
+          ...data,
+        };
+      });
+  }, [workTypeByDateData]);
+
+  if (workTypeLoading) {
+    return (
+      <Card className="h-[400px] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-4">
@@ -50,52 +139,61 @@ export function WorkOrdersByTypeChart({
           <Plus className="h-4 w-4" />
         </Button>
       </CardHeader>
+
       <CardContent>
-        {/* Stats */}
-        <div className="grid grid-cols-4 gap-6 mb-8 max-w-5xl mx-auto">
-          <div className="text-center">
-            <div className="text-5xl font-bold mb-3">0</div>
+        {/* --- FIXED STATS LAYOUT --- */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10 text-center max-w-4xl mx-auto py-12">
+          {/* Preventive */}
+          <div className="flex flex-col items-center">
+            <div className="text-4xl font-bold">{stats.preventive}</div>
             <Button
               variant="outline"
               size="sm"
-              className="text-teal-600 border-teal-300 hover:bg-teal-50"
+              className="mt-2 text-teal-600 border-teal-300 hover:bg-teal-50"
             >
               Preventive
             </Button>
           </div>
-          <div className="text-center">
-            <div className="text-5xl font-bold mb-3">2</div>
+
+          {/* Reactive */}
+          <div className="flex flex-col items-center">
+            <div className="text-7xl font-bold">{stats.reactive}</div>
             <Button
               variant="outline"
               size="sm"
-              className="text-blue-600 border-blue-300 hover:bg-blue-50"
+              className="mt-2 text-blue-600 border-blue-300 hover:bg-blue-50"
             >
               Reactive
             </Button>
           </div>
-          <div className="text-center">
-            <div className="text-5xl font-bold mb-3">0</div>
+
+          {/* Other */}
+          <div className="flex flex-col items-center">
+            <div className="text-4xl font-bold">{stats.other}</div>
             <Button
               variant="outline"
               size="sm"
-              className="text-gray-600 border-gray-300 hover:bg-gray-50"
+              className="mt-2 text-gray-600 border-gray-300 hover:bg-gray-50"
             >
               Other
             </Button>
           </div>
-          <div className="text-center">
-            <div className="text-5xl font-bold mb-3">
-              0.0<span className="text-3xl">%</span>
+
+          {/* Ratio */}
+          <div className="flex flex-col items-center">
+            <div className="text-4xl font-bold flex items-baseline">
+              {stats.preventiveRatio}
+              <span className="text-xl ml-1">%</span>
             </div>
-            <div className="text-sm text-gray-600 mt-2">
+            <div className="mt-2 text-sm text-gray-600 font-medium">
               Total Preventive Ratio
             </div>
           </div>
         </div>
 
-        {/* Chart */}
+        {/* CHART */}
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={workOrdersByTypeData}>
+          <BarChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis
               dataKey="date"

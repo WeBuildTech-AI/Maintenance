@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@apollo/client/react";
 import { GET_CHART_DATA } from "../../../graphql/reporting.queries";
-
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 import { Button } from "../../ui/button";
 import {
@@ -16,85 +15,12 @@ import {
 } from "recharts";
 import { Info, ChevronRight, Plus, Loader2 } from "lucide-react";
 import { format, parseISO, isValid } from "date-fns";
-
-// --- Types ---
-interface FilterParam {
-  field: string;
-  operator: string;
-  value: string;
-}
+import { mapFilters } from "../filterUtils";
 
 interface CreatedVsCompletedChartProps {
-  filters: Record<string, any>; // From FilterBar
+  filters: Record<string, any>;
   dateRange: { startDate: string; endDate: string };
 }
-
-const convertToISODate = (dateStr: string): string => {
-  try {
-    const [month, day, year] = dateStr.split("/");
-    return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
-  } catch (e) {
-    console.error("Date conversion error:", e);
-    return dateStr;
-  }
-};
-
-// --- Filter Mapper ---
-// Maps Frontend keys to Backend Config keys
-const mapFilters = (
-  filters: Record<string, any>,
-  dateRange: { startDate: string; endDate: string }
-): FilterParam[] => {
-  const mapped: FilterParam[] = [];
-
-  Object.entries(filters).forEach(([key, value]) => {
-    if (!value) return;
-
-    // Map 'assignedToOneOf' -> 'assigneeId' with 'eq' operator
-    if (key === "assignedToOneOf") {
-      mapped.push({
-        field: "assigneeId",
-        operator: "eq",
-        value: String(value),
-      });
-    }
-    // Map 'locationOneOf' -> 'locationId' with 'eq' operator
-    else if (key === "locationOneOf") {
-      mapped.push({
-        field: "locationId",
-        operator: "eq",
-        value: String(value),
-      });
-    }
-    // Map 'priorityOneOf' -> 'priority' with 'eq' operator
-    else if (key === "priorityOneOf") {
-      mapped.push({ field: "priority", operator: "eq", value: String(value) });
-    }
-    // Map 'workTypeOneOf' -> 'workType' with 'eq' operator
-    else if (key === "workTypeOneOf") {
-      mapped.push({ field: "workType", operator: "eq", value: String(value) });
-    }
-    // Add other filter mappings as needed
-  });
-
-  // Add Date Range (Global) - Convert to ISO format with timestamp
-  if (dateRange.startDate) {
-    mapped.push({
-      field: "createdAt",
-      operator: "gte",
-      value: `${convertToISODate(dateRange.startDate)}T00:00:00Z`,
-    });
-  }
-  if (dateRange.endDate) {
-    mapped.push({
-      field: "createdAt",
-      operator: "lte",
-      value: `${convertToISODate(dateRange.endDate)}T23:59:59Z`,
-    });
-  }
-
-  return mapped;
-};
 
 export function CreatedVsCompletedChart({
   filters,
@@ -109,31 +35,33 @@ export function CreatedVsCompletedChart({
   }, [filters, dateRange]);
 
   // 1. Fetch Status Counts (For Big Numbers)
-  const { data: statusData, loading: statusLoading } = useQuery(
-    GET_CHART_DATA,
-    {
-      variables: {
-        input: {
-          dataset: "WORK_ORDERS",
-          groupByField: "status",
-          filters: apiFilters,
-        },
-      },
-      fetchPolicy: "cache-and-network",
-    }
-  );
-
-  // 2. Fetch Created By Date (For Blue Line)
-  const { data: createdData } = useQuery(GET_CHART_DATA, {
+  const { data: statusData, loading: statusLoading } = useQuery<{
+    getChartData?: { label: string; value: number }[];
+  }>(GET_CHART_DATA, {
     variables: {
       input: {
         dataset: "WORK_ORDERS",
-        groupByField: "createdAt", // Requires 'createdAt' to be type: 'date' in backend config
+        groupByField: "status",
         filters: apiFilters,
       },
     },
     fetchPolicy: "cache-and-network",
   });
+
+  // 2. Fetch Created By Date (For Blue Line)
+  const {
+    data: createdData,
+  }: { data?: { getChartData?: { label: string; value: number }[] } } =
+    useQuery(GET_CHART_DATA, {
+      variables: {
+        input: {
+          dataset: "WORK_ORDERS",
+          groupByField: "createdAt", // Requires 'createdAt' to be type: 'date' in backend config
+          filters: apiFilters,
+        },
+      },
+      fetchPolicy: "cache-and-network",
+    });
 
   // 3. Fetch Completed By Date (For Green Line)
   // NOTE: Backend doesn't support 'completedAt' as a reportable field yet

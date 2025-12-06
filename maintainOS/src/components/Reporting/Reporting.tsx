@@ -20,18 +20,16 @@ type TabType =
   | "export-data"
   | "custom-dashboards";
 
-type DateRangeType = "between" | "last";
-
 export function Reporting() {
   const [activeTab, setActiveTab] = useState<TabType>("work-orders");
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [dateRangeType, setDateRangeType] = useState<DateRangeType>("between");
   const [startDate, setStartDate] = useState("10/01/2025");
   const [endDate, setEndDate] = useState("12/05/2025");
   const [selectedMonth, setSelectedMonth] = useState(9); // October (0-indexed)
   const [selectedYear, setSelectedYear] = useState(2025);
-  const [groupBy, setGroupBy] = useState<"day" | "week" | "month">("week");
   const [filterParams, setFilterParams] = useState<Record<string, any>>({});
+  const [tempStartDate, setTempStartDate] = useState(startDate);
+  const [tempEndDate, setTempEndDate] = useState(endDate);
 
   const tabs: { id: TabType; label: string; icon?: React.ReactNode }[] = [
     { id: "work-orders", label: "Work Orders" },
@@ -78,6 +76,26 @@ export function Reporting() {
     return new Date(year, month, 1).getDay();
   };
 
+  const handleDateClick = (day: number, month: number, year: number) => {
+    const dateStr = `${String(month + 1).padStart(2, "0")}/${String(
+      day
+    ).padStart(2, "0")}/${year}`;
+
+    // Simple logic: first click sets start, second sets end
+    if (!tempStartDate || (tempStartDate && tempEndDate)) {
+      setTempStartDate(dateStr);
+      setTempEndDate("");
+    } else {
+      setTempEndDate(dateStr);
+    }
+  };
+
+  const handleApplyDates = () => {
+    if (tempStartDate) setStartDate(tempStartDate);
+    if (tempEndDate) setEndDate(tempEndDate);
+    setShowDatePicker(false);
+  };
+
   const renderCalendar = () => {
     const daysInMonth = getDaysInMonth(selectedMonth, selectedYear);
     const firstDay = getFirstDayOfMonth(selectedMonth, selectedYear);
@@ -85,26 +103,39 @@ export function Reporting() {
 
     // Previous month days
     const prevMonthDays = getDaysInMonth(selectedMonth - 1, selectedYear);
-    for (let i = firstDay - 1; i >= 0; i--) {
+    for (let i = firstDay; i > 0; i--) {
+      const prevMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
+      const prevYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
+      const day = prevMonthDays - i + 1;
       days.push(
         <button
           key={`prev-${i}`}
-          className="p-2 text-gray-400 hover:bg-gray-50 rounded-md"
+          onClick={() => handleDateClick(day, prevMonth, prevYear)}
+          className="p-1 text-xs text-gray-400 hover:bg-gray-50 rounded"
         >
-          {prevMonthDays - i}
+          {day}
         </button>
       );
     }
 
     // Current month days
     for (let day = 1; day <= daysInMonth; day++) {
-      const isToday = day === 1 && selectedMonth === 9; // Example: Oct 1
+      const currentDate = `${String(selectedMonth + 1).padStart(
+        2,
+        "0"
+      )}/${String(day).padStart(2, "0")}/${selectedYear}`;
+      const isStart = currentDate === tempStartDate;
+      const isEnd = currentDate === tempEndDate;
+      const isSelected = isStart || isEnd;
+
       days.push(
         <button
           key={day}
+          onClick={() => handleDateClick(day, selectedMonth, selectedYear)}
           className={cn(
-            "p-2 hover:bg-blue-50 rounded-md transition-colors",
-            isToday && "bg-blue-500 text-white hover:bg-blue-600"
+            "p-1 text-xs hover:bg-blue-50 rounded transition-colors font-medium",
+            isSelected && "bg-blue-500 text-white hover:bg-blue-600",
+            !isSelected && "text-gray-700"
           )}
         >
           {day}
@@ -115,10 +146,13 @@ export function Reporting() {
     // Next month days to fill the grid
     const remainingDays = 42 - days.length;
     for (let day = 1; day <= remainingDays; day++) {
+      const nextMonth = selectedMonth === 11 ? 0 : selectedMonth + 1;
+      const nextYear = selectedMonth === 11 ? selectedYear + 1 : selectedYear;
       days.push(
         <button
           key={`next-${day}`}
-          className="p-2 text-gray-400 hover:bg-gray-50 rounded-md"
+          onClick={() => handleDateClick(day, nextMonth, nextYear)}
+          className="p-1 text-xs text-gray-400 hover:bg-gray-50 rounded"
         >
           {day}
         </button>
@@ -141,7 +175,11 @@ export function Reporting() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowDatePicker(true)}
+              onClick={() => {
+                setTempStartDate(startDate);
+                setTempEndDate(endDate);
+                setShowDatePicker(true);
+              }}
               className="flex items-center gap-2"
             >
               <Calendar className="h-4 w-4 text-blue-500" />
@@ -213,7 +251,7 @@ export function Reporting() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-auto px-6 py-6 relative z-0">
+      <div className="flex-1 overflow-auto px-6 py-6 relative z-0 mt-6">
         {activeTab === "work-orders" && (
           <WorkOrdersTab
             filters={filterParams}
@@ -249,58 +287,36 @@ export function Reporting() {
 
       {/* Date Picker Dialog */}
       <Dialog open={showDatePicker} onOpenChange={setShowDatePicker}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-md p-4" style={{ zIndex: 9999 }}>
           <DialogHeader>
-            <DialogTitle>Select Date Range</DialogTitle>
+            <DialogTitle className="text-base">Select Date Range</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4">
-            {/* Date Range Type Selector */}
-            <div className="flex gap-2">
-              <Button
-                variant={dateRangeType === "between" ? "default" : "outline"}
-                onClick={() => setDateRangeType("between")}
-                className={cn(
-                  dateRangeType === "between" &&
-                    "bg-blue-500 hover:bg-blue-600 text-white"
-                )}
-              >
-                Between
-              </Button>
-              <Button
-                variant={dateRangeType === "last" ? "default" : "outline"}
-                onClick={() => setDateRangeType("last")}
-              >
-                Last
-              </Button>
-            </div>
-
+          <div className="space-y-3">
             {/* Date Inputs */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
               <input
                 type="text"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
+                value={tempStartDate}
+                readOnly
+                className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm bg-gray-50"
                 placeholder="Start date"
               />
-              <span>-</span>
+              <span className="text-gray-400 text-sm">to</span>
               <input
                 type="text"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
+                value={tempEndDate}
+                readOnly
+                className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm bg-gray-50"
                 placeholder="End date"
               />
             </div>
 
             {/* Calendar */}
-            <div className="border rounded-lg p-4">
+            <div className="border rounded-lg p-3">
               {/* Month/Year Selector */}
-              <div className="flex items-center justify-between mb-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
+              <div className="flex items-center justify-between mb-3">
+                <button
                   onClick={() => {
                     if (selectedMonth === 0) {
                       setSelectedMonth(11);
@@ -309,43 +325,14 @@ export function Reporting() {
                       setSelectedMonth(selectedMonth - 1);
                     }
                   }}
+                  className="p-1 hover:bg-gray-100 rounded text-sm font-bold"
                 >
-                  «
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    if (selectedMonth === 0) {
-                      setSelectedMonth(0);
-                      setSelectedYear(selectedYear - 1);
-                    } else {
-                      setSelectedMonth(0);
-                    }
-                  }}
-                >
-                  ‹
-                </Button>
-                <span className="text-sm font-medium text-blue-600">
+                  ←
+                </button>
+                <span className="text-sm font-medium">
                   {monthNames[selectedMonth]} {selectedYear}
                 </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    if (selectedMonth === 11) {
-                      setSelectedMonth(11);
-                      setSelectedYear(selectedYear + 1);
-                    } else {
-                      setSelectedMonth(11);
-                    }
-                  }}
-                >
-                  ›
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
+                <button
                   onClick={() => {
                     if (selectedMonth === 11) {
                       setSelectedMonth(0);
@@ -354,17 +341,18 @@ export function Reporting() {
                       setSelectedMonth(selectedMonth + 1);
                     }
                   }}
+                  className="p-1 hover:bg-gray-100 rounded text-sm font-bold"
                 >
-                  »
-                </Button>
+                  →
+                </button>
               </div>
 
               {/* Day Headers */}
-              <div className="grid grid-cols-7 gap-1 mb-2">
-                {["M", "T", "W", "T", "F", "S", "S"].map((day, i) => (
+              <div className="grid grid-cols-7 gap-1 mb-1">
+                {["S", "M", "T", "W", "T", "F", "S"].map((day, i) => (
                   <div
                     key={i}
-                    className="text-center text-sm font-medium text-gray-600"
+                    className="text-center text-xs font-medium text-gray-500 py-1"
                   >
                     {day}
                   </div>
@@ -375,49 +363,29 @@ export function Reporting() {
               <div className="grid grid-cols-7 gap-1">{renderCalendar()}</div>
             </div>
 
-            {/* Group By Options */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Group by</h3>
-              <div className="flex gap-2">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="groupBy"
-                    value="day"
-                    checked={groupBy === "day"}
-                    onChange={() => setGroupBy("day")}
-                    className="text-blue-600"
-                  />
-                  <span className="text-sm">Day</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="groupBy"
-                    value="week"
-                    checked={groupBy === "week"}
-                    onChange={() => setGroupBy("week")}
-                    className="text-blue-600"
-                  />
-                  <span className="text-sm">Week</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="groupBy"
-                    value="month"
-                    checked={groupBy === "month"}
-                    onChange={() => setGroupBy("month")}
-                    className="text-blue-600"
-                  />
-                  <span className="text-sm">Month</span>
-                </label>
-              </div>
+            {/* Timezone */}
+            <div className="text-xs text-gray-500 text-center pt-2">
+              Time zone: Asia/Kolkata
             </div>
 
-            {/* Timezone */}
-            <div className="text-sm text-gray-600">
-              Time zone for all dates: Asia/Kolkata
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setTempStartDate(startDate);
+                  setTempEndDate(endDate);
+                  setShowDatePicker(false);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleApplyDates}
+                className="bg-blue-500 hover:bg-blue-600 text-white"
+              >
+                Apply
+              </Button>
             </div>
           </div>
         </DialogContent>
