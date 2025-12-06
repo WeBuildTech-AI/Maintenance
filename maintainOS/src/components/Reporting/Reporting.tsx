@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { cn } from "../ui/utils";
 import { WorkOrdersTab } from "./WorkOrders";
 import ReportingFilterBar from "./ReportingFilterBar";
+import { ReportingDetails } from "./ReportingDetails";
 
 type TabType =
   | "work-orders"
@@ -30,6 +31,9 @@ export function Reporting() {
   const [filterParams, setFilterParams] = useState<Record<string, any>>({});
   const [tempStartDate, setTempStartDate] = useState(startDate);
   const [tempEndDate, setTempEndDate] = useState(endDate);
+  const [selectedDetailChart, setSelectedDetailChart] = useState<string | null>(
+    null
+  );
 
   const tabs: { id: TabType; label: string; icon?: React.ReactNode }[] = [
     { id: "work-orders", label: "Work Orders" },
@@ -51,6 +55,11 @@ export function Reporting() {
   const handleFilterChange = useCallback((params: Record<string, any>) => {
     setFilterParams(params);
     console.log("Filter params:", params);
+  }, []);
+
+  const handleNavigateToDetails = useCallback((chartType: string) => {
+    setSelectedDetailChart(chartType);
+    setActiveTab("reporting-details");
   }, []);
 
   const monthNames = [
@@ -256,6 +265,7 @@ export function Reporting() {
           <WorkOrdersTab
             filters={filterParams}
             dateRange={{ startDate, endDate }}
+            onNavigateToDetails={handleNavigateToDetails}
           />
         )}
         {activeTab === "asset-health" && (
@@ -264,9 +274,11 @@ export function Reporting() {
           </div>
         )}
         {activeTab === "reporting-details" && (
-          <div className="text-center py-12 text-gray-500">
-            Reporting Details content coming soon.
-          </div>
+          <ReportingDetails
+            filters={filterParams}
+            dateRange={{ startDate, endDate }}
+            initialChart={selectedDetailChart}
+          />
         )}
         {activeTab === "recent-activity" && (
           <div className="text-center py-12 text-gray-500">

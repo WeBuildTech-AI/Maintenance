@@ -20,11 +20,13 @@ import { mapFilters } from "../filterUtils";
 interface CreatedVsCompletedChartProps {
   filters: Record<string, any>;
   dateRange: { startDate: string; endDate: string };
+  onNavigateToDetails?: () => void;
 }
 
 export function CreatedVsCompletedChart({
   filters,
   dateRange,
+  onNavigateToDetails,
 }: CreatedVsCompletedChartProps) {
   const apiFilters = useMemo(() => {
     const mapped = mapFilters(filters, dateRange);
@@ -178,7 +180,13 @@ export function CreatedVsCompletedChart({
             Created vs. Completed
           </CardTitle>
           <Info className="h-4 w-4 text-gray-400" />
-          <ChevronRight className="h-4 w-4 text-blue-500" />
+          <button
+            onClick={onNavigateToDetails}
+            className="hover:bg-gray-100 rounded p-1 transition-colors"
+            title="View details"
+          >
+            <ChevronRight className="h-4 w-4 text-blue-500" />
+          </button>
         </div>
         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
           <Plus className="h-4 w-4" />

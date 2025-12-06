@@ -165,7 +165,7 @@ export function WorkOrdersRepeatingChart({ filters, dateRange }: Props) {
               size="sm"
               className="text-green-600 border-green-300 hover:bg-green-50"
             >
-              Repeatin
+              Repeating
             </Button>
           </div>
           <div className="text-center">
