@@ -191,7 +191,7 @@ export default function PurchaseOrdersTable({
             Rejected
           </span>
         );
-      case "Cancelled": // Yeh aapke purane function mein tha, shayad aapko iski zaroorat ho
+      case "cancelled": // Yeh aapke purane function mein tha, shayad aapko iski zaroorat ho
         return (
           <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-700">
             <XCircle className="h-4 w-4" />
@@ -424,10 +424,10 @@ export default function PurchaseOrdersTable({
               {/* ⭐ FIX 3: `Avatar` ko `ShadCNAvatar` se replace kiya */}
               <ShadCNAvatar className="h-8 w-8">
                 <AvatarFallback>
-                  {renderInitials(createdBy || "U")}
+                  {renderInitials(user?.fullName || "U")}
                 </AvatarFallback>
               </ShadCNAvatar>
-              <span className="text-foreground">{createdBy}</span>
+              <span className="text-foreground">{user?.fullName}</span>
             </div>
           );
         } else if (colName === "Custom Number") {
