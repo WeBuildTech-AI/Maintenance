@@ -309,14 +309,14 @@ export function ListView({
               </div>
 
               {/* Settings Icon in Header (When not editing) */}
-              <Tooltip text="Settings">
+              {/* <Tooltip text="Settings">
                 <button
                   onClick={() => setIsSettingsModalOpen(true)}
                   className="text-gray-500 hover:text-blue-600"
                 >
                   <Settings size={18} />
                 </button>
-              </Tooltip>
+              </Tooltip> */}
             </div>
           );
         }
