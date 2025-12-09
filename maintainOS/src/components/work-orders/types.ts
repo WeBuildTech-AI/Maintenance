@@ -39,6 +39,8 @@ export interface ListViewProps {
   onRefreshWorkOrders: any;
   setIsSettingsModalOpen: any;
   isSettingsModalOpen: boolean;
+   showDeleted: boolean;
+  setShowDeleted: (value: boolean) => void;
 }
 
 export interface ToDoViewProps {

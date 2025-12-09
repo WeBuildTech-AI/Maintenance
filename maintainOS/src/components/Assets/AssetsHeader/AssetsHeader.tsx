@@ -29,7 +29,7 @@ interface AssetHeaderProps {
   setSelectedAsset: Dispatch<SetStateAction<any | null>>;
   setIsSettingsModalOpen: Dispatch<SetStateAction<boolean>>;
   setShowDeleted: Dispatch<SetStateAction<boolean>>;
-  // 👇 NEW: Accept filter callback
+  // NEW: Accept filter callback
   onFilterChange?: (params: FetchAssetsParams) => void;
 }
 

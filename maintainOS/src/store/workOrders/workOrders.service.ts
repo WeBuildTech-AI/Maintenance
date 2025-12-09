@@ -126,4 +126,13 @@ export const workOrderService = {
     const res = await api.post(`/procedure-field-responses`, data);
     return res.data;
   },
+  fetchDeleteWorkOrder: async (): Promise<void> => {
+    const res = await api.get(`work-orders/deleted/all`);
+    return res.data;
+  },
+
+  restoreWorkOrderData: async (id: string): Promise<WorkOrderResponse> => {
+    const res = await api.patch(`/work-orders/${id}/restore`);
+    return res.data;
+  },
 };

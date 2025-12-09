@@ -268,3 +268,38 @@ export const submitFieldResponse = createAsyncThunk(
     }
   }
 );
+
+export const fetchDeleteAsset = createAsyncThunk(
+  "workOrders/fetchDeleteWorkOrder",
+  async (_, { rejectWithValue }) => {
+    try {
+      const workOrder = await workOrderService.fetchDeleteWorkOrder();
+      return workOrder;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch Delete Work Order "
+      );
+    }
+  }
+);
+
+export const restoreWorkOrderData = createAsyncThunk(
+  "workOrders/restoreWorkOrdersData",
+  async (
+    {
+      id,
+    }: {
+      id: string;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const asset = await workOrderService.restoreWorkOrderData(id);
+      return asset;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to restore work order Data"
+      );
+    }
+  }
+);
