@@ -37,7 +37,7 @@ export function ReadingHistory({
       </div>
 
       {/* Reading List */}
-      <div className="flex-1 overflow-auto space-y-3">
+      <div className="flex-1 overflow-auto space-y-3 ">
         {selectedMeter?.readings?.length === 0 ? (
           <div className="text-center text-gray-500 mt-8">No readings yet.</div>
         ) : (
@@ -49,18 +49,18 @@ export function ReadingHistory({
                 new Date(a.timestamp).valueOf()
             )
             .map((r: any) => (
-              <div key={r.id} className="border-b p-2 last:border-none">
-                <div className="text-sm font-medium text-gray-800">
+              <div key={r.id} className="border-b p-2 last:border-none ">
+                <div className="text-sm font-medium text-gray-800 ml-3">
                   {r.value}{" "}
                   {selectedMeter.measurement && selectedMeter.measurement.name}
                 </div>
-                <div className="text-sm text-gray-500 mt-1">
+                <div className="text-sm text-gray-500 mt-1 ml-3">
                   {format(new Date(r.timestamp), "d MMM yyyy - HH:mm:ss")}
                 </div>
-                <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
+                <div className="flex items-center gap-1 text-sm text-gray-500 mt-1 ml-3">
                   <User className="h-3 w-3 text-orange-600" />
                   Recorded by
-                  <span className="font-medium text-gray-700 capitalize">
+                  <span className="font-medium text-gray-700 capitalize ">
                     {user?.fullName || "Unknown"}
                   </span>{" "}
                   manually

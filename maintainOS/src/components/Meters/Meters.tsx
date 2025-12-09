@@ -10,9 +10,9 @@ import {
   meterService,
   type MeterResponse,
 } from "../../store/meters";
-import { FetchMetersParams } from "../../store/meters/meters.types"; // ✅ Imported Types
+import { FetchMetersParams } from "../../store/meters/meters.types";
 import type { ViewMode } from "../purchase-orders/po.types";
-import { useNavigate, useMatch } from "react-router-dom";
+import { useNavigate, useMatch, useSearchParams } from "react-router-dom"; // ✅ Imported useSearchParams
 import toast, { Toaster } from "react-hot-toast";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store";
@@ -21,14 +21,30 @@ import { ReadingHistory } from "./MeterDetail/ReadingHistory";
 import RecordReadingModal from "./MeterDetail/RecordReadingModal";
 
 export function Meters() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState(""); // ✅ Debounce
-  
+  // ✅ 1. URL Search Params Setup
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // ✅ 2. Initialize State from URL (Refresh hone par yahan se value uthayega)
+  const [searchQuery, setSearchQuery] = useState(
+    () => searchParams.get("search") || ""
+  );
+  const [debouncedSearch, setDebouncedSearch] = useState(
+    () => searchParams.get("search") || ""
+  );
+
   const [showSettings, setShowSettings] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>("panel");
+
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    return (searchParams.get("viewMode") as ViewMode) || "panel";
+  });
+
   const [meterData, setMeterData] = useState<MeterResponse[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showReadingMeter, setShowReadingMeter] = useState(false);
+
+  const [showReadingMeter, setShowReadingMeter] = useState(() => {
+    return searchParams.get("reading") === "true";
+  });
+
   const modalRef = React.useRef<HTMLDivElement>(null);
   const [selectedMeter, setSelectedMeter] = useState<
     (typeof meterData)[0] | null
@@ -40,10 +56,10 @@ export function Meters() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
 
-  // ✅ FILTER PARAMETERS STATE
+  // ✅ FILTER PARAMETERS STATE (Page Number URL se read karega)
   const [filterParams, setFilterParams] = useState<FetchMetersParams>({
-    page: 1, 
-    limit: 50 
+    page: Number(searchParams.get("page")) || 1,
+    limit: 50,
   });
 
   const dispatch = useDispatch<AppDispatch>();
@@ -55,6 +71,27 @@ export function Meters() {
   const meterToEdit = isEditMode
     ? meterData.find((m) => m.id === isEditRoute?.params.meterId)
     : null;
+
+  // ✅ 3. Sync State TO URL (Jab bhi state change ho, URL update karo)
+  useEffect(() => {
+    const params: any = {};
+
+    // Values ko URL mein set karo
+    // if (viewMode) params.viewMode = viewMode;
+    // if (filterParams.page) params.page = filterParams.page.toString();
+    if (debouncedSearch) params.search = debouncedSearch;
+    if (showReadingMeter) params.reading = "true";
+    if (selectedMeter?.id) params.meterId = selectedMeter.id;
+
+    // URL update karo (replace: true taaki history clutter na ho)
+    setSearchParams(params, { replace: true });
+  }, [
+    viewMode,
+    filterParams.page,
+    debouncedSearch,
+    showReadingMeter,
+    selectedMeter?.id,
+  ]);
 
   // ✅ DEBOUNCE EFFECT
   useEffect(() => {
@@ -81,35 +118,38 @@ export function Meters() {
   // ✅ FETCH METERS (Memoized with Filters)
   const fetchMeters = useCallback(async () => {
     setLoading(true);
-    // Keep selected if possible, else logic below handles it
     let res: any;
 
     try {
       if (showDeleted) {
         res = await meterService.fetchDeleteMeter();
       } else {
-        // ✅ USE API PAYLOAD WITH FILTERS
-        // Note: API uses 'name' for search
         const apiPayload = {
           ...filterParams,
-          name: debouncedSearch || undefined 
+          name: debouncedSearch || undefined,
         };
-
-        // console.log("🔥 Meters API Call:", apiPayload);
         res = await meterService.fetchMeters(apiPayload);
       }
 
-      // Keep existing sort or rely on backend
       const sortedData = [...res].sort(
         (a, b) =>
           new Date(b.updatedAt).valueOf() - new Date(a.updatedAt).valueOf()
       );
 
       setMeterData(sortedData);
+      const urlMeterId = searchParams.get("meterId");
 
-      // Only select first if nothing selected
-      if (!selectedMeter && sortedData.length > 0) {
-        setSelectedMeter(sortedData[0]);
+      if (urlMeterId) {
+        const found = sortedData.find((m) => m.id === urlMeterId);
+        if (found) {
+          setSelectedMeter(found);
+        } else if (sortedData.length > 0) {
+          setSelectedMeter(sortedData[0]);
+        }
+      } else {
+        if (!selectedMeter && sortedData.length > 0) {
+          setSelectedMeter(sortedData[0]);
+        }
       }
     } catch (err) {
       console.error(err);
@@ -117,21 +157,24 @@ export function Meters() {
     } finally {
       setLoading(false);
     }
-  }, [showDeleted, filterParams, debouncedSearch]); // Removed 'selectedMeter' to prevent loop
+  }, [showDeleted, filterParams, debouncedSearch]);
 
   // Initial Fetch
   useEffect(() => {
     fetchMeters();
-  }, [fetchMeters, viewMode]); 
+  }, [fetchMeters, viewMode]);
 
   // ✅ HANDLER: Filter Change
-  const handleFilterChange = useCallback((newParams: Partial<FetchMetersParams>) => {
-    setFilterParams((prev) => {
-      const merged = { ...prev, ...newParams };
-      if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
-      return merged;
-    });
-  }, []);
+  const handleFilterChange = useCallback(
+    (newParams: Partial<FetchMetersParams>) => {
+      setFilterParams((prev) => {
+        const merged = { ...prev, ...newParams };
+        if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
+        return merged;
+      });
+    },
+    []
+  );
 
   useEffect(() => {
     if (isDropdownOpen && headerRef.current) {
@@ -177,8 +220,6 @@ export function Meters() {
       });
   };
 
-  // console.log(showDeleted, "showDeleted");
-
   return (
     <>
       <div>
@@ -194,7 +235,7 @@ export function Meters() {
           setShowSettings,
           setIsSettingsModalOpen,
           setShowDeleted,
-          handleFilterChange // ✅ Pass Filter Handler
+          handleFilterChange
         )}
 
         {viewMode === "table" ? (
@@ -213,7 +254,7 @@ export function Meters() {
           <>
             <div className="flex flex-1 overflow-hidden">
               <MetersList
-                filteredMeters={meterData} // Use fetched data directly (filtering is now backend)
+                filteredMeters={meterData}
                 selectedMeter={selectedMeter}
                 setSelectedMeter={setSelectedMeter}
                 loading={loading}

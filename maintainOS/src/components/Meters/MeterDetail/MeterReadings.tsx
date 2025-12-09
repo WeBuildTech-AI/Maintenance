@@ -8,13 +8,21 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-  LabelList,
 } from "recharts";
 import { Button } from "../../ui/button";
-import { subHours, subDays, subWeeks, subMonths, isAfter } from "date-fns";
+import { subHours, subDays, subWeeks, subMonths } from "date-fns";
+import { useSelector } from "react-redux";
+import type { RootState } from "../../../store";
+import { Avatar } from "../../ui/avatar";
 
-export function MeterReadings({ selectedMeter, setShowReadingMeter }: any) {
+export function MeterReadings({
+  selectedMeter,
+  setShowReadingMeter,
+  hideSeeReadingFlag,
+}: any) {
+  const user = useSelector((state: RootState) => state.auth.user);
   const [selectedTimePeriod, setSelectedTimePeriod] = useState("1D");
+
   const [customRange, setCustomRange] = useState<{
     start: Date | null;
     end: Date | null;
@@ -25,18 +33,17 @@ export function MeterReadings({ selectedMeter, setShowReadingMeter }: any) {
 
   const readings = selectedMeter?.readings || [];
 
-  // 1. Convert timestamps (no change)
+  // Convert timestamps
   const formattedData = useMemo(
     () =>
       readings.map((r: any) => ({
         ...r,
-        date: new Date(r.timestamp).getTime(), // numeric timestamp
+        date: new Date(r.timestamp).getTime(),
       })),
     [readings]
   );
 
-  // 2. (NEW) Create a dedicated useMemo for the time range (domain)
-  // This calculates the [startTime, endTime] as numbers
+  // Calculate domain range
   const domainRange = useMemo(() => {
     const now = new Date();
     let startDate: Date;
@@ -65,33 +72,25 @@ export function MeterReadings({ selectedMeter, setShowReadingMeter }: any) {
         startDate = subMonths(now, 12);
         break;
       case "Custom":
-        if (customRange.start && customRange.end) {
-          startDate = customRange.start;
-          endDate = customRange.end;
-        } else {
-          // Fallback if custom is selected but not set
-          startDate = subDays(now, 1);
-        }
+        startDate = customRange.start || subDays(now, 1);
+        endDate = customRange.end || now;
         break;
       default:
         startDate = subDays(now, 1);
     }
-    // Return numeric timestamps
+
     return [startDate.getTime(), endDate.getTime()];
   }, [selectedTimePeriod, customRange]);
 
-  // 3. (CHANGED) Simplify filteredData to use the new domainRange
+  // Filtered data
   const filteredData = useMemo(() => {
-    // Get the numeric start/end times from our new hook
     const [startTime, endTime] = domainRange;
-
-    // Filter the data based on this fixed range
     return formattedData.filter(
       (d) => d.date >= startTime && d.date <= endTime
     );
   }, [formattedData, domainRange]);
 
-  // 4. Dynamic Y-axis (no change)
+  // Y-axis dynamic
   const { minValue, maxValue } = useMemo(() => {
     if (filteredData.length === 0) return { minValue: 0, maxValue: 100 };
     const values = filteredData.map((d) => d.value);
@@ -104,21 +103,28 @@ export function MeterReadings({ selectedMeter, setShowReadingMeter }: any) {
     };
   }, [filteredData]);
 
-  // 5. Custom date input (no change)
-  const handleCustomDateSelect = () => {
-    const start = prompt("Enter start date (YYYY-MM-DD):");
-    const end = prompt("Enter end date (YYYY-MM-DD):");
-    if (start && end) {
-      setCustomRange({ start: new Date(start), end: new Date(end) });
-      setSelectedTimePeriod("Custom");
-    }
-  };
+  // ⬇️ FIX → No more "0" dot when no data
+  const safeData =
+    filteredData.length > 0
+      ? filteredData
+      : [{ date: domainRange[0], value: undefined }];
 
   return (
-    <div>
-      {/* Header (no change) */}
+    <div
+      className={`${
+        hideSeeReadingFlag === false ? "p-4" : ""
+      } bg-white rounded-lg shadow`}
+    >
+      {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-medium">Readings</h2>
+        {hideSeeReadingFlag === false ? (
+          <h2 className="text-lg font-medium">
+            {selectedMeter.measurement && selectedMeter.measurement.name}
+          </h2>
+        ) : (
+          <h2 className="text-lg font-medium">Readings</h2>
+        )}
+
         <div className="flex items-center gap-1 flex-wrap">
           {["1H", "1D", "1W", "1M", "3M", "6M", "1Y", "Custom"].map(
             (period) => (
@@ -126,14 +132,25 @@ export function MeterReadings({ selectedMeter, setShowReadingMeter }: any) {
                 key={period}
                 size="sm"
                 onClick={() => {
-                  if (period === "Custom") handleCustomDateSelect();
-                  else setSelectedTimePeriod(period);
+                  if (period === "Custom") {
+                    // const start = prompt("Enter start date (YYYY-MM-DD):");
+                    // const end = prompt("Enter end date (YYYY-MM-DD):");
+                    // if (start && end) {
+                    //   setCustomRange({
+                    //     start: new Date(start),
+                    //     end: new Date(end),
+                    //   });
+                    //   setSelectedTimePeriod("Custom");
+                    // }
+                  } else {
+                    setSelectedTimePeriod(period);
+                  }
                 }}
                 className={`${
                   selectedTimePeriod === period
                     ? "bg-orange-600 hover:bg-orange-700 text-white"
                     : "bg-transparent hover:bg-gray-100 text-gray-600"
-                } transition-all duration-200`}
+                }`}
               >
                 {period}
               </Button>
@@ -142,132 +159,90 @@ export function MeterReadings({ selectedMeter, setShowReadingMeter }: any) {
         </div>
       </div>
 
-      {/* Chart Section (no change) */}
-      <div className="space-y-4">
-        <div className="text-sm font-medium text-muted-foreground">
-          {selectedMeter.measurement && selectedMeter.measurement.name}
-        </div>
+      {/* Chart */}
+      <div className="h-80 w-full transition-all duration-300">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            key={`${selectedTimePeriod}-${safeData.length}-${minValue}-${maxValue}`}
+            data={safeData}
+            margin={{ top: 20, right: 30, left: 10, bottom: 10 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#c9c8c8ff" />
 
-        <div className="h-80 w-full transition-all duration-300">
-          {filteredData.length === 0 ? (
-            <div className="flex justify-center items-center h-full text-gray-400">
-              No data for this range
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                key={`${selectedTimePeriod}-${filteredData.length}-${minValue}-${maxValue}`}
-                data={filteredData}
-                margin={{ top: 20, right: 30, left: 10, bottom: 10 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-
-                {/* 6. (CHANGED) THIS IS THE KEY FIX */}
-                <XAxis
-                  dataKey="date"
-                  type="number"
-                  domain={domainRange}
-                  tickFormatter={(value) => {
-                    const date = new Date(value);
-                    switch (selectedTimePeriod) {
-                      case "1H":
-                        return date.toLocaleTimeString("en-IN", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        });
-                      case "1D":
-                        return date.toLocaleTimeString("en-IN", {
-                          hour: "2-digit",
-                          hour12: true,
-                        });
-                      case "1W":
-                        return date.toLocaleString("en-IN", {
-                          weekday: "short",
-                          hour: "2-digit",
-                          hour12: true,
-                        });
-                      case "1M":
-                      case "3M":
-                        return date.toLocaleDateString("en-IN", {
-                          day: "2-digit",
-                          month: "short",
-                        });
-                      case "6M":
-                        return date.toLocaleDateString("en-IN", {
-                          month: "short",
-                          year: "2-digit",
-                        });
-                      case "1Y":
-                        return date.toLocaleDateString("en-IN", {
-                          month: "short",
-                          year: "2-digit",
-                        });
-                      case "Custom":
-                        return date.toLocaleDateString("en-IN", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "2-digit",
-                        });
-                      default:
-                        return date.toLocaleString("en-IN");
-                    }
-                  }}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 12, fill: "#666" }}
-                />
-
-                {/* Y-Axis (no change) */}
-                <YAxis
-                  domain={[minValue, maxValue]}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 12, fill: "#666" }}
-                />
-
-                {/* Tooltip (no change) */}
-                <Tooltip
-                  formatter={(value: number) => [
-                    `${value} ${
-                      selectedMeter.measurement &&
-                      selectedMeter.measurement.name
-                    }`,
-                    "Reading",
-                  ]}
-                  labelFormatter={(label: string) =>
-                    new Date(label).toLocaleString("en-IN", {
-                      day: "2-digit",
-                      month: "short",
+            {/* Restored old date formatting */}
+            <XAxis
+              dataKey="date"
+              type="number"
+              domain={domainRange}
+              tickFormatter={(value) => {
+                const date = new Date(value);
+                switch (selectedTimePeriod) {
+                  case "1H":
+                    return date.toLocaleTimeString("en-IN", {
                       hour: "2-digit",
                       minute: "2-digit",
-                    })
-                  }
-                />
+                    });
+                  case "1D":
+                    return date.toLocaleTimeString("en-IN", {
+                      hour: "2-digit",
+                      hour12: true,
+                    });
+                  case "1W":
+                    return date.toLocaleString("en-IN", {
+                      weekday: "short",
+                      hour: "2-digit",
+                      hour12: true,
+                    });
+                  case "1M":
+                  case "3M":
+                    return date.toLocaleDateString("en-IN", {
+                      day: "2-digit",
+                      month: "short",
+                    });
+                  case "6M":
+                  case "1Y":
+                    return date.toLocaleDateString("en-IN", {
+                      month: "short",
+                      year: "2-digit",
+                    });
+                  case "Custom":
+                    return date.toLocaleDateString("en-IN", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "2-digit",
+                    });
+                  default:
+                    return date.toLocaleString("en-IN");
+                }
+              }}
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 12, fill: "#666" }}
+            />
 
-                {/* Line (no change) */}
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  stroke="#FFCD00"
-                  strokeWidth={2}
-                  dot={{ fill: "#FFCD00", strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, stroke: "#FFCD00", strokeWidth: 2 }}
-                  isAnimationActive
-                  animationDuration={500}
-                >
-                  <LabelList
-                    dataKey="value"
-                    position="top"
-                    className="text-xs"
-                    formatter={(v: number) => v.toString()}
-                  />
-                </Line>
-              </LineChart>
-            </ResponsiveContainer>
-          )}
-        </div>
+            <YAxis
+              domain={[minValue, maxValue]}
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 12, fill: "#666" }}
+            />
 
-        {/* Button (no change) */}
+            <Tooltip />
+
+            <Line
+              type="monotone"
+              dataKey="value"
+              stroke="#FFCD00"
+              strokeWidth={2}
+              dot={{ r: 4 }}
+              activeDot={{ r: 6 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Button */}
+      {hideSeeReadingFlag === false ? null : (
         <div className="pt-4">
           <Button
             className="gap-2 bg-orange-600 hover:bg-orange-700"
@@ -277,7 +252,29 @@ export function MeterReadings({ selectedMeter, setShowReadingMeter }: any) {
             See All Readings
           </Button>
         </div>
-      </div>
+      )}
+      {hideSeeReadingFlag === false && (
+        <div className="space-y-3 mt-2 text-orange-600">
+          <div className="flex item-center">
+            <div className="flex items-center  gap-2 text-[15px] mt-1">
+              <div className=" text-sm ">Source :- </div>
+              {/* <Avatar>
+                {}
+              </Avatar> */}
+              {user?.fullName}
+            </div>
+            <div className="border-b mt-2"></div>
+          </div>
+
+          {/* Last Reading Value */}
+          <div>
+            <div className="text-gray-500 text-sm">Last Reading Value :- </div>
+            <div className="font-medium text-[15px] mt-1">
+              {/* {`${meter.readingValue} PSI, ${meter.date}, ${meter.time}`} */}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

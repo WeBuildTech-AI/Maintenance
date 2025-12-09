@@ -410,9 +410,11 @@ export function MeterTable({
       meterType: m.meterType || "—",
       asset: m.asset?.name || "—",
       location: m.location?.name || "—",
-      lastReading: m.readingFrequency
-        ? `${m.readingFrequency.time} ${m.readingFrequency.interval}`
-        : "—",
+      lastReading:
+        m.readingFrequency?.time && m.readingFrequency?.interval
+          ? `${m.readingFrequency.time} ${m.readingFrequency.interval}`
+          : "—",
+
       status: m.status || "—",
       isOverdue: m.isOverdue || false,
       createdAt: m.createdAt || "—",

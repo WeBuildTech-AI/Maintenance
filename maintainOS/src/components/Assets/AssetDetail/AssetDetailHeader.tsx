@@ -31,6 +31,7 @@ interface AssetDetailHeaderProps {
   onClose: () => void;
   restoreData: string;
   fetchAssetsData: () => void;
+  showDeleted: boolean;
 }
 
 export function AssetDetailHeader({
@@ -41,6 +42,7 @@ export function AssetDetailHeader({
   onClose,
   restoreData,
   fetchAssetsData,
+  showDeleted,
 }: AssetDetailHeaderProps) {
   const navigate = useNavigate();
   const [openAssetDeleteModal, setOpenAssetDeleteModal] = useState(false);
@@ -89,10 +91,12 @@ export function AssetDetailHeader({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setOpenAssetDeleteModal(true)}>
-                Delete
-              </DropdownMenuItem>
-              {restoreData && (
+              {!showDeleted && (
+                <DropdownMenuItem onClick={() => setOpenAssetDeleteModal(true)}>
+                  Delete
+                </DropdownMenuItem>
+              )}
+              {showDeleted && (
                 <DropdownMenuItem onClick={handleRestoreData}>
                   Restore
                 </DropdownMenuItem>

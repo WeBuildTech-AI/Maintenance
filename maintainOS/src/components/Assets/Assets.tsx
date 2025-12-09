@@ -7,12 +7,14 @@ import { AssetTable } from "./AssetsTable/AssetTable";
 import { AssetHeaderComponent } from "./AssetsHeader/AssetsHeader";
 import type { ViewMode } from "../purchase-orders/po.types";
 import { assetService, deleteAsset } from "../../store/assets";
-import { FetchAssetsParams } from "../../store/assets/assets.types"; // ✅ Imported Types
+import { FetchAssetsParams } from "../../store/assets/assets.types";
 import toast, { Toaster } from "react-hot-toast";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store";
 import { locationService } from "../../store/locations";
 import AssetStatusMoreDetails from "./AssetDetail/sections/AssetStatusMoreDetails";
+// ✅ Import useSearchParams
+import { useSearchParams } from "react-router-dom";
 
 // --- Interfaces (Same as provided) ---
 export interface Location {
@@ -31,12 +33,28 @@ export interface Asset {
 
 // --- Component Start ---
 export const Assets: FC = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState(""); // ✅ Debounce
-  const [seeMoreAssetStatus, setSeeMoreAssetStatus] = useState(false);
+  // ✅ 1. URL Search Params Setup
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // ✅ 2. Initialize State from URL
+  const [searchQuery, setSearchQuery] = useState(
+    () => searchParams.get("search") || ""
+  );
+  const [debouncedSearch, setDebouncedSearch] = useState(
+    () => searchParams.get("search") || ""
+  );
+
+  const [seeMoreAssetStatus, setSeeMoreAssetStatus] = useState(() => {
+    return searchParams.get("moreDetails") === "true";
+  });
+
   const [showNewAssetForm, setShowNewAssetForm] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>("panel");
+
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    return (searchParams.get("viewMode") as ViewMode) || "panel";
+  });
+
   const [loading, setLoading] = useState(false);
   const [assetData, setAssetData] = useState<Asset[]>([]);
   const [sortType, setSortType] = useState("Name");
@@ -47,11 +65,34 @@ export const Assets: FC = () => {
   const [showDeleted, setShowDeleted] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
 
-  // ✅ FILTER PARAMETERS STATE
+  // ✅ FILTER PARAMETERS STATE (Page from URL)
   const [filterParams, setFilterParams] = useState<FetchAssetsParams>({
-    page: 1, 
-    limit: 50 
+    page: Number(searchParams.get("page")) || 1,
+    limit: 50,
   });
+
+  // ✅ 3. Sync State TO URL (Effect to update URL when state changes)
+  useEffect(() => {
+    const params: any = {};
+
+    if (debouncedSearch) params.search = debouncedSearch;
+    // if (viewMode) params.viewMode = viewMode;
+    if (seeMoreAssetStatus) params.moreDetails = "true";
+    // Check if filterParams.page is greater than 1, usually we only put it in URL if not default
+    if (filterParams.page > 1) params.page = filterParams.page.toString();
+
+    // Most important: Set the Asset ID
+    if (selectedAsset?.id) params.assetId = selectedAsset.id;
+
+    // Update URL (replace: true prevents massive history stack)
+    setSearchParams(params, { replace: true });
+  }, [
+    debouncedSearch,
+    viewMode,
+    seeMoreAssetStatus,
+    selectedAsset?.id,
+    filterParams.page,
+  ]);
 
   // ✅ DEBOUNCE EFFECT
   useEffect(() => {
@@ -63,38 +104,52 @@ export const Assets: FC = () => {
 
   const fetchAssetsData = useCallback(async () => {
     setLoading(true);
-    // Note: Don't clear selectedAsset immediately here if you want to preserve selection across background refreshes,
-    // but clearing it on search change is usually expected.
-    // setSelectedAsset(null); 
+    // Removed setSelectedAsset(null) to allow persistence logic to work
 
     try {
-      let assets: Asset[] = [];
+      let assets: any;
 
       if (showDeleted && viewMode === "table") {
         assets = await assetService.fetchDeleteAsset();
       } else {
-        // ✅ USE API PAYLOAD WITH FILTERS
-        // Note: API uses 'name' for search
         const apiPayload = {
           ...filterParams,
-          name: debouncedSearch || undefined
+          name: debouncedSearch || undefined,
         };
-        // console.log("🔥 Assets API Call:", apiPayload);
         assets = await assetService.fetchAssets(apiPayload);
       }
 
       if (assets && assets.length > 0) {
         setAssetData(assets);
 
-        // Optional: Pre-select if nothing selected
-        if(!selectedAsset) {
-             const mostRecent = [...assets].sort(
-                (a, b) =>
-                    new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        // ✅ URL SELECTION LOGIC
+        const urlAssetId = searchParams.get("assetId");
+
+        if (urlAssetId) {
+          // 1. Try to find the asset from the URL
+          const found = assets.find((a) => String(a.id) === String(urlAssetId));
+          if (found) {
+            setSelectedAsset(found);
+          } else {
+            // If URL ID is invalid/not found, fallback to most recent
+            const mostRecent = [...assets].sort(
+              (a, b) =>
+                new Date(b.updatedAt).getTime() -
+                new Date(a.updatedAt).getTime()
             );
             setSelectedAsset(mostRecent[0]);
+          }
+        } else {
+          // 2. If no URL ID and no currently selected asset, select most recent
+          if (!selectedAsset) {
+            const mostRecent = [...assets].sort(
+              (a, b) =>
+                new Date(b.updatedAt).getTime() -
+                new Date(a.updatedAt).getTime()
+            );
+            setSelectedAsset(mostRecent[0]);
+          }
         }
-       
       } else {
         setAssetData([]);
         setSelectedAsset(null);
@@ -107,7 +162,7 @@ export const Assets: FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [showDeleted, viewMode, filterParams, debouncedSearch]); // Removed selectedAsset to avoid loop
+  }, [showDeleted, viewMode, filterParams, debouncedSearch]); // Note: removed searchParams from dependency to avoid loop, it reads strictly inside
 
   const fetchAllLocationData = useCallback(async () => {
     try {
@@ -121,17 +176,19 @@ export const Assets: FC = () => {
   useEffect(() => {
     fetchAssetsData();
     fetchAllLocationData();
-  }, [fetchAssetsData, fetchAllLocationData]); // viewMode is inside fetchAssetsData dep
+  }, [fetchAssetsData, fetchAllLocationData]);
 
   // ✅ HANDLER: Filter Change
-  const handleFilterChange = useCallback((newParams: Partial<FetchAssetsParams>) => {
-    setFilterParams((prev) => {
-      const merged = { ...prev, ...newParams };
-      if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
-      return merged;
-    });
-  }, []);
-
+  const handleFilterChange = useCallback(
+    (newParams: Partial<FetchAssetsParams>) => {
+      setFilterParams((prev) => {
+        const merged = { ...prev, ...newParams };
+        if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
+        return merged;
+      });
+    },
+    []
+  );
 
   const handleEditAsset = useCallback((assetToEdit: Asset) => {
     setEditingAsset(assetToEdit);
@@ -164,8 +221,6 @@ export const Assets: FC = () => {
       return sortOrder === "desc" ? comparison : -comparison;
     });
 
-    // Client-side filtering removed as backend handles it now. 
-    // Just return the sorted API data.
     return processedAssets;
   }, [assetData, sortType, sortOrder]);
 
@@ -180,6 +235,7 @@ export const Assets: FC = () => {
           if (newAssetList.length === 0) {
             setSelectedAsset(null);
           } else {
+            // Logic to select next available item
             const newIndexToSelect = Math.min(
               currentIndex,
               newAssetList.length - 1
@@ -211,7 +267,6 @@ export const Assets: FC = () => {
               setSelectedAsset={setSelectedAsset}
               setIsSettingsModalOpen={setIsSettingsModalOpen}
               setShowDeleted={setShowDeleted}
-              // ✅ Pass Filter Handler
               onFilterChange={handleFilterChange}
             />
 
@@ -227,6 +282,7 @@ export const Assets: FC = () => {
                 onEdit={handleEditAsset}
                 showDeleted={showDeleted}
                 setShowDeleted={setShowDeleted}
+                setSeeMoreAssetStatus={setSeeMoreAssetStatus}
               />
             ) : (
               <div className="flex flex-1 min-h-0">

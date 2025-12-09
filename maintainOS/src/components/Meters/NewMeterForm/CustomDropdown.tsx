@@ -2,8 +2,16 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Loader from "../../Loader/Loader";
-import { useNavigate } from "react-router-dom";
+import { 
+  Ruler,       // Distance
+  Box,         // Volume
+  Thermometer, // Temperature
+  Gauge,       // Velocity, Acceleration, Electricity
+  Hash,        // Other
+  Tag          // Fallback
+} from "lucide-react"; 
 
+// ... (Interfaces same rahenge) ...
 interface DropdownOption {
   id: string;
   name: string;
@@ -20,8 +28,6 @@ interface CustomDropdownProps {
   loading: boolean;
   placeholder: string;
   errorText?: string;
-
-  // only for measurement
   measurementCategory?: string;
 }
 
@@ -39,23 +45,28 @@ export function CustomDropdown({
 }: CustomDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
-
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const isMeasurement = label === "Measurement Unit (Required)";
 
-  // Update input when value changes
+  // ✅ Same Helper Function (No changes here)
+  const getCategoryIcon = (categoryName: string) => {
+    const cat = categoryName.toLowerCase();
+    if (cat.includes("distance") || cat.includes("length")) return <Ruler size={16} />;
+    if (cat.includes("volume") || cat.includes("capacity")) return <Box size={16} />;
+    if (cat.includes("temperature")) return <Thermometer size={16} />;
+    if (cat.includes("velocity") || cat.includes("speed")) return <Gauge size={16} />;
+    if (cat.includes("acceleration")) return <Gauge size={16} />;
+    if (cat.includes("electricity") || cat.includes("current")) return <Gauge size={16} />;
+    return <Tag size={16} />;
+  };
+
+  // ... (useEffect logics same rahenge) ...
   useEffect(() => {
     if (value) {
       const selectedOption = options.find((o) => o.id === value);
-
-      if (selectedOption) {
-        setInputValue(selectedOption.name);
-      } else {
-        if (options.length === 0) {
-          setInputValue("");
-        }
-      }
+      if (selectedOption) setInputValue(selectedOption.name);
+      else if (options.length === 0) setInputValue("");
     } else {
       setInputValue("");
     }
@@ -63,10 +74,7 @@ export function CustomDropdown({
 
   useEffect(() => {
     function handleOutside(e: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setIsOpen(false);
         const selectedOption = options.find((o) => o.id === value);
         setInputValue(selectedOption ? selectedOption.name : "");
@@ -76,27 +84,16 @@ export function CustomDropdown({
     return () => document.removeEventListener("mousedown", handleOutside);
   }, [value, options]);
 
-  // --------------------------------------------------------------------
-  // LOGIC FOR NON-MEASUREMENT DROPDOWNS
-  // --------------------------------------------------------------------
+  // ... (Filtering logic same rahega) ...
   const normalFilteredOptions = !isMeasurement
-    ? options.filter((o) =>
-        o.name.toLowerCase().includes(inputValue.toLowerCase())
-      )
+    ? options.filter((o) => o.name.toLowerCase().includes(inputValue.toLowerCase()))
     : [];
 
-  // --------------------------------------------------------------------
-  // LOGIC FOR MEASUREMENT-DROPDOWN ONLY
-  // --------------------------------------------------------------------
   let categoryFilteredOptions = options;
-
   if (isMeasurement && measurementCategory) {
-    categoryFilteredOptions = options.filter(
-      (o) => o.category === measurementCategory
-    );
+    categoryFilteredOptions = options.filter((o) => o.category === measurementCategory);
   }
 
-  // Group by category
   const groupedOptions = isMeasurement
     ? categoryFilteredOptions.reduce((acc, item) => {
         if (!acc[item.category || "OTHER"]) acc[item.category || "OTHER"] = [];
@@ -105,9 +102,7 @@ export function CustomDropdown({
       }, {} as Record<string, DropdownOption[]>)
     : {};
 
-  // Filter inside groups
   const filteredGroupedOptions: Record<string, DropdownOption[]> = {};
-
   if (isMeasurement) {
     Object.keys(groupedOptions).forEach((category) => {
       const match = groupedOptions[category].filter((o) =>
@@ -117,38 +112,21 @@ export function CustomDropdown({
     });
   }
 
-  // Create option logic (measurement only)
-  const exactMatch =
-    isMeasurement &&
-    categoryFilteredOptions.some(
+  const exactMatch = isMeasurement && categoryFilteredOptions.some(
       (o) => o.name.toLowerCase() === inputValue.toLowerCase()
     );
+  const showCreateOption = isMeasurement && inputValue.trim().length > 0 && !exactMatch && !loading;
 
-  const showCreateOption =
-    isMeasurement && inputValue.trim().length > 0 && !exactMatch && !loading;
-
-  const handleInputClick = () => {
-    onOpen();
-    setIsOpen(true);
-  };
-
+  // Handlers
+  const handleInputClick = () => { onOpen(); setIsOpen(true); };
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(e.target.value);
-    onChange("");
-    setIsOpen(true);
+    setInputValue(e.target.value); onChange(""); setIsOpen(true);
   };
-
   const handleOptionClick = (item: DropdownOption) => {
-    onChange(item.id);
-    setInputValue(item.name);
-    setIsOpen(false);
+    onChange(item.id); setInputValue(item.name); setIsOpen(false);
   };
-
   const handleCreateClick = () => {
-    const newId = inputValue.toLowerCase().replace(/\s+/g, "-");
-    onChange(newId);
-    // setInputValue(inputValue);
-    // setIsOpen(false);
+    const newId = inputValue.toLowerCase().replace(/\s+/g, "-"); onChange(newId);
   };
 
   return (
@@ -173,33 +151,22 @@ export function CustomDropdown({
 
         {isOpen && (
           <div className="absolute z-50 w-full border mt-1 max-h-64 overflow-auto bg-white shadow-lg ring-1 ring-black ring-opacity-5 rounded-md p-2">
-            {/* LOADING */}
             {loading && (
               <div className="px-4 py-2 text-gray-500">
                 <Loader />
               </div>
             )}
 
-            {/* ---------------------------------------------------------------- */}
-            {/* NON-MEASUREMENT MODE (Asset, Location etc.) */}
-            {/* ---------------------------------------------------------------- */}
-            {!loading &&
-              !isMeasurement &&
-              normalFilteredOptions.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => handleOptionClick(item)}
-                  className="cursor-pointer px-3 py-2 hover:bg-indigo-600 hover:text-white rounded-md"
-                >
-                  {item.name}
-                </div>
-              ))}
+            {!loading && !isMeasurement && normalFilteredOptions.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => handleOptionClick(item)}
+                className="cursor-pointer px-3 py-2 hover:bg-indigo-600 hover:text-white rounded-md"
+              >
+                {item.name}
+              </div>
+            ))}
 
-            {/* ---------------------------------------------------------------- */}
-            {/* MEASUREMENT MODE (ONLY Measurement Unit dropdown) */}
-            {/* ---------------------------------------------------------------- */}
-
-            {/* CREATE */}
             {!loading && showCreateOption && (
               <div
                 onClick={handleCreateClick}
@@ -209,41 +176,46 @@ export function CustomDropdown({
               </div>
             )}
 
-            {/* GROUPED OPTIONS */}
+            {/* ✅ UPDATED RENDER LOGIC */}
             {!loading &&
               isMeasurement &&
               Object.keys(filteredGroupedOptions).map((category, index) => (
                 <div key={category}>
+                  {/* Category Header (Icon Removed from here) */}
                   <div
-                    className={`p-1 text-sm font-semibold text-orange-600 text-gray-500 
-    ${index !== 0 ? "border-t" : ""}`}
+                    className={`p-1 text-sm font-semibold text-orange-600 bg-orange-50 
+                    ${index !== 0 ? "border-t mt-1" : ""} 
+                    rounded-sm`}
                   >
                     {category}
                   </div>
 
+                  {/* Items List (Icon Added here) */}
                   {filteredGroupedOptions[category].map((item) => (
                     <div
                       key={item.id}
                       onClick={() => handleOptionClick(item)}
-                      className="cursor-pointer py-2 px-3 capitalize pl-3 pr-9 hover:bg-indigo-600 hover:text-white rounded-md"
+                      // Added 'group', 'flex', 'items-center', 'gap-2'
+                      className="group cursor-pointer py-2 px-3 capitalize flex items-center gap-2 hover:bg-indigo-600 hover:text-white rounded-md"
                     >
+                      {/* Icon show karega (Category based) */}
+                      {/* 'group-hover:text-white' ensure karega ki hover hone par icon bhi white ho jaye */}
+                      <span className="text-gray-400 group-hover:text-white">
+                        {getCategoryIcon(category)}
+                      </span>
+
                       {item.name}
                     </div>
                   ))}
                 </div>
               ))}
 
-            {/* NOTHING FOUND */}
-            {!loading &&
-              isMeasurement &&
-              !Object.keys(filteredGroupedOptions).length &&
-              !showCreateOption && (
-                <div className="px-4 py-2 text-gray-500">No options found</div>
-              )}
+            {!loading && isMeasurement && !Object.keys(filteredGroupedOptions).length && !showCreateOption && (
+              <div className="px-4 py-2 text-gray-500">No options found</div>
+            )}
           </div>
         )}
       </div>
-
       {errorText && <p className="mt-2 text-sm text-red-600">{errorText}</p>}
     </div>
   );

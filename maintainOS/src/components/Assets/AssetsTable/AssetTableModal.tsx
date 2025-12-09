@@ -1,5 +1,10 @@
-import React, { type Dispatch, type SetStateAction } from "react";
-import { X } from "lucide-react"; // Assuming you use lucide-react for icons
+import React, {
+  useState,
+  type Dispatch,
+  type SetStateAction,
+  useRef,
+} from "react";
+import { X } from "lucide-react";
 import { AssetDetail } from "../AssetDetail/AssetDetail";
 import type { Asset } from "../Assets";
 import { MeterDetail } from "../../Meters/MeterDetail/MeterDetail";
@@ -7,9 +12,13 @@ import LocationDetails from "../../Locations/LocationDetails";
 import VendorDetails from "../../vendors/VendorDetails/VendorDetails";
 import { PartDetails } from "../../Inventory/PartDetail/PartDetails";
 import PurchaseOrderDetails from "../../purchase-orders/PurchaseOrderDetails";
-import { StatusBadge } from "../../purchase-orders/StatusBadge";
+import { NewAssetForm } from "../NewAssetForm/NewAssetForm";
 
-// Define the props interface
+// ✅ 1. IMPORT METER COMPONENTS
+import { ReadingHistory } from "../../Meters/MeterDetail/ReadingHistory";
+import RecordReadingModal from "../../Meters/MeterDetail/RecordReadingModal";
+import { NewMeterForm } from "../../Meters/NewMeterForm/NewMeterForm";
+
 interface AssetTableModalProps {
   data: any[];
   onClose: () => void;
@@ -21,33 +30,40 @@ interface AssetTableModalProps {
   setShowReadingMeter: Dispatch<SetStateAction<boolean>>;
   setIsRecordModalOpen: Dispatch<SetStateAction<boolean>>;
   restoreData: string;
-  showDeleted:boolean;
+  showDeleted: boolean;
 }
 
 const AssetTableModal: React.FC<AssetTableModalProps> = ({
   onClose,
   data,
   onDelete,
-  onEdit,
+  onEdit, // Note: Ye prop sirf Assets ke liye tha, Meter ke liye hum local state use karenge
   fetchData,
   setSeeMoreAssetStatus,
   showDetailsSection,
   restoreData,
-  showDeleted
+  showDeleted,
 }) => {
-  // Prevent click inside modal content from closing the modal
+  // Asset Editing State
+  const [isEditing, setIsEditing] = useState(false);
+
+  // ✅ 2. NEW STATES FOR METER (Edit, History, Record)
+  const [isMeterEditing, setIsMeterEditing] = useState(false);
+  const [showMeterHistory, setShowMeterHistory] = useState(false);
+  const [isRecordReadingOpen, setIsRecordReadingOpen] = useState(false);
+
+  const modalRef = useRef<HTMLDivElement>(null);
+
   const handleContentClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
-
-  
 
   return (
     <div
       role="dialog"
       aria-modal="true"
       className="fixed inset-0 bg-black/50 flex w-full items-center justify-center p-4 z-50 backdrop-blur-sm"
-      onClick={onClose} // Close when clicking the background overlay
+      onClick={onClose}
     >
       <div
         className="bg-card rounded-lg shadow-md w-200 h-full flex flex-col overflow-auto bg-white"
@@ -66,29 +82,82 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
           </button>
         </div>
 
-        {/* Content Body - Scrollable */}
+        {/* Content Body */}
         <div className="flex-1 overflow-y-auto">
-          {showDetailsSection === "asset" && (
-            <AssetDetail
-              asset={data}
-              onDelete={onDelete}
-              onEdit={() => {}}
-              fetchAssetsData={fetchData}
-              setSeeMoreAssetStatus={() => {}}
-              onClose={onClose}
-              restoreData={restoreData}
-            />
-          )}
+          {/* --- ASSET SECTION --- */}
+          {showDetailsSection === "asset" &&
+            (isEditing ? (
+              <div className="p-4">
+                <NewAssetForm
+                  isEdit={true}
+                  assetData={data}
+                  fetchAssetsData={fetchData}
+                  onCancel={() => setIsEditing(false)}
+                  onCreate={(updatedAsset) => {
+                    fetchData();
+                    setIsEditing(false);
+                  }}
+                />
+              </div>
+            ) : (
+              <AssetDetail
+                asset={data}
+                onDelete={onDelete}
+                onEdit={() => setIsEditing(true)}
+                fetchAssetsData={fetchData}
+                onClose={onClose}
+                restoreData={restoreData}
+                showDeleted={showDeleted}
+                setSeeMoreAssetStatus={setSeeMoreAssetStatus}
+              />
+            ))}
 
-          {showDetailsSection === "meter" && (
-            <MeterDetail
-              selectedMeter={data}
-              restoreData={"Restore"}
-              fetchMeters={fetchData}
-              onClose={onClose}
-            />
-          )}
+          {/* --- METER SECTION (UPDATED FOR IN-MODAL EDITING) --- */}
+          {showDetailsSection === "meter" &&
+            (isMeterEditing ? (
+              <div className="p-4">
+                <NewMeterForm
+                  editingMeter={data} // Current meter ka data pass kiya
+                  onCancel={() => setIsMeterEditing(false)} // Cancel par wapas detail view
+                  onCreate={() => {
+                    fetchData(); // Data refresh karo
+                    setIsMeterEditing(false); // Edit mode band karo
+                  }}
+                />
+              </div>
+            ) : showMeterHistory ? (
+              <ReadingHistory
+                selectedMeter={data}
+                onBack={() => setShowMeterHistory(false)}
+                setIsRecordModalOpen={setIsRecordReadingOpen}
+              />
+            ) : (
+              <>
+                <MeterDetail
+                  selectedMeter={data}
+                  restoreData={"Restore"}
+                  fetchMeters={fetchData}
+                  onClose={onClose}
+                  // 👇 Ye props pass kiye taaki History aur Record features kaam karein
+                  setShowReadingMeter={setShowMeterHistory}
+                  setIsRecordModalOpen={setIsRecordReadingOpen}
+                  // 👇 MAIN CHANGE: Edit button dabane par local state change hogi
+                  onEdit={() => setIsMeterEditing(true)}
+                />
 
+                {/* Record Reading Modal Overlay */}
+                {isRecordReadingOpen && (
+                  <RecordReadingModal
+                    modalRef={modalRef}
+                    selectedMeter={data}
+                    onClose={() => setIsRecordReadingOpen(false)}
+                    fetchMeters={fetchData}
+                  />
+                )}
+              </>
+            ))}
+
+          {/* --- OTHER SECTIONS (Location, Vendor, Part, PO) --- */}
           {showDetailsSection === "location" && (
             <LocationDetails
               selectedLocation={data}
@@ -121,7 +190,7 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
               selectedPO={data}
               updateState={() => {}}
               handleConfirm={() => {}}
-              setModalAction={(() => "delete")}
+              setModalAction={() => "delete"}
               topRef={{ current: null }}
               commentsRef={{ current: null }}
               formatMoney={(v) => v.toString()}

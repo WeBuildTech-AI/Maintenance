@@ -63,11 +63,22 @@ export function MeterDetailsSection({ selectedMeter }: any) {
         {/* Measurement Unit */}
         <div>
           <h3 className="text-sm font-medium text-muted-foreground mb-2">
+            Meter Type
+          </h3>
+          <div className="flex items-center gap-2">
+            <Tag className="h-4 w-4 text-muted-foreground" />
+            <span className="text-base capitalize">
+              {selectedMeter.meterType && selectedMeter.meterType}
+            </span>
+          </div>
+        </div>
+        <div>
+          <h3 className="text-sm font-medium text-muted-foreground mb-2">
             Measurement Unit
           </h3>
           <div className="flex items-center gap-2">
             <Tag className="h-4 w-4 text-muted-foreground" />
-            <span className="text-base">
+            <span className="text-base capitalize">
               {selectedMeter.measurement && selectedMeter.measurement.name}
             </span>
           </div>
@@ -98,8 +109,9 @@ export function MeterDetailsSection({ selectedMeter }: any) {
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <span className="text-base">
-              {selectedMeter?.readings?.length > 0 ? 
-                formatDate(selectedMeter.readings[0].timestamp) : "N/A"}
+              {selectedMeter?.readings?.length > 0
+                ? formatDate(selectedMeter.readings[0].timestamp)
+                : "N/A"}
             </span>
           </div>
         </div>

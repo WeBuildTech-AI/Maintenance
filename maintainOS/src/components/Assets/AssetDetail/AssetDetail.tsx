@@ -1,4 +1,4 @@
-import { useState, FC, type Dispatch, type SetStateAction } from "react";
+import { useState, type FC, type Dispatch, type SetStateAction } from "react";
 import { AssetDetailContent } from "./AssetDetailContent";
 import { AssetDetailHeader } from "./AssetDetailHeader";
 import { useSelector } from "react-redux";
@@ -11,21 +11,19 @@ interface Asset {
   name: string;
   updatedAt: string;
   createdAt: string; // <-- Added this
-  location: {
-    id: number | string;
-    name: string;
-  };
+  location: any[];
   // Add other properties of your asset here
 }
 
 interface AssetDetailProps {
-  asset: any[];
+  asset: any;
   onEdit: (asset: Asset) => void;
   onDelete: (id: string | number) => void;
   fetchAssetsData: () => void;
-  setSeeMoreAssetStatus: Dispatch<SetStateAction<boolean>>;
+  setSeeMoreAssetStatus: (value: boolean) => void;
   onClose: () => void;
-  restoreData:string;
+  restoreData: string;
+  showDeleted: boolean;
 }
 
 export const AssetDetail: FC<AssetDetailProps> = ({
@@ -36,6 +34,7 @@ export const AssetDetail: FC<AssetDetailProps> = ({
   setSeeMoreAssetStatus,
   onClose,
   restoreData,
+  showDeleted,
 }) => {
   const [showHistory, setShowHistory] = useState<boolean>(false);
   const user = useSelector((state: RootState) => state.auth.user);
@@ -57,6 +56,7 @@ export const AssetDetail: FC<AssetDetailProps> = ({
         onClose={onClose}
         restoreData={restoreData}
         fetchAssetsData={fetchAssetsData}
+        showDeleted={showDeleted}
       />
 
       {showHistory ? (

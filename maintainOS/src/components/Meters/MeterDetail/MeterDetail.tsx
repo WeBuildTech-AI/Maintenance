@@ -86,7 +86,7 @@ export function MeterDetail({
               <button
                 title="Copy Link"
                 onClick={() => {
-                  const url = `${window.location.origin}/meters/${selectedMeter.id}`;
+                  const url = `${window.location.origin}/meters?meterId=${selectedMeter.id}`;
                   navigator.clipboard.writeText(url);
                   toast.success("Meter link copied!");
                 }}
@@ -143,15 +143,25 @@ export function MeterDetail({
 
         <div className="flex items-center gap-4 text-muted-foreground">
           {selectedMeter?.assetId && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center cursor-pointer gap-2">
               <Building2 className="h-4 w-4" />
-              <span>{selectedMeter.asset && selectedMeter.asset.name}</span>
+              <span
+                onClick={() =>
+                  navigate(`/assets?assetId=${selectedMeter.asset.id}`)
+                }
+              >
+                {selectedMeter.asset && selectedMeter.asset.name}
+              </span>
             </div>
           )}
           {selectedMeter?.locationId && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 cursor-pointer">
               <MapPin className="h-4 w-4" />
-              <span>
+              <span
+                onClick={() =>
+                  navigate(`/locations/${selectedMeter.location.id}`)
+                }
+              >
                 {selectedMeter.location && selectedMeter.location.name}
               </span>
             </div>
@@ -166,8 +176,8 @@ export function MeterDetail({
           setShowReadingMeter={setShowReadingMeter}
         />
         <MeterDetailsSection selectedMeter={selectedMeter} />
-        <MeterAutomations />
-        <MeterWorkOrders selectedMeter={selectedMeter} />
+        {/* <MeterAutomations /> */}
+        {/* <MeterWorkOrders selectedMeter={selectedMeter} /> */}
         {selectedMeter.createdAt === selectedMeter.updatedAt ? (
           <>
             <div className="text-sm text-gray-500 mt-6">

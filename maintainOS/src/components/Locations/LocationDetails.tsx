@@ -27,7 +27,7 @@ import { locationService } from "../../store/locations";
 
 // Props interface
 interface LocationDetailsProps {
-  selectedLocation: Location;
+  selectedLocation: any;
   handleDeleteLocation: (id: string) => void;
   user: {
     id: string;
@@ -35,10 +35,11 @@ interface LocationDetailsProps {
     email: string;
   } | null;
   onEdit?: (location: Location) => void;
-  handleShowNewSubLocationForm: boolean;
+  handleShowNewSubLocationForm: (show: boolean) => void;
   restoreData: string;
   fetchLocation: () => void;
   onClose: () => void;
+  setShowSubLocation: (show: boolean) => void;
 }
 
 const LocationDetails: React.FC<LocationDetailsProps> = ({
@@ -50,6 +51,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
   restoreData,
   fetchLocation,
   onClose,
+  setShowSubLocation,
 }) => {
   const navigate = useNavigate();
   const [openDeleteModal, setOpenDeleteModal] = React.useState(false);
@@ -218,7 +220,10 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
                       >
                         <div className="flex items-center gap-2">
                           <MapPin className="w-3 h-3 text-orange-600" />
-                          <span className="text-gray-900 text-sm">
+                          <span
+                            className="text-gray-900 text-sm"
+                            onClick={() => setShowSubLocation(true)}
+                          >
                             {location?.name || "Unnamed Location"}
                           </span>
                         </div>

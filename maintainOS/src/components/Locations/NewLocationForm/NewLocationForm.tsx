@@ -29,12 +29,12 @@ type NewLocationFormProps = {
 
 export function NewLocationForm({
   onCancel,
-  onCreate, 
+  onCreate,
   onSuccess,
   isEdit = false,
   editData = null,
   initialParentId,
-  isSubLocation = false, 
+  isSubLocation = false,
   fetchLocations,
   fetchLocationById,
 }: NewLocationFormProps) {
@@ -62,17 +62,24 @@ export function NewLocationForm({
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector((state: RootState) => state.auth.user);
 
-  // Pre-fill fields if editing
   useEffect(() => {
     if (isEdit && editData) {
       setName(editData.name);
       setAddress(editData.address || "");
       setDescription(editData.description || "");
       setQrCode(editData.qrCode?.split("/").pop() || "");
-      setVendorId(editData.vendorIds || []);
       setParentLocationId(editData.parentLocationId || "");
-
-      // Set existing location images and docs (support both new and old field names)
+      if (editData.vendorIds && editData.vendorIds.length > 0) {
+        // Case 1: API returns explicit IDs
+        setVendorId(editData.vendorIds);
+      } else if (
+        (editData as any).vendors &&
+        Array.isArray((editData as any).vendors)
+      ) {
+        setVendorId((editData as any).vendors.map((v: any) => v.id));
+      } else {
+        setVendorId([]);
+      }
       if (editData.locationImages) {
         setLocationImages(editData.locationImages);
       } else if (editData.photoUrls) {
@@ -187,7 +194,6 @@ export function NewLocationForm({
         formData.append(`locationDocs[${index}][fileName]`, doc.fileName);
       });
     }
-
 
     try {
       let res;
