@@ -5,6 +5,9 @@ import React, {
   useRef,
 } from "react";
 import { X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+
 import { AssetDetail } from "../AssetDetail/AssetDetail";
 import type { Asset } from "../Assets";
 import { MeterDetail } from "../../Meters/MeterDetail/MeterDetail";
@@ -14,13 +17,17 @@ import { PartDetails } from "../../Inventory/PartDetail/PartDetails";
 import PurchaseOrderDetails from "../../purchase-orders/PurchaseOrderDetails";
 import { NewAssetForm } from "../NewAssetForm/NewAssetForm";
 
-// ✅ 1. IMPORT METER COMPONENTS
+// Meter Components
 import { ReadingHistory } from "../../Meters/MeterDetail/ReadingHistory";
 import RecordReadingModal from "../../Meters/MeterDetail/RecordReadingModal";
 import { NewMeterForm } from "../../Meters/NewMeterForm/NewMeterForm";
 
+// PO Service & Modal
+import { purchaseOrderService } from "../../../store/purchaseOrders";
+import ConfirmationModal from "../../purchase-orders/ConfirmationModal";
+
 interface AssetTableModalProps {
-  data: any[];
+  data: any;
   onClose: () => void;
   onEdit: (asset: Asset) => void;
   onDelete: (id: string | number) => void;
@@ -37,20 +44,28 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
   onClose,
   data,
   onDelete,
-  onEdit, // Note: Ye prop sirf Assets ke liye tha, Meter ke liye hum local state use karenge
+  onEdit,
   fetchData,
   setSeeMoreAssetStatus,
   showDetailsSection,
   restoreData,
   showDeleted,
 }) => {
+  const navigate = useNavigate();
+
   // Asset Editing State
   const [isEditing, setIsEditing] = useState(false);
 
-  // ✅ 2. NEW STATES FOR METER (Edit, History, Record)
+  // Meter States
   const [isMeterEditing, setIsMeterEditing] = useState(false);
   const [showMeterHistory, setShowMeterHistory] = useState(false);
   const [isRecordReadingOpen, setIsRecordReadingOpen] = useState(false);
+
+  // --- PO ACTION STATES ---
+  const [poModalAction, setPoModalAction] = useState<
+    "reject" | "approve" | "delete" | "fullfill" | "cancelled" | null
+  >(null);
+  const [isPoLoading, setIsPoLoading] = useState(false);
 
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -58,7 +73,81 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
     e.stopPropagation();
   };
 
+  // --- 1. PO EDIT HANDLER ---
+  const handleEditPO = () => {
+    if (data?.id) {
+      // Navigate to the edit URL (opens the main Dialog)
+      navigate(`/purchase-orders/${data.id}/edit`);
+      onClose(); // Close this modal
+    }
+  };
+
+  // --- 2. PO CONFIRMATION HANDLER ---
+  const handlePoConfirm = async () => {
+    if (!data?.id) return;
+    setIsPoLoading(true);
+    try {
+      if (poModalAction === "reject") {
+        await purchaseOrderService.rejectPurchaseOrder(data.id);
+        toast.success("Successfully Rejected");
+      } else if (poModalAction === "approve") {
+        await purchaseOrderService.approvePurchaseOrder(data.id);
+        toast.success("Successfully Approved");
+      } else if (poModalAction === "delete") {
+        // ⭐ Delete Logic
+        await purchaseOrderService.deletePurchaseOrder(data.id);
+        toast.success("Deleted Successfully");
+        onClose(); // Close modal immediately after delete
+      } else if (poModalAction === "cancelled") {
+        await purchaseOrderService.cancelPurchaseOrder(data.id);
+        toast.success("Cancelled Successfully");
+      }
+      fetchData(); // Refresh Parent Table
+    } catch (error) {
+      console.error("Action failed:", error);
+      toast.error("Action failed!");
+    } finally {
+      setIsPoLoading(false);
+      setPoModalAction(null);
+    }
+  };
+
+  // Content for PO Confirmation Modal
+  const poModalContent = {
+    reject: {
+      title: "Reject Confirmation",
+      message: "If you confirm, this Purchase Order will be rejected.",
+      confirmButtonText: "Reject",
+      variant: "danger" as const,
+    },
+    approve: {
+      title: "Approve Confirmation",
+      message: "Are you sure you want to Approve this Purchase Order?",
+      confirmButtonText: "Approve",
+      variant: "warning" as const,
+    },
+    delete: {
+      title: "Delete Confirmation",
+      message: "Are you sure you want to Delete this?",
+      confirmButtonText: "Delete",
+      variant: "warning" as const,
+    },
+    cancelled: {
+      title: "Cancel Confirmation",
+      message: "Are you sure you want to Cancel this?",
+      confirmButtonText: "Cancel",
+      variant: "warning" as const,
+    },
+    fullfill: {
+      title: "",
+      message: "",
+      confirmButtonText: "",
+      variant: "warning" as const,
+    },
+  };
+
   return (
+    // ⭐ z-50 for the Asset Modal
     <div
       role="dialog"
       aria-modal="true"
@@ -72,7 +161,10 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="text-lg font-semibold capitalize">
-            {showDetailsSection} Details
+            {showDetailsSection === "purchaseorder"
+              ? "Purchase Order"
+              : showDetailsSection}{" "}
+            Details
           </h2>
           <button
             onClick={onClose}
@@ -84,7 +176,8 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
 
         {/* Content Body */}
         <div className="flex-1 overflow-y-auto">
-          {/* --- ASSET SECTION --- */}
+          {/* ... Asset, Meter, Location, Vendor, Part Sections ... */}
+
           {showDetailsSection === "asset" &&
             (isEditing ? (
               <div className="p-4">
@@ -93,7 +186,7 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
                   assetData={data}
                   fetchAssetsData={fetchData}
                   onCancel={() => setIsEditing(false)}
-                  onCreate={(updatedAsset) => {
+                  onCreate={() => {
                     fetchData();
                     setIsEditing(false);
                   }}
@@ -112,16 +205,15 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
               />
             ))}
 
-          {/* --- METER SECTION (UPDATED FOR IN-MODAL EDITING) --- */}
           {showDetailsSection === "meter" &&
             (isMeterEditing ? (
               <div className="p-4">
                 <NewMeterForm
-                  editingMeter={data} // Current meter ka data pass kiya
-                  onCancel={() => setIsMeterEditing(false)} // Cancel par wapas detail view
+                  editingMeter={data}
+                  onCancel={() => setIsMeterEditing(false)}
                   onCreate={() => {
-                    fetchData(); // Data refresh karo
-                    setIsMeterEditing(false); // Edit mode band karo
+                    fetchData();
+                    setIsMeterEditing(false);
                   }}
                 />
               </div>
@@ -138,14 +230,10 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
                   restoreData={"Restore"}
                   fetchMeters={fetchData}
                   onClose={onClose}
-                  // 👇 Ye props pass kiye taaki History aur Record features kaam karein
                   setShowReadingMeter={setShowMeterHistory}
                   setIsRecordModalOpen={setIsRecordReadingOpen}
-                  // 👇 MAIN CHANGE: Edit button dabane par local state change hogi
                   onEdit={() => setIsMeterEditing(true)}
                 />
-
-                {/* Record Reading Modal Overlay */}
                 {isRecordReadingOpen && (
                   <RecordReadingModal
                     modalRef={modalRef}
@@ -157,7 +245,6 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
               </>
             ))}
 
-          {/* --- OTHER SECTIONS (Location, Vendor, Part, PO) --- */}
           {showDetailsSection === "location" && (
             <LocationDetails
               selectedLocation={data}
@@ -185,19 +272,23 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
             />
           )}
 
+          {/* --- PURCHASE ORDER SECTION --- */}
           {showDetailsSection === "purchaseorder" && (
             <PurchaseOrderDetails
               selectedPO={data}
               updateState={() => {}}
-              handleConfirm={() => {}}
-              setModalAction={() => "delete"}
+              // ⭐ This triggers the state change to open ConfirmationModal
+              setModalAction={setPoModalAction}
+              // This is used for standard confirm inside PO Details (if any)
+              handleConfirm={handlePoConfirm}
               topRef={{ current: null }}
               commentsRef={{ current: null }}
               formatMoney={(v) => v.toString()}
               addressToLine={() => ""}
               showCommentBox={false}
               setShowCommentBox={() => {}}
-              handleEditClick={() => {}}
+              // ⭐ This triggers Edit Navigation
+              handleEditClick={handleEditPO}
               setApproveModal={() => {}}
               fetchPurchaseOrder={fetchData}
               restoreData={restoreData}
@@ -207,6 +298,32 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
           )}
         </div>
       </div>
+
+      {/* ✅ CONFIRMATION MODAL FIXED */}
+      {/* Moved outside the inner div but inside the fixed container. 
+          If issues persist, check ConfirmationModal's own z-index. */}
+      {poModalAction && (
+        <div style={{ position: "relative", zIndex: 60 }}>
+          <ConfirmationModal
+            isOpen={poModalAction !== null}
+            onClose={() => setPoModalAction(null)}
+            handleConfirm={handlePoConfirm}
+            isLoading={isPoLoading}
+            // ⭐ CRITICAL FIX: Pass selectedPO or the component might crash/hide
+            selectedPO={data}
+            title={poModalAction ? poModalContent[poModalAction].title : ""}
+            message={poModalAction ? poModalContent[poModalAction].message : ""}
+            confirmButtonText={
+              poModalAction
+                ? poModalContent[poModalAction].confirmButtonText
+                : ""
+            }
+            confirmButtonVariant={
+              poModalAction ? poModalContent[poModalAction].variant : "warning"
+            }
+          />
+        </div>
+      )}
     </div>
   );
 };

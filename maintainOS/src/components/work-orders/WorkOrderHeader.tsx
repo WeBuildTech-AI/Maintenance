@@ -30,6 +30,7 @@ interface WorkOrderHeaderProps {
   setShowSettings: Dispatch<SetStateAction<boolean>>;
   setIsModalOpen?: Dispatch<SetStateAction<boolean>>;
   setIsSettingsModalOpen?: Dispatch<SetStateAction<boolean>>;
+  setShowDeleted?: Dispatch<SetStateAction<boolean>>;
   onFilterChange?: (params: FetchWorkOrdersParams) => void;
 }
 
@@ -43,6 +44,7 @@ export function WorkOrderHeaderComponent({
   setIsModalOpen,
   setIsSettingsModalOpen,
   onFilterChange,
+  setShowDeleted,
 }: WorkOrderHeaderProps) {
   return (
     <header className=" border-border bg-card px-6 py-4">
@@ -82,7 +84,12 @@ export function WorkOrderHeaderComponent({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
-                  <DropdownMenuItem onClick={() => setViewMode("todo")}>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setViewMode("todo");
+                      setShowDeleted?.(false);
+                    }}
+                  >
                     <LayoutGrid className="h-4 w-4 mr-2" />
                     To-Do View
                   </DropdownMenuItem>
@@ -90,11 +97,21 @@ export function WorkOrderHeaderComponent({
                     <List className="h-4 w-4 mr-2" />
                     List View
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setViewMode("calendar")}>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setViewMode("calendar");
+                      setShowDeleted?.(false);
+                    }}
+                  >
                     <Calendar className="h-4 w-4 mr-2" />
                     Calendar View
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setViewMode("workload")}>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setViewMode("workload");
+                      setShowDeleted?.(false);
+                    }}
+                  >
                     <Users className="h-4 w-4 mr-2" />
                     Workload View
                   </DropdownMenuItem>
@@ -136,6 +153,7 @@ export function WorkOrderHeaderComponent({
         {/* Right: Settings button (only for table view) */}
         {viewMode === "list" && (
           <button
+            // onClick={() => setIsSettingsModalOpen?.(true)}
             onClick={() => setIsSettingsModalOpen?.(true)}
             className="p-2 rounded-md border hover:bg-gray-100 transition"
           >

@@ -7,7 +7,12 @@ import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 
-import { useNavigate, useMatch, useLocation, useParams } from "react-router-dom";
+import {
+  useNavigate,
+  useMatch,
+  useLocation,
+  useParams,
+} from "react-router-dom";
 
 import { Link as LinkIcon, Building2, Mail, Phone } from "lucide-react";
 
@@ -50,7 +55,7 @@ function getChangedFields(
     "shippingAddressId",
     "billingAddressId",
     "sameShipBill",
-    "vendorContactIds", 
+    "vendorContactIds",
   ];
 
   for (const key of keysToCompare) {
@@ -69,7 +74,7 @@ function getChangedFields(
     changes.items = current.items;
   }
 
-  // @ts-ignore 
+  // @ts-ignore
   if (JSON.stringify(original.taxLines) !== JSON.stringify(current.taxLines)) {
     // @ts-ignore
     changes.taxLines = current.taxLines;
@@ -97,14 +102,14 @@ export function PurchaseOrders() {
   const [getPurchaseOrderData, setGetPurchaseOrderData] = useState<
     PurchaseOrder[]
   >([]);
-  
+
   // Search State
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const [selectedPOId, setSelectedPOId] = useState<string | null>(null);
   const [approveModal, setApproveModal] = useState(false);
-  
+
   const [viewMode, setViewMode] = useState<ViewMode>("panel");
   const [selectedColumns, setSelectedColumns] = useState(allColumns);
   const [pageSize, setPageSize] = useState(25);
@@ -118,8 +123,8 @@ export function PurchaseOrders() {
 
   // ✅ FILTER PARAMETERS STATE
   const [filterParams, setFilterParams] = useState<FetchPurchaseOrdersParams>({
-    page: 1, 
-    limit: 50 
+    page: 1,
+    limit: 50,
   });
 
   const scrollToTop = () => {
@@ -166,12 +171,12 @@ export function PurchaseOrders() {
     dueDate: "",
     notes: "",
     extraCosts: 0,
-    vendorContactIds: [], 
+    vendorContactIds: [],
     poNumber: "",
   };
 
   const [newPO, setNewPO] = useState<NewPOFormType>(initialPOState);
-  
+
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -194,7 +199,7 @@ export function PurchaseOrders() {
   // ✅ FETCH POs
   const fetchPurchaseOrder = React.useCallback(async () => {
     if (getPurchaseOrderData.length === 0) setIsLoading(true);
-    
+
     let res: any;
     try {
       if (showDeleted) {
@@ -202,11 +207,11 @@ export function PurchaseOrders() {
       } else {
         const apiPayload = {
           ...filterParams,
-          search: debouncedSearch || undefined 
+          search: debouncedSearch || undefined,
         };
         res = await purchaseOrderService.fetchPurchaseOrders(apiPayload);
       }
-      
+
       const data = Array.isArray(res) ? res : (res as any)?.data?.items || [];
       const sortedData = [...data].sort(
         (a: PurchaseOrder, b: PurchaseOrder) =>
@@ -230,22 +235,24 @@ export function PurchaseOrders() {
 
     if (routeId) {
       // Avoid matching "create" keyword as an ID
-      if (routeId === "create") return; 
+      if (routeId === "create") return;
 
       const found = getPurchaseOrderData.find((p) => p.id === routeId);
       if (found) {
         setSelectedPOId(found.id);
 
         if (editMatch) {
-            if (newPO.id !== found.id) {
-                handleEditPO(found);
-            }
+          if (newPO.id !== found.id) {
+            handleEditPO(found);
+          }
         }
       }
     } else {
       if (viewMode === "panel") {
         if (!selectedPOId && getPurchaseOrderData.length > 0) {
-            navigate(`/purchase-orders/${getPurchaseOrderData[0].id}`, { replace: true });
+          navigate(`/purchase-orders/${getPurchaseOrderData[0].id}`, {
+            replace: true,
+          });
         }
       } else {
         setSelectedPOId(null);
@@ -254,13 +261,16 @@ export function PurchaseOrders() {
   }, [routeId, getPurchaseOrderData, viewMode, editMatch, newPO.id]);
 
   // ✅ HANDLER: Filter Change
-  const handleFilterChange = useCallback((newParams: Partial<FetchPurchaseOrdersParams>) => {
-    setFilterParams((prev) => {
-      const merged = { ...prev, ...newParams };
-      if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
-      return merged;
-    });
-  }, []);
+  const handleFilterChange = useCallback(
+    (newParams: Partial<FetchPurchaseOrdersParams>) => {
+      setFilterParams((prev) => {
+        const merged = { ...prev, ...newParams };
+        if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
+        return merged;
+      });
+    },
+    []
+  );
 
   const filteredPOs = getPurchaseOrderData;
 
@@ -328,7 +338,7 @@ export function PurchaseOrders() {
     (acc, it) => acc + (Number(it.quantity) || 0) * (Number(it.unitCost) || 0),
     0
   );
-  
+
   const newPOTotal = newPOSubtotal + (Number(newPO.extraCosts) || 0);
 
   const updateStatus = (status: POStatus) => {
@@ -366,24 +376,39 @@ export function PurchaseOrders() {
     if (!poToEdit) return;
 
     console.log("Editing PO:", poToEdit);
+
+    // 1. Tax Lines Mapping
     const mappedTaxLines = poToEdit.taxesAndCosts
       ? poToEdit.taxesAndCosts.map((t: any) => ({
-          id: cryptoId(), 
+          id: cryptoId(),
           taxLabel: t.taxLabel,
           taxValue: t.taxValue,
-          type: t.taxCategory === "PERCENTAGE" ? "percentage" : "fixed", 
+          type: t.taxCategory === "PERCENTAGE" ? "percentage" : "fixed",
           isTaxable: t.isTaxable,
         }))
       : [];
 
-    const mappedContactIds = poToEdit.contacts
-      ? poToEdit.contacts.map((c: any) => c.id)
-      : poToEdit.vendorContactIds || []; 
+    // 2. Contact IDs Mapping (Fix applied here)
+    // Backend kabhi 'vendorContacts' (full object) bhejta hai, kabhi 'vendorContactIds'
+    const mappedContactIds = poToEdit.vendorContacts
+      ? poToEdit.vendorContacts.map((c: any) => c.id)
+      : poToEdit.vendorContactIds || [];
 
+    // 3. Form State Create Karna
     const formPO: NewPOFormType = {
       id: poToEdit.id,
-      poNumber: poToEdit.poNumber || "",
-      vendorId: poToEdit.vendor?.id || poToEdit.vendorId || "",
+      poNumber: poToEdit.poNumber || "", // ✅ Auto-fill PO Number
+
+      vendorId: poToEdit.vendor?.id || poToEdit.vendorId || "", // ✅ Auto-fill Vendor
+
+      // ✅ Auto-fill Legacy Contact Fields (Name & Phone/Email)
+      // (Agar aapke form mein ye fields alag se hain)
+      contactName: poToEdit.contactName || "",
+      phoneOrMail: poToEdit.phoneOrMail || "",
+
+      // ✅ Auto-fill Selected Vendor Contacts (Dropdown ke liye)
+      vendorContactIds: mappedContactIds,
+
       items:
         poToEdit.orderItems && poToEdit.orderItems.length > 0
           ? poToEdit.orderItems.map((item: any) => ({
@@ -419,12 +444,11 @@ export function PurchaseOrders() {
 
       notes: poToEdit.notes || "",
       extraCosts: poToEdit.extraCosts || 0,
-      vendorContactIds: mappedContactIds, 
     };
 
     setNewPO(formPO);
     setOriginalPOForEdit(formPO);
-    setIsEditingPO(true);
+    setIsEditingPO(true); // Edit Mode ON
     setApiError(null);
     setAttachedFiles([]);
   };
@@ -641,9 +665,8 @@ export function PurchaseOrders() {
       } else if (modalAction === "delete") {
         await purchaseOrderService.deletePurchaseOrder(id);
         toast.success("Deleted Successfully");
-        
+
         navigate("/purchase-orders");
-        
       } else if (modalAction === "cancelled") {
         await purchaseOrderService.cancelPurchaseOrder(id);
         toast.success("Cancelled Successfully");
@@ -702,7 +725,7 @@ export function PurchaseOrders() {
         setShowSettings,
         setIsSettingModalOpen,
         setShowDeleted,
-        handleFilterChange 
+        handleFilterChange
       )}
 
       {viewMode === "table" ? (
@@ -782,7 +805,9 @@ export function PurchaseOrders() {
                                   <div className="mt-1">
                                     {(() => {
                                       const today = new Date();
-                                      const dueDate = new Date(po.dueDate || "");
+                                      const dueDate = new Date(
+                                        po.dueDate || ""
+                                      );
 
                                       // reset times for accurate comparison
                                       today.setHours(0, 0, 0, 0);
@@ -795,7 +820,8 @@ export function PurchaseOrders() {
                                           </span>
                                         );
                                       } else if (
-                                        po.dueDate && dueDate.getTime() === today.getTime()
+                                        po.dueDate &&
+                                        dueDate.getTime() === today.getTime()
                                       ) {
                                         return (
                                           <span className="text-red-600 font-medium text-sm mt-1">
@@ -859,7 +885,9 @@ export function PurchaseOrders() {
                 showCommentBox={showCommentBox}
                 setShowCommentBox={setShowCommentBox}
                 // 👇 Navigate to Edit Route
-                handleEditClick={() => navigate(`/purchase-orders/${selectedPO.id}/edit`)}
+                handleEditClick={() =>
+                  navigate(`/purchase-orders/${selectedPO.id}/edit`)
+                }
                 fetchPurchaseOrder={fetchPurchaseOrder}
                 restoreData="Restore"
                 onClose={() => setModalAction(null)}
@@ -892,11 +920,11 @@ export function PurchaseOrders() {
             resetNewPO();
             // 👇 FIX: Check creating state first to avoid infinite loop
             if (isCreateRoute) {
-                navigate("/purchase-orders");
+              navigate("/purchase-orders");
             } else if (routeId) {
-                navigate(`/purchase-orders/${routeId}`);
+              navigate(`/purchase-orders/${routeId}`);
             } else {
-                navigate("/purchase-orders");
+              navigate("/purchase-orders");
             }
           }
         }}
@@ -912,11 +940,11 @@ export function PurchaseOrders() {
           resetNewPO();
           // 👇 FIX: Check creating state first to avoid infinite loop
           if (isCreateRoute) {
-             navigate("/purchase-orders");
+            navigate("/purchase-orders");
           } else if (routeId) {
-             navigate(`/purchase-orders/${routeId}`);
+            navigate(`/purchase-orders/${routeId}`);
           } else {
-             navigate("/purchase-orders");
+            navigate("/purchase-orders");
           }
         }}
         handleCreatePurchaseOrder={

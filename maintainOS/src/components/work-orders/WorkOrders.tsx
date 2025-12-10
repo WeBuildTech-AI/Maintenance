@@ -13,6 +13,7 @@ import { WorkloadView } from "./WorkloadView/WorkloadView";
 import { WorkOrderHeaderComponent } from "./WorkOrderHeader";
 import { ToDoView } from "./ToDoView/ToDoView";
 import type { AppDispatch } from "../../store";
+import { workOrderService } from "../../store/workOrders";
 
 export function WorkOrders() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -27,6 +28,7 @@ export function WorkOrders() {
   const [showSettings, setShowSettings] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
 
   // ✅ 1. Refresh Key State
   const [refreshKey, setRefreshKey] = useState(0);
@@ -63,6 +65,7 @@ export function WorkOrders() {
     const loadData = async () => {
       setLoading(true);
       try {
+        let result: any;
         const apiPayload = {
           ...filterParams,
           title: debouncedSearch || undefined,
@@ -70,7 +73,11 @@ export function WorkOrders() {
 
         console.log("🔥 WorkOrders API Call:", apiPayload);
 
-        const result = await dispatch(fetchWorkOrders(apiPayload)).unwrap();
+        if (showDeleted) {
+          result = await workOrderService.fetchDeleteWorkOrder();
+        } else {
+          result = await dispatch(fetchWorkOrders(apiPayload)).unwrap();
+        }
 
         if (Array.isArray(result)) {
           // @ts-ignore
@@ -98,7 +105,7 @@ export function WorkOrders() {
     };
 
     loadData();
-  }, [dispatch, filterParams, debouncedSearch, refreshKey]);
+  }, [dispatch, filterParams, debouncedSearch, refreshKey, showDeleted]);
 
   // Stable Callback for Filters & Pagination
   const handleFilterChange = useCallback(
@@ -165,6 +172,7 @@ export function WorkOrders() {
         setIsModalOpen={setIsModalOpen}
         setIsSettingsModalOpen={setIsSettingsModalOpen}
         onFilterChange={handleFilterChange}
+        setShowDeleted={setShowDeleted}
       />
 
       {loading && workOrders.length === 0 && (
@@ -198,6 +206,8 @@ export function WorkOrders() {
               onRefreshWorkOrders={handleRefreshWorkOrders}
               isSettingsModalOpen={isSettingsModalOpen}
               setIsSettingsModalOpen={setIsSettingsModalOpen}
+              showDeleted={showDeleted}
+              setShowDeleted={setShowDeleted}
             />
           )}
 

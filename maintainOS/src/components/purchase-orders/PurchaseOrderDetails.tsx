@@ -697,7 +697,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
 
         {/* COMMENTS */}
         <div ref={commentsRef}>
-          <h3 className="font-medium mb-3">Comments &amp; History</h3>
+          <h3 className="font-medium mb-3">Comments</h3>
 
           <div className="border rounded-lg p-4 mb-4 max-h-64 overflow-y-auto">
             {isLoading ? (
@@ -775,7 +775,8 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
           />
 
           <div>
-            <div className="space-y-4">
+            <h3 className="font-medium mb-3">History</h3>
+            <div className="space-y-4 border rounded-lg p-4 mb-4 max-h-64 overflow-y-auto">
               {isLoading ? (
                 <Loader />
               ) : (

@@ -186,6 +186,8 @@ export function ListView({
   onRefreshWorkOrders,
   setIsSettingsModalOpen,
   isSettingsModalOpen,
+  showDeleted,
+  setShowDeleted,
 }: ListViewProps) {
   const dispatch = useDispatch();
   const [modalWO, setModalWO] = useState<any>(null);
@@ -198,7 +200,7 @@ export function ListView({
   const [sortType, setSortType] = useState("title");
   const [sortOrder, setSortOrder] = useState("asc");
   const [isDeleting, setIsDeleting] = useState(false);
-  const [showDeleted, setShowDeleted] = useState(false); // State for soft delete toggle
+  // const [showDeleted, setShowDeleted] = useState(false); // State for soft delete toggle
 
   // VIEW MODAL (Details/Edit)
   const [viewModal, setViewModal] = useState(false);
@@ -307,14 +309,14 @@ export function ListView({
               </div>
 
               {/* Settings Icon in Header (When not editing) */}
-              <Tooltip text="Settings">
+              {/* <Tooltip text="Settings">
                 <button
                   onClick={() => setIsSettingsModalOpen(true)}
                   className="text-gray-500 hover:text-blue-600"
                 >
                   <Settings size={18} />
                 </button>
-              </Tooltip>
+              </Tooltip> */}
             </div>
           );
         }
@@ -477,9 +479,7 @@ export function ListView({
       const assignedToStr = getSafeString(assigneeVal);
 
       // 2. Asset (Array or object)
-      const assetVal = Array.isArray(item.assets)
-        ? item.assets[0]
-        : item.asset;
+      const assetVal = Array.isArray(item.assets) ? item.assets[0] : item.asset;
       const assetStr = getSafeString(assetVal);
 
       // 3. Location (Object)
@@ -617,6 +617,8 @@ export function ListView({
         onClose={() => setViewModal(false)}
         workOrder={selectedWO}
         onRefreshWorkOrders={onRefreshWorkOrders}
+        showDeleted={showDeleted}
+        setShowDeleted={setShowDeleted}
       />
     </div>
   );
