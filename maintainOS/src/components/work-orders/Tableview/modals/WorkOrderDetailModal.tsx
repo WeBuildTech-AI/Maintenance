@@ -80,6 +80,7 @@ export default function WorkOrderDetailModal({
   workOrder,
   onRefreshWorkOrders,
   showDeleted,
+  setShowDeleted,
 }: any) {
   if (!open || !workOrder) return null;
 
@@ -203,6 +204,7 @@ export default function WorkOrderDetailModal({
       await workOrderService.restoreWorkOrderData(workOrder?.id);
       toast.success("Successfully Restore the Work Order");
       onClose();
+      setShowDeleted(false);
     } catch (error) {
       console.error("Failed to delete work order:", error);
       toast.error("Failed to restore the work Order");

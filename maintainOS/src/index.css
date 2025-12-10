@@ -3108,7 +3108,7 @@ html {
   } */
 
   ::-webkit-scrollbar {
-  width: 4px; /* 👈 Chhoti width for vertical scrollbar */
+  width: 2px; /*  Chhoti width for vertical scrollbar */
   height: 6px; /* Optional: chhoti height for horizontal scrollbar */
 }
 
@@ -3119,7 +3119,8 @@ html {
 
 ::-webkit-scrollbar-thumb {
   border-radius: 3.40282e38px;
-  background: var(--color-gray-700, #4B5563);
+  /* background: var(--color-gray-700, #4B5563); */
+  background:#FFCD00;
 }
 
 .dark ::-webkit-scrollbar-track {

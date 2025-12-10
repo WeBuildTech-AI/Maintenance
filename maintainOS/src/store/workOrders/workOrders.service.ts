@@ -132,7 +132,7 @@ export const workOrderService = {
   },
 
   restoreWorkOrderData: async (id: string): Promise<WorkOrderResponse> => {
-    const res = await api.patch(`/work-orders/${id}/restore`);
+    const res = await api.put(`/work-orders/restore/${id}`);
     return res.data;
   },
 };

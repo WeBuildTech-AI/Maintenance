@@ -618,6 +618,7 @@ export function ListView({
         workOrder={selectedWO}
         onRefreshWorkOrders={onRefreshWorkOrders}
         showDeleted={showDeleted}
+        setShowDeleted={setShowDeleted}
       />
     </div>
   );
