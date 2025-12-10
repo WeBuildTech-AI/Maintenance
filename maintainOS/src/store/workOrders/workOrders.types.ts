@@ -23,6 +23,10 @@ export interface WorkOrderLog {
   oldValue?: string | null;
   newValue?: string | null;
   createdAt: string;
+  workOrder?: {
+    id: string;
+    title: string;
+  };
   author?: {
     id: string;
     fullName: string;
