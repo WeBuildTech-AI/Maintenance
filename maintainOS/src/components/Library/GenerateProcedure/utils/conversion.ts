@@ -273,10 +273,11 @@ interface ApiProcedureResponse {
   fields: ApiField[];
   headings: ApiHeading[];
   sections: ApiSection[];
-  assets: string[]; 
-  locations: string[];
-  teams: string[];
-  categories: string[];
+  // ✅ FIX: Allow these to be string[] (IDs) OR Object[] (Populated)
+  assets: (string | { id: string })[]; 
+  locations: (string | { id: string })[];
+  teams: (string | { id: string })[];
+  categories: (string | { id: string })[];
 }
 
 // --- Reverse Maps (API to UI) ---
@@ -310,6 +311,16 @@ const reverseConditionMap: Record<string, string> = {
 };
 
 // --- Helper Functions (JSON -> STATE) ---
+
+// ✅ HELPER: Safely extract IDs from mixed Array (String IDs or Objects)
+function extractIds(items: (string | { id: string })[] | undefined): string[] {
+  if (!items || !Array.isArray(items)) return [];
+  return items.map(item => {
+    if (typeof item === 'string') return item;
+    if (typeof item === 'object' && item !== null && 'id' in item) return item.id;
+    return '';
+  }).filter(id => id !== '');
+}
 
 function mapApiFieldToStateField(apiField: ApiField): FieldData {
   const { config } = apiField;
@@ -380,13 +391,14 @@ export function convertJSONToState(apiJson: ApiProcedureResponse): {
 } {
   
   // 1. Map Settings State
+  // ✅ FIX: Use extractIds to ensure we only store UUID strings in state
   const settings: ProcedureSettingsState = {
     visibility: apiJson.visibility || "private",
     priority: apiJson.priority || null,
-    categories: apiJson.categories || [],
-    assets: apiJson.assets || [],
-    locations: apiJson.locations || [],
-    teamsInCharge: apiJson.teams || [],
+    categories: extractIds(apiJson.categories),
+    assets: extractIds(apiJson.assets),
+    locations: extractIds(apiJson.locations),
+    teamsInCharge: extractIds(apiJson.teams),
   };
 
   // 2. Map Fields State (with Nesting)

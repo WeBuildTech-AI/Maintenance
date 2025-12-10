@@ -13,7 +13,8 @@ import type {
   CreateFieldResponseData,
   FieldResponseResponse,
   CreatePartUsageData,
-  FetchWorkOrdersParams 
+  FetchWorkOrdersParams ,
+  FieldResponse
 } from "./workOrders.types";
 
 export const workOrderService = {
@@ -122,10 +123,14 @@ export const workOrderService = {
     return { id, usageId };
   },
 
+ // ✅ UPDATED: Matches POST /api/v1/procedure-field-responses
   createFieldResponse: async (data: CreateFieldResponseData): Promise<FieldResponseResponse> => {
+    // Assuming 'api' base URL handles /api/v1 prefix. If not, use `/api/v1/procedure-field-responses`
     const res = await api.post(`/procedure-field-responses`, data);
     return res.data;
   },
+
+
   fetchDeleteWorkOrder: async (): Promise<void> => {
     const res = await api.get(`work-orders/deleted/all`);
     return res.data;
@@ -133,6 +138,12 @@ export const workOrderService = {
 
   restoreWorkOrderData: async (id: string): Promise<WorkOrderResponse> => {
     const res = await api.put(`/work-orders/restore/${id}`);
+    return res.data;
+  },
+
+  getFieldResponses: async (submissionId: string): Promise<FieldResponse[]> => {
+    // API: GET /api/v1/procedure-field-responses/submission/{submissionId}
+    const res = await api.get(`/procedure-field-responses/submission/${submissionId}`);
     return res.data;
   },
 };

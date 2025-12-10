@@ -1,3 +1,4 @@
+// PartTable.tsx
 "use client";
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Card, CardContent } from "../ui/card";
@@ -6,7 +7,7 @@ import { Avatar as ShadCNAvatar, AvatarFallback } from "../ui/avatar";
 // Antd & Icons
 import { Table, Tooltip as AntTooltip } from "antd";
 import type { TableProps, TableColumnType } from "antd";
-import { Settings, Trash2, Loader2 } from "lucide-react";
+import { Settings, Trash2, Loader2, Edit, Plus, Maximize2, Minimize2, X } from "lucide-react"; 
 import toast from "react-hot-toast";
 
 // Imports
@@ -15,6 +16,10 @@ import { formatDateOnly } from "../utils/Date";
 import { partService } from "../../store/parts";
 import AssetTableModal from "../Assets/AssetsTable/AssetTableModal";
 import { Tooltip } from "../ui/tooltip";
+
+// ✅ Import Modals for Table Actions
+import RestockModal from "./PartDetail/RestockModal";
+import { NewPartForm } from "./NewPartForm/NewPartForm";
 
 // --- Helper Functions ---
 
@@ -29,7 +34,6 @@ const renderInitials = (text: string) =>
     .join("")
     .toUpperCase();
 
-// Row Styling
 const tableStyles = `
   .selected-row-class > td {
     background-color: #f0f9ff !important;
@@ -57,7 +61,6 @@ const tableStyles = `
   }
 `;
 
-// ⭐ 1. Column Names (Jo user ko settings modal mein dikhenge)
 const allAvailableColumns = [
   "Name",
   "Part ID",
@@ -70,7 +73,6 @@ const allAvailableColumns = [
   "Updated At",
 ];
 
-// ⭐ 2. Column Config (Sorting aur Width settings)
 const columnConfig: {
   [key: string]: {
     dataIndex: string;
@@ -94,24 +96,24 @@ const columnConfig: {
     sorter: (a, b) => (a.unitCost || 0) - (b.unitCost || 0),
   },
   Stock: {
-    dataIndex: "totalStock", // Humne niche map kiya hai
+    dataIndex: "totalStock",
     width: 150,
     sorter: (a, b) => (a.totalStock || 0) - (b.totalStock || 0),
   },
   Location: {
-    dataIndex: "locationString", // Combined string
+    dataIndex: "locationString",
     width: 200,
     sorter: (a, b) =>
       (a.locationString || "").localeCompare(b.locationString || ""),
   },
   Vendors: {
-    dataIndex: "vendors", // Array object
+    dataIndex: "vendors",
     width: 200,
     sorter: (a, b) =>
       (a.vendors?.[0]?.name || "").localeCompare(b.vendors?.[0]?.name || ""),
   },
   Teams: {
-    dataIndex: "teamsString", // Combined string
+    dataIndex: "teamsString",
     width: 150,
     sorter: (a, b) => (a.teamsString || "").localeCompare(b.teamsString || ""),
   },
@@ -122,12 +124,81 @@ const columnConfig: {
       new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   },
   "Updated At": {
-    dataIndex: "createdAt",
+    dataIndex: "updatedAt",
     width: 150,
     sorter: (a, b) =>
-      new Date(a.udpatedAt).getTime() - new Date(b.udpatedAt).getTime(),
+      new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
   },
 };
+
+// --- Internal Wrapper for Edit Modal to handle State ---
+function EditPartModalWrapper({ partId, onClose, onRefresh }: { partId: string; onClose: () => void; onRefresh: () => void }) {
+  const [item, setItem] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    partService.fetchPartById(partId)
+      .then((data) => {
+        if (mounted) {
+          setItem({
+             ...data,
+             _original: data,
+             // Ensure arrays exist for form
+             pictures: data.photos || [],
+             files: data.files || [],
+             partsType: data.partsType || [],
+             assetIds: data.assetIds || [],
+             teamsInCharge: data.teamsInCharge || [],
+             vendorIds: data.vendorIds || [],
+             vendors: data.vendors || [],
+          });
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        toast.error("Failed to load part details");
+        onClose();
+      });
+    return () => { mounted = false; };
+  }, [partId, onClose]);
+
+  if (loading || !item) {
+    return (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="bg-white p-6 rounded-lg shadow-xl flex items-center gap-3">
+          <Loader2 className="animate-spin text-orange-600" />
+          <span>Loading Part...</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-[9999] bg-white flex flex-col animate-in fade-in zoom-in-95 duration-200">
+       <div className="flex justify-between items-center p-4 border-b">
+          <h2 className="text-lg font-semibold">Edit Part</h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
+             <X size={20} />
+          </button>
+       </div>
+       <div className="flex-1 overflow-hidden">
+          <NewPartForm 
+            newItem={item}
+            setNewItem={setItem}
+            addVendorRow={() => setItem((prev: any) => ({ ...prev, vendors: [...(prev.vendors || []), { vendorId: "", orderingPartNumber: "" }] }))}
+            removeVendorRow={(idx: number) => setItem((prev: any) => ({ ...prev, vendors: (prev.vendors || []).filter((_: any, i: number) => i !== idx) }))}
+            onCancel={onClose}
+            onCreate={() => {
+                onRefresh();
+                onClose();
+            }}
+          />
+       </div>
+    </div>
+  );
+}
 
 export function PartTable({
   inventory,
@@ -144,20 +215,26 @@ export function PartTable({
   showDeleted: boolean;
   setShowDeleted: (v: boolean) => void;
 }) {
-  const [visibleColumns, setVisibleColumns] =
-    useState<string[]>(allAvailableColumns);
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(allAvailableColumns);
   const [sortType, setSortType] = useState<string>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [selectedPartIds, setSelectedPartIds] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // ✅ Local State for Modals
+  const [restockPartId, setRestockPartId] = useState<string | null>(null);
+  const [editPartId, setEditPartId] = useState<string | null>(null);
+  const [isFluid, setIsFluid] = useState(false); // Resize state
+
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
 
   const allPartIds = useMemo(() => inventory.map((p) => p.id), [inventory]);
   const selectedCount = selectedPartIds.length;
   const isEditing = selectedCount > 0;
-  const areAllSelected =
-    allPartIds.length > 0 && selectedCount === allPartIds.length;
+  const areAllSelected = allPartIds.length > 0 && selectedCount === allPartIds.length;
   const isIndeterminate = selectedCount > 0 && !areAllSelected;
+  
+  // Detail Modal State (View only)
   const [isOpenPartDetailsModal, setIsOpenPartDetailsModal] = useState(false);
   const [selectedPartTable, setSelectedPartTable] = useState<string[]>([]);
 
@@ -197,11 +274,7 @@ export function PartTable({
     }
   };
 
-  const handleTableChange: TableProps<any>["onChange"] = (
-    _pagination,
-    _filters,
-    sorter
-  ) => {
+  const handleTableChange: TableProps<any>["onChange"] = (_pagination, _filters, sorter) => {
     const s = Array.isArray(sorter) ? sorter[0] : sorter;
     if (s && s.field && s.order) {
       setSortType(s.field as string);
@@ -226,14 +299,12 @@ export function PartTable({
     setIsSettingsModalOpen(false);
   };
 
-  // ⭐ 3. Columns Definition (Display Logic)
   const columns: TableColumnType<any>[] = useMemo(() => {
-    // --- Name Column (Fixed Left) ---
     const nameColumn: TableColumnType<any> = {
       title: () => {
         if (!isEditing) {
           return (
-            <div className="flex items-center justify-between gap-2 h-full">
+            <div className="flex items-center justify-between gap-2 h-full w-full">
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -244,6 +315,16 @@ export function PartTable({
                 />
                 <span className="text-gray-600">Name</span>
               </div>
+              
+              {/* ✅ Resize Toggle */}
+              <Tooltip text={isFluid ? "Fixed Width" : "Fit to Screen"}>
+                <button 
+                  onClick={() => setIsFluid(!isFluid)}
+                  className="p-1.5 hover:bg-gray-100 rounded text-gray-500 hover:text-blue-600 transition"
+                >
+                   {isFluid ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                </button>
+              </Tooltip>
             </div>
           );
         }
@@ -256,33 +337,66 @@ export function PartTable({
               onChange={handleSelectAllToggle}
               className="h-4 w-4 accent-blue-600 cursor-pointer"
             />
-            <span className="text-sm font-medium text-gray-900">
-              Edit {selectedCount} {selectedCount === 1 ? "Item" : "Items"}
+            <span className="text-sm font-medium text-gray-900 whitespace-nowrap">
+              {selectedCount} Selected
             </span>
-            <Tooltip text="Delete">
-              <button
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className={`flex items-center gap-1 transition ${
-                  isDeleting
-                    ? "text-gray-400 cursor-not-allowed"
-                    : "text-orange-600 hover:text-orange-600 cursor-pointer"
-                }`}
-              >
-                {isDeleting ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <Trash2 size={16} />
-                )}
-              </button>
-            </Tooltip>
+            
+            <div className="flex items-center gap-1">
+                {/* ✅ Edit Button */}
+                <Tooltip text="Edit">
+                    <button
+                        onClick={() => {
+                            if (selectedCount === 1) setEditPartId(selectedPartIds[0]);
+                        }}
+                        disabled={selectedCount !== 1}
+                        className={`p-1.5 rounded transition ${
+                        selectedCount === 1
+                            ? "text-blue-600 hover:bg-blue-50 cursor-pointer"
+                            : "text-gray-300 cursor-not-allowed"
+                        }`}
+                    >
+                        <Edit size={18} />
+                    </button>
+                </Tooltip>
+
+                {/* ✅ Restock Button */}
+                <Tooltip text="Restock">
+                    <button
+                        onClick={() => {
+                            if (selectedCount === 1) setRestockPartId(selectedPartIds[0]);
+                        }}
+                        disabled={selectedCount !== 1}
+                        className={`p-1.5 rounded transition ${
+                        selectedCount === 1
+                            ? "text-green-600 hover:bg-green-50 cursor-pointer"
+                            : "text-gray-300 cursor-not-allowed"
+                        }`}
+                    >
+                        <Plus size={18} />
+                    </button>
+                </Tooltip>
+
+                <Tooltip text="Delete">
+                    <button
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        className={`p-1.5 rounded transition ${
+                        isDeleting
+                            ? "text-gray-400 cursor-not-allowed"
+                            : "text-red-600 hover:bg-red-50 cursor-pointer"
+                        }`}
+                    >
+                        {isDeleting ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                    </button>
+                </Tooltip>
+            </div>
           </div>
         );
       },
       dataIndex: "name",
       key: "name",
       fixed: "left",
-      width: 250,
+      width: isFluid ? undefined : 250, // ✅ Fluid Logic
       sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
       sortOrder: sortType === "name" ? mapAntSortOrder(sortOrder) : undefined,
       render: (name: string, record: any) => {
@@ -328,13 +442,10 @@ export function PartTable({
       .map((colName) => {
         const config = columnConfig[colName];
         if (!config) return null;
-        if (colName === "Name") return null; // Skip Name (it's fixed)
+        if (colName === "Name") return null;
 
-        let renderFunc:
-          | ((value: any, record: any) => React.ReactNode)
-          | undefined = undefined;
+        let renderFunc: ((value: any, record: any) => React.ReactNode) | undefined = undefined;
 
-        // Custom Renders
         if (colName === "Part ID") {
           renderFunc = (id: string) => (
             <Tooltip text={id}>
@@ -342,38 +453,21 @@ export function PartTable({
             </Tooltip>
           );
         } else if (colName === "Unit Cost") {
-          renderFunc = (val: number) => (
-            <span className="text-muted-foreground">
-              ${(val || 0).toFixed(2)}
-            </span>
-          );
+          renderFunc = (val: number) => <span className="text-muted-foreground">${(val || 0).toFixed(2)}</span>;
         } else if (colName === "Stock") {
-          // Record se 'totalStock' aur 'minStock' use kar rahe hain
           renderFunc = (_: any, record: any) => (
-            <span className="text-muted-foreground">
-              {record.totalStock} / Min {record.minStock}
-            </span>
+            <span className="text-muted-foreground">{record.totalStock} / Min {record.minStock}</span>
           );
         } else if (colName === "Vendors") {
-          // Backend: vendors = [{ id, name }]
           renderFunc = (vendors: any[]) => (
             <div className="flex flex-col gap-1 text-xs text-muted-foreground">
               {vendors && vendors.length > 0
-                ? vendors.map((v) => (
-                    <span
-                      key={v.id}
-                      className="bg-gray-100 px-2 py-0.5 rounded w-fit"
-                    >
-                      {v.name}
-                    </span>
-                  ))
+                ? vendors.map((v) => <span key={v.id} className="bg-gray-100 px-2 py-0.5 rounded w-fit">{v.name}</span>)
                 : "—"}
             </div>
           );
         } else if (colName === "Teams") {
-          renderFunc = (text: string) => (
-            <span className="text-muted-foreground">{text || "—"}</span>
-          );
+          renderFunc = (text: string) => <span className="text-muted-foreground">{text || "—"}</span>;
         } else if (colName === "Created At") {
           renderFunc = (text: string) => formatDateOnly(text) || "—";
         } else if (colName === "Updated At") {
@@ -384,50 +478,22 @@ export function PartTable({
           title: colName,
           dataIndex: config.dataIndex,
           key: config.dataIndex,
-          width: config.width,
+          width: isFluid ? undefined : config.width, // ✅ Fluid Logic
           sorter: config.sorter,
-          sortOrder:
-            sortType === config.dataIndex
-              ? mapAntSortOrder(sortOrder)
-              : undefined,
+          sortOrder: sortType === config.dataIndex ? mapAntSortOrder(sortOrder) : undefined,
           render: renderFunc,
         };
       })
       .filter(Boolean) as TableColumnType<any>[];
 
     return [nameColumn, ...dynamicColumns];
-  }, [
-    isEditing,
-    sortType,
-    sortOrder,
-    visibleColumns,
-    areAllSelected,
-    selectedCount,
-    selectedPartIds,
-    isDeleting,
-  ]);
+  }, [isEditing, sortType, sortOrder, visibleColumns, areAllSelected, selectedCount, selectedPartIds, isDeleting, isFluid]); // Added isFluid
 
-  // ⭐ 4. Data Mapping (Backend Response -> Table Rows)
   const dataSource = useMemo(() => {
     return inventory.map((part) => {
-      // Calculate Stock (Sum of all locations)
-      const totalStock =
-        part.locations?.reduce(
-          (acc: number, loc: any) => acc + (loc.unitsInStock || 0),
-          0
-        ) || 0;
-      const minStock =
-        part.locations?.reduce(
-          (acc: number, loc: any) => acc + (loc.minimumInStock || 0),
-          0
-        ) || 0;
-
-      // Format Location String
-      const locationString =
-        part.locations?.map((l: any) => `${l.name} (${l.area})`).join(", ") ||
-        "—";
-
-      // Format Teams String
+      const totalStock = part.locations?.reduce((acc: number, loc: any) => acc + (loc.unitsInStock || 0), 0) || 0;
+      const minStock = part.locations?.reduce((acc: number, loc: any) => acc + (loc.minimumInStock || 0), 0) || 0;
+      const locationString = part.locations?.map((l: any) => `${l.name} (${l.area})`).join(", ") || "—";
       const teamsString = part.teams?.map((t: any) => t.name).join(", ") || "";
 
       return {
@@ -435,14 +501,10 @@ export function PartTable({
         id: part.id,
         name: part.name,
         unitCost: part.unitCost,
-
-        // Calculated Fields
         totalStock,
         minStock,
         locationString,
         teamsString,
-
-        // Arrays passed as is
         vendors: part.vendors,
         createdAt: part.createdAt,
         updatedAt: part.updatedAt,
@@ -461,10 +523,11 @@ export function PartTable({
             columns={columns}
             dataSource={dataSource}
             pagination={false}
-            scroll={{ x: "max-content", y: "75vh" }}
-            rowClassName={(record: any) =>
-              selectedPartIds.includes(record.id) ? "selected-row-class" : ""
-            }
+            scroll={{ 
+                x: isFluid ? undefined : "max-content", // ✅ Fluid Scroll Logic
+                y: "75vh" 
+            }}
+            rowClassName={(record: any) => selectedPartIds.includes(record.id) ? "selected-row-class" : ""}
             onChange={handleTableChange}
             rowSelection={{
               selectedRowKeys: selectedPartIds,
@@ -473,18 +536,13 @@ export function PartTable({
               columnTitle: " ",
             }}
             onRow={(record) => ({
-              onClick: () => {
-                toggleRowSelection(record.id);
-              },
+              onClick: () => { toggleRowSelection(record.id); },
             })}
-            locale={{
-              emptyText: "No parts found.",
-            }}
+            locale={{ emptyText: "No parts found." }}
           />
         </CardContent>
       </Card>
 
-      {/* Settings Modal */}
       <SettingsModal
         isOpen={isSettingsModalOpen}
         onClose={() => setIsSettingsModalOpen(false)}
@@ -502,6 +560,28 @@ export function PartTable({
           showDetailsSection={"part"}
           restoreData={"Restore"}
           fetchData={fetchPartsData}
+        />
+      )}
+
+      {/* ✅ Render Restock Modal */}
+      {restockPartId && (
+        <RestockModal
+            isOpen={!!restockPartId}
+            onClose={() => setRestockPartId(null)}
+            part={inventory.find(p => p.id === restockPartId)}
+            onConfirm={() => {
+                fetchPartsData();
+                setRestockPartId(null);
+            }}
+        />
+      )}
+
+      {/* ✅ Render Edit Part Modal */}
+      {editPartId && (
+        <EditPartModalWrapper 
+            partId={editPartId} 
+            onClose={() => setEditPartId(null)} 
+            onRefresh={fetchPartsData} 
         />
       )}
     </div>
