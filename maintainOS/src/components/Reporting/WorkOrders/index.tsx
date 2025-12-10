@@ -3,6 +3,8 @@ import { WorkOrdersPriorityChart } from "./PriorityChart";
 import { WorkOrdersStatusChart } from "./StatusChart";
 import { WorkOrdersRepeatingChart } from "./Non-repeatingVsRepeatingChart";
 import { WorkOrdersByTypeChart } from "./WorkOrdersByTypeChart";
+import { TimeVsCostChart } from "./TimeVsCostChart";
+import { TimeToCompleteChart } from "./TimeToCompleteChart";
 
 interface WorkOrdersTabProps {
   filters: Record<string, any>;
@@ -48,6 +50,16 @@ export function WorkOrdersTab({
         filters={filters}
         dateRange={dateRange}
         onNavigateToDetails={() => onNavigateToDetails?.("priority")}
+      />
+      <TimeVsCostChart
+        filters={filters}
+        dateRange={dateRange}
+        onNavigateToDetails={() => onNavigateToDetails?.("time-vs-cost")}
+      />
+      <TimeToCompleteChart
+        filters={filters}
+        dateRange={dateRange}
+        onNavigateToDetails={() => onNavigateToDetails?.("time-to-complete")}
       />
     </div>
   );

@@ -13,6 +13,8 @@ import { NonRepeatingVsRepeatingDetail } from "./NonRepeatingVsRepeatingDetail";
 import { StatusDetail } from "./StatusDetail";
 import { PriorityDetail } from "./PriorityDetail";
 import { WorkOrdersByTypeDetail } from "./WorkOrdersByTypeDetail";
+import { TimeVsCostDetail } from "./TimeVsCostDetail";
+import { TimeToCompleteDetail } from "./TimeToCompleteDetail";
 
 interface ReportingDetailsProps {
   filters: Record<string, any>;
@@ -25,7 +27,9 @@ type ChartType =
   | "non-repeating-vs-repeating"
   | "status"
   | "priority"
-  | "work-orders-by-type";
+  | "work-orders-by-type"
+  | "time-vs-cost"
+  | "time-to-complete";
 
 const chartOptions = [
   { id: "created-vs-completed" as ChartType, label: "Created vs. Completed" },
@@ -36,6 +40,8 @@ const chartOptions = [
   { id: "status" as ChartType, label: "Status" },
   { id: "priority" as ChartType, label: "Priority" },
   { id: "work-orders-by-type" as ChartType, label: "Work Orders by Type" },
+  { id: "time-vs-cost" as ChartType, label: "Time vs. Cost Reports" },
+  { id: "time-to-complete" as ChartType, label: "Time to Complete" },
 ];
 
 export function ReportingDetails({
@@ -135,6 +141,12 @@ export function ReportingDetails({
         )}
         {selectedChart === "work-orders-by-type" && (
           <WorkOrdersByTypeDetail filters={filters} dateRange={dateRange} />
+        )}
+        {selectedChart === "time-vs-cost" && (
+          <TimeVsCostDetail filters={filters} dateRange={dateRange} />
+        )}
+        {selectedChart === "time-to-complete" && (
+          <TimeToCompleteDetail filters={filters} dateRange={dateRange} />
         )}
       </div>
     </div>

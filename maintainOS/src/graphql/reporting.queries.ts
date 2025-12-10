@@ -5,6 +5,9 @@ export const GET_CHART_DATA = gql`
     getChartData(input: $input) {
       groupValues
       value
+      totalTimeMinutes
+      totalCost
+      mttrAvgHours
     }
   }
 `;
