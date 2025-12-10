@@ -14,7 +14,15 @@ import { format, isValid } from "date-fns";
 // ==========================================
 
 // --- Inspection Check Runner ---
-function InspectionCheckRunner({ value, onChange }: { value: any; onChange: (val: any) => void }) {
+function InspectionCheckRunner({ 
+  value, 
+  onChange, 
+  onSave 
+}: { 
+  value: any; 
+  onChange: (val: any) => void; 
+  onSave?: (val: any) => void; // Explicit API trigger
+}) {
   const safeValue =
     typeof value === "object" && value !== null
       ? value
@@ -22,7 +30,7 @@ function InspectionCheckRunner({ value, onChange }: { value: any; onChange: (val
 
   const status = safeValue.status;
 
-  const [showNote, setShowNote] = React.useState(false);
+  const [showNote, setShowNote] = React.useState(!!safeValue.note);
   const [showFileBox, setShowFileBox] = React.useState(false);
 
   const colors = {
@@ -32,11 +40,22 @@ function InspectionCheckRunner({ value, onChange }: { value: any; onChange: (val
   };
 
   const handleStatusClick = (newStatus: string) => {
-    onChange({ ...safeValue, status: newStatus });
+    const newVal = { ...safeValue, status: newStatus };
+    onChange(newVal); // Update UI state
+    
+    // ✅ Trigger API Save Immediately on Status Change (Button Click)
+    if (onSave) onSave(newVal);
 
-    // reset extra fields on status change
-    setShowNote(false);
-    setShowFileBox(false);
+    // reset extra fields on status change logic (optional UI preference)
+    if (newStatus !== "pass") {
+       setShowNote(true);
+       setShowFileBox(true);
+    }
+  };
+
+  // ✅ Trigger API Save only when user leaves the note field (Blur)
+  const handleNoteBlur = () => {
+    if (onSave) onSave(safeValue); 
   };
 
   return (
@@ -106,6 +125,7 @@ function InspectionCheckRunner({ value, onChange }: { value: any; onChange: (val
             placeholder="Enter note"
             value={safeValue.note}
             onChange={(e) => onChange({ ...safeValue, note: e.target.value })}
+            onBlur={handleNoteBlur} // ✅ Save on Blur
             style={{
               width: "100%",
               border: "1px solid #d1d5db",
@@ -145,6 +165,7 @@ function InspectionCheckRunner({ value, onChange }: { value: any; onChange: (val
             placeholder="Enter note"
             value={safeValue.note}
             onChange={(e) => onChange({ ...safeValue, note: e.target.value })}
+            onBlur={handleNoteBlur} // ✅ Save on Blur
             style={{
               width: "100%",
               border: "1px solid #d1d5db",
@@ -204,6 +225,7 @@ function InspectionCheckRunner({ value, onChange }: { value: any; onChange: (val
               placeholder="Enter note"
               value={safeValue.note}
               onChange={(e) => onChange({ ...safeValue, note: e.target.value })}
+              onBlur={handleNoteBlur} // ✅ Save on Blur
               style={{
                 width: "100%",
                 border: "1px solid #d1d5db",
@@ -518,7 +540,7 @@ function UploadRunner({
 
       <input
         type="file"
-        accept="image/*,application/pdf"
+        accept="image/*"
         style={{ display: "none" }}
         onChange={handleFileChange}
       />
@@ -650,7 +672,15 @@ function DateRunner({ value, onChange }: { value: string | null; onChange: (val:
 }
 
 
-function YesNoRunner({ value, onChange }: { value: any; onChange: (val: any) => void }) {
+function YesNoRunner({ 
+  value, 
+  onChange, 
+  onSave 
+}: { 
+  value: any; 
+  onChange: (val: any) => void; 
+  onSave?: (val: any) => void;
+}) {
   const safeValue = typeof value === 'object' && value !== null ? value : { status: value || null, note: '', file: null };
   const status = safeValue.status;
   const note = safeValue.note || "";
@@ -665,13 +695,22 @@ function YesNoRunner({ value, onChange }: { value: any; onChange: (val: any) => 
   }, [note, file]);
 
   const handleStatusClick = (newStatus: string) => {
-    onChange({ ...safeValue, status: newStatus });
+    const newVal = { ...safeValue, status: newStatus };
+    onChange(newVal);
+    // ✅ Trigger API Save Immediately
+    if (onSave) onSave(newVal);
+    
     setShowNote(!!note);
     setShowUpload(!!file);
   };
 
   const handleNoteChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     onChange({ ...safeValue, note: e.target.value });
+  };
+  
+  // ✅ Trigger API Save on Blur (Note)
+  const handleNoteBlur = () => {
+    if (onSave) onSave(safeValue);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -737,6 +776,7 @@ function YesNoRunner({ value, onChange }: { value: any; onChange: (val: any) => 
             placeholder="Enter note"
             value={note}
             onChange={handleNoteChange}
+            onBlur={handleNoteBlur} // ✅ Save on Blur
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px] resize-none placeholder:text-gray-400 bg-white"
           />
         </div>
@@ -869,19 +909,35 @@ const PreviewField = memo(function PreviewField({
       const reader = new FileReader();
       reader.onload = (loadEvent) => {
         updateAnswer(fieldId, loadEvent.target?.result);
+        // ✅ Immediate save for image upload
+        if (onFieldSave && variant === "runner") {
+             onFieldSave(fieldId, loadEvent.target?.result);
+        }
       };
       reader.readAsDataURL(file);
     }
   };
 
-  // ✅ Wrappers to trigger save events
-  const handleImmediateChange = (val: any) => {
-    updateAnswer(fieldId, val);
-    if (onFieldSave) onFieldSave(fieldId, val); // 🔥 Log immediately
+  // ✅ [ADDED] Handles saving on blur (for Text/Number inputs)
+  const handleBlur = () => {
+    if (onFieldSave && variant === "runner" && currentValue !== undefined) {
+      onFieldSave(fieldId, currentValue);
+    }
   };
 
-  const handleBlur = () => {
-    if (onFieldSave) onFieldSave(fieldId, currentValue); // 🔥 Log on blur (text/number)
+  // ✅ [ADDED] Handles immediate saving (for Selectors/Buttons)
+  const handleImmediateSave = (val: any) => {
+    updateAnswer(fieldId, val);
+    if (onFieldSave && variant === "runner") {
+      onFieldSave(fieldId, val);
+    }
+  };
+
+  // ✅ Special handler for complex runners (Inspection/YesNo) to save data without waiting for state update
+  const handleRunnerSave = (val: any) => {
+    if (onFieldSave && variant === "runner") {
+      onFieldSave(fieldId, val);
+    }
   };
 
   const renderFieldInput = () => {
@@ -889,21 +945,39 @@ const PreviewField = memo(function PreviewField({
     if (variant === "runner") {
       switch (fieldType) {
         case "inspection_check": case "Inspection Check":
-          return <InspectionCheckRunner value={currentValue} onChange={handleImmediateChange} />;
+          return <InspectionCheckRunner value={currentValue} onChange={(val) => updateAnswer(fieldId, val)} onSave={handleRunnerSave} />;
         case "signature_block": case "Signature Block":
-          return <SignatureRunner value={currentValue} onChange={handleImmediateChange} />;
+          return <SignatureRunner value={currentValue} onChange={handleImmediateSave} />;
         case "picture_file": case "Picture/File Field":
-          return <UploadRunner value={currentValue} onChange={handleImmediateChange} />;
+          return <UploadRunner value={currentValue} onChange={handleImmediateSave} />;
         case "Date":
-          return <DateRunner value={currentValue} onChange={handleImmediateChange} />;
+          return <DateRunner value={currentValue} onChange={handleImmediateSave} />;
         case "yes_no_NA": case "Yes, No, N/A": 
-          return <YesNoRunner value={currentValue} onChange={handleImmediateChange} />;
+          return <YesNoRunner value={currentValue} onChange={(val) => updateAnswer(fieldId, val)} onSave={handleRunnerSave} />;
 
         // Interactive inputs for standard fields
         case "text_field": case "Text Field":
-          return <input type="text" value={currentValue || ""} onChange={e => updateAnswer(fieldId, e.target.value)} onBlur={handleBlur} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" placeholder="Enter Text" />;
+          return (
+            <input 
+              type="text" 
+              value={currentValue || ""} 
+              onChange={e => updateAnswer(fieldId, e.target.value)} 
+              onBlur={handleBlur} 
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" 
+              placeholder="Enter Text" 
+            />
+          );
         case "number_field": case "Number Field":
-          return <input type="number" value={currentValue || ""} onChange={e => updateAnswer(fieldId, e.target.value)} onBlur={handleBlur} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" placeholder="Enter Number" />;
+          return (
+            <input 
+              type="number" 
+              value={currentValue || ""} 
+              onChange={e => updateAnswer(fieldId, e.target.value)} 
+              onBlur={handleBlur} 
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" 
+              placeholder="Enter Number" 
+            />
+          );
         case "amount":
         case "Amount ($)":
           return (
@@ -943,12 +1017,12 @@ const PreviewField = memo(function PreviewField({
           );
 
         case "checkbox": case "Checkbox":
-          return <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={currentValue === true} onChange={e => handleImmediateChange(e.target.checked)} className="rounded border-gray-300 text-blue-600" /><span className="text-sm">{fieldLabel}</span></label>;
+          return <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={currentValue === true} onChange={e => handleImmediateSave(e.target.checked)} className="rounded border-gray-300 text-blue-600" /><span className="text-sm">{fieldLabel}</span></label>;
         case "mulitple_choice": case "Multiple Choice":
-          return <div className="flex flex-col gap-2">{fieldOptions?.map((opt: any, idx: number) => <label key={idx} className="flex items-center gap-2 cursor-pointer"><input type="radio" name={fieldId} checked={currentValue === opt} onChange={() => handleImmediateChange(opt)} /><span className="text-sm">{opt}</span></label>)}</div>;
+          return <div className="flex flex-col gap-2">{fieldOptions?.map((opt: any, idx: number) => <label key={idx} className="flex items-center gap-2 cursor-pointer"><input type="radio" name={fieldId} checked={currentValue === opt} onChange={() => handleImmediateSave(opt)} /><span className="text-sm">{opt}</span></label>)}</div>;
         case "checklist": case "Checklist":
           const cl = currentValue || [];
-          return <div className="flex flex-col gap-2">{fieldOptions?.map((opt: any, idx: number) => <label key={idx} className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={cl.includes(opt)} onChange={e => { const nl = e.target.checked ? [...cl, opt] : cl.filter((x: any) => x !== opt); handleImmediateChange(nl); }} /><span className="text-sm">{opt}</span></label>)}</div>;
+          return <div className="flex flex-col gap-2">{fieldOptions?.map((opt: any, idx: number) => <label key={idx} className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={cl.includes(opt)} onChange={e => { const nl = e.target.checked ? [...cl, opt] : cl.filter((x: any) => x !== opt); handleImmediateSave(nl); }} /><span className="text-sm">{opt}</span></label>)}</div>;
         case "meter_reading": case "Meter Reading":
           return <><div className="mb-1 text-xs text-gray-500">Last: {lastReading ?? 'N/A'}</div><div className="relative"><input type="number" value={currentValue || ""} onChange={e => updateAnswer(fieldId, e.target.value)} onBlur={handleBlur} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" placeholder="Enter Reading" /><span className="absolute right-3 top-2 text-gray-400 text-xs">{fieldUnit}</span></div></>;
         

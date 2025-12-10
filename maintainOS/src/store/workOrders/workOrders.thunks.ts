@@ -269,6 +269,21 @@ export const submitFieldResponse = createAsyncThunk(
   }
 );
 
+
+export const fetchFieldResponses = createAsyncThunk(
+  "workOrders/fetchFieldResponses",
+  async (submissionId: string, { rejectWithValue }) => {
+    try {
+      const responses = await workOrderService.getFieldResponses(submissionId);
+      return responses;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch field responses"
+      );
+    }
+  }
+);
+
 export const fetchDeleteAsset = createAsyncThunk(
   "workOrders/fetchDeleteWorkOrder",
   async (_, { rejectWithValue }) => {

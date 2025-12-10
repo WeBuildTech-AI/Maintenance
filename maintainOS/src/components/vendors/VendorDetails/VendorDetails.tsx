@@ -11,9 +11,7 @@ import {
 } from "../VendorsForm/NewContactModal";
 import { type Vendor } from "../vendors.types";
 
-import { Button } from "../../ui/button";
 import {
-  Building2,
   Briefcase,
   AlertTriangle,
   Factory,
@@ -28,9 +26,8 @@ import VendorFooter from "./VendorFooter";
 import DeleteModal from "./DeleteModal";
 import { VendorImages } from "./VendorImages";
 import { VendorFiles } from "./VendorFiles";
-
-// ✅ Newly created sections
 import VendorAssetsSection from "./VendorAssetsSection";
+// ❌ Removed VendorWorkOrdersSection import
 
 interface VendorDetailsProps {
   vendor?: any;
@@ -61,7 +58,7 @@ export default function VendorDetails({
   const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
 
-  // Parse Contacts safely
+  // Contacts Parse Logic
   const [contacts, setContacts] = useState<any[]>(() => {
     try {
       if (Array.isArray(vendor.contacts)) return vendor.contacts;
@@ -85,6 +82,14 @@ export default function VendorDetails({
   );
   const modalRef = useRef<HTMLDivElement | null>(null);
 
+  // Update contacts when vendor prop changes
+  useEffect(() => {
+    if (vendor?.contacts) {
+      if (Array.isArray(vendor.contacts)) setContacts(vendor.contacts);
+    }
+  }, [vendor]);
+
+  // Click Outside Logic
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -126,7 +131,7 @@ export default function VendorDetails({
     navigate(`/work-orders/create?vendorId=${vendor.id}`);
   };
 
-  // ✅ Helper to get styles for the "Linked Assets" list style
+  // Styles Helper
   const getVendorTypeListItemStyles = (type?: string) => {
     const t = type?.toLowerCase();
     if (t === "manufacturer") {
@@ -145,7 +150,6 @@ export default function VendorDetails({
         label: "Distributor",
       };
     }
-    // Default/Fallback
     return {
       iconContainer: "border-gray-200 bg-gray-100",
       iconColor: "text-gray-500",
@@ -157,10 +161,8 @@ export default function VendorDetails({
   const vendorTypeStyle = getVendorTypeListItemStyles(vendor.vendorType);
 
   return (
-    // ✅ Main Container: Relative is crucial for absolute positioning the button
     <div className="flex h-full flex-col overflow-hidden rounded-lg border relative bg-white">
-
-      {/* ✅ FIXED HEADER */}
+      {/* Header */}
       <div className="flex-none z-20 border-b bg-white shadow-sm">
         <VendorHeader
           vendor={vendor}
@@ -172,10 +174,9 @@ export default function VendorDetails({
         />
       </div>
 
-      {/* ✅ SCROLLABLE CONTENT */}
+      {/* Content */}
       <div className="flex-1 overflow-y-auto space-y-8 py-8 px-6 bg-white">
-
-        {/* Display IS DELETED Status if true */}
+        {/* Deleted Warning */}
         {vendor.isDeleted && (
           <div className="flex items-center gap-2 p-3 mb-4 text-sm text-red-700 bg-red-50 rounded-md border border-red-200">
             <AlertTriangle className="h-4 w-4" />
@@ -185,14 +186,14 @@ export default function VendorDetails({
           </div>
         )}
 
+        {/* General Details */}
         <div className="space-y-6">
-          {/* Vendor Type */}
+          {/* Type */}
           <div>
             <h3 className="text-sm font-semibold text-gray-800 mb-3">
               Vendor Type
             </h3>
             <div className="flex items-center gap-3 bg-gray-50 rounded-md p-3">
-              {/* Icon Container */}
               <div
                 className={`flex items-center justify-center h-10 w-10 rounded-full border ${vendorTypeStyle.iconContainer}`}
               >
@@ -200,7 +201,6 @@ export default function VendorDetails({
                   {vendorTypeStyle.icon}
                 </span>
               </div>
-              {/* Text */}
               <span className="text-gray-900 text-sm font-medium">
                 {vendorTypeStyle.label}
               </span>
@@ -218,55 +218,40 @@ export default function VendorDetails({
           </div>
         </div>
 
-        {/* Contacts */}
+        {/* 1. Contacts */}
         <VendorContactList
-          contacts={vendor.contacts}
+          contacts={contacts}
           setEditingContact={setEditingContact}
           setIsModalOpen={setIsModalOpen}
           openDeleteModal={openDeleteModal}
         />
 
-        {/* Assets Section */}
+        {/* ❌ Removed VendorWorkOrdersSection from here */}
+
+        {/* 2. Assets (API Field: assets & assetIds) */}
         <VendorAssetsSection vendor={vendor} />
 
-        {/* Locations */}
+        {/* 3. Locations (API Field: locations) */}
         <VendorLocationsSection vendor={vendor} />
 
-        {/* Parts */}
+        {/* 4. Parts (API Field: parts & partIds) */}
         <VendorPartsSection vendor={vendor} />
 
-        {/* Images */}
+        {/* 5. Media (API Field: vendorImages, vendorDocs) */}
         <VendorImages vendor={vendor} />
-
-        {/* Files */}
         <VendorFiles vendor={vendor} />
-        {/* ✅ FLOATING BUTTON (Bottom Center) using Inline CSS */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: "24px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 10,
-          }}
-        >
-          <Button
-            variant="outline"
-            onClick={handleUseInWorkOrder}
-            className="text-yellow-600 border-2 border-yellow-400 hover:bg-yellow-50 px-8 py-3 rounded-full shadow-lg bg-white font-medium whitespace-nowrap flex items-center gap-2"
-          >
-            <Building2 className="w-5 h-5" />
-            Use in New Work Order
-          </Button>
-        </div>
 
-        {/* ✅ Spacer Div: Prevents content from hiding behind floating button */}
-        <div style={{ height: 96 }} />
+        {/* 6. System Info (Footer Section: Created/Updated/IDs) */}
+        <VendorFooter user={user} vendor={vendor} />
+
+        {/* Spacer for Floating Button */}
+        <div style={{ height: 60 }} />
       </div>
 
+      {/* Floating Action Button */}
+      <VendorFooter.Button onClick={handleUseInWorkOrder} />
 
-
-      {/* Modals */}
+      {/* --- Modals --- */}
       <NewContactModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -285,22 +270,11 @@ export default function VendorDetails({
               setContacts((prev) => [...prev, newContact]);
               toast.success("New contact added!");
             }
-
-            const updatedVendor = await vendorService.fetchVendorById(
-              vendor.id
-            );
-            if (updatedVendor) {
-              vendor.contacts = updatedVendor.contacts;
-              setContacts(
-                Array.isArray(updatedVendor.contacts)
-                  ? updatedVendor.contacts
-                  : [updatedVendor.contacts]
-              );
-            }
-
+            // Trigger fetch to sync IDs from backend if needed
+            fetchVendors();
             setIsModalOpen(false);
           } catch (error) {
-            console.error("❌ Error refreshing vendor:", error);
+            console.error(error);
           }
         }}
       />

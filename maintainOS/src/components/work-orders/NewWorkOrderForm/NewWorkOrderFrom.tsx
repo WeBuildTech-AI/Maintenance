@@ -52,7 +52,7 @@ export function NewWorkOrderForm({
   const dispatch = useDispatch<any>();
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams(); // ✅ Using searchParams to catch ?procedureId=
   const authUser = useSelector((state: any) => state.auth.user);
 
   const procedureEditMatch = useMatch("/work-orders/:workOrderId/edit/library/:procedureId");
@@ -113,6 +113,38 @@ export function NewWorkOrderForm({
       console.error(`Failed fetching ${type}`, e);
     }
   };
+
+  // ---------------------------------------------------------------------------
+  // ✅ FIX: Handle "Use in Work Order" from Library (State or URL param)
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    // 1. If data is passed via Router State (Direct click from Library)
+    if (location.state?.procedureData) {
+      console.log("🔗 Procedure Linked via State:", location.state.procedureData);
+      setLinkedProcedure(location.state.procedureData);
+    } 
+    // 2. If ID is passed via URL (e.g. ?procedureId=123) - Handle Refresh/Link sharing
+    else {
+      const queryProcId = searchParams.get("procedureId");
+      if (queryProcId && !linkedProcedure && !isProcedureLoading) {
+         console.log("🔗 Fetching Procedure via URL Param:", queryProcId);
+         setIsProcedureLoading(true);
+         procedureService.fetchProcedureById(queryProcId)
+           .then((proc) => {
+             if(proc) setLinkedProcedure(proc);
+           })
+           .catch((err) => {
+             console.error("❌ Failed to link procedure from URL:", err);
+             toast.error("Could not load the linked procedure.");
+           })
+           .finally(() => setIsProcedureLoading(false));
+      }
+    }
+  }, [location.state, searchParams]); 
+
+  // ---------------------------------------------------------------------------
+  // Existing Logic for Edit Mode / Form State Restoration
+  // ---------------------------------------------------------------------------
 
   useEffect(() => {
     if (location.state?.previousFormState) {
@@ -521,7 +553,6 @@ export function NewWorkOrderForm({
             
             onPanelClick={setCurrentPanel}
             isEditMode={isEditMode}
-            // ✅ PASS partUsages to display card
             partUsages={existingWorkOrder?.partUsages}
           />
         </div>
