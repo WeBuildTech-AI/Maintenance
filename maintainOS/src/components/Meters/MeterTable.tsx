@@ -10,7 +10,7 @@ import { Table, Avatar, Tooltip as AntTooltip, Collapse } from "antd";
 import type { TableProps, TableColumnType } from "antd";
 import toast from "react-hot-toast";
 import { meterService } from "../../store/meters";
-import AssetTableModal from "../Assets/AssetsTable/AssetTableModal";
+import AssetTableModal from "../utils/AssetTableModal";
 
 type Sorter = Parameters<NonNullable<TableProps<any>["onChange"]>>[2];
 

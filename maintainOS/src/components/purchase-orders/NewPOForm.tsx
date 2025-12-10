@@ -523,7 +523,7 @@ export function NewPOForm(props: NewPOFormProps) {
               {newPO.vendorId && selectedVendor ? (
                 <div className="flex flex-col gap-2">
                   {/* Selected Vendor Badge */}
-                  <div className="flex items-center justify-between h-9 px-3 py-2 text-sm border rounded-md bg-muted/50">
+                  <div className="flex items-center z-50 justify-between h-9 px-3 py-2 text-sm border rounded-md bg-muted/50">
                     <div className="flex items-center gap-2">
                       <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-[10px] text-white font-bold">
                         {selectedVendor.name.charAt(0).toUpperCase()}
@@ -566,7 +566,7 @@ export function NewPOForm(props: NewPOFormProps) {
                             className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-medium border border-blue-100 animate-in fade-in zoom-in duration-200"
                           >
                             <div
-                              className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] text-white font-bold shrink-0`}
+                              // className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] text-white font-bold shrink-0"
                               style={{
                                 backgroundColor: contactDetails.contactColor
                                   ? contactDetails.contactColor
@@ -747,7 +747,7 @@ export function NewPOForm(props: NewPOFormProps) {
                                 return (
                                   <div
                                     key={contact.id}
-                                    className={`flex items-center px-4 py-3 cursor-pointer border-b last:border-0 ${
+                                    className={`flex items-center z-50 px-4 py-3 cursor-pointer border-b last:border-0 ${
                                       isSelected
                                         ? "bg-blue-50"
                                         : "hover:bg-muted"
@@ -829,7 +829,7 @@ export function NewPOForm(props: NewPOFormProps) {
                     onChange={(e) => setVendorSearchQuery(e.target.value)}
                   />
                   {isVendorSearchFocused && (
-                    <div className="absolute z-20 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                    <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
                       {isLoadingVendors ? (
                         <div className="p-2 text-sm text-muted-foreground">
                           Loading...

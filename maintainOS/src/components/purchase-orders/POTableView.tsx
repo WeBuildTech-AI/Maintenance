@@ -26,7 +26,7 @@ import { formatDateOnly } from "../utils/Date"; // Path check kar lein
 import toast from "react-hot-toast";
 import SettingsModal from "../utils/SettingsModal"; // Path check kar lein
 import { purchaseOrderService } from "../../store/purchaseOrders";
-import AssetTableModal from "../Assets/AssetsTable/AssetTableModal";
+import AssetTableModal from "../utils/AssetTableModal";
 import { Tooltip } from "../ui/tooltip";
 
 // --- Helper Functions ---

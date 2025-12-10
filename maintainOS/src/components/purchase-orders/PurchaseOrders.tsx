@@ -110,7 +110,11 @@ export function PurchaseOrders() {
   const [selectedPOId, setSelectedPOId] = useState<string | null>(null);
   const [approveModal, setApproveModal] = useState(false);
 
-  const [viewMode, setViewMode] = useState<ViewMode>("panel");
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const savedMode = localStorage.getItem("purchaseOrderViewMode");
+    return (savedMode as ViewMode) || "panel";
+  });
+
   const [selectedColumns, setSelectedColumns] = useState(allColumns);
   const [pageSize, setPageSize] = useState(25);
   const [showSettings, setShowSettings] = useState(false);
@@ -126,6 +130,10 @@ export function PurchaseOrders() {
     page: 1,
     limit: 50,
   });
+
+  useEffect(() => {
+    localStorage.setItem("purchaseOrderViewMode", viewMode);
+  }, [viewMode]);
 
   const scrollToTop = () => {
     if (topRef.current) {
@@ -375,55 +383,79 @@ export function PurchaseOrders() {
   const handleEditPO = (poToEdit: any) => {
     if (!poToEdit) return;
 
-    console.log("Editing PO:", poToEdit);
+    // --- 1. Vendor Handling (Extract ID & Object) ---
+    let extractedVendorId = "";
+    let vendorObject = null;
 
-    // 1. Tax Lines Mapping
+    if (poToEdit.vendor) {
+      if (typeof poToEdit.vendor === "object") {
+        extractedVendorId = poToEdit.vendor.id;
+        vendorObject = poToEdit.vendor; // Pura object store karein
+      } else if (typeof poToEdit.vendor === "string") {
+        extractedVendorId = poToEdit.vendor;
+      }
+    } else if (poToEdit.vendorId) {
+      extractedVendorId = poToEdit.vendorId;
+    }
+
+    // --- 2. Contacts Handling (Sabse Important Fix) ---
+    let mappedContactIds: string[] = [];
+    let mappedContactsList: any[] = [];
+
+    // Backend se contacts kisi bhi naam se aa sakte hain, sab check karo:
+    const rawContacts =
+      poToEdit.vendorContacts || // Option A: vendorContacts
+      poToEdit.contacts || // Option B: contacts
+      [];
+
+    if (Array.isArray(rawContacts) && rawContacts.length > 0) {
+      // IDs nikalo
+      mappedContactIds = rawContacts.map((c: any) =>
+        typeof c === "object" ? c.id : c
+      );
+      // Objects nikalo (UI ko dikhane ke liye)
+      mappedContactsList = rawContacts.filter(
+        (c: any) => typeof c === "object"
+      );
+    } else if (
+      poToEdit.vendorContactIds &&
+      Array.isArray(poToEdit.vendorContactIds)
+    ) {
+      // Fallback: Agar sirf IDs aaye hain
+      mappedContactIds = poToEdit.vendorContactIds;
+    }
+
+    // --- 3. Tax Lines Mapping (Corrected for label/value) ---
     const mappedTaxLines = poToEdit.taxesAndCosts
       ? poToEdit.taxesAndCosts.map((t: any) => ({
-          id: cryptoId(),
-          taxLabel: t.taxLabel,
-          taxValue: t.taxValue,
+          id: t.id || cryptoId(),
+          label: t.taxLabel || t.label || "", // ✅ 'label' key ensure ki
+          value: t.taxValue || t.value || 0, // ✅ 'value' key ensure ki
           type: t.taxCategory === "PERCENTAGE" ? "percentage" : "fixed",
           isTaxable: t.isTaxable,
         }))
       : [];
 
-    // 2. Contact IDs Mapping (Fix applied here)
-    // Backend kabhi 'vendorContacts' (full object) bhejta hai, kabhi 'vendorContactIds'
-    const mappedContactIds = poToEdit.vendorContacts
-      ? poToEdit.vendorContacts.map((c: any) => c.id)
-      : poToEdit.vendorContactIds || [];
-
-    // 3. Form State Create Karna
+    // --- 4. Construct Form State ---
     const formPO: NewPOFormType = {
       id: poToEdit.id,
-      poNumber: poToEdit.poNumber || "", // ✅ Auto-fill PO Number
+      poNumber: poToEdit.poNumber || "",
 
-      vendorId: poToEdit.vendor?.id || poToEdit.vendorId || "", // ✅ Auto-fill Vendor
+      // ✅ VENDOR: ID aur Object dono pass karein
+      vendorId: extractedVendorId,
+      // @ts-ignore
+      vendor: vendorObject, // UI ko ye object chahiye turant naam dikhane ke liye
 
-      // ✅ Auto-fill Legacy Contact Fields (Name & Phone/Email)
-      // (Agar aapke form mein ye fields alag se hain)
+      // ✅ CONTACTS: IDs aur List dono pass karein
+      vendorContactIds: mappedContactIds,
+      // @ts-ignore
+      initialVendorContacts: mappedContactsList, // Dropdown ko ye list chahiye
+
+      // ✅ Legacy Fields (Backup)
       contactName: poToEdit.contactName || "",
       phoneOrMail: poToEdit.phoneOrMail || "",
 
-      // ✅ Auto-fill Selected Vendor Contacts (Dropdown ke liye)
-      vendorContactIds: mappedContactIds,
-
-      items:
-        poToEdit.orderItems && poToEdit.orderItems.length > 0
-          ? poToEdit.orderItems.map((item: any) => ({
-              id: item.id ? item.id : `temp_${crypto.randomUUID()}`,
-              partId: item.part?.id || item.partId || null,
-              itemName: item.itemName || item.part?.name || "",
-              partNumber: item.partNumber || item.part?.partNumber || "",
-              quantity: item.unitsOrdered || 0,
-              unitCost: item.unitCost || 0,
-            }))
-          : [{ ...initialPOState.items[0], id: `temp_${crypto.randomUUID()}` }],
-
-      // @ts-ignore
-      taxLines: mappedTaxLines,
-
+      // ✅ Addresses
       shippingAddressId:
         poToEdit.shippingAddress?.id || poToEdit.shippingAddressId || "",
       shippingAddress: poToEdit.shippingAddress || null,
@@ -438,17 +470,40 @@ export function PurchaseOrders() {
         poToEdit.shippingAddressId !== null
       ),
 
+      // ✅ Dates & Notes
       dueDate: poToEdit.dueDate
         ? new Date(poToEdit.dueDate).toISOString().split("T")[0]
         : "",
-
       notes: poToEdit.notes || "",
       extraCosts: poToEdit.extraCosts || 0,
+
+      // ✅ Items
+      items:
+        poToEdit.orderItems && poToEdit.orderItems.length > 0
+          ? poToEdit.orderItems.map((item: any) => ({
+              id: item.id || `temp_${Math.random().toString(36).substr(2, 9)}`,
+              partId: item.part?.id || item.partId || null,
+              itemName: item.itemName || item.part?.name || "",
+              partNumber: item.partNumber || item.part?.partNumber || "",
+              quantity: item.unitsOrdered || 0,
+              unitCost: item.unitCost || 0,
+            }))
+          : [
+              {
+                ...initialPOState.items[0],
+                id: `temp_${Math.random().toString(36).substr(2, 9)}`,
+              },
+            ],
+
+      // ✅ Taxes
+      // @ts-ignore
+      taxLines: mappedTaxLines,
     };
 
+    console.log("Edit Form State Set:", formPO); // Debugging ke liye check karein
     setNewPO(formPO);
     setOriginalPOForEdit(formPO);
-    setIsEditingPO(true); // Edit Mode ON
+    setIsEditingPO(true);
     setApiError(null);
     setAttachedFiles([]);
   };

@@ -22,7 +22,7 @@ import type { TableProps, TableColumnType } from "antd";
 import type { AppDispatch } from "../../../store";
 import { useDispatch } from "react-redux";
 import Loader from "../../Loader/Loader";
-import AssetTableModal from "./AssetTableModal";
+import AssetTableModal from "../../utils/AssetTableModal";
 
 // Map sort order
 const mapAntSortOrder = (order: "asc" | "desc"): "ascend" | "descend" =>
