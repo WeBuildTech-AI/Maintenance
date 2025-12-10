@@ -11,7 +11,7 @@ import type { TableProps, TableColumnType } from "antd";
 
 import toast from "react-hot-toast";
 import { locationService } from "../../store/locations";
-import AssetTableModal from "../Assets/AssetsTable/AssetTableModal";
+import AssetTableModal from "../utils/AssetTableModal";
 import { Tooltip } from "../ui/tooltip";
 
 type Sorter = Parameters<NonNullable<TableProps<any>["onChange"]>>[2];

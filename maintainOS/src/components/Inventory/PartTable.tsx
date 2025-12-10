@@ -14,7 +14,7 @@ import toast from "react-hot-toast";
 import SettingsModal from "../utils/SettingsModal";
 import { formatDateOnly } from "../utils/Date";
 import { partService } from "../../store/parts";
-import AssetTableModal from "../Assets/AssetsTable/AssetTableModal";
+import AssetTableModal from "../utils/AssetTableModal";
 import { Tooltip } from "../ui/tooltip";
 
 // ✅ Import Modals for Table Actions

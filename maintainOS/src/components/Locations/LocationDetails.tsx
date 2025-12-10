@@ -5,6 +5,7 @@ import {
   Plus,
   MapPin,
   ChevronRight,
+  Building2,
 } from "lucide-react";
 import React from "react";
 import toast from "react-hot-toast";
@@ -40,6 +41,8 @@ interface LocationDetailsProps {
   fetchLocation: () => void;
   onClose: () => void;
   setShowSubLocation: (show: boolean) => void;
+  // ✅ NEW PROP Definition
+  onSubLocationClick: (location: any) => void;
 }
 
 const LocationDetails: React.FC<LocationDetailsProps> = ({
@@ -52,6 +55,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
   fetchLocation,
   onClose,
   setShowSubLocation,
+  onSubLocationClick, // ✅ Destructure here
 }) => {
   const navigate = useNavigate();
   const [openDeleteModal, setOpenDeleteModal] = React.useState(false);
@@ -107,17 +111,11 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="mt-2">
-                {/* {!restoreData && ( */}
-                <DropdownMenuItem
-                  // onClick={() => handleDeleteLocation(selectedLocation.id)}
-                  onClick={() => setOpenDeleteModal(true)}
-                >
+                <DropdownMenuItem onClick={() => setOpenDeleteModal(true)}>
                   Delete
                 </DropdownMenuItem>
-                {/* )} */}
                 {restoreData && (
                   <DropdownMenuItem
-                    // onClick={() => handleDeleteLocation(selectedLocation.id)}
                     onClick={() =>
                       handleRestoreLocationData(selectedLocation?.id)
                     }
@@ -152,7 +150,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
         <LocationFiles location={selectedLocation} />
 
         {selectedLocation.qrCode && (
-          <div className="mt-6">
+          <div className="mt-6 ">
             <h3 className="text-sm font-medium text-gray-700">
               QR Code/Barcode
             </h3>
@@ -171,7 +169,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
 
         <hr className="my-4" />
 
-        <div>
+        <div className="mt-4">
           {/* Check if there are no sub-locations */}
           {Array.isArray(selectedLocation?.children) &&
           selectedLocation.children.length === 0 ? (
@@ -184,8 +182,8 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
               </p>
 
               <button
-                onClick={handleShowNewSubLocationForm}
-                className="mt-2 cursor-pointer text-sm text-orange-600 hover:underline"
+                onClick={() => handleShowNewSubLocationForm(true)}
+                className="mt-2 cursor-pointer text-sm text-orange-600"
               >
                 Create Sub-Location
               </button>
@@ -199,7 +197,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
                     Sub-Locations ({selectedLocation?.children?.length || 0})
                   </h2>
                   <button
-                    onClick={handleShowNewSubLocationForm}
+                    onClick={() => handleShowNewSubLocationForm(true)}
                     className="flex items-center gap-2 text-orange-600 text-sm cursor-pointer font-medium transition-colors"
                   >
                     <div className="w-4 h-4 rounded-full border-2 border-blue-600 flex items-center justify-center">
@@ -215,14 +213,14 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
                     selectedLocation.children.map((location) => (
                       <button
                         key={location?.id || Math.random()}
-                        // onClick={() => handleLocationClick(location?.name)}
-                        className="w-full flex items-center justify-between py-2  hover:bg-gray-50 transition-colors group"
+                        className="w-full flex items-center justify-between py-2 hover:bg- 50 transition-colors group"
                       >
                         <div className="flex items-center gap-2">
                           <MapPin className="w-3 h-3 text-orange-600" />
                           <span
-                            className="text-gray-900 text-sm"
-                            onClick={() => setShowSubLocation(true)}
+                            className="text-gray-900 text-sm cursor-pointer"
+                            // ✅ TRIGGER: Call the new handler
+                            onClick={() => onSubLocationClick(location)}
                           >
                             {location?.name || "Unnamed Location"}
                           </span>
@@ -258,15 +256,24 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
       </div>
 
       {/* Footer */}
-      <div className=" border-t bg-transparent p-4">
-        <div className="flex justify-center">
-          <NavLink to="/work-orders">
-            <button className="cursor-pointer p-2 rounded-full border border-orange-600 bg-white px-5 py-3 text-sm text-orange-600 shadow-sm transition hover:bg-orange-50">
-              Use in New Work Order
-            </button>
-          </NavLink>
-        </div>
-      </div>
+      {/* <div
+        style={{
+          position: "absolute",
+          bottom: "24px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 10,
+        }}
+      >
+        <Button
+          variant="outline"
+          onClick={() => navigate("/work-orders/create")}
+          className="text-yellow-600 cursor-pointer border-2 border-yellow-400 hover:bg-yellow-50 px-8 py-3 rounded-full shadow-lg bg-white font-medium whitespace-nowrap"
+        >
+          <Building2 className="w-5 h-5 mr-2" />
+          Use in New Work Order
+        </Button>
+      </div> */}
 
       {openDeleteModal && (
         <DeleteModal

@@ -68,19 +68,20 @@ export function CreatedVsCompletedChart({
     });
 
   // 3. Fetch Completed By Date (For Green Line)
-  // NOTE: Backend doesn't support 'completedAt' as a reportable field yet
-  // Temporarily disabled until backend adds support
-  // const { data: completedData } = useQuery(GET_CHART_DATA, {
-  //   variables: {
-  //     input: {
-  //       dataset: "WORK_ORDERS",
-  //       groupByField: "completedAt",
-  //       filters: apiFilters,
-  //     },
-  //   },
-  //   fetchPolicy: "cache-and-network",
-  // });
-  const completedData = null; // Placeholder until backend supports completedAt
+  const {
+    data: completedData,
+  }: { data?: { getChartData?: { groupValues: string[]; value: number }[] } } =
+    useQuery(GET_CHART_DATA, {
+      variables: {
+        input: {
+          dataset: "WORK_ORDERS",
+          groupByFields: ["completedAt"],
+          metric: "COUNT",
+          filters: apiFilters,
+        },
+      },
+      fetchPolicy: "cache-and-network",
+    });
 
   // --- Calculations ---
 
@@ -129,13 +130,14 @@ export function CreatedVsCompletedChart({
       }
     });
 
-    // Process Completed (disabled until backend supports it)
-    // completedData?.getChartData?.forEach((item: any) => {
-    //   if (item.label && item.label !== "Unassigned") {
-    //     completedMap.set(item.label, item.value);
-    //     allDates.add(item.label);
-    //   }
-    // });
+    // Process Completed
+    completedData?.getChartData?.forEach((item: any) => {
+      const dateLabel = item.groupValues?.[0];
+      if (dateLabel && dateLabel !== "Unassigned") {
+        completedMap.set(dateLabel, item.value);
+        allDates.add(dateLabel);
+      }
+    });
 
     // Sort dates and build array
     return Array.from(allDates)
@@ -246,15 +248,14 @@ export function CreatedVsCompletedChart({
               dot={{ r: 4 }}
               name="Created"
             />
-            {/* Completed line disabled until backend supports completedAt field */}
-            {/* <Line
+            <Line
               type="monotone"
               dataKey="completed"
               stroke="#10b981"
               strokeWidth={2}
               dot={{ r: 4 }}
               name="Completed"
-            /> */}
+            />
           </LineChart>
         </ResponsiveContainer>
       </CardContent>

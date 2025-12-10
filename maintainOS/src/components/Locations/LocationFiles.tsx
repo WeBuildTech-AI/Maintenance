@@ -66,7 +66,7 @@ export const LocationFiles: React.FC<{ location: Location }> = ({
 
   if (!files?.length)
     return (
-      <div className="mt-6">
+      <div className="mt-6 ">
         <h3 className="mb-3 text-sm font-medium text-gray-800">
           Location Files
         </h3>

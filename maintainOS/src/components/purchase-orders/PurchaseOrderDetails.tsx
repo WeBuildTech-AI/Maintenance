@@ -94,6 +94,7 @@ interface PurchaseOrder {
   vendor: {
     id: string;
     name: string;
+    contacts?: VendorContact[];
   };
   shippingAddressId?: string;
   shippingAddress?: Address;
@@ -107,7 +108,7 @@ interface PurchaseOrder {
   phoneOrMail?: string;
   taxesAndCosts?: TaxItems[];
   vendorContactIds?: string[];
-  vendorContacts: VendorContact[];
+  contacts: VendorContact[];
 }
 
 interface PurchaseOrderDetailsProps {
@@ -132,6 +133,7 @@ interface PurchaseOrderDetailsProps {
   restoreData: String;
   onClose: () => void;
   showDeleted: boolean;
+  showCommentSection: boolean;
 }
 
 const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
@@ -152,6 +154,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   restoreData,
   onClose,
   showDeleted,
+  showCommentSection,
 }) => {
   console.log(selectedPO.status, "purchase Order Data ");
   const [fullFillModal, setFullFillModal] = React.useState(false);
@@ -455,31 +458,32 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                   </span>
                 </div>
                 <div className="w-64">
-                  {selectedPO.vendorContacts &&
-                    selectedPO.vendorContacts.length > 0 && (
+                  {selectedPO.vendor.contacts &&
+                    selectedPO.vendor.contacts.length > 0 && (
                       <>
                         <div className="p-3  rounded-lg bg-gray-50 mb-2">
                           <div className="font-medium">
-                            Name :- {selectedPO.vendorContacts[0]?.fullName}
+                            Name :- {selectedPO.vendor.contacts[0]?.fullName}
                           </div>
                           <div
                             className="text-sm text-oa-600 cursor-pointer"
                             onClick={() => {
-                              const email = selectedPO.vendorContacts[0]?.email;
+                              const email =
+                                selectedPO.vendor.contacts[0]?.email;
                               if (email)
                                 window.location.href = `mailto:${email}`;
                             }}
                           >
                             Email :-{" "}
                             <span className="text-orange-600">
-                              {selectedPO.vendorContacts[0]?.email}
+                              {selectedPO.vendor.contacts[0]?.email}
                             </span>
                           </div>
 
                           <div className="text-sm text-gray-600">
                             Phone :-
                             <span className="text-orange-600">
-                              {selectedPO.vendorContacts[0]?.phoneNumber}
+                              {selectedPO.vendor.contacts[0]?.phoneNumber}
                             </span>
                           </div>
                         </div>
@@ -764,19 +768,21 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
             )}
           </div>
 
-          <Comment
-            selectedPO={selectedPO}
-            showCommentBox={showCommentBox}
-            comment={comment}
-            handleSend={handleSend}
-            setShowCommentBox={setShowCommentBox}
-            setComment={setComment}
-            fetchPurchanseOrder={fetchPurchaseOrder}
-          />
+          {showCommentSection === false ? null : (
+            <Comment
+              selectedPO={selectedPO}
+              showCommentBox={showCommentBox}
+              comment={comment}
+              handleSend={handleSend}
+              setShowCommentBox={setShowCommentBox}
+              setComment={setComment}
+              fetchPurchanseOrder={fetchPurchaseOrder}
+            />
+          )}
 
           <div>
             <h3 className="font-medium mb-3">History</h3>
-            <div className="space-y-4 border rounded-lg p-4 mb-4 max-h-64 overflow-y-auto">
+            <div className="space-y-4 border rounded p-4 mb-4 mr-1 max-h-64 overflow-y-auto">
               {isLoading ? (
                 <Loader />
               ) : (
