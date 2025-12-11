@@ -988,6 +988,12 @@ export function MeterTable({
           showDetailsSection={"meter"}
           restoreData={"Restore"}
           fetchData={fetchMeters}
+          onEdit={() => {}}
+          onDelete={() => {}}
+          setSeeMoreAssetStatus={() => {}}
+          setShowReadingMeter={() => {}}
+          setIsRecordModalOpen={() => false}
+          showDeleted={showDeleted}
         />
       )}
     </div>

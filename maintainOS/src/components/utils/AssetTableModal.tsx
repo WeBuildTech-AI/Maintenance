@@ -59,7 +59,7 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
   const [isMeterEditing, setIsMeterEditing] = useState(false);
   const [showMeterHistory, setShowMeterHistory] = useState(false);
   const [isRecordReadingOpen, setIsRecordReadingOpen] = useState(false);
-
+  const [showRecordingButton, setShowRecordingButton] = useState(false);
   // --- PO ACTION STATES ---
   const [poModalAction, setPoModalAction] = useState<
     "reject" | "approve" | "delete" | "fullfill" | "cancelled" | null
@@ -232,6 +232,8 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
                   setShowReadingMeter={setShowMeterHistory}
                   setIsRecordModalOpen={setIsRecordReadingOpen}
                   onEdit={() => setIsMeterEditing(true)}
+                  showRecordingButton={showRecordingButton}
+                  showDeleted={showDeleted}
                 />
                 {isRecordReadingOpen && (
                   <RecordReadingModal
@@ -316,7 +318,6 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
                 ? poModalContent[poModalAction].confirmButtonText
                 : ""
             }
-            
             confirmButtonVariant={
               poModalAction ? poModalContent[poModalAction].variant : "warning"
             }

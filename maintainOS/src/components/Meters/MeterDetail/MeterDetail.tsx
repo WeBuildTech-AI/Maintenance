@@ -39,6 +39,8 @@ export function MeterDetail({
   setIsRecordModalOpen,
   restoreData,
   onClose,
+  showRecordingButton,
+  showDeleted,
 }: any) {
   const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
@@ -95,24 +97,28 @@ export function MeterDetail({
                 <LinkIcon size={18} />
               </button>
             </Tooltip>
-            <Button
-              className="gap-2 bg-orange-600 hover:bg-orange-700"
-              onClick={() => setIsRecordModalOpen(true)} // 👈 Modal open karne ke liye state update karein
-            >
-              <Plus className="h-4 w-4" />
-              Record Reading
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-2 text-orange-600"
-              onClick={() => {
-                navigate(`/meters/${selectedMeter.id}/edit`);
-              }}
-            >
-              <Edit className="h-4 w-4" />
-              Edit
-            </Button>
+            {showRecordingButton === false ? null : (
+              <Button
+                className="gap-2 bg-orange-600 hover:bg-orange-700"
+                onClick={() => setIsRecordModalOpen(true)} // Modal open karne ke liye state update karein
+              >
+                <Plus className="h-4 w-4" />
+                Record Reading
+              </Button>
+            )}
+            {!showDeleted && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-2 text-orange-600"
+                onClick={() => {
+                  navigate(`/meters/${selectedMeter.id}/edit`);
+                }}
+              >
+                <Edit className="h-4 w-4" />
+                Edit
+              </Button>
+            )}
             <div className="flex items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
