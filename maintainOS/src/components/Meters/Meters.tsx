@@ -88,13 +88,8 @@ export function Meters() {
   useEffect(() => {
     const params: any = {};
 
-    // Keep viewMode in URL so refresh works
-    // if (viewMode) params.viewMode = viewMode;
-
     if (debouncedSearch) params.search = debouncedSearch;
 
-    // ✅ FIX: Only add 'meterId' to URL if we are in 'panel' mode.
-    // This ensures that when you switch to Table, the ID disappears from the URL.
     if (viewMode === "panel" && selectedMeter?.id) {
       params.meterId = selectedMeter.id;
     }
@@ -284,7 +279,7 @@ export function Meters() {
                 setShowReadingMeter={setShowReadingMeter}
               />
 
-              <div className="flex-1 bg-card">
+              <div className="flex-1 bg-card mb-2">
                 {isCreateRoute || isEditRoute ? (
                   <NewMeterForm
                     onCancel={handleCancelForm}

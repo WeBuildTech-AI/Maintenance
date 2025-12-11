@@ -80,7 +80,7 @@ export function AssetsList({
   }, []);
 
   return (
-    <div className="w-96 border ml-2 mr-3 border-border bg-card flex flex-col min-h-0">
+    <div className="w-96 border ml-2 mr-3 mb-2 border-border bg-card flex flex-col min-h-0">
       {/* --- Custom Dropdown Header --- */}
       <div ref={headerRef} className="p-3 border-b border-border flex-shrink-0">
         <div className="flex items-center gap-2">
