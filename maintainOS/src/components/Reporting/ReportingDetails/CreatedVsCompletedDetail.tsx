@@ -560,97 +560,85 @@ export function CreatedVsCompletedDetail({ filters, dateRange }: Props) {
   return (
     <div className="space-y-6 pt-0 pb-12">
       {/* Chart Section */}
-      <div className="bg-white border rounded-lg p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold">Created vs. Completed</h3>
+      <div className="bg-white border rounded-xl p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-8">
+          <h3 className="text-xl font-bold text-gray-900">Created vs. Completed</h3>
           <Button
             variant="outline"
             size="sm"
-            className="border-2 border-gray-300"
+            className="border-2 border-gray-300 hover:bg-gray-50"
           >
             <span className="text-xl">+</span>
           </Button>
         </div>
 
-        {/* Stats and Chart Layout */}
-        <div className="flex items-start gap-8">
-          {/* Left Side: Stats - Side by Side */}
-          <div className="flex gap-8">
-            {/* Created Stat */}
-            <div className="flex flex-col items-center gap-2">
-              <span className="text-4xl font-bold text-gray-900">
-                {totals.created}
-              </span>
-              <div className="px-4 py-1.5 border-2 border-blue-400 rounded-md bg-blue-50 text-blue-600 font-semibold text-sm whitespace-nowrap">
-                Created
-              </div>
-            </div>
-
-            {/* Completed Stat */}
-            <div className="flex flex-col items-center gap-2">
-              <span className="text-4xl font-bold text-gray-900">
-                {totals.completed}
-              </span>
-              <div className="px-4 py-1.5 border-2 border-teal-400 rounded-md bg-teal-50 text-teal-600 font-semibold text-sm whitespace-nowrap">
-                Completed
-              </div>
+        {/* Stats Row - Horizontal Cards */}
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          {/* Created Card */}
+          <div className="bg-blue-50 rounded-lg p-3 border-2 border-blue-300 text-center">
+            <div className="text-sm font-semibold text-blue-700 mb-1">Created</div>
+            <div className="flex items-baseline justify-center">
+              <span className="text-3xl font-bold text-gray-900">{totals.created}</span>
             </div>
           </div>
 
-          {/* Right Side: Chart - Smaller */}
-          <div className="flex-1">
-            <ResponsiveContainer width="100%" height={180}>
-              <LineChart
-                data={[
-                  {
-                    date: dateRange.startDate,
-                    Created: totals.created,
-                    Completed: 0,
-                  },
-                  {
-                    date: dateRange.endDate,
-                    Created: totals.created,
-                    Completed: totals.completed,
-                  },
-                ]}
-                margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis
-                  dataKey="date"
-                  stroke="#6b7280"
-                  fontSize={11}
-                  tickLine={false}
-                />
-                <YAxis stroke="#6b7280" fontSize={11} tickLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "white",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "6px",
-                  }}
-                />
-                <Legend
-                  wrapperStyle={{ paddingTop: "10px" }}
-                  iconType="circle"
-                />
-                <Line
-                  type="monotone"
-                  dataKey="Created"
-                  stroke="#3b82f6"
-                  strokeWidth={2}
-                  dot={{ fill: "#3b82f6", r: 4, strokeWidth: 0 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="Completed"
-                  stroke="#14b8a6"
-                  strokeWidth={2}
-                  dot={{ fill: "#14b8a6", r: 4, strokeWidth: 0 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+          {/* Completed Card */}
+          <div className="bg-teal-50 rounded-lg p-3 border-2 border-teal-300 text-center">
+            <div className="text-sm font-semibold text-teal-700 mb-1">Completed</div>
+            <div className="flex items-baseline justify-center">
+              <span className="text-3xl font-bold text-gray-900">{totals.completed}</span>
+            </div>
           </div>
+        </div>
+
+        {/* Chart - Full Width */}
+        <div className="w-full">
+          <ResponsiveContainer width="100%" height={280}>
+            <LineChart
+              data={[
+                {
+                  date: dateRange.startDate,
+                  Created: totals.created,
+                  Completed: 0,
+                },
+                {
+                  date: dateRange.endDate,
+                  Created: totals.created,
+                  Completed: totals.completed,
+                },
+              ]}
+              margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "white",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "8px",
+                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                }}
+              />
+              <Legend wrapperStyle={{ paddingTop: "16px" }} iconType="circle" />
+              <Line
+                type="monotone"
+                dataKey="Created"
+                stroke="#3b82f6"
+                strokeWidth={3}
+                dot={{ fill: "#3b82f6", r: 5, strokeWidth: 0 }}
+                activeDot={{ r: 7, fill: "#2563eb" }}
+              />
+              <Line
+                type="monotone"
+                dataKey="Completed"
+                stroke="#14b8a6"
+                strokeWidth={3}
+                dot={{ fill: "#14b8a6", r: 5, strokeWidth: 0 }}
+                activeDot={{ r: 7, fill: "#0d9488" }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </div>
 

@@ -30,9 +30,6 @@ export function CreatedVsCompletedChart({
 }: CreatedVsCompletedChartProps) {
   const apiFilters = useMemo(() => {
     const mapped = mapFilters(filters, dateRange);
-    console.log("🔍 CreatedVsCompletedChart - Filters received:", filters);
-    console.log("🔍 CreatedVsCompletedChart - Date range:", dateRange);
-    console.log("🔍 CreatedVsCompletedChart - Mapped API filters:", mapped);
     return mapped;
   }, [filters, dateRange]);
 

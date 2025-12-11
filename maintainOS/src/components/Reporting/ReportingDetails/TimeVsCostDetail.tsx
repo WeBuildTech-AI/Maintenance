@@ -205,101 +205,92 @@ export function TimeVsCostDetail({ filters, dateRange }: Props) {
   return (
     <div className="space-y-6">
       {/* Chart Section */}
-      <div className="bg-white border rounded-lg p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold">Time vs. Cost Reports</h3>
+      <div className="bg-white border rounded-xl p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-8">
+          <h3 className="text-xl font-bold text-gray-900">Time vs. Cost Reports</h3>
           <Button
             variant="outline"
             size="sm"
-            className="border-2 border-gray-300"
+            className="border-2 border-gray-300 hover:bg-gray-50"
           >
             <span className="text-xl">+</span>
           </Button>
         </div>
 
-        {/* Horizontal Layout: Stats Left, Chart Right */}
-        <div className="flex items-center gap-8">
-          <div className="flex flex-col gap-6 min-w-[320px]">
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col items-end min-w-[100px]">
-                <span className="text-5xl font-bold leading-tight">
-                  {totals.totalHours.toFixed(1)} hrs
-                </span>
-                {/* <span className="text-xl font-bold text-gray-400">h</span> */}
-              </div>
-              <div className="px-4 py-2 border-2 border-blue-400 rounded-md bg-blue-50 text-blue-600 font-medium text-xs">
-                Total Reported
-                {/* <br /> */}
-                Time Spent
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col items-end min-w-[100px]">
-                <span className="text-5xl font-bold leading-tight">
-                  ${Math.round(totals.totalCost)}
-                </span>
-              </div>
-              <div className="px-4 py-2 border-2 border-blue-400 rounded-md bg-blue-50 text-blue-600 font-medium text-xs">
-                Total Reported
-                Cost Spent
-              </div>
+        {/* Stats Row - Horizontal Cards */}
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          {/* Total Time Card */}
+          <div className="bg-blue-50 rounded-lg p-3 border-2 border-blue-300 text-center">
+            <div className="text-sm font-semibold text-blue-700 mb-1">Total Reported Time</div>
+            <div className="flex items-baseline justify-center">
+              <span className="text-3xl font-bold text-gray-900">{totals.totalHours.toFixed(1)}</span>
+              <span className="text-base font-medium text-gray-400 ml-1">hrs</span>
             </div>
           </div>
 
-          <div className="flex-1 pl-8 border-l">
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={chartDataForChart}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="name"
-                  angle={-45}
-                  textAnchor="end"
-                  height={100}
-                />
-                <YAxis />
-                <Tooltip
-                  formatter={(value: any, name: string) => {
-                    if (name === "Time (hours)") return [`${value}h`, "Time"];
-                    if (name === "Cost ($)") return [`$${value}`, "Cost"];
-                    return value;
-                  }}
-                />
-                <Legend />
-                {viewMode === "time" ? (
-                  <Bar dataKey="timeHours" fill="#3b82f6" name="Time (hours)" />
-                ) : (
-                  <Bar dataKey="cost" fill="#3b82f6" name="Cost ($)" />
-                )}
-              </BarChart>
-            </ResponsiveContainer>
-
-            <div className="flex justify-center gap-2 mt-4">
-              <Button
-                variant={viewMode === "time" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setViewMode("time")}
-                className={
-                  viewMode === "time"
-                    ? "bg-gray-800 text-white hover:bg-gray-700"
-                    : ""
-                }
-              >
-                Time Reported
-              </Button>
-              <Button
-                variant={viewMode === "cost" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setViewMode("cost")}
-                className={
-                  viewMode === "cost"
-                    ? "bg-blue-500 text-white hover:bg-blue-600"
-                    : ""
-                }
-              >
-                Cost Reported
-              </Button>
+          {/* Total Cost Card */}
+          <div className="bg-emerald-50 rounded-lg p-3 border-2 border-emerald-300 text-center">
+            <div className="text-sm font-semibold text-emerald-700 mb-1">Total Reported Cost</div>
+            <div className="flex items-baseline justify-center">
+              <span className="text-3xl font-bold text-gray-900">${Math.round(totals.totalCost).toLocaleString()}</span>
             </div>
+          </div>
+        </div>
+
+        {/* Chart - Full Width */}
+        <div className="w-full">
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={chartDataForChart}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "white",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "8px",
+                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                }}
+                formatter={(value: any, name: string) => {
+                  if (name === "Time (hours)") return [`${value}h`, "Time"];
+                  if (name === "Cost ($)") return [`$${value}`, "Cost"];
+                  return value;
+                }}
+              />
+              <Legend wrapperStyle={{ paddingTop: "16px" }} iconType="circle" />
+              {viewMode === "time" ? (
+                <Bar dataKey="timeHours" fill="#3b82f6" name="Time (hours)" />
+              ) : (
+                <Bar dataKey="cost" fill="#10b981" name="Cost ($)" />
+              )}
+            </BarChart>
+          </ResponsiveContainer>
+
+          <div className="flex justify-center gap-2 mt-4">
+            <Button
+              variant={viewMode === "time" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode("time")}
+              className={
+                viewMode === "time"
+                  ? "bg-blue-500 text-white hover:bg-blue-600"
+                  : ""
+              }
+            >
+              Time Reported
+            </Button>
+            <Button
+              variant={viewMode === "cost" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode("cost")}
+              className={
+                viewMode === "cost"
+                  ? "bg-emerald-500 text-white hover:bg-emerald-600"
+                  : ""
+              }
+            >
+              Cost Reported
+            </Button>
           </div>
         </div>
       </div>

@@ -178,88 +178,80 @@ export function StatusDetail({ filters, dateRange }: Props) {
   return (
     <div className="space-y-6">
       {/* Chart Section */}
-      <div className="bg-white border rounded-lg p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold">Status</h3>
+      <div className="bg-white border rounded-xl p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-8">
+          <h3 className="text-xl font-bold text-gray-900">Status</h3>
           <Button
             variant="outline"
             size="sm"
-            className="border-2 border-gray-300"
+            className="border-2 border-gray-300 hover:bg-gray-50"
           >
             <span className="text-xl">+</span>
           </Button>
         </div>
 
-        {/* Horizontal Layout: Stats Left, Chart Right */}
-        <div className="flex items-center gap-8">
-          {/* Left Side: Stats */}
-          <div className="grid grid-cols-2 gap-6">
-            <div className="text-center">
-              <div className="text-6xl font-bold">{totals.open}</div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-2 text-blue-600 border-blue-300 hover:bg-blue-50"
-              >
-                Open
-              </Button>
-            </div>
-
-            <div className="text-center">
-              <div className="text-6xl font-bold">{totals.onHold}</div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-2 text-red-600 border-red-300 hover:bg-red-50"
-              >
-                On Hold
-              </Button>
-            </div>
-
-            <div className="text-center">
-              <div className="text-6xl font-bold">{totals.inProgress}</div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-2 text-yellow-600 border-yellow-300 hover:bg-yellow-50"
-              >
-                In Progress
-              </Button>
-            </div>
-
-            <div className="text-center">
-              <div className="text-6xl font-bold">{totals.done}</div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-2 text-green-600 border-green-300 hover:bg-green-50"
-              >
-                Done
-              </Button>
+        {/* Stats Row - Horizontal Cards */}
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          {/* Open Card */}
+          <div className="bg-blue-50 rounded-lg p-3 border-2 border-blue-300 text-center">
+            <div className="text-sm font-semibold text-blue-700 mb-1">Open</div>
+            <div className="flex items-baseline justify-center">
+              <span className="text-3xl font-bold text-gray-900">{totals.open}</span>
             </div>
           </div>
 
-          {/* Right Side: Pie Chart */}
-          <div className="flex-1 pl-8 border-l">
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={4}
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={index} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+          {/* On Hold Card */}
+          <div className="bg-red-50 rounded-lg p-3 border-2 border-red-300 text-center">
+            <div className="text-sm font-semibold text-red-700 mb-1">On Hold</div>
+            <div className="flex items-baseline justify-center">
+              <span className="text-3xl font-bold text-gray-900">{totals.onHold}</span>
+            </div>
           </div>
+
+          {/* In Progress Card */}
+          <div className="bg-amber-50 rounded-lg p-3 border-2 border-amber-300 text-center">
+            <div className="text-sm font-semibold text-amber-700 mb-1">In Progress</div>
+            <div className="flex items-baseline justify-center">
+              <span className="text-3xl font-bold text-gray-900">{totals.inProgress}</span>
+            </div>
+          </div>
+
+          {/* Done Card */}
+          <div className="bg-green-50 rounded-lg p-3 border-2 border-green-300 text-center">
+            <div className="text-sm font-semibold text-green-700 mb-1">Done</div>
+            <div className="flex items-baseline justify-center">
+              <span className="text-3xl font-bold text-gray-900">{totals.done}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Pie Chart - Full Width */}
+        <div className="w-full">
+          <ResponsiveContainer width="100%" height={280}>
+            <PieChart>
+              <Pie
+                data={pieData}
+                dataKey="value"
+                nameKey="name"
+                innerRadius={60}
+                outerRadius={100}
+                paddingAngle={4}
+              >
+                {pieData.map((entry, index) => (
+                  <Cell key={index} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "white",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "8px",
+                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                }}
+              />
+              <Legend wrapperStyle={{ paddingTop: "16px" }} iconType="circle" />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
       </div>
 

@@ -207,78 +207,75 @@ export function WorkOrdersByTypeDetail({ filters, dateRange }: Props) {
   return (
     <div className="space-y-6">
       {/* Chart Section */}
-      <div className="bg-white border rounded-lg p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold">Work Orders by Type</h3>
+      <div className="bg-white border rounded-xl p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-8">
+          <h3 className="text-xl font-bold text-gray-900">Work Orders by Type</h3>
           <Button
             variant="outline"
             size="sm"
-            className="border-2 border-gray-300"
+            className="border-2 border-gray-300 hover:bg-gray-50"
           >
             <span className="text-xl">+</span>
           </Button>
         </div>
 
-        {/* Horizontal Layout: Stats Left, Chart Right */}
-        <div className="flex items-center gap-8">
-          {/* Left Side: Stats */}
-          <div className="flex flex-col gap-8">
-            <div className="flex items-center gap-4">
-              <span className="text-6xl font-bold min-w-[80px] text-right">
-                {totals.preventive}
-              </span>
-              <div className="px-6 py-2 border-2 border-teal-400 rounded-md bg-teal-50 text-teal-600 font-semibold text-sm whitespace-nowrap">
-                Preventive
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <span className="text-6xl font-bold min-w-[80px] text-right">
-                {totals.reactive}
-              </span>
-              <div className="px-6 py-2 border-2 border-blue-400 rounded-md bg-blue-50 text-blue-600 font-semibold text-sm whitespace-nowrap">
-                Reactive
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <span className="text-6xl font-bold min-w-[80px] text-right">
-                {totals.other}
-              </span>
-              <div className="px-6 py-2 border-2 border-gray-400 rounded-md bg-gray-50 text-gray-600 font-semibold text-sm whitespace-nowrap">
-                Other
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <span className="text-6xl font-bold min-w-[80px] text-right">
-                {totals.preventiveRatio}
-                <span className="text-3xl">%</span>
-              </span>
-              <div className="text-sm text-gray-600">Preventive Ratio</div>
+        {/* Stats Row - Horizontal Cards */}
+        <div className="grid grid-cols-4 gap-4 mb-8">
+          {/* Preventive Card */}
+          <div className="bg-teal-50 rounded-lg p-3 border-2 border-teal-300 text-center">
+            <div className="text-sm font-semibold text-teal-700 mb-1">Preventive</div>
+            <div className="flex items-baseline justify-center">
+              <span className="text-3xl font-bold text-gray-900">{totals.preventive}</span>
             </div>
           </div>
 
-          {/* Right Side: Chart */}
-          <div className="flex-1 pl-8 border-l">
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={chartDataForChart}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="name"
-                  angle={-45}
-                  textAnchor="end"
-                  height={100}
-                />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="preventive" fill="#14b8a6" name="Preventive" />
-                <Bar dataKey="reactive" fill="#3b82f6" name="Reactive" />
-                <Bar dataKey="other" fill="#9ca3af" name="Other" />
-              </BarChart>
-            </ResponsiveContainer>
+          {/* Reactive Card */}
+          <div className="bg-blue-50 rounded-lg p-3 border-2 border-blue-300 text-center">
+            <div className="text-sm font-semibold text-blue-700 mb-1">Reactive</div>
+            <div className="flex items-baseline justify-center">
+              <span className="text-3xl font-bold text-gray-900">{totals.reactive}</span>
+            </div>
           </div>
+
+          {/* Other Card */}
+          <div className="bg-gray-50 rounded-lg p-3 border-2 border-gray-300 text-center">
+            <div className="text-sm font-semibold text-gray-600 mb-1">Other</div>
+            <div className="flex items-baseline justify-center">
+              <span className="text-3xl font-bold text-gray-900">{totals.other}</span>
+            </div>
+          </div>
+
+          {/* Preventive Ratio Card */}
+          <div className="bg-emerald-50 rounded-lg p-3 border-2 border-emerald-300 text-center">
+            <div className="text-sm font-semibold text-emerald-700 mb-1">Preventive Ratio</div>
+            <div className="flex items-baseline justify-center">
+              <span className="text-3xl font-bold text-gray-900">{totals.preventiveRatio}</span>
+              <span className="text-base font-medium text-gray-400 ml-1">%</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Chart - Full Width */}
+        <div className="w-full">
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={chartDataForChart}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "white",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "8px",
+                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                }}
+              />
+              <Legend wrapperStyle={{ paddingTop: "16px" }} iconType="circle" />
+              <Bar dataKey="preventive" fill="#14b8a6" name="Preventive" />
+              <Bar dataKey="reactive" fill="#3b82f6" name="Reactive" />
+              <Bar dataKey="other" fill="#9ca3af" name="Other" />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 

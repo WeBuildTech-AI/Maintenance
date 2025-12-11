@@ -188,101 +188,93 @@ export function TimeToCompleteDetail({ filters, dateRange }: Props) {
   return (
     <div className="space-y-6 pt-0 pb-12">
       {/* Chart Section */}
-      <div className="bg-white border rounded-lg p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold">Time to Complete</h3>
+      <div className="bg-white border rounded-xl p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-8">
+          <h3 className="text-xl font-bold text-gray-900">Time to Complete</h3>
           <Button
             variant="outline"
             size="sm"
-            className="border-2 border-gray-300"
+            className="border-2 border-gray-300 hover:bg-gray-50"
           >
             <span className="text-xl">+</span>
           </Button>
         </div>
 
-        {/* Horizontal Layout: Stats on Left, Chart on Right */}
-        <div className="flex items-center gap-8">
-          {/* Left Side: Stats */}
-          <div className="flex flex-col gap-6 min-w-[280px]">
-            {/* Total Hours Stat */}
-            <div className="flex items-center gap-4">
-              <span className="text-5xl font-bold min-w-[100px] text-right">
-                {stats.totalHours}
-                <span className="text-3xl">h</span>
-              </span>
-              <div className="px-6 py-2 border-2 border-gray-300 rounded-md bg-gray-50 text-gray-700 font-semibold text-sm whitespace-nowrap">
-                Total Hours
-              </div>
-            </div>
-
-            {/* AVG Hours Stat */}
-            <div className="flex items-center gap-4">
-              <span className="text-5xl font-bold min-w-[100px] text-right">
-                {stats.avgHours}
-                <span className="text-3xl">h</span>
-              </span>
-              <div className="px-6 py-2 border-2 border-teal-400 rounded-md bg-teal-50 text-black font-semibold text-sm whitespace-nowrap">
-                AVG Hours
-              </div>
-            </div>
-
-            {/* MTTR AVG Hours Stat */}
-            <div className="flex items-center gap-4">
-              <span className="text-5xl font-bold min-w-[100px] text-right">
-                {stats.mttrAvgHours}
-                <span className="text-3xl">h</span>
-              </span>
-              <div className="flex flex-col gap-1">
-                <div className="px-6 py-2 border-2 border-blue-400 rounded-md bg-blue-50 text-blue-600 font-semibold text-sm whitespace-nowrap">
-                  MTTR AVG Hours
-                </div>
-                <div className="text-xs text-gray-500 text-center">
-                  Only on Non-Repeating Work Orders
-                </div>
-              </div>
+        {/* Stats Row - Horizontal Cards */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          {/* Total Hours Card */}
+          <div className="bg-gray-50 rounded-lg p-3 border-2 border-gray-200 text-center">
+            <div className="text-sm font-semibold text-gray-600 mb-1">Total Hours</div>
+            <div className="flex items-baseline justify-center">
+              <span className="text-3xl font-bold text-gray-900">{stats.totalHours}</span>
+              <span className="text-base font-medium text-gray-400 ml-1">h</span>
             </div>
           </div>
 
-          {/* Right Side: Chart */}
-          <div className="flex-1">
-            <ResponsiveContainer width="100%" height={240}>
-              <LineChart
-                data={chartDataForChart}
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis
-                  dataKey="date"
-                  stroke="#6b7280"
-                  fontSize={12}
-                  tickLine={false}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                />
-                <YAxis stroke="#6b7280" fontSize={12} tickLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "white",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "6px",
-                  }}
-                />
-                <Legend
-                  wrapperStyle={{ paddingTop: "20px" }}
-                  iconType="circle"
-                />
-                <Line
-                  type="monotone"
-                  dataKey="mttrAvgHours"
-                  stroke="#3b82f6"
-                  strokeWidth={3}
-                  dot={{ fill: "#3b82f6", r: 6, strokeWidth: 0 }}
-                  name="MTTR AVG Hours"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+          {/* AVG Hours Card */}
+          <div className="bg-amber-50 rounded-lg p-3 border-2 border-amber-300 text-center">
+            <div className="text-sm font-semibold text-amber-700 mb-1">AVG Hours</div>
+            <div className="flex items-baseline justify-center">
+              <span className="text-3xl font-bold text-gray-900">{stats.avgHours}</span>
+              <span className="text-base font-medium text-gray-400 ml-1">h</span>
+            </div>
           </div>
+
+          {/* MTTR AVG Hours Card */}
+          <div className="bg-blue-50 rounded-lg p-3 border-2 border-blue-300 text-center">
+            <div className="text-sm font-semibold text-blue-700 mb-1">MTTR AVG Hours</div>
+            <div className="flex items-baseline justify-center">
+              <span className="text-3xl font-bold text-gray-900">{stats.mttrAvgHours}</span>
+              <span className="text-base font-medium text-gray-400 ml-1">h</span>
+            </div>
+            <div className="text-xs text-gray-500 mt-1">Only on Non-Repeating Work Orders</div>
+          </div>
+        </div>
+
+        {/* Chart - Full Width */}
+        <div className="w-full">
+          <ResponsiveContainer width="100%" height={280}>
+            <LineChart
+              data={chartDataForChart}
+              margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis
+                dataKey="date"
+                stroke="#9ca3af"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis 
+                stroke="#9ca3af" 
+                fontSize={12} 
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "white",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "8px",
+                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                }}
+              />
+              <Legend
+                wrapperStyle={{ paddingTop: "16px" }}
+                iconType="circle"
+              />
+              <Line
+                type="monotone"
+                dataKey="mttrAvgHours"
+                stroke="#3b82f6"
+                strokeWidth={3}
+                dot={{ fill: "#3b82f6", r: 5, strokeWidth: 0 }}
+                activeDot={{ r: 7, fill: "#2563eb" }}
+                name="MTTR AVG Hours"
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
