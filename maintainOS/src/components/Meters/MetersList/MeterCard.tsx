@@ -125,7 +125,7 @@ export function MeterCard({
           </div>
 
           {/* Row 2: Location / Asset Info */}
-          <div className="mt-1 space-y-0.5">
+          <div className="mt-1 flex justify-between item-center  space-y-0.5">
             {meter.asset && (
               <div className="flex items-center gap-1.5 text-sm text-gray-500 truncate">
                 <Building2 size={12} className="text-gray-400" />

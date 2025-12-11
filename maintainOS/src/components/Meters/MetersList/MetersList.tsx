@@ -14,7 +14,7 @@ export function MetersList({
   getAssetData,
   getLocationData,
   handleShowNewMeterForm,
-  setShowReadingMeter
+  setShowReadingMeter,
 }: any) {
   // --- STATE MANAGEMENT FOR SORTING & DROPDOWN ---
   const [sortType, setSortType] = useState("Last Updated");
@@ -22,7 +22,7 @@ export function MetersList({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>("Name");
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
- 
+
   // --- REFS FOR DOM ELEMENTS ---
   const headerRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -101,7 +101,7 @@ export function MetersList({
   }, [sortType, sortOrder]);
 
   return (
-    <div className="w-96 border ml-3 mr-2 border-border bg-card flex flex-col">
+    <div className="w-96 border ml-3 mr-2 border-border mb-2 bg-card flex flex-col">
       {/* --- Header with Sort Button --- */}
       <div ref={headerRef} className="p-3 border-b border-border flex-shrink-0">
         <div className="flex items-center gap-2">
@@ -217,7 +217,6 @@ export function MetersList({
           <Loader />
         ) : (
           <div>
-            {/* 👇 Use the sortedMeters array here */}
             {sortedMeters?.map((meter: any) => (
               <MeterCard
                 key={meter.id}
@@ -228,7 +227,6 @@ export function MetersList({
                 getLocationData={getLocationData}
                 handleShowNewMeterForm={handleShowNewMeterForm}
                 setShowReadingMeter={setShowReadingMeter}
-
               />
             ))}
 
@@ -252,7 +250,6 @@ export function MetersList({
           </div>
         )}
       </div>
-      
     </div>
   );
 }

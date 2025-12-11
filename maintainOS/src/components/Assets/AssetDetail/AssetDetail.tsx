@@ -47,7 +47,7 @@ export const AssetDetail: FC<AssetDetailProps> = ({
       .toUpperCase();
 
   return (
-    <div className="h-full border mr-3 flex flex-col min-h-0">
+    <div className="h-full border mr-3 mb-2 flex flex-col min-h-0">
       <AssetDetailHeader
         asset={asset}
         setShowHistory={setShowHistory}

@@ -17,7 +17,7 @@ export function AssetCard({
     <div
       onClick={onSelect}
       // ✅ Exact styling from Inventory PartCard (Yellow theme for selection)
-      className={`cursor-pointer border rounded-lg p-4 mb-3 transition-all duration-200 hover:shadow-md ${
+      className={`cursor-pointer border  rounded-lg p-4 mb-3 transition-all duration-200 hover:shadow-md ${
         selected
           ? "border-yellow-400 bg-yellow-50 ring-1 ring-yellow-400"
           : "border-gray-200 bg-white hover:border-yellow-200"
