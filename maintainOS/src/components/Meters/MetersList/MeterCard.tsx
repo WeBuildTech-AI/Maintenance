@@ -1,38 +1,31 @@
-import { AlertTriangle, Building2 } from "lucide-react";
-import { Badge } from "../../ui/badge";
-import { Card, CardContent } from "../../ui/card";
-import { Avatar, AvatarFallback } from "../../ui/avatar";
-import { useNavigate } from "react-router-dom";
+import {
+  AlertTriangle,
+  Building2,
+  CalendarClock,
+  Gauge,
+  MapPin,
+} from "lucide-react";
 import { format } from "date-fns";
+import { renderInitials } from "../../utils/renderInitials";
 
 export function MeterCard({
   meter,
   selectedMeter,
   setSelectedMeter,
-  handleCancelForm,
   setShowReadingMeter,
 }: any) {
-  const navigate = useNavigate();
-
-  const renderInitials = (text: string) =>
-    text
-      ?.split(" ")
-      .map((p) => p[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase();
-
   // ------------------------------------------------------
-  // NEXT READING LOGIC (WITH OVERDUE SUPPORT)
+  // NEXT READING LOGIC
   // ------------------------------------------------------
   const getNextReading = () => {
-    if (!meter?.readings?.length || !meter?.readingFrequency) return "N/A";
+    if (!meter?.readings?.length || !meter?.readingFrequency)
+      return { text: "N/A", isOverdue: false };
 
     const lastReadingTime = new Date(meter.readings[0].timestamp);
     const time = Number(meter.readingFrequency.time);
     const interval = meter.readingFrequency.interval?.toLowerCase();
 
-    if (isNaN(time)) return "Invalid frequency";
+    if (isNaN(time)) return { text: "Invalid frequency", isOverdue: false };
 
     const nextReading = new Date(lastReadingTime);
 
@@ -55,102 +48,114 @@ export function MeterCard({
         nextReading.setMinutes(nextReading.getMinutes() + time);
         break;
       default:
-        return "Invalid interval";
+        return { text: "Invalid interval", isOverdue: false };
     }
 
     const now = new Date();
 
-    // 1️⃣ Overdue check → full timestamp
+    // 1️⃣ Overdue check
     if (nextReading.getTime() < now.getTime()) {
-      return "Overdue";
+      return { text: "Overdue", isOverdue: true };
     }
 
-    // 2️⃣ Today check → compare dates only
+    // 2️⃣ Today check
     const todayMid = new Date();
     todayMid.setHours(0, 0, 0, 0);
-
     const nextReadingMid = new Date(nextReading);
     nextReadingMid.setHours(0, 0, 0, 0);
-
     const isToday = nextReadingMid.getTime() === todayMid.getTime();
 
-    // 3️⃣ Return formatted date
-    return isToday
-      ? `Today at ${format(nextReading, "HH:mm")}`
-      : format(nextReading, "dd/MM/yyyy, HH:mm");
+    return {
+      text: isToday
+        ? `Today, ${format(nextReading, "HH:mm")}`
+        : format(nextReading, "MMM dd, HH:mm"),
+      isOverdue: false,
+    };
   };
 
-  const nextReadingStatus = getNextReading();
+  const { text: readingText, isOverdue } = getNextReading();
+  const isSelected = selectedMeter?.id === meter.id;
 
   return (
-    <Card
-      key={meter.id}
-      className={`cursor-pointer transition-colors ${
-        selectedMeter?.id === meter.id
-          ? "border-0 bg-primary/5"
-          : "hover:bg-muted/50"
-      }`}
+    <div
       onClick={() => {
         setSelectedMeter(meter);
-        // navigate(`/meters/${meter.id}`);
         setShowReadingMeter(false);
       }}
+      // ✅ Consistent Yellow Theme Styling
+      className={`cursor-pointer border rounded-lg p-3 mb-3 transition-all duration-200 hover:shadow-md ${
+        isSelected
+          ? "border-yellow-400 bg-yellow-50 ring-1 ring-yellow-400"
+          : "border-gray-200 bg-white hover:border-yellow-200"
+      }`}
     >
-      <CardContent className="p-4">
-        {/* HEADER */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10">
-              <AvatarFallback>{renderInitials(meter.name)}</AvatarFallback>
-            </Avatar>
-            <h4 className="font-medium text-gray-900">{meter.name}</h4>
-          </div>
-
-          {/* OVERDUE BADGE */}
-          {nextReadingStatus === "Overdue" && (
-            <Badge variant="destructive" className="flex items-center gap-1">
-              <AlertTriangle className="h-4 w-4" />
-              Overdue
-            </Badge>
+      <div className="flex items-start gap-4">
+        {/* ✅ Icon Wrapper: Circular with Gauge Icon */}
+        <div
+          className={`h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-full border ${
+            isSelected
+              ? "bg-white border-yellow-200 text-yellow-600"
+              : "bg-gray-50 border-gray-100 text-gray-500"
+          }`}
+        >
+          {/* Use Initials if available, else generic Gauge icon */}
+          {renderInitials(meter.name) ? (
+            <span className="text-xs font-bold">
+              {renderInitials(meter.name)}
+            </span>
+          ) : (
+            <Gauge size={20} />
           )}
         </div>
 
-        {/* INFO SECTION */}
-        <div className="flex justify-between items-start">
-          <div className="space-y-2">
-            {meter.assetId && (
-              <div className="flex items-center gap-2 text-sm">
-                <div className="w-5 h-5 bg-orange-100 rounded flex items-center justify-center">
-                  <Building2 className="h-3 w-3 text-orange-600" />
-                </div>
-                <span className="capitalize">{meter.asset?.name}</span>
-              </div>
-            )}
+        {/* ✅ Content Column */}
+        <div className="flex-1 min-w-0">
+          {/* Row 1: Title + Overdue Badge */}
+          <div className="flex justify-between items-start gap-2">
+            <h3 className="text-md font-semibold text-gray-900 truncate leading-tight capitalize">
+              {meter.name}
+            </h3>
 
-            {meter.locationId && (
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <div className="w-5 h-5 bg-gray-200 rounded flex items-center justify-center">
-                  <span className="text-xs">📍</span>
-                </div>
-                <span className="capitalize">{meter.location?.name}</span>
-              </div>
-            )}
-          </div>
-
-          {/* NEXT READING SECTION */}
-          <div className="text-sm text-gray-700">
-            Next Reading:{" "}
-            {nextReadingStatus === "Overdue" ? (
-              <span className="text-red-600 font-semibold flex items-center gap-1">
-                <AlertTriangle className="h-4 w-4" />
+            {isOverdue && (
+              <span className="flex-shrink-0 inline-flex items-center text-xs gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-red-50 text-red-700 border border-red-200 uppercase">
+                <AlertTriangle size={10} />
                 Overdue
               </span>
-            ) : (
-              nextReadingStatus
             )}
           </div>
+
+          {/* Row 2: Location / Asset Info */}
+          <div className="mt-1 space-y-0.5">
+            {meter.asset && (
+              <div className="flex items-center gap-1.5 text-sm text-gray-500 truncate">
+                <Building2 size={12} className="text-gray-400" />
+                <span>{meter.asset.name}</span>
+              </div>
+            )}
+            {meter.location && (
+              <div className="flex items-center gap-1.5 text-sm mt-1 text-xs text-gray-500 truncate">
+                <MapPin size={12} className="text-gray-400" />
+                <span>{meter.location.name}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Row 3: Next Reading Footer */}
+          <div
+            className={`mt-2 pt-4 border-t border-dashed flex items-center gap-2 text-xs font-medium ${
+              isSelected ? "border-yellow-200" : "border-gray-100"
+            }`}
+          >
+            <CalendarClock
+              size={13}
+              className={isOverdue ? "text-red-500" : "text-gray-400"}
+            />
+            <span className={isOverdue ? "text-red-600" : "text-gray-600"}>
+              Next: {readingText}
+            </span>
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

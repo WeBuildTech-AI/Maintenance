@@ -1,4 +1,7 @@
-import { Check, ChevronDown, ChevronUp } from "lucide-react";
+// Inventory.tsx
+"use client";
+
+import { Check, ChevronDown, ChevronUp, PanelTop, Table as TableIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Route,
@@ -17,11 +20,14 @@ import { PartTable } from "./PartTable";
 
 /* ✅ Import partService */
 import { partService } from "../../store/parts/parts.service";
-import { FetchPartsParams } from "../../store/parts/parts.types"; // ✅ Import Params
+import { FetchPartsParams } from "../../store/parts/parts.types"; 
 
 export function Inventory() {
   const [parts, setParts] = useState<any[]>([]);
-  const [viewMode, setViewMode] = useState<"panel" | "table">("panel");
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const savedMode = localStorage.getItem("partViewMode");
+    return (savedMode as ViewMode) || "panel";
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -29,9 +35,9 @@ export function Inventory() {
 
   // Search State
   const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState(""); // ✅ Debounce
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  // 🟡 Sorting states
+  //  Sorting states
   const [sortType, setSortType] = useState("Name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -42,13 +48,15 @@ export function Inventory() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
 
-  // ✅ FILTER PARAMETERS STATE
+  // ✅ PAGINATION STATE
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; 
+
   const [filterParams, setFilterParams] = useState<FetchPartsParams>({
-    page: 1, 
-    limit: 50 
+    page: 1,
+    limit: 50,
   });
 
-  // ✅ DEBOUNCE EFFECT
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
@@ -56,7 +64,6 @@ export function Inventory() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // ✅ Refresh helper function (Memoized with Filters)
   const refreshParts = useCallback(async () => {
     let res: any;
     try {
@@ -64,16 +71,13 @@ export function Inventory() {
       if (showDeleted) {
         res = await partService.fetchDeletePart();
       } else {
-        // ✅ USE API PAYLOAD WITH FILTERS
-        // Note: API uses 'name' for search
         const apiPayload = {
           ...filterParams,
-          name: debouncedSearch || undefined 
+          name: debouncedSearch || undefined,
         };
-        // console.log("🔥 Parts API Call:", apiPayload);
         res = await partService.fetchParts(apiPayload);
       }
-      
+
       setParts(res || []);
     } catch (err: any) {
       console.error("Error fetching parts:", err);
@@ -84,12 +88,10 @@ export function Inventory() {
     }
   }, [showDeleted, filterParams, debouncedSearch]);
 
-  // ✅ Fetch on mount
   useEffect(() => {
     refreshParts();
   }, [refreshParts, viewMode]);
 
-  // ✅ HANDLER: Filter Change
   const handleFilterChange = useCallback((newParams: Partial<FetchPartsParams>) => {
     setFilterParams((prev) => {
       const merged = { ...prev, ...newParams };
@@ -98,7 +100,6 @@ export function Inventory() {
     });
   }, []);
 
-  // ✅ Refresh when coming back from delete/edit
   useEffect(() => {
     if (location.state?.refresh) {
       refreshParts();
@@ -106,7 +107,6 @@ export function Inventory() {
     }
   }, [location.state, location.pathname, navigate, refreshParts]);
 
-  // 🟡 Handle dropdown positioning
   useEffect(() => {
     if (headerRef.current) {
       const rect = headerRef.current.getBoundingClientRect();
@@ -117,7 +117,6 @@ export function Inventory() {
     }
   }, [isDropdownOpen]);
 
-  // 🟡 Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -134,7 +133,6 @@ export function Inventory() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 🟡 Sort parts (Client side sort of server returned data)
   const sortedParts = useMemo(() => {
     const sorted = [...parts].sort((a, b) => {
       let valA: any = a.name;
@@ -161,18 +159,37 @@ export function Inventory() {
     return sorted;
   }, [parts, sortType, sortOrder]);
 
+  // ✅ CLIENT-SIDE PAGINATION LOGIC
+  const totalItems = sortedParts.length;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+  const currentItems = sortedParts.slice(startIndex, endIndex);
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) setCurrentPage((p) => p - 1);
+  };
+  const handleNextPage = () => {
+    if (endIndex < totalItems) setCurrentPage((p) => p + 1);
+  };
+
+  // Reset page on sort change
+  useEffect(() => setCurrentPage(1), [sortType, sortOrder, searchQuery]);
+
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-background">
       {InventoryHeaderComponent(
         viewMode,
         setViewMode,
         searchQuery,
         setSearchQuery,
-        () => {}, // setIsCreatingForm prop used in sub-routes mostly, or handle here if needed
-        () => navigate("/inventory/create"), // action for new button
+        // ✅ FIX: Pass navigation to the 5th arg (setIsCreatingForm) 
+        // because InventoryHeader calls setIsCreatingForm(true) on click.
+        () => navigate("/inventory/create"), 
+        // 6th arg: setShowSettings (dummy/placeholder as it's not state-managed here yet)
+        () => {}, 
         setIsSettingsModalOpen,
         setShowDeleted,
-        handleFilterChange // ✅ Pass Filter Handler
+        handleFilterChange 
       )}
 
       {/* 🟩 TABLE VIEW */}
@@ -188,7 +205,7 @@ export function Inventory() {
           {!loading && !error && parts.length > 0 && (
             <PartTable
               inventory={sortedParts}
-              setSelectedId={(id) => navigate(`/inventory/${id}`)}
+              // setSelectedId={(id) => navigate(`/inventory/${id}`)}
               fetchPartsData={refreshParts}
               isSettingsModalOpen={isSettingsModalOpen}
               setIsSettingsModalOpen={setIsSettingsModalOpen}
@@ -198,26 +215,27 @@ export function Inventory() {
           )}
         </div>
       ) : (
-        // 🟦 PANEL VIEW
-        <div className="flex flex-1 min-h-0">
+        // 🟦 PANEL VIEW (Mimicking ToDoView structure)
+        <div className="flex flex-1 min-h-0 h-full">
           {/* LEFT LIST */}
-          <div className="w-96 border bg-card flex flex-col min-h-0 max-h-full relative">
-            {/* Sort Header */}
+          <div className="w-96 mr-2 ml-3 mb-2 border border-border flex flex-col min-h-0">
+            
+            {/* Header / Sort Bar (Like ToDoTabs) */}
             <div
               ref={headerRef}
-              className="p-4 border-b bg-white sticky top-0 z-40 flex items-center justify-between"
+              className="px-4 py-3 border-b bg-white z-40 flex items-center justify-between shadow-sm"
             >
-              <div className="flex items-center gap-2 text-sm text-gray-700 font-medium">
-                <span>Sort By:</span>
+              <div className="flex items-center gap-1 text-sm text-gray-700">
+                <span className="font-medium text-gray-500">Sort By:</span>
                 <button
                   onClick={() => setIsDropdownOpen((p) => !p)}
-                  className="flex items-center gap-1 text-sm text-yellow-600 font-semibold focus:outline-none"
+                  className="flex items-center gap-1 text-blue-600 font-medium focus:outline-none hover:text-blue-700"
                 >
-                  {sortType}: {sortOrder === "asc" ? "Ascending" : "Descending"}
+                  {sortType} : {sortOrder === "asc" ? "Ascending" : "Descending"}
                   {isDropdownOpen ? (
-                    <ChevronUp className="w-4 h-4 text-yellow-600" />
+                    <ChevronUp className="w-4 h-4" />
                   ) : (
-                    <ChevronDown className="w-4 h-4 text-yellow-600" />
+                    <ChevronDown className="w-4 h-4" />
                   )}
                 </button>
               </div>
@@ -227,139 +245,103 @@ export function Inventory() {
             {isDropdownOpen && (
               <div
                 ref={modalRef}
-                className="fixed z-[9999] text-sm rounded-md border border-gray-200 bg-white shadow-lg animate-fade-in p-2"
+                className="fixed z-[9999] text-sm rounded-lg border border-gray-200 bg-white shadow-xl animate-in fade-in zoom-in-95 duration-100 p-1"
                 style={{
                   top: dropdownPos.top,
                   left: dropdownPos.left,
                   transform: "translateX(-50%)",
-                  width: "300px",
-                  maxWidth: "90vw",
+                  width: "240px",
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="flex flex-col divide-y divide-gray-100">
+                 <div className="py-1">
                   {[
-                    {
-                      label: "Creation Date",
-                      options: ["Oldest First", "Newest First"],
-                    },
-                    {
-                      label: "Last Updated",
-                      options: ["Least Recent First", "Most Recent First"],
-                    },
-                    {
-                      label: "Name",
-                      options: ["Ascending Order", "Descending Order"],
-                    },
-                    {
-                      label: "Units in Stock",
-                      options: ["Lowest First", "Highest First"],
-                    },
+                    { label: "Creation Date", options: ["Oldest First", "Newest First"] },
+                    { label: "Last Updated", options: ["Least Recent First", "Most Recent First"] },
+                    { label: "Name", options: ["Ascending Order", "Descending Order"] },
+                    { label: "Units in Stock", options: ["Lowest First", "Highest First"] },
                   ].map((section) => (
-                    <div
-                      key={section.label}
-                      className="flex flex-col mt-1 mb-1"
-                    >
-                      <button
-                        onClick={() =>
-                          setOpenSection(
-                            openSection === section.label ? null : section.label
-                          )
-                        }
-                        className={`flex items-center justify-between w-full px-4 py-3 text-sm transition-all rounded-md ${
-                          sortType === section.label
-                            ? "text-yellow-600 font-medium bg-gray-50"
-                            : "text-gray-800 hover:bg-gray-50"
-                        }`}
-                      >
-                        <span>{section.label}</span>
-                        {openSection === section.label ? (
-                          <ChevronUp className="w-3.5 h-3.5 text-gray-400" />
-                        ) : (
-                          <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
-                        )}
-                      </button>
-
-                      {openSection === section.label && (
-                        <div className="flex flex-col bg-gray-50 border-t border-gray-100 py-1">
-                          {section.options.map((opt) => {
-                            const isSelected =
-                              (section.label === sortType &&
-                                sortOrder === "asc" &&
-                                (opt.includes("Asc") ||
-                                  opt.includes("Oldest") ||
-                                  opt.includes("Least") ||
-                                  opt.includes("Lowest"))) ||
-                              (section.label === sortType &&
-                                sortOrder === "desc" &&
-                                (opt.includes("Desc") ||
-                                  opt.includes("Newest") ||
-                                  opt.includes("Most") ||
-                                  opt.includes("Highest")));
-
-                            return (
-                              <button
-                                key={opt}
-                                onClick={() => {
-                                  setSortType(section.label);
-                                  setSortOrder(
-                                    opt.includes("Asc") ||
-                                      opt.includes("Oldest") ||
-                                      opt.includes("Least") ||
-                                      opt.includes("Lowest")
-                                      ? "asc"
-                                      : "desc"
-                                  );
-                                }}
-                                className={`flex items-center justify-between px-6 py-2 text-left text-sm transition rounded-md ${
-                                  isSelected
-                                    ? "text-yellow-600 bg-white"
-                                    : "text-gray-700 hover:text-yellow-500 hover:bg-white"
-                                }`}
-                              >
-                                {opt}
-                                {isSelected && (
-                                  <Check className="w-3.5 h-3.5 text-yellow-500" />
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
+                    <div key={section.label}>
+                       <button
+                         onClick={() => setOpenSection(openSection === section.label ? null : section.label)}
+                         className="flex items-center justify-between w-full px-4 py-2 text-left hover:bg-gray-100 rounded-md"
+                       >
+                          <span>{section.label}</span>
+                          {openSection === section.label ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                       </button>
+                       {openSection === section.label && (
+                         <div className="pl-4 pr-2 bg-gray-50 py-1 space-y-1">
+                            {section.options.map(opt => (
+                               <button 
+                                  key={opt}
+                                  onClick={() => {
+                                      setSortType(section.label);
+                                      setSortOrder(opt.includes("Asc") || opt.includes("Oldest") || opt.includes("Least") || opt.includes("Lowest") ? "asc" : "desc");
+                                      setIsDropdownOpen(false);
+                                  }}
+                                  className="w-full text-left text-xs px-2 py-1.5 hover:bg-white rounded text-gray-600"
+                               >
+                                  {opt}
+                               </button>
+                            ))}
+                         </div>
+                       )}
                     </div>
                   ))}
-                </div>
+                 </div>
               </div>
             )}
 
             {/* Parts List */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-auto bg-white p-4 space-y-2">
               {loading && (
-                <p className="text-center text-sm text-gray-500 mt-4">
-                  Loading parts...
-                </p>
+                <div className="flex items-center justify-center h-full">
+                   <p className="text-sm text-gray-500">Loading parts...</p>
+                </div>
               )}
-              {error && (
-                <p className="text-center text-red-500 mt-4">{error}</p>
+              {!loading && parts.length === 0 && (
+                <EmptyState variant="list" onCreate={() => navigate("/inventory/create")} />
               )}
-              {!loading && !error && parts.length === 0 && (
-                <EmptyState variant="panel" />
-              )}
-              {!loading &&
-                !error &&
-                sortedParts.map((it) => (
+              {!loading && currentItems.map((it) => (
                   <PartCard
                     key={it.id}
                     item={it}
-                    selected={false}
+                    selected={location.pathname.includes(it.id)}
                     onSelect={() => navigate(`/inventory/${it.id}`)}
                   />
-                ))}
+              ))}
             </div>
+
+            {/* ✅ PAGINATION BUBBLE (Exactly like ListView) */}
+            {totalItems > 0 && (
+              <div className="flex items-center justify-end p-3 border-t border-gray-200 bg-white">
+                <div className="inline-flex items-center gap-3 border border-yellow-400 rounded-full px-3 py-1 shadow-sm bg-white">
+                  <span className="text-xs font-medium text-gray-700">
+                    {startIndex + 1} – {endIndex} of {totalItems}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button 
+                      onClick={handlePrevPage} 
+                      disabled={currentPage === 1}
+                      className="text-gray-400 hover:text-gray-800 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    </button>
+                    <button 
+                      onClick={handleNextPage} 
+                      disabled={endIndex >= totalItems}
+                      className="text-gray-400 hover:text-gray-800 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* RIGHT PANEL */}
-          <div className="flex-1 border bg-card ml-1 mr-2 flex flex-col min-h-0 overflow-hidden">
+          <div className="flex-1 bg-card mr-3 ml-1 mb-2 border border-border min-h-0 flex flex-col">
             <Routes>
               <Route path="/" element={<EmptyState variant="panel" />} />
               <Route
@@ -374,6 +356,7 @@ export function Inventory() {
                     onPartDeleted={(deletedId) =>
                       setParts((prev) => prev.filter((p) => p.id !== deletedId))
                     }
+                    refreshParts={refreshParts}
                   />
                 }
               />
@@ -437,7 +420,6 @@ function CreatePartRoute({ onSuccess }: { onSuccess: () => void }) {
       }
       onCancel={() => navigate("/inventory")}
       onCreate={() => {
-        console.log("✅ Part created:", newItem);
         onSuccess();
         navigate("/inventory", { state: { refresh: true } });
       }}
@@ -449,24 +431,30 @@ function CreatePartRoute({ onSuccess }: { onSuccess: () => void }) {
 function PartDetailRoute({
   parts,
   onPartDeleted,
+  refreshParts
 }: {
   parts: any[];
   onPartDeleted: (id: string) => void;
+  refreshParts: () => void;
 }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const part = parts.find((p) => String(p.id) === String(id));
+  
   if (!part) return <EmptyState variant="panel" />;
 
-  const delta = part.unitsInStock - part.minInStock;
+  const delta = (part.unitsInStock || 0) - (part.minInStock || 0);
   const stockStatus = { ok: delta >= 0, delta };
 
   return (
     <PartDetails
       item={part}
       stockStatus={stockStatus}
+      onClose={() => navigate("/inventory")}
       onEdit={() => navigate(`/inventory/${id}/edit`)}
       onDeleteSuccess={onPartDeleted}
+      fetchPartData={refreshParts}
+      restoreData=""
     />
   );
 }
@@ -524,7 +512,6 @@ function EditPartRoute({ onSuccess }: { onSuccess: () => void }) {
       }
       onCancel={() => navigate(`/inventory/${id}`)}
       onCreate={() => {
-        console.log("✅ Edited part saved:", editItem);
         onSuccess();
         navigate(`/inventory/${id}`, { state: { refresh: true } });
       }}
@@ -541,18 +528,12 @@ function RestockRoute({ parts }: { parts: any[] }) {
 
   if (!part) return <EmptyState variant="panel" />;
 
-  console.log("🧩 RestockRoute received part:", part);
-  console.log("📍 Location data:", part.locations);
-
   return (
     <RestockModal
       isOpen={true}
       part={part}
       onClose={() => navigate(`/inventory/${id}`)}
       onConfirm={(data) => {
-        console.log("✅ Restock confirmed for:", part.name);
-        console.log("📦 Location sent:", part.location || part.locations);
-        console.log("📥 Restock input:", data);
         navigate(`/inventory/${id}`, { state: { refresh: true } });
       }}
     />

@@ -14,7 +14,14 @@ import {
   useParams,
 } from "react-router-dom";
 
-import { Link as LinkIcon, Building2, Mail, Phone } from "lucide-react";
+import {
+  Link as LinkIcon,
+  Building2,
+  Mail,
+  Phone,
+  FileText,
+  AlertCircle,
+} from "lucide-react";
 
 import {
   mockVendors,
@@ -132,7 +139,11 @@ export function PurchaseOrders() {
   });
 
   useEffect(() => {
-    localStorage.setItem("purchaseOrderViewMode", viewMode);
+    if (viewMode === "table") {
+      localStorage.setItem("purchaseOrderViewMode", "table");
+    } else {
+      localStorage.removeItem("purchaseOrderViewMode");
+    }
   }, [viewMode]);
 
   const scrollToTop = () => {
@@ -266,7 +277,7 @@ export function PurchaseOrders() {
         setSelectedPOId(null);
       }
     }
-  }, [routeId, getPurchaseOrderData, viewMode, editMatch, newPO.id]);
+  }, [routeId, getPurchaseOrderData, editMatch, newPO.id]);
 
   // ✅ HANDLER: Filter Change
   const handleFilterChange = useCallback(
@@ -810,107 +821,142 @@ export function PurchaseOrders() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto min-h-0 ">
+            <div className="flex-1 overflow-y-auto min-h-0 bg-white p-3 space-y-2">
               {isLoading && filteredPOs.length === 0 ? (
                 <Loader />
               ) : (
                 <>
                   {filteredPOs?.map((po) => {
+                    const isSelected = selectedPOId === po.id;
+                    const vendorName = po.vendor?.name || "Unknown Vendor";
+                    const initials = vendorName
+                      .split(" ")
+                      .map((n: string) => n[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase();
+                    const totalCost = totals[po.id] ?? 0;
+
+                    // Overdue Logic
+                    let isOverdue = false;
+                    if (
+                      po.dueDate &&
+                      po.status !== "completed" &&
+                      po.status !== "Completed"
+                    ) {
+                      const today = new Date();
+                      const due = new Date(po.dueDate);
+                      today.setHours(0, 0, 0, 0);
+                      due.setHours(0, 0, 0, 0);
+                      isOverdue = due < today;
+                    }
+
+                    // Status Color Logic
+                    let statusColor =
+                      "bg-gray-50 text-gray-700 border-gray-200";
+                    const s = po.status?.toLowerCase();
+                    if (s === "approved")
+                      statusColor =
+                        "bg-green-50 text-green-700 border-green-200";
+                    else if (s === "rejected")
+                      statusColor = "bg-red-50 text-red-700 border-red-200";
+                    else if (s === "completed")
+                      statusColor = "bg-blue-50 text-blue-700 border-blue-200";
+                    else
+                      statusColor =
+                        "bg-yellow-50 text-yellow-700 border-yellow-200"; // Pending
+
                     return (
-                      <Card
+                      <div
                         key={po.id}
-                        className={`cursor-pointer transition-colors rounded-none border-x-0 border-t-0 ${
-                          selectedPOId === po.id
-                            ? "border-l-4 border-l-orange-600 bg-orange-50/50 bg-muted/50"
-                            : "hover:bg-muted/50  border-l-4 border-l-transparent"
-                        }`}
-                        // 👇 Navigate to PO ID
                         onClick={() => navigate(`/purchase-orders/${po.id}`)}
+                        // ✅ INLINE Yellow Theme Styling
+                        className={`cursor-pointer border rounded-lg p-4 mb-3 transition-all duration-200 hover:shadow-md ${
+                          isSelected
+                            ? "border-yellow-400 bg-yellow-50 ring-1 ring-yellow-400"
+                            : "border-gray-200 bg-white hover:border-yellow-200"
+                        }`}
                       >
-                        <CardContent className="p-4">
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-4">
-                              <Avatar className="h-8 w-8">
-                                <AvatarFallback>
-                                  {po.vendor?.name
-                                    ?.split(" ")
-                                    .map((n) => n[0])
-                                    .join("") || "V"}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <span className="font-medium ">
-                                  Purchase Order #{po.poNumber || "-"}
-                                </span>
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                  <Building2 className="h-3 w-3" />
-                                  <span>{po.vendor?.name || "-"}</span>
-                                </div>
-                                <div className="text-sm text-muted-foreground">
-                                  Total Cost: {formatMoney(totals[po.id] ?? 0)}
-                                </div>
-                              </div>
+                        <div className="flex items-start gap-4">
+                          {/* Icon/Avatar Wrapper */}
+                          <div
+                            className={`h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-full border overflow-hidden ${
+                              isSelected
+                                ? "bg-white border-yellow-200 text-yellow-600"
+                                : "bg-gray-50 border-gray-100 text-gray-500"
+                            }`}
+                          >
+                            <span className="text-xs font-bold">
+                              {initials}
+                            </span>
+                          </div>
+
+                          {/* Content Column */}
+                          <div className="flex-1 min-w-0">
+                            {/* Row 1: Title + Status Badge */}
+                            <div className="flex justify-between items-start gap-2">
+                              <h3 className="text-sm font-semibold text-gray-900 truncate leading-tight">
+                                PO #{po.poNumber || "---"}
+                              </h3>
+
+                              <span
+                                className={`flex-shrink-0 inline-flex items-center text-xs px-2 py-0.5 rounded text-[10px] font-medium border uppercase ${statusColor}`}
+                              >
+                                {po.status}
+                              </span>
                             </div>
-                            <div className="text-right">
-                              <div className="mt-2 capitalize">
-                                <StatusBadge status={po.status as POStatus} />
+
+                            {/* Row 2: Vendor Name */}
+                            <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-500">
+                              <Building2
+                                size={12}
+                                className="flex-shrink-0 text-gray-400"
+                              />
+                              <span className="truncate capitalize">
+                                {vendorName}
+                              </span>
+                            </div>
+
+                            {/* Row 3: Footer (Cost + Overdue) */}
+                            <div
+                              className={`mt-2 pt-2 border-t border-dashed flex items-center justify-between text-xs ${
+                                isSelected
+                                  ? "border-yellow-200"
+                                  : "border-gray-100"
+                              }`}
+                            >
+                              <div className="flex mt-1 items-center gap-1 font-medium text-gray-700">
+                                <span className="text-gray-400">$</span>
+                                {formatMoney(totalCost).replace("$", "")}{" "}
+                                {/* Assuming formatMoney returns string with $ */}
                               </div>
-                              {po.status === "completed" ? null : (
-                                <>
-                                  <div className="mt-1">
-                                    {(() => {
-                                      const today = new Date();
-                                      const dueDate = new Date(
-                                        po.dueDate || ""
-                                      );
 
-                                      // reset times for accurate comparison
-                                      today.setHours(0, 0, 0, 0);
-                                      dueDate.setHours(0, 0, 0, 0);
-
-                                      if (po.dueDate && dueDate < today) {
-                                        return (
-                                          <span className="text-red-600 font-medium text-sm mt-1">
-                                            Overdue
-                                          </span>
-                                        );
-                                      } else if (
-                                        po.dueDate &&
-                                        dueDate.getTime() === today.getTime()
-                                      ) {
-                                        return (
-                                          <span className="text-red-600 font-medium text-sm mt-1">
-                                            Overdue
-                                          </span>
-                                        );
-                                      } else {
-                                        return null;
-                                      }
-                                    })()}
-                                  </div>
-                                </>
+                              {isOverdue && (
+                                <div className="flex items-center gap-1 text-red-600 font-semibold">
+                                  <AlertCircle size={12} />
+                                  <span>Overdue</span>
+                                </div>
                               )}
                             </div>
                           </div>
-                        </CardContent>
-                      </Card>
+                        </div>
+                      </div>
                     );
                   })}
 
                   {filteredPOs.length === 0 && (
                     <div className="text-center py-8">
                       <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
-                        <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed" />
+                        <FileText className="w-8 h-8 text-muted-foreground/30" />
                       </div>
                       <p className="text-muted-foreground mb-2">
                         No purchase orders found
                       </p>
                       <Button
                         variant="link"
-                        className="text-primary p-0"
+                        className="text-orange-600 p-0 hover:text-orange-700"
                         onClick={() => {
                           resetNewPO();
-                          // 👇 Navigate to Create Route
                           navigate("/purchase-orders/create");
                         }}
                       >

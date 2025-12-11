@@ -33,7 +33,6 @@ export function NewPartForm({
 }) {
   const dispatch = useDispatch<AppDispatch>();
 
-  // ✅ Get organizationId from Redux store
   const organizationId = useSelector(
     (state: RootState) => state.auth?.user?.organizationId
   );
@@ -88,164 +87,122 @@ export function NewPartForm({
   const handleSubmitPart = async () => {
     try {
       const formData = new FormData();
-
       const isEditing = !!newItem.id;
-      const original = newItem._original || {}; // keep original fetched data for diff
+      const original = newItem._original || {}; 
 
+      // Helper to append if value exists or changed
       const appendIfChanged = (key: string, newVal: any, oldVal: any) => {
-        // Handle serialized JSON case
-        if (typeof newVal === "string") {
-          if (newVal === "[]" || newVal === "{}") return; // skip empty JSON arrays/objects
-        }
+        if (typeof newVal === "string" && (newVal === "[]" || newVal === "{}")) return;
 
-        // Ignore null / undefined / empty string / empty array / empty object
         const isEmpty =
           newVal === "" ||
           newVal === null ||
           newVal === undefined ||
           (Array.isArray(newVal) && newVal.length === 0) ||
-          (typeof newVal === "object" &&
-            !Array.isArray(newVal) &&
-            Object.keys(newVal).length === 0);
+          (typeof newVal === "object" && !Array.isArray(newVal) && Object.keys(newVal).length === 0);
 
-        const isChanged =
-          !isEditing || JSON.stringify(newVal) !== JSON.stringify(oldVal);
+        // In Create mode, send everything. In Edit mode, send only diffs.
+        // Or for arrays like locations/files, easier to just send the current state to replace.
+        const isChanged = !isEditing || JSON.stringify(newVal) !== JSON.stringify(oldVal);
 
-        if (!isEmpty && isChanged) {
+        // Usually for multipart forms we send keys if they have values or changed
+        if (!isEmpty || isChanged) {
           formData.append(key, newVal);
         }
       };
 
-      //  Basic fields
-      appendIfChanged(
-        "organizationId",
-        organizationId || "",
-        original.organizationId
-      );
+      // 1. Basic Fields
+      appendIfChanged("organizationId", organizationId || "", original.organizationId);
       appendIfChanged("name", newItem.name || "", original.name);
-      appendIfChanged(
-        "description",
-        newItem.description || "",
-        original.description
-      );
-      appendIfChanged(
-        "unitCost",
-        newItem.unitCost ? String(newItem.unitCost) : "",
-        original.unitCost ? String(original.unitCost) : ""
-      );
-      appendIfChanged(
-        "qrCode",
-        `part/${String(newItem.qrCode)}` || "",
-        `part/${String(original.qrCode)}`
-      );
+      appendIfChanged("description", newItem.description || "", original.description);
+      appendIfChanged("unitCost", newItem.unitCost ? String(newItem.unitCost) : "", original.unitCost ? String(original.unitCost) : "");
+      
+      const newQr = newItem.qrCode ? `part/${String(newItem.qrCode).replace('part/', '')}` : "";
+      if (newQr) formData.append("qrCode", newQr);
 
-      const partTypeVal = Array.isArray(newItem.partsType)
-        ? newItem.partsType
-        : [];
+      // 2. Arrays (JSON)
+      const partTypeVal = Array.isArray(newItem.partsType) ? newItem.partsType : [];
       if (partTypeVal.length > 0) {
-        appendIfChanged(
-          "partsType",
-          JSON.stringify(partTypeVal),
-          JSON.stringify(original.partsType || [])
-        );
-      }
-
-      const hasLocationValues =
-        newItem.locationId ||
-        newItem.area ||
-        Number(newItem.unitInStock) > 0 ||
-        Number(newItem.minInStock) > 0;
-
-      if (hasLocationValues) {
-        const locationsPayload = [
-          {
-            locationId: newItem.locationId || "",
-            area: newItem.area || "",
-            unitsInStock: Number(newItem.unitInStock || 0),
-            minimumInStock: Number(newItem.minInStock || 0),
-          },
-        ];
-        appendIfChanged(
-          "locations",
-          JSON.stringify(locationsPayload),
-          JSON.stringify(original.locations || [])
-        );
+        formData.append("partsType", JSON.stringify(partTypeVal));
       }
 
       if (Array.isArray(newItem.assetIds) && newItem.assetIds.length > 0) {
-        appendIfChanged(
-          "assetIds",
-          JSON.stringify(newItem.assetIds),
-          JSON.stringify(original.assetIds || [])
-        );
+        formData.append("assetIds", JSON.stringify(newItem.assetIds));
       }
-      if (
-        Array.isArray(newItem.teamsInCharge) &&
-        newItem.teamsInCharge.length > 0
-      ) {
-        appendIfChanged(
-          "teamsInCharge",
-          JSON.stringify(newItem.teamsInCharge),
-          JSON.stringify(original.teamsInCharge || [])
-        );
+      if (Array.isArray(newItem.teamsInCharge) && newItem.teamsInCharge.length > 0) {
+        formData.append("teamsInCharge", JSON.stringify(newItem.teamsInCharge));
       }
       if (Array.isArray(newItem.vendorIds) && newItem.vendorIds.length > 0) {
-        appendIfChanged(
-          "vendorIds",
-          JSON.stringify(newItem.vendorIds),
-          JSON.stringify(original.vendorIds || [])
-        );
+        formData.append("vendorIds", JSON.stringify(newItem.vendorIds));
       }
 
-      //  Photos
+      // 3. ✅ LOCATIONS LOGIC (Fixed for Multiple Locations)
+      let locationsPayload: any[] = [];
+
+      // Case A: If user added multiple locations via the list (newItem.locations)
+      if (newItem.locations && newItem.locations.length > 0) {
+        locationsPayload = newItem.locations.map((loc: any) => ({
+           locationId: loc.locationId || loc.id,
+           area: loc.area || "",
+           unitsInStock: Number(loc.unitsInStock ?? loc.unitInStock ?? 0),
+           minimumInStock: Number(loc.minimumInStock ?? loc.minInStock ?? 0)
+        }));
+      } 
+      // Case B: Fallback for the single location inputs (if used)
+      else if (newItem.locationId || newItem.area) {
+        locationsPayload.push({
+           locationId: newItem.locationId || "",
+           area: newItem.area || "",
+           unitsInStock: Number(newItem.unitInStock || 0),
+           minimumInStock: Number(newItem.minInStock || 0)
+        });
+      }
+
+      if (locationsPayload.length > 0) {
+         formData.append("locations", JSON.stringify(locationsPayload));
+      }
+
+      // 4. Photos & Files
       if (Array.isArray(newItem.pictures) && newItem.pictures.length > 0) {
         newItem.pictures.forEach((file: any) => {
           if (file instanceof File) {
             formData.append("photos", file);
           } else if (typeof file === "string" && file.startsWith("data:")) {
+            // Convert Base64 to Blob if needed
             const byteString = atob(file.split(",")[1]);
             const mimeString = file.split(",")[0].split(":")[1].split(";")[0];
             const ab = new ArrayBuffer(byteString.length);
             const ia = new Uint8Array(ab);
-            for (let i = 0; i < byteString.length; i++)
-              ia[i] = byteString.charCodeAt(i);
+            for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
             const blob = new Blob([ab], { type: mimeString });
             formData.append("photos", blob);
           }
         });
       }
 
-      //  Files
       if (Array.isArray(newItem.files) && newItem.files.length > 0) {
         newItem.files.forEach((file: any) => {
           formData.append("files", file instanceof File ? file : String(file));
         });
       }
 
-      //  Backblaze BUD arrays as JSON strings
-      const partImagesArray =
-        partImages && partImages.length > 0 ? partImages : [];
+      // 5. Backblaze Arrays
+      const partImagesArray = partImages && partImages.length > 0 ? partImages : [];
       const partDocsArray = partDocs && partDocs.length > 0 ? partDocs : [];
-
       formData.append("partImages", JSON.stringify(partImagesArray));
       formData.append("partDocs", JSON.stringify(partDocsArray));
 
-      //  Vendors extra mapping (optional)
+      // 6. Vendors Metadata
       if (Array.isArray(newItem.vendors) && newItem.vendors.length > 0) {
         newItem.vendors.forEach((vendor: any, index: number) => {
           formData.append(`vendors[${index}][vendorId]`, vendor.vendorId || "");
-          formData.append(
-            `vendors[${index}][orderingPartNumber]`,
-            vendor.orderingPartNumber || ""
-          );
+          formData.append(`vendors[${index}][orderingPartNumber]`, vendor.orderingPartNumber || "");
         });
       }
 
-      //  Create or Update
+      // 7. Submit
       if (isEditing) {
-        await dispatch(
-          updatePart({ id: String(newItem.id), partData: formData })
-        ).unwrap();
+        await dispatch(updatePart({ id: String(newItem.id), partData: formData })).unwrap();
         toast.success("Part updated successfully!");
       } else {
         await dispatch(createPart(formData)).unwrap();

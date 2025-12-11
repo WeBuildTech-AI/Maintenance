@@ -1,3 +1,4 @@
+// NewWorkOrderFrom.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -52,7 +53,7 @@ export function NewWorkOrderForm({
   const dispatch = useDispatch<any>();
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams] = useSearchParams(); // ✅ Using searchParams to catch ?procedureId=
+  const [searchParams] = useSearchParams(); 
   const authUser = useSelector((state: any) => state.auth.user);
 
   const procedureEditMatch = useMatch("/work-orders/:workOrderId/edit/library/:procedureId");
@@ -101,6 +102,26 @@ export function NewWorkOrderForm({
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isAddProcModalOpen, setIsAddProcModalOpen] = useState(false);
 
+  // ✅ NEW EFFECT: Check for pre-filled part from navigation state
+  useEffect(() => {
+    if (location.state?.prefilledPart) {
+      const part = location.state.prefilledPart;
+      console.log("📦 Auto-adding part:", part);
+      
+      // 1. Add Part ID to selected list
+      setPartIds((prev) => {
+        if (prev.includes(part.id)) return prev;
+        return [...prev, part.id];
+      });
+
+      // 2. Add Part Option (So it shows up in dropdown with name)
+      setPartOptions((prev) => {
+        if (prev.some((opt) => opt.id === part.id)) return prev;
+        return [...prev, { id: part.id, name: part.name }];
+      });
+    }
+  }, [location.state]);
+
   const handleFetch = async (type: string, setOptions: (val: SelectOption[]) => void) => {
     try {
       const { data } = await fetchFilterData(type);
@@ -114,38 +135,23 @@ export function NewWorkOrderForm({
     }
   };
 
-  // ---------------------------------------------------------------------------
-  // ✅ FIX: Handle "Use in Work Order" from Library (State or URL param)
-  // ---------------------------------------------------------------------------
   useEffect(() => {
-    // 1. If data is passed via Router State (Direct click from Library)
     if (location.state?.procedureData) {
-      console.log("🔗 Procedure Linked via State:", location.state.procedureData);
       setLinkedProcedure(location.state.procedureData);
-    } 
-    // 2. If ID is passed via URL (e.g. ?procedureId=123) - Handle Refresh/Link sharing
-    else {
+    } else {
       const queryProcId = searchParams.get("procedureId");
       if (queryProcId && !linkedProcedure && !isProcedureLoading) {
-         console.log("🔗 Fetching Procedure via URL Param:", queryProcId);
          setIsProcedureLoading(true);
          procedureService.fetchProcedureById(queryProcId)
            .then((proc) => {
              if(proc) setLinkedProcedure(proc);
-           })
-           .catch((err) => {
-             console.error("❌ Failed to link procedure from URL:", err);
-             toast.error("Could not load the linked procedure.");
            })
            .finally(() => setIsProcedureLoading(false));
       }
     }
   }, [location.state, searchParams]); 
 
-  // ---------------------------------------------------------------------------
-  // Existing Logic for Edit Mode / Form State Restoration
-  // ---------------------------------------------------------------------------
-
+  // ... (Rest of the component remains unchanged)
   useEffect(() => {
     if (location.state?.previousFormState) {
       const s = location.state.previousFormState;

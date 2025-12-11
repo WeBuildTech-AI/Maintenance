@@ -1439,6 +1439,10 @@
     background-color: var(--color-orange-600);
   }
 
+  bg-orange:hover{
+    background-color: var(--color-orange-600);
+  }
+
   .bg-border {
     background-color: var(--border);
   }

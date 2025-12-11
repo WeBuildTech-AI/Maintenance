@@ -34,9 +34,9 @@ export function Meters() {
 
   const [showSettings, setShowSettings] = useState(false);
 
-  const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    return (searchParams.get("viewMode") as ViewMode) || "panel";
-  });
+  // const [viewMode, setViewMode] = useState<ViewMode>(() => {
+  //   return (searchParams.get("viewMode") as ViewMode) || "panel";
+  // });
 
   const [meterData, setMeterData] = useState<MeterResponse[]>([]);
   const [loading, setLoading] = useState(false);
@@ -44,7 +44,10 @@ export function Meters() {
   const [showReadingMeter, setShowReadingMeter] = useState(() => {
     return searchParams.get("reading") === "true";
   });
-
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const savedMode = localStorage.getItem("meterViewMode");
+    return (savedMode as ViewMode) || "panel";
+  });
   const modalRef = React.useRef<HTMLDivElement>(null);
   const [selectedMeter, setSelectedMeter] = useState<
     (typeof meterData)[0] | null
@@ -56,7 +59,7 @@ export function Meters() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
 
-  // ✅ FILTER PARAMETERS STATE (Page Number URL se read karega)
+  // FILTER PARAMETERS STATE (Page Number URL se read karega)
   const [filterParams, setFilterParams] = useState<FetchMetersParams>({
     page: Number(searchParams.get("page")) || 1,
     limit: 50,
@@ -72,22 +75,39 @@ export function Meters() {
     ? meterData.find((m) => m.id === isEditRoute?.params.meterId)
     : null;
 
-  // ✅ 3. Sync State TO URL (Jab bhi state change ho, URL update karo)
+  useEffect(() => {
+    if (viewMode === "table") {
+      localStorage.setItem("meterViewMode", "table");
+    } else {
+      localStorage.removeItem("meterViewMode");
+    }
+  }, [viewMode]);
+
+  // 3. Sync State TO URL (Jab bhi state change ho, URL update karo)
+  // 3. Sync State TO URL
   useEffect(() => {
     const params: any = {};
 
-    // Values ko URL mein set karo
+    // Keep viewMode in URL so refresh works
     // if (viewMode) params.viewMode = viewMode;
-    // if (filterParams.page) params.page = filterParams.page.toString();
-    if (debouncedSearch) params.search = debouncedSearch;
-    if (showReadingMeter) params.reading = "true";
-    if (selectedMeter?.id) params.meterId = selectedMeter.id;
 
-    // URL update karo (replace: true taaki history clutter na ho)
+    if (debouncedSearch) params.search = debouncedSearch;
+
+    // ✅ FIX: Only add 'meterId' to URL if we are in 'panel' mode.
+    // This ensures that when you switch to Table, the ID disappears from the URL.
+    if (viewMode === "panel" && selectedMeter?.id) {
+      params.meterId = selectedMeter.id;
+    }
+
+    // Only add reading if true AND in panel mode
+    if (viewMode === "panel" && showReadingMeter) {
+      params.reading = "true";
+    }
+
     setSearchParams(params, { replace: true });
   }, [
     viewMode,
-    filterParams.page,
+    // filterParams.page, // Uncomment if you use page in URL
     debouncedSearch,
     showReadingMeter,
     selectedMeter?.id,
@@ -162,7 +182,7 @@ export function Meters() {
   // Initial Fetch
   useEffect(() => {
     fetchMeters();
-  }, [fetchMeters, viewMode]);
+  }, [fetchMeters]);
 
   // ✅ HANDLER: Filter Change
   const handleFilterChange = useCallback(

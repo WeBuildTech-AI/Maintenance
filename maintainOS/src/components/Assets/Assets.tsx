@@ -13,7 +13,7 @@ import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store";
 import { locationService } from "../../store/locations";
 import AssetStatusMoreDetails from "./AssetDetail/sections/AssetStatusMoreDetails";
-// ✅ Import useSearchParams
+// Import useSearchParams
 import { useSearchParams } from "react-router-dom";
 
 // --- Interfaces (Same as provided) ---
@@ -52,7 +52,8 @@ export const Assets: FC = () => {
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
 
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    return (searchParams.get("viewMode") as ViewMode) || "panel";
+    const savedMode = localStorage.getItem("assetViewMode");
+    return (savedMode as ViewMode) || "panel";
   });
 
   const [loading, setLoading] = useState(false);
@@ -65,13 +66,21 @@ export const Assets: FC = () => {
   const [showDeleted, setShowDeleted] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
 
-  // ✅ FILTER PARAMETERS STATE (Page from URL)
+  // FILTER PARAMETERS STATE (Page from URL)
   const [filterParams, setFilterParams] = useState<FetchAssetsParams>({
     page: Number(searchParams.get("page")) || 1,
     limit: 50,
   });
 
-  // ✅ 3. Sync State TO URL (Effect to update URL when state changes)
+  useEffect(() => {
+    if (viewMode === "table") {
+      localStorage.setItem("assetViewMode", "table");
+    } else {
+      localStorage.removeItem("assetViewMode");
+    }
+  }, [viewMode]);
+
+  // 3. Sync State TO URL (Effect to update URL when state changes)
   useEffect(() => {
     const params: any = {};
 
@@ -88,13 +97,13 @@ export const Assets: FC = () => {
     setSearchParams(params, { replace: true });
   }, [
     debouncedSearch,
-    viewMode,
+    // viewMode,
     seeMoreAssetStatus,
     selectedAsset?.id,
     filterParams.page,
   ]);
 
-  // ✅ DEBOUNCE EFFECT
+  // DEBOUNCE EFFECT
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
@@ -102,14 +111,14 @@ export const Assets: FC = () => {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const fetchAssetsData = useCallback(async () => {
+const fetchAssetsData = useCallback(async () => {
     setLoading(true);
-    // Removed setSelectedAsset(null) to allow persistence logic to work
 
     try {
       let assets: any;
 
-      if (showDeleted && viewMode === "table") {
+      // 1. Fetch Logic
+      if (showDeleted) {
         assets = await assetService.fetchDeleteAsset();
       } else {
         const apiPayload = {
@@ -119,19 +128,19 @@ export const Assets: FC = () => {
         assets = await assetService.fetchAssets(apiPayload);
       }
 
+      // 2. Selection Logic
       if (assets && assets.length > 0) {
         setAssetData(assets);
 
-        // ✅ URL SELECTION LOGIC
         const urlAssetId = searchParams.get("assetId");
 
+        // Case A: URL mein ID hai (Direct link ya refresh)
         if (urlAssetId) {
-          // 1. Try to find the asset from the URL
           const found = assets.find((a) => String(a.id) === String(urlAssetId));
           if (found) {
             setSelectedAsset(found);
           } else {
-            // If URL ID is invalid/not found, fallback to most recent
+            // ID invalid hai toh default recent asset lo
             const mostRecent = [...assets].sort(
               (a, b) =>
                 new Date(b.updatedAt).getTime() -
@@ -139,10 +148,13 @@ export const Assets: FC = () => {
             );
             setSelectedAsset(mostRecent[0]);
           }
-        } else {
-          // 2. If no URL ID and no currently selected asset, select most recent
+        } 
+        // Case B: URL mein ID nahi hai
+        else {
+          // ✅ CRITICAL FIX: Agar pehle se koi asset selected hai (memory mein), toh usse mat chhedo.
+          // Ye tab kaam aayega jab aap Table se wapis Panel mein aaoge.
           if (!selectedAsset) {
-            const mostRecent = [...assets].sort(
+             const mostRecent = [...assets].sort(
               (a, b) =>
                 new Date(b.updatedAt).getTime() -
                 new Date(a.updatedAt).getTime()
@@ -162,8 +174,8 @@ export const Assets: FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [showDeleted, viewMode, filterParams, debouncedSearch]); // Note: removed searchParams from dependency to avoid loop, it reads strictly inside
-
+    // 👇 FIX: Removed 'viewMode' from here
+  }, [showDeleted, filterParams, debouncedSearch]);
   const fetchAllLocationData = useCallback(async () => {
     try {
       const locations: Location[] = await locationService.fetchLocations();
@@ -178,7 +190,7 @@ export const Assets: FC = () => {
     fetchAllLocationData();
   }, [fetchAssetsData, fetchAllLocationData]);
 
-  // ✅ HANDLER: Filter Change
+  // HANDLER: Filter Change
   const handleFilterChange = useCallback(
     (newParams: Partial<FetchAssetsParams>) => {
       setFilterParams((prev) => {
