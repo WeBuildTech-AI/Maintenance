@@ -21,7 +21,7 @@ export function MeterReadings({
   hideSeeReadingFlag,
 }: any) {
   const user = useSelector((state: RootState) => state.auth.user);
-  const [selectedTimePeriod, setSelectedTimePeriod] = useState("1D");
+  const [selectedTimePeriod, setSelectedTimePeriod] = useState("1H");
 
   const [customRange, setCustomRange] = useState<{
     start: Date | null;

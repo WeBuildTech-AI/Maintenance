@@ -131,6 +131,7 @@ export function Meters() {
   };
 
   // ✅ FETCH METERS (Memoized with Filters)
+  // ✅ FETCH METERS (Fixed Logic & Dependencies)
   const fetchMeters = useCallback(async () => {
     setLoading(true);
     let res: any;
@@ -146,34 +147,56 @@ export function Meters() {
         res = await meterService.fetchMeters(apiPayload);
       }
 
-      const sortedData = [...res].sort(
+      // SAFETY CHECK: Ensure res is an array to prevent crash
+      const safeData = Array.isArray(res) ? res : [];
+
+      const sortedData = [...safeData].sort(
         (a, b) =>
           new Date(b.updatedAt).valueOf() - new Date(a.updatedAt).valueOf()
       );
 
       setMeterData(sortedData);
-      const urlMeterId = searchParams.get("meterId");
 
-      if (urlMeterId) {
-        const found = sortedData.find((m) => m.id === urlMeterId);
-        if (found) {
-          setSelectedMeter(found);
-        } else if (sortedData.length > 0) {
-          setSelectedMeter(sortedData[0]);
+      // ✅ 1. Agar data hi nahi hai (Search Result = 0)
+      if (sortedData.length === 0) {
+        setSelectedMeter(null);
+      }
+      // ✅ 2. Agar data mila hai
+      else {
+        const urlMeterId = searchParams.get("meterId");
+
+        // Priority 1: URL mein jo ID hai use select karo
+        if (urlMeterId) {
+          const found = sortedData.find(
+            (m) => String(m.id) === String(urlMeterId)
+          );
+          if (found) {
+            setSelectedMeter(found);
+            return; // Kaam khatam
+          }
         }
-      } else {
-        if (!selectedMeter && sortedData.length > 0) {
-          setSelectedMeter(sortedData[0]);
-        }
+
+        // Priority 2: Agar pehle se koi meter selected nahi hai, toh first item select karo
+        // Note: Hum yahan 'selectedMeter' state check karne ke bajaye ye maan kar chalte hain
+        // ki naye search/filter par first item select karna safe UX hai.
+        setSelectedMeter((prev) => {
+          // Agar purana selected item nayi list mein exist karta hai, toh wahi rakho
+          if (prev && sortedData.find((m) => m.id === prev.id)) {
+            return prev;
+          }
+          // Nahi toh list ka pehla item pakdo
+          return sortedData[0];
+        });
       }
     } catch (err) {
       console.error(err);
       setMeterData([]);
+      setSelectedMeter(null);
     } finally {
       setLoading(false);
     }
   }, [showDeleted, filterParams, debouncedSearch]);
-
+  // ⚠️ DHYAN DEIN: 'selectedMeter' aur 'searchParams' ko yahan dependency mein mat daaliega
   // Initial Fetch
   useEffect(() => {
     fetchMeters();
