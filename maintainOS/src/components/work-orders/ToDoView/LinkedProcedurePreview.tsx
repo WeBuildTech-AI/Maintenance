@@ -3,7 +3,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { useDispatch } from "react-redux"; 
 import { procedureService } from "../../../store/procedures/procedures.service";
-import { submitFieldResponse } from "../../../store/workOrders/workOrders.thunks"; 
+import { 
+  submitFieldResponse, 
+  fetchFieldResponses 
+} from "../../../store/workOrders/workOrders.thunks"; 
 import { ProcedureForm } from "../../Library/GenerateProcedure/components/ProcedureForm";
 import type { AppDispatch } from "../../../store"; 
 import toast from "react-hot-toast";
@@ -16,13 +19,14 @@ export function LinkedProcedurePreview({ selectedWorkOrder }: LinkedProcedurePre
   const dispatch = useDispatch<AppDispatch>(); 
   const [fullProcedure, setFullProcedure] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // State to store fetched answers
+  const [existingAnswers, setExistingAnswers] = useState<Record<string, any>>({});
 
   const procedureSummary = selectedWorkOrder?.procedures?.[0];
-  
-  // ✅ 1. Get Submission ID (Critical for API)
-  // Assuming the backend creates a submission when the WO is created/assigned.
   const submissionId = selectedWorkOrder?.submissions?.[0]?.id; 
 
+  // --- 1. Load Procedure Schema (Template) ---
   useEffect(() => {
     if (procedureSummary?.id) {
       const loadProcedure = async () => {
@@ -40,30 +44,69 @@ export function LinkedProcedurePreview({ selectedWorkOrder }: LinkedProcedurePre
     }
   }, [procedureSummary?.id]);
 
-  // ✅ 2. Optimized Save Handler (Passed to ProcedureForm)
+  // --- 2. Load Saved Responses (GET API) ---
+  const loadResponses = useCallback(async () => {
+    if (!submissionId) return;
+
+    try {
+      const result = await dispatch(fetchFieldResponses(submissionId)).unwrap();
+      
+      // Normalize API Data to Form State
+      const answersMap: Record<string, any> = {};
+
+      if (Array.isArray(result)) {
+        result.forEach((item: any) => {
+          let val = null;
+          
+          if (item.jsonValue !== null && item.jsonValue !== undefined) {
+            val = item.jsonValue;
+          } else if (item.numericValue !== null && item.numericValue !== undefined) {
+            val = item.numericValue;
+          } else if (item.enumValue !== null && item.enumValue !== undefined) {
+            val = item.enumValue;
+          } else {
+            val = item.textValue;
+          }
+
+          if (val !== null) {
+            answersMap[item.fieldId] = val;
+          }
+        });
+      }
+
+      setExistingAnswers(answersMap);
+
+    } catch (error) {
+      console.error("Failed to load responses:", error);
+    }
+  }, [dispatch, submissionId]);
+
+  // Initial Load of Responses
+  useEffect(() => {
+    if (submissionId) {
+      loadResponses();
+    }
+  }, [submissionId, loadResponses]);
+
+
+  // --- 3. Save Handler (POST API) ---
   const handleFieldSave = useCallback(async (fieldId: string, value: any, notes?: string) => {
-    // Validation
     if (!submissionId) {
-      console.warn("⚠️ Cannot save response: No active submission ID found for this Work Order.");
+      console.warn("⚠️ Cannot save: No submission ID.");
       return; 
     }
 
-    if (value === undefined || value === null || value === "") return;
+    if (value === undefined) return;
 
-    // API Payload
     const payload = {
       submissionId,
       fieldId,
-      value, // Can be string, number, boolean, or object (for complex fields)
+      value, 
       notes
     };
 
-    console.log("🚀 Auto-saving field:", payload);
-
     try {
-      // Silent save (background sync)
       await dispatch(submitFieldResponse(payload)).unwrap();
-      // Optional: Add a small "Saved" indicator in UI state if needed
     } catch (error: any) {
       console.error("❌ Save failed:", error);
       toast.error("Failed to save progress");
@@ -85,14 +128,14 @@ export function LinkedProcedurePreview({ selectedWorkOrder }: LinkedProcedurePre
         </h3>
         
         <div className="border border-gray-200 rounded-lg bg-gray-50/50 p-4 sm:p-6">     
-          {/* ✅ Pass variant="runner" and the save handler */}
           <ProcedureForm
             rootFields={rootFields}
             rootHeadings={rootHeadings}
             sections={sections}
             resetKey={fullProcedure.id}
             variant="runner" 
-            onFieldSave={handleFieldSave} 
+            onFieldSave={handleFieldSave}
+            initialAnswers={existingAnswers} 
           />
         </div>
       </div>
