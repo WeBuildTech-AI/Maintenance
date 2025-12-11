@@ -220,7 +220,7 @@ export function WorkOrdersByTypeDetail({ filters, dateRange }: Props) {
         </div>
 
         {/* Stats Row - Horizontal Cards */}
-        <div className="grid grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 gap-4 mb-8">
           {/* Preventive Card */}
           <div className="bg-teal-50 rounded-lg p-3 border-2 border-teal-300 text-center">
             <div className="text-sm font-semibold text-teal-700 mb-1">Preventive</div>

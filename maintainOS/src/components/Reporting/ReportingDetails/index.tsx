@@ -71,10 +71,12 @@ export function ReportingDetails({
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="flex items-center gap-2 text-lg font-medium hover:bg-gray-50"
+              className="flex items-center gap-2 text-lg font-medium hover:bg-gray-50 min-w-[280px] justify-between"
             >
-              <Search className="h-5 w-5 text-gray-400" />
-              {selectedChartLabel}
+              <div className="flex items-center gap-2">
+                <Search className="h-5 w-5 text-gray-400" />
+                <span className="whitespace-nowrap">{selectedChartLabel}</span>
+              </div>
               <ChevronDown
                 className={`h-4 w-4 transition-transform ${
                   isDropdownOpen ? "rotate-180" : ""
@@ -82,7 +84,7 @@ export function ReportingDetails({
               />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-[400px] p-2">
+          <DropdownMenuContent align="end" className="min-w-[280px] p-2">
             {/* Search Input */}
             <div className="px-2 pb-2">
               <Input
