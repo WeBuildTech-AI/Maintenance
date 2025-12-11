@@ -12,6 +12,7 @@ import { cn } from "../ui/utils";
 import { WorkOrdersTab } from "./WorkOrders";
 import ReportingFilterBar from "./ReportingFilterBar";
 import { ReportingDetails } from "./ReportingDetails";
+import { RecentActivity } from "./RecentActivity";
 
 type TabType =
   | "work-orders"
@@ -280,11 +281,7 @@ export function Reporting() {
             initialChart={selectedDetailChart}
           />
         )}
-        {activeTab === "recent-activity" && (
-          <div className="text-center py-12 text-gray-500">
-            Recent Activity content coming soon.
-          </div>
-        )}
+        {activeTab === "recent-activity" && <RecentActivity />}
         {activeTab === "export-data" && (
           <div className="text-center py-12 text-gray-500">
             Export Data content coming soon.
