@@ -1,3 +1,4 @@
+// PartType.tsx
 "use client";
 
 import React from "react";
@@ -21,26 +22,34 @@ const PartType = ({
   const [activeDropdown, setActiveDropdown] = React.useState<string | null>(null);
   const [selectedTypeLabel, setSelectedTypeLabel] = React.useState<string>("");
 
+  // ✅ FIX: Resolve label and options immediately if value exists (Edit Mode)
+  React.useEffect(() => {
+    const val = Array.isArray(newItem.partsType) ? newItem.partsType[0] : newItem.partsType;
+    
+    if (val) {
+      // Find the matching name from our static list
+      const matched = DUMMY_PART_TYPES.find((opt) => opt.id === val);
+      if (matched) {
+        setSelectedTypeLabel(matched.name);
+        // Pre-fill options so we don't have to wait for "fetch" to see the list
+        setTypeOptions(DUMMY_PART_TYPES);
+      }
+    }
+  }, [newItem.partsType]);
+
   const fetchTypeOptions = React.useCallback(() => {
     if (typeOptions.length > 0) return;
     setLoading(true);
     setTimeout(() => {
       setTypeOptions(DUMMY_PART_TYPES);
       setLoading(false);
-
-      if (newItem.partsType?.length) {
-        const matched = DUMMY_PART_TYPES.find(
-          (opt) => opt.id === newItem.partsType[0]
-        );
-        if (matched) setSelectedTypeLabel(matched.name);
-      }
     }, 400);
-  }, [typeOptions.length, newItem.partsType]);
+  }, [typeOptions.length]);
 
   const handleSelect = (val: string | string[]) => {
     const id = Array.isArray(val) ? val[0] ?? "" : val;
     setNewItem((s: any) => ({ ...s, partsType: id ? [id] : [] }));
-    const matched = typeOptions.find((opt) => opt.id === id);
+    const matched = typeOptions.find((opt) => opt.id === id) || DUMMY_PART_TYPES.find(opt => opt.id === id);
     if (matched) setSelectedTypeLabel(matched.name);
   };
 

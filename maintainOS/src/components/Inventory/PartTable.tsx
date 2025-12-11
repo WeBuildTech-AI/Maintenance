@@ -7,8 +7,9 @@ import { Avatar as ShadCNAvatar, AvatarFallback } from "../ui/avatar";
 // Antd & Icons
 import { Table, Tooltip as AntTooltip } from "antd";
 import type { TableProps, TableColumnType } from "antd";
-import { Settings, Trash2, Loader2, Edit, Plus, Maximize2, Minimize2, X } from "lucide-react"; 
+import { Settings, Trash2, Loader2, Edit, Plus, X } from "lucide-react"; 
 import toast from "react-hot-toast";
+
 
 // Imports
 import SettingsModal from "../utils/SettingsModal";
@@ -34,6 +35,7 @@ const renderInitials = (text: string) =>
     .join("")
     .toUpperCase();
 
+// ✅ UPDATED STYLES: Single line headers, small text, custom scrollbar
 const tableStyles = `
   .selected-row-class > td {
     background-color: #f0f9ff !important;
@@ -55,9 +57,27 @@ const tableStyles = `
     font-size: 12px;
     font-weight: 600;
     color: #6b7280;
+    white-space: nowrap !important; /* ✅ Single line headers */
   }
   .ant-table-tbody > tr > td {
     border-bottom: 1px solid #f3f4f6;
+    font-size: 13px !important; /* ✅ Small text */
+    color: #374151;
+  }
+  /* ✅ CUSTOM SCROLLBAR (Matched ListView) */
+  .ant-table-body::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .ant-table-body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .ant-table-body::-webkit-scrollbar-thumb {
+    background: #d1d5db; 
+    border-radius: 9999px;
+  }
+  .ant-table-body::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af; 
   }
 `;
 
@@ -65,7 +85,11 @@ const allAvailableColumns = [
   "Name",
   "Part ID",
   "Unit Cost",
-  "Stock",
+  "Available Quantity", 
+  "Minimum In Stock",   
+  "Ordered Quantity",   
+  "Reserved Quantity",  
+  "Stock",              
   "Location",
   "Vendors",
   "Teams",
@@ -94,6 +118,26 @@ const columnConfig: {
     dataIndex: "unitCost",
     width: 120,
     sorter: (a, b) => (a.unitCost || 0) - (b.unitCost || 0),
+  },
+  "Available Quantity": { 
+    dataIndex: "totalStock",
+    width: 180, 
+    sorter: (a, b) => (a.totalStock || 0) - (b.totalStock || 0),
+  },
+  "Minimum In Stock": { 
+    dataIndex: "minStock",
+    width: 180, 
+    sorter: (a, b) => (a.minStock || 0) - (b.minStock || 0),
+  },
+  "Ordered Quantity": { 
+    dataIndex: "orderedQty",
+    width: 180, 
+    sorter: (a, b) => (a.orderedQty || 0) - (b.orderedQty || 0),
+  },
+  "Reserved Quantity": { 
+    dataIndex: "reservedQty",
+    width: 180, 
+    sorter: (a, b) => (a.reservedQty || 0) - (b.reservedQty || 0),
   },
   Stock: {
     dataIndex: "totalStock",
@@ -131,7 +175,7 @@ const columnConfig: {
   },
 };
 
-// --- Internal Wrapper for Edit Modal to handle State ---
+// --- Internal Wrapper for Edit Modal ---
 function EditPartModalWrapper({ partId, onClose, onRefresh }: { partId: string; onClose: () => void; onRefresh: () => void }) {
   const [item, setItem] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -144,7 +188,6 @@ function EditPartModalWrapper({ partId, onClose, onRefresh }: { partId: string; 
           setItem({
              ...data,
              _original: data,
-             // Ensure arrays exist for form
              pictures: data.photos || [],
              files: data.files || [],
              partsType: data.partsType || [],
@@ -177,12 +220,6 @@ function EditPartModalWrapper({ partId, onClose, onRefresh }: { partId: string; 
 
   return (
     <div className="fixed inset-0 z-[9999] bg-white flex flex-col animate-in fade-in zoom-in-95 duration-200">
-       <div className="flex justify-between items-center p-4 border-b">
-          <h2 className="text-lg font-semibold">Edit Part</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
-             <X size={20} />
-          </button>
-       </div>
        <div className="flex-1 overflow-hidden">
           <NewPartForm 
             newItem={item}
@@ -196,6 +233,13 @@ function EditPartModalWrapper({ partId, onClose, onRefresh }: { partId: string; 
             }}
           />
        </div>
+       {/* Floating Close Button */}
+       <button 
+          onClick={onClose} 
+          className="absolute top-4 right-4 p-2 bg-white/80 hover:bg-white rounded-full text-gray-500 shadow-sm z-[100000]"
+       >
+          <X size={20} />
+       </button>
     </div>
   );
 }
@@ -221,10 +265,9 @@ export function PartTable({
   const [selectedPartIds, setSelectedPartIds] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   
-  // ✅ Local State for Modals
+  // Modals
   const [restockPartId, setRestockPartId] = useState<string | null>(null);
   const [editPartId, setEditPartId] = useState<string | null>(null);
-  const [isFluid, setIsFluid] = useState(false); // Resize state
 
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
 
@@ -234,7 +277,6 @@ export function PartTable({
   const areAllSelected = allPartIds.length > 0 && selectedCount === allPartIds.length;
   const isIndeterminate = selectedCount > 0 && !areAllSelected;
   
-  // Detail Modal State (View only)
   const [isOpenPartDetailsModal, setIsOpenPartDetailsModal] = useState(false);
   const [selectedPartTable, setSelectedPartTable] = useState<string[]>([]);
 
@@ -315,16 +357,7 @@ export function PartTable({
                 />
                 <span className="text-gray-600">Name</span>
               </div>
-              
-              {/* ✅ Resize Toggle */}
-              <Tooltip text={isFluid ? "Fixed Width" : "Fit to Screen"}>
-                <button 
-                  onClick={() => setIsFluid(!isFluid)}
-                  className="p-1.5 hover:bg-gray-100 rounded text-gray-500 hover:text-blue-600 transition"
-                >
-                   {isFluid ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-                </button>
-              </Tooltip>
+              {/* ❌ Removed Resize/Fit to Screen Toggle as requested */}
             </div>
           );
         }
@@ -396,7 +429,7 @@ export function PartTable({
       dataIndex: "name",
       key: "name",
       fixed: "left",
-      width: isFluid ? undefined : 250, // ✅ Fluid Logic
+      width: 250, 
       sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
       sortOrder: sortType === "name" ? mapAntSortOrder(sortOrder) : undefined,
       render: (name: string, record: any) => {
@@ -456,8 +489,16 @@ export function PartTable({
           renderFunc = (val: number) => <span className="text-muted-foreground">${(val || 0).toFixed(2)}</span>;
         } else if (colName === "Stock") {
           renderFunc = (_: any, record: any) => (
-            <span className="text-muted-foreground">{record.totalStock} / Min {record.minStock}</span>
+            <span className="text-muted-foreground">{record.totalStock}</span>
           );
+        } else if (colName === "Available Quantity") { // 🆕
+          renderFunc = (val: number) => <span className="text-muted-foreground font-medium">{val}</span>;
+        } else if (colName === "Minimum In Stock") { // 🆕
+          renderFunc = (val: number) => <span className="text-muted-foreground">{val}</span>;
+        } else if (colName === "Ordered Quantity") { // 🆕
+          renderFunc = (val: number) => <span className="text-muted-foreground">{val}</span>;
+        } else if (colName === "Reserved Quantity") { // 🆕
+          renderFunc = (val: number) => <span className="text-muted-foreground">{val}</span>;
         } else if (colName === "Vendors") {
           renderFunc = (vendors: any[]) => (
             <div className="flex flex-col gap-1 text-xs text-muted-foreground">
@@ -478,7 +519,7 @@ export function PartTable({
           title: colName,
           dataIndex: config.dataIndex,
           key: config.dataIndex,
-          width: isFluid ? undefined : config.width, // ✅ Fluid Logic
+          width: config.width,
           sorter: config.sorter,
           sortOrder: sortType === config.dataIndex ? mapAntSortOrder(sortOrder) : undefined,
           render: renderFunc,
@@ -487,7 +528,7 @@ export function PartTable({
       .filter(Boolean) as TableColumnType<any>[];
 
     return [nameColumn, ...dynamicColumns];
-  }, [isEditing, sortType, sortOrder, visibleColumns, areAllSelected, selectedCount, selectedPartIds, isDeleting, isFluid]); // Added isFluid
+  }, [isEditing, sortType, sortOrder, visibleColumns, areAllSelected, selectedCount, selectedPartIds, isDeleting]);
 
   const dataSource = useMemo(() => {
     return inventory.map((part) => {
@@ -501,8 +542,11 @@ export function PartTable({
         id: part.id,
         name: part.name,
         unitCost: part.unitCost,
-        totalStock,
-        minStock,
+        totalStock, 
+        minStock,   
+        orderedQty: part.orderedQuantity || 0,
+        reservedQty: part.reservedQuantity || 0,
+        
         locationString,
         teamsString,
         vendors: part.vendors,
@@ -514,19 +558,19 @@ export function PartTable({
   }, [inventory]);
 
   return (
-    <div className="flex-1 overflow-auto p-2">
+    // ✅ H-FULL structure to push footer to bottom
+    <div className="h-full flex flex-col p-4">
       <style>{tableStyles}</style>
 
-      <Card className="shadow-sm border rounded-lg overflow-hidden w-full">
-        <CardContent className="p-0">
+      {/* ✅ Flex-1 Card to take available space */}
+      <Card className="flex-1 flex flex-col shadow-sm border rounded-lg overflow-hidden">
+        <CardContent className="flex-1 p-0 overflow-hidden">
           <Table
             columns={columns}
             dataSource={dataSource}
             pagination={false}
-            scroll={{ 
-                x: isFluid ? undefined : "max-content", // ✅ Fluid Scroll Logic
-                y: "75vh" 
-            }}
+            // ✅ Matched Scroll Height to ListView logic (screen height - offset)
+            scroll={{ x: "max-content", y: "calc(100vh - 280px)" }}
             rowClassName={(record: any) => selectedPartIds.includes(record.id) ? "selected-row-class" : ""}
             onChange={handleTableChange}
             rowSelection={{
@@ -541,6 +585,45 @@ export function PartTable({
             locale={{ emptyText: "No parts found." }}
           />
         </CardContent>
+
+        {/* ✅ PAGINATION FOOTER - Matched ListView style exactly */}
+        <div className="flex-shrink-0 flex items-center justify-end p-3 border-t border-gray-100 bg-white">
+          <div className="inline-flex items-center gap-4 rounded-md border bg-white p-2 shadow-sm">
+            <span className="text-sm text-gray-600">
+              1 – {inventory.length} of {inventory.length}
+            </span>
+            <button className="text-gray-400 hover:text-gray-700">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+            <button className="text-gray-400 hover:text-gray-700">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
       </Card>
 
       <SettingsModal

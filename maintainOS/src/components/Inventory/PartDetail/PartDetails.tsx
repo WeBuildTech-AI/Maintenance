@@ -8,7 +8,7 @@ import {
   Edit,
   Link as LinkIcon,
   MapPin,
-  MoreVertical,
+  MoreHorizontal, // ✅ Correct import
   Package2,
   Plus,
   UserCircle2,
@@ -57,26 +57,6 @@ export function PartDetails({
   // ✅ 1. Local State for Real-time Updates (initialized with prop item)
   const [partData, setPartData] = useState<any>(item);
 
-  // Sync if parent item changes
-  useEffect(() => {
-    setPartData(item);
-  }, [item]);
-
-  // ✅ 2. Helper to fetch fresh data immediately
-  const refreshLocalData = async () => {
-    if (!partData?.id) return;
-    try {
-      // Fetch fresh details for this specific part
-      const freshData = await partService.fetchPartById(partData.id);
-      setPartData(freshData);
-      
-      // Also refresh the parent list
-      if (fetchPartData) fetchPartData();
-    } catch (error) {
-      console.error("Failed to refresh part details:", error);
-    }
-  };
-
   // ✅ View States
   const [isEditing, setIsEditing] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
@@ -94,6 +74,27 @@ export function PartDetails({
   
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
+
+  // Sync if parent item changes
+  useEffect(() => {
+    setPartData(item);
+    setIsEditing(false); // ✅ FIX: Reset edit mode when switching parts
+  }, [item]);
+
+  // ✅ 2. Helper to fetch fresh data immediately
+  const refreshLocalData = async () => {
+    if (!partData?.id) return;
+    try {
+      // Fetch fresh details for this specific part
+      const freshData = await partService.fetchPartById(partData.id);
+      setPartData(freshData);
+      
+      // Also refresh the parent list
+      if (fetchPartData) fetchPartData();
+    } catch (error) {
+      console.error("Failed to refresh part details:", error);
+    }
+  };
 
   // --- 1. Fetch Full Data on Edit ---
   useEffect(() => {
@@ -162,6 +163,19 @@ export function PartDetails({
     setIsDropdownOpen(false);
   };
 
+  // ✅ HANDLE: USE IN NEW WORK ORDER
+  const handleUseInNewWorkOrder = () => {
+    navigate("/work-orders/create", {
+        state: {
+            prefilledPart: {
+                id: partData.id,
+                name: partData.name,
+                unitCost: partData.unitCost
+            }
+        }
+    });
+  };
+
   // --- 🔄 RENDER: EDIT FORM (In-Place) ---
   if (isEditing) {
     if(loading || !editItem) {
@@ -175,9 +189,8 @@ export function PartDetails({
 
     return (
       <div className={`flex flex-col h-full bg-white relative animate-in fade-in zoom-in-95 duration-200 ${isExpanded ? 'fixed inset-2 z-[99999] shadow-2xl rounded-lg border border-gray-300' : ''}`}>
-         {/* Edit Header */}
-         
-         <div className="flex-1 overflow-hidden">
+
+         <div className="flex-1 overflow-hidden pt-2">
             <NewPartForm 
                 newItem={editItem}
                 setNewItem={setEditItem}
@@ -186,7 +199,7 @@ export function PartDetails({
                 onCancel={() => setIsEditing(false)}
                 onCreate={() => {
                     setIsEditing(false);
-                    refreshLocalData(); // ✅ Refresh on Edit Success
+                    refreshLocalData();
                 }}
             />
          </div>
@@ -195,19 +208,15 @@ export function PartDetails({
   }
 
   // --- 🔄 RENDER: DETAILS VIEW ---
-  // ✅ Use partData instead of item
   const availableUnits = partData.unitsInStock ?? partData.locations?.[0]?.unitsInStock ?? 0;
   const minUnits = partData.minInStock ?? partData.locations?.[0]?.minimumInStock ?? 0;
   const partType = Array.isArray(partData.partsType) ? partData.partsType[0]?.name || partData.partsType[0] || "N/A" : partData.partsType?.name || "N/A";
 
   return (
     <div 
-      // ✅ RESIZE FIX: Use fixed positioning to break out of modal when expanded
       className={`flex flex-col h-full bg-white shadow-sm border relative transition-all duration-200 
         ${isExpanded ? 'fixed inset-2 z-[99999] rounded-lg shadow-2xl w-auto h-auto' : ''}`}
     >
-      
-      {/* Header */}
       <div className="flex justify-between items-start p-6 relative">
         <div>
           <h2 className="text-2xl font-normal">{partData.name}</h2>
@@ -217,8 +226,6 @@ export function PartDetails({
         </div>
 
         <div className="flex items-center gap-2 relative">
-          
-          {/* ✅ Resize / Expand Icon */}
           <Button
             variant="ghost"
             size="icon"
@@ -229,7 +236,6 @@ export function PartDetails({
             {isExpanded ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
           </Button>
 
-          {/* Copy link */}
           <Button
             variant="ghost"
             size="icon"
@@ -244,7 +250,6 @@ export function PartDetails({
             )}
           </Button>
 
-          {/* ✅ Restock Button */}
           <Button
             className="bg-white text-yellow-600 hover:bg-yellow-50 border-2 border-yellow-400 rounded-md px-4 py-2 font-medium"
             onClick={() => setShowRestockModal(true)}
@@ -253,7 +258,6 @@ export function PartDetails({
             Restock
           </Button>
 
-          {/* ✅ Edit Button */}
           <Button
             onClick={() => setIsEditing(true)}
             className="bg-white text-yellow-600 hover:bg-yellow-50 border-2 border-yellow-400 rounded-md px-4 py-2 font-medium"
@@ -262,7 +266,6 @@ export function PartDetails({
             Edit
           </Button>
 
-          {/* Menu */}
           <div className="relative">
             <Button
               ref={buttonRef} 
@@ -271,12 +274,27 @@ export function PartDetails({
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className={`text-gray-600 hover:bg-transparent ${isDropdownOpen ? 'bg-gray-100' : ''}`}
             >
-              <MoreVertical className="h-5 w-5" />
+              {/* ✅ UPDATED: Use MoreHorizontal to match import */}
+              <MoreHorizontal className="h-5 w-5" />
             </Button>
 
             {restoreData ? (
                  isDropdownOpen && (
-                  <div className="absolute mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50 right-0">
+                  <div 
+                    style={{
+                      position: 'absolute',
+                      right: '0px',
+                      left: 'auto',
+                      top: '100%',
+                      marginTop: '8px',
+                      width: '192px', 
+                      backgroundColor: 'white',
+                      border: '1px solid #e5e7eb', 
+                      borderRadius: '0.375rem', 
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                      zIndex: 50
+                    }}
+                  >
                     <ul className="text-gray-800 text-sm">
                       <li onClick={handleDeleteClick} className="px-4 py-2 text-red-500 hover:bg-red-50 cursor-pointer">
                         Delete Permanently
@@ -302,7 +320,6 @@ export function PartDetails({
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex text-base border-b border-gray-300">
         <button
           onClick={() => setActiveTab("details")}
@@ -326,7 +343,6 @@ export function PartDetails({
         </button>
       </div>
 
-      {/* Content */}
       <div className="flex-1 overflow-y-auto p-6 pb-24">
         {activeTab === "details" ? (
           <>
@@ -411,7 +427,6 @@ export function PartDetails({
 
             <hr className="border-t border-gray-200 mt-4" />
 
-            {/* QR & Assets */}
             <div className="grid grid-cols-2 gap-6 mb-8 mt-4 pb-8">
               <div>
                 <h4 className="font-medium text-gray-900 mb-3">QR Code</h4>
@@ -449,7 +464,6 @@ export function PartDetails({
 
             <hr className="border-t border-gray-200 mt-2" />
 
-            {/* Vendors */}
             <div className="pb-6 mb-8 mt-4 border-b">
               <h4 className="font-medium text-gray-800 mb-3">Vendors</h4>
               {partData.vendors?.length > 0 ? (
@@ -476,7 +490,6 @@ export function PartDetails({
               )}
             </div>
 
-            {/* Teams */}
             <div className="pb-6 mb-8 mt-4 border-b">
               <h4 className="font-medium text-gray-800 mb-3">Teams</h4>
               {partData.teams?.length > 0 ? (
@@ -493,7 +506,6 @@ export function PartDetails({
               )}
             </div>
 
-            {/* Created / Updated */}
             <div className="space-y-3 mb-8 mt-4">
               <div className="flex items-center gap-1 text-sm text-gray-600">
                 <UserCircle2 className="w-4 h-4 text-yellow-500" />
@@ -535,6 +547,7 @@ export function PartDetails({
         }}
       >
         <Button
+          onClick={handleUseInNewWorkOrder}
           variant="outline"
           className="text-yellow-600 border-2 border-yellow-400 hover:bg-yellow-50 px-8 py-3 rounded-full shadow-lg bg-white font-medium whitespace-nowrap"
         >
@@ -543,7 +556,6 @@ export function PartDetails({
         </Button>
       </div>
 
-      {/* Delete Modal */}
       {showDeleteModal && (
         <DeletePartModal
           isOpen={showDeleteModal}
@@ -552,7 +564,6 @@ export function PartDetails({
         />
       )}
 
-      {/* ✅ Restock Modal (Internal) */}
       {showRestockModal && (
         <RestockModal
             isOpen={showRestockModal}

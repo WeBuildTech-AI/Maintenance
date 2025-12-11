@@ -15,7 +15,7 @@ interface RestockModalProps {
     location: string;
     note: string;
   }) => void;
-  part?: any; // ✅ Add part as prop
+  part?: any;
 }
 
 export default function RestockModal({
@@ -29,6 +29,7 @@ export default function RestockModal({
   const [note, setNote] = useState("");
   const [restockImages, setRestockImages] = useState<BUD[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // ✅ Added loading state
   const modalRef = useRef<HTMLDivElement>(null);
   const dispatch = useDispatch<AppDispatch>();
 
@@ -38,15 +39,8 @@ export default function RestockModal({
     }
   };
 
-  // 🟢 Log received part data
   useEffect(() => {
     if (part) {
-      console.log("📦 RestockModal received part:", part);
-      console.log(
-        "🏬 Available locations:",
-        part.locations || "No locations found"
-      );
-      // Default first location if available
       if (part.locations?.length) {
         setLocation(
           part.locations[0].name || part.locations[0].locationName || "General"
@@ -55,7 +49,6 @@ export default function RestockModal({
     }
   }, [part]);
 
-  // Close modal when clicking outside
   useEffect(() => {
     if (!isOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -67,7 +60,6 @@ export default function RestockModal({
       document.removeEventListener("mousedown", handleClickOutside, true);
   }, [isOpen, onClose]);
 
-  // Close modal on ESC
   useEffect(() => {
     if (!isOpen) return;
     const handleKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -79,25 +71,25 @@ export default function RestockModal({
   const decrement = () => setQuantity((p) => Math.max(0, p - 1));
 
   const handleConfirm = async () => {
-    console.log("🧾 Confirm clicked:", { quantity, location, note });
-    onConfirm({ quantity, location, note });
-
-    // ✅ RESTOCK API CALL
-    try {
-      if (!part?.id) {
+    if (!part?.id) {
         toast.error("No part selected");
         return;
-      }
+    }
 
-      const selectedLoc = part.locations?.find(
+    const selectedLoc = part.locations?.find(
         (loc: any) => loc.name === location || loc.locationName === location
-      );
-      const locationId = selectedLoc?.id || selectedLoc?.locationId;
-      if (!locationId) {
+    );
+    const locationId = selectedLoc?.id || selectedLoc?.locationId;
+    
+    if (!locationId) {
         toast.error("Location ID not found");
         return;
-      }
+    }
 
+    try {
+      setIsSubmitting(true); // Disable button while submitting
+
+      // 1️⃣ CALL API FIRST
       await dispatch(
         restockPart({
           partId: part.id,
@@ -108,15 +100,22 @@ export default function RestockModal({
         })
       ).unwrap();
 
-      toast.success(
-        `✅ Successfully restocked ${quantity} units of ${part.name}`
-      );
+      toast.success(`✅ Successfully restocked ${quantity} units of ${part.name}`);
+
+      // 2️⃣ CALL ONCONFIRM ONLY AFTER SUCCESS (Triggers Parent Refresh)
+      onConfirm({ quantity, location, note });
+
+      // 3️⃣ RESET & CLOSE
       setQuantity(0);
       setNote("");
       setRestockImages([]);
       onClose();
+      
     } catch (error: any) {
+      console.error("Restock failed:", error);
       toast.error(error?.message || "Failed to restock part");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -160,11 +159,12 @@ export default function RestockModal({
           </h2>
           <button
             onClick={onClose}
+            disabled={isSubmitting}
             style={{
               background: "transparent",
               border: "none",
               color: "#6b7280",
-              cursor: "pointer",
+              cursor: isSubmitting ? "not-allowed" : "pointer",
             }}
           >
             <X size={22} />
@@ -191,6 +191,7 @@ export default function RestockModal({
           >
             <button
               onClick={decrement}
+              disabled={isSubmitting}
               style={{
                 width: "36px",
                 height: "36px",
@@ -199,7 +200,8 @@ export default function RestockModal({
                 color: "#ef4444",
                 background: "white",
                 fontSize: "20px",
-                cursor: "pointer",
+                cursor: isSubmitting ? "not-allowed" : "pointer",
+                opacity: isSubmitting ? 0.5 : 1,
               }}
             >
               −
@@ -210,6 +212,7 @@ export default function RestockModal({
               onChange={(e) =>
                 setQuantity(Math.max(0, parseInt(e.target.value) || 0))
               }
+              disabled={isSubmitting}
               style={{
                 width: "80px",
                 height: "36px",
@@ -221,6 +224,7 @@ export default function RestockModal({
             />
             <button
               onClick={increment}
+              disabled={isSubmitting}
               style={{
                 width: "36px",
                 height: "36px",
@@ -229,7 +233,8 @@ export default function RestockModal({
                 color: "#10b981",
                 background: "white",
                 fontSize: "20px",
-                cursor: "pointer",
+                cursor: isSubmitting ? "not-allowed" : "pointer",
+                opacity: isSubmitting ? 0.5 : 1,
               }}
             >
               +
@@ -250,7 +255,7 @@ export default function RestockModal({
               Location
             </label>
             <div
-              onClick={() => setIsDropdownOpen((p) => !p)}
+              onClick={() => !isSubmitting && setIsDropdownOpen((p) => !p)}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -258,9 +263,10 @@ export default function RestockModal({
                 padding: "8px 12px",
                 border: "1px solid #d1d5db",
                 borderRadius: "6px",
-                cursor: "pointer",
+                cursor: isSubmitting ? "not-allowed" : "pointer",
                 position: "relative",
                 backgroundColor: "#fff",
+                opacity: isSubmitting ? 0.7 : 1,
               }}
             >
               <MapPin size={18} color="#2563eb" />
@@ -341,6 +347,7 @@ export default function RestockModal({
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
+              disabled={isSubmitting}
               rows={3}
               style={{
                 width: "100%",
@@ -353,66 +360,8 @@ export default function RestockModal({
             />
           </div>
 
-          {/* Upload box */}
-          {/* <div
-            style={{
-              border: "2px dashed #93c5fd",
-              borderRadius: "6px",
-              background: "#eff6ff",
-              textAlign: "center",
-              padding: "20px",
-              cursor: "pointer",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "8px",
-              }}
-            >
-              <div
-                style={{
-                  width: "40px",
-                  height: "40px",
-                  borderRadius: "50%",
-                  background: "#3b82f6",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Camera size={20} color="white" />
-              </div>
-              <span
-                style={{
-                  color: "#2563eb",
-                  fontWeight: 500,
-                  fontSize: "14px",
-                }}
-              >
-                Add Pictures/Files
-              </span>
-            </div>
-          </div> */}
-
           {/* Restock Images Upload */}
-          <div
-           style={{
-    padding: "8px", // Reduced padding from default (e.g., 20px) to 8px
-  }}
-          >
-            {/* <h4
-              style={{
-                fontSize: "14px",
-                fontWeight: "500",
-                marginBottom: "2px",
-                color: "#1f2937",
-              }}
-            >
-              Add Restock Images
-            </h4> */}
+          <div style={{ padding: "8px" }}>
             <BlobUpload
               formId="restock_images"
               type="images"
@@ -436,32 +385,33 @@ export default function RestockModal({
         >
           <button
             onClick={onClose}
+            disabled={isSubmitting}
             style={{
               background: "transparent",
               border: "none",
               color: "#2563eb",
               fontWeight: 500,
               fontSize: "15px",
-              cursor: "pointer",
+              cursor: isSubmitting ? "not-allowed" : "pointer",
             }}
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
-            disabled={quantity === 0}
+            disabled={quantity === 0 || isSubmitting}
             style={{
-              background: quantity === 0 ? "#d1d5db" : "#2563eb",
-              color: quantity === 0 ? "#6b7280" : "#fff",
+              background: quantity === 0 || isSubmitting ? "#d1d5db" : "#2563eb",
+              color: quantity === 0 || isSubmitting ? "#6b7280" : "#fff",
               border: "none",
               borderRadius: "6px",
               padding: "8px 16px",
               fontWeight: 500,
               fontSize: "15px",
-              cursor: quantity === 0 ? "not-allowed" : "pointer",
+              cursor: quantity === 0 || isSubmitting ? "not-allowed" : "pointer",
             }}
           >
-            Confirm Restock
+            {isSubmitting ? "Processing..." : "Confirm Restock"}
           </button>
         </div>
       </div>
