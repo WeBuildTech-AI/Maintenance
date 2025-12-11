@@ -33,10 +33,8 @@ export interface Asset {
 
 // --- Component Start ---
 export const Assets: FC = () => {
-  // ✅ 1. URL Search Params Setup
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // ✅ 2. Initialize State from URL
   const [searchQuery, setSearchQuery] = useState(
     () => searchParams.get("search") || ""
   );
@@ -80,7 +78,6 @@ export const Assets: FC = () => {
     }
   }, [viewMode]);
 
-  // 3. Sync State TO URL (Effect to update URL when state changes)
   useEffect(() => {
     const params: any = {};
 
@@ -111,7 +108,7 @@ export const Assets: FC = () => {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-const fetchAssetsData = useCallback(async () => {
+  const fetchAssetsData = useCallback(async () => {
     setLoading(true);
 
     try {
@@ -148,13 +145,13 @@ const fetchAssetsData = useCallback(async () => {
             );
             setSelectedAsset(mostRecent[0]);
           }
-        } 
+        }
         // Case B: URL mein ID nahi hai
         else {
           // ✅ CRITICAL FIX: Agar pehle se koi asset selected hai (memory mein), toh usse mat chhedo.
           // Ye tab kaam aayega jab aap Table se wapis Panel mein aaoge.
           if (!selectedAsset) {
-             const mostRecent = [...assets].sort(
+            const mostRecent = [...assets].sort(
               (a, b) =>
                 new Date(b.updatedAt).getTime() -
                 new Date(a.updatedAt).getTime()
@@ -174,8 +171,8 @@ const fetchAssetsData = useCallback(async () => {
     } finally {
       setLoading(false);
     }
-    // 👇 FIX: Removed 'viewMode' from here
   }, [showDeleted, filterParams, debouncedSearch]);
+
   const fetchAllLocationData = useCallback(async () => {
     try {
       const locations: Location[] = await locationService.fetchLocations();
