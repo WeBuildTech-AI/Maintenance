@@ -132,7 +132,11 @@ export function PurchaseOrders() {
   });
 
   useEffect(() => {
-    localStorage.setItem("purchaseOrderViewMode", viewMode);
+    if (viewMode === "table") {
+      localStorage.setItem("purchaseOrderViewMode", "table");
+    } else {
+      localStorage.removeItem("purchaseOrderViewMode");
+    }
   }, [viewMode]);
 
   const scrollToTop = () => {

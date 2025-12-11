@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useDispatch } from "react-redux";
-import { useMatch, useNavigate } from "react-router-dom"; 
+import { useMatch, useNavigate } from "react-router-dom";
 import type { AppDispatch } from "../../store";
 import { updateVendor, vendorService } from "../../store/vendors";
 import { FetchVendorsParams } from "../../store/vendors/vendors.types";
@@ -15,22 +15,27 @@ import { Vendor } from "../../store/vendors/vendors.types";
 
 export function Vendors() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [viewMode, setViewMode] = useState<ViewMode>("panel");
-  
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const savedMode = localStorage.getItem("vendorViewMode");
+    return (savedMode as ViewMode) || "panel";
+  });
+
   // Search State
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const [showSettings, setShowSettings] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [selectedVendorId, setSelectedVendorId] = useState<string | undefined>();
+  const [selectedVendorId, setSelectedVendorId] = useState<
+    string | undefined
+  >();
   const [isSettingModalOpen, setIsSettingModalOpen] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
 
   // Filter Params
   const [filterParams, setFilterParams] = useState<FetchVendorsParams>({
-    page: 1, 
-    limit: 50 
+    page: 1,
+    limit: 50,
   });
 
   const dispatch = useDispatch<AppDispatch>();
@@ -39,7 +44,7 @@ export function Vendors() {
   const navigate = useNavigate();
   const isCreateRoute = useMatch("/vendors/create");
   const isEditRoute = useMatch("/vendors/:vendorId/edit");
-  
+
   // ✅ FIX: Capture the ID from the URL for View Mode
   const isViewRoute = useMatch("/vendors/:id");
 
@@ -48,6 +53,16 @@ export function Vendors() {
   const vendorToEdit = isEditMode
     ? vendors.find((v) => v.id === isEditRoute.params.vendorId)
     : null;
+
+  // sotre the view Mode in the local Storage
+
+  useEffect(() => {
+    if (viewMode === "table") {
+      localStorage.setItem("vendorViewMode", "table");
+    } else {
+      localStorage.removeItem("vendorViewMode");
+    }
+  }, [viewMode]);
 
   // ✅ DEBOUNCE SEARCH
   useEffect(() => {
@@ -75,7 +90,7 @@ export function Vendors() {
       } else {
         const apiPayload = {
           ...filterParams,
-          search: debouncedSearch || undefined 
+          search: debouncedSearch || undefined,
         };
         res = await vendorService.fetchVendors(apiPayload);
       }
@@ -94,16 +109,19 @@ export function Vendors() {
   }, [fetchVendorsData]);
 
   // ✅ HANDLER: Filter Change
-  const handleFilterChange = useCallback((newParams: Partial<FetchVendorsParams>) => {
-    setFilterParams((prev) => {
-      const merged = { ...prev, ...newParams };
-      if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
-      return merged;
-    });
-  }, []);
+  const handleFilterChange = useCallback(
+    (newParams: Partial<FetchVendorsParams>) => {
+      setFilterParams((prev) => {
+        const merged = { ...prev, ...newParams };
+        if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
+        return merged;
+      });
+    },
+    []
+  );
 
   const refreshVendors = async () => {
-     await fetchVendorsData();
+    await fetchVendorsData();
   };
 
   // ✅ SELECTION SYNC LOGIC (The Fix)
@@ -115,20 +133,24 @@ export function Vendors() {
       if (selectedVendorId !== urlId) {
         setSelectedVendorId(urlId);
       }
-    } 
+    }
     // 2. If NO URL ID, default to first vendor (Standard Panel Behavior)
-    else if (vendors.length > 0 && !selectedVendorId && !isCreateRoute && !isEditRoute) {
+    else if (
+      vendors.length > 0 &&
+      !selectedVendorId &&
+      !isCreateRoute &&
+      !isEditRoute
+    ) {
       setSelectedVendorId(vendors[0].id);
     }
   }, [isViewRoute, vendors, selectedVendorId, isCreateRoute, isEditRoute]);
 
-
   // ✅ CREATE SUBMIT
   const handleCreateSubmit = async (newVendor: Vendor) => {
-    setVendors((prev) => [newVendor, ...prev]); 
+    setVendors((prev) => [newVendor, ...prev]);
     setSelectedVendorId(newVendor.id);
-    await refreshVendors(); 
-    setSelectedVendorId(newVendor.id); 
+    await refreshVendors();
+    setSelectedVendorId(newVendor.id);
     navigate(`/vendors/${newVendor.id}`); // Ensure URL updates
   };
 
@@ -145,7 +167,7 @@ export function Vendors() {
         ).unwrap();
         await refreshVendors();
         navigate(`/vendors/${vendorToEdit.id}`);
-        return; 
+        return;
       }
 
       await dispatch(
@@ -214,8 +236,8 @@ export function Vendors() {
                   setVendors={setVendors}
                   setSelectedVendorId={setSelectedVendorId}
                   onSuccess={async (newVendor) => {
-                    setVendors((prev) => [newVendor, ...prev]); 
-                    await refreshVendors(); 
+                    setVendors((prev) => [newVendor, ...prev]);
+                    await refreshVendors();
                     setSelectedVendorId(newVendor.id);
                   }}
                 />

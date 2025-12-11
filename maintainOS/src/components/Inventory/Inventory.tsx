@@ -18,10 +18,14 @@ import { PartTable } from "./PartTable";
 /* ✅ Import partService */
 import { partService } from "../../store/parts/parts.service";
 import { FetchPartsParams } from "../../store/parts/parts.types"; // ✅ Import Params
+import type { ViewMode } from "../purchase-orders/po.types";
 
 export function Inventory() {
   const [parts, setParts] = useState<any[]>([]);
-  const [viewMode, setViewMode] = useState<"panel" | "table">("panel");
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const savedMode = localStorage.getItem("partViewMode");
+    return (savedMode as ViewMode) || "panel";
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -31,7 +35,7 @@ export function Inventory() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState(""); // ✅ Debounce
 
-  // 🟡 Sorting states
+  //  Sorting states
   const [sortType, setSortType] = useState("Name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -42,13 +46,13 @@ export function Inventory() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
 
-  // ✅ FILTER PARAMETERS STATE
+  //  FILTER PARAMETERS STATE
   const [filterParams, setFilterParams] = useState<FetchPartsParams>({
-    page: 1, 
-    limit: 50 
+    page: 1,
+    limit: 50,
   });
 
-  // ✅ DEBOUNCE EFFECT
+  //  DEBOUNCE EFFECT
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
@@ -56,7 +60,15 @@ export function Inventory() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // ✅ Refresh helper function (Memoized with Filters)
+  useEffect(() => {
+    if (viewMode === "table") {
+      localStorage.setItem("partViewMode", "table");
+    } else {
+      localStorage.removeItem("partViewMode");
+    }
+  }, [viewMode]);
+
+  // Refresh helper function (Memoized with Filters)
   const refreshParts = useCallback(async () => {
     let res: any;
     try {
@@ -68,12 +80,12 @@ export function Inventory() {
         // Note: API uses 'name' for search
         const apiPayload = {
           ...filterParams,
-          name: debouncedSearch || undefined 
+          name: debouncedSearch || undefined,
         };
         // console.log("🔥 Parts API Call:", apiPayload);
         res = await partService.fetchParts(apiPayload);
       }
-      
+
       setParts(res || []);
     } catch (err: any) {
       console.error("Error fetching parts:", err);
@@ -90,13 +102,16 @@ export function Inventory() {
   }, [refreshParts, viewMode]);
 
   // ✅ HANDLER: Filter Change
-  const handleFilterChange = useCallback((newParams: Partial<FetchPartsParams>) => {
-    setFilterParams((prev) => {
-      const merged = { ...prev, ...newParams };
-      if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
-      return merged;
-    });
-  }, []);
+  const handleFilterChange = useCallback(
+    (newParams: Partial<FetchPartsParams>) => {
+      setFilterParams((prev) => {
+        const merged = { ...prev, ...newParams };
+        if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
+        return merged;
+      });
+    },
+    []
+  );
 
   // ✅ Refresh when coming back from delete/edit
   useEffect(() => {
