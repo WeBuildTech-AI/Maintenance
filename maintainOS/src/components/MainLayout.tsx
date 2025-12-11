@@ -3,7 +3,11 @@ import { Menu } from "lucide-react";
 import { Button } from "./ui/button"; 
 import { Sidebar } from "./Sidebar";
 // ADD: React Context ke liye 'createContext' aur 'useContext' ko import kiya
-import { createContext, useContext, useState } from "react"; 
+import { createContext, use, useContext, useState } from "react"; 
+import { useNavigate } from "react-router-dom";
+import {logout} from "../store/auth/auth.thunks";
+import { type AppDispatch } from "../store";
+import { useDispatch } from "react-redux";
 
 interface MainLayoutProps {
   user?: { fullName: string; email: string; avatar?: string };
@@ -31,6 +35,15 @@ export const useLayout = () => useContext(LayoutContext);
 export function MainLayout({ user, onLogout, children }: MainLayoutProps) {
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [expanded, setExpanded] = useState(true);
+
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate('/login');
+  };
+
 
   // ADD: Dono widths ko ek jagah define kiya (Tailwind ke hisaab se)
   // w-64 = 16rem = 256px
@@ -81,7 +94,7 @@ export function MainLayout({ user, onLogout, children }: MainLayoutProps) {
             expanded={expanded}
             setExpanded={setExpanded}
             user={user}
-            onLogout={onLogout}
+            onLogout={handleLogout}
           />
         </div>
 

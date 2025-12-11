@@ -1,11 +1,9 @@
-import axios from "axios";
 import type {
   CreateUserData,
   UpdateUserData,
   UserResponse,
 } from "./users.types";
 
-const API_URL = import.meta.env.VITE_API_URL;
 import api from "../auth/auth.service";
 export const userService = {
   // ✅ Fetch paginated users
