@@ -12,7 +12,7 @@ import toast from "react-hot-toast";
 import SettingsModal from "../utils/SettingsModal";
 import { type Vendor } from "./vendors.types";
 import { vendorService } from "../../store/vendors";
-import AssetTableModal from "../Assets/AssetsTable/AssetTableModal";
+import AssetTableModal from "../utils/AssetTableModal";
 import { Tooltip } from "../ui/tooltip";
 
 // --- Helper Functions ---

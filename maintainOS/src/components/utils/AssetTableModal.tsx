@@ -8,23 +8,23 @@ import { X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
-import { AssetDetail } from "../AssetDetail/AssetDetail";
-import type { Asset } from "../Assets";
-import { MeterDetail } from "../../Meters/MeterDetail/MeterDetail";
-import LocationDetails from "../../Locations/LocationDetails";
-import VendorDetails from "../../vendors/VendorDetails/VendorDetails";
-import { PartDetails } from "../../Inventory/PartDetail/PartDetails";
-import PurchaseOrderDetails from "../../purchase-orders/PurchaseOrderDetails";
-import { NewAssetForm } from "../NewAssetForm/NewAssetForm";
+import { AssetDetail } from "../Assets/AssetDetail/AssetDetail";
+import type { Asset } from "../Assets/Assets";
+import { MeterDetail } from "../Meters/MeterDetail/MeterDetail";
+import LocationDetails from "../Locations/LocationDetails";
+import VendorDetails from "../vendors/VendorDetails/VendorDetails";
+import { PartDetails } from "../Inventory/PartDetail/PartDetails";
+import PurchaseOrderDetails from "../purchase-orders/PurchaseOrderDetails";
+import { NewAssetForm } from "../Assets/NewAssetForm/NewAssetForm";
 
 // Meter Components
-import { ReadingHistory } from "../../Meters/MeterDetail/ReadingHistory";
-import RecordReadingModal from "../../Meters/MeterDetail/RecordReadingModal";
-import { NewMeterForm } from "../../Meters/NewMeterForm/NewMeterForm";
+import { ReadingHistory } from "../Meters/MeterDetail/ReadingHistory";
+import RecordReadingModal from "../Meters/MeterDetail/RecordReadingModal";
+import { NewMeterForm } from "../Meters/NewMeterForm/NewMeterForm";
 
 // PO Service & Modal
-import { purchaseOrderService } from "../../../store/purchaseOrders";
-import ConfirmationModal from "../../purchase-orders/ConfirmationModal";
+import { purchaseOrderService } from "../../store/purchaseOrders";
+import ConfirmationModal from "../purchase-orders/ConfirmationModal";
 
 interface AssetTableModalProps {
   data: any;
@@ -55,7 +55,6 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
 
   // Asset Editing State
   const [isEditing, setIsEditing] = useState(false);
-
   // Meter States
   const [isMeterEditing, setIsMeterEditing] = useState(false);
   const [showMeterHistory, setShowMeterHistory] = useState(false);
@@ -66,7 +65,7 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
     "reject" | "approve" | "delete" | "fullfill" | "cancelled" | null
   >(null);
   const [isPoLoading, setIsPoLoading] = useState(false);
-
+  const [showCommentSection, setShowCommentSection] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
 
   const handleContentClick = (e: React.MouseEvent) => {
@@ -277,9 +276,7 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
             <PurchaseOrderDetails
               selectedPO={data}
               updateState={() => {}}
-              // ⭐ This triggers the state change to open ConfirmationModal
               setModalAction={setPoModalAction}
-              // This is used for standard confirm inside PO Details (if any)
               handleConfirm={handlePoConfirm}
               topRef={{ current: null }}
               commentsRef={{ current: null }}
@@ -294,6 +291,7 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
               restoreData={restoreData}
               onClose={onClose}
               showDeleted={showDeleted}
+              showCommentSection={showCommentSection}
             />
           )}
         </div>
@@ -318,6 +316,7 @@ const AssetTableModal: React.FC<AssetTableModalProps> = ({
                 ? poModalContent[poModalAction].confirmButtonText
                 : ""
             }
+            
             confirmButtonVariant={
               poModalAction ? poModalContent[poModalAction].variant : "warning"
             }

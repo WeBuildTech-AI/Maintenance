@@ -1,3 +1,6 @@
+// PartDetails.tsx
+"use client";
+
 import {
   Building2,
   CalendarDays,
@@ -9,6 +12,9 @@ import {
   Package2,
   Plus,
   UserCircle2,
+  Maximize2,
+  Minimize2,
+  X // Close icon
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -22,13 +28,20 @@ import { PartImages } from "./PartImages";
 import { PartFiles } from "./PartFiles";
 import { partService } from "../../../store/parts";
 
+// ✅ Import Dropdown
+import PartOptionsDropdown from "./PartOptionsDropdown";
+
+// ✅ Import Forms for In-Place Rendering
+import RestockModal from "./RestockModal"; 
+import { NewPartForm } from "../NewPartForm/NewPartForm";
+
 export function PartDetails({
   item,
   stockStatus,
   onClose,
   restoreData,
-  onEdit,
-  onDeleteSuccess, //added prop
+  onEdit, 
+  onDeleteSuccess,
   fetchPartData,
 }: {
   item: any;
@@ -36,28 +49,78 @@ export function PartDetails({
   onClose: () => void;
   stockStatus?: { ok: boolean; delta: number } | null;
   onEdit: () => void;
-  onDeleteSuccess: (id: string) => void; // ✅ added type
+  onDeleteSuccess: (id: string) => void;
   fetchPartData: () => void;
 }) {
   const [activeTab, setActiveTab] = useState<"details" | "history">("details");
-  const [menuOpen, setMenuOpen] = useState(false);
+  
+  // ✅ 1. Local State for Real-time Updates (initialized with prop item)
+  const [partData, setPartData] = useState<any>(item);
+
+  // Sync if parent item changes
+  useEffect(() => {
+    setPartData(item);
+  }, [item]);
+
+  // ✅ 2. Helper to fetch fresh data immediately
+  const refreshLocalData = async () => {
+    if (!partData?.id) return;
+    try {
+      // Fetch fresh details for this specific part
+      const freshData = await partService.fetchPartById(partData.id);
+      setPartData(freshData);
+      
+      // Also refresh the parent list
+      if (fetchPartData) fetchPartData();
+    } catch (error) {
+      console.error("Failed to refresh part details:", error);
+    }
+  };
+
+  // ✅ View States
+  const [isEditing, setIsEditing] = useState(false);
+  const [editItem, setEditItem] = useState<any>(null);
+  
+  // ✅ Resize State (Expanded View)
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // ✅ Dropdown & Modal States
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showRestockModal, setShowRestockModal] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [editLoading, setEditLoading] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
 
+  // --- 1. Fetch Full Data on Edit ---
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setMenuOpen(false);
-      }
+    if (isEditing && partData?.id) {
+       setLoading(true);
+       partService.fetchPartById(partData.id)
+         .then((fullData) => {
+            setEditItem({
+                ...fullData,
+                _original: fullData,
+                pictures: fullData.photos || [],
+                files: fullData.files || [],
+                partsType: fullData.partsType || [],
+                assetIds: fullData.assetIds || [],
+                teamsInCharge: fullData.teamsInCharge || [],
+                vendorIds: fullData.vendorIds || [],
+                vendors: fullData.vendors || [],
+            });
+         })
+         .catch((err) => {
+            console.error("Failed to fetch full part details:", err);
+            toast.error("Could not load part details for editing");
+            setIsEditing(false);
+         })
+         .finally(() => setLoading(false));
     }
-    if (menuOpen) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [menuOpen]);
+  }, [isEditing, partData]);
 
   const handleCopyClick = () => {
     const url = window.location.href;
@@ -70,73 +133,102 @@ export function PartDetails({
   const handleDeletePart = async () => {
     try {
       setLoading(true);
-      await dispatch(deletePart(item.id)).unwrap();
+      await dispatch(deletePart(partData.id)).unwrap();
       toast.success("Part deleted successfully!");
       setShowDeleteModal(false);
-
-      //  instantly update list
-      onDeleteSuccess(item.id);
-
-      //  navigate back to inventory
-      navigate("/inventory");
+      if(onDeleteSuccess) onDeleteSuccess(partData.id);
+      if(onClose) onClose(); 
     } catch (error: any) {
-      console.error(" Delete failed:", error);
+      console.error("Delete failed:", error);
       toast.error(error || "Failed to delete part");
     } finally {
       setLoading(false);
     }
   };
 
-  //  instant navigation + send data to edit route (prefill)
-  const handleEditPart = () => {
-    setEditLoading(true);
-    navigate(`/inventory/${item.id}/edit`, {
-      state: { partData: item },
-    });
-    setTimeout(() => setEditLoading(false), 800);
-  };
-
-  const handleRestorePartData = async (id) => {
+  const handleRestorePartData = async (id: string) => {
     try {
       await partService.restorePartData(id);
-      onClose();
-      fetchPartData();
-      toast.success("Successfully Restore the Data");
+      if(onClose) onClose();
+      refreshLocalData();
+      toast.success("Successfully Restored the Data");
     } catch (err) {
       toast.error("Failed to Restore the Data");
     }
   };
 
-  const availableUnits =
-    item.unitsInStock ?? item.locations?.[0]?.unitsInStock ?? 0;
-  const minUnits = item.minInStock ?? item.locations?.[0]?.minimumInStock ?? 0;
-  const partType = Array.isArray(item.partsType)
-    ? item.partsType[0]?.name || item.partsType[0] || "N/A"
-    : item.partsType?.name || "N/A";
+  const handleDeleteClick = () => {
+    setShowDeleteModal(true);
+    setIsDropdownOpen(false);
+  };
+
+  // --- 🔄 RENDER: EDIT FORM (In-Place) ---
+  if (isEditing) {
+    if(loading || !editItem) {
+        return (
+            <div className="flex flex-col items-center justify-center h-64">
+                <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                <p className="mt-4 text-gray-500 text-sm">Loading full details...</p>
+            </div>
+        )
+    }
+
+    return (
+      <div className={`flex flex-col h-full bg-white relative animate-in fade-in zoom-in-95 duration-200 ${isExpanded ? 'fixed inset-2 z-[99999] shadow-2xl rounded-lg border border-gray-300' : ''}`}>
+         {/* Edit Header */}
+         
+         <div className="flex-1 overflow-hidden">
+            <NewPartForm 
+                newItem={editItem}
+                setNewItem={setEditItem}
+                addVendorRow={() => setEditItem((prev: any) => ({ ...prev, vendors: [...(prev.vendors || []), { vendorId: "", orderingPartNumber: "" }] }))}
+                removeVendorRow={(idx: number) => setEditItem((prev: any) => ({ ...prev, vendors: (prev.vendors || []).filter((_: any, i: number) => i !== idx) }))}
+                onCancel={() => setIsEditing(false)}
+                onCreate={() => {
+                    setIsEditing(false);
+                    refreshLocalData(); // ✅ Refresh on Edit Success
+                }}
+            />
+         </div>
+      </div>
+    );
+  }
+
+  // --- 🔄 RENDER: DETAILS VIEW ---
+  // ✅ Use partData instead of item
+  const availableUnits = partData.unitsInStock ?? partData.locations?.[0]?.unitsInStock ?? 0;
+  const minUnits = partData.minInStock ?? partData.locations?.[0]?.minimumInStock ?? 0;
+  const partType = Array.isArray(partData.partsType) ? partData.partsType[0]?.name || partData.partsType[0] || "N/A" : partData.partsType?.name || "N/A";
 
   return (
-    <div className="flex flex-col h-full bg-white shadow-sm border relative">
-      {editLoading && (
-        <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-50">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-10 h-10 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-yellow-600 font-medium text-sm">
-              Opening edit form...
-            </p>
-          </div>
-        </div>
-      )}
-
+    <div 
+      // ✅ RESIZE FIX: Use fixed positioning to break out of modal when expanded
+      className={`flex flex-col h-full bg-white shadow-sm border relative transition-all duration-200 
+        ${isExpanded ? 'fixed inset-2 z-[99999] rounded-lg shadow-2xl w-auto h-auto' : ''}`}
+    >
+      
       {/* Header */}
       <div className="flex justify-between items-start p-6 relative">
         <div>
-          <h2 className="text-2xl font-normal">{item.name}</h2>
+          <h2 className="text-2xl font-normal">{partData.name}</h2>
           <p className="text-base text-gray-700 mt-2">
             {availableUnits} units in stock
           </p>
         </div>
 
-        <div className="flex items-center gap-3 relative">
+        <div className="flex items-center gap-2 relative">
+          
+          {/* ✅ Resize / Expand Icon */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="text-gray-400 hover:text-gray-600 hidden sm:flex"
+            title={isExpanded ? "Collapse" : "Expand"}
+          >
+            {isExpanded ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+          </Button>
+
           {/* Copy link */}
           <Button
             variant="ghost"
@@ -152,18 +244,18 @@ export function PartDetails({
             )}
           </Button>
 
-          {/* Restock */}
+          {/* ✅ Restock Button */}
           <Button
             className="bg-white text-yellow-600 hover:bg-yellow-50 border-2 border-yellow-400 rounded-md px-4 py-2 font-medium"
-            onClick={() => navigate(`/inventory/${item.id}/restock`)}
+            onClick={() => setShowRestockModal(true)}
           >
             <Plus className="h-4 w-4 mr-2" />
             Restock
           </Button>
 
-          {/* Edit */}
+          {/* ✅ Edit Button */}
           <Button
-            onClick={handleEditPart}
+            onClick={() => setIsEditing(true)}
             className="bg-white text-yellow-600 hover:bg-yellow-50 border-2 border-yellow-400 rounded-md px-4 py-2 font-medium"
           >
             <Edit className="h-4 w-4 mr-2" />
@@ -173,67 +265,38 @@ export function PartDetails({
           {/* Menu */}
           <div className="relative">
             <Button
+              ref={buttonRef} 
               variant="ghost"
               size="icon"
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="text-gray-600 hover:bg-transparent"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className={`text-gray-600 hover:bg-transparent ${isDropdownOpen ? 'bg-gray-100' : ''}`}
             >
               <MoreVertical className="h-5 w-5" />
             </Button>
 
-            {menuOpen && !restoreData && (
-              <div
-                ref={menuRef}
-                className="absolute mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50"
-                style={{ right: "10px", transform: "translateX(-10%)" }}
-              >
-                <ul className="text-gray-800 text-sm">
-                  <li className="px-4 py-2 hover:bg-gray-50 cursor-pointer">
-                    Order this Part
-                  </li>
-                  <li className="px-4 py-2 hover:bg-gray-50 cursor-pointer">
-                    Copy to New Part
-                  </li>
-                  <li className="px-4 py-2 hover:bg-gray-50 cursor-pointer">
-                    Export QR Codes
-                  </li>
-                  <hr className="my-1 border-yellow-200" />
-                  <li
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setShowDeleteModal(true);
-                    }}
-                    className="px-4 py-2 text-red-500 hover:bg-red-50 cursor-pointer"
-                  >
-                    Delete
-                  </li>
-                </ul>
-              </div>
-            )}
-            {restoreData && menuOpen && (
-              <div
-                ref={menuRef}
-                className="absolute mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50"
-                style={{ right: "10px", transform: "translateX(-10%)" }}
-              >
-                <ul className="text-gray-800 text-sm">
-                  <li
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setShowDeleteModal(true);
-                    }}
-                    className="px-4 py-2 text-red-500 hover:bg-red-50 cursor-pointer"
-                  >
-                    Delete
-                  </li>
-                  <li
-                    className="px-4 py-2 text-red-500 hover:bg-red-50 cursor-pointer"
-                    onClick={() => handleRestorePartData(item.id)}
-                  >
-                    Restore
-                  </li>
-                </ul>
-              </div>
+            {restoreData ? (
+                 isDropdownOpen && (
+                  <div className="absolute mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50 right-0">
+                    <ul className="text-gray-800 text-sm">
+                      <li onClick={handleDeleteClick} className="px-4 py-2 text-red-500 hover:bg-red-50 cursor-pointer">
+                        Delete Permanently
+                      </li>
+                      <li className="px-4 py-2 text-green-600 hover:bg-green-50 cursor-pointer" onClick={() => handleRestorePartData(partData.id)}>
+                        Restore
+                      </li>
+                    </ul>
+                  </div>
+                 )
+            ) : (
+                <PartOptionsDropdown 
+                    isOpen={isDropdownOpen}
+                    onClose={() => setIsDropdownOpen(false)}
+                    triggerRef={buttonRef}
+                    onOrder={() => toast("Order clicked")}
+                    onCopy={() => toast("Copy clicked")}
+                    onExportQR={() => toast("Export QR clicked")}
+                    onDelete={handleDeleteClick}
+                />
             )}
           </div>
         </div>
@@ -267,7 +330,6 @@ export function PartDetails({
       <div className="flex-1 overflow-y-auto p-6 pb-24">
         {activeTab === "details" ? (
           <>
-            {/* Top Stats */}
             <div className="grid grid-cols-3 gap-8 mb-8 pb-8">
               <div>
                 <h4 className="text-sm text-gray-600 mb-2">Minimum in Stock</h4>
@@ -276,7 +338,7 @@ export function PartDetails({
               <div>
                 <h4 className="text-sm text-gray-600 mb-2">Unit Cost</h4>
                 <p className="text-base font-normal">
-                  ${item.unitCost?.toFixed(2) || "0.00"}
+                  ${partData.unitCost?.toFixed(2) || "0.00"}
                 </p>
               </div>
               <div>
@@ -287,7 +349,6 @@ export function PartDetails({
               </div>
             </div>
 
-            {/* Available Quantity */}
             <div className="mb-8">
               <h4 className="text-sm text-gray-600 mb-2">Available Quantity</h4>
               <p className="text-base font-normal">{availableUnits} units</p>
@@ -295,26 +356,21 @@ export function PartDetails({
 
             <hr className="border-t border-gray-200 my-4" />
 
-            {/* Location Table */}
             <div className="mt-4 mb-8">
               <h4 className="font-medium text-gray-800 mb-3">Location</h4>
               <div className="overflow-x-auto rounded-lg border border-gray-200">
                 <table className="w-full text-sm text-gray-700">
                   <thead className="bg-gray-50 text-gray-700">
                     <tr>
-                      <th className="py-3 px-4 text-left font-medium">
-                        Location
-                      </th>
+                      <th className="py-3 px-4 text-left font-medium">Location</th>
                       <th className="py-3 px-4 text-left font-medium">Area</th>
                       <th className="py-3 px-4 text-left font-medium">Units</th>
-                      <th className="py-3 px-4 text-left font-medium">
-                        Minimum
-                      </th>
+                      <th className="py-3 px-4 text-left font-medium">Minimum</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white">
-                    {item.locations?.length ? (
-                      item.locations.map((loc: any, i: number) => (
+                    {partData.locations?.length ? (
+                      partData.locations.map((loc: any, i: number) => (
                         <tr key={i} className="border-t hover:bg-gray-50">
                           <td className="py-3 px-4 flex items-center gap-2">
                             <MapPin className="w-5 h-5 text-gray-600 shrink-0" />
@@ -331,10 +387,7 @@ export function PartDetails({
                       ))
                     ) : (
                       <tr>
-                        <td
-                          colSpan={4}
-                          className="text-center text-gray-500 py-3"
-                        >
+                        <td colSpan={4} className="text-center text-gray-500 py-3">
                           No location data available
                         </td>
                       </tr>
@@ -344,19 +397,15 @@ export function PartDetails({
               </div>
             </div>
 
-            {/* Part Images*/}
-            <PartImages part={item} />
-
-            {/* Part Files */}
-            <PartFiles part={item} />
+            <PartImages part={partData} />
+            <PartFiles part={partData} />
 
             <hr className="border-t border-gray-200 my-4" />
 
-            {/* Description */}
             <div className="py-4">
               <h4 className="font-medium text-gray-900 mb-2">Description</h4>
               <p className="text-gray-700 text-base leading-relaxed">
-                {item.description || "No description available"}
+                {partData.description || "No description available"}
               </p>
             </div>
 
@@ -367,11 +416,11 @@ export function PartDetails({
               <div>
                 <h4 className="font-medium text-gray-900 mb-3">QR Code</h4>
                 <p className="text-sm text-gray-700 mb-3">
-                  {(item.qrCode && item.qrCode.split("/").pop()) || "N/A"}
+                  {(partData.qrCode && partData.qrCode.split("/").pop()) || "N/A"}
                 </p>
                 <div className="bg-white rounded-md shadow-sm flex items-center">
                   <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${item.qrCode}`}
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${partData.qrCode}`}
                     alt="QR Code"
                     className="rounded-md"
                   />
@@ -379,14 +428,11 @@ export function PartDetails({
               </div>
               <div>
                 <h4 className="font-medium text-gray-900 mb-3">
-                  Assets ({item.assets?.length || 0})
+                  Assets ({partData.assets?.length || 0})
                 </h4>
-                {item.assets?.length > 0 ? (
-                  item.assets.map((a: any, i: number) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-2 text-gray-700 mb-2"
-                    >
+                {partData.assets?.length > 0 ? (
+                  partData.assets.map((a: any, i: number) => (
+                    <div key={i} className="flex items-center gap-2 text-gray-700 mb-2">
                       <div className="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center">
                         <Package2 className="w-5 h-5 text-yellow-500" />
                       </div>
@@ -406,16 +452,23 @@ export function PartDetails({
             {/* Vendors */}
             <div className="pb-6 mb-8 mt-4 border-b">
               <h4 className="font-medium text-gray-800 mb-3">Vendors</h4>
-              {item.vendors?.length > 0 ? (
-                item.vendors.map((v: any, i: number) => (
+              {partData.vendors?.length > 0 ? (
+                partData.vendors.map((v: any, i: number) => (
                   <div
                     key={i}
-                    className="flex items-center gap-2 text-gray-700 mb-1"
+                    onClick={() => {
+                        if (v.id || v.vendorId) {
+                            navigate(`/vendors/${v.id || v.vendorId}`);
+                        }
+                    }}
+                    className="flex items-center gap-2 text-gray-700 mb-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded-md transition-colors group"
                   >
-                    <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white font-medium text-sm">
+                    <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white font-medium text-sm group-hover:ring-2 group-hover:ring-green-200">
                       {v.name?.charAt(0).toUpperCase()}
                     </div>
-                    <span className="text-gray-600">{v.name}</span>
+                    <span className="text-gray-600 font-medium group-hover:text-blue-600 group-hover:underline">
+                        {v.name}
+                    </span>
                   </div>
                 ))
               ) : (
@@ -426,12 +479,9 @@ export function PartDetails({
             {/* Teams */}
             <div className="pb-6 mb-8 mt-4 border-b">
               <h4 className="font-medium text-gray-800 mb-3">Teams</h4>
-              {item.teams?.length > 0 ? (
-                item.teams.map((t: any, i: number) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-2 text-gray-700 mb-1"
-                  >
+              {partData.teams?.length > 0 ? (
+                partData.teams.map((t: any, i: number) => (
+                  <div key={i} className="flex items-center gap-2 text-gray-700 mb-1">
                     <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium text-sm">
                       {t.name?.charAt(0).toUpperCase()}
                     </div>
@@ -450,19 +500,18 @@ export function PartDetails({
                 <span>Created</span>
                 <CalendarDays className="w-4 h-4 text-gray-500 ml-1" />
                 <span>
-                  {item.createdAt
-                    ? new Date(item.createdAt).toLocaleString()
+                  {partData.createdAt
+                    ? new Date(partData.createdAt).toLocaleString()
                     : "N/A"}
                 </span>
               </div>
               <div className="flex items-center gap-1 text-sm text-gray-600">
                 <UserCircle2 className="w-4 h-4 text-yellow-500" />
                 <span>Last Updated</span>
-
                 <CalendarDays className="w-4 h-4 text-gray-500 ml-1" />
                 <span>
-                  {item.updatedAt
-                    ? new Date(item.updatedAt).toLocaleString()
+                  {partData.updatedAt
+                    ? new Date(partData.updatedAt).toLocaleString()
                     : "N/A"}
                 </span>
               </div>
@@ -500,6 +549,19 @@ export function PartDetails({
           isOpen={showDeleteModal}
           onClose={() => setShowDeleteModal(false)}
           onConfirm={handleDeletePart}
+        />
+      )}
+
+      {/* ✅ Restock Modal (Internal) */}
+      {showRestockModal && (
+        <RestockModal
+            isOpen={showRestockModal}
+            onClose={() => setShowRestockModal(false)}
+            part={partData} // ✅ Pass current state
+            onConfirm={() => {
+                setShowRestockModal(false);
+                refreshLocalData(); // ✅ REFRESH ON CONFIRM
+            }}
         />
       )}
     </div>

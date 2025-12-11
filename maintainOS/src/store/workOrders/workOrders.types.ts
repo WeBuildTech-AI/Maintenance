@@ -148,9 +148,19 @@ export interface FetchWorkOrdersParams {
   [key: string]: any; 
 }
 
+export interface FieldResponse {
+  id: string;
+  submissionId: string;
+  fieldId: string;
+  value: any;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+//  UPDATED: Schema matches your new API definition
 export interface CreateFieldResponseData {
-  workOrderId: string;
-  procedureId: string;
+  submissionId: string; // Changed from workOrderId/procedureId
   fieldId: string;
   value: string | number | boolean;
   notes?: string;

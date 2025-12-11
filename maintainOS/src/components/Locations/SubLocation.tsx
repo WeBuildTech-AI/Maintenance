@@ -1,6 +1,9 @@
 import React from "react";
 import { formatDate } from "../utils/Date";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import type { RootState } from "../../store";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
 interface LocationDetailsProps {
   onClose: () => void;
@@ -16,6 +19,7 @@ const SubLocation: React.FC<LocationDetailsProps> = ({
   const navigate = useNavigate();
 
   if (!selectedLocation) return null;
+  const user = useSelector((state: RootState) => state.auth.user);
 
   return (
     <div className="w-full min-h-screen bg-white flex flex-col relative">
@@ -23,7 +27,7 @@ const SubLocation: React.FC<LocationDetailsProps> = ({
       <div className="flex items-center justify-between px-4 py-4 border-b">
         <div className="flex items-center gap-3">
           <button className="text-gray-700 text-xl" onClick={onClose}>
-            &#8592;
+            <ArrowLeft />
           </button>
 
           {/* ✅ FIX: Yahan Sub-Location ka naam aayega */}
@@ -57,9 +61,9 @@ const SubLocation: React.FC<LocationDetailsProps> = ({
       </div>
 
       {/* --- Content --- */}
-      <div className="px-6 py-6 flex-1">
+      <div className=" flex-1">
         {/* Parent Location Section */}
-        <div>
+        <div className="p-4">
           <p className="text-gray-500 font-medium">Parent Location</p>
 
           <div className="flex items-center gap-3 mt-2">
@@ -74,13 +78,11 @@ const SubLocation: React.FC<LocationDetailsProps> = ({
         <hr className="my-8" />
 
         {/* Created By Info */}
-        <div className="flex items-center gap-2 text-gray-700">
+        <div className="flex items-center gap-2 text-gray-700 p-4">
           <span>Created By</span>
           <span className="text-xl">⚽</span>
-          <span className="font-medium capitalize">
-            {selectedLocation.createdBy?.fullName ||
-              selectedLocation.createdById ||
-              "Unknown"}
+          <span className="font-medium capitalize text-orange-600">
+            {user?.fullName || user?.fullName}
           </span>
           <span className="text-gray-500">
             on {formatDate(selectedLocation.createdAt)}

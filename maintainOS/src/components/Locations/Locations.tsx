@@ -15,7 +15,7 @@ import { LocationTable } from "./LocationTable";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import type { AppDispatch, RootState } from "../../store";
 import { useDispatch, useSelector } from "react-redux";
-// ✅ useSearchParams import kiya gaya hai URL sync ke liye
+// ✅ useSearchParams import for URL sync
 import {
   useNavigate,
   useMatch,
@@ -32,7 +32,7 @@ export function Locations() {
   // ✅ 1. URL Search Params Setup
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // ✅ 2. Initialize State from URL (Refresh hone par yahan se value uthayega)
+  // ✅ 2. Initialize State
   const [searchQuery, setSearchQuery] = useState(
     () => searchParams.get("search") || ""
   );
@@ -55,6 +55,9 @@ export function Locations() {
   const [error, setError] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] =
     useState<LocationResponse | null>(null);
+
+  // ⭐ NEW STATE: To store the clicked sub-location data
+  const [activeSubLocation, setActiveSubLocation] = useState<any>(null);
 
   const { locationId } = useParams();
 
@@ -79,21 +82,46 @@ export function Locations() {
   );
 
   const isEditMode = !!isEditRoute;
-  const locationToEdit = isEditMode
-    ? locations.find((loc) => loc.id === isEditRoute?.params.locationId)
-    : null;
   const parentIdFromUrl = isCreateSubLocationRoute?.params.parentId;
 
-  // ✅ 3. Sync State TO URL (State change hone par URL update karega)
+  // ✅ HELPER: Recursive Search to find location even inside children
+  const findLocationDeep = (
+    data: LocationResponse[],
+    id: string
+  ): LocationResponse | undefined => {
+    for (const item of data) {
+      if (item.id === id) return item;
+      if (item.children && item.children.length > 0) {
+        const found = findLocationDeep(item.children, id);
+        if (found) return found;
+      }
+    }
+    return undefined;
+  };
+
+  // ✅ UPDATED: Edit Logic to support Sub-Locations & Refresh
+  const locationToEdit = useMemo(() => {
+    if (!isEditMode || !isEditRoute?.params.locationId) return null;
+
+    const targetId = isEditRoute.params.locationId;
+
+    // 1. Try finding in the main list (Deep Search)
+    const foundInList = findLocationDeep(locations, targetId);
+    if (foundInList) return foundInList;
+
+    // 2. Fallback: Check if selectedLocation matches (useful on page refresh)
+    if (selectedLocation?.id === targetId) return selectedLocation;
+
+    return null;
+  }, [isEditMode, isEditRoute, locations, selectedLocation]);
+
+  // ✅ 3. Sync State TO URL
   useEffect(() => {
     const params: any = {};
-
-    // if (viewMode) params.viewMode = viewMode;
     if (debouncedSearch) params.search = debouncedSearch;
     if (filterParams.page && filterParams.page > 1)
       params.page = filterParams.page.toString();
 
-    // Existing query params ko maintain karte hue naye set karein
     setSearchParams(params, { replace: true });
   }, [viewMode, debouncedSearch, filterParams.page, setSearchParams]);
 
@@ -126,7 +154,7 @@ export function Locations() {
     [navigate]
   );
 
-  // ✅ Main List Fetch Function (Updated dependencies)
+  // ✅ Main List Fetch Function
   const fetchLocations = useCallback(async () => {
     setLoading(true);
     try {
@@ -156,33 +184,23 @@ export function Locations() {
     fetchLocations();
   }, [fetchLocations]);
 
-  // ✅ CORE FIX: Selection Logic (Deep Linking + Default Selection)
-  // Yeh useEffect ensure karta hai ki agar URL mein ID hai to wahi open ho, chahe refresh karein
+  // ✅ Selection Logic
   useEffect(() => {
-    // 1. Create/Edit Mode check (Skip logic if creating new)
     if (isCreateRoute || isCreateSubLocationRoute) {
       return;
     }
 
-    // 2. URL ID Logic (High Priority)
     if (locationId) {
-      // Agar already wahi location selected hai to kuch mat karo
       if (selectedLocation?.id === locationId) return;
-
-      // Check karo ki kya ye ID loaded list mein hai?
-      const foundInList = locations.find((l) => l.id === locationId);
+      // Use Deep Search here too
+      const foundInList = findLocationDeep(locations, locationId);
 
       if (foundInList) {
-        // List mein mil gaya -> Select kar lo
         setSelectedLocation(foundInList);
       } else {
-        // 🔴 List mein nahi mila (Refresh Case) -> API se fetch karo
-        // Hum yahan 'loading' ka wait nahi karenge taaki URL wala data turant dikhe.
         fetchLocationById(locationId);
       }
-    }
-    // 3. Default Selection (Sirf tab jab URL mein koi ID nahi hai)
-    else if (!loading && locations.length > 0 && !selectedLocation) {
+    } else if (!loading && locations.length > 0 && !selectedLocation) {
       const firstLocation = locations[0];
       setSelectedLocation(firstLocation);
       navigate(`/locations/${firstLocation.id}`, { replace: true });
@@ -190,7 +208,6 @@ export function Locations() {
   }, [
     locationId,
     locations,
-    // loading, // Loading dependency hata di gayi hai taaki refresh par turant ID check ho
     isCreateRoute,
     isCreateSubLocationRoute,
     fetchLocationById,
@@ -230,22 +247,12 @@ export function Locations() {
   };
 
   const handleFormSuccess = (locationData: LocationResponse) => {
-    const locationIndex = locations.findIndex(
-      (loc) => loc.id === locationData.id
-    );
-    let updatedLocations;
-    if (locationIndex > -1) {
-      updatedLocations = [...locations];
-      updatedLocations[locationIndex] = locationData;
-    } else {
-      updatedLocations = [locationData, ...locations];
-    }
-    setLocations(updatedLocations);
+    // Refresh List to ensure hierarchy is correct
+    fetchLocations();
     setSelectedLocation(locationData);
     navigate(`/locations/${locationData.id}`);
   };
 
-  // ✅ Updated handleFilterChange to work with State->URL flow
   const handleFilterChange = useCallback(
     (newParams: Partial<FetchLocationsParams>) => {
       setFilterParams((prev) => {
@@ -281,7 +288,7 @@ export function Locations() {
     return items;
   }, [locations, sortType, sortOrder]);
 
-  // Dropdown positioning & Clicks
+  // Dropdown positioning
   useEffect(() => {
     if (isDropdownOpen && headerRef.current) {
       const rect = headerRef.current.getBoundingClientRect();
@@ -325,7 +332,6 @@ export function Locations() {
           setSelectedLocation(null);
           navigate("/locations");
         } else {
-          // Select next available
           const nextLoc = newLocationsList[0];
           setSelectedLocation(nextLoc);
           navigate(`/locations/${nextLoc.id}`);
@@ -604,16 +610,16 @@ export function Locations() {
                       onSuccess={handleFormSuccess}
                       fetchLocations={fetchLocations}
                       isEdit={isEditMode}
-                      editData={locationToEdit}
+                      editData={locationToEdit} // ✅ Now passing correct deep-searched data
                       initialParentId={parentIdFromUrl}
                       isSubLocation={!!isCreateSubLocationRoute}
-                      fetchLocationById={(id) => fetchLocationById(id || "")}
+                      fetchLocationById={() => {}}
                     />
                   ) : showSubLocation ? (
-                    /* 2️⃣ SHOW SUBLOCATION VIEW WHEN showSubLocation === true */
                     <SubLocation
-                      selectedLocation={selectedLocation}
+                      selectedLocation={activeSubLocation} // ✅ Uses activeSubLocation
                       onClose={() => setShowSubLocation(false)}
+                      parentName={selectedLocation?.name}
                     />
                   ) : selectedLocation ? (
                     /* 3️⃣ Normal Location Details View */
@@ -622,13 +628,20 @@ export function Locations() {
                       onEdit={(v) => navigate(`/locations/${v.id}/edit`)}
                       handleDeleteLocation={handleDeleteLocation}
                       handleShowNewSubLocationForm={() => {
-                        setShowSetLocation(true); // 👈 yeh toggle karega SubLocation view
+                        navigate(
+                          `/locations/${selectedLocation.id}/create-sublocation`
+                        );
                       }}
                       user={user}
                       restoreData={""}
                       fetchLocation={fetchLocations}
                       onClose={() => setSelectedLocation(null)}
                       setShowSubLocation={setShowSubLocation}
+                      // ✅ Handler for sub-location click
+                      onSubLocationClick={(subLoc) => {
+                        setActiveSubLocation(subLoc);
+                        setShowSubLocation(true);
+                      }}
                     />
                   ) : detailsLoading ? (
                     /* 4️⃣ Loader when fetching */

@@ -158,7 +158,7 @@ export function ToDoView({
   };
 
   // --------------------------------------------------
-  // 🧠 ASSIGNEE LOGIC
+  //  ASSIGNEE LOGIC
   const safeAssignee = (wo: any) =>
     wo?.assignees?.[0] ||
     wo?.assignedTo ||
@@ -187,7 +187,7 @@ export function ToDoView({
       : "U";
 
   // --------------------------------------------------
-  // ✳️ Navigation + editing logic
+  //  Navigation + editing logic
   const handleEditWorkOrder = (wo: any) => {
     setEditingWorkOrder(wo);
     if (wo?.id) navigate(`/work-orders/${wo.id}/edit`);
