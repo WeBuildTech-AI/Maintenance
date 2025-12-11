@@ -270,7 +270,7 @@ export function PurchaseOrders() {
         setSelectedPOId(null);
       }
     }
-  }, [routeId, getPurchaseOrderData, viewMode, editMatch, newPO.id]);
+  }, [routeId, getPurchaseOrderData, editMatch, newPO.id]);
 
   // ✅ HANDLER: Filter Change
   const handleFilterChange = useCallback(
