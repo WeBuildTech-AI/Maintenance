@@ -194,7 +194,7 @@ export function AssetsList({
       {loading ? (
         <Loader />
       ) : (
-        <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="flex-1 overflow-y-auto min-h-0 p-4">
           <div className="">
             {assets.map((asset) => (
               <AssetCard

@@ -1,6 +1,15 @@
 "use client";
 
-import { ChevronDown, MapPin, Check, ChevronUp } from "lucide-react";
+import {
+  ChevronDown,
+  MapPin,
+  Check,
+  ChevronUp,
+  Layers,
+  Building2,
+  ChevronRight,
+  ChevronLeft,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
@@ -12,10 +21,8 @@ import type { ViewMode } from "../purchase-orders/po.types";
 import { LocationHeaderComponent } from "./LocationsHeader";
 import Loader from "../Loader/Loader";
 import { LocationTable } from "./LocationTable";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import type { AppDispatch, RootState } from "../../store";
 import { useDispatch, useSelector } from "react-redux";
-// ✅ useSearchParams import for URL sync
 import {
   useNavigate,
   useMatch,
@@ -40,7 +47,7 @@ export function Locations() {
     () => searchParams.get("search") || ""
   );
 
-   const [viewMode, setViewMode] = useState<ViewMode>(() => {
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const savedMode = localStorage.getItem("locationViewMode");
     return (savedMode as ViewMode) || "panel";
   });
@@ -66,6 +73,8 @@ export function Locations() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   const user = useSelector((state: RootState) => state.auth.user);
+
+  // Sorting State
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [sortType, setSortType] = useState("Last Updated");
   const [sortOrder, setSortOrder] = useState("dsc");
@@ -73,8 +82,14 @@ export function Locations() {
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const headerRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+
   const [showDeleted, setShowDeleted] = useState(false);
   const [showSubLocation, setShowSubLocation] = useState(false);
+
+  // ✅ Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   const navigate = useNavigate();
   const isCreateRoute = useMatch("/locations/create");
   const isEditRoute = useMatch("/locations/:locationId/edit");
@@ -85,7 +100,7 @@ export function Locations() {
   const isEditMode = !!isEditRoute;
   const parentIdFromUrl = isCreateSubLocationRoute?.params.parentId;
 
-  // ✅ HELPER: Recursive Search to find location even inside children
+  // ✅ HELPER: Recursive Search
   const findLocationDeep = (
     data: LocationResponse[],
     id: string
@@ -100,44 +115,34 @@ export function Locations() {
     return undefined;
   };
 
-  // store the viewMode in local storage 
-
   useEffect(() => {
-  if (viewMode === "table") {
-    localStorage.setItem("locationViewMode", "table");
-  } else {
-    localStorage.removeItem("locationViewMode");
-  }
-}, [viewMode]);
+    if (viewMode === "table") {
+      localStorage.setItem("locationViewMode", "table");
+    } else {
+      localStorage.removeItem("locationViewMode");
+    }
+  }, [viewMode]);
 
-
-  // ✅ UPDATED: Edit Logic to support Sub-Locations & Refresh
+  // ✅ Edit Logic
   const locationToEdit = useMemo(() => {
     if (!isEditMode || !isEditRoute?.params.locationId) return null;
-
     const targetId = isEditRoute.params.locationId;
-
-    // 1. Try finding in the main list (Deep Search)
     const foundInList = findLocationDeep(locations, targetId);
     if (foundInList) return foundInList;
-
-    // 2. Fallback: Check if selectedLocation matches (useful on page refresh)
     if (selectedLocation?.id === targetId) return selectedLocation;
-
     return null;
   }, [isEditMode, isEditRoute, locations, selectedLocation]);
 
-  // ✅ 3. Sync State TO URL
+  // ✅ Sync State TO URL
   useEffect(() => {
     const params: any = {};
     if (debouncedSearch) params.search = debouncedSearch;
     if (filterParams.page && filterParams.page > 1)
       params.page = filterParams.page.toString();
-
     setSearchParams(params, { replace: true });
   }, [viewMode, debouncedSearch, filterParams.page, setSearchParams]);
 
-  // Debounce Effect
+  // Debounce
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
@@ -166,7 +171,7 @@ export function Locations() {
     [navigate]
   );
 
-  // ✅ Main List Fetch Function
+  // ✅ Main List Fetch
   const fetchLocations = useCallback(async () => {
     setLoading(true);
     try {
@@ -191,7 +196,6 @@ export function Locations() {
     }
   }, [showDeleted, filterParams, debouncedSearch]);
 
-  // Initial Fetch
   useEffect(() => {
     fetchLocations();
   }, [fetchLocations]);
@@ -204,9 +208,7 @@ export function Locations() {
 
     if (locationId) {
       if (selectedLocation?.id === locationId) return;
-      // Use Deep Search here too
       const foundInList = findLocationDeep(locations, locationId);
-
       if (foundInList) {
         setSelectedLocation(foundInList);
       } else {
@@ -227,7 +229,6 @@ export function Locations() {
     selectedLocation,
   ]);
 
-  // Handlers
   const handleShowNewLocationForm = () => navigate("/locations/create");
 
   const handleCancelForm = () => {
@@ -259,7 +260,6 @@ export function Locations() {
   };
 
   const handleFormSuccess = (locationData: LocationResponse) => {
-    // Refresh List to ensure hierarchy is correct
     fetchLocations();
     setSelectedLocation(locationData);
     navigate(`/locations/${locationData.id}`);
@@ -276,6 +276,7 @@ export function Locations() {
     []
   );
 
+  // ✅ Sorting Logic
   const sortedLocations = useMemo(() => {
     let items = [...locations];
     items.sort((a, b) => {
@@ -300,6 +301,22 @@ export function Locations() {
     return items;
   }, [locations, sortType, sortOrder]);
 
+  // ✅ Pagination Logic
+  const totalItems = sortedLocations.length;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+  const currentItems = sortedLocations.slice(startIndex, endIndex);
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) setCurrentPage((p) => p - 1);
+  };
+  const handleNextPage = () => {
+    if (endIndex < totalItems) setCurrentPage((p) => p + 1);
+  };
+
+  // Reset page when search or sort changes
+  useEffect(() => setCurrentPage(1), [sortType, sortOrder, debouncedSearch]);
+
   // Dropdown positioning
   useEffect(() => {
     if (isDropdownOpen && headerRef.current) {
@@ -323,16 +340,6 @@ export function Locations() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [modalRef]);
-
-  const sortLabel = useMemo(() => {
-    if (sortType === "Last Updated")
-      return sortOrder === "desc" ? "Most Recent First" : "Least Recent First";
-    if (sortType === "Creation Date")
-      return sortOrder === "desc" ? "Newest First" : "Oldest First";
-    if (sortType === "Name")
-      return sortOrder === "asc" ? "Ascending Order" : "Descending Order";
-    return "Sort By";
-  }, [sortType, sortOrder]);
 
   const handleDeleteLocation = (id: string) => {
     dispatch(deleteLocation(id))
@@ -369,7 +376,7 @@ export function Locations() {
       <div>
         <Toaster />
       </div>
-      <div className="flex h-full flex-col">
+      <div className="flex h-full flex-col bg-background">
         {LocationHeaderComponent(
           viewMode,
           setViewMode,
@@ -393,287 +400,295 @@ export function Locations() {
             setShowDeleted={setShowDeleted}
           />
         ) : (
-          <>
-            <div className="flex gap-2 flex-1 overflow-hidden mt-3 min-h-0">
-              <div className="border ml-3 mr-1 w-96 flex flex-col">
-                {/* SORT HEADER */}
-                <div
-                  ref={headerRef}
-                  className="flex items-center justify-between px-5 py-3 border-b bg-white relative z-10"
-                >
-                  <div className="flex items-center ml-3 gap-2 text-sm text-gray-700 font-medium">
-                    <span>Sort By:</span>
-                    <button
-                      onClick={() => setIsDropdownOpen((p) => !p)}
-                      className="flex items-center gap-1 text-sm text-orange-600 font-semibold focus:outline-none"
-                    >
-                      {sortType}: {sortLabel}
-                      {isDropdownOpen ? (
-                        <ChevronUp className="w-4 h-4 mt-1" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4 mt-1" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Dropdown Menu */}
-                {isDropdownOpen && (
-                  <div
-                    ref={modalRef}
-                    className="fixed z-50 text-sm rounded-md border border-gray-200 bg-white shadow-lg p-2"
-                    style={{
-                      top: dropdownPos.top,
-                      left: dropdownPos.left,
-                      transform: "translateX(-50%)",
-                      width: "300px",
-                    }}
-                    onClick={(e) => e.stopPropagation()}
+          // 🟦 PANEL VIEW (Split Screen)
+          <div className="flex flex-1 min-h-0 h-full">
+            {/* --- LEFT LIST PANEL --- */}
+            <div className="w-96 mr-2 ml-3 mb-2 border border-border flex flex-col min-h-0 bg-white">
+              {/* 1. Sort Header */}
+              <div
+                ref={headerRef}
+                className="px-4 py-3 border-b bg-white z-40 flex items-center justify-between shadow-sm"
+              >
+                <div className="flex items-center gap-1 text-sm text-gray-700">
+                  <span className="font-medium text-gray-500">Sort By:</span>
+                  <button
+                    onClick={() => setIsDropdownOpen((p) => !p)}
+                    className="flex items-center gap-1 text-blue-600 font-medium focus:outline-none hover:text-blue-700"
                   >
-                    <div className="flex flex-col divide-y divide-gray-100">
-                      {[
-                        {
-                          label: "Creation Date",
-                          options: ["Oldest First", "Newest First"],
-                        },
-                        {
-                          label: "Last Updated",
-                          options: ["Least Recent First", "Most Recent First"],
-                        },
-                        {
-                          label: "Name",
-                          options: ["Ascending Order", "Descending Order"],
-                        },
-                      ].map((section) => (
-                        <div
-                          key={section.label}
-                          className="flex flex-col mt-1 mb-1"
-                        >
-                          <button
-                            onClick={() =>
-                              setOpenSection(
-                                openSection === section.label
-                                  ? null
-                                  : section.label
-                              )
-                            }
-                            className={`flex items-center justify-between w-full px-4 py-3 text-sm rounded-md ${
-                              sortType === section.label
-                                ? "text-orange-600 bg-gray-50"
-                                : "text-gray-800"
-                            }`}
-                          >
-                            <span>{section.label}</span>
-                            {openSection === section.label ? (
-                              <ChevronUp className="w-3.5" />
-                            ) : (
-                              <ChevronDown className="w-3.5" />
-                            )}
-                          </button>
-                          {openSection === section.label && (
-                            <div className="flex flex-col bg-gray-50 border-t border-gray-100 py-1">
-                              {section.options.map((opt) => (
-                                <button
-                                  key={opt}
-                                  onClick={() => {
-                                    setSortType(section.label);
-                                    setSortOrder(
-                                      opt.includes("Asc") ||
-                                        opt.includes("Oldest") ||
-                                        opt.includes("Least")
-                                        ? "asc"
-                                        : "desc"
-                                    );
-                                    setIsDropdownOpen(false);
-                                  }}
-                                  className={`flex items-center justify-between px-6 py-2 text-left text-sm ${
-                                    section.label === sortType &&
-                                    ((sortOrder === "asc" &&
-                                      (opt.includes("Asc") ||
-                                        opt.includes("Oldest") ||
-                                        opt.includes("Least"))) ||
-                                      (sortOrder === "desc" &&
-                                        (opt.includes("Desc") ||
-                                          opt.includes("Newest") ||
-                                          opt.includes("Most"))))
-                                      ? "text-orange-600 bg-white"
-                                      : "text-gray-700 hover:bg-white"
-                                  }`}
-                                >
-                                  {opt}
-                                  {section.label === sortType &&
-                                    ((sortOrder === "asc" &&
-                                      (opt.includes("Asc") ||
-                                        opt.includes("Oldest") ||
-                                        opt.includes("Least"))) ||
-                                      (sortOrder === "desc" &&
-                                        (opt.includes("Desc") ||
-                                          opt.includes("Newest") ||
-                                          opt.includes("Most")))) && (
-                                      <Check className="w-3.5" />
-                                    )}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Locations List */}
-                <div className="flex-1 overflow-y-auto min-h-0">
-                  {loading && filterParams.page === 1 ? (
-                    <div className="flex h-full items-center justify-center">
-                      <Loader />
-                    </div>
-                  ) : sortedLocations && sortedLocations.length > 0 ? (
-                    <>
-                      {sortedLocations.map((items) => (
-                        <Card
-                          key={items.id}
-                          onClick={() => {
-                            setSelectedLocation(items);
-                            // Navigate to ID on click
-                            navigate(`/locations/${items.id}`);
-                          }}
-                          className={`border-b cursor-pointer border-border transition hover:bg-muted/40 ${
-                            items.id === selectedLocation?.id ||
-                            items.id === locationId
-                              ? "bg-primary/5"
-                              : ""
-                          }`}
-                        >
-                          <CardContent className="p-4">
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
-                                  <Avatar className="h-8 w-8">
-                                    <AvatarFallback>
-                                      {items?.photoUrls?.length > 0 ? (
-                                        <AvatarImage
-                                          className="w-6"
-                                          src={`data:${items.photoUrls[0].mimetype};base64,${items.photoUrls[0].base64}`}
-                                          alt={items.name}
-                                        />
-                                      ) : (
-                                        renderInitials(items.name)
-                                      )}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                </div>
-                                <div>
-                                  <h4 className="font-medium capitalize text-gray-900">
-                                    {items.name}
-                                  </h4>
-                                  {items.address && (
-                                    <div className="flex items-center gap-1 mt-1 text-muted-foreground">
-                                      <MapPin className="h-3 w-3" />
-                                      <span className="text-sm truncate max-w-[200px] capitalize">
-                                        {items.address}
-                                      </span>
-                                    </div>
-                                  )}
-                                  {items.children &&
-                                    items.children.length > 0 && (
-                                      <button className="text-sm text-orange-600">
-                                        <p>
-                                          Sub Location: {items.children.length}
-                                        </p>
-                                      </button>
-                                    )}
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </>
-                  ) : (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground mb-2">
-                        Start adding Location on MaintainOS
-                      </p>
-                      <Button
-                        onClick={handleShowNewLocationForm}
-                        className="text-primary p-0 bg-white"
-                      >
-                        Create the first Location
-                      </Button>
-                    </div>
-                  )}
+                    {sortType} : {sortOrder === "asc" ? "Asc" : "Desc"}
+                    {isDropdownOpen ? (
+                      <ChevronUp size={16} />
+                    ) : (
+                      <ChevronDown size={16} />
+                    )}
+                  </button>
                 </div>
               </div>
 
-              {/* Right Card (Detail / Form View) */}
-              <Card className="flex flex-col h-full mr-2 flex-1 ">
-                <CardContent className="flex-1 min-h-0">
-                  {/* 1️⃣ Create / Edit / Create SubLocation Form */}
-                  {isCreateRoute || isEditRoute || isCreateSubLocationRoute ? (
-                    <NewLocationForm
-                      onCancel={handleCancelForm}
-                      onCreate={
-                        isCreateSubLocationRoute
-                          ? handleSubLocationCreated
-                          : handleRootLocationCreate
-                      }
-                      setSelectedLocation={setSelectedLocation}
-                      onSuccess={handleFormSuccess}
-                      fetchLocations={fetchLocations}
-                      isEdit={isEditMode}
-                      editData={locationToEdit} // ✅ Now passing correct deep-searched data
-                      initialParentId={parentIdFromUrl}
-                      isSubLocation={!!isCreateSubLocationRoute}
-                      fetchLocationById={() => {}}
-                    />
-                  ) : showSubLocation ? (
-                    <SubLocation
-                      selectedLocation={activeSubLocation} // ✅ Uses activeSubLocation
-                      onClose={() => setShowSubLocation(false)}
-                      parentName={selectedLocation?.name}
-                    />
-                  ) : selectedLocation ? (
-                    /* 3️⃣ Normal Location Details View */
-                    <LocationDetails
-                      selectedLocation={selectedLocation}
-                      onEdit={(v) => navigate(`/locations/${v.id}/edit`)}
-                      handleDeleteLocation={handleDeleteLocation}
-                      handleShowNewSubLocationForm={() => {
-                        navigate(
-                          `/locations/${selectedLocation.id}/create-sublocation`
-                        );
-                      }}
-                      user={user}
-                      restoreData={""}
-                      fetchLocation={fetchLocations}
-                      onClose={() => setSelectedLocation(null)}
-                      setShowSubLocation={setShowSubLocation}
-                      // ✅ Handler for sub-location click
-                      onSubLocationClick={(subLoc) => {
-                        setActiveSubLocation(subLoc);
-                        setShowSubLocation(true);
-                      }}
-                    />
-                  ) : detailsLoading ? (
-                    /* 4️⃣ Loader when fetching */
-                    <div className="flex items-center justify-center h-full">
-                      <Loader />
-                    </div>
-                  ) : (
-                    /* 5️⃣ Empty State */
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <p className="text-muted-foreground mb-2">
-                          Select a Location to view details
-                        </p>
+              {/* Sort Dropdown */}
+              {isDropdownOpen && (
+                <div
+                  ref={modalRef}
+                  className="fixed z-[9999] text-sm rounded-lg border border-gray-200 bg-white shadow-xl animate-in fade-in zoom-in-95 duration-100 p-1"
+                  style={{
+                    top: dropdownPos.top,
+                    left: dropdownPos.left,
+                    transform: "translateX(-50%)",
+                    width: "240px",
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="py-1">
+                    {[
+                      {
+                        label: "Creation Date",
+                        options: ["Oldest First", "Newest First"],
+                      },
+                      {
+                        label: "Last Updated",
+                        options: ["Least Recent First", "Most Recent First"],
+                      },
+                      {
+                        label: "Name",
+                        options: ["Ascending Order", "Descending Order"],
+                      },
+                    ].map((section) => (
+                      <div key={section.label}>
+                        <button
+                          onClick={() =>
+                            setOpenSection(
+                              openSection === section.label
+                                ? null
+                                : section.label
+                            )
+                          }
+                          className="flex items-center justify-between w-full px-4 py-2 text-left hover:bg-gray-100 rounded-md"
+                        >
+                          <span>{section.label}</span>
+                          {openSection === section.label ? (
+                            <ChevronUp size={14} />
+                          ) : (
+                            <ChevronDown size={14} />
+                          )}
+                        </button>
+                        {openSection === section.label && (
+                          <div className="pl-4 pr-2 bg-gray-50 py-1 space-y-1">
+                            {section.options.map((opt) => (
+                              <button
+                                key={opt}
+                                onClick={() => {
+                                  setSortType(section.label);
+                                  setSortOrder(
+                                    opt.includes("Asc") ||
+                                      opt.includes("Oldest") ||
+                                      opt.includes("Least")
+                                      ? "asc"
+                                      : "desc"
+                                  );
+                                  setIsDropdownOpen(false);
+                                }}
+                                className="w-full text-left text-xs px-2 py-1.5 hover:bg-white rounded text-gray-600"
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 2. Scrollable List with INLINE CARD UI */}
+              <div className="flex-1 overflow-auto bg-white p-3 space-y-2">
+                {loading && filterParams.page === 1 ? (
+                  <div className="flex h-full items-center justify-center">
+                    <Loader />
+                  </div>
+                ) : !loading && currentItems.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-sm text-gray-500 mb-2">
+                      No locations found.
+                    </p>
+                    <Button
+                      onClick={handleShowNewLocationForm}
+                      variant="outline"
+                      size="sm"
+                    >
+                      Create first location
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    {currentItems.map((item) => {
+                      const isSelected =
+                        item.id === selectedLocation?.id ||
+                        item.id === locationId;
+                      const hasPhoto = item?.photoUrls?.length > 0;
+                      const subLocationCount = item.children?.length || 0;
+
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={() => {
+                            setSelectedLocation(item);
+                            navigate(`/locations/${item.id}`);
+                          }}
+                          // ✅ INLINE Yellow Theme Styling
+                          className={`cursor-pointer border rounded-lg p-4 mb-3 transition-all duration-200 hover:shadow-md ${
+                            isSelected
+                              ? "border-yellow-400 bg-yellow-50 ring-1 ring-yellow-400"
+                              : "border-gray-200 bg-white hover:border-yellow-200"
+                          }`}
+                        >
+                          <div className="flex items-start gap-4">
+                            {/* Icon/Image Wrapper */}
+                            <div
+                              className={`h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-full border overflow-hidden ${
+                                isSelected
+                                  ? "bg-white border-yellow-200 text-yellow-600"
+                                  : "bg-gray-50 border-gray-100 text-gray-500"
+                              }`}
+                            >
+                              {hasPhoto ? (
+                                <img
+                                  src={`data:${item.photoUrls[0].mimetype};base64,${item.photoUrls[0].base64}`}
+                                  alt={item.name}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-xs font-bold uppercase">
+                                  {renderInitials(item.name) || (
+                                    <Building2 size={18} />
+                                  )}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Content Column */}
+                            <div className="flex-1 min-w-0">
+                              {/* Row 1: Title + Sub-location Badge */}
+                              <div className="flex justify-between items-start gap-2">
+                                <h3 className="text-sm font-semibold text-gray-900 truncate leading-tight capitalize">
+                                  {item.name}
+                                </h3>
+
+                                {/* Sub-location Pill */}
+                                {subLocationCount > 0 && (
+                                  <span className="flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-orange-50 text-orange-700 border border-orange-200">
+                                    <Layers size={10} />
+                                    {subLocationCount} Sub-locs
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Row 2: Address */}
+                              <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-500">
+                                <MapPin
+                                  size={12}
+                                  className="flex-shrink-0 text-gray-400"
+                                />
+                                <span className="truncate capitalize max-w-[200px]">
+                                  {item.address || "No address provided"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
+              </div>
+
+              {/* 3. Pagination Footer */}
+              {totalItems > 0 && (
+                <div className="flex items-center justify-end p-3 border-t border-gray-200 bg-white">
+                  <div className="inline-flex items-center gap-3 border border-yellow-400 rounded-full px-3 py-1 shadow-sm bg-white">
+                    <span className="text-xs font-medium text-gray-700">
+                      {startIndex + 1} – {endIndex} of {totalItems}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={handlePrevPage}
+                        disabled={currentPage === 1}
+                        className="text-gray-400 hover:text-gray-800 disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <ChevronLeft className="rotate-90" size={16} />
+                      </button>
+                      <button
+                        onClick={handleNextPage}
+                        disabled={endIndex >= totalItems}
+                        className="text-gray-400 hover:text-gray-800 disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <ChevronRight className="-rotate-90" size={16} />
+                      </button>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+                  </div>
+                </div>
+              )}
             </div>
-          </>
+
+            {/* --- RIGHT DETAIL PANEL --- */}
+            <div className="flex-1 bg-card mr-3 ml-1 mb-2 border border-border min-h-0 flex flex-col">
+              <div className="flex-1 h-full overflow-hidden">
+                {isCreateRoute || isEditRoute || isCreateSubLocationRoute ? (
+                  <NewLocationForm
+                    onCancel={handleCancelForm}
+                    onCreate={
+                      isCreateSubLocationRoute
+                        ? handleSubLocationCreated
+                        : handleRootLocationCreate
+                    }
+                    setSelectedLocation={setSelectedLocation}
+                    onSuccess={handleFormSuccess}
+                    fetchLocations={fetchLocations}
+                    isEdit={isEditMode}
+                    editData={locationToEdit}
+                    initialParentId={parentIdFromUrl}
+                    isSubLocation={!!isCreateSubLocationRoute}
+                    fetchLocationById={() => {}}
+                  />
+                ) : showSubLocation ? (
+                  <SubLocation
+                    selectedLocation={activeSubLocation}
+                    onClose={() => setShowSubLocation(false)}
+                    parentName={selectedLocation?.name}
+                  />
+                ) : selectedLocation ? (
+                  <LocationDetails
+                    selectedLocation={selectedLocation}
+                    onEdit={(v) => navigate(`/locations/${v.id}/edit`)}
+                    handleDeleteLocation={handleDeleteLocation}
+                    handleShowNewSubLocationForm={() => {
+                      navigate(
+                        `/locations/${selectedLocation.id}/create-sublocation`
+                      );
+                    }}
+                    user={user}
+                    restoreData={""}
+                    fetchLocation={fetchLocations}
+                    onClose={() => setSelectedLocation(null)}
+                    setShowSubLocation={setShowSubLocation}
+                    onSubLocationClick={(subLoc) => {
+                      setActiveSubLocation(subLoc);
+                      setShowSubLocation(true);
+                    }}
+                  />
+                ) : (
+                  /* Empty State */
+                  <div className="flex items-center justify-center h-full text-center">
+                    <div>
+                      <p className="text-muted-foreground mb-2">
+                        Select a Location to view details
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </>

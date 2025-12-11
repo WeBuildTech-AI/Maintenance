@@ -111,7 +111,7 @@ export const Assets: FC = () => {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const fetchAssetsData = useCallback(async () => {
+const fetchAssetsData = useCallback(async () => {
     setLoading(true);
 
     try {
@@ -148,13 +148,13 @@ export const Assets: FC = () => {
             );
             setSelectedAsset(mostRecent[0]);
           }
-        }
+        } 
         // Case B: URL mein ID nahi hai
         else {
           // ✅ CRITICAL FIX: Agar pehle se koi asset selected hai (memory mein), toh usse mat chhedo.
           // Ye tab kaam aayega jab aap Table se wapis Panel mein aaoge.
           if (!selectedAsset) {
-            const mostRecent = [...assets].sort(
+             const mostRecent = [...assets].sort(
               (a, b) =>
                 new Date(b.updatedAt).getTime() -
                 new Date(a.updatedAt).getTime()
