@@ -22,7 +22,11 @@ export function WorkOrders() {
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrder | null>(
     null
   );
-  const [viewMode, setViewMode] = useState<ViewMode>("todo");
+  // const [viewMode, setViewMode] = useState<ViewMode>("todo");
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const savedMode = localStorage.getItem("workOrderViewMode");
+    return (savedMode as ViewMode) || "todo";
+  });
   const [workloadWeekOffset, setWorkloadWeekOffset] = useState(0);
   const [creatingWorkOrder, setCreatingWorkOrder] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -60,7 +64,21 @@ export function WorkOrders() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // ✅ 2. Main Fetch (Added refreshKey & Selected Work Order Update Logic)
+  // store the view mode in local storage
+
+  useEffect(() => {
+    if (viewMode === "list") {
+      localStorage.setItem("workOrderViewMode", "list");
+    } else if (viewMode === "calendar") {
+      localStorage.setItem("workOrderViewMode", "calendar");
+    } else if (viewMode === "workload") {
+      // localStorage.setItem("workOrderViewMode", "workload");
+    } else {
+      localStorage.removeItem("workOrderViewMode");
+    }
+  }, [viewMode]);
+
+  //  2. Main Fetch (Added refreshKey & Selected Work Order Update Logic)
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);

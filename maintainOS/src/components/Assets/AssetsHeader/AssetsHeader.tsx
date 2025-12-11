@@ -1,4 +1,4 @@
-import { FC, Dispatch, SetStateAction } from "react"; 
+import { FC, Dispatch, SetStateAction } from "react";
 import type { ViewMode } from "../../purchase-orders/po.types";
 import {
   DropdownMenu,
@@ -39,10 +39,10 @@ export const AssetHeaderComponent: FC<AssetHeaderProps> = ({
   searchQuery,
   setSearchQuery,
   setShowNewAssetForm,
-  setSelectedAsset, 
+  setSelectedAsset,
   setIsSettingsModalOpen,
   setShowDeleted,
-  onFilterChange
+  onFilterChange,
 }) => {
   const navigate = useNavigate();
   const currentPath = window.location.pathname;
@@ -75,12 +75,17 @@ export const AssetHeaderComponent: FC<AssetHeaderProps> = ({
                     onClick={() => {
                       setViewMode("panel");
                       setShowDeleted(false);
-                      setSelectedAsset(null); 
+                      setSelectedAsset(null);
                     }}
                   >
                     <PanelTop className="mr-2 h-4 w-4" /> Panel View
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setViewMode("table")}>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      navigate("/assets");
+                      setViewMode("table");
+                    }}
+                  >
                     <Table className="mr-2 h-4 w-4" /> Table View
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -103,7 +108,7 @@ export const AssetHeaderComponent: FC<AssetHeaderProps> = ({
             onClick={() => {
               setShowNewAssetForm(true);
               setViewMode("panel");
-              setSelectedAsset(null); 
+              setSelectedAsset(null);
               navigate(`${currentPath}?create`, { replace: true });
             }}
           >

@@ -40,8 +40,9 @@ export function Locations() {
     () => searchParams.get("search") || ""
   );
 
-  const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    return (searchParams.get("viewMode") as ViewMode) || "panel";
+   const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const savedMode = localStorage.getItem("locationViewMode");
+    return (savedMode as ViewMode) || "panel";
   });
 
   const [filterParams, setFilterParams] = useState<FetchLocationsParams>({
@@ -98,6 +99,17 @@ export function Locations() {
     }
     return undefined;
   };
+
+  // store the viewMode in local storage 
+
+  useEffect(() => {
+  if (viewMode === "table") {
+    localStorage.setItem("locationViewMode", "table");
+  } else {
+    localStorage.removeItem("locationViewMode");
+  }
+}, [viewMode]);
+
 
   // ✅ UPDATED: Edit Logic to support Sub-Locations & Refresh
   const locationToEdit = useMemo(() => {

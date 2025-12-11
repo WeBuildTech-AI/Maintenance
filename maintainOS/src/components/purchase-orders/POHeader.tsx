@@ -68,7 +68,7 @@ export function POHeaderComponent(
                   <DropdownMenuItem
                     onClick={() => {
                       setViewMode("table");
-                      naviagte("/purchase-orders");
+                      // naviagte("/purchase-orders");
                     }}
                   >
                     <Table className="mr-2 h-4 w-4" /> Table View

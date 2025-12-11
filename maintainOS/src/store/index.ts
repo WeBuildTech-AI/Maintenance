@@ -15,7 +15,7 @@ import userReducer from "./userSlice";
 // import { teamMembersReducer } from "./teamMembers";
 // import { teamsReducer } from "./teams";
 // import { vendorsReducer } from "./vendors";
-// import { workOrdersReducer } from "./workOrders";
+import { workOrdersReducer } from "./workOrders";
 // import { attachmentsReducer } from "./attachments";
 // import { auditLogsReducer } from "./auditLogs";
 // import { storageReducer } from "./storage";
@@ -27,6 +27,7 @@ export const store = configureStore({
     user: userReducer,
     auth: authReducer,
     messaging : messageReducer,
+    workOrders: workOrdersReducer,
     // users: usersReducer,
     // organizations: organizationsReducer,
     // assets: assetsReducer,

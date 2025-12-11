@@ -20,7 +20,7 @@ import { VendorCard } from "./VendorCard";
 import { VendorForm } from "./VendorsForm/VendorForm";
 import VendorDetails from "./VendorDetails/VendorDetails";
 import { VendorTable } from "./VendorTable";
-import { EmptyState } from "../inventory/EmptyState"; // Reuse EmptyState
+import { EmptyState } from "../Inventory/EmptyState"; // Reuse EmptyState
 
 export function Vendors() {
   const [vendors, setVendors] = useState<any[]>([]);
@@ -76,6 +76,7 @@ export function Vendors() {
       } else {
         const apiPayload = {
           ...filterParams,
+          search: debouncedSearch || undefined,
           search: debouncedSearch || undefined,
         };
         res = await vendorService.fetchVendors(apiPayload);

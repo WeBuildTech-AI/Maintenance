@@ -132,7 +132,11 @@ export function PurchaseOrders() {
   });
 
   useEffect(() => {
-    localStorage.setItem("purchaseOrderViewMode", viewMode);
+    if (viewMode === "table") {
+      localStorage.setItem("purchaseOrderViewMode", "table");
+    } else {
+      localStorage.removeItem("purchaseOrderViewMode");
+    }
   }, [viewMode]);
 
   const scrollToTop = () => {
@@ -266,7 +270,7 @@ export function PurchaseOrders() {
         setSelectedPOId(null);
       }
     }
-  }, [routeId, getPurchaseOrderData, viewMode, editMatch, newPO.id]);
+  }, [routeId, getPurchaseOrderData, editMatch, newPO.id]);
 
   // ✅ HANDLER: Filter Change
   const handleFilterChange = useCallback(

@@ -24,7 +24,10 @@ import { FetchPartsParams } from "../../store/parts/parts.types";
 
 export function Inventory() {
   const [parts, setParts] = useState<any[]>([]);
-  const [viewMode, setViewMode] = useState<"panel" | "table">("panel");
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const savedMode = localStorage.getItem("partViewMode");
+    return (savedMode as ViewMode) || "panel";
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -34,7 +37,7 @@ export function Inventory() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  // 🟡 Sorting states
+  //  Sorting states
   const [sortType, setSortType] = useState("Name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -50,8 +53,8 @@ export function Inventory() {
   const itemsPerPage = 10; 
 
   const [filterParams, setFilterParams] = useState<FetchPartsParams>({
-    page: 1, 
-    limit: 50 
+    page: 1,
+    limit: 50,
   });
 
   useEffect(() => {
@@ -70,11 +73,11 @@ export function Inventory() {
       } else {
         const apiPayload = {
           ...filterParams,
-          name: debouncedSearch || undefined 
+          name: debouncedSearch || undefined,
         };
         res = await partService.fetchParts(apiPayload);
       }
-      
+
       setParts(res || []);
     } catch (err: any) {
       console.error("Error fetching parts:", err);

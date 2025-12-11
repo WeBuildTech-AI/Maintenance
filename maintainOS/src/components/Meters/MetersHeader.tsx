@@ -18,6 +18,7 @@ import {
 import { Input } from "../ui/input";
 import MetersFilterBar from "./MetersFilterBar";
 import { FetchMetersParams } from "../../store/meters/meters.types";
+import { Navigate, useNavigate } from "react-router-dom";
 
 export function MetersHeaderComponent(
   viewMode: ViewMode,
@@ -31,6 +32,7 @@ export function MetersHeaderComponent(
   // 👇 NEW: Accept filter callback
   onFilterChange?: (params: FetchMetersParams) => void
 ) {
+  const naviagte = useNavigate();
   return (
     <header className=" border-border bg-card px-6 py-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -63,7 +65,12 @@ export function MetersHeaderComponent(
                   >
                     <PanelTop className="mr-2 h-4 w-4" /> Panel View
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setViewMode("table")}>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setViewMode("table");
+                      naviagte("/meters");
+                    }}
+                  >
                     <Table className="mr-2 h-4 w-4" /> Table View
                   </DropdownMenuItem>
                 </DropdownMenuContent>
