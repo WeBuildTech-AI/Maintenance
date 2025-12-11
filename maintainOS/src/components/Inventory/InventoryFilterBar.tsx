@@ -6,7 +6,9 @@ const ALL_FILTERS = [
   { key: "location", label: "Location", icon: <MapPin size={16} /> },
   { key: "asset", label: "Asset", icon: <Settings size={16} /> },
   { key: "vendor", label: "Vendor", icon: <Settings size={16} /> },
-  
+  // ✅ ADDED TEAMS IN CHARGE FILTER
+  { key: "team", label: "Teams in Charge", icon: <User size={16} /> },
+
   // --- PART SPECIFIC FILTERS ---
   {
     key: "stockStatus",
@@ -21,10 +23,10 @@ const ALL_FILTERS = [
   { key: "partType", label: "Part Type", icon: <Tag size={16} /> }, // Maps to partTypeContains
   { key: "area", label: "Area", icon: <MapPin size={16} /> }, // Maps to areaContains
   { key: "description", label: "Description", icon: <FileText size={16} /> },
-  
-  { 
-    key: "workOrderRecurrence", 
-    label: "Recurrence", 
+
+  {
+    key: "workOrderRecurrence",
+    label: "Recurrence",
     icon: <Repeat size={16} />,
     options: [
       { label: "Repeating", value: "has_repeating" },

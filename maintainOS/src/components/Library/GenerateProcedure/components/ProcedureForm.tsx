@@ -1633,6 +1633,7 @@ interface ProcedureFormProps {
   onAnswersChange?: (answers: Record<string, any>) => void;
   variant?: "preview" | "runner"; // ✅ [ADDED] Default is Preview
   onFieldSave?: (fieldId: string, value: any) => void; // ✅ [ADDED] Save Callback
+  initialAnswers?: Record<string, any>; // ✅ [ADDED] Accept fetched data
 }
 
 export function ProcedureForm({
@@ -1642,13 +1643,26 @@ export function ProcedureForm({
   resetKey,
   onAnswersChange,
   variant = "preview", // ✅ [ADDED] Pass variant down
-  onFieldSave // ✅ [ADDED]
+  onFieldSave, // ✅ [ADDED] Pass callback down
+  initialAnswers = {} // ✅ [ADDED] Default empty
 }: ProcedureFormProps) {
-  const [answers, setAnswers] = useState<Record<string, any>>({});
+  
+  const [answers, setAnswers] = useState<Record<string, any>>(initialAnswers);
 
-  // --- Reset answers when procedure changes ---
+  // --- ✅ 1. Sync Initial Answers when they load ---
   useEffect(() => {
-    setAnswers({});
+    if (initialAnswers && Object.keys(initialAnswers).length > 0) {
+      console.log("📥 Loading saved answers into form:", initialAnswers);
+      setAnswers((prev) => ({
+        ...prev,
+        ...initialAnswers
+      }));
+    }
+  }, [initialAnswers]);
+
+  // --- Reset answers when procedure ID changes ---
+  useEffect(() => {
+    setAnswers(initialAnswers || {});
   }, [resetKey]);
 
   const updateAnswer = useCallback((fieldId: string, value: any) => {
@@ -1721,7 +1735,7 @@ export function ProcedureForm({
   const allRootFieldsForLogic = rootFields || [];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+    <div className="flex flex-col gap-24">
       {renderAllItems(combinedRootItems, allRootFieldsForLogic)}
 
       {/* Render Sections */}
