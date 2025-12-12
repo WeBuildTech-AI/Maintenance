@@ -7,6 +7,7 @@ import { useDispatch, useSelector } from "react-redux";
 import type { SelectOption } from "./DynamicSelect";
 import { fetchLocationsName } from "../../../store/locations/locations.thunks";
 import { fetchAssetsName } from "../../../store/assets/assets.thunks";
+import { partService } from "../../../store/parts"; // ✅ Import Part Service
 import { VendorPrimaryDetails } from "./VendorPrimaryDetails";
 import { VendorContactInput, type ContactFormData } from "./VendorContactInput";
 import { VendorLinkedItems } from "./VendorLinkedItems";
@@ -27,7 +28,7 @@ export function VendorForm({
     createdBy: "",
     partsSummary: "",
     color: "#2563eb",
-    vendorType: "manufacturer", // Default Value
+    vendorType: "manufacturer",
   });
 
   const dispatch = useDispatch<AppDispatch>();
@@ -66,13 +67,13 @@ export function VendorForm({
         services: initialData.services || "",
         partsSummary: initialData.partsSummary || "",
         color: initialData.color || "#2563eb",
-        vendorType: initialData.vendorType || "manufacturer", // ✅ Pre-fill
+        vendorType: initialData.vendorType || "manufacturer",
       }));
 
       if (initialData.vendorImages) setVendorImages(initialData.vendorImages);
       if (initialData.vendorDocs) setVendorDocs(initialData.vendorDocs);
 
-      // ✅ PREFILL CONTACTS
+      // PREFILL CONTACTS
       if (initialData.contacts) {
         try {
           const c = Array.isArray(initialData.contacts)
@@ -86,15 +87,13 @@ export function VendorForm({
         }
       }
 
-      // ✅ PREFILL LOCATIONS (IDs + Options)
+      // PREFILL LOCATIONS
       if (initialData.locations && Array.isArray(initialData.locations)) {
-        // 1. Set IDs
         const ids = initialData.locations.map((loc: any) =>
           typeof loc === "string" ? loc : loc.id
         );
         setSelectedLocationIds(ids);
 
-        // 2. Set Options (Important for display)
         const opts = initialData.locations
           .filter((loc: any) => typeof loc === "object")
           .map((loc: any) => ({
@@ -104,7 +103,7 @@ export function VendorForm({
         if (opts.length > 0) setAvailableLocations(opts);
       }
 
-      // ✅ PREFILL ASSETS
+      // PREFILL ASSETS
       if (initialData.assets && Array.isArray(initialData.assets)) {
         const ids = initialData.assets.map((a: any) => a.id);
         setSelectedAssetIds(ids);
@@ -118,7 +117,7 @@ export function VendorForm({
         setSelectedAssetIds(initialData.assetIds);
       }
 
-      // ✅ PREFILL PARTS
+      // PREFILL PARTS
       if (initialData.parts && Array.isArray(initialData.parts)) {
         const ids = initialData.parts.map((p: any) => p.id);
         setSelectedPartIds(ids);
@@ -170,10 +169,30 @@ export function VendorForm({
       .finally(() => setAssetsLoading(false));
   };
 
-  const handleFetchParts = () => {
+  // ✅ FIXED: Connected to Part Service + Added Logging
+  const handleFetchParts = async () => {
+    console.log("📡 handleFetchParts triggered...");
     setPartsLoading(true);
-    // Mock or implement fetchPartsName thunk here
-    setPartsLoading(false);
+    try {
+      // Fetch parts (Assuming fetching top 100 for dropdown, customize params as needed)
+      const res: any = await partService.fetchParts({ limit: 1000 });
+      
+      console.log("✅ Parts API Response:", res);
+
+      const items = Array.isArray(res) ? res : res.items || [];
+      
+      const options = items.map((p: any) => ({
+        id: p.id,
+        name: p.name || "Unnamed Part",
+      }));
+
+      console.log("📝 Mapped Part Options:", options);
+      setAvailableParts(options);
+    } catch (err) {
+      console.error("🚨 Fetch parts failed:", err);
+    } finally {
+      setPartsLoading(false);
+    }
   };
 
   const handleCtaClick = (path: string) => navigate(path);
@@ -197,8 +216,6 @@ export function VendorForm({
     appendIfPresent("name", form.name.trim());
     appendIfPresent("description", form.description);
     appendIfPresent("color", form.color);
-    
-    // ✅ Include Vendor Type in Payload
     appendIfPresent("vendorType", form.vendorType?.toLowerCase());
 
     // Contacts
@@ -207,18 +224,9 @@ export function VendorForm({
         formData.append(`contacts[${index}][fullName]`, contact.fullName || "");
         formData.append(`contacts[${index}][role]`, contact.role || "");
         formData.append(`contacts[${index}][email]`, contact.email || "");
-        formData.append(
-          `contacts[${index}][phoneNumber]`,
-          contact.phoneNumber || ""
-        );
-        formData.append(
-          `contacts[${index}][phoneExtension]`,
-          contact.phoneExtension || ""
-        );
-        formData.append(
-          `contacts[${index}][contactColor]`,
-          contact.contactColour || "#EC4899"
-        );
+        formData.append(`contacts[${index}][phoneNumber]`, contact.phoneNumber || "");
+        formData.append(`contacts[${index}][phoneExtension]`, contact.phoneExtension || "");
+        formData.append(`contacts[${index}][contactColor]`, contact.contactColor || "#EC4899");
       });
     }
 
@@ -272,7 +280,6 @@ export function VendorForm({
           onChange={handleBlobChange}
         />
 
-        {/* ✅ Updated Contact Input */}
         <VendorContactInput
           initialContacts={contacts}
           onContactsChange={setContacts}
@@ -285,7 +292,6 @@ export function VendorForm({
           onChange={handleBlobChange}
         />
 
-        {/* ✅ VendorLinkedItems with Lifted State */}
         <VendorLinkedItems
           availableLocations={availableLocations}
           selectedLocationIds={selectedLocationIds}
@@ -302,12 +308,12 @@ export function VendorForm({
           availableParts={availableParts}
           selectedPartIds={selectedPartIds}
           onPartsChange={setSelectedPartIds}
-          onFetchParts={handleFetchParts}
+          // ✅ Passed correct handler
+          onFetchParts={handleFetchParts} 
           partsLoading={partsLoading}
           
           onCtaClick={handleCtaClick}
 
-          // ✅ Pass Lifted State & Handler
           vendorType={form.vendorType}
           onVendorTypeChange={(val) => setForm((f) => ({ ...f, vendorType: val }))}
         />

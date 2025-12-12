@@ -43,8 +43,31 @@ const DetailsTabContent = ({ procedure }: { procedure: any }) => {
   const user = useSelector((state: RootState) => state.auth.user);
   const fullName = user?.fullName;
 
+  // Helpers for display
+  const assets = procedure.assets || [];
+  const locations = procedure.locations || [];
+  const teams = procedure.teams || [];
+  const categories = procedure.categories || [];
+
+  const renderBadgeList = (items: any[]) => {
+    if (!items || items.length === 0) return <span className="text-sm text-gray-500">—</span>;
+    return (
+      <div className="flex flex-wrap gap-2">
+        {items.map((item, idx) => {
+            const label = typeof item === 'string' ? item : (item.name || item.title || "Unknown");
+            return (
+                <span key={idx} className="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800 ">
+                    {label}
+                </span>
+            )
+        })}
+      </div>
+    );
+  };
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-8">
+      {/* Created/Updated Info */}
       <div className="space-y-3">
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <User size={16} className="text-blue-600" />
@@ -60,6 +83,34 @@ const DetailsTabContent = ({ procedure }: { procedure: any }) => {
           </span>
         </div>
       </div>
+
+      {/* Details Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-gray-200">
+          {/* Assets */}
+          <div>
+              <h4 className="text-sm font-medium text-gray-900 mb-3">Assets</h4>
+              {renderBadgeList(assets)}
+          </div>
+
+           {/* Locations */}
+           <div>
+              <h4 className="text-sm font-medium text-gray-900 mb-3">Locations</h4>
+              {renderBadgeList(locations)}
+          </div>
+          
+           {/* Teams */}
+           <div>
+              <h4 className="text-sm font-medium text-gray-900 mb-3">Teams in Charge</h4>
+              {renderBadgeList(teams)}
+          </div>
+
+           {/* Categories */}
+           <div>
+              <h4 className="text-sm font-medium text-gray-900 mb-3">Categories</h4>
+              {renderBadgeList(categories)}
+          </div>
+      </div>
+
       <div className="pt-6 border-t border-gray-200">
         <p className="text-sm text-gray-500 mb-2">Procedure ID</p>
         <span

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DynamicSelect, type SelectOption } from "./DynamicSelect";
 
 interface VendorLinkedItemsProps {
@@ -22,7 +22,6 @@ interface VendorLinkedItemsProps {
 
   onCtaClick: (path: string) => void;
 
-  // ✅ NEW PROPS: Controlled from Parent (VendorForm)
   vendorType: string;
   onVendorTypeChange: (val: string) => void;
 }
@@ -44,11 +43,17 @@ export function VendorLinkedItems({
   onFetchParts,
   partsLoading,
   onCtaClick,
-  // ✅ Destructure New Props
   vendorType,
   onVendorTypeChange,
 }: VendorLinkedItemsProps) {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+
+  // ✅ Debugging Log
+  useEffect(() => {
+    if (availableParts.length > 0) {
+      console.log("📦 VendorLinkedItems received parts:", availableParts);
+    }
+  }, [availableParts]);
 
   const vendorTypeOptions: SelectOption[] = [
     { id: "manufacturer", name: "Manufacturer" },
@@ -111,13 +116,13 @@ export function VendorLinkedItems({
           onSelect={(val) => onPartsChange(val as string[])}
           onFetch={onFetchParts}
           ctaText="+ Create New Part"
-          onCtaClick={() => onCtaClick("/parts/create")}
+          onCtaClick={() => onCtaClick("/inventory/create")}
           activeDropdown={activeDropdown}
           setActiveDropdown={setActiveDropdown}
         />
       </div>
 
-      {/* Vendor Type Dropdown (Now Controlled) */}
+      {/* Vendor Type Dropdown */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-4">
           Vendor Type
@@ -127,8 +132,8 @@ export function VendorLinkedItems({
           placeholder="Select vendor type..."
           options={vendorTypeOptions}
           loading={false}
-          value={vendorType} // ✅ Uses Parent State
-          onSelect={(val) => onVendorTypeChange(val as string)} // ✅ Updates Parent State
+          value={vendorType}
+          onSelect={(val) => onVendorTypeChange(val as string)}
           onFetch={() => {}}
           activeDropdown={activeDropdown}
           setActiveDropdown={setActiveDropdown}
