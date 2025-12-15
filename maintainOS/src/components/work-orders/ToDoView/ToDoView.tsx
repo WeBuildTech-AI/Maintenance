@@ -47,6 +47,11 @@ export function ToDoView({
   // ✅ New state added for activePanel tracking
   const [activePanel, setActivePanel] = useState<"details" | "parts" | "time" | "cost">("details");
 
+  // ✅ FIX: Reset panel to 'details' whenever the selected Work Order ID changes
+  useEffect(() => {
+    setActivePanel("details");
+  }, [selectedWorkOrder?.id]);
+
   // ✅ PAGINATION STATE ADDED HERE
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10; 
@@ -201,10 +206,11 @@ export function ToDoView({
     onSelectWorkOrder(item);
     setEditingWorkOrder(null);
     onCancelCreate?.();
+    // ✅ Reset panel to details
+    setActivePanel("details"); 
     if (item?.id) setTimeout(() => navigate(`/work-orders/${item.id}`), 0);
   };
 
-  // ✅ WO-401 FIX: Function to scroll to comments
   const handleScrollToComments = () => {
     if (commentsRef.current) {
       commentsRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -273,21 +279,30 @@ export function ToDoView({
 
       {/* Right Panel */}
       <div className="flex-1 bg-card mr-3 ml-2 mb-2 border border-border min-h-0 flex flex-col">
-        {/* ✅ WO-395 FIX: Added creatingWorkOrder */}
+        
+        {/* ✅ CASE 1: CREATE NEW WORK ORDER */}
         {isCreateRoute || creatingWorkOrder ? (
           <NewWorkOrderForm
+            // ✅ KEY PROP ADDED: Forces React to re-mount component freshly
+            key="create-work-order-form" 
             onCreate={() => {
               onCancelCreate?.();
               setEditingWorkOrder(null);
               onRefreshWorkOrders?.();
             }}
-            existingWorkOrder={selectedWorkOrder}
+            // ✅ Explicitly NULL to clear any previous data
+            existingWorkOrder={null} 
             editId={editingId}
             isEditMode={false}
             onCancel={onCancelCreate}
           />
-        ) : editingWorkOrder || isEditMode ? (
+        ) 
+        
+        // ✅ CASE 2: EDIT WORK ORDER
+        : editingWorkOrder || isEditMode ? (
           <NewWorkOrderForm
+            // ✅ KEY PROP ADDED: Ensures edit form refreshes on ID change
+            key={editingWorkOrder?.id || editingId || 'edit-form'}
             existingWorkOrder={editingWorkOrder}
             editId={editingId}
             isEditMode={isEditMode}
@@ -298,14 +313,16 @@ export function ToDoView({
             }}
             onCancel={handleEditCancel}
           />
-        ) : !selectedWorkOrder ? (
+        ) 
+        
+        // ✅ CASE 3: VIEW DETAILS OR EMPTY
+        : !selectedWorkOrder ? (
           <EmptyState
             message="No work order selected"
             subtext="Select a work order from the list to view its details."
           />
         ) : (
           <div className="overflow-y-auto">
-            {/* ✅ WO-401 FIX: Passing scroll handler to Details */}
             <WorkOrderDetails
               selectedWorkOrder={selectedWorkOrder}
               selectedAvatarUrl={selectedAvatarUrl}
@@ -321,13 +338,13 @@ export function ToDoView({
               onScrollToComments={handleScrollToComments} 
             />
 
-            {/* ✅ FIX: Render Procedure & Comments ONLY when in 'details' panel */}
+            {/* ✅ Render sub-panels only when active */}
             {activePanel === "details" && (
               <>
                 <LinkedProcedurePreview selectedWorkOrder={selectedWorkOrder} />
 
                 <CommentsSection
-                  ref={commentsRef} // ✅ Attached Ref here
+                  ref={commentsRef}
                   comment={comment}
                   setComment={setComment}
                   attachment={attachment}

@@ -20,6 +20,7 @@ import {
   PauseCircle,
   RefreshCcw,
   Activity, 
+  UserCircle2, 
 } from "lucide-react";
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -34,6 +35,9 @@ import {
   updateWorkOrder,
   updateWorkOrderStatus
 } from "../../../store/workOrders/workOrders.thunks";
+
+// ✅ Import Service for User Fetching
+import { workOrderService } from "../../../store/workOrders/workOrders.service";
 
 import DeleteWorkOrderModal from "./DeleteWorkOrderModal";
 
@@ -204,6 +208,10 @@ export function WorkOrderDetails({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
+  // ✅ Local state for user names
+  const [createdByName, setCreatedByName] = useState<string>("System");
+  const [updatedByName, setUpdatedByName] = useState<string>("System");
+
   useEffect(() => {
     if (selectedWorkOrder?.status) {
       setActiveStatus(selectedWorkOrder.status.toLowerCase());
@@ -234,6 +242,39 @@ export function WorkOrderDetails({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // ✅ Moved assigneesList calculation UP (Before useEffect)
+  const assigneesList = selectedWorkOrder.assignees || [];
+  if (assigneesList.length === 0 && selectedWorkOrder.assignedTo) {
+    assigneesList.push(selectedWorkOrder.assignedTo);
+  }
+
+  // ✅ Moved User Fetching Effect UP (Before Conditional Returns)
+  useEffect(() => {
+    const fetchName = async (userId: string | undefined, setFn: (s: string) => void) => {
+        if (!userId) {
+            setFn("System");
+            return;
+        }
+        // Try to find in assignees first (optimization)
+        const inAssignees = assigneesList.find((a: any) => a.id === userId);
+        if (inAssignees) {
+            setFn(inAssignees.fullName || inAssignees.name);
+            return;
+        }
+        // Fetch from API
+        try {
+            const userData = await workOrderService.fetchUserById(userId);
+            setFn(userData.fullName || "Unknown");
+        } catch (error) {
+            // console.error("Failed to fetch user name for", userId, error);
+            setFn("Unknown");
+        }
+    };
+
+    fetchName(selectedWorkOrder.createdBy, setCreatedByName);
+    fetchName(selectedWorkOrder.updatedBy, setUpdatedByName);
+  }, [selectedWorkOrder.createdBy, selectedWorkOrder.updatedBy, assigneesList]);
 
   const handleDeleteClick = () => {
     setShowDeleteModal(true);
@@ -318,6 +359,7 @@ export function WorkOrderDetails({
     }
   };
 
+  // ✅ Conditional Returns (now safe because hooks are above)
   if (activePanel === "parts") {
     return (
       <UpdatePartsPanel
@@ -366,11 +408,6 @@ export function WorkOrderDetails({
     );
   }
 
-  const assigneesList = selectedWorkOrder.assignees || [];
-  if (assigneesList.length === 0 && selectedWorkOrder.assignedTo) {
-    assigneesList.push(selectedWorkOrder.assignedTo);
-  }
-
   const recurrenceParsed = parseRecurrenceRule(
     selectedWorkOrder.recurrenceRule,
     selectedWorkOrder.startDate,
@@ -378,6 +415,11 @@ export function WorkOrderDetails({
   );
   const originTitle = selectedWorkOrder?.title || null;
   const originId = selectedWorkOrder?.id || null;
+
+  // --- Avatar Logic for Creator ---
+  const creatorInitials = createdByName !== "System" && createdByName.length > 0
+    ? createdByName.charAt(0).toUpperCase()
+    : "S";
 
   return (
     <>
@@ -906,32 +948,34 @@ export function WorkOrderDetails({
           })}
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t p-6">
-          <div className="flex items-center text-xs">
-            <span>Created By</span>
-            <div className="ml-2 mr-2 h-6 w-6 inline-flex rounded-full overflow-hidden bg-gray-100">
-              <img
-                src={selectedAvatarUrl}
-                alt={selectedWorkOrder.createdBy || "Creator"}
-                className="h-full w-full object-cover"
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).style.display = "none";
-                }}
-              />
+        {/* ✅ UPDATED FOOTER WITH EXACT MATCH */}
+        <div className="border-t p-6">
+             <div className="space-y-3">
+              <div className="flex items-center gap-1 text-sm text-gray-600">
+                <UserCircle2 className="w-4 h-4 text-yellow-500" />
+                <span>
+                  Created {createdByName ? `by ${createdByName}` : ""}
+                </span>
+                <CalendarDays className="w-4 h-4 text-gray-500 ml-1" />
+                <span>
+                  {selectedWorkOrder.createdAt
+                    ? new Date(selectedWorkOrder.createdAt).toLocaleString()
+                    : "N/A"}
+                </span>
+              </div>
+              <div className="flex items-center gap-1 text-sm text-gray-600">
+                <UserCircle2 className="w-4 h-4 text-yellow-500" />
+                <span>
+                  Last Updated {updatedByName ? `by ${updatedByName}` : ""}
+                </span>
+                <CalendarDays className="w-4 h-4 text-gray-500 ml-1" />
+                <span>
+                  {selectedWorkOrder.updatedAt
+                    ? new Date(selectedWorkOrder.updatedAt).toLocaleString()
+                    : "N/A"}
+                </span>
+              </div>
             </div>
-            <span>
-              {selectedWorkOrder.createdBy || "System"}
-            </span>
-            <span className="mx-2">on</span>
-            <span>{formatModalDateTime(selectedWorkOrder.createdAt)}</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Updated On</span>
-            <span className="text-xs">
-              {formatModalDateTime(selectedWorkOrder.updatedAt)}
-            </span>
-          </div>
         </div>
       </div>
     </>
