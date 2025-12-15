@@ -32,7 +32,10 @@ export function ToDoView({
   const [comment, setComment] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const ref = useRef<HTMLTextAreaElement>(null);
+  
+  // ✅ WO-401 FIX: Ref specifically for CommentsSection
+  const commentsRef = useRef<HTMLTextAreaElement>(null);
+
   const [editingWorkOrder, setEditingWorkOrder] = useState<any | null>(null);
   const navigate = useNavigate();
 
@@ -46,7 +49,7 @@ export function ToDoView({
 
   // ✅ PAGINATION STATE ADDED HERE
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10; // Ek page par kitne items dikhane hain yaha change karein
+  const itemsPerPage = 10; 
 
   const isEditRoute = useMatch("/work-orders/:workOrderId/edit");
   const isCreateRoute = useMatch("/work-orders/create");
@@ -55,7 +58,7 @@ export function ToDoView({
   const detailId = isDetailRoute?.params?.workOrderId;
   const isEditMode = !!isEditRoute;
 
-  // 📌 Sort change handler (from ToDoTabs)
+  // 📌 Sort change handler
   const handleSortChange = (
     type: string,
     order: "asc" | "desc",
@@ -78,38 +81,23 @@ export function ToDoView({
       const dueA = new Date(a.dueDate || 0).getTime();
       const dueB = new Date(b.dueDate || 0).getTime();
 
-      const nameA =
-        (a.name || a.title || a.workOrderTitle || "").toString().toLowerCase();
-      const nameB =
-        (b.name || b.title || b.workOrderTitle || "").toString().toLowerCase();
+      const nameA = (a.name || a.title || a.workOrderTitle || "").toString().toLowerCase();
+      const nameB = (b.name || b.title || b.workOrderTitle || "").toString().toLowerCase();
 
       let valA: any = 0;
       let valB: any = 0;
 
       switch (sortType) {
-        case "Creation Date":
-          valA = createdA;
-          valB = createdB;
-          break;
-        case "Last Updated":
-          valA = updatedA;
-          valB = updatedB;
-          break;
-        case "Due Date":
-          valA = dueA;
-          valB = dueB;
-          break;
+        case "Creation Date": valA = createdA; valB = createdB; break;
+        case "Last Updated": valA = updatedA; valB = updatedB; break;
+        case "Due Date": valA = dueA; valB = dueB; break;
         case "Name":
-          return sortOrder === "asc"
-            ? nameA.localeCompare(nameB)
-            : nameB.localeCompare(nameA);
+          return sortOrder === "asc" ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
         case "Priority":
           valA = priorityRank[a.priority?.toLowerCase()] || 0;
           valB = priorityRank[b.priority?.toLowerCase()] || 0;
           break;
-        default:
-          valA = updatedA;
-          valB = updatedB;
+        default: valA = updatedA; valB = updatedB;
       }
 
       if (valA < valB) return sortOrder === "asc" ? -1 : 1;
@@ -124,11 +112,9 @@ export function ToDoView({
         return aRead === bRead ? 0 : aRead ? 1 : -1;
       });
     }
-
     return sorted;
   };
 
-  // ✅ Re-sort when dependencies change
   const lists = useMemo(
     () => ({
       todo: sortList(todoWorkOrders),
@@ -141,7 +127,7 @@ export function ToDoView({
 
   // ✅ PAGINATION LOGIC
   useEffect(() => {
-    setCurrentPage(1); // Reset page when tab or sort changes
+    setCurrentPage(1); 
   }, [activeTab, sortType, sortOrder, unreadFirst]);
 
   const totalItems = activeList.length;
@@ -180,10 +166,7 @@ export function ToDoView({
 
   const getInitials = (name: string | undefined | null): string =>
     typeof name === "string" && name.trim().length > 0
-      ? name
-          .split(" ")
-          .map((n) => n[0])
-          .join("")
+      ? name.split(" ").map((n) => n[0]).join("")
       : "U";
 
   // --------------------------------------------------
@@ -221,6 +204,14 @@ export function ToDoView({
     if (item?.id) setTimeout(() => navigate(`/work-orders/${item.id}`), 0);
   };
 
+  // ✅ WO-401 FIX: Function to scroll to comments
+  const handleScrollToComments = () => {
+    if (commentsRef.current) {
+      commentsRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      commentsRef.current.focus();
+    }
+  };
+
   // --------------------------------------------------
   // 🧱 UI
   return (
@@ -247,7 +238,6 @@ export function ToDoView({
             />
           ) : (
             <div className="space-y-2 p-4">
-              {/* ✅ Render CURRENT ITEMS (Sliced) instead of activeList */}
               {currentItems.map((wo) => (
                 <WorkOrderCard
                   key={wo.id}
@@ -263,66 +253,16 @@ export function ToDoView({
           )}
         </div>
 
-        {/* ✅ PAGINATION UI (Bottom Right Bubble with Inline CSS) */}
+        {/* PAGINATION UI */}
         {totalItems > 0 && (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end", // Right aligned
-              padding: "8px 12px",
-              borderTop: "1px solid #e5e7eb",
-              backgroundColor: "#fff",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                border: "1px solid #fbbf24", // Yellow border from screenshot
-                borderRadius: "999px", // Bubble shape
-                padding: "4px 12px",
-                fontSize: "14px",
-                fontWeight: "500",
-                color: "#374151",
-              }}
-            >
-              <span>
-                {startIndex + 1} – {endIndex} of {totalItems}
-              </span>
-              
+          <div style={{ display: "flex", justifyContent: "flex-end", padding: "8px 12px", borderTop: "1px solid #e5e7eb", backgroundColor: "#fff" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", border: "1px solid #fbbf24", borderRadius: "999px", padding: "4px 12px", fontSize: "14px", fontWeight: "500", color: "#374151" }}>
+              <span>{startIndex + 1} – {endIndex} of {totalItems}</span>
               <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                <button
-                  onClick={handlePrevPage}
-                  disabled={currentPage === 1}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: currentPage === 1 ? "not-allowed" : "pointer",
-                    opacity: currentPage === 1 ? 0.3 : 1,
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "2px",
-                  }}
-                >
-                  {/* Left Arrow SVG */}
+                <button onClick={handlePrevPage} disabled={currentPage === 1} style={{ background: "none", border: "none", cursor: currentPage === 1 ? "not-allowed" : "pointer", opacity: currentPage === 1 ? 0.3 : 1, display: "flex", alignItems: "center", padding: "2px" }}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 </button>
-
-                <button
-                  onClick={handleNextPage}
-                  disabled={endIndex >= totalItems}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: endIndex >= totalItems ? "not-allowed" : "pointer",
-                    opacity: endIndex >= totalItems ? 0.3 : 1,
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "2px",
-                  }}
-                >
-                  {/* Right Arrow SVG */}
+                <button onClick={handleNextPage} disabled={endIndex >= totalItems} style={{ background: "none", border: "none", cursor: endIndex >= totalItems ? "not-allowed" : "pointer", opacity: endIndex >= totalItems ? 0.3 : 1, display: "flex", alignItems: "center", padding: "2px" }}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                 </button>
               </div>
@@ -333,7 +273,8 @@ export function ToDoView({
 
       {/* Right Panel */}
       <div className="flex-1 bg-card mr-3 ml-2 mb-2 border border-border min-h-0 flex flex-col">
-        {isCreateRoute ? (
+        {/* ✅ WO-395 FIX: Added creatingWorkOrder */}
+        {isCreateRoute || creatingWorkOrder ? (
           <NewWorkOrderForm
             onCreate={() => {
               onCancelCreate?.();
@@ -343,6 +284,7 @@ export function ToDoView({
             existingWorkOrder={selectedWorkOrder}
             editId={editingId}
             isEditMode={false}
+            onCancel={onCancelCreate}
           />
         ) : editingWorkOrder || isEditMode ? (
           <NewWorkOrderForm
@@ -363,6 +305,7 @@ export function ToDoView({
           />
         ) : (
           <div className="overflow-y-auto">
+            {/* ✅ WO-401 FIX: Passing scroll handler to Details */}
             <WorkOrderDetails
               selectedWorkOrder={selectedWorkOrder}
               selectedAvatarUrl={selectedAvatarUrl}
@@ -375,20 +318,24 @@ export function ToDoView({
               onRefreshWorkOrders={onRefreshWorkOrders}
               activePanel={activePanel}
               setActivePanel={setActivePanel}
+              onScrollToComments={handleScrollToComments} 
             />
 
-            <LinkedProcedurePreview selectedWorkOrder={selectedWorkOrder} />
-
+            {/* ✅ FIX: Render Procedure & Comments ONLY when in 'details' panel */}
             {activePanel === "details" && (
-              <CommentsSection
-                ref={ref}
-                comment={comment}
-                setComment={setComment}
-                attachment={attachment}
-                setAttachment={setAttachment}
-                fileRef={fileRef}
-                selectedWorkOrder={selectedWorkOrder}
-              />
+              <>
+                <LinkedProcedurePreview selectedWorkOrder={selectedWorkOrder} />
+
+                <CommentsSection
+                  ref={commentsRef} // ✅ Attached Ref here
+                  comment={comment}
+                  setComment={setComment}
+                  attachment={attachment}
+                  setAttachment={setAttachment}
+                  fileRef={fileRef}
+                  selectedWorkOrder={selectedWorkOrder}
+                />
+              </>
             )}
           </div>
         )}

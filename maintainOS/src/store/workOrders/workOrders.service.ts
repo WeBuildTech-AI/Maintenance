@@ -13,12 +13,12 @@ import type {
   CreateFieldResponseData,
   FieldResponseResponse,
   CreatePartUsageData,
-  FetchWorkOrdersParams ,
+  FetchWorkOrdersParams,
   FieldResponse
 } from "./workOrders.types";
 
 export const workOrderService = {
-  // ✅ FIX: Accept params argument and pass to API
+  // ✅ GET: Fetch all work orders with optional filters
   fetchWorkOrders: async (params?: FetchWorkOrdersParams): Promise<WorkOrderResponse[]> => {
     const res = await api.get("/work-orders", { 
       params, 
@@ -31,80 +31,98 @@ export const workOrderService = {
     return [];
   },
 
+  // ✅ GET: Fetch single work order by ID
   fetchWorkOrderById: async (id: string): Promise<WorkOrderResponse> => {
     const res = await api.get(`/work-orders/${id}`);
     return res.data;
   },
 
+  // ✅ POST: Create Work Order
   createWorkOrder: async (data: CreateWorkOrderData): Promise<WorkOrderResponse> => {
-    const res = await api.post(`/work-orders`, data);
+    const res = await api.post(`work-orders`, data);
     return res.data;
   },
 
-  updateWorkOrder: async (id: string, authorId: string, data: UpdateWorkOrderData): Promise<WorkOrderResponse> => {
-    const res = await api.request({ method: "PATCH", url: `/work-orders/${id}/${authorId}`, data });
+  // ✅ PATCH: Update Work Order
+  updateWorkOrder: async (id: string, data: any): Promise<WorkOrderResponse> => {
+    const res = await api.patch(`/work-orders/${id}`, data);
     return res.data;
   },
 
-  deleteWorkOrder: async (id: string): Promise<void> => {
-    await api.delete(`/work-orders/${id}`);
-  },
-
-  batchDeleteWorkOrder: async (ids: string[]): Promise<void> => {
-    await api.delete(`work-orders/batch-delete`, { data: { ids: ids } });
-  },
-
-  updateWorkOrderStatus: async (id: string, authorId: string, status: string): Promise<WorkOrderResponse> => {
-    const res = await api.patch(`/work-orders/${id}/status/${authorId}`, { status });
+  // ✅ PATCH: Update Status specific endpoint
+  updateWorkOrderStatus: async (id: string, status: string, authorId: string): Promise<WorkOrderResponse> => {
+    const res = await api.patch(`/work-orders/${id}/status`, { status, authorId });
     return res.data;
   },
 
-  patchWorkOrderComplete: async (id: string): Promise<WorkOrderResponse> => {
-    const res = await api.patch(`/work-orders/patch/${id}/complete`);
-    return res.data;
-  },
-
-  markWorkOrderInProgress: async (id: string): Promise<WorkOrderResponse> => {
-    const res = await api.post(`/work-orders/${id}/in-progress`);
-    return res.data;
-  },
-
+  // ✅ POST: Assign users
   assignWorkOrder: async (id: string, data: AssignWorkOrderData): Promise<WorkOrderResponse> => {
     const res = await api.post(`/work-orders/${id}/assign`, data);
     return res.data;
   },
 
-  addWorkOrderComment: async (id: string, data: AddCommentPayload): Promise<WorkOrderComment> => {
-    const res = await api.post(`/work-orders/${id}/comment`, data);
+  // ✅ POST: Add Comment
+  addWorkOrderComment: async (id: string, payload: AddCommentPayload): Promise<WorkOrderComment> => {
+    const res = await api.post(`/work-orders/${id}/comments`, payload);
     return res.data;
   },
 
+  // ✅ GET: Fetch Comments
   fetchWorkOrderComments: async (id: string): Promise<WorkOrderComment[]> => {
     const res = await api.get(`/work-orders/${id}/comments`);
-    if (Array.isArray(res.data)) return res.data;
-    if (res.data?.data && Array.isArray(res.data.data)) return res.data.data;
-    return [];
+    return res.data;
   },
 
-  fetchWorkOrderLogs: async (workOrderId: string): Promise<WorkOrderLog[]> => {
-    const res = await api.get(`/work-orders/get/work-order-logs/${workOrderId}`);
-    if (Array.isArray(res.data)) return res.data;
-    if (res.data && Array.isArray(res.data.data)) return res.data.data;
-    return [];
+  // ✅ GET: Fetch Logs
+  fetchWorkOrderLogs: async (id: string): Promise<WorkOrderLog[]> => {
+    const res = await api.get(`/work-orders/${id}/logs`);
+    return res.data;
   },
 
+  // ✅ PATCH: Mark Complete
+  markWorkOrderCompleted: async (id: string, userId: string): Promise<WorkOrderResponse> => {
+    const res = await api.patch(`/work-orders/${id}/complete`, { userId });
+    return res.data;
+  },
+
+  patchWorkOrderComplete: async (id: string): Promise<WorkOrderResponse> => {
+    const res = await api.patch(`/work-orders/${id}/status`, { status: "done" });
+    return res.data;
+  },
+
+  markWorkOrderInProgress: async (id: string): Promise<WorkOrderResponse> => {
+    const res = await api.patch(`/work-orders/${id}/status`, { status: "in_progress" });
+    return res.data;
+  },
+
+  // --- Costs ---
   addOtherCost: async (id: string, data: CreateOtherCostData) => {
-    const res = await api.post(`/work-orders/${id}/other-costs`, data);
+    const res = await api.post(`/work-orders/${id}/costs`, data);
     return res.data;
   },
 
   deleteOtherCost: async (id: string, costId: string) => {
-    const res = await api.delete(`/work-orders/${id}/other-costs/${costId}`);
+    const res = await api.delete(`/work-orders/${id}/costs/${costId}`);
     return res.data;
   },
 
-  addTimeEntry: async (id: string, data: CreateTimeEntryData): Promise<WorkOrderTimeEntry> => {
-    const res = await api.post(`/work-orders/${id}/time`, data);
+  // --- Time Entries ---
+  
+  // ✅ FIXED: Removed 'description' and 'date' as per backend error.
+  // ✅ FIXED: Converted 'entryType' to lowercase to match enum values.
+  addTimeEntry: async (id: string, data: CreateTimeEntryData) => {
+    const payload = {
+      items: [
+        {
+          userId: data.userId,
+          entryType: data.entryType ? data.entryType.toLowerCase() : "work", // Ensure lowercase (work, inspection, other)
+          hours: Number(data.hours) || 0,
+          minutes: Number(data.minutes) || 0,
+          hourlyRate: Number(data.rate) || 0 // Map 'rate' to 'hourlyRate'
+        }
+      ]
+    };
+    const res = await api.post(`/work-orders/${id}/time`, payload);
     return res.data;
   },
 
@@ -113,6 +131,7 @@ export const workOrderService = {
     return res.data;
   },
 
+  // --- Parts ---
   addPartUsage: async (id: string, data: CreatePartUsageData) => {
     const res = await api.post(`/work-orders/${id}/parts`, data);
     return res.data; 
@@ -123,27 +142,35 @@ export const workOrderService = {
     return { id, usageId };
   },
 
- // ✅ UPDATED: Matches POST /api/v1/procedure-field-responses
+  // --- Procedure Field Responses ---
   createFieldResponse: async (data: CreateFieldResponseData): Promise<FieldResponseResponse> => {
-    // Assuming 'api' base URL handles /api/v1 prefix. If not, use `/api/v1/procedure-field-responses`
     const res = await api.post(`/procedure-field-responses`, data);
     return res.data;
   },
 
+  getFieldResponses: async (submissionId: string) => {
+    const res = await api.get(`/procedure-field-responses?submissionId=${submissionId}`);
+    return res.data; 
+  },
 
+  // --- Deleted / Trash ---
   fetchDeleteWorkOrder: async (): Promise<void> => {
     const res = await api.get(`work-orders/deleted/all`);
     return res.data;
   },
 
   restoreWorkOrderData: async (id: string): Promise<WorkOrderResponse> => {
-    const res = await api.put(`/work-orders/restore/${id}`);
+    const res = await api.put(`/work-orders/${id}/restore`);
     return res.data;
   },
 
-  getFieldResponses: async (submissionId: string): Promise<FieldResponse[]> => {
-    // API: GET /api/v1/procedure-field-responses/submission/{submissionId}
-    const res = await api.get(`/procedure-field-responses/submission/${submissionId}`);
-    return res.data;
+  batchDeleteWorkOrder: async (ids: string[]): Promise<void> => {
+    await api.delete(`/work-orders/batch-delete`, {
+      data: { ids },
+    });
+  },
+
+  deleteWorkOrder: async (id: string): Promise<void> => {
+    await api.delete(`/work-orders/${id}`);
   },
 };

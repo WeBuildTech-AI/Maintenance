@@ -191,6 +191,8 @@ export function WorkOrderDetails({
   onRefreshLogs,
   activePanel,
   setActivePanel,
+  // ✅ WO-401 FIX: Receive prop from parent
+  onScrollToComments,
 }: any) {
   const navigate = useNavigate();
   const dispatch = useDispatch<any>();
@@ -389,7 +391,11 @@ export function WorkOrderDetails({
           </div>
 
           <div className="flex items-center gap-2 relative">
-            <button className="inline-flex items-center rounded border px-2 py-1.5 text-sm hover:bg-muted">
+            {/* ✅ WO-401 FIX: onClick scrolls to internal comments */}
+            <button 
+              className="inline-flex items-center rounded border px-2 py-1.5 text-sm hover:bg-muted"
+              onClick={onScrollToComments} 
+            >
               <MessageSquare className="h-4 w-4 mr-2" />
               Comments
             </button>
@@ -729,7 +735,6 @@ export function WorkOrderDetails({
             if (label === "Parts") {
                 const partUsages = selectedWorkOrder?.partUsages || [];
                 
-                // ✅ Manually calculate total from visible parts to ensure match
                 const calculatedPartTotal = partUsages.reduce(
                   (sum: number, item: any) => sum + (Number(item.totalCost) || 0), 
                   0
@@ -737,7 +742,6 @@ export function WorkOrderDetails({
   
                 return (
                   <div key={label} className="border-b last:border-none mb-2">
-                    {/* Header Row */}
                     <div className="flex justify-between items-center p-3">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">Parts</span>
@@ -748,7 +752,6 @@ export function WorkOrderDetails({
                         )}
                       </div>
                       
-                      {/* ✅ ALWAYS SHOW "Add" to allow multiple parts */}
                       <button
                         className="flex text-sm text-blue-600 items-center gap-1 hover:underline"
                         onClick={() => setActivePanel("parts")}
@@ -758,7 +761,6 @@ export function WorkOrderDetails({
                       </button>
                     </div>
   
-                    {/* ✅ Part Cards List */}
                     {partUsages.length > 0 && (
                       <div className="px-3 pb-3 space-y-2">
                         {partUsages.map((usage: any) => (
@@ -766,7 +768,6 @@ export function WorkOrderDetails({
                             key={usage.id} 
                             className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm shadow-sm"
                           >
-                            {/* Part Name & Location */}
                             <div className="mb-2">
                               <div className="font-semibold text-gray-900 flex items-center gap-2">
                                   <Wrench className="h-3 w-3 text-gray-500"/>
@@ -778,7 +779,6 @@ export function WorkOrderDetails({
                               </div>
                             </div>
   
-                            {/* Stats Grid (Qty, Unit Cost, Total) */}
                             <div className="grid grid-cols-3 gap-2 bg-white rounded border border-gray-100 p-2 text-xs">
                               <div className="flex flex-col">
                                   <span className="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Qty</span>
@@ -801,6 +801,52 @@ export function WorkOrderDetails({
                 );
               }
 
+            // ✅ SPECIAL HANDLING FOR TIME
+            if (label === "Time") {
+                const timeEntries = selectedWorkOrder?.timeEntries || [];
+                const totalEntries = timeEntries.length;
+                const totalMinutes = timeEntries.reduce((acc: number, t: any) => acc + (Number(t.minutes) || 0) + (Number(t.hours) || 0) * 60, 0);
+                const h = Math.floor(totalMinutes / 60);
+                const m = totalMinutes % 60;
+                const displayValue = `${h}h ${m}m`;
+
+                return (
+                    <div key={label} className="flex justify-between items-center p-3 mb-2 border-b last:border-none">
+                        <span className="text-sm font-medium">{label}</span>
+                        {totalEntries === 0 ? (
+                            <button
+                                className="flex text-sm text-muted-foreground items-center gap-1"
+                                onClick={() => setActivePanel("time")}
+                            >
+                                Add
+                                <ChevronRight className="h-4 w-4 font-muted-foreground" />
+                            </button>
+                        ) : (
+                            <div className="flex flex-col items-end justify-end leading-tight">
+                                <div className="flex items-end gap-1">
+                                    <button
+                                        className="flex items-end text-blue-600 text-sm font-medium gap-1"
+                                        onClick={() => setActivePanel("time")}
+                                    >
+                                        <span className="relative" style={{ top: "1px" }}>
+                                            {totalEntries} entries
+                                        </span>
+                                        <ChevronRight
+                                            className="h-4 w-4 text-blue-600"
+                                            style={{ position: "relative", top: "2px", marginLeft: "4px" }}
+                                        />
+                                    </button>
+                                </div>
+                                <p className="text-sm font-semibold text-gray-900" style={{ lineHeight: "1.1", marginTop: "5px" }}>
+                                    {displayValue}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+
+            // --- OTHER COSTS (Default Fallback) ---
             const isOtherCosts = label === "Other Costs";
             const otherCosts = selectedWorkOrder?.otherCosts || [];
             const totalEntries = otherCosts.length;
@@ -819,15 +865,7 @@ export function WorkOrderDetails({
                 {!isOtherCosts || totalEntries === 0 ? (
                   <button
                     className="flex text-sm text-muted-foreground items-center gap-1"
-                    onClick={() =>
-                      setActivePanel(
-                        label === "Parts"
-                          ? "parts"
-                          : label === "Time"
-                            ? "time"
-                            : "cost"
-                      )
-                    }
+                    onClick={() => setActivePanel("cost")}
                   >
                     Add
                     <ChevronRight className="h-4 w-4 font-muted-foreground" />
