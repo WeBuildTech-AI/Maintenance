@@ -16,7 +16,7 @@ import {
   Minimize2,
   X // Close icon
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../ui/button";
 import DeletePartModal from "./DeletePartModal";
@@ -34,6 +34,9 @@ import PartOptionsDropdown from "./PartOptionsDropdown";
 // ✅ Import Forms for In-Place Rendering
 import RestockModal from "./RestockModal"; 
 import { NewPartForm } from "../NewPartForm/NewPartForm";
+
+// ✅ Import API to fetch users
+import api from "../../../store/auth/auth.service";
 
 export function PartDetails({
   item,
@@ -71,6 +74,10 @@ export function PartDetails({
   const [showRestockModal, setShowRestockModal] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // ✅ NEW STATE FOR USER NAMES
+  const [createdByName, setCreatedByName] = useState<string>("");
+  const [updatedByName, setUpdatedByName] = useState<string>("");
   
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
@@ -95,6 +102,49 @@ export function PartDetails({
       console.error("Failed to refresh part details:", error);
     }
   };
+
+  // ✅ NEW EFFECT TO FETCH USER NAMES
+  useEffect(() => {
+    const fetchUserNames = async () => {
+      // 1. Fetch Creator Name
+      if (partData.createdBy) {
+        try {
+          if (partData.createdBy.length > 20) { // Check if it looks like a UUID
+             const res = await api.get(`/users/${partData.createdBy}`);
+             if (res.data?.fullName) {
+               setCreatedByName(res.data.fullName);
+             }
+          } else {
+             setCreatedByName(partData.createdBy);
+          }
+        } catch (err) {
+          console.error("Failed to fetch creator name", err);
+        }
+      } else {
+        setCreatedByName("");
+      }
+
+      // 2. Fetch Updater Name
+      if (partData.updatedBy) {
+        try {
+          if (partData.updatedBy.length > 20) {
+            const res = await api.get(`/users/${partData.updatedBy}`);
+            if (res.data?.fullName) {
+              setUpdatedByName(res.data.fullName);
+            }
+          } else {
+            setUpdatedByName(partData.updatedBy);
+          }
+        } catch (err) {
+          console.error("Failed to fetch updater name", err);
+        }
+      } else {
+        setUpdatedByName("");
+      }
+    };
+
+    fetchUserNames();
+  }, [partData.createdBy, partData.updatedBy]);
 
   // --- 1. Fetch Full Data on Edit ---
   useEffect(() => {
@@ -509,7 +559,10 @@ export function PartDetails({
             <div className="space-y-3 mb-8 mt-4">
               <div className="flex items-center gap-1 text-sm text-gray-600">
                 <UserCircle2 className="w-4 h-4 text-yellow-500" />
-                <span>Created</span>
+                {/* ✅ UPDATED: Added Created By Name */}
+                <span>
+                  Created {createdByName ? `by ${createdByName}` : ""}
+                </span>
                 <CalendarDays className="w-4 h-4 text-gray-500 ml-1" />
                 <span>
                   {partData.createdAt
@@ -519,7 +572,10 @@ export function PartDetails({
               </div>
               <div className="flex items-center gap-1 text-sm text-gray-600">
                 <UserCircle2 className="w-4 h-4 text-yellow-500" />
-                <span>Last Updated</span>
+                {/* ✅ UPDATED: Added Last Updated By Name */}
+                <span>
+                  Last Updated {updatedByName ? `by ${updatedByName}` : ""}
+                </span>
                 <CalendarDays className="w-4 h-4 text-gray-500 ml-1" />
                 <span>
                   {partData.updatedAt
@@ -530,8 +586,35 @@ export function PartDetails({
             </div>
           </>
         ) : (
-          <div className="text-gray-500 italic">
-            History will appear here...
+          <div className="space-y-6 mt-4">
+             {/* ✅ HISTORY TAB: Added Record History Section */}
+             <div className="space-y-3">
+               <h4 className="font-medium text-gray-900">Record History</h4>
+               <div className="flex items-center gap-1 text-sm text-gray-600">
+                 <UserCircle2 className="w-4 h-4 text-yellow-500" />
+                 <span>
+                   Created {createdByName ? `by ${createdByName}` : ""}
+                 </span>
+                 <CalendarDays className="w-4 h-4 text-gray-500 ml-1" />
+                 <span>
+                   {partData.createdAt
+                     ? new Date(partData.createdAt).toLocaleString()
+                     : "N/A"}
+                 </span>
+               </div>
+               <div className="flex items-center gap-1 text-sm text-gray-600">
+                 <UserCircle2 className="w-4 h-4 text-yellow-500" />
+                 <span>
+                   Last Updated {updatedByName ? `by ${updatedByName}` : ""}
+                 </span>
+                 <CalendarDays className="w-4 h-4 text-gray-500 ml-1" />
+                 <span>
+                   {partData.updatedAt
+                     ? new Date(partData.updatedAt).toLocaleString()
+                     : "N/A"}
+                 </span>
+               </div>
+             </div>
           </div>
         )}
       </div>

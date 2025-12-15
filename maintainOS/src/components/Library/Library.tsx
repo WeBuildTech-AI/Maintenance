@@ -49,8 +49,13 @@ export function Library() {
   const routeId = editMatch?.params?.id || viewMatch?.params?.id;
 
   // --- Local State ---
-  const [viewMode, setViewMode] = useState<ViewMode>("panel"); 
+  // Initialize viewMode, trying to recover from navigation state if available
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    return (location.state as any)?.previousViewMode || "panel";
+  });
+  
   const [searchQuery, setSearchQuery] = useState("");
+  // This state now strictly controls the API trigger for search
   const [debouncedSearch, setDebouncedSearch] = useState(""); 
 
   const [showSettings, setShowSettings] = useState(false);
@@ -60,7 +65,6 @@ export function Library() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ 1. Filter Params State
   const [filterParams, setFilterParams] = useState<FetchProceduresParams>({
     page: 1, 
     limit: 50 
@@ -76,7 +80,17 @@ export function Library() {
 
   const [visibleColumns, setVisibleColumns] = useState<string[]>(allToggleableColumns);
 
-  // ✅ Debounce Search Effect
+  // --- RESTORE VIEW MODE ON RETURN ---
+  // This effect ensures that if we navigate back with state, we switch to that view
+  useEffect(() => {
+    const stateViewMode = (location.state as any)?.previousViewMode;
+    if (!isFormOpen && stateViewMode && (stateViewMode === "panel" || stateViewMode === "table")) {
+      setViewMode(stateViewMode);
+    }
+  }, [location.state, isFormOpen]);
+
+  // --- OPTIMIZED: Debounce Search Effect ---
+  // Only updates the trigger state 'debouncedSearch' after 500ms of inactivity
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
@@ -84,11 +98,11 @@ export function Library() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // --- FETCH LIST (Memoized & Updated with Filters) ---
+  // --- OPTIMIZED: Fetch Data ---
+  // Now strictly depends on the final triggers (debouncedSearch, filterParams, showDeleted)
+  // Removed unnecessary dependencies to prevent loops.
   const fetchData = useCallback(async () => {
-      if (procedures.length === 0) {
-        setLoading(true);
-      }
+      setLoading(true);
       
       try {
         setError(null);
@@ -98,13 +112,13 @@ export function Library() {
           const res = await procedureService.fetchDeletedProcedures();
           data = Array.isArray(res) ? res : res?.data || [];
         } else {
-          // ✅ FIX: Use 'search' instead of 'title' as per API requirements
+          // Clean up search param
+          const finalSearch = debouncedSearch.trim() || undefined;
+
           const apiPayload = {
             ...filterParams,
-            search: debouncedSearch || undefined 
+            search: finalSearch
           };
-
-          console.log("🔥 Library API Call:", apiPayload);
           
           const res = await procedureService.fetchProcedures(apiPayload);
           data = Array.isArray(res) ? res : (res as any)?.data?.items || [];
@@ -120,14 +134,16 @@ export function Library() {
       }
   }, [showDeleted, filterParams, debouncedSearch]); 
 
+  // Trigger fetch when strict dependencies change
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  // ✅ Handle Filter Change Callback
+  // --- Handler for Filters ---
   const handleFilterChange = useCallback((newParams: Partial<FetchProceduresParams>) => {
     setFilterParams((prevParams) => {
       const merged = { ...prevParams, ...newParams };
+      // Prevent update if object is practically identical
       if (JSON.stringify(prevParams) === JSON.stringify(merged)) {
         return prevParams; 
       }
@@ -157,7 +173,9 @@ export function Library() {
         setModalProcedure(null);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routeId, procedures, viewMode, isFormOpen]); 
+  // Note: sortedProcedures is derived from procedures, so we can exclude it safely to avoid cycles
 
   // --- SORTING ---
   const sortedProcedures = useMemo(() => {
@@ -202,25 +220,34 @@ export function Library() {
   // --- HANDLERS ---
 
   const handleCreateClick = () => navigate("/library/create");
-  const handleEditProcedure = (id: string) => navigate(`/library/${id}/edit`);
+  
+  // ✅ FIX: Close modal and pass viewMode state when navigating to edit
+  const handleEditProcedure = (id: string) => {
+    setModalProcedure(null); // Ensure modal is closed so Edit page is visible
+    navigate(`/library/${id}/edit`, { 
+      state: { previousViewMode: viewMode } 
+    });
+  };
+
   const handleSelectProcedure = (proc: any) => {
     if (routeId !== proc.id) navigate(`/library/${proc.id}`);
   };
 
+  // ✅ FIX: Read viewMode state when returning from builder
   const handleBackFromBuilder = useCallback(() => {
-    if (location.state?.returnPath) {
-        navigate(location.state.returnPath, {
-            state: { previousFormState: location.state.previousFormState } 
-        });
-    } else {
-        if (routeId) {
-            navigate(`/library/${routeId}`);
-        } else {
-            navigate("/library");
-        }
-        fetchData(); 
-    }
-  }, [location.state, routeId, fetchData, navigate]);
+    // Check if we have a specific return path or just go to root
+    const returnPath = location.state?.returnPath || "/library";
+    // Check if we have a preserved view mode from when we entered edit mode
+    const preservedViewMode = location.state?.previousViewMode;
+
+    navigate(returnPath, {
+      state: { 
+        previousFormState: location.state?.previousFormState,
+        previousViewMode: preservedViewMode // Pass it back so Library re-mounts with correct view
+      } 
+    });
+    fetchData(); 
+  }, [location.state, fetchData, navigate]);
 
   const handleModalClose = () => {
     setModalProcedure(null);
@@ -260,7 +287,6 @@ export function Library() {
             setSearchQuery={setSearchQuery}
             setIsCreatingForm={handleCreateClick}
             setShowSettings={setShowSettings}
-            // ✅ Pass Filter Handler
             onFilterChange={handleFilterChange}
           />
 

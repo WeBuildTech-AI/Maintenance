@@ -1,16 +1,16 @@
-import axios from "axios";
-import type { PartResponse, FetchPartsParams } from "./parts.types"; // ✅ Imported Types
-import type { RestockThunkArgs, PartRestockLog } from "./parts.types";
 import api from "../auth/auth.service";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import type { 
+  PartResponse, 
+  FetchPartsParams, 
+  CreatePartPayload, 
+  UpdatePartPayload 
+} from "./parts.types";
+import type { RestockThunkArgs, PartRestockLog } from "./parts.types";
 
 export const partService = {
-  // ✅ Updated to accept params object
   fetchParts: async (params?: FetchPartsParams): Promise<PartResponse[]> => {
     const res = await api.get(`/parts`, {
       params,
-      // Ensure arrays are serialized correctly
       paramsSerializer: { indexes: null },
       headers: { Accept: "application/json" },
     });
@@ -25,12 +25,14 @@ export const partService = {
     return res.data;
   },
 
-  createPart: async (data: FormData): Promise<PartResponse> => {
+  // ✅ CREATE: Sends JSON Object
+  createPart: async (data: CreatePartPayload): Promise<PartResponse> => {
     const res = await api.post(`/parts`, data);
     return res.data;
   },
 
-  updatePart: async (id: string, data: FormData): Promise<PartResponse> => {
+  // ✅ UPDATE: Sends JSON Object
+  updatePart: async (id: string, data: UpdatePartPayload): Promise<PartResponse> => {
     const res = await api.patch(`/parts/${id}`, data);
     return res.data;
   },
@@ -46,25 +48,11 @@ export const partService = {
     return res.data;
   },
 
-  // RESTOCK API THUNKS BELOW
-
-  restockPart: async (
-    partId: string,
-    payload: RestockThunkArgs
-  ): Promise<PartResponse> => {
-    const formData = new FormData();
-
-    formData.append("locationId", payload.locationId);
-    formData.append("addedUnits", String(payload.addedUnits));
-    if (payload.notes) {
-      formData.append("notes", payload.notes);
-    }
-
-    if (payload.restockImages && payload.restockImages.length > 0) {
-      formData.append("restockImages", JSON.stringify(payload.restockImages));
-    }
-
-    const res = await api.post(`/parts/${partId}/restock`, formData);
+  // ✅ RESTOCK: JSON Object
+  restockPart: async (partId: string, payload: RestockThunkArgs): Promise<PartResponse> => {
+    // We pass payload directly as JSON. 
+    // Ensure your backend Restock endpoint also accepts JSON body.
+    const res = await api.post(`/parts/${partId}/restock`, payload);
     return res.data;
   },
 
@@ -77,6 +65,7 @@ export const partService = {
     const res = await api.get(`/parts/restock-logs/${logId}`);
     return res.data;
   },
+
   batchDeletePart: async (ids: string[]): Promise<void> => {
     await api.delete(`parts/batch-delete`, {
       data: { ids: ids },

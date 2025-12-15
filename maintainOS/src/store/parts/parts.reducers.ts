@@ -140,6 +140,7 @@ const partsSlice = createSlice({
         state.error = action.payload as string;
       })
 
+      // RESTOCK LOGS
       .addCase(getAllRestockLogs.pending, (state) => {
         state.loading = true;
         state.error = null;
