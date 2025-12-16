@@ -1,6 +1,6 @@
 import type { FieldData, ConditionData, ProcedureSettingsState } from "../types";
 
-// --- Helper: Maps UI field types to backend field types (FIXED) ---
+// --- Helper: Maps UI field types to backend field types ---
 function mapFieldType(type: string): string {
   const map: Record<string, string> = {
     "Text Field": "text_field",
@@ -125,6 +125,8 @@ export function convertStateToJSON(
     teamsInCharge: settings.teamsInCharge, 
     locationIds: settings.locations, 
     visibility: settings.visibility,
+    // ✅ FIX: Changed 'categories' to 'categoryIds'
+    categoryIds: settings.categories, 
 
     // --- Conditionally add 'priority' ---
     ...(settings.priority && { priority: settings.priority }),

@@ -8,13 +8,13 @@ import {
   Edit,
   Link as LinkIcon,
   MapPin,
-  MoreHorizontal, // ✅ Correct import
+  MoreHorizontal,
   Package2,
   Plus,
   UserCircle2,
   Maximize2,
   Minimize2,
-  X // Close icon
+  X 
 } from "lucide-react";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
@@ -57,14 +57,14 @@ export function PartDetails({
 }) {
   const [activeTab, setActiveTab] = useState<"details" | "history">("details");
   
-  // ✅ 1. Local State for Real-time Updates (initialized with prop item)
+  // ✅ 1. Local State for Real-time Updates
   const [partData, setPartData] = useState<any>(item);
 
   // ✅ View States
   const [isEditing, setIsEditing] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
   
-  // ✅ Resize State (Expanded View)
+  // ✅ Resize State
   const [isExpanded, setIsExpanded] = useState(false);
 
   // ✅ Dropdown & Modal States
@@ -75,7 +75,7 @@ export function PartDetails({
   const [isCopied, setIsCopied] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // ✅ NEW STATE FOR USER NAMES
+  // ✅ User Names State
   const [createdByName, setCreatedByName] = useState<string>("");
   const [updatedByName, setUpdatedByName] = useState<string>("");
   
@@ -85,31 +85,28 @@ export function PartDetails({
   // Sync if parent item changes
   useEffect(() => {
     setPartData(item);
-    setIsEditing(false); // ✅ FIX: Reset edit mode when switching parts
+    setIsEditing(false);
   }, [item]);
 
-  // ✅ 2. Helper to fetch fresh data immediately
+  // ✅ Refresh Logic
   const refreshLocalData = async () => {
     if (!partData?.id) return;
     try {
-      // Fetch fresh details for this specific part
       const freshData = await partService.fetchPartById(partData.id);
       setPartData(freshData);
-      
-      // Also refresh the parent list
       if (fetchPartData) fetchPartData();
     } catch (error) {
       console.error("Failed to refresh part details:", error);
     }
   };
 
-  // ✅ NEW EFFECT TO FETCH USER NAMES
+  // ✅ Fetch User Names
   useEffect(() => {
     const fetchUserNames = async () => {
       // 1. Fetch Creator Name
       if (partData.createdBy) {
         try {
-          if (partData.createdBy.length > 20) { // Check if it looks like a UUID
+          if (partData.createdBy.length > 20) { 
              const res = await api.get(`/users/${partData.createdBy}`);
              if (res.data?.fullName) {
                setCreatedByName(res.data.fullName);
@@ -146,7 +143,7 @@ export function PartDetails({
     fetchUserNames();
   }, [partData.createdBy, partData.updatedBy]);
 
-  // --- 1. Fetch Full Data on Edit ---
+  // ✅ Edit Data Fetch
   useEffect(() => {
     if (isEditing && partData?.id) {
        setLoading(true);
@@ -172,6 +169,34 @@ export function PartDetails({
          .finally(() => setLoading(false));
     }
   }, [isEditing, partData]);
+
+  /* -------------------------------------------------------------------------- */
+  /* ✅ DIRECT DUPLICATE ACTION                        */
+  /* -------------------------------------------------------------------------- */
+  const handleDuplicatePart = () => {
+    // 1. Prepare clean data
+    const copyData = {
+        ...partData,
+        name: `Copy - ${partData.name}`, // Prefix name
+        id: null, // Clear ID to make it new
+        _id: null,
+        createdAt: null,
+        updatedAt: null,
+        createdBy: null,
+        updatedBy: null,
+        // Pass arrays so they prefill in the new form
+        locations: partData.locations || [],
+        vendors: partData.vendors || [],
+        assets: partData.assets || [],
+        teams: partData.teams || [],
+        partImages: partData.partImages || [],
+        partDocs: partData.partDocs || []
+    };
+    
+    // 2. Direct Navigation to Create Screen
+    setIsDropdownOpen(false);
+    navigate("/inventory/create", { state: { copyData } });
+  };
 
   const handleCopyClick = () => {
     const url = window.location.href;
@@ -213,7 +238,6 @@ export function PartDetails({
     setIsDropdownOpen(false);
   };
 
-  // ✅ HANDLE: USE IN NEW WORK ORDER
   const handleUseInNewWorkOrder = () => {
     navigate("/work-orders/create", {
         state: {
@@ -239,7 +263,6 @@ export function PartDetails({
 
     return (
       <div className={`flex flex-col h-full bg-white relative animate-in fade-in zoom-in-95 duration-200 ${isExpanded ? 'fixed inset-2 z-[99999] shadow-2xl rounded-lg border border-gray-300' : ''}`}>
-
          <div className="flex-1 overflow-hidden pt-2">
             <NewPartForm 
                 newItem={editItem}
@@ -324,7 +347,6 @@ export function PartDetails({
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className={`text-gray-600 hover:bg-transparent ${isDropdownOpen ? 'bg-gray-100' : ''}`}
             >
-              {/* ✅ UPDATED: Use MoreHorizontal to match import */}
               <MoreHorizontal className="h-5 w-5" />
             </Button>
 
@@ -361,7 +383,7 @@ export function PartDetails({
                     onClose={() => setIsDropdownOpen(false)}
                     triggerRef={buttonRef}
                     onOrder={() => toast("Order clicked")}
-                    onCopy={() => toast("Copy clicked")}
+                    onCopy={handleDuplicatePart} // ✅ Direct Call
                     onExportQR={() => toast("Export QR clicked")}
                     onDelete={handleDeleteClick}
                 />
@@ -437,10 +459,17 @@ export function PartDetails({
                   <tbody className="bg-white">
                     {partData.locations?.length ? (
                       partData.locations.map((loc: any, i: number) => (
-                        <tr key={i} className="border-t hover:bg-gray-50">
+                        <tr 
+                            key={i} 
+                            className="border-t hover:bg-gray-50 cursor-pointer transition-colors"
+                            onClick={() => {
+                                const targetId = loc.locationId || loc.id;
+                                if (targetId) navigate(`/locations/${targetId}`);
+                            }}
+                        >
                           <td className="py-3 px-4 flex items-center gap-2">
                             <MapPin className="w-5 h-5 text-gray-600 shrink-0" />
-                            <span className="text-gray-800">
+                            <span className="text-gray-800 group-hover:text-blue-600 group-hover:underline">
                               {loc.name || loc.locationName || "Warehouse"}
                             </span>
                           </td>
@@ -483,11 +512,11 @@ export function PartDetails({
                 <p className="text-sm text-gray-700 mb-3">
                   {(partData.qrCode && partData.qrCode.split("/").pop()) || "N/A"}
                 </p>
-                <div className="bg-white rounded-md shadow-sm flex items-center">
+                <div className="bg-white rounded-md shadow-sm flex items-center border p-2 w-fit">
                   <img
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${partData.qrCode}`}
                     alt="QR Code"
-                    className="rounded-md"
+                    className="rounded-md w-24 h-24"
                   />
                 </div>
               </div>
@@ -497,11 +526,17 @@ export function PartDetails({
                 </h4>
                 {partData.assets?.length > 0 ? (
                   partData.assets.map((a: any, i: number) => (
-                    <div key={i} className="flex items-center gap-2 text-gray-700 mb-2">
+                    <div 
+                        key={i} 
+                        className="flex items-center gap-2 text-gray-700 mb-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded-md transition-colors group"
+                        onClick={() => {
+                            if (a.id) navigate(`/assets?assetId=${a.id}`);
+                        }}
+                    >
                       <div className="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center">
                         <Package2 className="w-5 h-5 text-yellow-500" />
                       </div>
-                      <span className="text-gray-800 font-normal">
+                      <span className="text-gray-800 font-normal group-hover:text-blue-600 group-hover:underline">
                         {a.name}
                       </span>
                     </div>
@@ -531,7 +566,7 @@ export function PartDetails({
                       {v.name?.charAt(0).toUpperCase()}
                     </div>
                     <span className="text-gray-600 font-medium group-hover:text-blue-600 group-hover:underline">
-                        {v.name}
+                      {v.name}
                     </span>
                   </div>
                 ))
@@ -544,11 +579,19 @@ export function PartDetails({
               <h4 className="font-medium text-gray-800 mb-3">Teams</h4>
               {partData.teams?.length > 0 ? (
                 partData.teams.map((t: any, i: number) => (
-                  <div key={i} className="flex items-center gap-2 text-gray-700 mb-1">
+                  <div 
+                    key={i} 
+                    className="flex items-center gap-2 text-gray-700 mb-1 cursor-pointer hover:bg-gray-50 p-1.5 rounded-md transition-colors group"
+                    onClick={() => {
+                        if (t.id) navigate(`/teams/${t.id}`);
+                    }}
+                  >
                     <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium text-sm">
                       {t.name?.charAt(0).toUpperCase()}
                     </div>
-                    <span className="text-gray-600">{t.name}</span>
+                    <span className="text-gray-600 group-hover:text-blue-600 group-hover:underline">
+                        {t.name}
+                    </span>
                   </div>
                 ))
               ) : (
@@ -559,9 +602,12 @@ export function PartDetails({
             <div className="space-y-3 mb-8 mt-4">
               <div className="flex items-center gap-1 text-sm text-gray-600">
                 <UserCircle2 className="w-4 h-4 text-yellow-500" />
-                {/* ✅ UPDATED: Added Created By Name */}
                 <span>
-                  Created {createdByName ? `by ${createdByName}` : ""}
+                  Created {createdByName ? 
+                    <span className="text-blue-600 hover:underline cursor-pointer ml-1" onClick={() => navigate(`/users/profile/${partData.createdBy}`)}>
+                        by {createdByName}
+                    </span> 
+                    : ""}
                 </span>
                 <CalendarDays className="w-4 h-4 text-gray-500 ml-1" />
                 <span>
@@ -572,9 +618,12 @@ export function PartDetails({
               </div>
               <div className="flex items-center gap-1 text-sm text-gray-600">
                 <UserCircle2 className="w-4 h-4 text-yellow-500" />
-                {/* ✅ UPDATED: Added Last Updated By Name */}
                 <span>
-                  Last Updated {updatedByName ? `by ${updatedByName}` : ""}
+                  Last Updated {updatedByName ? 
+                    <span className="text-blue-600 hover:underline cursor-pointer ml-1" onClick={() => navigate(`/users/profile/${partData.updatedBy}`)}>
+                        by {updatedByName}
+                    </span> 
+                    : ""}
                 </span>
                 <CalendarDays className="w-4 h-4 text-gray-500 ml-1" />
                 <span>
@@ -587,13 +636,15 @@ export function PartDetails({
           </>
         ) : (
           <div className="space-y-6 mt-4">
-             {/* ✅ HISTORY TAB: Added Record History Section */}
              <div className="space-y-3">
                <h4 className="font-medium text-gray-900">Record History</h4>
                <div className="flex items-center gap-1 text-sm text-gray-600">
                  <UserCircle2 className="w-4 h-4 text-yellow-500" />
                  <span>
-                   Created {createdByName ? `by ${createdByName}` : ""}
+                   Created {createdByName ? 
+                    <span className="text-blue-600 hover:underline cursor-pointer ml-1" onClick={() => navigate(`/users/profile/${partData.createdBy}`)}>
+                        by {createdByName}
+                    </span> : ""}
                  </span>
                  <CalendarDays className="w-4 h-4 text-gray-500 ml-1" />
                  <span>
@@ -605,7 +656,10 @@ export function PartDetails({
                <div className="flex items-center gap-1 text-sm text-gray-600">
                  <UserCircle2 className="w-4 h-4 text-yellow-500" />
                  <span>
-                   Last Updated {updatedByName ? `by ${updatedByName}` : ""}
+                   Last Updated {updatedByName ? 
+                    <span className="text-blue-600 hover:underline cursor-pointer ml-1" onClick={() => navigate(`/users/profile/${partData.updatedBy}`)}>
+                        by {updatedByName}
+                    </span> : ""}
                  </span>
                  <CalendarDays className="w-4 h-4 text-gray-500 ml-1" />
                  <span>
@@ -651,10 +705,10 @@ export function PartDetails({
         <RestockModal
             isOpen={showRestockModal}
             onClose={() => setShowRestockModal(false)}
-            part={partData} // ✅ Pass current state
+            part={partData} 
             onConfirm={() => {
                 setShowRestockModal(false);
-                refreshLocalData(); // ✅ REFRESH ON CONFIRM
+                refreshLocalData(); 
             }}
         />
       )}

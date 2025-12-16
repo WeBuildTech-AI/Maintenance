@@ -52,9 +52,14 @@ export function Locations() {
     return (savedMode as ViewMode) || "panel";
   });
 
+  // ✅ SERVER-SIDE PAGINATION STATE
+  // "page" param ko URL se read karte hain (Default: 1)
+  const currentPage = Number(searchParams.get("page")) || 1;
+  const itemsPerPage = 50; // Server limit matches this
+
   const [filterParams, setFilterParams] = useState<FetchLocationsParams>({
-    page: Number(searchParams.get("page")) || 1,
-    limit: 50,
+    page: currentPage,
+    limit: itemsPerPage,
   });
 
   const [locations, setLocations] = useState<LocationResponse[]>([]);
@@ -64,7 +69,6 @@ export function Locations() {
   const [selectedLocation, setSelectedLocation] =
     useState<LocationResponse | null>(null);
 
-  // ⭐ NEW STATE: To store the clicked sub-location data
   const [activeSubLocation, setActiveSubLocation] = useState<any>(null);
 
   const { locationId } = useParams();
@@ -85,10 +89,6 @@ export function Locations() {
 
   const [showDeleted, setShowDeleted] = useState(false);
   const [showSubLocation, setShowSubLocation] = useState(false);
-
-  // ✅ Pagination State
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
   const navigate = useNavigate();
   const isCreateRoute = useMatch("/locations/create");
@@ -133,16 +133,28 @@ export function Locations() {
     return null;
   }, [isEditMode, isEditRoute, locations, selectedLocation]);
 
-  // ✅ Sync State TO URL
+  // ✅ Sync State TO URL (Pagination & Search)
   useEffect(() => {
     const params: any = {};
     if (debouncedSearch) params.search = debouncedSearch;
-    if (filterParams.page && filterParams.page > 1)
+    
+    // Sirf tab param add karein agar page > 1 hai
+    if (filterParams.page && filterParams.page > 1) {
       params.page = filterParams.page.toString();
+    }
+      
     setSearchParams(params, { replace: true });
-  }, [viewMode, debouncedSearch, filterParams.page, setSearchParams]);
+  }, [debouncedSearch, filterParams.page, setSearchParams]);
 
-  // Debounce
+  // ✅ URL Change Listener: Update FilterParams when URL changes (e.g. Back button)
+  useEffect(() => {
+    const pageFromUrl = Number(searchParams.get("page")) || 1;
+    if (pageFromUrl !== filterParams.page) {
+      setFilterParams(prev => ({ ...prev, page: pageFromUrl }));
+    }
+  }, [searchParams]);
+
+  // Debounce Search
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
@@ -163,12 +175,12 @@ export function Locations() {
         });
       } catch (err) {
         console.error("Failed to fetch location by ID:", err);
-        navigate("/locations");
+        toast.error("Could not load the selected location.");
       } finally {
         setDetailsLoading(false);
       }
     },
-    [navigate]
+    [] 
   );
 
   // ✅ Main List Fetch
@@ -185,8 +197,16 @@ export function Locations() {
         };
         res = await locationService.fetchLocations(apiPayload);
       }
+      
       const reversedLocations = [...res].reverse();
-      setLocations(reversedLocations);
+      
+      setLocations((prevLocations) => {
+          if (selectedLocation && !reversedLocations.find(l => l.id === selectedLocation.id)) {
+              return [selectedLocation, ...reversedLocations];
+          }
+          return reversedLocations;
+      });
+
     } catch (err) {
       console.error(err);
       setError("Failed to fetch locations");
@@ -194,7 +214,7 @@ export function Locations() {
     } finally {
       setLoading(false);
     }
-  }, [showDeleted, filterParams, debouncedSearch]);
+  }, [showDeleted, filterParams, debouncedSearch, selectedLocation]); 
 
   useEffect(() => {
     fetchLocations();
@@ -208,13 +228,16 @@ export function Locations() {
 
     if (locationId) {
       if (selectedLocation?.id === locationId) return;
+      
       const foundInList = findLocationDeep(locations, locationId);
       if (foundInList) {
         setSelectedLocation(foundInList);
       } else {
         fetchLocationById(locationId);
       }
-    } else if (!loading && locations.length > 0 && !selectedLocation) {
+      return;
+    } 
+    else if (!loading && locations.length > 0 && !selectedLocation) {
       const firstLocation = locations[0];
       setSelectedLocation(firstLocation);
       navigate(`/locations/${firstLocation.id}`, { replace: true });
@@ -227,6 +250,7 @@ export function Locations() {
     fetchLocationById,
     navigate,
     selectedLocation,
+    loading
   ]);
 
   const handleShowNewLocationForm = () => navigate("/locations/create");
@@ -276,7 +300,7 @@ export function Locations() {
     []
   );
 
-  // ✅ Sorting Logic
+  // ✅ Sorting Logic (Client side sorting of current page)
   const sortedLocations = useMemo(() => {
     let items = [...locations];
     items.sort((a, b) => {
@@ -301,21 +325,20 @@ export function Locations() {
     return items;
   }, [locations, sortType, sortOrder]);
 
-  // ✅ Pagination Logic
-  const totalItems = sortedLocations.length;
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-  const currentItems = sortedLocations.slice(startIndex, endIndex);
-
+  // ✅ Server-Side Pagination Handlers
   const handlePrevPage = () => {
-    if (currentPage > 1) setCurrentPage((p) => p - 1);
-  };
-  const handleNextPage = () => {
-    if (endIndex < totalItems) setCurrentPage((p) => p + 1);
+    if (filterParams.page && filterParams.page > 1) {
+      setFilterParams((prev) => ({ ...prev, page: Number(prev.page) - 1 }));
+    }
   };
 
-  // Reset page when search or sort changes
-  useEffect(() => setCurrentPage(1), [sortType, sortOrder, debouncedSearch]);
+  const handleNextPage = () => {
+    // Note: Since we don't have total count, we allow next if current list is full size
+    // or if you want to allow indefinite next until empty array
+    if (locations.length > 0) { 
+       setFilterParams((prev) => ({ ...prev, page: Number(prev.page || 1) + 1 }));
+    }
+  };
 
   // Dropdown positioning
   useEffect(() => {
@@ -502,14 +525,14 @@ export function Locations() {
 
               {/* 2. Scrollable List with INLINE CARD UI */}
               <div className="flex-1 overflow-auto bg-white p-3 space-y-2">
-                {loading && filterParams.page === 1 ? (
+                {loading && locations.length === 0 ? (
                   <div className="flex h-full items-center justify-center">
                     <Loader />
                   </div>
-                ) : !loading && currentItems.length === 0 ? (
+                ) : locations.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-sm text-gray-500 mb-2">
-                      No locations found.
+                      No locations found on Page {filterParams.page}.
                     </p>
                     <Button
                       onClick={handleShowNewLocationForm}
@@ -521,7 +544,7 @@ export function Locations() {
                   </div>
                 ) : (
                   <>
-                    {currentItems.map((item) => {
+                    {sortedLocations.map((item) => {
                       const isSelected =
                         item.id === selectedLocation?.id ||
                         item.id === locationId;
@@ -535,7 +558,6 @@ export function Locations() {
                             setSelectedLocation(item);
                             navigate(`/locations/${item.id}`);
                           }}
-                          // ✅ INLINE Yellow Theme Styling
                           className={`cursor-pointer border rounded-lg p-4 mb-3 transition-all duration-200 hover:shadow-md ${
                             isSelected
                               ? "border-yellow-400 bg-yellow-50 ring-1 ring-yellow-400"
@@ -568,13 +590,10 @@ export function Locations() {
 
                             {/* Content Column */}
                             <div className="flex-1 min-w-0">
-                              {/* Row 1: Title + Sub-location Badge */}
                               <div className="flex justify-between items-start gap-2">
                                 <h3 className="text-sm font-semibold text-gray-900 truncate leading-tight capitalize">
                                   {item.name}
                                 </h3>
-
-                                {/* Sub-location Pill */}
                                 {subLocationCount > 0 && (
                                   <span className="flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-orange-50 text-orange-700 border border-orange-200">
                                     <Layers size={10} />
@@ -582,8 +601,6 @@ export function Locations() {
                                   </span>
                                 )}
                               </div>
-
-                              {/* Row 2: Address */}
                               <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-500">
                                 <MapPin
                                   size={12}
@@ -602,32 +619,32 @@ export function Locations() {
                 )}
               </div>
 
-              {/* 3. Pagination Footer */}
-              {totalItems > 0 && (
-                <div className="flex items-center justify-end p-3 border-t border-gray-200 bg-white">
-                  <div className="inline-flex items-center gap-3 border border-yellow-400 rounded-full px-3 py-1 shadow-sm bg-white">
-                    <span className="text-xs font-medium text-gray-700">
-                      {startIndex + 1} – {endIndex} of {totalItems}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={handlePrevPage}
-                        disabled={currentPage === 1}
-                        className="text-gray-400 hover:text-gray-800 disabled:opacity-30 disabled:cursor-not-allowed"
-                      >
-                        <ChevronLeft className="rotate-90" size={16} />
-                      </button>
-                      <button
-                        onClick={handleNextPage}
-                        disabled={endIndex >= totalItems}
-                        className="text-gray-400 hover:text-gray-800 disabled:opacity-30 disabled:cursor-not-allowed"
-                      >
-                        <ChevronRight className="-rotate-90" size={16} />
-                      </button>
-                    </div>
+              {/* 3. SERVER SIDE Pagination Footer */}
+              <div className="flex items-center justify-end p-3 border-t border-gray-200 bg-white">
+                <div className="inline-flex items-center gap-3 border border-yellow-400 rounded-full px-3 py-1 shadow-sm bg-white">
+                  <span className="text-xs font-medium text-gray-700">
+                     Page {filterParams.page}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={handlePrevPage}
+                      disabled={!filterParams.page || filterParams.page <= 1}
+                      className="text-gray-400 hover:text-gray-800 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <ChevronLeft className="rotate-90" size={16} />
+                    </button>
+                    <button
+                      onClick={handleNextPage}
+                      // Disable next if we fetched fewer items than limit (means last page)
+                      // Or if locations array is empty
+                      disabled={locations.length < itemsPerPage}
+                      className="text-gray-400 hover:text-gray-800 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <ChevronRight className="-rotate-90" size={16} />
+                    </button>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
 
             {/* --- RIGHT DETAIL PANEL --- */}

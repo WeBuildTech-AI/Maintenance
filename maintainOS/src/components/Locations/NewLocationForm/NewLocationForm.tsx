@@ -14,7 +14,9 @@ import type { RootState, AppDispatch } from "../../../store";
 import { createLocation, updateLocation } from "../../../store/locations";
 import type { LocationResponse } from "../../../store/locations";
 
-// Updated props to be more specific
+// Helper type for options
+type Option = { id: string; name: string };
+
 type NewLocationFormProps = {
   onCancel: () => void;
   onCreate: (locationData: LocationResponse) => void;
@@ -41,14 +43,18 @@ export function NewLocationForm({
   const [locationImages, setLocationImages] = useState<BUD[]>([]);
   const [locationDocs, setLocationDocs] = useState<BUD[]>([]);
   const [name, setName] = useState("");
-  const [submitLocationFormLoader, setSubmitLocationFormLoader] =
-    useState(false);
+  const [submitLocationFormLoader, setSubmitLocationFormLoader] = useState(false);
   const [address, setAddress] = useState("");
   const [description, setDescription] = useState("");
   const [qrCode, setQrCode] = useState("");
   const [teamInCharge, setTeamInCharge] = useState<string[]>([]);
   const [vendorId, setVendorId] = useState<string[]>([]);
   const [parentLocationId, setParentLocationId] = useState("");
+
+  // ✅ NEW: Store hydrated options for prefilling UI
+  const [preloadedTeams, setPreloadedTeams] = useState<Option[]>([]);
+  const [preloadedVendors, setPreloadedVendors] = useState<Option[]>([]);
+  const [preloadedParent, setPreloadedParent] = useState<Option[]>([]);
 
   const [teamOpen, setTeamOpen] = useState(false);
   const [vendorOpen, setVendorOpen] = useState(false);
@@ -68,18 +74,42 @@ export function NewLocationForm({
       setAddress(editData.address || "");
       setDescription(editData.description || "");
       setQrCode(editData.qrCode?.split("/").pop() || "");
+      
+      // 1. Handle Parent ID
       setParentLocationId(editData.parentLocationId || "");
+
+      // 2. Handle Vendors (IDs + Hydration)
       if (editData.vendorIds && editData.vendorIds.length > 0) {
-        // Case 1: API returns explicit IDs
         setVendorId(editData.vendorIds);
-      } else if (
-        (editData as any).vendors &&
-        Array.isArray((editData as any).vendors)
-      ) {
+      } else if ((editData as any).vendors && Array.isArray((editData as any).vendors)) {
         setVendorId((editData as any).vendors.map((v: any) => v.id));
       } else {
         setVendorId([]);
       }
+
+      // ✅ Hydrate Vendor Options (So pills show names immediately)
+      if ((editData as any).vendors && Array.isArray((editData as any).vendors)) {
+        setPreloadedVendors((editData as any).vendors);
+      }
+
+      // 3. Handle Teams (IDs + Hydration)
+      if (editData.teamsInCharge && editData.teamsInCharge.length > 0) {
+        setTeamInCharge(editData.teamsInCharge);
+      }
+      
+      // ✅ Hydrate Team Options
+      if ((editData as any).teams && Array.isArray((editData as any).teams)) {
+        setPreloadedTeams((editData as any).teams);
+      }
+
+      // 4. Handle Parent (Hydration)
+      // Note: If the backend provides a 'parentLocation' object, use it here.
+      // If not, the ID will remain, but the name might be missing until dropdown click.
+      if ((editData as any).parentLocation) {
+         setPreloadedParent([(editData as any).parentLocation]);
+      }
+
+      // Images & Files
       if (editData.locationImages) {
         setLocationImages(editData.locationImages);
       } else if (editData.photoUrls) {
@@ -104,15 +134,9 @@ export function NewLocationForm({
     const handleClickOutside = (event: MouseEvent) => {
       if (teamRef.current && !teamRef.current.contains(event.target as Node))
         setTeamOpen(false);
-      if (
-        vendorRef.current &&
-        !vendorRef.current.contains(event.target as Node)
-      )
+      if (vendorRef.current && !vendorRef.current.contains(event.target as Node))
         setVendorOpen(false);
-      if (
-        parentRef.current &&
-        !parentRef.current.contains(event.target as Node)
-      )
+      if (parentRef.current && !parentRef.current.contains(event.target as Node))
         setParentOpen(false);
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -128,49 +152,28 @@ export function NewLocationForm({
   };
 
   const handleSubmitLocation = async () => {
-    if (!user) {
-      toast.error("User not authenticated.");
+    if (!user?.id || !user?.organizationId) {
+      toast.error("User or Organization ID missing.");
       return;
     }
-
-    if (!user.id) {
-      toast.error("User ID is missing.");
-      return;
-    }
-
-    if (!user.organizationId) {
-      toast.error("Organization ID is missing.");
-      return;
-    }
-
-    if (!name || !name.trim()) {
+    if (!name.trim()) {
       toast.error("Location Name is required.");
       return;
     }
 
     setSubmitLocationFormLoader(true);
-
-    console.log("User data:", {
-      // organizationId: user.organizationId,
-      userId: user.id,
-      name: name.trim(),
-    });
-
     const formData = new FormData();
 
-    // formData.append("organizationId", String(user.organizationId));
     formData.append("name", String(name.trim()));
     formData.append("createdBy", String(user.id));
 
     if (description) formData.append("description", String(description));
     if (address) formData.append("address", String(address));
-    // if (qrCode) formData.append("qrCode", String(qrCode));
     if (qrCode) formData.append("qrCode", `location/${String(qrCode)}`);
     if (parentLocationId && parentLocationId.trim()) {
       formData.append("parentLocationId", String(parentLocationId));
     }
 
-    // Add arrays
     if (teamInCharge && teamInCharge.length > 0) {
       teamInCharge.forEach((team) => formData.append("teamsInCharge[]", team));
     }
@@ -179,45 +182,30 @@ export function NewLocationForm({
       vendorId.forEach((vendor) => formData.append("vendorIds[]", vendor));
     }
 
-    // Add location images
-    if (locationImages && locationImages.length > 0) {
-      locationImages.forEach((image, index) => {
-        formData.append(`locationImages[${index}][key]`, image.key);
-        formData.append(`locationImages[${index}][fileName]`, image.fileName);
-      });
-    }
+    // Images & Docs
+    locationImages?.forEach((image, index) => {
+      formData.append(`locationImages[${index}][key]`, image.key);
+      formData.append(`locationImages[${index}][fileName]`, image.fileName);
+    });
 
-    // Add location documents
-    if (locationDocs && locationDocs.length > 0) {
-      locationDocs.forEach((doc, index) => {
-        formData.append(`locationDocs[${index}][key]`, doc.key);
-        formData.append(`locationDocs[${index}][fileName]`, doc.fileName);
-      });
-    }
+    locationDocs?.forEach((doc, index) => {
+      formData.append(`locationDocs[${index}][key]`, doc.key);
+      formData.append(`locationDocs[${index}][fileName]`, doc.fileName);
+    });
 
     try {
       let res;
       if (isEdit && editData?.id) {
-        res = await dispatch(
-          updateLocation({ id: editData.id, locationData: formData })
-        ).unwrap();
+        res = await dispatch(updateLocation({ id: editData.id, locationData: formData })).unwrap();
         toast.success("Location updated successfully");
-        //  Call onSuccess for UPDATES
         onSuccess(res);
       } else {
         res = await dispatch(createLocation(formData)).unwrap();
-        toast.success(
-          isSubLocation ? "Sub-location added!" : "Location created!"
-        );
-        //Call onCreate for CREATION
+        toast.success(isSubLocation ? "Sub-location added!" : "Location created!");
         isSubLocation ? fetchLocationById() : onCreate(res);
-        // fetchLocationById(res?.id);
       }
 
-      setTimeout(() => {
-        fetchLocations();
-      }, 500);
-
+      setTimeout(() => fetchLocations(), 500);
       onCancel();
     } catch (err: any) {
       console.error("Failed to submit location:", err);
@@ -227,7 +215,6 @@ export function NewLocationForm({
     }
   };
 
-  // Dynamic title and button text based on context
   const title = isEdit
     ? "Update Location Details"
     : isSubLocation
@@ -243,15 +230,11 @@ export function NewLocationForm({
   return (
     <>
       <div className="flex flex-col h-full overflow-hidden">
-        {/* Header */}
         <div className="p-4 border-b flex-none">
-          {/* Use the dynamic title */}
           <h2 className="text-lg font-semibold">{title}</h2>
         </div>
 
-        {/* Scrollable content (no changes needed in the form fields) */}
         <div className="flex-1 overflow-y-auto p-4 space-y-6 min-h-0 mb-2">
-          {/* Location Name */}
           <div className="space-y-1">
             <input
               type="text"
@@ -273,6 +256,7 @@ export function NewLocationForm({
             description={description}
             setDescription={setDescription}
           />
+          
           <Dropdowns
             stage="teams"
             open={teamOpen}
@@ -280,17 +264,19 @@ export function NewLocationForm({
             containerRef={teamRef}
             navigate={navigate}
             value={teamInCharge}
-            onSelect={(val) =>
-              setTeamInCharge(Array.isArray(val) ? val : [val])
-            }
+            onSelect={(val) => setTeamInCharge(Array.isArray(val) ? val : [val])}
+            preloadedOptions={preloadedTeams} // ✅ Pass hydrated data
           />
+          
           <QrCodeSection qrCode={qrCode} setQrCode={setQrCode} />
+          
           <BlobUpload
             formId="location_docs"
             type="files"
             initialBuds={locationDocs}
             onChange={handleBlobChange}
           />
+          
           <Dropdowns
             stage="vendors"
             open={vendorOpen}
@@ -299,7 +285,9 @@ export function NewLocationForm({
             navigate={navigate}
             value={vendorId}
             onSelect={(val) => setVendorId(Array.isArray(val) ? val : [val])}
+            preloadedOptions={preloadedVendors} // ✅ Pass hydrated data
           />
+          
           <Dropdowns
             stage="parent"
             open={parentOpen}
@@ -308,19 +296,16 @@ export function NewLocationForm({
             navigate={navigate}
             value={parentLocationId}
             onSelect={(val) => setParentLocationId(val as string)}
-            // You might want to disable this dropdown if editing or creating a sub-location
             disabled={isEdit || isSubLocation}
+            preloadedOptions={preloadedParent} // ✅ Pass hydrated data
           />
         </div>
 
-        {/* Footer Actions */}
         <FooterActions
           onCancel={onCancel}
           onCreate={handleSubmitLocation}
           submitLocationFormLoader={submitLocationFormLoader}
           isEdit={isEdit}
-          // ✨ NEW: Pass the dynamic button text to the footer
-          // (You will need to update the FooterActions component to accept this prop)
           buttonText={buttonText}
         />
       </div>

@@ -47,13 +47,20 @@ const DetailsTabContent = ({ procedure }: { procedure: any }) => {
   const assets = procedure.assets || [];
   const locations = procedure.locations || [];
   const teams = procedure.teams || [];
-  const categories = procedure.categories || [];
+  
+  // ✅ FIX: Robust extraction for categories
+  // Checks for 'categories' (plural) first, then falls back to 'category' (singular) if needed
+  let categories = procedure.categories || [];
+  if (categories.length === 0 && procedure.category) {
+      categories = Array.isArray(procedure.category) ? procedure.category : [procedure.category];
+  }
 
   const renderBadgeList = (items: any[]) => {
     if (!items || items.length === 0) return <span className="text-sm text-gray-500">—</span>;
     return (
       <div className="flex flex-wrap gap-2">
         {items.map((item, idx) => {
+            // Handle both string IDs and Objects (API returns objects with name)
             const label = typeof item === 'string' ? item : (item.name || item.title || "Unknown");
             return (
                 <span key={idx} className="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800 ">
@@ -104,7 +111,7 @@ const DetailsTabContent = ({ procedure }: { procedure: any }) => {
               {renderBadgeList(teams)}
           </div>
 
-           {/* Categories */}
+           {/* ✅ FIX: Explicitly added Categories Section */}
            <div>
               <h4 className="text-sm font-medium text-gray-900 mb-3">Categories</h4>
               {renderBadgeList(categories)}
@@ -178,14 +185,12 @@ export function LibraryDetails({
     }
   };
 
-  // --- ✅ FIX: Ensure data is passed correctly in state ---
   const handleUseInWorkOrder = () => {
     if (!selectedProcedure) return;
-    console.log("Navigating to Work Order with Procedure:", selectedProcedure);
     
     navigate(`/work-orders/create?procedureId=${selectedProcedure.id}`, {
       state: { 
-        procedureData: selectedProcedure // This passes the full object instantly
+        procedureData: selectedProcedure 
       }
     });
   };

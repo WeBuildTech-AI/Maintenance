@@ -13,7 +13,7 @@ import { CriticalityDropdown } from "./dropdowns/CriticalityDropdown";
 import { DescriptionField } from "./fields/DescriptionField";
 import { YearInput } from "./fields/YearInput";
 import { ManufacturerDropdown } from "./dropdowns/ManufacturerDropdown";
-// import { ModelField } from "./fields/ModelField"; // <-- Import pehle se tha
+import { ModelField } from "./dropdowns/ModelField";
 import { SerialNumberInput } from "./fields/SerialNumberInput";
 import { TeamsDropdown } from "./dropdowns/TeamsDropdown";
 import { QrCodeInput } from "./fields/QrCodeInput";
@@ -35,305 +35,185 @@ type SelectableItem = {
   name: string;
 };
 
-// Interface (Aapke pichle code ke hisaab se update kar diya hai)
-interface Asset {
-  id: number | string;
-  name: string;
-  location: SelectableItem;
-  criticality?: string;
-  description?: string;
-  year?: string | number;
-  manufacturer?: SelectableItem; // <-- Yeh 'SelectableItem' hai
-  model?: string;
-  serialNumber?: string;
-  teams?: SelectableItem[];
-  qrCode?: string;
-  assetTypes?: SelectableItem[];
-  vendor?: SelectableItem;
-  parts?: SelectableItem[];
-  parentAsset?: SelectableItem;
-}
-
 interface NewAssetFormProps {
+  onCancel: () => void;
+  onCreate: (asset: any) => void;
   isEdit?: boolean;
-  assetData?: Asset | null;
-  // accept any response from API to avoid type mismatch with store types
-  onCreate: (newAsset: any) => void;
-  onCancel?: () => void;
+  assetData?: any;
   fetchAssetsData: () => void;
 }
 
 export function NewAssetForm({
+  onCancel,
+  onCreate,
   isEdit = false,
   assetData,
-  onCreate,
-  onCancel,
   fetchAssetsData,
 }: NewAssetFormProps) {
-  const [assetName, setAssetName] = useState("");
-  const [selectedLocation, setSelectedLocation] =
-    useState<SelectableItem | null>(null);
-  const [criticality, setCriticality] = useState("");
-  const [description, setDescription] = useState("");
-  const [year, setYear] = useState("");
-
-  // State ko 'SelectableItem | null' banaya
-  const [selectedManufacture, setSelectedManufacture] =
-    useState<SelectableItem | null>(null);
-
-  const [selectedModel, setSelectedModel] = useState("");
-  const [serialNumber, setSerialNumber] = useState("");
-  const [selectedTeamInCharge, setSelectedTeamInCharge] = useState<
-    SelectableItem[]
-  >([]);
-  const [qrCode, setQrCode] = useState("");
-  const [selectedAssetTypeIds, setSelectedAssetTypeIds] = useState<number[]>(
-    []
-  );
-  const [selectedVendorId, setSelectedvendorId] =
-    useState<SelectableItem | null>(null);
-  const [selectedParts, setSelectedParts] = useState<SelectableItem[]>([]);
-  const [selectedParentAssets, setSelectedParentAssets] =
-    useState<SelectableItem | null>(null);
-
-  const [locationOpen, setLocationOpen] = useState(false);
-  const [partOpen, setPartOpen] = useState(false);
-  const [vendorOpen, setVendorOpen] = useState(false);
-  const [teamOpen, setTeamsOpen] = useState(false);
-  const [parentAssetOpen, setParentAssetOpen] = useState(false);
-  const [status] = useState("online");
-
-  const LocationRef = useRef<HTMLDivElement | null>(null);
-  const teamRef = useRef<HTMLDivElement | null>(null);
-  const partRef = useRef<HTMLDivElement | null>(null);
-  const vendorRef = useRef<HTMLDivElement | null>(null);
-  const parentAssetRef = useRef<HTMLDivElement | null>(null);
-
-  const [error, setError] = useState("");
-  // navigation hook not needed here because dropdowns handle their own navigation
-  const user = useSelector((state: RootState) => state.auth.user);
   const dispatch = useDispatch<AppDispatch>();
+  const user = useSelector((state: RootState) => state.auth.user);
 
+  // States
+  const [assetName, setAssetName] = useState("");
+  const [description, setDescription] = useState("");
+  const [year, setYear] = useState<number | string>("");
+  const [model, setModel] = useState("");
+  const [serialNumber, setSerialNumber] = useState("");
+  const [qrCode, setQrCode] = useState("");
+  const [criticality, setCriticality] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState<SelectableItem | null>(null);
+  const [selectedManufacturer, setSelectedManufacturer] = useState<SelectableItem | null>(null);
+  const [selectedVendorId, setSelectedvendorId] = useState<SelectableItem | null>(null);
+  const [selectedTeamInCharge, setSelectedTeamInCharge] = useState<SelectableItem[]>([]);
+  const [selectedAssetTypeIds, setSelectedAssetTypeIds] = useState<number[]>([]);
+  const [selectedParts, setSelectedParts] = useState<SelectableItem[]>([]);
+  const [selectedParentAssets, setSelectedParentAssets] = useState<SelectableItem | null>(null);
+
+  // Dropdown open states
+  const [locationOpen, setLocationOpen] = useState(false);
+  const [teamOpen, setTeamsOpen] = useState(false);
+  const [vendorOpen, setVendorOpen] = useState(false);
+  const [partOpen, setPartOpen] = useState(false);
+  const [parentAssetOpen, setParentAssetOpen] = useState(false);
+
+  // Refs
+  const LocationRef = useRef<HTMLDivElement>(null);
+  const teamRef = useRef<HTMLDivElement>(null);
+  const vendorRef = useRef<HTMLDivElement>(null);
+  const partRef = useRef<HTMLDivElement>(null);
+  const parentAssetRef = useRef<HTMLDivElement>(null);
+
+  // Load data if editing
   useEffect(() => {
     if (isEdit && assetData) {
       setAssetName(assetData.name || "");
-      setSelectedLocation(assetData.location || null);
-      setCriticality(assetData.criticality || "");
       setDescription(assetData.description || "");
-
-      // === FIX: Yeh lines missing thi ===
-      // 'year' ko string mein convert kiya taaki input field mein aa sake
-      setYear(String(assetData.year || ""));
-      setSelectedManufacture(assetData.manufacturer || null);
-      setSelectedModel(assetData.model || "");
-      // === END FIX ===
-
+      setYear(assetData.year || "");
+      setModel(assetData.model || "");
       setSerialNumber(assetData.serialNumber || "");
-      setSelectedTeamInCharge(assetData.teams || []);
-      setQrCode(
-        assetData?.qrCode ? assetData.qrCode.split("/").pop() || "" : ""
-      );
-
-      if (assetData.assetTypes) {
-        const ids = assetData.assetTypes.map((type) => type.id as number);
-        setSelectedAssetTypeIds(ids);
-      } else {
-        setSelectedAssetTypeIds([]);
-      }
-
-      setSelectedvendorId(assetData.vendor || null);
-      setSelectedParts(assetData.parts || []);
-      setSelectedParentAssets(assetData.parentAsset || null);
+      setQrCode(assetData.qrCode || "");
+      setCriticality(assetData.criticality || "");
+      setSelectedLocation(assetData.location ? { id: assetData.location.id, name: assetData.location.name } : null);
+      setSelectedManufacturer(assetData.manufacturer ? { id: assetData.manufacturer.id, name: assetData.manufacturer.name } : null);
     }
   }, [isEdit, assetData]);
 
-  const handleCreate = () => {
-    if (!assetName.trim()) {
-      setError("You need to provide an Asset Name");
+  const handleCreate = async () => {
+    if (!assetName) {
+      toast.error("Asset Name is required");
       return;
     }
-    setError("");
 
-    const payload: Partial<CreateAssetData> = {
-      // organizationId: user?.organizationId,
-      name: assetName.trim(),
+    const payload: CreateAssetData = {
+      name: assetName,
+      description,
+      year: Number(year),
+      model,
+      serialNumber,
+      qrCode,
+      criticality,
+      locationId: selectedLocation?.id as string,
+      // ✅ Fixed: Changed to manufacturerId
+      manufacturerId: selectedManufacturer?.id as string,
+      vendorId: selectedVendorId?.id as string,
+      teamsInCharge: selectedTeamInCharge.map(t => t.id),
+      partIds: selectedParts.map(p => p.id),
+      assetTypeIds: selectedAssetTypeIds,
+      parentAssetId: selectedParentAssets?.id as string,
     };
 
-    if (selectedLocation?.id) payload.locationId = selectedLocation.id;
-    if (criticality) payload.criticality = criticality;
-    if (description.trim()) payload.description = description;
-    if (year) payload.year = year;
-
-    // Ab 'manufacturerId' bhej rahe hain
-    if (selectedManufacture?.id) {
-      // Note: Key ka naam 'manufacturerId' maana hai, aap ise apne 'CreateAssetData' ke hisaab se badal lein
-      payload.manufacturerId = selectedManufacture.id;
-    }
-
-    if (selectedModel) payload.model = selectedModel;
-    if (serialNumber.trim()) payload.serialNumber = serialNumber;
-    if (qrCode.trim()) payload.qrCode = `asset/${qrCode.trim()}`;
-
-    if (selectedAssetTypeIds.length > 0) {
-      payload.assetTypeIds = selectedAssetTypeIds;
-    }
-
-    if (selectedVendorId?.id) payload.vendorId = selectedVendorId.id;
-
-    if (selectedParentAssets?.id)
-      payload.parentAssetId = selectedParentAssets.id;
-    if (status) payload.status = status;
-
-    if (selectedTeamInCharge?.length > 0) {
-      payload.teamsInCharge = selectedTeamInCharge.map((team) => team.id);
-    }
-
-    if (selectedParts?.length > 0) {
-      payload.partIds = selectedParts.map((part) => part.id);
-    }
-
-    console.log("Final Payload:", payload);
-
-    if (isEdit && assetData?.id) {
-      dispatch(updateAsset({ id: String(assetData.id), assetData: payload }))
-        .unwrap()
-        .then((res) => {
-          toast.success("Successfully Updated the Asset");
-          onCreate(res);
-          fetchAssetsData();
-        })
-        .catch((err) => {
-          const errorMessage = err.message || "Failed to update asset";
-          // setError(errorMessage);
-          toast.error(errorMessage);
-        });
-    } else {
-      dispatch(createAsset(payload as CreateAssetData))
-        .unwrap()
-        .then((res) => {
-          toast.success("Successfully Created the Asset");
-          onCreate(res); // <-- FIX: Ise uncomment kar diya hai
-          fetchAssetsData();
-          // Reset form
-          setAssetName("");
-          setSelectedLocation(null);
-          setCriticality("");
-          setDescription("");
-          setYear("");
-          setSelectedManufacture(null); // <-- Reset to null
-          setSelectedModel(""); // <-- Reset add kar diya
-          setSerialNumber("");
-          setSelectedTeamInCharge([]);
-          setQrCode("");
-          setSelectedAssetTypeIds([]);
-          setSelectedvendorId(null);
-          setSelectedParts([]);
-          setSelectedParentAssets(null);
-        })
-        .catch((err) => {
-          const errorMessage = err.message || "Failed to create asset";
-          // setError(errorMessage);
-          toast.error(errorMessage);
-        });
+    try {
+      if (isEdit && assetData?.id) {
+        const updated = await dispatch(updateAsset({ id: assetData.id, data: payload })).unwrap();
+        toast.success("Asset updated successfully");
+        onCreate(updated);
+      } else {
+        const created = await dispatch(createAsset(payload)).unwrap();
+        toast.success("Asset created successfully");
+        onCreate(created);
+      }
+      fetchAssetsData();
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error || "Failed to save asset");
     }
   };
 
   return (
-    <div className="flex h-full flex-col overflow-hidden border">
-      {/* Header */}
-      <div className="flex-none border-b px-6 py-4">
-        <h2 className="text-xl font-semibold">
-          {isEdit ? "Edit Asset" : "New Asset"}
+    <div className="flex flex-col h-full bg-white overflow-y-auto">
+      <div className="p-6">
+        <h2 className="text-xl font-semibold mb-4">
+          {isEdit ? "Edit Asset" : "Create New Asset"}
         </h2>
-      </div>
-      {/* Scrollable content */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-6">
-        {/* Icon + Asset Name */}
-        <div className="flex items-start gap-4">
-          <div className="mt-1 flex h-12 w-12 flex-none items-center justify-center rounded-full border bg-white text-gray-400">
-            <Package className="h-5 w-5" />
-          </div>
-          <AssetNameInput
-            assetName={assetName}
-            setAssetName={setAssetName}
-            error={error}
-          />
-        </div>
-
-        {/* Sections */}
+        
+        <AssetNameInput assetName={assetName} setAssetName={setAssetName} />
         <PicturesUpload />
         <FilesUpload />
-        <LocationDropdown
+        
+        <LocationDropdown 
           locationOpen={locationOpen}
           setLocationOpen={setLocationOpen}
           LocationRef={LocationRef}
           selectedLocation={selectedLocation}
           setSelectedLocation={setSelectedLocation}
         />
-        <CriticalityDropdown
-          setCriticality={setCriticality}
-          criticality={criticality}
-        />
-        <DescriptionField
-          description={description}
-          setDescription={setDescription}
-        />
+        
+        <CriticalityDropdown criticality={criticality} setCriticality={setCriticality} />
+        <DescriptionField description={description} setDescription={setDescription} />
         <YearInput year={year} setYear={setYear} />
-
-        {/* === FIX: ManufacturerDropdown ko props pass kiye === */}
-        <ManufacturerDropdown
-          label="Manufacturer"
-          value={selectedManufacture}
-          onChange={setSelectedManufacture}
+        
+        <ManufacturerDropdown 
+           label="Manufacturer"
+           value={selectedManufacturer}
+           onChange={setSelectedManufacturer}
         />
-
-        {/* === FIX: ModelField ko uncomment kiya aur props pass kiye === */}
-        {/* <ModelField model={selectedModel} setModel={setSelectedModel} /> */}
-
-        <SerialNumberInput
-          serialNumber={serialNumber}
-          setSerialNumber={setSerialNumber}
+        
+        <ModelField model={model} setModel={setModel} />
+        
+        <SerialNumberInput serialNumber={serialNumber} setSerialNumber={setSerialNumber} />
+        
+        <TeamsDropdown 
+           teamOpen={teamOpen}
+           setteamsOpen={setTeamsOpen}
+           teamRef={teamRef}
+           selectTeamInCharge={selectedTeamInCharge}
+           setSelectTeamInCharge={setSelectedTeamInCharge}
         />
-        <TeamsDropdown
-          teamOpen={teamOpen}
-          setteamsOpen={setTeamsOpen}
-          teamRef={teamRef}
-          selectTeamInCharge={selectedTeamInCharge}
-          setSelectTeamInCharge={setSelectedTeamInCharge}
-        />
+        
         <QrCodeInput qrCode={qrCode} setQrCode={setQrCode} />
-
-        <AssetTypesDropdown
-          label="Asset Types"
-          value={selectedAssetTypeIds}
-          onChange={setSelectedAssetTypeIds}
+        
+        <AssetTypesDropdown 
+           label="Asset Types"
+           value={selectedAssetTypeIds}
+           onChange={setSelectedAssetTypeIds}
         />
-
-        <VendorsDropdown
-          vendorOpen={vendorOpen}
-          setVendorOpen={setVendorOpen}
-          vendorRef={vendorRef}
-          selectedVendorId={selectedVendorId}
-          setSelectedvendorId={setSelectedvendorId}
+        
+        <VendorsDropdown 
+           vendorOpen={vendorOpen}
+           setVendorOpen={setVendorOpen}
+           vendorRef={vendorRef}
+           selectedVendorId={selectedVendorId}
+           setSelectedvendorId={setSelectedvendorId}
         />
-        <PartsDropdown
-          partOpen={partOpen}
-          setPartOpen={setPartOpen}
-          partRef={partRef}
-          selectedParts={selectedParts}
-          setSelectedParts={setSelectedParts}
+        
+        <PartsDropdown 
+           partOpen={partOpen}
+           setPartOpen={setPartOpen}
+           partRef={partRef}
+           selectedParts={selectedParts}
+           setSelectedParts={setSelectedParts}
         />
-        <ParentAssetDropdown
-          parentAssetOpen={parentAssetOpen}
-          setParentAssetOpen={setParentAssetOpen}
-          parentAssetRef={parentAssetRef}
-          selectedParentAssets={selectedParentAssets}
-          setSelectedParentAssets={setSelectedParentAssets}
+        
+        <ParentAssetDropdown 
+           parentAssetOpen={parentAssetOpen}
+           setParentAssetOpen={setParentAssetOpen}
+           parentAssetRef={parentAssetRef}
+           selectedParentAssets={selectedParentAssets}
+           setSelectedParentAssets={setSelectedParentAssets}
         />
       </div>
 
-      {/* Footer */}
-      <FooterActions onCreate={handleCreate} onCancel={onCancel} isEdit ={isEdit} />
+      <FooterActions onCreate={handleCreate} onCancel={onCancel} isEdit={isEdit} />
     </div>
   );
 }

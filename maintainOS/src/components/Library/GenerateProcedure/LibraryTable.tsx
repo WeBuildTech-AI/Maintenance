@@ -249,7 +249,7 @@ export function LibraryTable({
             <span className="text-sm font-medium text-gray-900">
               Edit {selectedCount} {selectedCount === 1 ? "Procedure" : "Procedures"}
             </span>
-            <AntTooltip title="Delete">
+            <AntTooltip title="Delete Selected">
               <button
                 onClick={() => setIsBatchDeleteModalOpen(true)}
                 className={`flex items-center gap-1 transition ${
@@ -353,18 +353,24 @@ export function LibraryTable({
       fixed: "right" as const,
       render: (_: any, record: any) => (
         <div className="flex items-center justify-end gap-2 text-gray-500">
-          <button
-            onClick={() => onEdit(record.key)}
-            className="hover:text-blue-600"
-          >
-            <Pencil size={18} />
-          </button>
-          <button
-            onClick={() => handleDuplicate(record.fullData)}
-            className="hover:text-blue-600"
-          >
-            <Copy size={18} />
-          </button>
+          <AntTooltip title="Edit Procedure">
+            <button
+              onClick={() => onEdit(record.key)}
+              className="hover:text-blue-600"
+            >
+              <Pencil size={18} />
+            </button>
+          </AntTooltip>
+          
+          <AntTooltip title="Duplicate">
+            <button
+              onClick={() => handleDuplicate(record.fullData)}
+              className="hover:text-blue-600"
+            >
+              <Copy size={18} />
+            </button>
+          </AntTooltip>
+
           <MoreActionsMenu
             onDelete={() => handleDeleteClick(record.fullData)}
             onDuplicate={() => handleDuplicate(record.fullData)}
@@ -372,9 +378,11 @@ export function LibraryTable({
               showDeleted ? () => handleRestore(record.fullData) : undefined
             }
           >
-            <button className="hover:text-blue-600">
-              <MoreVertical size={18} />
-            </button>
+            <div title="More Options"> {/* Wrapper for Tooltip on custom component */}
+              <button className="hover:text-blue-600 flex items-center">
+                <MoreVertical size={18} />
+              </button>
+            </div>
           </MoreActionsMenu>
         </div>
       ),
@@ -444,7 +452,7 @@ export function LibraryTable({
             <span className="text-sm text-gray-600">
               1 – {procedures.length} of {procedures.length}
             </span>
-            <button className="text-gray-400 hover:text-gray-700">
+            <button className="text-gray-400 hover:text-gray-700" title="Previous Page">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="20"
@@ -459,7 +467,7 @@ export function LibraryTable({
                 <polyline points="15 18 9 12 15 6"></polyline>
               </svg>
             </button>
-            <button className="text-gray-400 hover:text-gray-700">
+            <button className="text-gray-400 hover:text-gray-700" title="Next Page">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="20"

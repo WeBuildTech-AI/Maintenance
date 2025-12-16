@@ -8,7 +8,7 @@ export interface AssetResponse {
   criticality?: string;
   pictures?: string[];
   files?: string[];
-  manufacturer?: string;
+  manufacturer?: string; // Response might still return object/string, kept flexible
   model?: string;
   serialNumber?: string;
   createdAt: string;
@@ -16,8 +16,8 @@ export interface AssetResponse {
 }
 
 export interface CreateAssetData {
-  organizationId: string;
-  year:number;
+  organizationId?: string;
+  year: number;
   name: string;
   description?: string;
   status?: string;
@@ -25,9 +25,10 @@ export interface CreateAssetData {
   criticality?: string;
   pictures?: string[];
   files?: string[];
-  manufacturer?: string;
+  manufacturerId?: string; // ✅ Renamed from manufacturer
   model?: string;
   serialNumber?: string;
+  [key: string]: any;
 }
 
 export interface CreateAssetType {
@@ -43,9 +44,10 @@ export interface UpdateAssetData {
   criticality?: string;
   pictures?: string[];
   files?: string[];
-  manufacturer?: string;
+  manufacturerId?: string; // ✅ Renamed from manufacturer
   model?: string;
   serialNumber?: string;
+  [key: string]: any;
 }
 
 export interface UpdateAssetStatus {
@@ -56,19 +58,31 @@ export interface UpdateAssetStatus {
   userId: string;
 }
 
-// ✅ API FILTER PARAMETERS
+// API FILTER PARAMETERS
 export interface FetchAssetsParams {
-  page?: number | string;
-  limit?: number | string;
-  name?: string; // API uses 'name' for fuzzy search
+  page?: number;
+  limit?: number;
+  name?: string;
+  
+  // UI Filter Keys
+  status?: string | string[];
+  criticality?: string | string[];
+  location?: any;
+  manufacturer?: any;
+  vendor?: any;
+  part?: any;
+  teamsInCharge?: any;
+  assetTypes?: any;
+  downtimeType?: any;
+  downtimeReason?: any;
+  description?: string;
+  serialNumber?: string;
+  year?: string;
+  workOrderRecurrence?: string;
+  asset?: any;
 
-  // Dynamic Keys from QueryBuilder
-  [key: string]: any; 
-}
-
-export interface AssetsState {
-  assets: AssetResponse[];
-  selectedAsset: AssetResponse | null;
-  loading: boolean;
-  error: string | null;
+  // Strict API Keys
+  statusOneOf?: string;
+  locationOneOf?: string;
+  [key: string]: any;
 }

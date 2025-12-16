@@ -13,7 +13,7 @@ import { Button } from "../../ui/button";
 import { subHours, subDays, subWeeks, subMonths } from "date-fns";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../../store";
-import { Avatar } from "../../ui/avatar";
+import { CustomDateRangeModal } from "./CustomDateRangeModal"; // Import the new modal
 
 export function MeterReadings({
   selectedMeter,
@@ -22,6 +22,7 @@ export function MeterReadings({
 }: any) {
   const user = useSelector((state: RootState) => state.auth.user);
   const [selectedTimePeriod, setSelectedTimePeriod] = useState("1H");
+  const [isCustomDateModalOpen, setIsCustomDateModalOpen] = useState(false); // State for modal
 
   const [customRange, setCustomRange] = useState<{
     start: Date | null;
@@ -86,14 +87,14 @@ export function MeterReadings({
   const filteredData = useMemo(() => {
     const [startTime, endTime] = domainRange;
     return formattedData.filter(
-      (d) => d.date >= startTime && d.date <= endTime
+      (d: any) => d.date >= startTime && d.date <= endTime
     );
   }, [formattedData, domainRange]);
 
   // Y-axis dynamic
   const { minValue, maxValue } = useMemo(() => {
     if (filteredData.length === 0) return { minValue: 0, maxValue: 100 };
-    const values = filteredData.map((d) => d.value);
+    const values = filteredData.map((d: any) => d.value);
     const min = Math.min(...values);
     const max = Math.max(...values);
     const range = max - min || 10;
@@ -103,17 +104,21 @@ export function MeterReadings({
     };
   }, [filteredData]);
 
-  // ⬇️ FIX → No more "0" dot when no data
   const safeData =
     filteredData.length > 0
       ? filteredData
       : [{ date: domainRange[0], value: undefined }];
 
+  const handleCustomDateApply = (start: Date, end: Date) => {
+    setCustomRange({ start, end });
+    setSelectedTimePeriod("Custom");
+  };
+
   return (
     <div
       className={`${
         hideSeeReadingFlag === false ? "p-4" : ""
-      } bg-white rounded-lg shadow`}
+      } bg-white rounded-lg shadow relative`}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
@@ -133,15 +138,7 @@ export function MeterReadings({
                 size="sm"
                 onClick={() => {
                   if (period === "Custom") {
-                    // const start = prompt("Enter start date (YYYY-MM-DD):");
-                    // const end = prompt("Enter end date (YYYY-MM-DD):");
-                    // if (start && end) {
-                    //   setCustomRange({
-                    //     start: new Date(start),
-                    //     end: new Date(end),
-                    //   });
-                    //   setSelectedTimePeriod("Custom");
-                    // }
+                    setIsCustomDateModalOpen(true);
                   } else {
                     setSelectedTimePeriod(period);
                   }
@@ -169,7 +166,6 @@ export function MeterReadings({
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#c9c8c8ff" />
 
-            {/* Restored old date formatting */}
             <XAxis
               dataKey="date"
               type="number"
@@ -227,7 +223,9 @@ export function MeterReadings({
               tick={{ fontSize: 12, fill: "#666" }}
             />
 
-            <Tooltip />
+            <Tooltip
+              labelFormatter={(value) => new Date(value).toLocaleString()}
+            />
 
             <Line
               type="monotone"
@@ -258,22 +256,26 @@ export function MeterReadings({
           <div className="flex item-center">
             <div className="flex items-center  gap-2 text-[15px] mt-1">
               <div className=" text-sm ">Source :- </div>
-              {/* <Avatar>
-                {}
-              </Avatar> */}
               {user?.fullName}
             </div>
             <div className="border-b mt-2"></div>
           </div>
 
-          {/* Last Reading Value */}
           <div>
             <div className="text-gray-500 text-sm">Last Reading Value :- </div>
             <div className="font-medium text-[15px] mt-1">
-              {/* {`${meter.readingValue} PSI, ${meter.date}, ${meter.time}`} */}
+              {readings.length > 0 ? readings[0].value : "N/A"}
             </div>
           </div>
         </div>
+      )}
+
+      {/* Render the Custom Date Modal */}
+      {isCustomDateModalOpen && (
+        <CustomDateRangeModal
+          onClose={() => setIsCustomDateModalOpen(false)}
+          onApply={handleCustomDateApply}
+        />
       )}
     </div>
   );

@@ -33,7 +33,7 @@ export function SectionBlock({
     setActiveContainerId,
     activeField,
     overContainerId,
-    handleAddField, // <-- 💡 1. YEH FUNCTION ADD KAREIN (This was already here)
+    handleAddField, 
   } = useProcedureBuilder();
 
   const isSectionEditing = editingSectionId === field.id;
@@ -96,15 +96,17 @@ export function SectionBlock({
                 </button>
 
                 {!isCollapsed && (
-                  <Pencil
-                    size={16}
-                    className="text-gray-400 group-hover:text-blue-500 transition-opacity opacity-0 group-hover:opacity-100 cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setEditingSectionId(field.id);
-                      setEditingFieldId(null);
-                    }}
-                  />
+                  <div title="Rename Section"> {/* ✅ Tooltip Wrapper */}
+                    <Pencil
+                      size={16}
+                      className="text-gray-400 group-hover:text-blue-500 transition-opacity opacity-0 group-hover:opacity-100 cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingSectionId(field.id);
+                        setEditingFieldId(null);
+                      }}
+                    />
+                  </div>
                 )}
               </>
             )}
@@ -121,6 +123,7 @@ export function SectionBlock({
                 );
               }}
               className="text-gray-500 hover:text-gray-700"
+              title="Section Options" // ✅ Added Tooltip
             >
               <MoreVertical size={20} />
             </button>
@@ -239,12 +242,11 @@ export function SectionBlock({
                       }
                     })
                   ) : (
-                    // --- 💡 START FIX: Case 2: Section khaali hai ---
+                    // --- Case 2: Section khaali hai ---
                     <div className="relative z-10 flex items-center gap-2">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          // --- 💡 FIX: Set active container ID FIRST ---
                           setActiveContainerId(field.id);
                           handleAddField(); // Then add the field
                         }}
@@ -265,7 +267,6 @@ export function SectionBlock({
                         Add Procedure
                       </button>
                     </div>
-                    // --- 💡 END FIX ---
                   )}
                 </div>
               </SortableContext>

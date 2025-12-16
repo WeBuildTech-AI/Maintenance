@@ -22,6 +22,9 @@ import { PartTable } from "./PartTable";
 import { partService } from "../../store/parts/parts.service";
 import { FetchPartsParams } from "../../store/parts/parts.types"; 
 
+// Define ViewMode locally to avoid type errors if not imported
+type ViewMode = "table" | "panel";
+
 export function Inventory() {
   const [parts, setParts] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
@@ -376,9 +379,11 @@ export function Inventory() {
   );
 }
 
-/* ✅ CREATE ROUTE */
+/* ✅ CREATE ROUTE (UPDATED TO HANDLE COPY) */
 function CreatePartRoute({ onSuccess }: { onSuccess: () => void }) {
   const navigate = useNavigate();
+  const location = useLocation(); // ✅ Added access to location state
+
   const [newItem, setNewItem] = useState<any>({
     name: "",
     description: "",
@@ -396,6 +401,16 @@ function CreatePartRoute({ onSuccess }: { onSuccess: () => void }) {
     vendorIds: [],
     vendors: [],
   });
+
+  // ✅ Effect to pre-fill form if "copyData" is present in navigation state
+  useEffect(() => {
+    if (location.state?.copyData) {
+      setNewItem({
+        ...location.state.copyData,
+        id: null, // Clear ID to ensure it's a new part creation
+      });
+    }
+  }, [location.state]);
 
   return (
     <NewPartForm

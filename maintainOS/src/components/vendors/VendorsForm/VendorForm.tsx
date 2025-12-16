@@ -1,18 +1,35 @@
 "use client";
 
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import type { AppDispatch, RootState } from "../../../store";
 import { useDispatch, useSelector } from "react-redux";
 import type { SelectOption } from "./DynamicSelect";
 import { fetchLocationsName } from "../../../store/locations/locations.thunks";
 import { fetchAssetsName } from "../../../store/assets/assets.thunks";
-import { partService } from "../../../store/parts"; // ✅ Import Part Service
+import { partService } from "../../../store/parts"; 
 import { VendorPrimaryDetails } from "./VendorPrimaryDetails";
 import { VendorContactInput, type ContactFormData } from "./VendorContactInput";
 import { VendorLinkedItems } from "./VendorLinkedItems";
 import { saveVendor } from "./vendorService";
 import { BlobUpload, type BUD } from "../../utils/BlobUpload";
+import toast from "react-hot-toast";
+
+// Helper to compare arrays (sets) for changes
+const hasArrayChanged = (current: string[], initial: string[] = []) => {
+  if (current.length !== (initial?.length || 0)) return true;
+  const s1 = new Set(current);
+  const s2 = new Set(initial || []);
+  for (const item of s1) {
+    if (!s2.has(item)) return true;
+  }
+  return false;
+};
+
+// Helper to compare complex objects (Contacts)
+const hasContactsChanged = (current: any[], initial: any[] = []) => {
+    return JSON.stringify(current) !== JSON.stringify(initial);
+};
 
 export function VendorForm({
   onCancel,
@@ -25,7 +42,6 @@ export function VendorForm({
     description: "",
     category: "",
     services: "",
-    createdBy: "",
     partsSummary: "",
     color: "#2563eb",
     vendorType: "manufacturer",
@@ -55,6 +71,63 @@ export function VendorForm({
   const [selectedPartIds, setSelectedPartIds] = useState<string[]>([]);
 
   const [submitting, setSubmitting] = useState(false);
+
+  // Store original IDs for dirty checking later
+  const originalIds = useRef({
+      locations: [] as string[],
+      assets: [] as string[],
+      parts: [] as string[],
+  });
+
+  // --- Fetchers ---
+  const handleFetchLocations = () => {
+    setLocationsLoading(true);
+    dispatch(fetchLocationsName())
+      .unwrap()
+      .then((response) => {
+        const list = response || [];
+        const options = list.map((loc: any) => ({
+          id: (loc.id || loc._id || String(loc)).toString(),
+          name: loc.name || loc.location_name || "Unnamed",
+        }));
+        setAvailableLocations(options);
+      })
+      .catch((err) => console.error("🚨 Fetch locations failed:", err))
+      .finally(() => setLocationsLoading(false));
+  };
+
+  const handleFetchAssets = () => {
+    setAssetsLoading(true);
+    dispatch(fetchAssetsName())
+      .unwrap()
+      .then((response) => {
+        const list = response || [];
+        const options = list.map((asset: any) => ({
+          id: (asset.id || asset._id || String(asset)).toString(),
+          name: asset.name || asset.asset_name || "Unnamed",
+        }));
+        setAvailableAssets(options);
+      })
+      .catch((err) => console.error("🚨 Fetch assets failed:", err))
+      .finally(() => setAssetsLoading(false));
+  };
+
+  const handleFetchParts = async () => {
+    setPartsLoading(true);
+    try {
+      const res: any = await partService.fetchParts({ limit: 1000 });
+      const items = Array.isArray(res) ? res : res.items || [];
+      const options = items.map((p: any) => ({
+        id: (p.id || p._id || "").toString(),
+        name: p.name || "Unnamed Part",
+      }));
+      setAvailableParts(options);
+    } catch (err) {
+      console.error("🚨 Fetch parts failed:", err);
+    } finally {
+      setPartsLoading(false);
+    }
+  };
 
   // ✅ INITIALIZATION & PREFILL LOGIC
   useEffect(() => {
@@ -87,113 +160,31 @@ export function VendorForm({
         }
       }
 
-      // PREFILL LOCATIONS
-      if (initialData.locations && Array.isArray(initialData.locations)) {
-        const ids = initialData.locations.map((loc: any) =>
-          typeof loc === "string" ? loc : loc.id
-        );
-        setSelectedLocationIds(ids);
+      // ✅ PREFILL & SAVE ORIGINAL IDs
+      // Locations
+      const rawLocs = initialData.locations || [];
+      const locIds = rawLocs.map((l: any) => (typeof l === 'string' ? l : (l.id || l._id || "").toString()));
+      setSelectedLocationIds(locIds);
+      originalIds.current.locations = locIds;
 
-        const opts = initialData.locations
-          .filter((loc: any) => typeof loc === "object")
-          .map((loc: any) => ({
-            id: loc.id,
-            name: loc.name || "Unknown Location",
-          }));
-        if (opts.length > 0) setAvailableLocations(opts);
-      }
+      // Assets
+      const rawAssets = initialData.assetIds || initialData.assets || [];
+      const assetIds = rawAssets.map((a: any) => (typeof a === 'string' ? a : (a.id || a._id || "").toString()));
+      setSelectedAssetIds(assetIds);
+      originalIds.current.assets = assetIds;
 
-      // PREFILL ASSETS
-      if (initialData.assets && Array.isArray(initialData.assets)) {
-        const ids = initialData.assets.map((a: any) => a.id);
-        setSelectedAssetIds(ids);
+      // Parts
+      const rawParts = initialData.partIds || initialData.parts || [];
+      const partIds = rawParts.map((p: any) => (typeof p === 'string' ? p : (p.id || p._id || "").toString()));
+      setSelectedPartIds(partIds);
+      originalIds.current.parts = partIds;
 
-        const opts = initialData.assets.map((a: any) => ({
-          id: a.id,
-          name: a.name || "Unknown Asset",
-        }));
-        setAvailableAssets(opts);
-      } else if (initialData.assetIds) {
-        setSelectedAssetIds(initialData.assetIds);
-      }
-
-      // PREFILL PARTS
-      if (initialData.parts && Array.isArray(initialData.parts)) {
-        const ids = initialData.parts.map((p: any) => p.id);
-        setSelectedPartIds(ids);
-
-        const opts = initialData.parts.map((p: any) => ({
-          id: p.id,
-          name: p.name || "Unknown Part",
-        }));
-        setAvailableParts(opts);
-      } else if (initialData.partIds) {
-        setSelectedPartIds(initialData.partIds);
-      }
+      // Trigger fetch so options are available for the prefilled IDs
+      handleFetchLocations();
+      handleFetchAssets();
+      handleFetchParts();
     }
   }, [initialData]);
-
-  const handleFetchLocations = () => {
-    setLocationsLoading(true);
-    dispatch(fetchLocationsName())
-      .unwrap()
-      .then((response) => {
-        const list = response || [];
-        const options = list.map((loc: any) => ({
-          id: loc.id || loc._id || String(loc),
-          name: loc.name || loc.location_name || "Unnamed",
-        }));
-        setAvailableLocations(options);
-      })
-      .catch((err) => {
-        console.error("🚨 Fetch locations failed:", err);
-      })
-      .finally(() => setLocationsLoading(false));
-  };
-
-  const handleFetchAssets = () => {
-    setAssetsLoading(true);
-    dispatch(fetchAssetsName())
-      .unwrap()
-      .then((response) => {
-        const list = response || [];
-        const options = list.map((asset: any) => ({
-          id: asset.id || asset._id || String(asset),
-          name: asset.name || asset.asset_name || "Unnamed",
-        }));
-        setAvailableAssets(options);
-      })
-      .catch((err) => {
-        console.error("🚨 Fetch assets failed:", err);
-      })
-      .finally(() => setAssetsLoading(false));
-  };
-
-  // ✅ FIXED: Connected to Part Service + Added Logging
-  const handleFetchParts = async () => {
-    console.log("📡 handleFetchParts triggered...");
-    setPartsLoading(true);
-    try {
-      // Fetch parts (Assuming fetching top 100 for dropdown, customize params as needed)
-      const res: any = await partService.fetchParts({ limit: 1000 });
-      
-      console.log("✅ Parts API Response:", res);
-
-      const items = Array.isArray(res) ? res : res.items || [];
-      
-      const options = items.map((p: any) => ({
-        id: p.id,
-        name: p.name || "Unnamed Part",
-      }));
-
-      console.log("📝 Mapped Part Options:", options);
-      setAvailableParts(options);
-    } catch (err) {
-      console.error("🚨 Fetch parts failed:", err);
-    } finally {
-      setPartsLoading(false);
-    }
-  };
 
   const handleCtaClick = (path: string) => navigate(path);
 
@@ -208,37 +199,64 @@ export function VendorForm({
     setSubmitting(true);
 
     const formData = new FormData();
-    const appendIfPresent = (key: string, value: any) => {
-      if (value !== undefined && value !== null && value !== "")
-        formData.append(key, value);
+    const isEdit = !!initialData;
+    let hasChanges = false; // ✅ Track if anything changed
+
+    // Helper to append only if changed
+    const appendIfChanged = (key: string, currentVal: any, initialVal: any) => {
+        if (!isEdit || currentVal !== initialVal) {
+            // Treat undefined/null as empty string for comparison safety
+            const sCurrent = currentVal === undefined || currentVal === null ? "" : String(currentVal);
+            const sInitial = initialVal === undefined || initialVal === null ? "" : String(initialVal);
+            
+            if (!isEdit || sCurrent !== sInitial) {
+                formData.append(key, currentVal);
+                hasChanges = true;
+            }
+        }
     };
 
-    appendIfPresent("name", form.name.trim());
-    appendIfPresent("description", form.description);
-    appendIfPresent("color", form.color);
-    appendIfPresent("vendorType", form.vendorType?.toLowerCase());
+    appendIfChanged("name", form.name.trim(), initialData?.name);
+    appendIfChanged("description", form.description, initialData?.description);
+    appendIfChanged("color", form.color, initialData?.color);
+    appendIfChanged("vendorType", form.vendorType?.toLowerCase(), initialData?.vendorType);
 
     // Contacts
-    if (Array.isArray(contacts)) {
-      contacts.forEach((contact, index) => {
-        formData.append(`contacts[${index}][fullName]`, contact.fullName || "");
-        formData.append(`contacts[${index}][role]`, contact.role || "");
-        formData.append(`contacts[${index}][email]`, contact.email || "");
-        formData.append(`contacts[${index}][phoneNumber]`, contact.phoneNumber || "");
-        formData.append(`contacts[${index}][phoneExtension]`, contact.phoneExtension || "");
-        formData.append(`contacts[${index}][contactColor]`, contact.contactColor || "#EC4899");
-      });
+    if (!isEdit || hasContactsChanged(contacts, initialData?.contacts)) {
+        hasChanges = true;
+        if (Array.isArray(contacts)) {
+            contacts.forEach((contact, index) => {
+                formData.append(`contacts[${index}][fullName]`, contact.fullName || "");
+                formData.append(`contacts[${index}][role]`, contact.role || "");
+                formData.append(`contacts[${index}][email]`, contact.email || "");
+                formData.append(`contacts[${index}][phoneNumber]`, contact.phoneNumber || "");
+                formData.append(`contacts[${index}][phoneExtension]`, contact.phoneExtension || "");
+                formData.append(`contacts[${index}][contactColor]`, contact.contactColor || "#EC4899");
+                if ((contact as any).id) {
+                     formData.append(`contacts[${index}][id]`, (contact as any).id);
+                }
+            });
+        }
     }
 
-    // Dropdowns
-    if (selectedLocationIds)
-      selectedLocationIds.forEach((id) => formData.append("locations[]", id));
-    if (selectedAssetIds)
-      selectedAssetIds.forEach((id) => formData.append("assetIds[]", id));
-    if (selectedPartIds)
-      selectedPartIds.forEach((id) => formData.append("partIds[]", id));
+    // Dropdowns (Arrays)
+    if (!isEdit || hasArrayChanged(selectedLocationIds, originalIds.current.locations)) {
+        hasChanges = true;
+        selectedLocationIds.forEach((id) => formData.append("locations[]", id));
+    }
+    if (!isEdit || hasArrayChanged(selectedAssetIds, originalIds.current.assets)) {
+        hasChanges = true;
+        selectedAssetIds.forEach((id) => formData.append("assetIds[]", id));
+    }
+    if (!isEdit || hasArrayChanged(selectedPartIds, originalIds.current.parts)) {
+        hasChanges = true;
+        selectedPartIds.forEach((id) => formData.append("partIds[]", id));
+    }
 
-    // Images & Docs
+    // Files (Always send if present, simpler for backend sync)
+    // You can add dirty checking for files if needed, but usually strictly required for new files
+    if (vendorImages.length > 0 || vendorDocs.length > 0) hasChanges = true;
+
     vendorImages.forEach((img, i) => {
       formData.append(`vendorImages[${i}][key]`, img.key);
       formData.append(`vendorImages[${i}][fileName]`, img.fileName);
@@ -247,6 +265,14 @@ export function VendorForm({
       formData.append(`vendorDocs[${i}][key]`, doc.key);
       formData.append(`vendorDocs[${i}][fileName]`, doc.fileName);
     });
+
+    // ✅ PRODUCTION FIX: If edit mode and NO changes, don't call API
+    if (isEdit && !hasChanges) {
+        toast.success("No changes detected.");
+        setSubmitting(false);
+        onCancel(); // Close modal
+        return;
+    }
 
     await saveVendor({
       dispatch,
@@ -308,7 +334,6 @@ export function VendorForm({
           availableParts={availableParts}
           selectedPartIds={selectedPartIds}
           onPartsChange={setSelectedPartIds}
-          // ✅ Passed correct handler
           onFetchParts={handleFetchParts} 
           partsLoading={partsLoading}
           
@@ -355,6 +380,7 @@ export function VendorForm({
         <button
           type="submit"
           onClick={handleSubmit}
+          disabled={submitting}
           style={{
             height: "2.5rem",
             display: "flex",
@@ -366,11 +392,11 @@ export function VendorForm({
             fontSize: "0.875rem",
             fontWeight: 500,
             border: "none",
-            backgroundColor: "#EA580C",
+            backgroundColor: submitting ? "#fdba74" : "#EA580C",
             color: "#FFFFFF",
           }}
         >
-          {initialData ? "Save Changes" : "Create"}
+          {submitting ? "Saving..." : initialData ? "Save Changes" : "Create"}
         </button>
       </div>
     </div>

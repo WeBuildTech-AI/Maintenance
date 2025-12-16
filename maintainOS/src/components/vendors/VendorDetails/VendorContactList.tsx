@@ -61,8 +61,18 @@ export default function VendorContactList({
                         .join("")
                         .toUpperCase()
                     : "U";
+                  
+                  // ✅ FIX: Prioritize 'contactColor' from API response
                   const color =
-                    contact.color || contact.contactColour || "#EC4899";
+                    contact.contactColor || contact.color || "#EC4899";
+
+                  // ✅ FIX: Handle Phone + Extension
+                  const phoneNum = contact.phone || contact.phoneNumber;
+                  const ext = contact.phoneExtension;
+                  const displayPhone = phoneNum 
+                    ? (ext ? `${ext} ${phoneNum}` : phoneNum) 
+                    : "-";
+
                   return (
                     <tr
                       key={index}
@@ -94,10 +104,10 @@ export default function VendorContactList({
                       </td>
                       <td className="px-6 py-3 text-blue-600 font-medium whitespace-nowrap">
                         <a
-                          href={`tel:${contact.phone || contact.phoneNumber}`}
+                          href={`tel:${displayPhone}`}
                           className="hover:underline"
                         >
-                          {contact.phone || contact.phoneNumber || "-"}
+                          {displayPhone}
                         </a>
                       </td>
                       <td className="px-6 py-3 text-right whitespace-nowrap">

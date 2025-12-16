@@ -2,7 +2,6 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { vendorService } from "./vendors.service";
 import type { Contact, FetchVendorsParams } from "./vendors.types";
 
-// ✅ Updated to accept params
 export const fetchVendors = createAsyncThunk(
   "vendors/fetchVendors",
   async (params: FetchVendorsParams | undefined, { rejectWithValue }) => {
@@ -44,9 +43,9 @@ export const fetchVendorById = createAsyncThunk(
 
 export const createVendor = createAsyncThunk(
   "vendors/createVendor",
-  async (vendorData: FormData, { rejectWithValue }) => {
+  async (data: FormData, { rejectWithValue }) => {
     try {
-      return await vendorService.createVendor(vendorData);
+      return await vendorService.createVendor(data);
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to create vendor"
@@ -55,9 +54,10 @@ export const createVendor = createAsyncThunk(
   }
 );
 
+// ✅ Update Vendor Thunk
 export const updateVendor = createAsyncThunk(
   "vendors/updateVendor",
-  async ({ id, data }: { id: string; data: any }, { rejectWithValue }) => {
+  async ({ id, data }: { id: string; data: FormData }, { rejectWithValue }) => {
     try {
       return await vendorService.updateVendor(id, data);
     } catch (error: any) {
@@ -68,15 +68,17 @@ export const updateVendor = createAsyncThunk(
   }
 );
 
-export const deleteVendor = createAsyncThunk(
-  "vendors/deleteVendor",
-  async (id: string, { rejectWithValue }) => {
+export const createVendorContact = createAsyncThunk(
+  "vendors/createVendorContact",
+  async (
+    { vendorId, contactData }: { vendorId: string; contactData: Contact },
+    { rejectWithValue }
+  ) => {
     try {
-      await vendorService.deleteVendor(id);
-      return id;
+      return await vendorService.createVendorContact(vendorId, contactData);
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to delete vendor"
+        error.response?.data?.message || "Failed to create contact"
       );
     }
   }
@@ -88,12 +90,16 @@ export const updateVendorContact = createAsyncThunk(
     {
       vendorId,
       contactId,
-      data,
-    }: { vendorId: string; contactId: string; data: Contact },
+      contactData,
+    }: { vendorId: string; contactId: string; contactData: Contact },
     { rejectWithValue }
   ) => {
     try {
-      return await vendorService.updateVendorContact(vendorId, contactId, data);
+      return await vendorService.updateVendorContact(
+        vendorId,
+        contactId,
+        contactData
+      );
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to update contact"
@@ -102,15 +108,15 @@ export const updateVendorContact = createAsyncThunk(
   }
 );
 
-export const batchDeleteVendor = createAsyncThunk(
-  "vendor/batchDeleteVendor",
+export const deleteVendor = createAsyncThunk(
+  "vendors/deleteVendor",
   async (ids: string[], { rejectWithValue }) => {
     try {
       await vendorService.batchDeleteVendor(ids);
-      return ids;
+      return ids[0]; // Returning first ID for single delete logic compatibility if needed
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to delete Vendor"
+        error.response?.data?.message || "Failed to delete vendor"
       );
     }
   }
@@ -130,7 +136,7 @@ export const fetchVendorContact = createAsyncThunk(
 );
 
 export const updateVendorContactData = createAsyncThunk(
-  "vendors/updateVendorContact",
+  "vendors/updateVendorContactData",
   async (
     { vendorId, contactId }: { vendorId: string; contactId: string[] },
     { rejectWithValue }
@@ -149,8 +155,7 @@ export const fetchDeleteVendor = createAsyncThunk(
   "vendor/fetchDeleteVendor",
   async (_, { rejectWithValue }) => {
     try {
-      const assets = await vendorService.fetchDeleteVendor();
-      return assets;
+      return await vendorService.fetchDeleteVendor();
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch Delete Vendor "
@@ -161,20 +166,13 @@ export const fetchDeleteVendor = createAsyncThunk(
 
 export const restoreVendorData = createAsyncThunk(
   "vendor/restoreVendorData",
-  async (
-    {
-      id,
-    }: {
-      id: string;
-    },
-    { rejectWithValue }
-  ) => {
+  async ({ id }: { id: string }, { rejectWithValue }) => {
     try {
-      const asset = await vendorService.restoreVendorData(id);
-      return asset;
+      await vendorService.restoreVendorData(id);
+      return id;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to restore Vendor Data"
+        error.response?.data?.message || "Failed to restore vendor"
       );
     }
   }

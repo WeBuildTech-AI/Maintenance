@@ -2,39 +2,39 @@ import { useState } from "react";
 import { ChevronLeft, Eye, Loader2 } from "lucide-react";
 import ProcedureBody from "./ProcedureBody";
 import ProcedureSettings from "./ProcedureSettings";
-import { useLayout } from "../../MainLayout"; // Note: This path is inferred
+import { useLayout } from "../../MainLayout"; 
 import { useProcedureBuilder } from "./ProcedureBuilderContext";
 import { convertStateToJSON } from "./utils/conversion";
 import { ProcedurePreviewModal } from "./components/ProcedurePreviewModal";
-
-// --- 💡 1. REDUX IMPORTS ---
 import { useDispatch } from "react-redux";
-// import { useSelector } from "react-redux"; 
-import { type RootState, type AppDispatch } from "../../../store"; // Note: This path is inferred
-// --- 👇 [CHANGE] 'updateProcedure' ko import karein ---
+import { type RootState, type AppDispatch } from "../../../store"; 
 import { createProcedure, updateProcedure } from "../../../store/procedures/procedures.thunks"; 
-
+import { FieldData, ProcedureSettingsState } from "./types";
 
 interface BuilderProps {
   name: string;
   description: string;
   onBack: () => void;
-  // --- 👇 [CHANGE] Naya prop add karein ---
   editingProcedureId: string | null;
+  initialState?: {
+    fields: FieldData[];
+    settings: ProcedureSettingsState;
+    name: string;
+    description: string;
+  };
 }
 
 export default function ProcedureBuilder({
   name,
   description,
   onBack,
-  // --- 👇 [CHANGE] Prop ko read karein ---
   editingProcedureId,
+  initialState, 
 }: BuilderProps) {
   const [scoring, setScoring] = useState(false);
   const [activeTab, setActiveTab] = useState<"fields" | "settings">("fields");
   const [showPreview, setShowPreview] = useState(false);
 
-  // --- 💡 2. REDUX HOOKS ---
   const [isSaving, setIsSaving] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
   
@@ -45,69 +45,101 @@ export default function ProcedureBuilder({
   const HEADER_HEIGHT = 70;
   const FOOTER_HEIGHT = 60;
 
-  // --- 💡 3. 'SAVE TEMPLATE' LOGIC (UPDATED) ---
+  // --- Helper to remove IDs from payload (for clean JSON) ---
+  const removeId = (obj: any) => {
+    const { 
+      id, 
+      condition,
+      parentId,
+      sectionId, 
+      ...rest 
+    } = obj;
+    
+    // Recursive cleanup
+    if (rest.children) {
+      rest.children = rest.children.map(removeId);
+    }
+    if (rest.fields) {
+      rest.fields = rest.fields.map(removeId);
+    }
+    return rest;
+  };
+
+  // --- Helper to prepare final API payload ---
+  const preparePayload = (fieldsData: any[], settingsData: any, pName: string, pDesc: string) => {
+    const rawJSON = convertStateToJSON(fieldsData, settingsData, pName, pDesc);
+    return {
+      ...rawJSON,
+      headings: rawJSON.headings.map(removeId),
+      rootFields: rawJSON.rootFields.map(removeId),
+      sections: rawJSON.sections.map((section: any) => ({
+        ...removeId(section),
+        headings: section.headings.map(removeId),
+        fields: section.fields.map(removeId)
+      }))
+    };
+  };
+
+  // --- SAVE TEMPLATE LOGIC (With Partial Update) ---
   const handleSaveOrUpdateTemplate = async () => {
     
     setIsSaving(true);
     
-    // 1. Get the JSON data *with* IDs (for the preview)
-    const previewJSON = convertStateToJSON(fields, settings, name, description);
-    
-    // 2. --- FIX: Update helper function to remove 'sectionId' ---
-    const removeId = (obj: any) => {
-      // This strips 'id' and any other non-API props
-      const { 
-        id, 
-        condition,
-        parentId,
-        sectionId, // <-- (FIX) ADDED sectionId TO BE REMOVED
-        // --- Add any other frontend-only props here ---
-        ...rest 
-      } = obj;
-      
-      // Re-map children recursively if they exist
-      if (rest.children) {
-        rest.children = rest.children.map(removeId);
-      }
-      // Re-map section fields recursively
-      if (rest.fields) {
-        rest.fields = rest.fields.map(removeId);
-      }
-      
-      return rest;
-    };
-    
-    // 3. --- FIX: Apply 'removeId' to the new 'headings' arrays ---
-    const apiPayload = {
-      ...previewJSON,
-      headings: previewJSON.headings.map(removeId), // <-- (FIX) CLEAN ROOT HEADINGS
-      rootFields: previewJSON.rootFields.map(removeId), 
-      sections: previewJSON.sections.map((section: any) => ({
-        ...removeId(section), 
-        headings: section.headings.map(removeId), // <-- (FIX) CLEAN SECTION HEADINGS
-        fields: section.fields.map(removeId) 
-      }))
-    };
-    // --- END FIX ---
-
-
-    console.log("--- FINAL PAYLOAD TO API (IDs Removed) ---");
-    console.log(JSON.stringify(apiPayload, null, 2));
+    // 1. Generate Current Payload
+    const currentPayload = preparePayload(fields, settings, name, description);
 
     try {
-      // --- 👇 [CHANGE] Logic to Create vs Update ---
       if (editingProcedureId) {
-        // UPDATE (Edit Mode)
-        await dispatch(updateProcedure({ id: editingProcedureId, procedureData: apiPayload })).unwrap();
+        // --- UPDATE MODE: Calculate Diff ---
+        let finalPayload = currentPayload;
+
+        if (initialState) {
+          // Generate Initial Payload from original state to compare against
+          const initialPayload = preparePayload(initialState.fields, initialState.settings, initialState.name, initialState.description);
+          
+          const diff: any = {};
+          
+          // Compare Keys
+          Object.keys(currentPayload).forEach(key => {
+            // Deep comparison using JSON.stringify for simplicity on objects/arrays
+            if (JSON.stringify(currentPayload[key]) !== JSON.stringify(initialPayload[key])) {
+              diff[key] = currentPayload[key];
+            }
+          });
+          
+          // Structural Integrity Check:
+          const structureKeys = ['rootFields', 'headings', 'sections'];
+          const structureChanged = structureKeys.some(k => diff[k]);
+
+          if (structureChanged) {
+             structureKeys.forEach(k => diff[k] = currentPayload[k]);
+          }
+
+          finalPayload = diff;
+        }
+
+        console.log("--- PARTIAL PAYLOAD TO API ---");
+        console.log(JSON.stringify(finalPayload, null, 2));
+
+        if (Object.keys(finalPayload).length === 0) {
+           alert("No changes detected.");
+           setIsSaving(false);
+           return;
+        }
+
+        await dispatch(updateProcedure({ id: editingProcedureId, procedureData: finalPayload })).unwrap();
+
       } else {
-        // CREATE (New Mode)
-        await dispatch(createProcedure(apiPayload)).unwrap();
+        // --- CREATE MODE: Send Full Payload ---
+        console.log("--- CREATE PAYLOAD TO API ---");
+        console.log(JSON.stringify(currentPayload, null, 2));
+        
+        await dispatch(createProcedure(currentPayload)).unwrap();
       }
-      // --- END CHANGE ---
       
       // Success
       setIsSaving(false);
-      onBack(); // Wapas Library screen par bhej diya
+      onBack(); 
       
     } catch (error: any) {
       // Error
@@ -140,6 +172,7 @@ export default function ProcedureBuilder({
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <button
             onClick={onBack}
+            title="Back to Library" // ✅ Added Tooltip
             style={{
               background: "none",
               border: "none",
@@ -162,7 +195,6 @@ export default function ProcedureBuilder({
             color: "#374151",
           }}
         >
-          {/* ... (Tabs aur Scoring ka code same rahega) ... */}
           <span
             style={{
               color: activeTab === "fields" ? "#2563eb" : "#374151",
@@ -259,7 +291,7 @@ export default function ProcedureBuilder({
             <span>Preview</span>
           </button>
 
-          {/* --- 💡 4. DYNAMIC BUTTON LOGIC (No change here) --- */}
+          {/* --- ACTION BUTTON --- */}
           {activeTab === "fields" ? (
             <button
               onClick={() => setActiveTab("settings")} 
@@ -280,7 +312,7 @@ export default function ProcedureBuilder({
             </button>
           ) : (
             <button
-              onClick={handleSaveOrUpdateTemplate} // <-- [CHANGE] Function ka naam badla
+              onClick={handleSaveOrUpdateTemplate} 
               disabled={isSaving}
               style={{
                 backgroundColor: isSaving ? "#d1d5db" : "#2563eb", // Disable color
@@ -298,7 +330,6 @@ export default function ProcedureBuilder({
               {isSaving && (
                 <Loader2 size={16} className="animate-spin" />
               )}
-              {/* --- 👇 [CHANGE] Button text ko dynamic banayein --- */}
               {isSaving ? "Saving..." : (editingProcedureId ? "Update Template" : "Save Template")}
             </button>
           )}

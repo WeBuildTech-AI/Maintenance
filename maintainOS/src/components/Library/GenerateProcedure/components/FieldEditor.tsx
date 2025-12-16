@@ -31,8 +31,6 @@ export function FieldEditor({
     dropdownOpen,
     setDropdownOpen,
     logicEditorOpen,
-    // --- 👇 [CHANGE] 'setLogicEditorOpen' ko hata dein ---
-    // setLogicEditorOpen, // (Ab naya function use hoga)
     fieldBlockRefs,
     dropdownRefs,
     buttonRefs,
@@ -52,7 +50,6 @@ export function FieldEditor({
     handleDuplicateField,
     handleFieldPropChange,
     setIsLinkModalOpen,
-    // --- 👇 [CHANGE] Naya function import karein ---
     handleToggleLogicEditor, 
   } = useProcedureBuilder();
 
@@ -241,6 +238,7 @@ export function FieldEditor({
                     <button
                       onClick={() => deleteLink(link.id)}
                       className="text-gray-400 hover:text-red-500 ml-auto flex-shrink-0"
+                      title="Remove Link"
                     >
                       <Trash size={16} />
                     </button>
@@ -275,6 +273,7 @@ export function FieldEditor({
                         </a>
                         <button
                           onClick={() => deleteAttachment(attachment.id)}
+                          title="Remove Image"
                           style={{
                             position: "absolute",
                             top: "-0.5rem",
@@ -320,6 +319,7 @@ export function FieldEditor({
                         <button
                           onClick={() => deleteAttachment(attachment.id)}
                           className="text-gray-400 hover:text-gray-600 flex-shrink-0 ml-2"
+                          title="Remove File"
                         >
                           <X size={20} />
                         </button>
@@ -411,7 +411,7 @@ export function FieldEditor({
                   </label>
                 )}
 
-                {/* --- 👇 [CHANGE] YEH AAPKA FIX HAI --- */}
+                {/* --- Logic Button --- */}
                 {logicEnabledFieldTypes.includes(field.selectedType) && (
                   <button
                     ref={(el) =>
@@ -419,9 +419,9 @@ export function FieldEditor({
                     }
                     onClick={(e) => {
                       e.stopPropagation();
-                      // Naye, smart function ko call karein
                       handleToggleLogicEditor(field.id);
                     }}
+                    title="Add/Edit Logic" // ✅ Added Tooltip
                     className={`hover:text-blue-600 ${
                       logicEditorOpen === field.id ? "text-blue-600" : ""
                     }`}
@@ -429,18 +429,18 @@ export function FieldEditor({
                     <Share2 size={18} />
                   </button>
                 )}
-                {/* --- END FIX --- */}
                 
                 <button
                   onClick={() => setIsLinkModalOpen({ fieldId: field.id })}
                   className="hover:text-blue-600"
+                  title="Add Link" // ✅ Added Tooltip
                 >
                   <Link2 size={18} />
                 </button>
 
                 <button
                   className="hover:text-blue-600"
-                  title="Add Pictures/Files"
+                  title="Add Pictures/Files" // ✅ Added Tooltip
                   onClick={(e) => {
                     e.stopPropagation();
                     fileInputRef.current?.click();
@@ -452,6 +452,7 @@ export function FieldEditor({
                 <button
                   onClick={() => handleDeleteField(field.id)}
                   className="hover:text-red-500"
+                  title="Delete Field" // ✅ Added Tooltip
                 >
                   <Trash2 size={18} />
                 </button>
@@ -520,6 +521,7 @@ export function FieldEditor({
                       );
                     }}
                     className="hover:text-gray-700"
+                    title="More Options" // ✅ Added Tooltip
                   >
                     <MoreVertical size={18} />
                   </button>

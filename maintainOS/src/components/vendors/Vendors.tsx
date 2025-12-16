@@ -11,7 +11,7 @@ import {
 } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store";
-import { vendorService } from "../../store/vendors";
+import { vendorService, updateVendor } from "../../store/vendors"; // ✅ Added updateVendor
 import { FetchVendorsParams } from "../../store/vendors/vendors.types";
 
 // Components
@@ -40,7 +40,7 @@ export function Vendors() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
-  
+
   const headerRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -76,7 +76,6 @@ export function Vendors() {
       } else {
         const apiPayload = {
           ...filterParams,
-          search: debouncedSearch || undefined,
           search: debouncedSearch || undefined,
         };
         res = await vendorService.fetchVendors(apiPayload);
@@ -132,9 +131,12 @@ export function Vendors() {
   }, []);
 
   // Filter Handler
-  const handleFilterChange = useCallback((newParams: Partial<FetchVendorsParams>) => {
-    setFilterParams((prev) => ({ ...prev, ...newParams }));
-  }, []);
+  const handleFilterChange = useCallback(
+    (newParams: Partial<FetchVendorsParams>) => {
+      setFilterParams((prev) => ({ ...prev, ...newParams }));
+    },
+    []
+  );
 
   // Sorting Logic
   const sortedVendors = useMemo(() => {
@@ -193,23 +195,21 @@ export function Vendors() {
       {/* 🟩 TABLE VIEW */}
       {viewMode === "table" ? (
         <div className="flex-1 overflow-auto p-3 bg-muted/20">
-             {/* Use your existing VendorTable here */}
-             <VendorTable
-                vendors={sortedVendors}
-                isSettingModalOpen={isSettingModalOpen}
-                setIsSettingModalOpen={setIsSettingModalOpen}
-                fetchVendors={refreshVendors}
-                showDeleted={showDeleted}
-                setShowDeleted={setShowDeleted}
-             />
+          {/* Use your existing VendorTable here */}
+          <VendorTable
+            vendors={sortedVendors}
+            isSettingModalOpen={isSettingModalOpen}
+            setIsSettingModalOpen={setIsSettingModalOpen}
+            fetchVendors={refreshVendors}
+            showDeleted={showDeleted}
+            setShowDeleted={setShowDeleted}
+          />
         </div>
       ) : (
         // 🟦 PANEL VIEW (Matching Inventory Structure)
         <div className="flex flex-1 min-h-0 h-full">
-          
           {/* LEFT LIST PANEL */}
           <div className="w-96 mr-2 ml-3 mb-2 border border-border flex flex-col min-h-0 bg-white rounded-lg shadow-sm">
-            
             {/* Sort Header */}
             <div
               ref={headerRef}
@@ -221,7 +221,8 @@ export function Vendors() {
                   onClick={() => setIsDropdownOpen((p) => !p)}
                   className="flex items-center gap-1 text-blue-600 font-medium focus:outline-none hover:text-blue-700"
                 >
-                  {sortType} : {sortOrder === "asc" ? "Ascending" : "Descending"}
+                  {sortType} :{" "}
+                  {sortOrder === "asc" ? "Ascending" : "Descending"}
                   {isDropdownOpen ? (
                     <ChevronUp className="w-4 h-4" />
                   ) : (
@@ -246,38 +247,61 @@ export function Vendors() {
               >
                 <div className="py-1">
                   {[
-                    { label: "Creation Date", options: ["Oldest First", "Newest First"] },
-                    { label: "Last Updated", options: ["Least Recent First", "Most Recent First"] },
-                    { label: "Name", options: ["Ascending Order", "Descending Order"] },
+                    {
+                      label: "Creation Date",
+                      options: ["Oldest First", "Newest First"],
+                    },
+                    {
+                      label: "Last Updated",
+                      options: ["Least Recent First", "Most Recent First"],
+                    },
+                    {
+                      label: "Name",
+                      options: ["Ascending Order", "Descending Order"],
+                    },
                   ].map((section) => (
                     <div key={section.label}>
-                       <button
-                         onClick={() => setOpenSection(openSection === section.label ? null : section.label)}
-                         className="flex items-center justify-between w-full px-4 py-2 text-left hover:bg-gray-100 rounded-md"
-                       >
-                          <span>{section.label}</span>
-                          {openSection === section.label ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                       </button>
-                       {openSection === section.label && (
-                         <div className="pl-4 pr-2 bg-gray-50 py-1 space-y-1">
-                            {section.options.map(opt => (
-                               <button 
-                                  key={opt}
-                                  onClick={() => {
-                                      setSortType(section.label);
-                                      setSortOrder(opt.includes("Asc") || opt.includes("Oldest") || opt.includes("Least") ? "asc" : "desc");
-                                      setIsDropdownOpen(false);
-                                  }}
-                                  className="w-full text-left text-xs px-2 py-1.5 hover:bg-white rounded text-gray-600"
-                               >
-                                  {opt}
-                               </button>
-                            ))}
-                         </div>
-                       )}
+                      <button
+                        onClick={() =>
+                          setOpenSection(
+                            openSection === section.label ? null : section.label
+                          )
+                        }
+                        className="flex items-center justify-between w-full px-4 py-2 text-left hover:bg-gray-100 rounded-md"
+                      >
+                        <span>{section.label}</span>
+                        {openSection === section.label ? (
+                          <ChevronUp size={14} />
+                        ) : (
+                          <ChevronDown size={14} />
+                        )}
+                      </button>
+                      {openSection === section.label && (
+                        <div className="pl-4 pr-2 bg-gray-50 py-1 space-y-1">
+                          {section.options.map((opt) => (
+                            <button
+                              key={opt}
+                              onClick={() => {
+                                setSortType(section.label);
+                                setSortOrder(
+                                  opt.includes("Asc") ||
+                                    opt.includes("Oldest") ||
+                                    opt.includes("Least")
+                                    ? "asc"
+                                    : "desc"
+                                );
+                                setIsDropdownOpen(false);
+                              }}
+                              className="w-full text-left text-xs px-2 py-1.5 hover:bg-white rounded text-gray-600"
+                            >
+                              {opt}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
-                 </div>
+                </div>
               </div>
             )}
 
@@ -285,20 +309,24 @@ export function Vendors() {
             <div className="flex-1 overflow-auto bg-white p-4 space-y-2">
               {loading && (
                 <div className="flex items-center justify-center h-full">
-                   <p className="text-sm text-gray-500">Loading vendors...</p>
+                  <p className="text-sm text-gray-500">Loading vendors...</p>
                 </div>
               )}
               {!loading && vendors.length === 0 && (
-                <EmptyState variant="list" onCreate={() => navigate("/vendors/create")} />
+                <EmptyState
+                  variant="list"
+                  onCreate={() => navigate("/vendors/create")}
+                />
               )}
-              {!loading && currentItems.map((vendor) => (
+              {!loading &&
+                currentItems.map((vendor) => (
                   <VendorCard
                     key={vendor.id}
                     vendor={vendor}
                     selected={location.pathname.includes(vendor.id)}
                     onSelect={() => navigate(`/vendors/${vendor.id}`)}
                   />
-              ))}
+                ))}
             </div>
 
             {/* Pagination Bubble */}
@@ -309,19 +337,41 @@ export function Vendors() {
                     {startIndex + 1} – {endIndex} of {totalItems}
                   </span>
                   <div className="flex items-center gap-1">
-                    <button 
-                      onClick={handlePrevPage} 
+                    <button
+                      onClick={handlePrevPage}
                       disabled={currentPage === 1}
                       className="text-gray-400 hover:text-gray-800 disabled:opacity-30 disabled:cursor-not-allowed"
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                      </svg>
                     </button>
-                    <button 
-                      onClick={handleNextPage} 
+                    <button
+                      onClick={handleNextPage}
                       disabled={endIndex >= totalItems}
                       className="text-gray-400 hover:text-gray-800 disabled:opacity-30 disabled:cursor-not-allowed"
                     >
-                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                      </svg>
                     </button>
                   </div>
                 </div>
@@ -343,7 +393,9 @@ export function Vendors() {
                   <VendorDetailRoute
                     vendors={vendors}
                     onVendorDeleted={(deletedId) =>
-                      setVendors((prev) => prev.filter((v) => v.id !== deletedId))
+                      setVendors((prev) =>
+                        prev.filter((v) => v.id !== deletedId)
+                      )
                     }
                     refreshVendors={refreshVendors}
                     showDeleted={showDeleted}
@@ -380,6 +432,7 @@ function CreateVendorRoute({ onSuccess }: { onSuccess: () => void }) {
 function EditVendorRoute({ onSuccess }: { onSuccess: () => void }) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>(); // ✅ Dispatch hook
   const [vendor, setVendor] = useState<any>(null);
 
   useEffect(() => {
@@ -392,12 +445,14 @@ function EditVendorRoute({ onSuccess }: { onSuccess: () => void }) {
     <VendorForm
       initialData={vendor}
       onCancel={() => navigate(`/vendors/${id}`)}
-      onSubmit={(data: any) => {
-        // Form component handles the API call logic internally usually via saveVendor
-        // but if it needs props:
+      onSubmit={(data: FormData) => {
+        // ✅ CRITICAL FIX: Return the dispatch promise so saveVendor awaits it
+        return dispatch(updateVendor({ id: id!, data })).unwrap();
       }}
       onSuccess={() => {
+        // ✅ This calls refreshVendors() in parent immediately
         onSuccess();
+        // Force navigation to ensure state refresh if needed
         navigate(`/vendors/${id}`, { state: { refresh: true } });
       }}
     />

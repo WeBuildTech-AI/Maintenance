@@ -10,15 +10,16 @@ interface Asset {
   id: number | string;
   name: string;
   updatedAt: string;
-  createdAt: string; // <-- Added this
+  createdAt: string; 
   location: any[];
-  // Add other properties of your asset here
+  [key: string]: any;
 }
 
 interface AssetDetailProps {
   asset: any;
   onEdit: (asset: Asset) => void;
   onDelete: (id: string | number) => void;
+  onCopy: (asset: Asset) => void; // ✅ Added onCopy prop
   fetchAssetsData: () => void;
   setSeeMoreAssetStatus: (value: boolean) => void;
   onClose: () => void;
@@ -30,6 +31,7 @@ export const AssetDetail: FC<AssetDetailProps> = ({
   asset,
   onEdit,
   onDelete,
+  onCopy, // ✅ Destructure onCopy
   fetchAssetsData,
   setSeeMoreAssetStatus,
   onClose,
@@ -38,21 +40,26 @@ export const AssetDetail: FC<AssetDetailProps> = ({
 }) => {
   const [showHistory, setShowHistory] = useState<boolean>(false);
   const user = useSelector((state: RootState) => state.auth.user);
+  
   const renderInitials = (text: string) =>
     text
-      .split(" ")
-      .map((p) => p[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase();
+      ? text
+          .split(" ")
+          .map((p) => p[0])
+          .slice(0, 2)
+          .join("")
+          .toUpperCase()
+      : "NA";
 
   return (
+    // ✅ Maintained your original styling exactly
     <div className="h-full border mr-3 mb-2 flex flex-col min-h-0">
       <AssetDetailHeader
         asset={asset}
         setShowHistory={setShowHistory}
         onEdit={onEdit}
-        onDelete={onDelete} // This prop is now passed down correctly
+        onDelete={onDelete}
+        onCopy={onCopy} // ✅ Passed to Header
         onClose={onClose}
         restoreData={restoreData}
         fetchAssetsData={fetchAssetsData}

@@ -1,13 +1,14 @@
-import { Edit, Link, MoreHorizontal } from "lucide-react";
+import { Edit, Link, MoreHorizontal, Copy } from "lucide-react"; // ✅ Added Copy icon
 import { Button } from "../../ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator, // ✅ Added Separator for better look
 } from "../../ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "../../ui/tabs";
-import { Tooltip } from "../../ui/tooltip"; // Import the simple tooltip
+import { Tooltip } from "../../ui/tooltip"; 
 
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
@@ -20,6 +21,7 @@ interface Asset {
   id: string;
   name: string;
   // You can add other properties of your asset here
+  [key: string]: any;
 }
 
 // Define the props type for the component
@@ -27,7 +29,8 @@ interface AssetDetailHeaderProps {
   asset: Asset;
   setShowHistory: (show: boolean) => void;
   onEdit: (asset: Asset) => void;
-  onDelete: (asset: Asset) => void;
+  onDelete: (id: string | number) => void; // Adjusted to match parent usage if needed, or keep as Asset
+  onCopy: (asset: Asset) => void; // ✅ Added onCopy prop
   onClose: () => void;
   restoreData: string;
   fetchAssetsData: () => void;
@@ -39,6 +42,7 @@ export function AssetDetailHeader({
   setShowHistory,
   onEdit,
   onDelete,
+  onCopy, // ✅ Destructure onCopy
   onClose,
   restoreData,
   fetchAssetsData,
@@ -92,9 +96,17 @@ export function AssetDetailHeader({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               {!showDeleted && (
-                <DropdownMenuItem onClick={() => setOpenAssetDeleteModal(true)}>
-                  Delete
-                </DropdownMenuItem>
+                <>
+                  {/* ✅ Added Copy Option */}
+                  <DropdownMenuItem onClick={() => onCopy(asset)}>
+                    <Copy className="mr-2 h-4 w-4" /> Copy Asset
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  
+                  <DropdownMenuItem onClick={() => setOpenAssetDeleteModal(true)} className="text-red-600 focus:text-red-600">
+                    Delete
+                  </DropdownMenuItem>
+                </>
               )}
               {showDeleted && (
                 <DropdownMenuItem onClick={handleRestoreData}>

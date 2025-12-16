@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from "react";
 import {
   Building2,
@@ -9,6 +7,7 @@ import {
   MapPin,
   MoreHorizontal,
   Plus,
+  Copy, // Imported Copy Icon
 } from "lucide-react";
 import { Button } from "../../ui/button";
 import { MeterAutomations } from "./MeterAutomations";
@@ -24,12 +23,12 @@ import {
 } from "../../ui/dropdown-menu";
 import { formatDate } from "../../utils/Date";
 import type { AppDispatch, RootState } from "../../../store";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux"; // Imported useDispatch
 import MeterDeleteModal from "../MeterDeleteModal";
-import RecordReadingModal from "./RecordReadingModal"; // 👈 Naya modal import karein
+import RecordReadingModal from "./RecordReadingModal";
 import toast from "react-hot-toast";
 import { Tooltip } from "../../ui/tooltip";
-import { meterService } from "../../../store/meters";
+import { meterService, createMeter } from "../../../store/meters"; // Imported createMeter
 
 export function MeterDetail({
   selectedMeter,
@@ -41,34 +40,64 @@ export function MeterDetail({
   onClose,
 }: any) {
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>(); // Initialize dispatch
   const user = useSelector((state: RootState) => state.auth.user);
 
-  // Modals ke liye state
   const [openMeterDeleteModal, setOpenMeterDeleteModal] = useState(false);
-  // const [isRecordModalOpen, setIsRecordModalOpen] = useState(false); // 👈 Modal ke liye state add karein
-
   const modalRef = React.useRef<HTMLDivElement>(null);
-
-  // Jab form submit hoga to ye function chalega
-  const handleRecordReadingConfirm = (readingData: {
-    value: string;
-    date: string;
-  }) => {
-    console.log("New Reading Recorded:", {
-      meterId: selectedMeter.id,
-      ...readingData,
-    });
-    // Yahan aap API call ya Redux action dispatch kar sakte hain
-    setIsRecordModalOpen(false); // Modal ko band kar dein
-  };
 
   const handleRestoreData = async () => {
     try {
       await meterService.restoreMeterData(selectedMeter.id);
       fetchMeters();
-      toast.success("successfully restore the data ");
+      toast.success("Successfully restored the data");
     } catch (err) {
       toast.error("Failed to restore the Meter Data");
+    }
+  };
+
+  // ✅ New Feature: Handle Copy Meter
+  const handleCopyMeter = async () => {
+    const loadingToast = toast.loading("Copying meter...");
+    try {
+      const formData = new FormData();
+      
+      // 1. Prefix Name
+      formData.append("name", `Copy-${selectedMeter.name}`);
+      
+      // 2. Copy Type
+      formData.append("meterType", selectedMeter.meterType || "manual");
+
+      // 3. Copy Measurement Unit (Handle potential structure differences)
+      const measId = selectedMeter.measurementId || selectedMeter.measurement?.id;
+      if (measId) {
+        formData.append("measurementId", measId);
+      }
+
+      // 4. Copy Optional Fields
+      if (selectedMeter.description) formData.append("description", selectedMeter.description);
+      if (selectedMeter.assetId) formData.append("assetId", selectedMeter.assetId);
+      if (selectedMeter.locationId) formData.append("locationId", selectedMeter.locationId);
+
+      // 5. Copy Frequency (Ensure it's stringified as per NewMeterForm logic)
+      if (selectedMeter.readingFrequency) {
+        formData.append(
+          "readingFrequency",
+          JSON.stringify(selectedMeter.readingFrequency)
+        );
+      }
+
+      // 6. Dispatch Create Action
+      await dispatch(createMeter(formData)).unwrap();
+      
+      toast.success("Meter copied successfully!", { id: loadingToast });
+      
+      // 7. Refresh List
+      fetchMeters();
+      
+    } catch (err: any) {
+      console.error("Failed to copy meter:", err);
+      toast.error(err.message || "Failed to copy meter", { id: loadingToast });
     }
   };
 
@@ -82,7 +111,6 @@ export function MeterDetail({
               {selectedMeter.name}
             </h1>
             <div className="flex items-center gap-2">
-              {/* ▼ Button pr onClick event add karein */}
               <Tooltip text="Copy Link">
                 <button
                   title="Copy Link"
@@ -98,7 +126,7 @@ export function MeterDetail({
               </Tooltip>
               <Button
                 className="gap-2 bg-orange-600 hover:bg-orange-700"
-                onClick={() => setIsRecordModalOpen(true)} // 👈 Modal open karne ke liye state update karein
+                onClick={() => setIsRecordModalOpen(true)}
               >
                 <Plus className="h-4 w-4" />
                 Record Reading
@@ -122,8 +150,15 @@ export function MeterDetail({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="mt-2">
+                    {/* ✅ New Copy Option */}
+                    <DropdownMenuItem onClick={handleCopyMeter}>
+                      <Copy className="mr-2 h-4 w-4" />
+                      Copy Meter
+                    </DropdownMenuItem>
+                    
                     <DropdownMenuItem
                       onClick={() => setOpenMeterDeleteModal(true)}
+                      className="text-red-600 focus:text-red-600"
                     >
                       Delete
                     </DropdownMenuItem>

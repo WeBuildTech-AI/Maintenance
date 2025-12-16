@@ -99,6 +99,7 @@ export function HeadingBlock({
                   handleDuplicateField(field.id);
                 }}
                 className="hover:text-blue-600"
+                title="Duplicate Heading" // ✅ Added Tooltip
               >
                 <Copy size={18} />
               </button>
@@ -108,6 +109,7 @@ export function HeadingBlock({
                   handleDeleteField(field.id);
                 }}
                 className="hover:text-red-500"
+                title="Delete Heading" // ✅ Added Tooltip
               >
                 <Trash2 size={18} />
               </button>
@@ -126,6 +128,7 @@ export function HeadingBlock({
                   handleDuplicateField(field.id);
                 }}
                 className="hover:text-blue-600"
+                title="Duplicate Heading" // ✅ Added Tooltip
               >
                 <Copy size={18} />
               </button>
@@ -135,6 +138,7 @@ export function HeadingBlock({
                   handleDeleteField(field.id);
                 }}
                 className="hover:text-red-500"
+                title="Delete Heading" // ✅ Added Tooltip
               >
                 <Trash2 size={18} />
               </button>

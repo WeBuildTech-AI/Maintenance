@@ -1,7 +1,4 @@
-import axios from "axios";
 import type { VendorResponse, Contact, FetchVendorsParams } from "./vendors.types";
-
-const API_URL = import.meta.env.VITE_API_URL;
 import api from "../auth/auth.service";
 
 export const vendorService = {
@@ -9,7 +6,6 @@ export const vendorService = {
   fetchVendors: async (params?: FetchVendorsParams): Promise<VendorResponse[]> => {
     const res = await api.get(`/vendors`, {
       params,
-      // Ensure arrays (e.g. locationOneOf) are serialized correctly
       paramsSerializer: { indexes: null }, 
     });
     
@@ -18,7 +14,7 @@ export const vendorService = {
     return [];
   },
 
-  // ✅ Fetch vendor summary (names)
+  // ✅ Fetch vendor summary
   fetchVendorName: async (): Promise<VendorResponse[]> => {
     const res = await api.get(`/vendors/summary`);
     return res.data;
@@ -36,18 +32,10 @@ export const vendorService = {
     return res.data;
   },
 
-  // ✅ Update vendor
-  updateVendor: async (
-    id: string,
-    data: Partial<VendorResponse>
-  ): Promise<VendorResponse> => {
+  // ✅ Update Vendor (PATCH) - WAS MISSING
+  updateVendor: async (id: string, data: FormData): Promise<VendorResponse> => {
     const res = await api.patch(`/vendors/${id}`, data);
     return res.data;
-  },
-
-  // ✅ Delete vendor
-  deleteVendor: async (id: string): Promise<void> => {
-    await api.delete(`/vendors/${id}`);
   },
 
   // ✅ Create new contact
@@ -61,7 +49,7 @@ export const vendorService = {
     return res.data;
   },
 
-  // ✅ Update or create (PUT)
+  // ✅ Update contact
   updateVendorContact: async (
     vendorId: string,
     contactId: string,
@@ -93,14 +81,19 @@ export const vendorService = {
     const res = await api.get(`/vendors/${vendorId}/contacts/${contactId}`);
     return res.data;
   },
-
-  fetchDeleteVendor: async (): Promise<void> => {
-    const res = await api.get(`vendors/deleted/all`);
+  
+  fetchDeleteVendor: async (): Promise<VendorResponse[]> => {
+    const res = await api.get(`/vendors/deleted`);
     return res.data;
   },
 
-  restoreVendorData: async (id: string): Promise<VendorResponse> => {
-    const res = await api.patch(`/vendors/${id}/restore`);
+  restoreVendorData: async (id: string): Promise<void> => {
+    await api.put(`/vendors/${id}/restore`);
+  },
+
+  // ✅ Fetch User Details (for Footer)
+  fetchUser: async (id: string): Promise<any> => {
+    const res = await api.get(`/users/${id}`);
     return res.data;
   },
 };

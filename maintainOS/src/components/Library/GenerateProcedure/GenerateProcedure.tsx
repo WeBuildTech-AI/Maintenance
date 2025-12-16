@@ -62,8 +62,6 @@ export default function GenerateProcedure({
       
       fetchAndConvertData();
     }
-    // ✅ CRITICAL FIX: Removed 'onBack' from dependencies. 
-    // This prevents infinite refetching loops if the parent component re-renders.
   }, [editingProcedureId]); 
   
   
@@ -91,7 +89,8 @@ export default function GenerateProcedure({
           name={prefetchedData.name}
           description={prefetchedData.description}
           onBack={onBack} 
-          editingProcedureId={editingProcedureId} 
+          editingProcedureId={editingProcedureId}
+          initialState={prefetchedData} // ✅ FIX: Passing initial state for diffing
         />
       </ProcedureBuilderProvider>
     );

@@ -5,23 +5,69 @@ import type {
   CreateAssetData,
   UpdateAssetData,
   UpdateAssetStatus,
-  FetchAssetsParams, // ✅ Imported
+  FetchAssetsParams,
 } from "./assets.types";
 
-
 export const assetService = {
-  // ✅ Updated to accept params object
   fetchAssets: async (
-    params?: FetchAssetsParams
+    params?: FetchAssetsParams & Record<string, any>
   ): Promise<AssetResponse[]> => {
+    // 1. Prepare API Params
+    const apiParams: Record<string, any> = {};
+
+    if (params) {
+      // Basic Fields
+      if (params.page) apiParams.page = params.page;
+      if (params.limit) apiParams.limit = params.limit;
+      if (params.name) apiParams.name = params.name;
+
+      // --- MAPPING LOGIC (UI Key -> API Key) ---
+      const mappings: Record<string, string> = {
+        // UI Key : API Key
+        status: "statusOneOf",
+        criticality: "criticalityOneOf",
+        location: "locationOneOf",
+        manufacturer: "manufacturerOneOf",
+        vendor: "vendorOneOf",
+        part: "partOneOf",
+        teamsInCharge: "teamsOneOf",
+        assetTypes: "assetTypeOneOf",
+        downtimeType: "downtimeTypeOneOf",
+        downtimeReason: "downtimeReasonOneOf",
+        description: "descriptionContains",
+        serialNumber: "serialContains",
+        year: "yearContains",
+        workOrderRecurrence: "workOrderRecurrence",
+        // IMP: UI me 'asset' filter hai, but API 'name' dhoondhta hai
+        asset: "name", 
+      };
+
+      Object.keys(params).forEach((key) => {
+        // Check mapping
+        const apiKey = mappings[key] || key; // Agar mapping nahi hai to same key use karo
+        
+        // Skip basic keys jo manually upar set kiye
+        if (['page', 'limit', 'name'].includes(apiKey) && mappings[key] === undefined) return;
+
+        const value = params[key];
+        
+        if (value !== undefined && value !== null && value !== "") {
+           // Array handling: Join with comma
+           if (Array.isArray(value)) {
+             apiParams[apiKey] = value.join(',');
+           } else {
+             apiParams[apiKey] = String(value);
+           }
+        }
+      });
+    }
+
+    // Call API
     const res = await api.get(`/assets`, {
-      params,
-      // Ensure arrays are serialized correctly (e.g. statusOneOf=id1,id2)
-      paramsSerializer: { indexes: null },
+      params: apiParams,
       headers: { Accept: "application/json" },
     });
-    
-    // Handle both potential response structures
+
     if (res.data && Array.isArray(res.data.items)) return res.data.items;
     if (Array.isArray(res.data)) return res.data;
     return [];
@@ -44,7 +90,7 @@ export const assetService = {
 
   updateAsset: async (
     id: string,
-    data: UpdateAssetData
+    data: Partial<UpdateAssetData>
   ): Promise<AssetResponse> => {
     const res = await api.patch(`/assets/${id}`, data);
     return res.data;
@@ -54,23 +100,31 @@ export const assetService = {
     await api.delete(`/assets/${id}`);
   },
 
-  fetchAssetType: async (): Promise<AssetResponse> => {
+  fetchDeleteAsset: async (): Promise<AssetResponse[]> => {
+    const res = await api.get(`/assets/deleted`);
+    return res.data;
+  },
+
+  restoreAssetData: async (id: string): Promise<AssetResponse> => {
+    const res = await api.patch(`/assets/${id}/restore`);
+    return res.data;
+  },
+
+  fetchAssetType: async (): Promise<AssetResponse[]> => {
     const res = await api.get(`/assets/get/asset-type`);
     return res.data;
   },
-  createAssetType: async (data: CreateAssetData): Promise<AssetResponse> => {
+  createAssetType: async (data: any): Promise<AssetResponse> => {
     const res = await api.post(`/assets/asset-type`, data);
     return res.data;
   },
 
-  fetchAssetManufacturer: async (): Promise<AssetResponse> => {
+  fetchAssetManufacturer: async (): Promise<AssetResponse[]> => {
     const res = await api.get(`/assets/get/manufacturer`);
     return res.data;
   },
 
-  createAssetManufacture: async (
-    data: CreateAssetData
-  ): Promise<AssetResponse> => {
+  createAssetManufacture: async (data: any): Promise<AssetResponse> => {
     const res = await api.post(`/assets/manufacturer`, data);
     return res.data;
   },
@@ -94,17 +148,7 @@ export const assetService = {
 
   batchDeleteAsset: async (ids: string[]): Promise<void> => {
     await api.delete(`assets/batch-delete`, {
-      data: { ids: ids },
+      data: { ids },
     });
-  },
-
-  fetchDeleteAsset: async (): Promise<void> => {
-    const res = await api.get(`assets/deleted/all`);
-    return res.data;
-  },
-
-  restoreAssetData: async (id: string): Promise<AssetResponse> => {
-    const res = await api.patch(`/assets/${id}/restore`);
-    return res.data;
   },
 };

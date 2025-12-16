@@ -1,4 +1,4 @@
-import {type  AppDispatch } from "../../../store";
+import { type AppDispatch } from "../../../store";
 import { createVendor } from "../../../store/vendors";
 import toast from "react-hot-toast";
 
@@ -17,17 +17,22 @@ export async function saveVendor({
   dispatch: AppDispatch;
   formData: FormData;
   initialData?: any;
-  onSubmit?: (data: any) => void;
+  onSubmit?: (data: any) => Promise<any> | void; // ✅ Allow Promise return
   onSuccess?: (data: any) => void;
   onCancel: () => void;
 }) {
   try {
     if (initialData && onSubmit) {
       // 🟢 UPDATE FLOW
-      onSubmit(formData);
+      // ✅ Await the update action so we don't close before it finishes
+      await onSubmit(formData);
+
       toast.success("Vendor updated successfully", {
         style: { background: "#ffffff", color: "#333" },
       });
+
+      // ✅ Call onSuccess so parent re-fetches data immediately
+      if (onSuccess) onSuccess(initialData);
     } else {
       // 🟢 CREATE FLOW
       const created = await dispatch(createVendor(formData)).unwrap();
