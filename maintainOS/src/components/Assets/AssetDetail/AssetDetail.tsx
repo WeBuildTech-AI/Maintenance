@@ -1,16 +1,23 @@
-import { useState, type FC, type Dispatch, type SetStateAction } from "react";
+import {
+  useState,
+  type FC,
+  type Dispatch,
+  type SetStateAction,
+  useEffect,
+} from "react";
 import { AssetDetailContent } from "./AssetDetailContent";
 import { AssetDetailHeader } from "./AssetDetailHeader";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../../store";
 import { MapPin } from "lucide-react";
 import { formatDate, formatFriendlyDate } from "../../utils/Date";
+import { workOrderService } from "../../../store/workOrders";
 
 interface Asset {
   id: number | string;
   name: string;
   updatedAt: string;
-  createdAt: string; 
+  createdAt: string;
   location: any[];
   [key: string]: any;
 }
@@ -31,7 +38,7 @@ export const AssetDetail: FC<AssetDetailProps> = ({
   asset,
   onEdit,
   onDelete,
-  onCopy, // ✅ Destructure onCopy
+  onCopy, // Destructure onCopy
   fetchAssetsData,
   setSeeMoreAssetStatus,
   onClose,
@@ -40,7 +47,21 @@ export const AssetDetail: FC<AssetDetailProps> = ({
 }) => {
   const [showHistory, setShowHistory] = useState<boolean>(false);
   const user = useSelector((state: RootState) => state.auth.user);
-  
+  const [createdUser, setCreatedUser] = useState("");
+
+  const fetchUser = async () => {
+    let res: any;
+    try {
+      res = await workOrderService.fetchUserById(asset.createdBy);
+      setCreatedUser(res.fullName);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+  useEffect(() => {
+    fetchUser();
+  });
+
   const renderInitials = (text: string) =>
     text
       ? text
@@ -52,7 +73,7 @@ export const AssetDetail: FC<AssetDetailProps> = ({
       : "NA";
 
   return (
-    // ✅ Maintained your original styling exactly
+    //  Maintained your original styling exactly
     <div className="h-full border mr-3 mb-2 flex flex-col min-h-0">
       <AssetDetailHeader
         asset={asset}
@@ -70,14 +91,14 @@ export const AssetDetail: FC<AssetDetailProps> = ({
         <div className="flex items-start gap-3 p-3 border-b border-gray-100">
           {/* Avatar */}
           <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-semibold text-blue-600">
-            {renderInitials(user?.fullName)}
+            {renderInitials(createdUser)}
           </div>
 
           {/* Content */}
           <div className="flex-1">
             {/* Header */}
             <div className="text-sm text-gray-800">
-              <span className="font-semibold">{user?.fullName}</span>
+              <span className="font-semibold">{createdUser}</span>
               <span className="text-gray-500 ml-2">
                 {formatDate(asset.createdAt)}
               </span>
@@ -104,6 +125,7 @@ export const AssetDetail: FC<AssetDetailProps> = ({
           fetchAssetsData={fetchAssetsData}
           asset={asset}
           setSeeMoreAssetStatus={setSeeMoreAssetStatus}
+          createdUser={createdUser}
         />
       )}
     </div>

@@ -24,6 +24,7 @@ import { ParentAssetDropdown } from "./dropdowns/ParentAssetDropdown";
 import { FooterActions } from "./FooterActions";
 
 import {
+  assetService,
   createAsset,
   updateAsset,
   type CreateAssetData,
@@ -61,13 +62,21 @@ export function NewAssetForm({
   const [serialNumber, setSerialNumber] = useState("");
   const [qrCode, setQrCode] = useState("");
   const [criticality, setCriticality] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState<SelectableItem | null>(null);
-  const [selectedManufacturer, setSelectedManufacturer] = useState<SelectableItem | null>(null);
-  const [selectedVendorId, setSelectedvendorId] = useState<SelectableItem | null>(null);
-  const [selectedTeamInCharge, setSelectedTeamInCharge] = useState<SelectableItem[]>([]);
-  const [selectedAssetTypeIds, setSelectedAssetTypeIds] = useState<number[]>([]);
+  const [selectedLocation, setSelectedLocation] =
+    useState<SelectableItem | null>(null);
+  const [selectedManufacturer, setSelectedManufacturer] =
+    useState<SelectableItem | null>(null);
+  const [selectedVendorId, setSelectedvendorId] =
+    useState<SelectableItem | null>(null);
+  const [selectedTeamInCharge, setSelectedTeamInCharge] = useState<
+    SelectableItem[]
+  >([]);
+  const [selectedAssetTypeIds, setSelectedAssetTypeIds] = useState<number[]>(
+    []
+  );
   const [selectedParts, setSelectedParts] = useState<SelectableItem[]>([]);
-  const [selectedParentAssets, setSelectedParentAssets] = useState<SelectableItem | null>(null);
+  const [selectedParentAssets, setSelectedParentAssets] =
+    useState<SelectableItem | null>(null);
 
   // Dropdown open states
   const [locationOpen, setLocationOpen] = useState(false);
@@ -93,8 +102,50 @@ export function NewAssetForm({
       setSerialNumber(assetData.serialNumber || "");
       setQrCode(assetData.qrCode || "");
       setCriticality(assetData.criticality || "");
-      setSelectedLocation(assetData.location ? { id: assetData.location.id, name: assetData.location.name } : null);
-      setSelectedManufacturer(assetData.manufacturer ? { id: assetData.manufacturer.id, name: assetData.manufacturer.name } : null);
+
+      setSelectedLocation(
+        assetData.location
+          ? { id: assetData.location.id, name: assetData.location.name }
+          : null
+      );
+
+      setSelectedManufacturer(
+        assetData.manufacturer
+          ? { id: assetData.manufacturer.id, name: assetData.manufacturer.name }
+          : null
+      );
+
+      setSelectedvendorId(
+        assetData.vendor
+          ? { id: assetData.vendor.id, name: assetData.vendor.name }
+          : null
+      );
+
+      setSelectedTeamInCharge(
+        assetData.teamsInCharge
+          ? assetData.teamsInCharge.map((t: any) => ({
+              id: t.id,
+              name: t.name,
+            }))
+          : []
+      );
+
+      setSelectedAssetTypeIds(assetData.assetTypeIds || []);
+
+      setSelectedParts(
+        assetData.parts
+          ? assetData.parts.map((p: any) => ({
+              id: p.id,
+              name: p.name,
+            }))
+          : []
+      );
+
+      setSelectedParentAssets(
+        assetData.parentAsset
+          ? { id: assetData.parentAsset.id, name: assetData.parentAsset.name }
+          : null
+      );
     }
   }, [isEdit, assetData]);
 
@@ -113,18 +164,17 @@ export function NewAssetForm({
       qrCode,
       criticality,
       locationId: selectedLocation?.id as string,
-      // ✅ Fixed: Changed to manufacturerId
       manufacturerId: selectedManufacturer?.id as string,
       vendorId: selectedVendorId?.id as string,
-      teamsInCharge: selectedTeamInCharge.map(t => t.id),
-      partIds: selectedParts.map(p => p.id),
+      teamsInCharge: selectedTeamInCharge.map((t) => t.id),
+      partIds: selectedParts.map((p) => p.id),
       assetTypeIds: selectedAssetTypeIds,
       parentAssetId: selectedParentAssets?.id as string,
     };
 
     try {
       if (isEdit && assetData?.id) {
-        const updated = await dispatch(updateAsset({ id: assetData.id, data: payload })).unwrap();
+        const updated = await assetService.updateAsset(assetData.id, payload);
         toast.success("Asset updated successfully");
         onCreate(updated);
       } else {
@@ -140,80 +190,105 @@ export function NewAssetForm({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white overflow-y-auto">
-      <div className="p-6">
-        <h2 className="text-xl font-semibold mb-4">
-          {isEdit ? "Edit Asset" : "Create New Asset"}
+    <div className="flex h-full flex-col overflow-hidden border">
+      {/* Header */}
+      <div className="flex-none border-b px-6 py-4">
+        <h2 className="text-xl font-semibold">
+          {isEdit ? "Edit Asset" : "New Asset"}
         </h2>
-        
-        <AssetNameInput assetName={assetName} setAssetName={setAssetName} />
+      </div>
+      {/* Scrollable content */}
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-6">
+        {/* Icon + Asset Name */}
+        <div className="flex items-start gap-4">
+          <div className="mt-1 flex h-12 w-12 flex-none items-center justify-center rounded-full border bg-white text-gray-400">
+            <Package className="h-5 w-5" />
+          </div>
+          <AssetNameInput
+            assetName={assetName}
+            setAssetName={setAssetName}
+            // error={() => {}}
+          />
+        </div>
+
+        {/* Sections */}
         <PicturesUpload />
         <FilesUpload />
-        
-        <LocationDropdown 
+        <LocationDropdown
           locationOpen={locationOpen}
           setLocationOpen={setLocationOpen}
           LocationRef={LocationRef}
           selectedLocation={selectedLocation}
           setSelectedLocation={setSelectedLocation}
         />
-        
-        <CriticalityDropdown criticality={criticality} setCriticality={setCriticality} />
-        <DescriptionField description={description} setDescription={setDescription} />
+        <CriticalityDropdown
+          setCriticality={setCriticality}
+          criticality={criticality}
+        />
+        <DescriptionField
+          description={description}
+          setDescription={setDescription}
+        />
         <YearInput year={year} setYear={setYear} />
-        
-        <ManufacturerDropdown 
-           label="Manufacturer"
-           value={selectedManufacturer}
-           onChange={setSelectedManufacturer}
+
+        {/* === FIX: ManufacturerDropdown ko props pass kiye === */}
+        <ManufacturerDropdown
+          label="Manufacturer"
+          value={selectedManufacturer}
+          onChange={setSelectedManufacturer}
         />
-        
-        <ModelField model={model} setModel={setModel} />
-        
-        <SerialNumberInput serialNumber={serialNumber} setSerialNumber={setSerialNumber} />
-        
-        <TeamsDropdown 
-           teamOpen={teamOpen}
-           setteamsOpen={setTeamsOpen}
-           teamRef={teamRef}
-           selectTeamInCharge={selectedTeamInCharge}
-           setSelectTeamInCharge={setSelectedTeamInCharge}
+
+        {/* === FIX: ModelField ko uncomment kiya aur props pass kiye === */}
+        {/* <ModelField model={selectedModel} setModel={setSelectedModel} /> */}
+
+        <SerialNumberInput
+          serialNumber={serialNumber}
+          setSerialNumber={setSerialNumber}
         />
-        
+        <TeamsDropdown
+          teamOpen={teamOpen}
+          setteamsOpen={setTeamsOpen}
+          teamRef={teamRef}
+          selectTeamInCharge={selectedTeamInCharge}
+          setSelectTeamInCharge={setSelectedTeamInCharge}
+        />
         <QrCodeInput qrCode={qrCode} setQrCode={setQrCode} />
-        
-        <AssetTypesDropdown 
-           label="Asset Types"
-           value={selectedAssetTypeIds}
-           onChange={setSelectedAssetTypeIds}
+
+        <AssetTypesDropdown
+          label="Asset Types"
+          value={selectedAssetTypeIds}
+          onChange={setSelectedAssetTypeIds}
         />
-        
-        <VendorsDropdown 
-           vendorOpen={vendorOpen}
-           setVendorOpen={setVendorOpen}
-           vendorRef={vendorRef}
-           selectedVendorId={selectedVendorId}
-           setSelectedvendorId={setSelectedvendorId}
+
+        <VendorsDropdown
+          vendorOpen={vendorOpen}
+          setVendorOpen={setVendorOpen}
+          vendorRef={vendorRef}
+          selectedVendorId={selectedVendorId}
+          setSelectedvendorId={setSelectedvendorId}
         />
-        
-        <PartsDropdown 
-           partOpen={partOpen}
-           setPartOpen={setPartOpen}
-           partRef={partRef}
-           selectedParts={selectedParts}
-           setSelectedParts={setSelectedParts}
+        <PartsDropdown
+          partOpen={partOpen}
+          setPartOpen={setPartOpen}
+          partRef={partRef}
+          selectedParts={selectedParts}
+          setSelectedParts={setSelectedParts}
         />
-        
-        <ParentAssetDropdown 
-           parentAssetOpen={parentAssetOpen}
-           setParentAssetOpen={setParentAssetOpen}
-           parentAssetRef={parentAssetRef}
-           selectedParentAssets={selectedParentAssets}
-           setSelectedParentAssets={setSelectedParentAssets}
+        <ParentAssetDropdown
+          parentAssetOpen={parentAssetOpen}
+          setParentAssetOpen={setParentAssetOpen}
+          parentAssetRef={parentAssetRef}
+          selectedParentAssets={selectedParentAssets}
+          setSelectedParentAssets={setSelectedParentAssets}
         />
       </div>
 
-      <FooterActions onCreate={handleCreate} onCancel={onCancel} isEdit={isEdit} />
+      {/* Footer */}
+      <FooterActions
+        onCreate={handleCreate}
+        onCancel={onCancel}
+        isEdit={isEdit}
+      />
     </div>
   );
 }

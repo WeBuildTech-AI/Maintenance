@@ -146,9 +146,7 @@ export function NewMeterForm({
       }
 
       if (isEdit && editingMeter?.id) {
-        await dispatch(
-          updateMeter({ id: editingMeter.id, meterData: formData })
-        ).unwrap();
+        await meterService.updateMeter(editingMeter.id, formData);
         toast.success("Meter updated successfully");
       } else {
         await dispatch(createMeter(formData)).unwrap();
@@ -368,7 +366,7 @@ export function NewMeterForm({
                 textAlign: "center",
                 color: "#374151",
                 fontSize: "14px",
-                marginTop:"8px",
+                marginTop: "8px",
               }}
             />
             <div style={{ position: "relative", width: "180px" }}>

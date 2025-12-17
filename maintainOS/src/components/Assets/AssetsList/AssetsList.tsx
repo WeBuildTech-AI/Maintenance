@@ -18,6 +18,12 @@ interface AssetsListProps {
   sortOrder: string;
   setSortOrder: (order: string) => void;
   allLocationData: { name: string }[]; // Use the strong type
+
+  currentPage: number;
+  setCurrentPage: (page: number) => void;
+  startIndex: number;
+  endIndex: number;
+  totalItems: number;
 }
 
 export function AssetsList({
@@ -31,6 +37,11 @@ export function AssetsList({
   sortOrder,
   setSortOrder,
   allLocationData,
+  currentPage,
+  setCurrentPage,
+  startIndex,
+  endIndex,
+  totalItems,
 }: AssetsListProps) {
   // --- State and Refs for the custom dropdown ---
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -224,6 +235,51 @@ export function AssetsList({
                 </Button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* pagination */}
+      {totalItems > 0 && (
+        <div className="flex justify-end p-3 border-t bg-white">
+          <div className="flex items-center gap-3 border border-yellow-400 rounded-full px-3 py-1">
+            <span className="text-xs">
+              {startIndex + 1} – {endIndex} of {totalItems}
+            </span>
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(currentPage - 1)}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+            <button
+              disabled={endIndex >= totalItems}
+              onClick={() => setCurrentPage(currentPage + 1)}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
           </div>
         </div>
       )}

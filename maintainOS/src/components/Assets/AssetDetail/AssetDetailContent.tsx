@@ -18,8 +18,6 @@ import { Building2, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 // import { AssetWorkOrders } from "./sections/AssetWorkOrders";
 
-// You should import this interface from a shared types file
-// or from your main Assets.tsx component if you export it there.
 interface Asset {
   id: number | string;
   name: string;
@@ -36,12 +34,14 @@ interface AssetDetailContentProps {
   asset: Asset; // Use your specific Asset type
   fetchAssetsData: () => void;
   setSeeMoreAssetStatus: boolean;
+  createdUser: string;
 }
 
 export function AssetDetailContent({
   asset,
   fetchAssetsData,
   setSeeMoreAssetStatus,
+  createdUser,
 }: AssetDetailContentProps) {
   const navigate = useNavigate();
   return (
@@ -64,7 +64,7 @@ export function AssetDetailContent({
         <AssetVendor asset={asset} />
         <AssetPart asset={asset} />
         <AssetAutomations />
-        <AssetCreatedUpdated asset={asset} />
+        <AssetCreatedUpdated asset={asset} createdUser={createdUser} />
       </div>
 
       {/* Center bottom floating button */}

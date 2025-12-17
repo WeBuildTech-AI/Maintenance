@@ -7,7 +7,10 @@ import { AssetTable } from "./AssetsTable/AssetTable";
 import { AssetHeaderComponent } from "./AssetsHeader/AssetsHeader";
 import type { ViewMode } from "../purchase-orders/po.types";
 import { assetService, createAsset, deleteAsset } from "../../store/assets";
-import { FetchAssetsParams, CreateAssetData } from "../../store/assets/assets.types";
+import {
+  FetchAssetsParams,
+  CreateAssetData,
+} from "../../store/assets/assets.types";
 import toast, { Toaster } from "react-hot-toast";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store";
@@ -40,10 +43,11 @@ export const Assets: FC = () => {
       limit: 50,
     };
     searchParams.forEach((value, key) => {
-      if (['page', 'limit', 'search', 'assetId', 'moreDetails'].includes(key)) return;
-      
-      if (value.includes(',')) {
-        initialParams[key] = value.split(',');
+      if (["page", "limit", "search", "assetId", "moreDetails"].includes(key))
+        return;
+
+      if (value.includes(",")) {
+        initialParams[key] = value.split(",");
       } else {
         initialParams[key] = value;
       }
@@ -51,13 +55,21 @@ export const Assets: FC = () => {
     return initialParams;
   });
 
-  const [searchQuery, setSearchQuery] = useState(() => searchParams.get("search") || "");
-  const [debouncedSearch, setDebouncedSearch] = useState(() => searchParams.get("search") || "");
-  const [seeMoreAssetStatus, setSeeMoreAssetStatus] = useState(() => searchParams.get("moreDetails") === "true");
-  
+  const [searchQuery, setSearchQuery] = useState(
+    () => searchParams.get("search") || ""
+  );
+  const [debouncedSearch, setDebouncedSearch] = useState(
+    () => searchParams.get("search") || ""
+  );
+  const [seeMoreAssetStatus, setSeeMoreAssetStatus] = useState(
+    () => searchParams.get("moreDetails") === "true"
+  );
+
   const [showNewAssetForm, setShowNewAssetForm] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>(() => (localStorage.getItem("assetViewMode") as ViewMode) || "panel");
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    () => (localStorage.getItem("assetViewMode") as ViewMode) || "panel"
+  );
 
   const [loading, setLoading] = useState(false);
   const [assetData, setAssetData] = useState<Asset[]>([]);
@@ -67,8 +79,10 @@ export const Assets: FC = () => {
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
-  
+
   const dispatch = useDispatch<AppDispatch>();
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const paramAssetId = searchParams.get("assetId");
 
   // --- 2. Sync State -> URL ---
@@ -77,21 +91,28 @@ export const Assets: FC = () => {
     if (debouncedSearch) params.search = debouncedSearch;
     if (seeMoreAssetStatus) params.moreDetails = "true";
     if (selectedAsset?.id) params.assetId = selectedAsset.id;
-    if (filterParams.page && filterParams.page > 1) params.page = filterParams.page.toString();
+    if (filterParams.page && filterParams.page > 1)
+      params.page = filterParams.page.toString();
 
     Object.keys(filterParams).forEach((key) => {
       const value = filterParams[key as keyof FetchAssetsParams];
       if (value !== undefined && value !== null && value !== "") {
         if (Array.isArray(value) && value.length > 0) {
-           params[key] = value.join(',');
+          params[key] = value.join(",");
         } else if (!Array.isArray(value)) {
-           params[key] = String(value);
+          params[key] = String(value);
         }
       }
     });
 
     setSearchParams(params, { replace: true });
-  }, [debouncedSearch, seeMoreAssetStatus, selectedAsset?.id, filterParams, setSearchParams]);
+  }, [
+    debouncedSearch,
+    seeMoreAssetStatus,
+    selectedAsset?.id,
+    filterParams,
+    setSearchParams,
+  ]);
 
   // --- 3. Debounce Search ---
   useEffect(() => {
@@ -102,19 +123,27 @@ export const Assets: FC = () => {
   // --- 4. Fetch Assets ---
   const fetchAssetsData = useCallback(async () => {
     setLoading(true);
+
+    // ⛔ Prevent showing old selected asset until new data comes
+    setSelectedAsset(null);
+
     try {
       let assets: any;
+
       if (showDeleted) {
         assets = await assetService.fetchDeleteAsset();
       } else {
-        const apiPayload = { ...filterParams, name: debouncedSearch || undefined };
-        
-        Object.keys(apiPayload).forEach(key => {
-            if (apiPayload[key as keyof typeof apiPayload] === undefined) {
-                delete apiPayload[key as keyof typeof apiPayload];
-            }
+        const apiPayload = {
+          ...filterParams,
+          name: debouncedSearch || undefined,
+        };
+
+        Object.keys(apiPayload).forEach((key) => {
+          if (apiPayload[key as keyof typeof apiPayload] === undefined) {
+            delete apiPayload[key as keyof typeof apiPayload];
+          }
         });
-        
+
         assets = await assetService.fetchAssets(apiPayload);
       }
 
@@ -122,7 +151,6 @@ export const Assets: FC = () => {
         setAssetData(assets);
       } else {
         setAssetData([]);
-        setSelectedAsset(null);
       }
     } catch (err) {
       console.error("Failed to fetch assets:", err);
@@ -137,11 +165,16 @@ export const Assets: FC = () => {
   useEffect(() => {
     if (!assetData || assetData.length === 0) return;
     if (paramAssetId) {
-      const found = assetData.find((a: any) => String(a.id) === String(paramAssetId));
+      const found = assetData.find(
+        (a: any) => String(a.id) === String(paramAssetId)
+      );
       if (found && found.id !== selectedAsset?.id) setSelectedAsset(found);
     } else {
       if (!selectedAsset) {
-        const mostRecent = [...assetData].sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+        const mostRecent = [...assetData].sort(
+          (a: any, b: any) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        );
         setSelectedAsset(mostRecent[0]);
       }
     }
@@ -151,7 +184,9 @@ export const Assets: FC = () => {
     try {
       const locations: Location[] = await locationService.fetchLocations();
       setAllLocationData(locations);
-    } catch (err) { console.error("Failed to fetch locations:", err); }
+    } catch (err) {
+      console.error("Failed to fetch locations:", err);
+    }
   }, []);
 
   useEffect(() => {
@@ -160,71 +195,84 @@ export const Assets: FC = () => {
   }, [fetchAssetsData, fetchAllLocationData]);
 
   // --- Filter Handler ---
-  const handleFilterChange = useCallback((newParams: Partial<FetchAssetsParams>) => {
-    const sanitized: any = {};
+  const handleFilterChange = useCallback(
+    (newParams: Partial<FetchAssetsParams>) => {
+      const sanitized: any = {};
 
-    Object.keys(newParams).forEach((key) => {
-      const value = newParams[key as keyof FetchAssetsParams];
+      Object.keys(newParams).forEach((key) => {
+        const value = newParams[key as keyof FetchAssetsParams];
 
-      if (value === undefined || value === null || value === "") {
-        sanitized[key] = undefined;
-        return;
-      }
+        if (value === undefined || value === null || value === "") {
+          sanitized[key] = undefined;
+          return;
+        }
 
-      if (typeof value === 'object' && !Array.isArray(value)) {
-        if ('id' in (value as any)) sanitized[key] = (value as any).id;
-        else if ('name' in (value as any)) sanitized[key] = (value as any).name;
-        else sanitized[key] = String(value);
-      }
-      else if (Array.isArray(value)) {
-        if (value.length > 0 && typeof value[0] === 'object' && 'id' in value[0]) {
-          sanitized[key] = value.map((v: any) => v.id);
+        if (typeof value === "object" && !Array.isArray(value)) {
+          if ("id" in (value as any)) sanitized[key] = (value as any).id;
+          else if ("name" in (value as any))
+            sanitized[key] = (value as any).name;
+          else sanitized[key] = String(value);
+        } else if (Array.isArray(value)) {
+          if (
+            value.length > 0 &&
+            typeof value[0] === "object" &&
+            "id" in value[0]
+          ) {
+            sanitized[key] = value.map((v: any) => v.id);
+          } else {
+            sanitized[key] = value;
+          }
         } else {
           sanitized[key] = value;
         }
-      } 
-      else {
-        sanitized[key] = value;
-      }
-    });
-
-    setFilterParams((prev) => {
-      const merged = { ...prev, ...sanitized, page: 1 };
-      Object.keys(sanitized).forEach(k => {
-          if (sanitized[k] === undefined) delete merged[k as keyof FetchAssetsParams];
       });
-      if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
-      return merged;
-    });
-  }, []);
+
+      setFilterParams((prev) => {
+        const merged = { ...prev, ...sanitized, page: 1 };
+        Object.keys(sanitized).forEach((k) => {
+          if (sanitized[k] === undefined)
+            delete merged[k as keyof FetchAssetsParams];
+        });
+        if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
+        return merged;
+      });
+    },
+    []
+  );
 
   // --- HANDLE COPY ASSET ---
-  const handleCopyAsset = useCallback(async (asset: any) => {
-    const loadingToast = toast.loading("Creating copy...");
-    try {
-      const payload: CreateAssetData = {
-        year: asset.year,
-        name: `Copy - ${asset.name}`,
-        description: asset.description,
-        status: asset.status,
-        locationId: asset.location?.id || asset.locationId,
-        criticality: asset.criticality,
-        pictures: asset.pictures || [],
-        files: asset.files || [],
-        // ✅ Fixed: Changed manufacturer to manufacturerId
-        manufacturerId: typeof asset.manufacturer === 'object' ? asset.manufacturer?.id : asset.manufacturer,
-        model: asset.model,
-        serialNumber: asset.serialNumber,
-      };
+  const handleCopyAsset = useCallback(
+    async (asset: any) => {
+      const loadingToast = toast.loading("Creating copy...");
+      try {
+        const payload: CreateAssetData = {
+          year: asset.year,
+          name: `Copy - ${asset.name}`,
+          description: asset.description,
+          status: asset.status,
+          locationId: asset.location?.id || asset.locationId,
+          criticality: asset.criticality,
+          pictures: asset.pictures || [],
+          files: asset.files || [],
+          // ✅ Fixed: Changed manufacturer to manufacturerId
+          manufacturerId:
+            typeof asset.manufacturer === "object"
+              ? asset.manufacturer?.id
+              : asset.manufacturer,
+          model: asset.model,
+          serialNumber: asset.serialNumber,
+        };
 
-      await dispatch(createAsset(payload)).unwrap();
-      toast.success("Asset copied successfully", { id: loadingToast });
-      fetchAssetsData();
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to copy asset", { id: loadingToast });
-    }
-  }, [dispatch, fetchAssetsData]);
+        await dispatch(createAsset(payload)).unwrap();
+        toast.success("Asset copied successfully", { id: loadingToast });
+        fetchAssetsData();
+      } catch (error) {
+        console.error(error);
+        toast.error("Failed to copy asset", { id: loadingToast });
+      }
+    },
+    [dispatch, fetchAssetsData]
+  );
 
   const handleEditAsset = useCallback((assetToEdit: Asset) => {
     setEditingAsset(assetToEdit);
@@ -236,28 +284,63 @@ export const Assets: FC = () => {
     processedAssets.sort((a, b) => {
       let comparison = 0;
       switch (sortType) {
-        case "Name": comparison = a.name.localeCompare(b.name); break;
-        case "Last Updated": comparison = new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(); break;
-        case "Creation Date": comparison = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(); break;
+        case "Name":
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case "Last Updated":
+          comparison =
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+          break;
+        case "Creation Date":
+          comparison =
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          break;
       }
-      return sortType === "Name" ? (sortOrder === "asc" ? comparison : -comparison) : (sortOrder === "desc" ? comparison : -comparison);
+      return sortType === "Name"
+        ? sortOrder === "asc"
+          ? comparison
+          : -comparison
+        : sortOrder === "desc"
+        ? comparison
+        : -comparison;
     });
     return processedAssets;
   }, [assetData, sortType, sortOrder]);
 
-  const handleDeleteAsset = useCallback((id: string | number) => {
-    const currentIndex = assetData.findIndex((a) => a.id === id);
-    dispatch(deleteAsset(id)).unwrap().then(() => {
-      const newAssetList = assetData.filter((asset) => asset.id !== id);
-      setAssetData(newAssetList);
-      if (newAssetList.length === 0) setSelectedAsset(null);
-      else {
-        const newIndexToSelect = Math.min(currentIndex, newAssetList.length - 1);
-        setSelectedAsset(newAssetList[newIndexToSelect]);
-      }
-      toast.success("Asset deleted successfully!");
-    }).catch((error) => { console.error("Delete failed:", error); toast.error("Failed to delete the asset."); });
-  }, [assetData, dispatch]);
+  const totalItems = sortedAndFilteredAssets.length;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+  const paginatedAssets = sortedAndFilteredAssets.slice(startIndex, endIndex);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sortType, sortOrder, debouncedSearch, filterParams]);
+
+  const handleDeleteAsset = useCallback(
+    (id: string | number) => {
+      const currentIndex = assetData.findIndex((a) => a.id === id);
+      dispatch(deleteAsset(id))
+        .unwrap()
+        .then(() => {
+          const newAssetList = assetData.filter((asset) => asset.id !== id);
+          setAssetData(newAssetList);
+          if (newAssetList.length === 0) setSelectedAsset(null);
+          else {
+            const newIndexToSelect = Math.min(
+              currentIndex,
+              newAssetList.length - 1
+            );
+            setSelectedAsset(newAssetList[newIndexToSelect]);
+          }
+          toast.success("Asset deleted successfully!");
+        })
+        .catch((error) => {
+          console.error("Delete failed:", error);
+          toast.error("Failed to delete the asset.");
+        });
+    },
+    [assetData, dispatch]
+  );
 
   return (
     <>
@@ -287,7 +370,7 @@ export const Assets: FC = () => {
                 isSettingsModalOpen={isSettingsModalOpen}
                 onDelete={handleDeleteAsset}
                 onEdit={handleEditAsset}
-                onCopy={handleCopyAsset} 
+                onCopy={handleCopyAsset}
                 showDeleted={showDeleted}
                 setShowDeleted={setShowDeleted}
                 setSeeMoreAssetStatus={setSeeMoreAssetStatus}
@@ -295,7 +378,7 @@ export const Assets: FC = () => {
             ) : (
               <div className="flex flex-1 min-h-0">
                 <AssetsList
-                  assets={sortedAndFilteredAssets}
+                  assets={paginatedAssets}
                   selectedAsset={selectedAsset}
                   setSelectedAsset={setSelectedAsset}
                   setShowNewAssetForm={setShowNewAssetForm}
@@ -305,21 +388,38 @@ export const Assets: FC = () => {
                   sortOrder={sortOrder}
                   setSortOrder={setSortOrder}
                   allLocationData={allLocationData}
+                  currentPage={currentPage}
+                  setCurrentPage={setCurrentPage}
+                  startIndex={startIndex}
+                  endIndex={endIndex}
+                  totalItems={totalItems}
                 />
                 <div className="flex-1 bg-card min-h-0 flex flex-col">
                   {showNewAssetForm ? (
                     <NewAssetForm
                       onCreate={(updatedOrNewAsset) => {
                         if (editingAsset) {
-                          setAssetData((prevAssets) => prevAssets.map((asset) => asset.id === updatedOrNewAsset.id ? { ...asset, ...updatedOrNewAsset } : asset));
+                          setAssetData((prevAssets) =>
+                            prevAssets.map((asset) =>
+                              asset.id === updatedOrNewAsset.id
+                                ? { ...asset, ...updatedOrNewAsset }
+                                : asset
+                            )
+                          );
                         } else {
-                          setAssetData((prevAssets) => [updatedOrNewAsset as Asset, ...prevAssets]);
+                          setAssetData((prevAssets) => [
+                            updatedOrNewAsset as Asset,
+                            ...prevAssets,
+                          ]);
                         }
                         setSelectedAsset(updatedOrNewAsset as Asset);
                         setShowNewAssetForm(false);
                         setEditingAsset(null);
                       }}
-                      onCancel={() => { setShowNewAssetForm(false); setEditingAsset(null); }}
+                      onCancel={() => {
+                        setShowNewAssetForm(false);
+                        setEditingAsset(null);
+                      }}
                       isEdit={!!editingAsset}
                       assetData={editingAsset}
                       fetchAssetsData={fetchAssetsData}
@@ -329,11 +429,11 @@ export const Assets: FC = () => {
                       asset={selectedAsset}
                       onDelete={handleDeleteAsset}
                       onEdit={handleEditAsset}
-                      onCopy={handleCopyAsset} 
+                      onCopy={handleCopyAsset}
                       fetchAssetsData={fetchAssetsData}
                       setSeeMoreAssetStatus={setSeeMoreAssetStatus}
-                      onClose={() => setSelectedAsset(null)} 
-                      restoreData="" 
+                      onClose={() => setSelectedAsset(null)}
+                      restoreData=""
                       showDeleted={showDeleted}
                     />
                   ) : (
@@ -342,7 +442,9 @@ export const Assets: FC = () => {
                         <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-lg flex items-center justify-center">
                           <div className="w-8 h-8 border-2 border-muted-foreground/30 rounded border-dashed"></div>
                         </div>
-                        <p className="text-muted-foreground mb-2">Select an asset to view details</p>
+                        <p className="text-muted-foreground mb-2">
+                          Select an asset to view details
+                        </p>
                       </div>
                     </div>
                   )}
