@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Building2,
   Edit,
@@ -29,6 +29,7 @@ import RecordReadingModal from "./RecordReadingModal";
 import toast from "react-hot-toast";
 import { Tooltip } from "../../ui/tooltip";
 import { meterService, createMeter } from "../../../store/meters"; // Imported createMeter
+import { workOrderService } from "../../../store/workOrders";
 
 export function MeterDetail({
   selectedMeter,
@@ -42,7 +43,7 @@ export function MeterDetail({
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>(); // Initialize dispatch
   const user = useSelector((state: RootState) => state.auth.user);
-
+  const [createdUser, setCreatedUser] = useState("");
   const [openMeterDeleteModal, setOpenMeterDeleteModal] = useState(false);
   const modalRef = React.useRef<HTMLDivElement>(null);
 
@@ -56,28 +57,46 @@ export function MeterDetail({
     }
   };
 
-  // ✅ New Feature: Handle Copy Meter
+  const fetchCreatedUser = async () => {
+    let res: string[];
+    try {
+      const res = await workOrderService.fetchUserById(selectedMeter.createdBy);
+      setCreatedUser(res.fullName);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchCreatedUser();
+  }, [selectedMeter.createdBy]);
+
+  // New Feature: Handle Copy Meter
   const handleCopyMeter = async () => {
     const loadingToast = toast.loading("Copying meter...");
     try {
       const formData = new FormData();
-      
+
       // 1. Prefix Name
       formData.append("name", `Copy-${selectedMeter.name}`);
-      
+
       // 2. Copy Type
       formData.append("meterType", selectedMeter.meterType || "manual");
 
       // 3. Copy Measurement Unit (Handle potential structure differences)
-      const measId = selectedMeter.measurementId || selectedMeter.measurement?.id;
+      const measId =
+        selectedMeter.measurementId || selectedMeter.measurement?.id;
       if (measId) {
         formData.append("measurementId", measId);
       }
 
       // 4. Copy Optional Fields
-      if (selectedMeter.description) formData.append("description", selectedMeter.description);
-      if (selectedMeter.assetId) formData.append("assetId", selectedMeter.assetId);
-      if (selectedMeter.locationId) formData.append("locationId", selectedMeter.locationId);
+      if (selectedMeter.description)
+        formData.append("description", selectedMeter.description);
+      if (selectedMeter.assetId)
+        formData.append("assetId", selectedMeter.assetId);
+      if (selectedMeter.locationId)
+        formData.append("locationId", selectedMeter.locationId);
 
       // 5. Copy Frequency (Ensure it's stringified as per NewMeterForm logic)
       if (selectedMeter.readingFrequency) {
@@ -89,12 +108,11 @@ export function MeterDetail({
 
       // 6. Dispatch Create Action
       await dispatch(createMeter(formData)).unwrap();
-      
+
       toast.success("Meter copied successfully!", { id: loadingToast });
-      
+
       // 7. Refresh List
       fetchMeters();
-      
     } catch (err: any) {
       console.error("Failed to copy meter:", err);
       toast.error(err.message || "Failed to copy meter", { id: loadingToast });
@@ -155,7 +173,7 @@ export function MeterDetail({
                       <Copy className="mr-2 h-4 w-4" />
                       Copy Meter
                     </DropdownMenuItem>
-                    
+
                     <DropdownMenuItem
                       onClick={() => setOpenMeterDeleteModal(true)}
                       className="text-red-600 focus:text-red-600"
@@ -219,7 +237,7 @@ export function MeterDetail({
               <div className="text-sm text-gray-500 mt-6">
                 Created By{" "}
                 <span className="font-medium text-gray-700 capitalize">
-                  {user?.fullName}
+                  {createdUser}
                 </span>{" "}
                 on {formatDate(selectedMeter.createdAt)}
               </div>
@@ -229,7 +247,7 @@ export function MeterDetail({
               <div className="text-sm text-gray-500 mt-6">
                 Created By{" "}
                 <span className="font-medium text-gray-700 capitalize">
-                  {user?.fullName}
+                  {createdUser}
                 </span>{" "}
                 on {formatDate(selectedMeter.createdAt)}
               </div>
@@ -238,7 +256,7 @@ export function MeterDetail({
                 <span className="font-medium text-gray-700 capitalize">
                   {user?.fullName}
                 </span>{" "}
-                on {formatDate(selectedMeter.updatedAt)}
+                on {formatDate(selectedMeter.createdAt)}
               </div>
             </>
           )}

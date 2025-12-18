@@ -34,10 +34,6 @@ export function Meters() {
 
   const [showSettings, setShowSettings] = useState(false);
 
-  // const [viewMode, setViewMode] = useState<ViewMode>(() => {
-  //   return (searchParams.get("viewMode") as ViewMode) || "panel";
-  // });
-
   const [meterData, setMeterData] = useState<MeterResponse[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -159,7 +155,7 @@ export function Meters() {
       console.error(err);
       setMeterData([]);
     } finally {
-      setLoading(false); // 🔥 THIS is the signal
+      setLoading(false); 
     }
   }, [showDeleted, filterParams, debouncedSearch]);
 

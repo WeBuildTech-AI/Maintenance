@@ -116,7 +116,7 @@ const columnConfig: {
   Note: {
     dataIndex: "note",
     width: 150,
-    sorter: (a, b) => (a.note || "").localeCompare(b.note || ""),
+    sorter: (a, b) => (a.note || "-").localeCompare(b.note || "-"),
   },
 };
 
@@ -468,7 +468,7 @@ export default function PurchaseOrdersTable({
         } else if (colName === "Custom Number") {
           renderFunc = (poNumber: string) => poNumber;
         } else if (colName === "Note") {
-          renderFunc = (note: string) => note;
+          renderFunc = (note: string) => note || "—";
         }
         return {
           title: colName,
