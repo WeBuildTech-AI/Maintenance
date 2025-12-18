@@ -57,17 +57,17 @@ const tableStyles = `
   .ant-table-thead > tr > th {
     background-color: #f9fafb !important;
     text-transform: uppercase;
-    font-size: 14px !important; /* ✅ Fixed to 14px (sm) */
+    font-size: 14px !important; 
     font-weight: 600;
     color: #6b7280;
     white-space: nowrap !important;
   }
   .ant-table-tbody > tr > td {
     border-bottom: 1px solid #f3f4f6;
-    font-size: 14px !important; /* ✅ Fixed to 14px (sm) to match everything else */
-    color: #374151;
+    font-size: 14px !important; 
+    color: #374151 !important;
   }
-  /* ✅ CUSTOM SCROLLBAR (Matched ListView) */
+  /* CUSTOM SCROLLBAR (Matched ListView) */
   .ant-table-body::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -407,7 +407,6 @@ export function PartTable({
                 />
                 <span className="text-gray-600">Name</span>
               </div>
-              {/* ❌ Removed Resize/Fit to Screen Toggle as requested */}
             </div>
           );
         }
@@ -501,34 +500,37 @@ export function PartTable({
           | ((value: any, record: any) => React.ReactNode)
           | undefined = undefined;
 
+        // Shared cell styles
+        const cellClass = "text-sm text-gray-700";
+
         if (colName === "Part ID") {
           renderFunc = (id: string) => (
             <Tooltip text={id}>
-              <span>#{id.substring(0, 8)}...</span>
+              <span className={cellClass}>#{id.substring(0, 8)}...</span>
             </Tooltip>
           );
         } else if (colName === "Unit Cost") {
           renderFunc = (val: number) => (
-            // ✅ Fixed: Removed text-muted-foreground for consistency
-            <span className="text-gray-700">
+            <span className={cellClass}>
               ${(val || 0).toFixed(2)}
             </span>
           );
         } else if (colName === "Stock") {
           renderFunc = (_: any, record: any) => (
-            <span className="text-gray-700">{record.totalStock}</span>
+            <span className={cellClass}>{record.totalStock}</span>
           );
         } else if (colName === "Available Quantity") {
-          renderFunc = (val: number) => <span className="text-gray-700 font-medium">{val}</span>;
+          // ✅ Standardized font-weight to match other columns
+          renderFunc = (val: number) => <span className={cellClass}>{val}</span>;
         } else if (colName === "Minimum In Stock") {
-          renderFunc = (val: number) => <span className="text-gray-700">{val}</span>;
+          renderFunc = (val: number) => <span className={cellClass}>{val}</span>;
         } else if (colName === "Ordered Quantity") {
-          renderFunc = (val: number) => <span className="text-gray-700">{val}</span>;
+          renderFunc = (val: number) => <span className={cellClass}>{val}</span>;
         } else if (colName === "Reserved Quantity") {
-          renderFunc = (val: number) => <span className="text-gray-700">{val}</span>;
+          renderFunc = (val: number) => <span className={cellClass}>{val}</span>;
         } else if (colName === "Vendors") {
           renderFunc = (vendors: any[]) => (
-            // ✅ FIXED: text-sm (14px) and normal text color (text-gray-700)
+            // ✅ Standardized text size to 14px (sm)
             <div className="flex flex-col gap-1 text-sm text-gray-700">
               {vendors && vendors.length > 0
                 ? vendors.map((v) => (
@@ -544,13 +546,10 @@ export function PartTable({
           );
         } else if (colName === "Teams") {
           renderFunc = (text: string) => (
-            // ✅ FIXED: removed text-muted-foreground
-            <span className="text-gray-700">{text || "—"}</span>
+            <span className={cellClass}>{text || "—"}</span>
           );
-        } else if (colName === "Created At") {
-          renderFunc = (text: string) => formatDateOnly(text) || "—";
-        } else if (colName === "Updated At") {
-          renderFunc = (text: string) => formatDateOnly(text) || "—";
+        } else if (colName === "Created At" || colName === "Updated At") {
+          renderFunc = (text: string) => <span className={cellClass}>{formatDateOnly(text) || "—"}</span>;
         }
 
         return {
@@ -609,18 +608,15 @@ export function PartTable({
   }, [inventory]);
 
   return (
-    // ✅ H-FULL structure to push footer to bottom
     <div className="h-full flex flex-col p-4">
       <style>{tableStyles}</style>
 
-      {/* ✅ Flex-1 Card to take available space */}
       <Card className="flex-1 flex flex-col shadow-sm border rounded-lg overflow-hidden">
         <CardContent className="flex-1 p-0 overflow-hidden">
           <Table
             columns={columns}
             dataSource={dataSource}
             pagination={false}
-            // ✅ Matched Scroll Height to ListView logic (screen height - offset)
             scroll={{ x: "max-content", y: "calc(100vh - 280px)" }}
             rowClassName={(record: any) => selectedPartIds.includes(record.id) ? "selected-row-class" : ""}
             onChange={handleTableChange}
@@ -639,7 +635,6 @@ export function PartTable({
           />
         </CardContent>
 
-        {/* ✅ PAGINATION FOOTER - Matched ListView style exactly */}
         <div className="flex-shrink-0 flex items-center justify-end p-3 border-t border-gray-100 bg-white">
           <div className="inline-flex items-center gap-4 rounded-md border bg-white p-2 shadow-sm">
             <span className="text-sm text-gray-600">
@@ -699,7 +694,6 @@ export function PartTable({
         />
       )}
 
-      {/* Render Restock Modal */}
       {restockPartId && (
         <RestockModal
           isOpen={!!restockPartId}
@@ -712,7 +706,6 @@ export function PartTable({
         />
       )}
 
-      {/* Render Edit Part Modal */}
       {editPartId && (
         <EditPartModalWrapper
           partId={editPartId}

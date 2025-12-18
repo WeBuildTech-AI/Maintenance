@@ -11,7 +11,8 @@ import {
   FileText,
   Tag,
   AlertCircle,
-  Briefcase
+  Briefcase,
+  Users // Added User Icon import
 } from "lucide-react";
 import { fetchFilterData } from "../utils/filterDataFetcher";
 
@@ -33,7 +34,7 @@ interface FilterDropdownProps {
   onClose?: () => void;
   currentCondition?: string;
   onConditionChange: (condition: string) => void;
-  hideCondition?: boolean; // ✅ New prop to hide "One of" menu
+  hideCondition?: boolean;
 }
 
 export function FilterDropdown({
@@ -47,7 +48,7 @@ export function FilterDropdown({
   onClose,
   currentCondition = "One of",
   onConditionChange,
-  hideCondition = false, // Default show
+  hideCondition = false,
 }: FilterDropdownProps) {
   const [condition, setCondition] = useState(currentCondition);
   const [showConditionMenu, setShowConditionMenu] = useState(false);
@@ -56,7 +57,7 @@ export function FilterDropdown({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(true);
 
-  // List of keys that fetch data from API
+  // ✅ FIXED: Added "teams in charge" to valid API keys
   const API_KEYS = [
     "location", "locations",
     "asset", "assets",
@@ -67,7 +68,7 @@ export function FilterDropdown({
     "assigned to", "assignedto",
     "completed by", "completedby",
     "requested by", "requestedby",
-    "team", "teams",
+    "team", "teams", "teams in charge", // <-- ADDED THIS
     "user", "users"
   ];
 
@@ -79,6 +80,12 @@ export function FilterDropdown({
       if (shouldFetchFromApi) {
         setLoading(true);
         let fetchType = title.toLowerCase();
+
+        // ✅ FIXED: Map "teams in charge" to "teams" for the fetcher
+        if (fetchType === "teams in charge") {
+            fetchType = "teams";
+        }
+        
         if(fetchType.includes("assigned") || fetchType.includes("completed") || fetchType.includes("requested")) {
             fetchType = "users"; 
         }
@@ -101,9 +108,6 @@ export function FilterDropdown({
     setShowConditionMenu(false);
   };
 
-  // ✅ NORMALIZE OPTIONS: Convert everything to { name, id } format
-  // name = What shows in UI
-  // id = What sends to API
   const sourceData = shouldFetchFromApi 
     ? dynamicOptions 
     : options.map(o => {
@@ -111,7 +115,6 @@ export function FilterDropdown({
         return { name: o.label, id: o.value, image: null };
     });
 
-  // ✅ FILTER RESULTS based on Search
   const filtered = sourceData.filter((opt) => 
     (opt.name || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -128,6 +131,7 @@ export function FilterDropdown({
     if (t.includes("priority")) return <AlertCircle size={16} className="text-red-600" />;
     if (t.includes("status")) return <Tag size={16} className="text-blue-500" />;
     if (t.includes("work type")) return <Briefcase size={16} className="text-gray-600" />;
+    if (t.includes("team")) return <Users size={16} className="text-indigo-600" />; // Added icon
     return <Search size={16} className="text-gray-400" />;
   };
 
@@ -176,7 +180,6 @@ export function FilterDropdown({
         <div className="flex items-center gap-2">
           <span className="text-gray-500">{title}</span>
 
-          {/* ✅ CONDITION SELECTOR (Hidden if hideCondition is true) */}
           {!hideCondition && (
             <div className="relative">
               <button
@@ -222,7 +225,6 @@ export function FilterDropdown({
           )}
         </div>
 
-        {/* Delete Icon */}
         <Trash2
           size={16}
           className="cursor-pointer text-gray-500 hover:text-red-500"
@@ -233,7 +235,6 @@ export function FilterDropdown({
         />
       </div>
 
-      {/* Search Box */}
       <div className="p-3 border-b">
         <div className="flex items-center gap-2 border border-blue-400 rounded-md px-2 py-1 focus-within:ring-1 focus-within:ring-blue-500">
           <Search size={14} className="text-gray-400" />
@@ -248,13 +249,11 @@ export function FilterDropdown({
         </div>
       </div>
 
-      {/* Options List */}
       <div className="max-h-56 overflow-y-auto">
         {loading ? (
           <div className="px-3 py-2 text-sm text-gray-500">Loading...</div>
         ) : filtered.length > 0 ? (
           filtered.map((opt: any, idx: number) => {
-            // ✅ Use ID for value, Name for display
             const valueForSelect = opt.id ?? opt.name;
             const isSelected = selectedOptions.includes(valueForSelect);
 

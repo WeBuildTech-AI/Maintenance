@@ -7,7 +7,6 @@ import { procedureService } from "../../store/procedures/procedures.service";
 import { userService } from "../../store/users/users.service";
 import { categoryService } from "../../store/categories/categories.service";
 import { teamService } from "../../store/teams/teams.service";
-// --- 👇 [NEW] Added import for meter service ---
 import { meterService } from "../../store/meters/meters.service";
 
 // 🔹 Simple in-memory cache to avoid repeat API calls
@@ -161,6 +160,8 @@ export async function fetchFilterData(filterType: string) {
        * -------------------------------------------------
        */
       case "team":
+      case "teams": // ✅ ADDED THIS CASE (This was missing!)
+      case "teams in charge": // ✅ ADDED Safety alias
       case "teammember":
       case "teammembers":
       case "team-members":
@@ -176,7 +177,6 @@ export async function fetchFilterData(filterType: string) {
         break;
       }
 
-      // --- 👇 [NEW] Added case for meters ---
       /**
        * -------------------------------------------------
        * 📟 METERS
@@ -184,18 +184,15 @@ export async function fetchFilterData(filterType: string) {
        */
       case "meter":
       case "meters": {
-        // Use the fetchMeters function from the service
-        // Pass default pagination params like we do for locations
         list = await meterService.fetchMeters(1000, 1, 0);
         result = (list || []).map((m: any) => ({
           id: m.id,
-          name: m.name, // MeterResponse type has 'name'
+          name: m.name,
           image: null, 
         }));
         console.log("🟢 Meters fetched:", result.length);
         break;
       }
-      // --- END OF NEW CASE ---
 
       /**
        * -------------------------------------------------
