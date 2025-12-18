@@ -67,7 +67,7 @@ export function AssetStatusReadings({
     }
 
     if (!user?.id) {
-      console.error("User ID not found in user object!", user);
+      console.error("User ID not found!");
       return;
     }
 
@@ -75,15 +75,16 @@ export function AssetStatusReadings({
     try {
       const finalStatusData = {
         ...statusData,
-        // userId: user.id,
       };
 
       console.log("Submitting to backend:", finalStatusData);
 
-      const res = await assetService.updateAssetStatus(
-        asset.id,
-        finalStatusData
-      );
+      await assetService.updateAssetStatus(asset.id, finalStatusData);
+
+      // IMPORTANT FIX — UPDATE UI IMMEDIATELY
+      setAssetStatus(finalStatusData.status);
+
+      // Optional refetch
       if (typeof fetchAssetsData === "function") {
         fetchAssetsData();
       }
@@ -92,12 +93,11 @@ export function AssetStatusReadings({
       }
 
       setIsModalOpen(false);
-      // getAssetStatusLog();
-      toast.success("Asset Status Successfully updated ");
-    } catch (error) {
+      toast.success("Asset Status Successfully updated");
+    } catch (error: any) {
       console.error("Failed to update asset status:", error);
+      toast.error(error?.message || "Failed to update Asset Status");
       setIsModalOpen(false);
-      toast.error(error.message || "Failed to update Asset Status");
     } finally {
       setIsLoading(false);
     }
@@ -407,7 +407,6 @@ export function UpdateAssetStatusModal({
     }
     return true;
   };
-
 
   const handleFormSubmit = (event: React.FormEvent) => {
     event.preventDefault();

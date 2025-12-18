@@ -121,15 +121,14 @@ export const Assets: FC = () => {
   }, [searchQuery]);
 
   // --- 4. Fetch Assets ---
+
   const fetchAssetsData = useCallback(async () => {
     setLoading(true);
-
-    // ⛔ Prevent showing old selected asset until new data comes
-    setSelectedAsset(null);
 
     try {
       let assets: any;
 
+      // 1. Fetch Logic
       if (showDeleted) {
         assets = await assetService.fetchDeleteAsset();
       } else {
@@ -137,24 +136,51 @@ export const Assets: FC = () => {
           ...filterParams,
           name: debouncedSearch || undefined,
         };
-
-        Object.keys(apiPayload).forEach((key) => {
-          if (apiPayload[key as keyof typeof apiPayload] === undefined) {
-            delete apiPayload[key as keyof typeof apiPayload];
-          }
-        });
-
         assets = await assetService.fetchAssets(apiPayload);
       }
 
+      // 2. Selection Logic
       if (assets && assets.length > 0) {
         setAssetData(assets);
+
+        const urlAssetId = searchParams.get("assetId");
+
+        // Case A: URL mein ID hai (Direct link ya refresh)
+        if (urlAssetId) {
+          const found = assets.find((a) => String(a.id) === String(urlAssetId));
+          if (found) {
+            setSelectedAsset(found);
+          } else {
+            // ID invalid hai toh default recent asset lo
+            const mostRecent = [...assets].sort(
+              (a, b) =>
+                new Date(b.updatedAt).getTime() -
+                new Date(a.updatedAt).getTime()
+            );
+            setSelectedAsset(mostRecent[0]);
+          }
+        }
+        // Case B: URL mein ID nahi hai
+        else {
+          // ✅ CRITICAL FIX: Agar pehle se koi asset selected hai (memory mein), toh usse mat chhedo.
+          // Ye tab kaam aayega jab aap Table se wapis Panel mein aaoge.
+          if (!selectedAsset) {
+            const mostRecent = [...assets].sort(
+              (a, b) =>
+                new Date(b.updatedAt).getTime() -
+                new Date(a.updatedAt).getTime()
+            );
+            setSelectedAsset(mostRecent[0]);
+          }
+        }
       } else {
         setAssetData([]);
+        setSelectedAsset(null);
       }
     } catch (err) {
       console.error("Failed to fetch assets:", err);
       setAssetData([]);
+      setSelectedAsset(null);
       toast.error("Failed to load assets.");
     } finally {
       setLoading(false);
@@ -254,7 +280,7 @@ export const Assets: FC = () => {
           criticality: asset.criticality,
           pictures: asset.pictures || [],
           files: asset.files || [],
-          // ✅ Fixed: Changed manufacturer to manufacturerId
+          // Fixed: Changed manufacturer to manufacturerId
           manufacturerId:
             typeof asset.manufacturer === "object"
               ? asset.manufacturer?.id

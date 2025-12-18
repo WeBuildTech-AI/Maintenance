@@ -59,7 +59,7 @@ export const AssetDetail: FC<AssetDetailProps> = ({
     }
   };
   useEffect(() => {
-    fetchUser();
+    // fetchUser();
   });
 
   const renderInitials = (text: string) =>

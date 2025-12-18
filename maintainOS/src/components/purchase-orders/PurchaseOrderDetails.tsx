@@ -320,10 +320,10 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
 
           {/* HEADER ACTIONS */}
           <div className="flex items-center gap-2">
-            <Button className="gap-2 border cursor-pointer border-orange-600 bg-white text-orange-600 hover:bg-orange-50">
+            {/* <Button className="gap-2 border cursor-pointer border-orange-600 bg-white text-orange-600 hover:bg-orange-50">
               <Upload className="h-4 w-4" />
               Send to Vendor
-            </Button>
+            </Button> */}
 
             <Button
               className="gap-2 bg-white cursor-pointer text-orange-600 border border-orange-600 hover:bg-orange-50"

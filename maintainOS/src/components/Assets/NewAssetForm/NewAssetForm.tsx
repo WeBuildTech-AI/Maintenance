@@ -77,6 +77,7 @@ export function NewAssetForm({
   const [selectedParts, setSelectedParts] = useState<SelectableItem[]>([]);
   const [selectedParentAssets, setSelectedParentAssets] =
     useState<SelectableItem | null>(null);
+  const [status] = useState("online");
 
   // Dropdown open states
   const [locationOpen, setLocationOpen] = useState(false);
@@ -170,6 +171,7 @@ export function NewAssetForm({
       partIds: selectedParts.map((p) => p.id),
       assetTypeIds: selectedAssetTypeIds,
       parentAssetId: selectedParentAssets?.id as string,
+      status: status as string,
     };
 
     try {

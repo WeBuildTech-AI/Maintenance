@@ -1647,7 +1647,7 @@ export function NewPOForm(props: NewPOFormProps) {
                 <Paperclip className="h-4 w-4" />
                 Attach files
               </Button>
-              <div className="flex flex-wrap gap-2">
+              {/* <div className="flex flex-wrap gap-2">
                 {attachedFiles?.map((file) => (
                   <div
                     key={file.name}
@@ -1663,7 +1663,7 @@ export function NewPOForm(props: NewPOFormProps) {
                     </button>
                   </div>
                 ))}
-              </div>
+              </div> */}
             </div>
             {apiError && (
               <div className="text-sm text-red-600 mr-auto">

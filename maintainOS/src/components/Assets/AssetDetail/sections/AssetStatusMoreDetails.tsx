@@ -436,6 +436,7 @@ export default function AssetStatusMoreDetails({
                   asset={asset}
                   seeMoreFlag={seeMoreFlag}
                   getAssetStatusLog={getAssetStatusLog}
+                  fetchAssetsData={fetchAssetsData}
                 />
 
                 <button
@@ -826,6 +827,7 @@ export default function AssetStatusMoreDetails({
                 onClose={() => setUpdateAssetModal(false)}
                 isLoading={isSubmitting}
                 onSubmit={handleManualDowntimeSubmit}
+                fetchAssetsData={fetchAssetsData}
               />
             )}
           </div>
