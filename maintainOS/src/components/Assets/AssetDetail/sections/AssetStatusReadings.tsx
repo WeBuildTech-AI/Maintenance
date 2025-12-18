@@ -144,9 +144,9 @@ export function AssetStatusReadings({
               </span>
             </div>
             {isDropdownOpen ? (
-              <ChevronUp className="w-5 h-5 text-blue-500" />
+              <ChevronUp className="w-5 h-5 text-orange-500" />
             ) : (
-              <ChevronDown className="w-5 h-5 text-blue-500" />
+              <ChevronDown className="w-5 h-5 text-orange-500" />
             )}
           </button>
           {isDropdownOpen && (

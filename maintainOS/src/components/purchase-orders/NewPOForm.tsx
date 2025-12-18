@@ -9,6 +9,7 @@ import {
   X,
   Search,
   Check,
+  IndianRupee,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -883,9 +884,7 @@ export function NewPOForm(props: NewPOFormProps) {
                       (Number(it.quantity) || 0) * (Number(it.unitCost) || 0);
 
                     const filteredParts = parts.filter((p) =>
-                      p.name
-                        .toLowerCase()
-                        .includes(it.itemName.toLowerCase())
+                      p.name.toLowerCase().includes(it.itemName.toLowerCase())
                     );
 
                     return (
@@ -909,10 +908,7 @@ export function NewPOForm(props: NewPOFormProps) {
                               setFocusedItemId(it.id);
                             }}
                             onBlur={() => {
-                              setTimeout(
-                                () => setFocusedItemId(null),
-                                150
-                              );
+                              setTimeout(() => setFocusedItemId(null), 150);
                             }}
                           />
                           {focusedItemId === it.id && (
@@ -921,8 +917,7 @@ export function NewPOForm(props: NewPOFormProps) {
                                 <div className="p-2 text-sm text-muted-foreground">
                                   Loading...
                                 </div>
-                              ) : filteredParts.length === 0 &&
-                                it.itemName ? (
+                              ) : filteredParts.length === 0 && it.itemName ? (
                                 <div className="p-2 text-sm text-muted-foreground">
                                   No parts found.
                                 </div>
@@ -938,11 +933,7 @@ export function NewPOForm(props: NewPOFormProps) {
                                         "itemName",
                                         part.name
                                       );
-                                      updateItemField(
-                                        it.id,
-                                        "partId",
-                                        part.id
-                                      );
+                                      updateItemField(it.id, "partId", part.id);
                                       updateItemField(
                                         it.id,
                                         "partNumber",
@@ -995,7 +986,7 @@ export function NewPOForm(props: NewPOFormProps) {
                         <td className="p-3">
                           <div className="flex items-center">
                             <span className="text-muted-foreground mr-1">
-                              $
+                              ₹
                             </span>
                             <Input
                               className="h-9 text-sm bg-white border-orange-600"
@@ -1083,11 +1074,7 @@ export function NewPOForm(props: NewPOFormProps) {
                         step="0.01"
                         value={tax.value}
                         onChange={(e) =>
-                          handleUpdateTaxLine(
-                            tax.id,
-                            "value",
-                            e.target.value
-                          )
+                          handleUpdateTaxLine(tax.id, "value", e.target.value)
                         }
                         placeholder="0"
                       />
@@ -1103,16 +1090,12 @@ export function NewPOForm(props: NewPOFormProps) {
                               : "bg-gray-50 text-gray-500 hover:bg-gray-100"
                           }`}
                         >
-                          <DollarSign className="h-3 w-3" />
+                          <IndianRupee className="h-3 w-3" />
                         </button>
                         <button
                           type="button"
                           onClick={() =>
-                            handleUpdateTaxLine(
-                              tax.id,
-                              "type",
-                              "percentage"
-                            )
+                            handleUpdateTaxLine(tax.id, "type", "percentage")
                           }
                           className={`px-2 h-full flex items-center justify-center text-xs font-medium transition-colors ${
                             tax.type === "percentage"
@@ -1212,9 +1195,7 @@ export function NewPOForm(props: NewPOFormProps) {
                 </div>
               ) : showNewAddressForm ? (
                 <div className="p-4 border rounded-lg space-y-3">
-                  <div className="text-sm font-medium">
-                    Create New Address
-                  </div>
+                  <div className="text-sm font-medium">Create New Address</div>
                   <div className="flex gap-4">
                     <Input
                       className="h-9 text-sm bg-white border-orange-600"
@@ -1312,10 +1293,7 @@ export function NewPOForm(props: NewPOFormProps) {
                       handleAddressDropdownOpen();
                     }}
                     onBlur={() => {
-                      setTimeout(
-                        () => setIsAddressSearchFocused(false),
-                        150
-                      );
+                      setTimeout(() => setIsAddressSearchFocused(false), 150);
                     }}
                     onChange={(e) => setAddressSearchQuery(e.target.value)}
                   />
@@ -1528,9 +1506,7 @@ export function NewPOForm(props: NewPOFormProps) {
                           !newBillingAddress.city
                         }
                       >
-                        {isCreatingBillingAddress
-                          ? "Adding..."
-                          : "Add Address"}
+                        {isCreatingBillingAddress ? "Adding..." : "Add Address"}
                       </Button>
                     </div>
                   </div>

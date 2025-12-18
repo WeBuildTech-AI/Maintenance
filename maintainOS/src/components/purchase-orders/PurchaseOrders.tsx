@@ -841,8 +841,7 @@ export function PurchaseOrders() {
                     let isOverdue = false;
                     if (
                       po.dueDate &&
-                      po.status !== "completed" &&
-                      po.status !== "Completed"
+                      po.status !== "completed"
                     ) {
                       const today = new Date();
                       const due = new Date(po.dueDate);

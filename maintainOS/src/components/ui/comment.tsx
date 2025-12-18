@@ -1,13 +1,13 @@
-import { Send, X, } from "lucide-react"; // Send icon add kiya
-import React from "react";
+import { Send, X, Paperclip, Trash2 } from "lucide-react";
+import React, { useRef, useState } from "react";
 
 type CommentProps = {
   showCommentBox: boolean;
   comment: string;
-  handleSend: () => void; // Logic parent se aayega
-  setShowCommentBox: React.Dispatch<React.SetStateAction<void>>;
+  handleSend: (file: File | null) => void;
+  setShowCommentBox: React.Dispatch<React.SetStateAction<boolean>>;
   setComment: React.Dispatch<React.SetStateAction<string>>;
-  isLoading: boolean; // Loading state receive karein
+  isLoading: boolean;
 };
 
 const Comment: React.FC<CommentProps> = ({
@@ -16,8 +16,11 @@ const Comment: React.FC<CommentProps> = ({
   handleSend,
   setShowCommentBox,
   setComment,
-  isLoading, // isLoading ko use karein
+  isLoading,
 }) => {
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   return (
     <div
       style={{
@@ -30,27 +33,13 @@ const Comment: React.FC<CommentProps> = ({
         alignItems: "flex-end",
       }}
     >
-      {/* Comment Box */}
       {showCommentBox && (
-        <div
-          style={{
-            transition: "all 0.3s ease-in-out",
-            // Animation ke liye (optional)
-            animation: "slideInUp 0.3s ease",
-          }}
-        >
-          {/* CSS Animation (Optional) */}
+        <div style={{ animation: "slideInUp 0.3s ease" }}>
           <style>
             {`
               @keyframes slideInUp {
-                from {
-                  transform: translateY(20px);
-                  opacity: 0;
-                }
-                to {
-                  transform: translateY(0);
-                  opacity: 1;
-                }
+                from { transform: translateY(20px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
               }
             `}
           </style>
@@ -59,7 +48,6 @@ const Comment: React.FC<CommentProps> = ({
             style={{
               background: "white",
               width: "20rem",
-              maxWidth: "24rem",
               borderRadius: "0.75rem",
               boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
               border: "1px solid #e2e8f0",
@@ -77,59 +65,141 @@ const Comment: React.FC<CommentProps> = ({
               >
                 Leave a comment
               </h3>
+
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 placeholder="Share your thoughts..."
-                disabled={isLoading} // Loading mein disable
+                disabled={isLoading}
                 style={{
                   width: "100%",
                   height: "7rem",
                   padding: "0.75rem",
-                  border: "1px solid #cbd5e1", // Border color update
+                  border: "1px solid #cbd5e1",
                   borderRadius: "0.5rem",
                   resize: "none",
                   fontSize: "0.875rem",
-                  color: "#334155",
-                  outline: "none",
-                  backgroundColor: isLoading ? "#f1f5f9" : "white", // Loading BG
+                  backgroundColor: isLoading ? "#f1f5f9" : "white",
                 }}
               />
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                hidden
+                disabled={isLoading}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) setAttachedFile(file);
+                }}
+              />
+
+              {/* Attachment preview + remove */}
+              {attachedFile && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginTop: "0.5rem",
+                    padding: "0.4rem 0.6rem",
+                    background: "#f8fafc",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "0.4rem",
+                    fontSize: "0.75rem",
+                  }}
+                >
+                  <span
+                    style={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      maxWidth: "14rem",
+                    }}
+                  >
+                    {attachedFile.name}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAttachedFile(null);
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = "";
+                      }
+                    }}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                      color: "#ef4444",
+                    }}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              )}
+
               <div
                 style={{
                   display: "flex",
-                  justifyContent: "flex-end",
+                  justifyContent: "space-between",
+                  alignItems: "center",
                   marginTop: "0.75rem",
                 }}
               >
                 <button
-                  onClick={handleSend}
-                  disabled={!comment.trim() || isLoading} // Loading mein disable
+                  type="button"
+                  disabled={isLoading}
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                    background: "transparent",
+                    border: "none",
+                    color: "#475569",
+                    cursor: isLoading ? "not-allowed" : "pointer",
+                    fontSize: "0.875rem",
+                  }}
+                >
+                  <Paperclip size={16} />
+                  Attach file
+                </button>
+
+                <button
+                  onClick={() => {
+                    handleSend(attachedFile);
+                    setAttachedFile(null);
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = "";
+                    }
+                  }}
+                  disabled={(!comment.trim() && !attachedFile) || isLoading}
                   style={{
                     display: "flex",
                     alignItems: "center",
                     gap: "0.5rem",
-                    // Button color logic
                     background:
-                      !comment.trim() || isLoading
-                        ? "#e2e8f0" // Disabled color
-                        : "#FFCD00", // Active color
+                      (!comment.trim() && !attachedFile) || isLoading
+                        ? "#e2e8f0"
+                        : "#FFCD00",
                     color:
-                      !comment.trim() || isLoading
-                        ? "#64748b" // Disabled text color
+                      (!comment.trim() && !attachedFile) || isLoading
+                        ? "#64748b"
                         : "white",
-                    padding: "0.4rem 0.8rem", // Padding update
+                    padding: "0.4rem 0.8rem",
                     borderRadius: "0.5rem",
                     border: "none",
                     cursor:
-                      !comment.trim() || isLoading ? "not-allowed" : "pointer",
-                    transition: "background 0.2s ease",
-                    fontSize: "0.875rem", // Font size
-                    fontWeight: "500", // Font weight
+                      (!comment.trim() && !attachedFile) || isLoading
+                        ? "not-allowed"
+                        : "pointer",
+                    fontSize: "0.875rem",
+                    fontWeight: "500",
                   }}
                 >
                   {isLoading ? (
-                    <span>Sending...</span>
+                    "Sending..."
                   ) : (
                     <>
                       <span>Send</span>
@@ -143,64 +213,37 @@ const Comment: React.FC<CommentProps> = ({
         </div>
       )}
 
-      {/* Toggle Button */}
       {showCommentBox ? (
         <button
-          onClick={() => setShowCommentBox(false)} // Close karne ke liye 'false' set karein
-          aria-label="Close comment box"
+          onClick={() => setShowCommentBox(false)}
+          className="flex justify-center items-center"
           style={{
-            background: "#FFCD00", // Red for close
+            background: "#FFCD00",
             color: "white",
-            width: "3rem", // Size update
-            height: "3rem", // Size update
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            borderRadius: "50%", // Fully rounded
+            width: "3rem",
+            height: "3rem",
+            borderRadius: "50%",
             border: "none",
             cursor: "pointer",
             boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
-            transition: "all 0.3s ease-in-out",
-            transform: "rotate(0deg)", // Rotate X
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "scale(1.05) rotate(0deg)";
-            e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.25)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "scale(1) rotate(0deg)";
-            e.currentTarget.style.boxShadow = "0 4px 10px rgba(0,0,0,0.15)";
           }}
         >
           <X size={20} />
         </button>
       ) : (
         <button
-          onClick={() => setShowCommentBox(true)} // Open karne ke liye 'true' set karein
-          aria-label="Open comment box"
+          onClick={() => setShowCommentBox(true)}
           style={{
             background: "#FFCD00",
             color: "white",
             padding: "0.5rem 1.2rem",
-            height: "3rem", // Height set
-            borderRadius: "9999px", // Pill shape
+            height: "3rem",
+            borderRadius: "9999px",
             fontSize: "14px",
             fontWeight: "500",
             border: "none",
             cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
             boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
-            transition: "all 0.3s ease-in-out",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "scale(1.05)";
-            e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.25)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "scale(1)";
-            e.currentTarget.style.boxShadow = "0 4px 10px rgba(0,0,0,0.15)";
           }}
         >
           Add Comment

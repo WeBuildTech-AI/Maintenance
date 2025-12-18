@@ -35,6 +35,7 @@ import { renderInitials } from "../utils/renderInitials";
 import { vendorService } from "../../store/vendors";
 import { addressToLine, formatMoney } from "./helpers";
 import { StatusBadge } from "./StatusBadge";
+import { useNavigate } from "react-router-dom";
 
 interface OrderItem {
   id: string;
@@ -142,21 +143,18 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   handleConfirm,
   setModalAction,
   topRef,
-  // formatMoney,
-  // addressToLine,
   commentsRef,
   showCommentBox,
   setShowCommentBox,
   handleEditClick,
   setApproveModal,
-  // StatusBadge,
   fetchPurchaseOrder,
   restoreData,
   onClose,
   showDeleted,
   showCommentSection,
 }) => {
-  console.log(selectedPO.status, "purchase Order Data ");
+  const navigate = useNavigate();
   const [fullFillModal, setFullFillModal] = React.useState(false);
   const [continueModal, setContinueModal] = React.useState(false);
   const [commentData, setCommentData] = React.useState([]);
@@ -166,7 +164,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   const modalRef = React.useRef<HTMLDivElement>(null);
   const user = useSelector((state: RootState) => state.auth.user);
 
-  // --- NEW STATE: To store detailed contact objects ---
+
   const [contactDetails, setContactDetails] = React.useState<VendorContact[]>(
     []
   );
@@ -446,14 +444,16 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
               </div>
             </Card>
           </div>
-
           <div>
             <Card className="p-3 rounded-lg mt-4">
               <div className="text-sm text-muted-foreground mb-1">Vendor</div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Building2 className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">
+                  <span
+                    className="font-medium cursor-pointer hover-text "
+                    onClick={() => navigate(`/vendors/${selectedPO.vendor.id}`)}
+                  >
                     {selectedPO.vendor?.name || "-"}
                   </span>
                 </div>
@@ -494,7 +494,6 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
             </Card>
           </div>
 
-          {/* NEW CONTACTS SECTION */}
           {(isLoadingContacts ||
             (contactDetails && contactDetails.length > 0)) && (
             <div>
