@@ -172,7 +172,17 @@ export function CustomDateRangeModal({
       )}
 
       {/* Calendar (Both tabs) */}
-      <DayPicker mode="range" selected={range} onSelect={setRange} />
+      <DayPicker
+        mode="range"
+        selected={range}
+        onSelect={setRange}
+        modifiersClassNames={{
+          selected: "bg-orange-600  hover:bg-orange-600",
+          range_start: "bg-orange-600 text-white rounded-full",
+          range_end: "bg-orange-600 text-white rounded-full",
+          range_middle: "bg-orange-100 text-orange-900",
+        }}
+      />
 
       {/* Footer */}
       <div className="flex justify-end gap-2 mt-3">
