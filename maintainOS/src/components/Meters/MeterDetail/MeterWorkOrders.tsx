@@ -6,14 +6,14 @@ import type { RootState } from "../../../store";
 import { useSelector } from "react-redux";
 import { formatDate } from "../../utils/Date";
 
-export function MeterWorkOrders({ selectedMeter }) {
+export function MeterWorkOrders({ selectedMeter }: any) {
   const user = useSelector((state: RootState) => state.auth.user);
   const renderInitials = (text?: string) => {
     if (!text) return ""; // ✅ handle undefined/null/empty
     return text
       .trim()
-      .split(/\s+/) // ✅ handle multiple spaces
-      .filter(Boolean) // ✅ remove empty strings
+      .split(/\s+/) //  handle multiple spaces
+      .filter(Boolean) // remove empty strings
       .map((p) => p[0].toUpperCase())
       .slice(0, 2)
       .join("");

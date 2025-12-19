@@ -1,5 +1,5 @@
 import { Plus } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import {
   CartesianGrid,
   Line,
@@ -13,7 +13,7 @@ import { Button } from "../../ui/button";
 import { subHours, subDays, subWeeks, subMonths } from "date-fns";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../../store";
-import { CustomDateRangeModal } from "./CustomDateRangeModal"; // Import the new modal
+import { CustomDateRangeModal } from "./CustomDateRangeModal";
 
 export function MeterReadings({
   selectedMeter,
@@ -22,7 +22,8 @@ export function MeterReadings({
 }: any) {
   const user = useSelector((state: RootState) => state.auth.user);
   const [selectedTimePeriod, setSelectedTimePeriod] = useState("1H");
-  const [isCustomDateModalOpen, setIsCustomDateModalOpen] = useState(false); // State for modal
+  const [isCustomOpen, setIsCustomOpen] = useState(false);
+  const customBtnRef = useRef<HTMLDivElement>(null);
 
   const [customRange, setCustomRange] = useState<{
     start: Date | null;
@@ -34,7 +35,6 @@ export function MeterReadings({
 
   const readings = selectedMeter?.readings || [];
 
-  // Convert timestamps
   const formattedData = useMemo(
     () =>
       readings.map((r: any) => ({
@@ -44,7 +44,7 @@ export function MeterReadings({
     [readings]
   );
 
-  // Calculate domain range
+  // 1. Domain Range Calculation
   const domainRange = useMemo(() => {
     const now = new Date();
     let startDate: Date;
@@ -83,7 +83,6 @@ export function MeterReadings({
     return [startDate.getTime(), endDate.getTime()];
   }, [selectedTimePeriod, customRange]);
 
-  // Filtered data
   const filteredData = useMemo(() => {
     const [startTime, endTime] = domainRange;
     return formattedData.filter(
@@ -91,7 +90,54 @@ export function MeterReadings({
     );
   }, [formattedData, domainRange]);
 
-  // Y-axis dynamic
+  // ✅ NEW LOGIC: Clean Intervals (No Duplicates)
+  const allTicks = useMemo(() => {
+    const [start, end] = domainRange;
+    const ticks = [];
+
+    // Calculate time difference
+    const diff = end - start;
+    const ONE_MINUTE = 60 * 1000;
+    const ONE_HOUR = 60 * ONE_MINUTE;
+    const ONE_DAY = 24 * ONE_HOUR;
+
+    let step = ONE_DAY; // Default to 1 Day
+
+    // Step calculation logic
+    if (selectedTimePeriod === "1H") {
+      step = 10 * ONE_MINUTE; // 1 Hour view: 10 min ticks
+    } else if (
+      selectedTimePeriod === "1D" ||
+      (selectedTimePeriod === "Custom" && diff <= 2 * ONE_DAY)
+    ) {
+      step = 4 * ONE_HOUR; // 1-2 Days view: 4 Hour ticks
+    } else if (diff <= 30 * ONE_DAY) {
+      step = ONE_DAY; // < 1 Month: 1 Day ticks (Clean Daily Labels)
+    } else if (diff <= 180 * ONE_DAY) {
+      step = 15 * ONE_DAY; // < 6 Months: 15 Day ticks
+    } else {
+      step = 30 * ONE_DAY; // > 6 Months: Monthly ticks
+    }
+
+    // Loop generation
+    let current = start;
+
+    if (step >= ONE_DAY) {
+      const d = new Date(start);
+      d.setHours(0, 0, 0, 0);
+      current = d.getTime();
+    }
+
+    while (current <= end) {
+      if (current >= start) {
+        ticks.push(current);
+      }
+      current += step;
+    }
+
+    return ticks;
+  }, [domainRange, selectedTimePeriod]);
+
   const { minValue, maxValue } = useMemo(() => {
     if (filteredData.length === 0) return { minValue: 0, maxValue: 100 };
     const values = filteredData.map((d: any) => d.value);
@@ -112,66 +158,92 @@ export function MeterReadings({
   const handleCustomDateApply = (start: Date, end: Date) => {
     setCustomRange({ start, end });
     setSelectedTimePeriod("Custom");
+    setIsCustomOpen(false);
   };
 
   return (
-    <div
-      className={`${
-        hideSeeReadingFlag === false ? "p-4" : ""
-      } bg-white rounded-lg shadow relative`}
-    >
+    <div className=" rounded-lg shadow relative p-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        {hideSeeReadingFlag === false ? (
-          <h2 className="text-lg font-medium">
-            {selectedMeter.measurement && selectedMeter.measurement.name}
-          </h2>
-        ) : (
-          <h2 className="text-lg font-medium">Readings</h2>
-        )}
+        <h2 className="text-lg font-medium">
+          {selectedMeter?.measurement?.name || "Readings"}
+        </h2>
 
-        <div className="flex items-center gap-1 flex-wrap">
-          {["1H", "1D", "1W", "1M", "3M", "6M", "1Y", "Custom"].map(
-            (period) => (
-              <Button
-                key={period}
-                size="sm"
-                onClick={() => {
-                  if (period === "Custom") {
-                    setIsCustomDateModalOpen(true);
-                  } else {
-                    setSelectedTimePeriod(period);
-                  }
-                }}
-                className={`${
-                  selectedTimePeriod === period
-                    ? "bg-orange-600 hover:bg-orange-700 text-white"
-                    : "bg-transparent hover:bg-gray-100 text-gray-600"
-                }`}
-              >
-                {period}
-              </Button>
-            )
+        <div className="flex items-center gap-1 flex-wrap relative">
+          {["1H", "1D", "1W", "1M", "3M", "6M", "1Y"].map((period) => (
+            <Button
+              key={period}
+              size="sm"
+              onClick={() => setSelectedTimePeriod(period)}
+              className={
+                selectedTimePeriod === period
+                  ? "bg-orange-600 text-white"
+                  : "bg-transparent text-gray-600"
+              }
+            >
+              {period}
+            </Button>
+          ))}
+
+          {/* Custom Button */}
+          <div ref={customBtnRef}>
+            <Button
+              size="sm"
+              onClick={() => setIsCustomOpen((s) => !s)}
+              className={
+                selectedTimePeriod === "Custom"
+                  ? "bg-orange-600 text-white"
+                  : "bg-transparent text-gray-600"
+              }
+            >
+              Custom
+            </Button>
+          </div>
+
+          {isCustomOpen && (
+            <CustomDateRangeModal
+              anchorRef={customBtnRef}
+              onApply={handleCustomDateApply}
+              onClose={() => setIsCustomOpen(false)}
+            />
           )}
         </div>
       </div>
 
+      {selectedTimePeriod === "Custom" &&
+        customRange.start &&
+        customRange.end && (
+          <div className="mb-3 rounded-md border bg-gray-50 px-3 py-2 text-sm text-gray-700">
+            <span className="font-medium">Selected Range:</span>{" "}
+            {customRange.start.toLocaleDateString("en-IN", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })}{" "}
+            –{" "}
+            {customRange.end.toLocaleDateString("en-IN", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })}
+          </div>
+        )}
       {/* Chart */}
-      <div className="h-80 w-full transition-all duration-300">
+      <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart
-            key={`${selectedTimePeriod}-${safeData.length}-${minValue}-${maxValue}`}
-            data={safeData}
-            margin={{ top: 20, right: 30, left: 10, bottom: 10 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke="#c9c8c8ff" />
+          <LineChart data={safeData}>
+            <CartesianGrid strokeDasharray="3 3" />
 
             <XAxis
               dataKey="date"
               type="number"
               domain={domainRange}
+              ticks={allTicks} // 👈 Updated: Uses merged ticks (Interval + Data)
+              interval="preserveStartEnd" // Overlapping labels ko handle karega
               tickFormatter={(value) => {
                 const date = new Date(value);
+                const currentYear = new Date().getFullYear();
+                const dateYear = date.getFullYear();
                 switch (selectedTimePeriod) {
                   case "1H":
                     return date.toLocaleTimeString("en-IN", {
@@ -184,10 +256,10 @@ export function MeterReadings({
                       hour12: true,
                     });
                   case "1W":
+                    // Shows "Mon 12" format
                     return date.toLocaleString("en-IN", {
                       weekday: "short",
-                      hour: "2-digit",
-                      hour12: true,
+                      day: "numeric",
                     });
                   case "1M":
                   case "3M":
@@ -202,44 +274,32 @@ export function MeterReadings({
                       year: "2-digit",
                     });
                   case "Custom":
+                    // Check if the date's year matches the current real-world year
+                    const isCurrentYear = dateYear === currentYear;
+
                     return date.toLocaleDateString("en-IN", {
                       day: "2-digit",
                       month: "short",
-                      year: "2-digit",
+                      // If it's the current year, pass 'undefined' (hidden), else show '2-digit' (e.g., 24, 25)
+                      year: isCurrentYear ? undefined : "2-digit",
                     });
                   default:
                     return date.toLocaleString("en-IN");
                 }
               }}
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 12, fill: "#666" }}
             />
 
-            <YAxis
-              domain={[minValue, maxValue]}
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 12, fill: "#666" }}
-            />
-
+            <YAxis domain={[minValue, maxValue]} />
             <Tooltip
-              labelFormatter={(value) => new Date(value).toLocaleString()}
+              labelFormatter={(value) =>
+                new Date(value).toLocaleString("en-IN")
+              }
             />
 
-            <Line
-              type="monotone"
-              dataKey="value"
-              stroke="#FFCD00"
-              strokeWidth={2}
-              dot={{ r: 4 }}
-              activeDot={{ r: 6 }}
-            />
+            <Line dataKey="value" stroke="#FFCD00" strokeWidth={2} />
           </LineChart>
         </ResponsiveContainer>
       </div>
-
-      {/* Button */}
       {hideSeeReadingFlag === false ? null : (
         <div className="pt-4">
           <Button
@@ -268,14 +328,6 @@ export function MeterReadings({
             </div>
           </div>
         </div>
-      )}
-
-      {/* Render the Custom Date Modal */}
-      {isCustomDateModalOpen && (
-        <CustomDateRangeModal
-          onClose={() => setIsCustomDateModalOpen(false)}
-          onApply={handleCustomDateApply}
-        />
       )}
     </div>
   );

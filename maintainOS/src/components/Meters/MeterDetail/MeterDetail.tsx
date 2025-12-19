@@ -224,7 +224,7 @@ export function MeterDetail({
         </div>
 
         {/* Content */}
-        <div className="flex-1 p-6 space-y-8 overflow-auto">
+        <div className="flex-1 p-6 w-full space-y-8 overflow-y-auto">
           <MeterReadings
             selectedMeter={selectedMeter}
             setShowReadingMeter={setShowReadingMeter}
