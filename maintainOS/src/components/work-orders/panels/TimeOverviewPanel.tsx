@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, UserCircle2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { useSelector } from "react-redux";
@@ -8,11 +8,21 @@ import { useAppDispatch } from "../../../store/hooks";
 import {
   addTimeEntry,
   deleteTimeEntry,
-  updateTimeEntry, // Assuming you have an update thunk
+  updateTimeEntry, // ✅ Import update thunk
 } from "../../../store/workOrders/workOrders.thunks";
 import AddTimeModal from "../../work-orders/ToDoView/AddTimeModal";
 
-// helper: time ago formatter
+// --- HELPERS ---
+
+const getEntryMinutes = (entry: any) => {
+  if (entry.totalMinutes && Number(entry.totalMinutes) > 0) {
+    return Number(entry.totalMinutes);
+  }
+  const h = Number(entry.hours || 0);
+  const m = Number(entry.minutes || 0);
+  return (h * 60) + m;
+};
+
 const timeAgo = (timestamp: string | number) => {
   const time = typeof timestamp === "string" ? new Date(timestamp).getTime() : timestamp;
   const diff = Date.now() - time;
@@ -25,7 +35,6 @@ const timeAgo = (timestamp: string | number) => {
   return `${days} day${days > 1 ? "s" : ""} ago`;
 };
 
-// helper: total mins → formatted duration
 const formatDuration = (mins: number) => {
   const h = Math.floor(mins / 60);
   const m = mins % 60;
@@ -34,18 +43,27 @@ const formatDuration = (mins: number) => {
   return `${m}m`;
 };
 
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount);
+};
+
 type Props = {
   onCancel: () => void;
   workOrderId?: string;
   selectedWorkOrder?: any;
-  onSaveSuccess?: () => void; // ✅ Prop for refreshing parent
+  onSaveSuccess?: () => void; 
 };
 
 export default function TimeOverviewPanel({
   onCancel,
   workOrderId,
   selectedWorkOrder,
-  onSaveSuccess, // ✅ Destructure prop
+  onSaveSuccess, 
 }: Props) {
   const dispatch = useAppDispatch();
   const user = useSelector((state: any) => state.auth?.user);
@@ -54,7 +72,6 @@ export default function TimeOverviewPanel({
   const [modalInitial, setModalInitial] = useState<any>(null);
   const [viewUser, setViewUser] = useState<string | null>(null);
 
-  // init from work order
   useEffect(() => {
     if (selectedWorkOrder?.timeEntries?.length) {
       setEntries(selectedWorkOrder.timeEntries);
@@ -63,31 +80,32 @@ export default function TimeOverviewPanel({
     }
   }, [selectedWorkOrder]);
 
-  // totals
   const totalMinutes = useMemo(
-    () => entries.reduce((a, e) => a + (Number(e.totalMinutes ?? 0) || 0), 0),
+    () => entries.reduce((a, e) => a + getEntryMinutes(e), 0),
     [entries]
   );
 
-  // group by user
   const grouped = useMemo(() => {
     const map: Record<string, { items: any[]; total: number }> = {};
     for (const e of entries) {
       const name = e.user?.fullName || "Unknown";
+      const entryMins = getEntryMinutes(e);
+
       if (!map[name]) map[name] = { items: [], total: 0 };
+      
       map[name].items.push(e);
-      map[name].total += Number(e.totalMinutes ?? 0);
+      map[name].total += entryMins;
     }
     return map;
   }, [entries]);
 
-  // create
   const handleAdd = async (data: any) => {
     try {
       const userId = typeof data.userId === "object" ? data.userId.id : data.userId;
-
       const apiPayload = {
         userId,
+        hours: Number(data.hours || 0),
+        minutes: Number(data.minutes || 0),
         totalMinutes: Number(data.totalMinutes ?? 0),
         entryType: (data.entryType ?? "work").toLowerCase(),
         rate: Number(data.rate || 0),
@@ -95,54 +113,55 @@ export default function TimeOverviewPanel({
 
       await dispatch(addTimeEntry({ id: workOrderId!, data: apiPayload })).unwrap();
       toast.success("✅ Time entry added");
-
-      // ✅ Trigger Parent Refresh
       if (onSaveSuccess) onSaveSuccess();
-      
-      // Close Modal
       setIsModalOpen(false);
-
     } catch (err: any) {
       toast.error(err?.message || "Failed to add time entry");
     }
   };
 
-  // update (Assuming you have an update function, otherwise this updates locally and likely needs an API call)
+  // ✅ IMPLEMENTED: Update Logic
   const handleUpdate = async (data: any) => {
-      // If you implement updateTimeEntry thunk:
-      /*
-      try {
-          await dispatch(updateTimeEntry({ ... })).unwrap();
-          toast.success("Updated");
-          if (onSaveSuccess) onSaveSuccess();
-          setIsModalOpen(false);
-      } catch(e) { ... }
-      */
-     // For now, mirroring local update logic or if AddTimeModal handles API internally
-     // If AddTimeModal handles API, just refresh:
-     if (onSaveSuccess) onSaveSuccess();
-     setIsModalOpen(false);
+    try {
+      // data coming from Modal has { id, hours, minutes, userId, etc... }
+      const userId = typeof data.userId === "object" ? data.userId.id : data.userId;
+      
+      const apiPayload = {
+        userId,
+        hours: Number(data.hours || 0),
+        minutes: Number(data.minutes || 0),
+        entryType: (data.entryType ?? "work").toLowerCase(),
+        rate: Number(data.rate || 0),
+      };
+
+      await dispatch(updateTimeEntry({ 
+        workOrderId: workOrderId!, 
+        timeEntryId: data.id, // Ensure ID is passed from modal
+        data: apiPayload 
+      })).unwrap();
+
+      toast.success("✅ Time entry updated");
+      if (onSaveSuccess) onSaveSuccess();
+      setIsModalOpen(false);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update time entry");
+    }
   };
 
-
-  // delete
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this time entry?")) return;
     try {
       await dispatch(deleteTimeEntry({ id: workOrderId!, entryId: id })).unwrap();
       toast.success("🗑️ Deleted successfully");
-      
-      // ✅ Trigger Parent Refresh
       if (onSaveSuccess) onSaveSuccess();
       setIsModalOpen(false);
-
     } catch (err: any) {
       toast.error(err?.message || "Failed to delete time entry");
     }
   };
 
   const Header = ({ title, onBack }: any) => (
-    <div className="flex items-center justify-between p-4 bg-white sticky border top-0 z-30">
+    <div className="flex items-center justify-between p-4 bg-white border-b z-30 shrink-0">
       <button
         onClick={onBack}
         className="flex items-center gap-2 text-lg font-semibold text-gray-900 hover:text-blue-600"
@@ -163,9 +182,8 @@ export default function TimeOverviewPanel({
   );
 
   const OverviewView = () => (
-    <div className="flex-1 flex flex-col overflow-y-auto bg-white">
+    <div className="flex-1 flex flex-col overflow-y-auto bg-white min-h-0">
       <div className="flex flex-col items-center justify-center py-10">
-        {/* total */}
         <div className="flex items-center justify-center w-full max-w-3xl px-10" style={{ gap: "4rem" }}>
           <div className="flex flex-col items-center justify-center" style={{ width: 200, height: 180 }}>
             <h2 className="text-5xl font-semibold text-gray-900">
@@ -195,7 +213,6 @@ export default function TimeOverviewPanel({
           </div>
         </div>
 
-        {/* by user */}
         <div className="w-full max-w-3xl mt-10">
           {Object.entries(grouped).map(([userName, data]) => {
             const sorted = [...data.items].sort(
@@ -219,23 +236,25 @@ export default function TimeOverviewPanel({
                     }}
                   >
                     <div className="flex items-center gap-3">
-                      <img
-                        src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
-                        alt="user"
-                        className="w-10 h-10 rounded-full"
-                      />
+                      <div className="h-10 w-10 min-w-[2.5rem] rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold shrink-0 text-sm">
+                        {entry.user?.avatarUrl ? (
+                            <img src={entry.user.avatarUrl} className="h-full w-full rounded-full object-cover"/>
+                        ) : (
+                            (entry.user?.fullName?.[0] || "U").toUpperCase()
+                        )}
+                      </div>
                       <div>
                         <div className="text-base font-semibold text-gray-900">
                           {(entry.entryType || "work").charAt(0).toUpperCase() +
                             (entry.entryType || "work").slice(1)}
                           {" – "}
-                          {formatDuration(entry.totalMinutes ?? 0)}
+                          {formatDuration(getEntryMinutes(entry))}
                         </div>
                         <div className="text-sm text-gray-600">
                           Logged {timeAgo(entry.createdAt || Date.now())}
                         </div>
                         <div className="text-sm text-gray-700">
-                          Rate: ${entry.rate ?? 0}/hr
+                          Rate: {formatCurrency(entry.rate || entry.hourlyRate || 0)}/hr
                         </div>
                       </div>
                     </div>
@@ -263,18 +282,16 @@ export default function TimeOverviewPanel({
       (e) => e.user?.fullName?.toLowerCase() === userName.toLowerCase()
     );
     const total = userEntries.reduce(
-      (a, e) => a + (Number(e.totalMinutes ?? 0) || 0),
+      (a, e) => a + getEntryMinutes(e),
       0
     );
 
     return (
-      <div className="flex-1 flex flex-col overflow-y-auto bg-white">
+      <div className="flex-1 flex flex-col overflow-y-auto bg-white min-h-0">
         <div className="flex flex-col items-center py-10">
-          <img
-            src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
-            alt="user"
-            className="w-24 h-24 rounded-full mb-4"
-          />
+          <div className="h-24 w-24 min-w-[6rem] rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-3xl mb-4 shrink-0">
+             {userName.charAt(0).toUpperCase()}
+          </div>
           <h2 className="text-2xl font-semibold text-gray-900">{userName}</h2>
           <p className="text-lg text-gray-700 mb-6">{formatDuration(total)}</p>
 
@@ -291,14 +308,12 @@ export default function TimeOverviewPanel({
                 }}
               >
                 <div className="flex items-center gap-3">
-                  <img
-                    src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
-                    alt="user"
-                    className="w-10 h-10 rounded-full"
-                  />
-                <div>
+                  <div className="h-10 w-10 min-w-[2.5rem] rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold shrink-0 text-sm">
+                     {(userName.charAt(0) || "U").toUpperCase()}
+                  </div>
+                  <div>
                     <div className="text-blue-600 text-base font-semibold">
-                      {formatDuration(entry.totalMinutes ?? 0)}
+                      {formatDuration(getEntryMinutes(entry))}
                     </div>
                     <p className="text-sm font-semibold text-gray-900">
                       {(entry.entryType || "work").charAt(0).toUpperCase() +
@@ -306,7 +321,7 @@ export default function TimeOverviewPanel({
                       – {timeAgo(entry.createdAt || Date.now())}
                     </p>
                     <p className="text-sm text-gray-500">
-                      Rate: ${entry.rate ?? 0}/hr
+                      Rate: {formatCurrency(entry.rate || entry.hourlyRate || 0)}/hr
                     </p>
                   </div>
                 </div>
@@ -346,7 +361,7 @@ export default function TimeOverviewPanel({
           selectedWorkOrder={selectedWorkOrder}
           initialTime={modalInitial}
           onAdd={handleAdd}
-          onUpdate={handleUpdate} // Call wrapper
+          onUpdate={handleUpdate} // ✅ Connected
           onDelete={handleDelete}
         />
       )}

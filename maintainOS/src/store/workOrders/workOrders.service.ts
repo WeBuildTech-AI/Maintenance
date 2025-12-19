@@ -50,19 +50,14 @@ export const workOrderService = {
     return [];
   },
 
-  // ✅ FIXED: Suppress Error Toaster for GET request
   fetchWorkOrderById: async (id: string): Promise<WorkOrderResponse> => {
-    // 1. Guard Clause
     if (!id || id === "undefined" || id === "null") {
       return null as any;
     }
     try {
-      // 2. Try Fetching
       const res = await api.get(`/work-orders/${id}`);
       return res.data;
     } catch (error) {
-      // 3. Catch Error & Return Null (Prevents Red Toast)
-      // console.warn(`Silently failed to fetch Work Order ${id}`, error);
       return null as any;
     }
   },
@@ -73,7 +68,6 @@ export const workOrderService = {
     return res.data;
   },
 
-  // ✅ CORRECT URL: /work-orders/{id}/{authorId}
   updateWorkOrder: async (id: string, authorId: string, data: UpdateWorkOrderData): Promise<WorkOrderResponse> => {
     const cleanedData = cleanPayload(data);
     const res = await api.patch(`/work-orders/${id}/${authorId}`, cleanedData);
@@ -81,7 +75,7 @@ export const workOrderService = {
   },
 
   updateWorkOrderStatus: async (id: string, status: string, authorId: string): Promise<WorkOrderResponse> => {
-    const res = await api.patch(`/work-orders/${id}/status`, { status, authorId });
+    const res = await api.patch(`/work-orders/${id}/status/${authorId}`, { status });
     return res.data;
   },
 
@@ -91,7 +85,7 @@ export const workOrderService = {
   },
 
   addWorkOrderComment: async (id: string, payload: AddCommentPayload): Promise<WorkOrderComment> => {
-    const res = await api.post(`/work-orders/${id}/comments`, payload);
+    const res = await api.post(`/work-orders/${id}/comment`, payload);
     return res.data;
   },
 
@@ -127,26 +121,66 @@ export const workOrderService = {
   },
 
   addOtherCost: async (id: string, data: CreateOtherCostData) => {
-    const res = await api.post(`/work-orders/${id}/costs`, data);
+    const item = {
+      userId: data.userId,
+      amount: Number(data.amount) || 0,
+      description: data.description || "",
+      category: data.category || "other"
+    };
+    const payload = { items: [item] };
+    const res = await api.post(`/work-orders/${id}/other-costs`, payload);
+    return res.data;
+  },
+
+  // ✅ ADDED: Update Other Cost
+  updateOtherCost: async (workOrderId: string, costId: string, data: CreateOtherCostData) => {
+    const payload = {
+      userId: data.userId,
+      amount: Number(data.amount) || 0,
+      description: data.description || "",
+      category: data.category || "other"
+    };
+    const res = await api.patch(`/work-orders/${workOrderId}/other-costs/${costId}`, payload);
     return res.data;
   },
 
   deleteOtherCost: async (id: string, costId: string) => {
-    const res = await api.delete(`/work-orders/${id}/costs/${costId}`);
+    const res = await api.delete(`/work-orders/${id}/other-costs/${costId}`);
     return res.data;
   },
 
   addTimeEntry: async (id: string, data: CreateTimeEntryData) => {
-    const payload = {
-      items: [{
-        userId: data.userId,
-        entryType: data.entryType ? data.entryType.toLowerCase() : "work",
-        hours: Number(data.hours) || 0,
-        minutes: Number(data.minutes) || 0,
-        hourlyRate: Number(data.rate) || 0 
-      }]
+    let finalHours = Number(data.hours) || 0;
+    let finalMinutes = Number(data.minutes) || 0;
+
+    if (finalHours === 0 && finalMinutes === 0 && (data as any).totalMinutes > 0) {
+       const total = Number((data as any).totalMinutes);
+       finalHours = Math.floor(total / 60);
+       finalMinutes = total % 60;
+    }
+
+    const item = {
+      userId: data.userId,
+      entryType: data.entryType ? data.entryType.toLowerCase() : "work",
+      hours: finalHours,
+      minutes: finalMinutes,
+      hourlyRate: Number(data.rate ?? data.hourlyRate) || 0
     };
+
+    const payload = { items: [item] };
     const res = await api.post(`/work-orders/${id}/time`, payload);
+    return res.data;
+  },
+
+  updateTimeEntry: async (workOrderId: string, entryId: string, data: CreateTimeEntryData) => {
+    const payload = {
+      userId: data.userId,
+      hours: Number(data.hours) || 0,
+      minutes: Number(data.minutes) || 0,
+      entryType: data.entryType ? data.entryType.toLowerCase() : "work",
+      hourlyRate: Number(data.rate ?? data.hourlyRate) || 0
+    };
+    const res = await api.patch(`/work-orders/${workOrderId}/time/${entryId}`, payload);
     return res.data;
   },
 
@@ -158,6 +192,17 @@ export const workOrderService = {
   addPartUsage: async (id: string, data: CreatePartUsageData) => {
     const res = await api.post(`/work-orders/${id}/parts`, data);
     return res.data; 
+  },
+
+  // ✅ ADDED: Update Part Usage
+  updatePartUsage: async (workOrderId: string, usageId: string, data: CreatePartUsageData) => {
+    const payload = {
+      partId: data.partId,
+      locationId: data.locationId,
+      quantity: Number(data.quantity) || 0
+    };
+    const res = await api.patch(`/work-orders/${workOrderId}/parts/${usageId}`, payload);
+    return res.data;
   },
 
   deletePartUsage: async (id: string, usageId: string) => {
@@ -193,14 +238,13 @@ export const workOrderService = {
     await api.delete(`/work-orders/${id}`);
   },
 
-  // ✅ FIXED: Suppress Error Toaster for User Fetch
   fetchUserById: async (id: string): Promise<any> => {
     if (!id || id === "undefined" || id === "null") return {};
     try {
       const res = await api.get(`/users/${id}`);
       return res.data;
     } catch (error) {
-      return {}; // Return empty object instead of throwing error
+      return {}; 
     }
   },
 };

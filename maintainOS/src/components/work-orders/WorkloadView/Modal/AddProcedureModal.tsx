@@ -6,6 +6,43 @@ import { createPortal } from "react-dom";
 import { procedureService } from "../../../../store/procedures/procedures.service";
 import toast from "react-hot-toast";
 
+// ✅ 1. Production-Grade Safe Rendering Helper
+// Prevents "Objects are not valid as a React child" crashes
+const safeRender = (value: any): React.ReactNode => {
+  // Handle Null/Undefined
+  if (value === null || value === undefined) return null;
+
+  // Handle Primitives (String, Number)
+  if (typeof value === "string" || typeof value === "number") return value;
+
+  // Handle Boolean
+  if (typeof value === "boolean") return ""; // Don't render boolean text
+
+  // Handle Arrays (e.g. ["Tag1", "Tag2"])
+  if (Array.isArray(value)) {
+    return value.map((item) => safeRender(item)).join(", ");
+  }
+
+  // Handle Objects (The specific fix for {id, name})
+  if (typeof value === "object") {
+    // Priority list of keys to attempt to render
+    const candidate = 
+      value.title || 
+      value.name || 
+      value.label || 
+      value.fullName || 
+      value.value || 
+      value.id;
+    
+    if (candidate !== undefined && candidate !== null) {
+      return safeRender(candidate); // Recursively safe-render the found value
+    }
+    return "—"; // Fallback for unknown objects
+  }
+
+  return String(value); // Last resort stringify
+};
+
 interface AddProcedureModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -71,15 +108,17 @@ export default function AddProcedureModal({
     }
   };
 
-  const filteredProcedures = procedures.filter((p) =>
-    (p.title || "").toLowerCase().includes(search.toLowerCase())
-  );
+  // ✅ 2. Safe Filter Logic (Prevents .toLowerCase() crash on objects)
+  const filteredProcedures = procedures.filter((p) => {
+    const titleStr = typeof p.title === "string" ? p.title : (p.title?.name || p.title?.title || ""); 
+    return (titleStr || "").toLowerCase().includes(search.toLowerCase());
+  });
 
   if (!isOpen || typeof document === "undefined") return null;
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[99999] flex items-center justify-center  backdrop-blur-sm"
+      className="fixed inset-0 z-[99999] flex items-center justify-center backdrop-blur-sm"
       onClick={onClose} 
     >
       <div
@@ -152,11 +191,13 @@ export default function AddProcedureModal({
                         </div>
                         <div>
                           <h3 className={`font-medium text-sm ${isSelected ? "text-blue-800" : "text-gray-900"}`}>
-                            {proc.title || "Untitled Procedure"}
+                            {/* ✅ 3. FIX: safeRender wraps title */}
+                            {safeRender(proc.title) || "Untitled Procedure"}
                           </h3>
                           {proc.categories && proc.categories.length > 0 && (
                              <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600 mt-1">
-                               {proc.categories[0]}
+                               {/* ✅ 4. FIX: safeRender wraps category item */}
+                               {safeRender(proc.categories[0])}
                              </span>
                           )}
                         </div>
@@ -175,7 +216,8 @@ export default function AddProcedureModal({
 
                     {proc.description && (
                       <p className="text-xs text-gray-500 line-clamp-2 mt-1 pl-[52px]">
-                        {proc.description}
+                        {/* ✅ 5. FIX: safeRender wraps description */}
+                        {safeRender(proc.description)}
                       </p>
                     )}
                   </div>
@@ -198,14 +240,13 @@ export default function AddProcedureModal({
               Cancel
             </button>
             
-            {/* ✅ BUTTON: Border added when inactive, Yellow when active */}
             <button
               onClick={handleAdd}
               disabled={!selectedProcedure}
               className={`px-6 py-2 text-sm font-medium rounded-md transition-colors shadow-sm border ${
                 selectedProcedure
-                  ? "bg-yellow-500 hover:bg-yellow-600 text-white border-transparent cursor-pointer" // Active
-                  : "bg-white text-gray-400 border-gray-200 cursor-not-allowed" // Inactive with Border
+                  ? "bg-yellow-500 hover:bg-yellow-600 text-white border-transparent cursor-pointer"
+                  : "bg-white text-gray-400 border-gray-200 cursor-not-allowed"
               }`}
             >
               Add Procedure

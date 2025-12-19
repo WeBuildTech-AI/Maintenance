@@ -8,17 +8,16 @@ import type {
   AddCommentPayload,
   CreateFieldResponseData,
   CreatePartUsageData,
-  FetchWorkOrdersParams // ✅ Imported
+  FetchWorkOrdersParams,
+  CreateTimeEntryData
 } from "./workOrders.types";
 
 // --- Work Orders ---
 
-// ✅ FIX: Ensure thunk accepts 'params'
 export const fetchWorkOrders = createAsyncThunk(
   "workOrders/fetchWorkOrders",
   async (params: FetchWorkOrdersParams | undefined, { rejectWithValue }) => {
     try {
-      // ✅ Pass params to service
       return await workOrderService.fetchWorkOrders(params);
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || "Failed to fetch work orders");
@@ -88,7 +87,7 @@ export const updateWorkOrderStatus = createAsyncThunk(
   "workOrders/updateStatus",
   async ({ id, authorId, status }: { id: string; authorId: string; status: string }, { rejectWithValue }) => {
     try {
-      return await workOrderService.updateWorkOrderStatus(id, authorId, status);
+      return await workOrderService.updateWorkOrderStatus(id, status, authorId);
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || "Failed to update status");
     }
@@ -188,6 +187,18 @@ export const addOtherCost = createAsyncThunk(
   }
 );
 
+// ✅ ADDED: Update Other Cost Thunk
+export const updateOtherCost = createAsyncThunk(
+  "workOrders/updateOtherCost",
+  async ({ workOrderId, costId, data }: { workOrderId: string; costId: string; data: CreateOtherCostData }, { rejectWithValue }) => {
+    try {
+      return await workOrderService.updateOtherCost(workOrderId, costId, data);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || "Failed to update other cost");
+    }
+  }
+);
+
 export const deleteOtherCost = createAsyncThunk(
   "workOrders/deleteOtherCost",
   async ({ id, costId }: { id: string; costId: string }, { rejectWithValue }) => {
@@ -202,18 +213,24 @@ export const deleteOtherCost = createAsyncThunk(
 
 export const addTimeEntry = createAsyncThunk(
   "workOrders/addTimeEntry",
-  async ({ id, data }: { id: string; data: any }, { rejectWithValue }) => {
+  async ({ id, data }: { id: string; data: CreateTimeEntryData }, { rejectWithValue }) => {
     try {
-      const payload = {
-        userId: data.userId,
-        totalMinutes: data.totalMinutes,
-        entryType: data.entryType?.toLowerCase() || "work",
-        rate: Number(data.rate || 0),
-      };
-      const res = await workOrderService.addTimeEntry(id, payload);
+      const res = await workOrderService.addTimeEntry(id, data);
       return res;
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data?.message || "Failed to add time entry");
+    }
+  }
+);
+
+export const updateTimeEntry = createAsyncThunk(
+  "workOrders/updateTimeEntry",
+  async ({ workOrderId, timeEntryId, data }: { workOrderId: string; timeEntryId: string; data: CreateTimeEntryData }, { rejectWithValue }) => {
+    try {
+      const res = await workOrderService.updateTimeEntry(workOrderId, timeEntryId, data);
+      return res;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || "Failed to update time entry");
     }
   }
 );
@@ -240,6 +257,19 @@ export const addPartUsage = createAsyncThunk(
       return res; 
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || "Failed to add parts");
+    }
+  }
+);
+
+// ✅ ADDED: Update Part Usage Thunk
+export const updatePartUsage = createAsyncThunk(
+  "workOrders/updatePartUsage",
+  async ({ workOrderId, usageId, data }: { workOrderId: string; usageId: string; data: CreatePartUsageData }, { rejectWithValue }) => {
+    try {
+      const res = await workOrderService.updatePartUsage(workOrderId, usageId, data);
+      return res;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || "Failed to update part");
     }
   }
 );

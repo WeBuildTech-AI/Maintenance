@@ -1,4 +1,3 @@
-// NewWorkOrderFrom.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -28,14 +27,91 @@ import TimeOverviewPanel from "./../panels/TimeOverviewPanel";
 import OtherCostsPanel from "./../panels/OtherCostsPanel";
 import UpdatePartsPanel from "./../panels/UpdatePartsPanel";
 
-function parseDateInputToISO(input?: string): string | undefined {
-  if (!input) return undefined;
+function parseDateInputToISO(input?: string): string | null {
+  if (!input) return null;
   const v = input.trim();
-  if (!v) return undefined;
+  if (!v) return null;
   const maybe = Date.parse(v);
-  if (!Number.isNaN(maybe) && v.includes("T")) return new Date(maybe).toISOString();
-  return new Date(v).toISOString();
+  if (!Number.isNaN(maybe)) return new Date(maybe).toISOString();
+  return null;
 }
+
+// ✅ HELPER: Compare Old vs New Data (Create PATCH Payload)
+const getChangedFields = (original: any, current: any) => {
+    const changes: any = {};
+
+    // A. Simple Fields
+    const simpleFields = [
+      "title", "description", "priority", "status", "workType", 
+      "locationId"
+    ];
+
+    simpleFields.forEach((key) => {
+      // Check for inequality. Handle undefined in current safely.
+      if (current[key] !== undefined && original[key] !== current[key]) {
+        changes[key] = current[key];
+      }
+    });
+
+    // B. Number Fields (estimatedTimeHours)
+    // Note: Assuming estimatedTimeHours is part of your form state but wasn't explicitly in the snippet provided.
+    // If you have a state for it, map it here. Using a placeholder check based on provided prompt context.
+    /* if (current.estimatedTimeHours !== undefined && Number(original.estimatedTimeHours || 0) !== Number(current.estimatedTimeHours || 0)) {
+        changes.estimatedTimeHours = Number(current.estimatedTimeHours);
+    }
+    */
+
+    // C. Date Fields (Compare ISO Strings)
+    const dateFields = ["startDate", "dueDate"];
+    dateFields.forEach((key) => {
+        const origDate = original[key] ? new Date(original[key]).toISOString() : null;
+        const currDate = current[key] ? new Date(current[key]).toISOString() : null;
+        
+        if (origDate !== currDate) {
+            // Send null if cleared, or new date string
+            changes[key] = currDate;
+        }
+    });
+
+    // D. Arrays (Assets, Teams, etc.) - Compare IDs
+    const arrayMap: Record<string, string> = {
+        "assetIds": "assets",
+        "vendorIds": "vendors",
+        "partIds": "parts",
+        "assignedTeamIds": "teams",
+        "categoryIds": "categories",
+        "assigneeIds": "assignees",
+        "procedureIds": "procedures"
+    };
+
+    const hasArrayChanged = (arr1: string[], arr2: string[]) => {
+        const a1 = arr1 || [];
+        const a2 = arr2 || [];
+        if (a1.length !== a2.length) return true;
+        const s1 = [...a1].sort();
+        const s2 = [...a2].sort();
+        return JSON.stringify(s1) !== JSON.stringify(s2);
+    };
+
+    Object.keys(arrayMap).forEach((payloadKey) => {
+        const originalKey = arrayMap[payloadKey];
+        // Extract IDs from original object array (e.g. assets: [{id: 1}, {id: 2}])
+        // Note: 'assignees' might be mapped to 'assigneeIds' in state
+        const originalIds = original[originalKey]?.map((item: any) => item.id) || [];
+        const currentIds = current[payloadKey] || [];
+
+        if (hasArrayChanged(originalIds, currentIds)) {
+            changes[payloadKey] = currentIds;
+        }
+    });
+
+    // E. Recurrence Rule
+    if (JSON.stringify(original.recurrenceRule) !== JSON.stringify(current.recurrenceRule)) {
+        changes.recurrenceRule = current.recurrenceRule;
+    }
+
+    return changes;
+};
 
 export function NewWorkOrderForm({
   onCreate,
@@ -151,7 +227,6 @@ export function NewWorkOrderForm({
     }
   }, [location.state, searchParams]); 
 
-  // ... (Rest of the component remains unchanged)
   useEffect(() => {
     if (location.state?.previousFormState) {
       const s = location.state.previousFormState;
@@ -384,7 +459,7 @@ export function NewWorkOrderForm({
         return;
       }
 
-      const payload: any = {
+      const formState: any = {
         title: workOrderName,
         description,
         status: "open",
@@ -411,12 +486,22 @@ export function NewWorkOrderForm({
 
       if (recurrenceRule) {
         const rule = typeof recurrenceRule === 'string' ? JSON.parse(recurrenceRule) : recurrenceRule;
-        payload.recurrenceRule = rule;
+        formState.recurrenceRule = rule;
       }
 
       setLoading(true);
 
       if (isEditMode && id) {
+        // ✅ DIFFING LOGIC for PATCH
+        const payload = getChangedFields(existingWorkOrder || {}, formState);
+        
+        if (Object.keys(payload).length === 0) {
+            toast("No changes detected.");
+            if (onCreate) onCreate();
+            else navigate("/work-orders");
+            return;
+        }
+
         await dispatch(updateWorkOrder({ 
             id, 
             authorId, 
@@ -424,7 +509,7 @@ export function NewWorkOrderForm({
         })).unwrap();
         toast.success("✅ Work order updated successfully");
       } else {
-        await dispatch(createWorkOrder(payload)).unwrap();
+        await dispatch(createWorkOrder(formState)).unwrap();
         toast.success("✅ Work order created successfully");
       }
 

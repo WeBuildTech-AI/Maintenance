@@ -3,11 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "../../../store/hooks";
-import { ArrowLeft, ChevronRight, ChevronLeft } from "lucide-react";
+import { ArrowLeft, ChevronRight, UserCircle2 } from "lucide-react";
 import AddCostModal from "../ToDoView/AddCostModal";
 import {
   addOtherCost,
   deleteOtherCost,
+  updateOtherCost, // ✅ Import update thunk
 } from "../../../store/workOrders/workOrders.thunks";
 import toast from "react-hot-toast";
 
@@ -24,18 +25,26 @@ const timeAgo = (timestamp: string | number) => {
   return `${days} day${days > 1 ? "s" : ""} ago`;
 };
 
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    minimumFractionDigits: 2,
+  }).format(amount);
+};
+
 type Props = {
   onCancel: () => void;
   workOrderId?: string;
   selectedWorkOrder?: any;
-  onSaveSuccess?: () => void; // ✅ Added prop
+  onSaveSuccess?: () => void; 
 };
 
 export default function OtherCostsPanel({
   onCancel,
   workOrderId,
   selectedWorkOrder,
-  onSaveSuccess, // ✅ Destructure prop
+  onSaveSuccess, 
 }: Props) {
   const dispatch = useAppDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -78,41 +87,52 @@ export default function OtherCostsPanel({
     return map;
   }, [costs]);
 
-  // local handlers
-  const addLocal = (c: any) => setCosts((p) => [...p, c]);
-  const updateLocal = (c: any) =>
-    setCosts((p) => p.map((x) => (x.id === c.id ? { ...x, ...c } : x)));
-  const deleteLocal = (id: string) =>
-    setCosts((p) => p.filter((x) => x.id !== id));
-
   // ✅ API Handlers
   const handleAdd = async (data: any) => {
     try {
-      const userId =
-        typeof data.userId === "object" ? data.userId.id : data.userId;
+      const userId = typeof data.userId === "object" ? data.userId.id : data.userId;
 
       const payload = {
-        items: [
-          {
-            userId, // ✅ only ID string goes
-            amount: Number(data.amount || 0),
-            description: data.description || "",
-            category: data.category || "other",
-          },
-        ],
+          userId, 
+          amount: Number(data.amount || 0),
+          description: data.description || "",
+          category: data.category || "other",
       };
 
-      const res = await dispatch(addOtherCost({ id: workOrderId!, data: payload })).unwrap();
+      await dispatch(addOtherCost({ id: workOrderId!, data: payload })).unwrap();
       toast.success("✅ Cost added successfully");
 
-      // ✅ Trigger Parent Refresh
       if (onSaveSuccess) onSaveSuccess();
-
-      // Close modal
       setIsModalOpen(false);
 
     } catch (err: any) {
       toast.error(err?.message || "Failed to add cost");
+    }
+  };
+
+  // ✅ IMPLEMENTED: Update Logic
+  const handleUpdate = async (data: any) => {
+    try {
+        const userId = typeof data.userId === "object" ? data.userId.id : data.userId;
+        
+        const payload = {
+            userId,
+            amount: Number(data.amount || 0),
+            description: data.description || "",
+            category: data.category || "other",
+        };
+
+        await dispatch(updateOtherCost({ 
+            workOrderId: workOrderId!, 
+            costId: data.id, 
+            data: payload 
+        })).unwrap();
+
+        toast.success("✅ Cost updated successfully");
+        if (onSaveSuccess) onSaveSuccess();
+        setIsModalOpen(false);
+    } catch (err: any) {
+        toast.error(err?.message || "Failed to update cost");
     }
   };
 
@@ -122,10 +142,10 @@ export default function OtherCostsPanel({
       await dispatch(deleteOtherCost({ id: workOrderId!, costId: id })).unwrap();
       toast.success("🗑️ Cost deleted successfully");
       
-      // ✅ Trigger Parent Refresh
       if (onSaveSuccess) onSaveSuccess();
       
-      deleteLocal(id);
+      // Optimistic local update not needed if parent refreshes, but safe to keep consistent
+      setCosts((p) => p.filter((x) => x.id !== id));
     } catch (err: any) {
       toast.error(err?.message || "Failed to delete cost");
     }
@@ -133,7 +153,7 @@ export default function OtherCostsPanel({
 
   // header
   const Header = ({ title, onBack }: any) => (
-    <div className="flex items-center justify-between p-4 bg-white sticky border top-0 z-30">
+    <div className="flex items-center justify-between p-4 bg-white border-b z-30 shrink-0">
       <button
         onClick={onBack}
         className="flex items-center gap-2 text-lg font-semibold text-gray-900 hover:text-blue-600"
@@ -155,14 +175,14 @@ export default function OtherCostsPanel({
 
   // Overview
   const OverviewView = () => (
-    <div className="flex-1 flex flex-col overflow-y-auto bg-white">
+    <div className="flex-1 flex flex-col overflow-y-auto bg-white min-h-0">
       <div className="flex flex-col items-center justify-center py-10">
         <div
           className="flex items-center justify-center w-full max-w-3xl px-10"
           style={{ gap: "4rem" }}
         >
           <div className="flex flex-col items-center justify-center" style={{ width: 200, height: 180 }}>
-            <h2 className="text-5xl font-semibold text-gray-900">${totalCost.toFixed(2)}</h2>
+            <h2 className="text-5xl font-semibold text-gray-900">{formatCurrency(totalCost)}</h2>
             <p className="text-gray-600 mt-2">Total Other Costs</p>
           </div>
 
@@ -175,7 +195,7 @@ export default function OtherCostsPanel({
             className="flex flex-col items-center justify-center hover:bg-blue-50 transition-all duration-300 rounded-md cursor-pointer"
             style={{ width: 200, height: 180 }}
           >
-            <h2 className="text-5xl font-semibold text-gray-900">${totalCost.toFixed(2)}</h2>
+            <h2 className="text-5xl font-semibold text-gray-900">{formatCurrency(totalCost)}</h2>
             <button
               className="mt-3 border border-blue-500 text-blue-600 text-sm font-medium px-5 h-9 rounded-md hover:bg-blue-100 transition"
               style={{ minWidth: 120 }}
@@ -192,7 +212,7 @@ export default function OtherCostsPanel({
               <div key={cat} className="mb-10">
                 <h2 className="text-3xl font-semibold text-gray-900 mb-3 px-3">
                   {catData.title}{" "}
-                  <span className="text-gray-800">${catData.total.toFixed(2)}</span>
+                  <span className="text-gray-800">{formatCurrency(catData.total)}</span>
                 </h2>
 
                 {Object.entries(catData.users).map(([userName, entries]: [string, any[]]) => {
@@ -212,18 +232,17 @@ export default function OtherCostsPanel({
                       onClick={() => setViewUser(userName)}
                     >
                       <div className="flex items-center gap-3">
-                        <img
-                          src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
-                          alt="user"
-                          className="w-10 h-10 rounded-full"
-                        />
+                        {/* ✅ FIX 1: Robust Circular Avatar */}
+                        <div className="h-10 w-10 min-w-[2.5rem] rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold shrink-0 text-sm">
+                            {(userName.charAt(0) || "U").toUpperCase()}
+                        </div>
                         <div>
                           <div className="text-base font-semibold text-gray-900">{userName}</div>
                           <div className="text-sm text-gray-600">
                             Last entry {timeAgo(lastEntry?.createdAt || Date.now())}
                           </div>
                           <div className="text-sm text-gray-700">
-                            ${subtotal.toFixed(2)}
+                            {formatCurrency(subtotal)}
                           </div>
                         </div>
                       </div>
@@ -250,15 +269,14 @@ export default function OtherCostsPanel({
     );
 
     return (
-      <div className="flex-1 flex flex-col overflow-y-auto bg-white">
+      <div className="flex-1 flex flex-col overflow-y-auto bg-white min-h-0">
         <div className="flex flex-col items-center py-10">
-          <img
-            src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
-            alt="user"
-            className="w-24 h-24 rounded-full mb-4"
-          />
+          {/* ✅ FIX 1: Big Avatar with shrink-0 */}
+          <div className="h-24 w-24 min-w-[6rem] rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-3xl mb-4 shrink-0">
+             {userName.charAt(0).toUpperCase()}
+          </div>
           <h2 className="text-2xl font-semibold text-gray-900">{userName}</h2>
-          <p className="text-lg text-gray-700 mb-6">${total.toFixed(2)}</p>
+          <p className="text-lg text-gray-700 mb-6">{formatCurrency(total)}</p>
 
           <div className="w-full max-w-3xl border-t pt-6 px-4">
             <h3 className="text-lg font-semibold mb-3">Entries</h3>
@@ -273,14 +291,13 @@ export default function OtherCostsPanel({
                 }}
               >
                 <div className="flex items-center gap-3">
-                  <img
-                    src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
-                    alt="user"
-                    className="w-10 h-10 rounded-full"
-                  />
+                  {/* ✅ FIX 1: List Item Avatar with strict dimensions */}
+                  <div className="h-10 w-10 min-w-[2.5rem] rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold shrink-0 text-sm">
+                        <UserCircle2 className="h-6 w-6" />
+                  </div>
                   <div>
                     <a className="text-blue-600 text-base font-semibold" href="#">
-                      ${Number(entry.amount ?? entry.cost ?? 0).toFixed(2)}
+                      {formatCurrency(Number(entry.amount ?? entry.cost ?? 0))}
                     </a>
                     <p className="text-sm font-semibold text-gray-900">
                       {entry.category || "Other"} – Created {timeAgo(entry.createdAt || Date.now())}
@@ -319,16 +336,11 @@ export default function OtherCostsPanel({
       {isModalOpen && (
         <AddCostModal
           onClose={() => setIsModalOpen(false)}
-          workOrderId={workOrderId}
+          workOrderId={workOrderId!}
           selectedWorkOrder={selectedWorkOrder}
-          initialCost={modalInitial}
+          initialData={modalInitial} // ✅ Pass initial data for editing
           onAdd={handleAdd}
-          onUpdate={(upd) => {
-              // If AddCostModal handles updates internally via API:
-              if (onSaveSuccess) onSaveSuccess();
-              updateLocal(upd);
-          }}
-          onDelete={handleDelete}
+          onUpdate={handleUpdate} // ✅ Pass update handler
         />
       )}
     </div>

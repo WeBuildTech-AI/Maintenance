@@ -1,6 +1,8 @@
 import React from "react";
 import { X } from "lucide-react";
 import { WorkOrderDetails } from "../ToDoView/WorkOrderDetails";
+// ✅ Import Date Helper
+import { formatDate } from "../../utils/dateUtils";
 
 export default function WorkOrderFullViewModal({
   isOpen,
@@ -36,9 +38,8 @@ export default function WorkOrderFullViewModal({
           <div className="text-sm font-medium">
             Created on{" "}
             <span className="font-bold">
-              {workOrder.createdAt
-                ? new Date(workOrder.createdAt).toLocaleDateString("en-US")
-                : "N/A"}
+              {/* ✅ FIX: Use formatDate */}
+              {formatDate(workOrder.createdAt)}
             </span>
           </div>
 

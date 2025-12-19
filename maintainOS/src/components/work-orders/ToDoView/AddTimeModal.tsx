@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { X } from "lucide-react";
 import { DynamicSelect } from "../NewWorkOrderForm/DynamicSelect";
 
@@ -24,35 +24,38 @@ export default function AddTimeModal({
   initialTime = null,
 }: AddTimeModalProps) {
   const isEdit = !!initialTime;
+  const modalRef = useRef<HTMLDivElement>(null);
 
-  const [form, setForm] = useState({
-    userId: initialTime?.userId || initialTime?.user?.id || "",
-    userName:
-      initialTime?.user?.fullName ||
-      initialTime?.userName ||
-      (selectedWorkOrder?.assignees?.[0]?.fullName ?? ""),
-    hours:
-      typeof initialTime?.hours !== "undefined"
-        ? String(initialTime.hours)
-        : "",
-    minutes:
-      typeof initialTime?.minutes !== "undefined"
-        ? String(initialTime.minutes)
-        : "",
-    entryType:
-      (initialTime?.entryType &&
-        (initialTime.entryType[0].toUpperCase() + initialTime.entryType.slice(1))) ||
-      "Work",
-    rate:
-      typeof initialTime?.rate !== "undefined"
-        ? String(initialTime.rate)
-        : "",
-  });
+  // --- STATE ---
+  // Default to string "0" to ensure inputs work correctly
+  const [userId, setUserId] = useState(initialTime?.userId || initialTime?.user?.id || "");
+  const [userName, setUserName] = useState(
+    initialTime?.user?.fullName ||
+    initialTime?.userName ||
+    (selectedWorkOrder?.assignees?.[0]?.fullName ?? "")
+  );
+
+  const [hours, setHours] = useState<string>(
+    initialTime?.hours !== undefined ? String(initialTime.hours) : "0"
+  );
+  const [minutes, setMinutes] = useState<string>(
+    initialTime?.minutes !== undefined ? String(initialTime.minutes) : "0"
+  );
+
+  const [entryType, setEntryType] = useState(
+    (initialTime?.entryType && (initialTime.entryType[0].toUpperCase() + initialTime.entryType.slice(1))) || "Work"
+  );
+
+  const [rate, setRate] = useState<string>(
+    initialTime?.rate !== undefined ? String(initialTime.rate) : ""
+  );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
-  // ✅ Dropdown options (same as AddCostModal)
+  // --- LOGIC ---
+
+  // Dropdown options
   const userOptions = useMemo(() => {
     const opts =
       selectedWorkOrder?.assignees?.map((a: any) => ({
@@ -79,43 +82,70 @@ export default function AddTimeModal({
   ];
 
   useEffect(() => {
-    if (!form.userId && userOptions.length) {
-      setForm((f) => ({
-        ...f,
-        userId: userOptions[0].id,
-        userName: userOptions[0].name,
-      }));
+    if (!userId && userOptions.length > 0) {
+      setUserId(userOptions[0].id);
+      setUserName(userOptions[0].name);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userOptions.length]);
+  }, [userOptions, userId]);
 
-  // ✅ Add / Update
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [onClose]);
+
+  // --- HANDLERS ---
+
+  // ✅ Simplified Input Handler
+  const handleInputChange = (setter: (val: string) => void, val: string) => {
+    // Allow digits or empty string (to delete 0)
+    if (val === "" || /^\d+$/.test(val)) {
+      setter(val);
+    }
+  };
+
   const handlePrimary = async () => {
-    if (!form.userId) {
+    // 🛠️ DEBUG LOG 1: Check raw state values when button is clicked
+    console.log("👉 [DEBUG] Raw State Values:", { hours, minutes, userId, rate });
+
+    if (!userId) {
       alert("Please select a user");
       return;
     }
 
-    const totalMinutes =
-      Number(form.hours || 0) * 60 + Number(form.minutes || 0);
-    if (totalMinutes <= 0) {
+    // Convert to numbers safely
+    const h = hours === "" ? 0 : parseInt(hours, 10);
+    const m = minutes === "" ? 0 : parseInt(minutes, 10);
+    const r = rate === "" ? 0 : parseFloat(rate);
+
+    const totalMinutes = (h * 60) + m;
+
+    if (totalMinutes <= 0 && !isEdit) {
       alert("Please enter valid hours or minutes");
       return;
     }
 
     setIsSubmitting(true);
+
     try {
       const payload = {
         id: initialTime?.id,
-        userId: form.userId,
-        totalMinutes,
-        hours: Number(form.hours || 0),
-        minutes: Number(form.minutes || 0),
-        entryType: form.entryType.toLowerCase(),
-        rate: Number(form.rate || 0),
+        userId: userId,
+        hours: h,     // ✅ Sending confirmed number
+        minutes: m,   // ✅ Sending confirmed number
+        totalMinutes: totalMinutes,
+        entryType: entryType.toLowerCase(),
+        rate: r,
         createdAt: initialTime?.createdAt || new Date().toISOString(),
-        user: { id: form.userId, fullName: form.userName || "Unknown User" },
+        user: { id: userId, fullName: userName || "Unknown User" },
       };
+
+      // 🛠️ DEBUG LOG 2: Check Final Payload before calling onAdd/onUpdate
+      console.log("🚀 [DEBUG] Final Payload to Parent:", payload);
 
       if (isEdit && onUpdate) {
         onUpdate(payload);
@@ -131,7 +161,6 @@ export default function AddTimeModal({
     }
   };
 
-  // ✅ Delete
   const handleDelete = () => {
     if (!initialTime?.id) return;
     if (confirm("Delete this time entry? This cannot be undone.")) {
@@ -143,6 +172,7 @@ export default function AddTimeModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div
+        ref={modalRef}
         className="bg-white rounded-md shadow-lg border border-gray-200"
         style={{
           width: "560px",
@@ -151,7 +181,6 @@ export default function AddTimeModal({
           flexDirection: "column",
         }}
       >
-        {/* Header */}
         <div className="flex items-center justify-between bg-blue-600 text-white px-6 py-3 rounded-t-md">
           <h2 className="text-base font-semibold">
             {isEdit ? "Edit Time Entry" : "Add Time"}
@@ -164,23 +193,19 @@ export default function AddTimeModal({
           </button>
         </div>
 
-        {/* Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* User Dropdown */}
+          
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-1">
               User
             </label>
             <DynamicSelect
               options={userOptions}
-              value={form.userId}
-              onSelect={(val: any, opt?: any) =>
-                setForm({
-                  ...form,
-                  userId: val as string,
-                  userName: opt?.name ?? form.userName,
-                })
-              }
+              value={userId}
+              onSelect={(val: any, opt?: any) => {
+                setUserId(val as string);
+                setUserName(opt?.name ?? userName);
+              }}
               onFetch={() => {}}
               loading={false}
               placeholder="Select User"
@@ -190,41 +215,51 @@ export default function AddTimeModal({
             />
           </div>
 
-          {/* Hours & Minutes */}
           <div className="flex gap-4">
             <div className="flex-1">
               <label className="text-sm font-medium text-gray-700 block mb-1">
                 Hours
               </label>
-              <input
-                type="number"
-                value={form.hours}
-                onChange={(e) => setForm({ ...form, hours: e.target.value })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm outline-none focus-visible:border-blue-400 transition"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={hours}
+                  // ✅ Using updated safe handler
+                  onChange={(e) => handleInputChange(setHours, e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm outline-none focus-visible:border-blue-400 transition"
+                  placeholder="0"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 pointer-events-none">h</span>
+              </div>
             </div>
             <div className="flex-1">
               <label className="text-sm font-medium text-gray-700 block mb-1">
                 Minutes
               </label>
-              <input
-                type="number"
-                value={form.minutes}
-                onChange={(e) => setForm({ ...form, minutes: e.target.value })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm outline-none focus-visible:border-blue-400 transition"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={minutes}
+                  // ✅ Using updated safe handler
+                  onChange={(e) => handleInputChange(setMinutes, e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm outline-none focus-visible:border-blue-400 transition"
+                  placeholder="0"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 pointer-events-none">m</span>
+              </div>
             </div>
           </div>
 
-          {/* Entry Type Dropdown */}
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-1">
               Entry Type
             </label>
             <DynamicSelect
               options={typeOptions}
-              value={form.entryType}
-              onSelect={(val) => setForm({ ...form, entryType: val as string })}
+              value={entryType}
+              onSelect={(val) => setEntryType(val as string)}
               onFetch={() => {}}
               loading={false}
               placeholder="Select Entry Type"
@@ -234,7 +269,6 @@ export default function AddTimeModal({
             />
           </div>
 
-          {/* Rate */}
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-1">
               Hourly Rate (Optional)
@@ -243,8 +277,8 @@ export default function AddTimeModal({
               <span className="text-gray-500 mr-2">$</span>
               <input
                 type="number"
-                value={form.rate}
-                onChange={(e) => setForm({ ...form, rate: e.target.value })}
+                value={rate}
+                onChange={(e) => setRate(e.target.value)}
                 className="flex-1 py-2 text-sm outline-none bg-transparent"
                 placeholder="0.00"
               />
@@ -252,7 +286,6 @@ export default function AddTimeModal({
           </div>
         </div>
 
-        {/* Footer */}
         <div className="flex justify-between items-center border-t bg-gray-50 px-6 py-4 rounded-b-md">
           {isEdit ? (
             <button

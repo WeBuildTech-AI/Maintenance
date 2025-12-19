@@ -132,15 +132,18 @@ export default function UpdatePartsPanel({
   // 4. DELETE LOGIC
   // =========================================================
   const removeRow = async (id: string, isNew: boolean) => {
-    if (rows.length === 1 && !rows[0].partId) return;
+    // Prevent deleting the last empty row if it's the only one
+    if (rows.length === 1 && !rows[0].partId && isNew) return;
 
     if (!isNew && workOrderId) {
       if (confirm("Are you sure you want to remove this part?")) {
         try {
            await dispatch(deletePartUsage({ id: workOrderId, usageId: id })).unwrap();
            toast.success("Part removed");
-           // ✅ If success, call refresh immediately
+           
+           // ✅ Refresh Parent immediately after deletion
            if (onSaveSuccess) onSaveSuccess();
+           
            setRows(prev => prev.filter(r => r.id !== id));
         } catch (error: any) {
            console.error(error);
@@ -149,6 +152,7 @@ export default function UpdatePartsPanel({
       }
       return;
     }
+    // Just remove from local state if it's a new unsaved row
     setRows(prev => prev.filter(r => r.id !== id));
   };
 
@@ -185,9 +189,8 @@ export default function UpdatePartsPanel({
       // ✅ Trigger Parent Refresh and Close Panel
       if (onSaveSuccess) {
           onSaveSuccess(); 
-      } else {
-          onCancel();
       }
+      onCancel();
 
     } catch (error: any) {
       console.error(error);
@@ -254,7 +257,7 @@ export default function UpdatePartsPanel({
               <div key={row.id} style={{ width: "100%", ...zIndexStyle }}>
                 
                 {!isSelected ? (
-                  // ✅ STATE 1: Full Width Dropdown
+                  // ✅ STATE 1: Full Width Dropdown (Initial State)
                   <div style={{ width: "100%", display: "flex", alignItems: "center", gap: "12px" }}>
                     <div style={{ flex: 1 }} onClick={(e) => e.stopPropagation()}>
                         <DynamicSelect
@@ -280,7 +283,7 @@ export default function UpdatePartsPanel({
                     )}
                   </div>
                 ) : (
-                  // ✅ STATE 2: 3-Column Layout
+                  // ✅ STATE 2: 3-Column Layout (Selected State)
                   <div className="animate-in fade-in slide-in-from-bottom-1" style={{ display: "flex", alignItems: "center", gap: "16px" }}>
                     
                     {/* 1. Part Name */}

@@ -23,7 +23,7 @@ import {
   UserCircle2, 
 } from "lucide-react";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import toast from "react-hot-toast";
@@ -39,11 +39,32 @@ import {
 // ✅ Import Service for User Fetching
 import { workOrderService } from "../../../store/workOrders/workOrders.service";
 
+// ✅ Import Date Helper
+import { formatDate } from "./../../utils/dateUtils";
+
 import DeleteWorkOrderModal from "./DeleteWorkOrderModal";
 
 import UpdatePartsPanel from "../panels/UpdatePartsPanel";
 import TimeOverviewPanel from "../panels/TimeOverviewPanel";
 import OtherCostsPanel from "../panels/OtherCostsPanel";
+
+// --- Helper: Currency Formatter (Fixed to Rupee ₹) ---
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    minimumFractionDigits: 2,
+  }).format(amount);
+};
+
+// --- Helper: Duration Formatter (Xh Xm Xs) ---
+const formatDurationDetailed = (totalMinutes: number) => {
+  if (!totalMinutes) return "0h 0m 00s";
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = Math.floor(totalMinutes % 60);
+  const seconds = 0; // Defaulting to 0s as inputs are usually in minutes
+  return `${hours}h ${minutes}m ${seconds.toString().padStart(2, "0")}s`;
+};
 
 const renderList = (items: any[], key = "name") => {
   if (!items || !Array.isArray(items) || items.length === 0) return "—";
@@ -211,6 +232,39 @@ export function WorkOrderDetails({
   // ✅ Local state for user names
   const [createdByName, setCreatedByName] = useState<string>("System");
   const [updatedByName, setUpdatedByName] = useState<string>("System");
+
+  // ✅ DYNAMIC FINANCIAL CALCULATIONS (useMemo)
+  const financials = useMemo(() => {
+    if (!selectedWorkOrder) return { partsCost: 0, timeCost: 0, otherCost: 0, totalCost: 0, totalMinutes: 0 };
+
+    // Parts Calculation
+    const parts = selectedWorkOrder.partUsages || [];
+    const partsCost = parts.reduce((sum: number, p: any) => {
+        const cost = Number(p.totalCost) || (Number(p.unitCost) * Number(p.quantity)) || 0;
+        return sum + cost;
+    }, 0);
+
+    // Time Calculation
+    const timeEntries = selectedWorkOrder.timeEntries || [];
+    const totalMinutes = timeEntries.reduce((acc: number, t: any) => acc + (Number(t.minutes) || 0) + (Number(t.hours) || 0) * 60, 0);
+    // Cost derivation based on hourly rate
+    const timeCost = timeEntries.reduce((sum: number, t: any) => {
+        const durationHours = ((Number(t.hours) || 0) + (Number(t.minutes) || 0) / 60);
+        return sum + (durationHours * (Number(t.hourlyRate) || 0));
+    }, 0);
+
+    // Other Costs
+    const otherCosts = selectedWorkOrder.otherCosts || [];
+    const otherCost = otherCosts.reduce((sum: number, c: any) => sum + (Number(c.amount || c.cost) || 0), 0);
+
+    return {
+        partsCost,
+        timeCost,
+        otherCost,
+        totalCost: partsCost + timeCost + otherCost,
+        totalMinutes
+    };
+  }, [selectedWorkOrder]);
 
   useEffect(() => {
     if (selectedWorkOrder?.status) {
@@ -511,7 +565,8 @@ export function WorkOrderDetails({
         <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
           <span className="flex items-center gap-1">
             <CalendarDays className="h-3 w-3" />
-            Due by {selectedWorkOrder.dueDate ? new Date(selectedWorkOrder.dueDate).toLocaleDateString() : "N/A"}
+            {/* ✅ FIX: Use formatDate */}
+            Due by {formatDate(selectedWorkOrder.dueDate)}
           </span>
         </div>
       </div>
@@ -582,7 +637,8 @@ export function WorkOrderDetails({
           <div>
             <h3 className="text-sm font-medium mb-2">Due Date</h3>
             <p className="text-sm text-muted-foreground">
-              {selectedWorkOrder.dueDate ? new Date(selectedWorkOrder.dueDate).toLocaleDateString() : "N/A"}
+              {/* ✅ FIX: Use formatDate */}
+              {formatDate(selectedWorkOrder.dueDate)}
             </p>
           </div>
           <div>
@@ -761,7 +817,8 @@ export function WorkOrderDetails({
                     {originTitle}
                   </a>
                   {selectedWorkOrder.dueDate && (
-                    <span className="text-muted-foreground"> (due {new Date(selectedWorkOrder.dueDate).toLocaleDateString()})</span>
+                    /* ✅ FIX: Use formatDate */
+                    <span className="text-muted-foreground"> (due {formatDate(selectedWorkOrder.dueDate)})</span>
                   )}
                 </div>
               )}
@@ -769,183 +826,104 @@ export function WorkOrderDetails({
           </div>
         </div>
 
+        {/* ✅ TIME & COST TRACKING - PIXEL PERFECT IMPLEMENTATION */}
         <div className="border-t p-6">
-          <h3 className="text-2xl font-medium mb-2">Time & Cost Tracking</h3>
-          {["Parts", "Time", "Other Costs"].map((label) => {
-            
-            // ✅ SPECIAL HANDLING FOR PARTS
-            if (label === "Parts") {
-                const partUsages = selectedWorkOrder?.partUsages || [];
-                
-                const calculatedPartTotal = partUsages.reduce(
-                  (sum: number, item: any) => sum + (Number(item.totalCost) || 0), 
-                  0
-                );
-  
-                return (
-                  <div key={label} className="border-b last:border-none mb-2">
-                    <div className="flex justify-between items-center p-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">Parts</span>
-                        {partUsages.length > 0 && (
-                          <span className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">
-                            ${calculatedPartTotal.toFixed(2)}
-                          </span>
-                        )}
-                      </div>
-                      
-                      <button
-                        className="flex text-sm text-blue-600 items-center gap-1 hover:underline"
-                        onClick={() => setActivePanel("parts")}
-                      >
-                        Add
-                        <ChevronRight className="h-4 w-4" />
-                      </button>
-                    </div>
-  
-                    {partUsages.length > 0 && (
-                      <div className="px-3 pb-3 space-y-2">
-                        {partUsages.map((usage: any) => (
-                          <div 
-                            key={usage.id} 
-                            className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm shadow-sm"
-                          >
-                            <div className="mb-2">
-                              <div className="font-semibold text-gray-900 flex items-center gap-2">
-                                  <Wrench className="h-3 w-3 text-gray-500"/>
-                                  {usage.part?.name || "Unknown Part"}
-                              </div>
-                              <div className="text-xs text-gray-500 ml-5 flex items-center gap-1">
-                                  <MapPin className="h-3 w-3" />
-                                  {usage.location?.name || "No Location"}
-                              </div>
-                            </div>
-  
-                            <div className="grid grid-cols-3 gap-2 bg-white rounded border border-gray-100 p-2 text-xs">
-                              <div className="flex flex-col">
-                                  <span className="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Qty</span>
-                                  <span className="font-medium text-gray-700">{usage.quantity}</span>
-                              </div>
-                              <div className="flex flex-col border-l pl-2">
-                                  <span className="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Unit Cost</span>
-                                  <span className="font-medium text-gray-700">${Number(usage.unitCost).toFixed(2)}</span>
-                              </div>
-                              <div className="flex flex-col text-right border-l pl-2">
-                                  <span className="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Total</span>
-                                  <span className="font-bold text-green-700">${Number(usage.totalCost).toFixed(2)}</span>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              }
+          <h3 className="text-lg font-bold text-gray-900 mb-6">Time & Cost Tracking</h3>
 
-            // ✅ SPECIAL HANDLING FOR TIME
-            if (label === "Time") {
-                const timeEntries = selectedWorkOrder?.timeEntries || [];
-                const totalEntries = timeEntries.length;
-                const totalMinutes = timeEntries.reduce((acc: number, t: any) => acc + (Number(t.minutes) || 0) + (Number(t.hours) || 0) * 60, 0);
-                const h = Math.floor(totalMinutes / 60);
-                const m = totalMinutes % 60;
-                const displayValue = `${h}h ${m}m`;
-
-                return (
-                    <div key={label} className="flex justify-between items-center p-3 mb-2 border-b last:border-none">
-                        <span className="text-sm font-medium">{label}</span>
-                        {totalEntries === 0 ? (
-                            <button
-                                className="flex text-sm text-muted-foreground items-center gap-1"
-                                onClick={() => setActivePanel("time")}
-                            >
-                                Add
-                                <ChevronRight className="h-4 w-4 font-muted-foreground" />
-                            </button>
-                        ) : (
-                            <div className="flex flex-col items-end justify-end leading-tight">
-                                <div className="flex items-end gap-1">
-                                    <button
-                                        className="flex items-end text-blue-600 text-sm font-medium gap-1"
-                                        onClick={() => setActivePanel("time")}
-                                    >
-                                        <span className="relative" style={{ top: "1px" }}>
-                                            {totalEntries} entries
-                                        </span>
-                                        <ChevronRight
-                                            className="h-4 w-4 text-blue-600"
-                                            style={{ position: "relative", top: "2px", marginLeft: "4px" }}
-                                        />
-                                    </button>
-                                </div>
-                                <p className="text-sm font-semibold text-gray-900" style={{ lineHeight: "1.1", marginTop: "5px" }}>
-                                    {displayValue}
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                );
-            }
-
-            // --- OTHER COSTS (Default Fallback) ---
-            const isOtherCosts = label === "Other Costs";
-            const otherCosts = selectedWorkOrder?.otherCosts || [];
-            const totalEntries = otherCosts.length;
-            const totalAmount = otherCosts.reduce(
-              (sum: number, c: any) => sum + (Number(c.amount ?? c.cost ?? 0) || 0),
-              0
-            );
-
-            return (
-              <div
-                key={label}
-                className="flex justify-between items-center p-3 mb-2 border-b last:border-none"
+          {/* 1. Parts Section */}
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-3">
+              <h4 className="text-sm font-semibold text-gray-900">
+                Parts <span className="text-gray-500 font-normal">({selectedWorkOrder.partUsages?.length || 0})</span>
+              </h4>
+              <button 
+                onClick={() => setActivePanel("parts")}
+                className="text-sm text-blue-600 font-medium hover:underline"
               >
-                <span className="text-sm font-medium">{label}</span>
+                Add / Edit
+              </button>
+            </div>
 
-                {!isOtherCosts || totalEntries === 0 ? (
-                  <button
-                    className="flex text-sm text-muted-foreground items-center gap-1"
-                    onClick={() => setActivePanel("cost")}
-                  >
-                    Add
-                    <ChevronRight className="h-4 w-4 font-muted-foreground" />
-                  </button>
-                ) : (
-                  <div className="flex flex-col items-end justify-end leading-tight">
-                    <div className="flex items-end gap-1">
-                      <button
-                        className="flex items-end text-blue-600 text-sm font-medium gap-1"
-                        onClick={() => setActivePanel("cost")}
-                      >
-                        <span className="relative" style={{ top: "1px" }}>
-                          {totalEntries} entries
-                        </span>
-                        <ChevronRight
-                          className="h-4 w-4 text-blue-600"
-                          style={{
-                            position: "relative",
-                            top: "2px",
-                            marginLeft: "4px",
-                          }}
-                        />
-                      </button>
-                    </div>
-                    <p
-                      className="text-sm font-semibold text-gray-900"
-                      style={{
-                        lineHeight: "1.1",
-                        marginTop: "5px",
-                      }}
-                    >
-                      ${totalAmount.toFixed(2)}
-                    </p>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+            {/* Parts Table */}
+            <div className="border border-gray-200 rounded-md overflow-hidden">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-2 font-medium text-gray-500 uppercase text-xs">Part</th>
+                    <th className="px-4 py-2 font-medium text-gray-500 uppercase text-xs">Location</th>
+                    <th className="px-4 py-2 font-medium text-gray-500 uppercase text-xs text-right">Quantity</th>
+                    <th className="px-4 py-2 font-medium text-gray-500 uppercase text-xs text-right">Unit Cost</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {(selectedWorkOrder.partUsages || []).length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-4 text-center text-gray-400 italic">No parts added</td>
+                    </tr>
+                  ) : (
+                    selectedWorkOrder.partUsages.map((part: any, idx: number) => (
+                      <tr key={idx} className="bg-white">
+                        <td className="px-4 py-3 text-gray-900 font-medium">{part.part?.name || "Unknown Part"}</td>
+                        <td className="px-4 py-3 text-gray-600">{part.location?.name || "—"}</td>
+                        <td className="px-4 py-3 text-gray-900 text-right">{part.quantity}</td>
+                        <td className="px-4 py-3 text-gray-900 text-right">{formatCurrency(Number(part.unitCost) || 0)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+                {/* Parts Footer */}
+                <tfoot className="bg-white border-t border-gray-200">
+                  <tr>
+                    <td colSpan={3} className="px-4 py-3 font-medium text-gray-900">Parts Cost</td>
+                    <td className="px-4 py-3 font-medium text-gray-900 text-right">
+                      {formatCurrency(financials.partsCost)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          {/* 2. Time Section */}
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-2">
+              <h4 className="text-sm font-semibold text-gray-900">Time</h4>
+              <button 
+                onClick={() => setActivePanel("time")}
+                className="text-sm text-blue-600 font-medium hover:underline"
+              >
+                {formatDurationDetailed(financials.totalMinutes)}
+              </button>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-gray-100">
+              <span className="text-sm text-gray-900">Time Cost</span>
+              <span className="text-sm font-medium text-gray-900">{formatCurrency(financials.timeCost)}</span>
+            </div>
+          </div>
+
+          {/* 3. Other Costs Section */}
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-2">
+              <h4 className="text-sm font-semibold text-gray-900">Other Costs</h4>
+              <button 
+                onClick={() => setActivePanel("cost")}
+                className="text-sm text-blue-600 font-medium hover:underline"
+              >
+                Add
+              </button>
+            </div>
+            {/* List other costs if they exist, or just show total line */}
+            <div className="flex justify-between items-center py-2 border-b border-gray-100">
+               <span className="text-sm text-gray-900">Other Costs Total</span>
+               <span className="text-sm font-medium text-gray-900">{formatCurrency(financials.otherCost)}</span>
+            </div>
+          </div>
+
+          {/* 4. Total Summary Section */}
+          <div className="bg-gray-50 rounded-lg p-4 flex justify-between items-center mt-4 border border-gray-200">
+            <span className="text-sm font-semibold text-gray-900">Total Work Order Cost</span>
+            <span className="text-lg font-bold text-gray-900">{formatCurrency(financials.totalCost)}</span>
+          </div>
         </div>
 
         {/* ✅ UPDATED FOOTER WITH EXACT MATCH */}
@@ -958,9 +936,8 @@ export function WorkOrderDetails({
                 </span>
                
                 <span>
-                  {selectedWorkOrder.createdAt
-                    ? new Date(selectedWorkOrder.createdAt).toLocaleString()
-                    : "N/A"}
+                  {/* ✅ FIX: Use formatDate */}
+                  {formatDate(selectedWorkOrder.createdAt, true)}
                 </span>
               </div>
               <div className="flex items-center gap-1 text-sm ">
@@ -970,9 +947,8 @@ export function WorkOrderDetails({
                 </span>
                
                 <span>
-                  {selectedWorkOrder.updatedAt
-                    ? new Date(selectedWorkOrder.updatedAt).toLocaleString()
-                    : "N/A"}
+                  {/* ✅ FIX: Use formatDate */}
+                  {formatDate(selectedWorkOrder.updatedAt, true)}
                 </span>
               </div>
             </div>
