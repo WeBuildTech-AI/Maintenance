@@ -106,12 +106,14 @@ export const workOrderService = {
   },
 
   markWorkOrderCompleted: async (id: string, userId: string): Promise<WorkOrderResponse> => {
+    // This seems to be an older/alternative endpoint, keeping for safety or legacy
     const res = await api.patch(`/work-orders/${id}/complete`, { userId });
     return res.data;
   },
 
+  // ✅ FIXED: Updated to use the correct dedicated endpoint for "Done" status
   patchWorkOrderComplete: async (id: string): Promise<WorkOrderResponse> => {
-    const res = await api.patch(`/work-orders/${id}/status`, { status: "done" });
+    const res = await api.patch(`/work-orders/patch/${id}/complete`);
     return res.data;
   },
 
@@ -132,7 +134,6 @@ export const workOrderService = {
     return res.data;
   },
 
-  // ✅ ADDED: Update Other Cost
   updateOtherCost: async (workOrderId: string, costId: string, data: CreateOtherCostData) => {
     const payload = {
       userId: data.userId,
@@ -194,7 +195,6 @@ export const workOrderService = {
     return res.data; 
   },
 
-  // ✅ ADDED: Update Part Usage
   updatePartUsage: async (workOrderId: string, usageId: string, data: CreatePartUsageData) => {
     const payload = {
       partId: data.partId,

@@ -27,6 +27,7 @@ import TimeOverviewPanel from "./../panels/TimeOverviewPanel";
 import OtherCostsPanel from "./../panels/OtherCostsPanel";
 import UpdatePartsPanel from "./../panels/UpdatePartsPanel";
 
+// Helper: Dates to ISO
 function parseDateInputToISO(input?: string): string | null {
   if (!input) return null;
   const v = input.trim();
@@ -36,44 +37,43 @@ function parseDateInputToISO(input?: string): string | null {
   return null;
 }
 
-// ✅ HELPER: Compare Old vs New Data (Create PATCH Payload)
+// ✅ FIXED HELPER: Robust Diffing Logic
 const getChangedFields = (original: any, current: any) => {
     const changes: any = {};
 
-    // A. Simple Fields
+    // 1. Simple Fields
     const simpleFields = [
       "title", "description", "priority", "status", "workType", 
       "locationId"
     ];
 
     simpleFields.forEach((key) => {
-      // Check for inequality. Handle undefined in current safely.
       if (current[key] !== undefined && original[key] !== current[key]) {
         changes[key] = current[key];
       }
     });
 
-    // B. Number Fields (estimatedTimeHours)
-    // Note: Assuming estimatedTimeHours is part of your form state but wasn't explicitly in the snippet provided.
-    // If you have a state for it, map it here. Using a placeholder check based on provided prompt context.
-    /* if (current.estimatedTimeHours !== undefined && Number(original.estimatedTimeHours || 0) !== Number(current.estimatedTimeHours || 0)) {
-        changes.estimatedTimeHours = Number(current.estimatedTimeHours);
+    // 2. Estimated Time (Number) - Handle 0 explicitly
+    // Convert both to numbers to ensure safe comparison (e.g. "4" vs 4)
+    const origTime = Number(original.estimatedTimeHours || 0);
+    const currTime = Number(current.estimatedTimeHours || 0);
+    
+    if (origTime !== currTime) {
+        changes.estimatedTimeHours = currTime;
     }
-    */
 
-    // C. Date Fields (Compare ISO Strings)
+    // 3. Date Fields (Compare ISO Strings)
     const dateFields = ["startDate", "dueDate"];
     dateFields.forEach((key) => {
-        const origDate = original[key] ? new Date(original[key]).toISOString() : null;
-        const currDate = current[key] ? new Date(current[key]).toISOString() : null;
+        const origDate = original[key] || null; // Backend usually gives ISO string or null
+        const currDate = current[key] || null; // Form state is ISO string or null
         
         if (origDate !== currDate) {
-            // Send null if cleared, or new date string
             changes[key] = currDate;
         }
     });
 
-    // D. Arrays (Assets, Teams, etc.) - Compare IDs
+    // 4. Arrays (Compare IDs)
     const arrayMap: Record<string, string> = {
         "assetIds": "assets",
         "vendorIds": "vendors",
@@ -95,8 +95,6 @@ const getChangedFields = (original: any, current: any) => {
 
     Object.keys(arrayMap).forEach((payloadKey) => {
         const originalKey = arrayMap[payloadKey];
-        // Extract IDs from original object array (e.g. assets: [{id: 1}, {id: 2}])
-        // Note: 'assignees' might be mapped to 'assigneeIds' in state
         const originalIds = original[originalKey]?.map((item: any) => item.id) || [];
         const currentIds = current[payloadKey] || [];
 
@@ -105,7 +103,7 @@ const getChangedFields = (original: any, current: any) => {
         }
     });
 
-    // E. Recurrence Rule
+    // 5. Recurrence Rule
     if (JSON.stringify(original.recurrenceRule) !== JSON.stringify(current.recurrenceRule)) {
         changes.recurrenceRule = current.recurrenceRule;
     }
@@ -144,10 +142,14 @@ export function NewWorkOrderForm({
   const [loading, setLoading] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   
+  // --- Form State ---
   const [workOrderName, setWorkOrderName] = useState("");
   const [description, setDescription] = useState("");
   const [locationId, setLocationId] = useState("");
   
+  // ✅ ADDED: Estimated Time State
+  const [estimatedTime, setEstimatedTime] = useState(""); 
+
   const [assetIds, setAssetIds] = useState<string[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [assigneeOptions, setAssigneeOptions] = useState<{id: string, name: string}[]>([]);
@@ -178,19 +180,14 @@ export function NewWorkOrderForm({
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isAddProcModalOpen, setIsAddProcModalOpen] = useState(false);
 
-  // ✅ NEW EFFECT: Check for pre-filled part from navigation state
+  // ... (Effects for prefilled parts, fetching options, etc. - kept same) ...
   useEffect(() => {
     if (location.state?.prefilledPart) {
       const part = location.state.prefilledPart;
-      console.log("📦 Auto-adding part:", part);
-      
-      // 1. Add Part ID to selected list
       setPartIds((prev) => {
         if (prev.includes(part.id)) return prev;
         return [...prev, part.id];
       });
-
-      // 2. Add Part Option (So it shows up in dropdown with name)
       setPartOptions((prev) => {
         if (prev.some((opt) => opt.id === part.id)) return prev;
         return [...prev, { id: part.id, name: part.name }];
@@ -211,6 +208,7 @@ export function NewWorkOrderForm({
     }
   };
 
+  // ... (Procedure loading effects - kept same) ...
   useEffect(() => {
     if (location.state?.procedureData) {
       setLinkedProcedure(location.state.procedureData);
@@ -227,12 +225,14 @@ export function NewWorkOrderForm({
     }
   }, [location.state, searchParams]); 
 
+  // ... (Restore previous form state effect - kept same) ...
   useEffect(() => {
     if (location.state?.previousFormState) {
       const s = location.state.previousFormState;
       if (s.workOrderName) setWorkOrderName(s.workOrderName);
       if (s.description) setDescription(s.description);
       if (s.locationId) setLocationId(s.locationId);
+      if (s.estimatedTime) setEstimatedTime(s.estimatedTime); // Restore time
       if (s.assetIds) setAssetIds(s.assetIds);
       if (s.selectedUsers) setSelectedUsers(s.selectedUsers);
       if (s.dueDate) setDueDate(s.dueDate);
@@ -248,6 +248,7 @@ export function NewWorkOrderForm({
     }
   }, [location.state]);
 
+  // ... (Deep editing effect - kept same) ...
   useEffect(() => {
     if (deepEditingProcedureId && linkedProcedure?.id !== deepEditingProcedureId) {
       const fetchSpecificProcedure = async () => {
@@ -265,6 +266,7 @@ export function NewWorkOrderForm({
     }
   }, [deepEditingProcedureId]);
 
+  // --- FILL FIELDS Logic ---
   useEffect(() => {
     if (isCreateRoute && !editId && !location.state?.previousFormState) return; 
 
@@ -274,6 +276,9 @@ export function NewWorkOrderForm({
       setWorkOrderName(data.title || "");
       setDescription(data.description || "");
       
+      // ✅ Populate Estimated Time
+      setEstimatedTime(data.estimatedTimeHours ? String(data.estimatedTimeHours) : "");
+
       setDueDate(data.dueDate ? new Date(data.dueDate).toLocaleDateString("en-US") : "");
       setStartDate(data.startDate ? new Date(data.startDate).toLocaleDateString("en-US") : "");
       
@@ -284,6 +289,7 @@ export function NewWorkOrderForm({
       
       setQrCodeValue(data.qrCode || "");
       
+      // Recurrence
       if (data.recurrenceRule) {
         try {
           const parsed = typeof data.recurrenceRule === 'string' 
@@ -297,6 +303,7 @@ export function NewWorkOrderForm({
         setRecurrenceRule(null);
       }
 
+      // Location
       if (data.location) {
         setLocationId(data.location.id);
         setLocationOptions([{ id: data.location.id, name: data.location.name || "Unknown Location" }]);
@@ -304,6 +311,7 @@ export function NewWorkOrderForm({
         setLocationId(data.locationId);
       }
 
+      // Arrays (Assets, Teams, etc.)
       if (data.assets && data.assets.length > 0) {
         setAssetIds(data.assets.map((a: any) => a.id));
         setAssetOptions(data.assets.map((a: any) => ({ id: a.id, name: a.name || "Unknown Asset" })));
@@ -350,6 +358,7 @@ export function NewWorkOrderForm({
         setAssigneeOptions([]);
       }
       
+      // Procedures
       if (data.procedures && data.procedures.length > 0) {
         setLinkedProcedure(data.procedures[0]);
       } else if (data.procedure) {
@@ -365,6 +374,7 @@ export function NewWorkOrderForm({
     const loadWorkOrder = async () => {
       if (isEditMode && id) {
         if (location.state?.previousFormState) {
+            // Restore procedure from state if exists
             if (location.state.previousFormState.procedureId && !linkedProcedure) {
                  const pId = location.state.previousFormState.procedureId;
                  const proc = await procedureService.fetchProcedureById(pId);
@@ -395,12 +405,14 @@ export function NewWorkOrderForm({
     loadWorkOrder();
   }, [dispatch, id, existingWorkOrder, isEditMode, isCreateRoute, location.state]);
 
+  // ... (Edit Linked Procedure & Back Handlers - kept same) ...
   const handleEditLinkedProcedure = () => {
     if (linkedProcedure?.id) {
       const currentFormState = {
         workOrderName,
         description,
         locationId,
+        estimatedTime, // Save state
         assetIds,
         selectedUsers,
         dueDate,
@@ -446,6 +458,7 @@ export function NewWorkOrderForm({
     }
   };
 
+  // --- SUBMIT HANDLER ---
   const handleSubmit = async () => {
     try {
       if (!workOrderName.trim()) {
@@ -459,6 +472,7 @@ export function NewWorkOrderForm({
         return;
       }
 
+      // ✅ CONSTRUCT FORM STATE (Full Object)
       const formState: any = {
         title: workOrderName,
         description,
@@ -471,6 +485,9 @@ export function NewWorkOrderForm({
         
         locationId: locationId || null,
         
+        // Ensure estimatedTime is a number or 0
+        estimatedTimeHours: estimatedTime ? Number(estimatedTime) : 0,
+        
         assetIds: assetIds,
         vendorIds: vendorIds,
         partIds: partIds,
@@ -480,6 +497,7 @@ export function NewWorkOrderForm({
         
         procedureIds: linkedProcedure ? [linkedProcedure.id] : [],
         
+        // Convert to ISO Strings
         dueDate: parseDateInputToISO(dueDate),
         startDate: parseDateInputToISO(startDate),
       };
@@ -493,8 +511,12 @@ export function NewWorkOrderForm({
 
       if (isEditMode && id) {
         // ✅ DIFFING LOGIC for PATCH
+        // Compares 'existingWorkOrder' (from DB) with 'formState' (Current UI)
         const payload = getChangedFields(existingWorkOrder || {}, formState);
         
+        console.log("📝 [DEBUG] Form State:", formState);
+        console.log("🚀 [DEBUG] Final API Payload (Diff):", payload);
+
         if (Object.keys(payload).length === 0) {
             toast("No changes detected.");
             if (onCreate) onCreate();
@@ -562,6 +584,11 @@ export function NewWorkOrderForm({
             onNameChange={setWorkOrderName}
             description={description}
             onDescriptionChange={setDescription}
+            
+            // ✅ PASSING ESTIMATED TIME
+            estimatedTime={estimatedTime}
+            onEstimatedTimeChange={setEstimatedTime}
+
             locationId={locationId}
             onLocationSelect={(val) => setLocationId(val as string)}
             locationOptions={locationOptions}
