@@ -97,21 +97,20 @@ export const workOrderService = {
     } catch (e) { return []; }
   },
 
+  // ✅ FIXED: Updated Endpoint Path
   fetchWorkOrderLogs: async (id: string): Promise<WorkOrderLog[]> => {
     if (!id) return [];
     try {
-      const res = await api.get(`/work-orders/${id}/logs`);
+      const res = await api.get(`/work-orders/get/work-order-logs/${id}`);
       return res.data;
     } catch (e) { return []; }
   },
 
   markWorkOrderCompleted: async (id: string, userId: string): Promise<WorkOrderResponse> => {
-    // This seems to be an older/alternative endpoint, keeping for safety or legacy
     const res = await api.patch(`/work-orders/${id}/complete`, { userId });
     return res.data;
   },
 
-  // ✅ FIXED: Updated to use the correct dedicated endpoint for "Done" status
   patchWorkOrderComplete: async (id: string): Promise<WorkOrderResponse> => {
     const res = await api.patch(`/work-orders/patch/${id}/complete`);
     return res.data;
