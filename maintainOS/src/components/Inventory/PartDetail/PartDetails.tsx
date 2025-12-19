@@ -20,9 +20,9 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../ui/button";
 import DeletePartModal from "./DeletePartModal";
-import { useDispatch } from "react-redux";
-import type { AppDispatch } from "../../../store";
-import { deletePart } from "../../../store/parts/parts.thunks";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "../../../store";
+import { createPart, deletePart } from "../../../store/parts/parts.thunks";
 import toast from "react-hot-toast";
 import { PartImages } from "./PartImages";
 import { PartFiles } from "./PartFiles";
@@ -82,6 +82,11 @@ export function PartDetails({
 
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
+
+  // ✅ Get organizationId from Auth State
+  const organizationId = useSelector(
+    (state: RootState) => state.auth?.user?.organizationId
+  );
 
   // Sync if parent item changes
   useEffect(() => {
@@ -173,31 +178,65 @@ export function PartDetails({
   }, [isEditing, partData]);
 
   /* -------------------------------------------------------------------------- */
-  /* ✅ DIRECT DUPLICATE ACTION                        */
+  /* ✅ DIRECT DUPLICATE ACTION (FIXED FOR 500 ERROR)                           */
   /* -------------------------------------------------------------------------- */
-  const handleDuplicatePart = () => {
-    // 1. Prepare clean data
-    const copyData = {
-      ...partData,
-      name: `Copy - ${partData.name}`, // Prefix name
-      id: null, // Clear ID to make it new
-      _id: null,
-      createdAt: null,
-      updatedAt: null,
-      createdBy: null,
-      updatedBy: null,
-      // Pass arrays so they prefill in the new form
-      locations: partData.locations || [],
-      vendors: partData.vendors || [],
-      assets: partData.assets || [],
-      teams: partData.teams || [],
-      partImages: partData.partImages || [],
-      partDocs: partData.partDocs || [],
-    };
+  const handleDuplicatePart = async () => {
+    const loadingToast = toast.loading("Duplicating part...");
+    try {
+      const formData = new FormData();
 
-    // 2. Direct Navigation to Create Screen
-    setIsDropdownOpen(false);
-    navigate("/inventory/create", { state: { copyData } });
+      // 1. Basic Info
+      formData.append("organizationId", organizationId || "");
+      formData.append("name", `Copy - ${partData.name}`);
+      formData.append("description", partData.description || "");
+      formData.append("unitCost", String(partData.unitCost || 0));
+
+      // 2. Arrays (must be stringified JSON for your backend logic)
+      const partsType = Array.isArray(partData.partsType) ? partData.partsType : [];
+      formData.append("partsType", JSON.stringify(partsType));
+
+      const assetIds = partData.assets?.map((a: any) => a.id) || [];
+      formData.append("assetIds", JSON.stringify(assetIds));
+
+      const teamsInCharge = partData.teams?.map((t: any) => t.id) || [];
+      formData.append("teamsInCharge", JSON.stringify(teamsInCharge));
+
+      const vendorIds = partData.vendors?.map((v: any) => v.id) || [];
+      formData.append("vendorIds", JSON.stringify(vendorIds));
+
+      // 3. Locations Array (Matching Case A in your logic)
+      const locationsPayload = (partData.locations || []).map((loc: any) => ({
+        locationId: loc.locationId || loc.id,
+        area: loc.area || "",
+        unitsInStock: Number(loc.unitsInStock ?? 0),
+        minimumInStock: Number(loc.minimumInStock ?? 0),
+      }));
+      formData.append("locations", JSON.stringify(locationsPayload));
+
+      // 4. Blobs/Files Metadata
+      formData.append("partImages", JSON.stringify(partData.partImages || []));
+      formData.append("partDocs", JSON.stringify(partData.partDocs || []));
+
+      // 5. Vendors Metadata Row Mapping
+      if (Array.isArray(partData.vendors) && partData.vendors.length > 0) {
+        partData.vendors.forEach((vendor: any, index: number) => {
+          formData.append(`vendors[${index}][vendorId]`, vendor.id || "");
+          formData.append(`vendors[${index}][orderingPartNumber]`, vendor.orderingPartNumber || "");
+        });
+      }
+
+      // 6. Direct API Call
+      const result = await dispatch(createPart(formData)).unwrap();
+
+      toast.success("Part duplicated successfully!", { id: loadingToast });
+      setIsDropdownOpen(false);
+
+      if (fetchPartData) fetchPartData();
+      navigate(`/inventory/${result.id}`);
+    } catch (error: any) {
+      console.error("❌ Duplicate failed:", error);
+      toast.error(error?.message || "Failed to duplicate part", { id: loadingToast });
+    }
   };
 
   const handleCopyClick = () => {
@@ -252,7 +291,6 @@ export function PartDetails({
     });
   };
 
-  // --- 🔄 RENDER: EDIT FORM (In-Place) ---
   if (isEditing) {
     if (loading || !editItem) {
       return (
@@ -303,7 +341,6 @@ export function PartDetails({
     );
   }
 
-  // --- 🔄 RENDER: DETAILS VIEW ---
   const availableUnits =
     partData.unitsInStock ?? partData.locations?.[0]?.unitsInStock ?? 0;
   const minUnits =
@@ -429,7 +466,7 @@ export function PartDetails({
                 onClose={() => setIsDropdownOpen(false)}
                 triggerRef={buttonRef}
                 onOrder={() => toast("Order clicked")}
-                onCopy={handleDuplicatePart} // ✅ Direct Call
+                onCopy={handleDuplicatePart}
                 onExportQR={() => toast("Export QR clicked")}
                 onDelete={handleDeleteClick}
               />

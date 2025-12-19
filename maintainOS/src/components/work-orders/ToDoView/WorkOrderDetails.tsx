@@ -951,24 +951,24 @@ export function WorkOrderDetails({
         {/* ✅ UPDATED FOOTER WITH EXACT MATCH */}
         <div className="border-t p-6">
              <div className="space-y-3">
-              <div className="flex items-center gap-1 text-sm text-gray-600">
+              <div className="flex items-center gap-1 text-sm ">
                 <UserCircle2 className="w-4 h-4 text-yellow-500" />
                 <span>
                   Created {createdByName ? `by ${createdByName}` : ""}
                 </span>
-                <CalendarDays className="w-4 h-4 text-gray-500 ml-1" />
+               
                 <span>
                   {selectedWorkOrder.createdAt
                     ? new Date(selectedWorkOrder.createdAt).toLocaleString()
                     : "N/A"}
                 </span>
               </div>
-              <div className="flex items-center gap-1 text-sm text-gray-600">
+              <div className="flex items-center gap-1 text-sm ">
                 <UserCircle2 className="w-4 h-4 text-yellow-500" />
                 <span>
                   Last Updated {updatedByName ? `by ${updatedByName}` : ""}
                 </span>
-                <CalendarDays className="w-4 h-4 text-gray-500 ml-1" />
+               
                 <span>
                   {selectedWorkOrder.updatedAt
                     ? new Date(selectedWorkOrder.updatedAt).toLocaleString()

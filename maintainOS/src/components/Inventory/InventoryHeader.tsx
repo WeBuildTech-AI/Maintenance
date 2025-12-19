@@ -28,16 +28,16 @@ export function InventoryHeaderComponent(
   setShowSettings: Dispatch<SetStateAction<boolean>>,
   setIsSettingsModalOpen: Dispatch<SetStateAction<boolean>>,
   setShowDeleted: Dispatch<SetStateAction<boolean>>,
-  // 👇 NEW: Accept filter callback
-  onFilterChange?: (params: FetchPartsParams) => void
+  // 👇 Callback passed from Inventory.tsx
+  onFilterChange?: (params: Partial<FetchPartsParams>) => void
 ) {
   return (
-    <header className=" border-border bg-card px-6 py-4">
+    <header className="border-b border-border bg-card px-6 py-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="flex item-center gap-6">
+          <div className="flex items-center gap-6">
             <h1 className="text-2xl font-semibold">Parts Inventory</h1>
-            <div className=" flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -72,17 +72,17 @@ export function InventoryHeaderComponent(
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <div className="relative border-orange-600 focus:border-orange-600  ">
+          <div className="relative border-orange-600 focus:border-orange-600">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-orange-600" />
             <Input
               placeholder="Search for tools and supplies"
-              className="w-96 pl-9 bg-white border-orange-600  "
+              className="w-96 pl-9 bg-white border-orange-600"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           <Button
-            className="gap-2 cursor-pointer bg-orange-600 hover:outline-none"
+            className="gap-2 cursor-pointer bg-orange-600 hover:bg-orange-700 text-white"
             onClick={() => {
               setIsCreatingForm(true);
               setViewMode("panel");
@@ -94,14 +94,17 @@ export function InventoryHeaderComponent(
         </div>
       </div>
       <div className="flex items-center mt-4 p-1 h-10 justify-between">
-        {/* Left: Filter bar - Passed callback */}
+        {/* Left: Filter bar 
+          Ensuring the callback is passed to trigger API calls in Inventory.tsx
+        */}
         <InventoryFilterBar onParamsChange={onFilterChange} />
 
         {/* Right: Settings button (only for table view) */}
         {viewMode === "table" && (
           <button
             onClick={() => setIsSettingsModalOpen(true)}
-            className="p-2 rounded-md cursor-pointer border hover:bg-gray-100 transition"
+            className="p-2 rounded-md cursor-pointer border border-gray-200 bg-white hover:bg-gray-100 transition shadow-sm"
+            title="Table Settings"
           >
             <Settings className="h-5 w-5 text-orange-600" />
           </button>
