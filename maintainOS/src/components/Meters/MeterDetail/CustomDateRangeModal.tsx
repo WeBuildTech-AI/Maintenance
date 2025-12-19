@@ -1,107 +1,191 @@
-import { X } from "lucide-react";
-import React, { useState } from "react";
-import { Button } from "../../ui/button";
+"use client";
 
-interface CustomDateRangeModalProps {
+import { useState, useLayoutEffect, useEffect, useRef } from "react";
+import { DayPicker } from "react-day-picker";
+import "react-day-picker/dist/style.css";
+import { Button } from "../../ui/button";
+import { subDays, subWeeks, subMonths } from "date-fns";
+
+type Props = {
   onClose: () => void;
   onApply: (start: Date, end: Date) => void;
-}
+  anchorRef: React.RefObject<HTMLDivElement | HTMLButtonElement>; // Updated type to accept Button too
+  position?: "top" | "bottom" | "auto"; // 👈 New Prop
+};
 
 export function CustomDateRangeModal({
   onClose,
   onApply,
-}: CustomDateRangeModalProps) {
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [error, setError] = useState("");
+  anchorRef,
+  position = "auto", // Default to auto
+}: Props) {
+  const [tab, setTab] = useState<"between" | "last">("last");
+  const [value, setValue] = useState<number | "">(15);
+  const [unit, setUnit] = useState<"days" | "weeks" | "months">("days");
+  const [range, setRange] = useState<{ from?: Date; to?: Date }>({});
+
+  // State for dynamic styling
+  const [style, setStyle] = useState<React.CSSProperties>({
+    visibility: "hidden", // Hide initially until calculation is done
+    position: "absolute",
+    zIndex: 50,
+    right: 0, // Right align with anchor
+  });
+
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // 📌 Position Logic (Smart Detection)
+  useLayoutEffect(() => {
+    if (!anchorRef.current || !modalRef.current) return;
+
+    const anchorRect = anchorRef.current.getBoundingClientRect();
+    const modalRect = modalRef.current.getBoundingClientRect();
+    const screenHeight = window.innerHeight;
+
+    // Check space below the button
+    const spaceBelow = screenHeight - anchorRect.bottom;
+    const spaceAbove = anchorRect.top;
+
+    // Default gap between button and modal
+    const gap = 8;
+
+    let finalPosition = position;
+
+    // If auto, decide based on available space
+    if (position === "auto") {
+      // Agar neeche jagah kam hai (modal height se kam), toh upar dikhao
+      if (spaceBelow < modalRect.height && spaceAbove > modalRect.height) {
+        finalPosition = "top";
+      } else {
+        finalPosition = "bottom";
+      }
+    }
+
+    // Apply Styles based on decision
+    if (finalPosition === "top") {
+      setStyle({
+        position: "absolute",
+        bottom: "100%", // Anchor ke upar
+        marginBottom: `${gap}px`,
+        right: 0,
+        zIndex: 50,
+        visibility: "visible",
+      });
+    } else {
+      setStyle({
+        position: "absolute",
+        top: "100%", // Anchor ke neeche
+        marginTop: `${gap}px`,
+        right: 0,
+        zIndex: 50,
+        visibility: "visible",
+      });
+    }
+  }, [anchorRef, position, tab]); // Re-calculate if tab changes (size changes)
+
+  // 📌 Sync calendar when LAST is selected
+  useEffect(() => {
+    if (tab !== "last" || value === "") return;
+
+    const now = new Date();
+    let start: Date;
+
+    switch (unit) {
+      case "weeks":
+        start = subWeeks(now, value);
+        break;
+      case "months":
+        start = subMonths(now, value);
+        break;
+      default:
+        start = subDays(now, value);
+    }
+
+    setRange({ from: start, to: now });
+  }, [tab, value, unit]);
 
   const handleApply = () => {
-    if (!startDate || !endDate) {
-      setError("Please select both start and end dates.");
-      return;
+    if (range.from && range.to) {
+      onApply(range.from, range.to);
     }
-
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-
-    if (start > end) {
-      setError("Start date cannot be after end date.");
-      return;
-    }
-
-    // Set end date to end of day
-    end.setHours(23, 59, 59, 999);
-
-    onApply(start, end);
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      {/* Updated: Used inline style for width and removed w-full */}
-      <div
-        className="bg-white rounded-lg shadow-lg p-6 border border-gray-200"
-        style={{ width: "320px", maxWidth: "100%" }} // ✅ Inline CSS applied
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-800">
-            Select Date Range
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-600 cursor-pointer hover:text-gray-800"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <div
+      ref={modalRef} // 👈 Ref attached here to measure height
+      style={style}
+      className="bg-white border rounded-lg shadow-lg w-[360px] p-3"
+    >
+      {/* Tabs */}
+      <div className="flex mb-3 rounded-md overflow-hidden border">
+        <button
+          className={`flex-1 py-1 text-sm ${
+            tab === "between" ? "bg-orange-600 text-white font-medium" : ""
+          }`}
+          onClick={() => setTab("between")}
+        >
+          Between
+        </button>
+        <button
+          className={`flex-1 py-1 text-sm ${
+            tab === "last" ? "bg-orange-600 text-white font-medium" : ""
+          }`}
+          onClick={() => setTab("last")}
+        >
+          Last
+        </button>
+      </div>
 
-        <div className="space-y-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Start Date
-            </label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => {
-                setStartDate(e.target.value);
-                setError("");
-              }}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              End Date
-            </label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => {
-                setEndDate(e.target.value);
-                setError("");
-              }}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-          </div>
-          {error && <p className="text-xs text-red-600">{error}</p>}
+      {/* LAST controls */}
+      {tab === "last" && (
+        <div className="flex gap-2 mb-3">
+          <input
+            type="number"
+            min={1}
+            value={value}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === "") {
+                setValue("");
+              } else {
+                setValue(Number(val));
+              }
+            }}
+            onBlur={() => {
+              if (value === "" || value === 0) {
+                setValue(15);
+              }
+            }}
+            className="w-20 border rounded px-2 py-1 text-sm"
+          />
+          <select
+            value={unit}
+            onChange={(e) => setUnit(e.target.value as any)}
+            className="flex-1 border rounded px-2 py-1 text-sm"
+          >
+            <option value="days">Days</option>
+            <option value="weeks">Weeks</option>
+            <option value="months">Months</option>
+          </select>
         </div>
+      )}
 
-        <div className="flex justify-end gap-3">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            className="border-gray-300"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleApply}
-            className="bg-orange-600 hover:bg-orange-700 text-white"
-          >
-            Apply
-          </Button>
-        </div>
+      {/* Calendar (Both tabs) */}
+      <DayPicker mode="range" selected={range} onSelect={setRange} />
+
+      {/* Footer */}
+      <div className="flex justify-end gap-2 mt-3">
+        <Button size="sm" variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button size="sm" className="bg-orange-500" onClick={handleApply}>
+          Apply
+        </Button>
+      </div>
+
+      <div className="text-[11px] text-gray-500 mt-2">
+        Time zone for all dates: Asia/Kolkata
       </div>
     </div>
   );
