@@ -200,13 +200,13 @@ export function MeterReadings({
             </Button>
           </div>
 
-          {isCustomOpen && (
+          {/* {isCustomOpen && (
             <CustomDateRangeModal
               anchorRef={customBtnRef}
               onApply={handleCustomDateApply}
               onClose={() => setIsCustomOpen(false)}
             />
-          )}
+          )} */}
         </div>
       </div>
 
