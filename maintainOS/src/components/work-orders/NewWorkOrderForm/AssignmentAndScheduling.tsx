@@ -6,7 +6,7 @@ import "react-day-picker/dist/style.css";
 
 interface Props {
   selectedUsers: string[];
-  setSelectedUsers: React.Dispatch<React.SetStateAction<string[]>>;
+  setSelectedUsers: (value: string[] | ((prev: string[]) => string[])) => void;
   dueDate: string;
   setDueDate: (value: string) => void;
   startDate: string;
@@ -18,7 +18,7 @@ interface Props {
   recurrenceRule: any; 
   setRecurrenceRule: (value: any) => void;
   
-  // Legacy
+  // Legacy props (can be ignored if not used elsewhere, but good to keep for compatibility)
   recurrence?: string;
   setRecurrence?: (value: string) => void;
 
@@ -47,7 +47,7 @@ export function AssignmentAndScheduling({
   const [recurrenceOpen, setRecurrenceOpen] = useState(false);
   const [selectedFreq, setSelectedFreq] = useState("Does not repeat");
 
-  // ✅ FIX: Initialize users with initialAssignees
+  // ✅ FIX: Initialize users state with initialAssignees
   const [users, setUsers] = useState<{ id: string; name: string }[]>(initialAssignees);
   
   const [isLoading, setIsLoading] = useState(false);
@@ -69,20 +69,21 @@ export function AssignmentAndScheduling({
 
   const monthDaysList = Array.from({length: 31}, (_, i) => i + 1);
 
-  // ✅ FIX: Update users list if initialAssignees changes (e.g., after API load)
+  // ✅ FIX: Update users list if initialAssignees prop changes (e.g., after API load in parent)
   useEffect(() => {
     if (initialAssignees.length > 0) {
       setUsers((prev) => {
-        // Merge to avoid duplicates
+        // Create a Set of existing IDs for faster lookup
         const existingIds = new Set(prev.map(u => u.id));
+        // Filter out initial assignees that are already in the state
         const newUsers = initialAssignees.filter(u => !existingIds.has(u.id));
+        // Merge previous users with new unique ones
         return [...prev, ...newUsers];
       });
     }
   }, [initialAssignees]);
 
-  // ... (Rest of the logic remains exactly the same)
-
+  // Initialize Recurrence UI from Rule
   useEffect(() => {
     if (recurrenceRule) {
       try {
@@ -118,8 +119,9 @@ export function AssignmentAndScheduling({
         console.error("Failed to parse recurrence rule", e);
       }
     }
-  }, []);
+  }, [recurrenceRule]); // Added recurrenceRule as dependency to update on load
 
+  // Update Recurrence Rule State when UI changes
   useEffect(() => {
     let rule = null;
 
@@ -147,15 +149,17 @@ export function AssignmentAndScheduling({
   }, [
     selectedFreq, selectedWeekDays, 
     monthMode, dayOfMonth, weekOfMonth, weekdayOfMonth, 
-    yearInterval
+    yearInterval, setRecurrenceRule // Added setRecurrenceRule to dependency array
   ]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dueRef.current && !dueRef.current.contains(event.target as Node)) setShowDueCalendar(false);
       if (startRef.current && !startRef.current.contains(event.target as Node)) setShowStartCalendar(false);
-      setRecurrenceOpen(false);
-      setWorkTypeOpen(false);
+      
+      // Close dropdowns if clicking outside (simple implementation, might need specific refs)
+      // setRecurrenceOpen(false); // This might conflict with the dropdown itself if not ref-bounded
+      // setWorkTypeOpen(false); 
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -168,7 +172,8 @@ export function AssignmentAndScheduling({
       const normalized = Array.isArray(data) && data.length
           ? data.map((u: any) => ({ id: u.id, name: u.fullName || u.name || "Unnamed User" }))
           : [];
-      // Merge fetched users with initial ones to preserve selection names
+      
+      // Merge fetched users with initial ones to preserve selection names and avoid duplicates
       setUsers((prev) => {
          const existingIds = new Set(prev.map(u => u.id));
          const newUsers = normalized.filter((u: any) => !existingIds.has(u.id));
@@ -182,7 +187,11 @@ export function AssignmentAndScheduling({
   };
 
   useEffect(() => {
-    if (assignedOpen && users.length <= (initialAssignees?.length || 0)) fetchUsers();
+    // Fetch users only when dropdown opens AND we don't have many users (optimization)
+    // Or you can fetch every time to be safe.
+    if (assignedOpen) {
+        fetchUsers();
+    }
   }, [assignedOpen]);
 
   const filteredUsers = users.filter((u) =>
@@ -232,7 +241,16 @@ export function AssignmentAndScheduling({
                 <X className="w-4 h-4 text-gray-500 cursor-pointer hover:text-gray-700" onClick={(e) => { e.stopPropagation(); toggleUser(id); }} />
               </span>
             ))}
-            <input value={assignedSearch} onChange={(e) => setAssignedSearch(e.target.value)} placeholder={selectedUsers.length === 0 ? "Type name or email address" : ""} className="flex-1 border-0 outline-none text-sm py-1 px-1" />
+            <input 
+              value={assignedSearch} 
+              onChange={(e) => setAssignedSearch(e.target.value)} 
+              placeholder={selectedUsers.length === 0 ? "Type name or email address" : ""} 
+              className="flex-1 border-0 outline-none text-sm py-1 px-1 min-w-[150px]" 
+              onClick={(e) => {
+                  e.stopPropagation();
+                  setAssignedOpen(true);
+              }}
+            />
             <ChevronDown className={`w-5 h-5 text-gray-400 ml-auto transition-transform ${assignedOpen ? "rotate-180" : ""}`} />
           </div>
 
@@ -246,13 +264,18 @@ export function AssignmentAndScheduling({
                 {isLoading ? <div className="p-4 text-center text-gray-500 text-sm">Loading...</div> : 
                  filteredUsers.length === 0 ? <div className="p-4 text-center text-gray-500 text-sm">No users found</div> :
                  filteredUsers.map((u) => (
-                    <label key={u.id} className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors border-b last:border-b-0 ${selectedUsers.includes(u.id) ? "bg-blue-50" : "hover:bg-gray-50"}`}>
+                    <div key={u.id} onClick={() => toggleUser(u.id)} className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors border-b last:border-b-0 ${selectedUsers.includes(u.id) ? "bg-blue-50" : "hover:bg-gray-50"}`}>
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-white flex items-center justify-center text-sm font-semibold shadow-sm">
                         {(u.name || "?").charAt(0).toUpperCase()}
                       </div>
                       <span className="flex-1 text-sm font-medium text-gray-900">{u.name}</span>
-                      <input type="checkbox" checked={selectedUsers.includes(u.id)} onChange={() => toggleUser(u.id)} className="w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500" />
-                    </label>
+                      <input 
+                        type="checkbox" 
+                        checked={selectedUsers.includes(u.id)} 
+                        readOnly
+                        className="w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500" 
+                      />
+                    </div>
                   ))
                 }
               </div>
@@ -261,36 +284,65 @@ export function AssignmentAndScheduling({
         </div>
       </div>
 
-      {/* ... (Rest of the UI remains exactly the same) */}
-      <div className="mt-4">
-        <h3 className="mb-4 text-base font-medium text-gray-900">Estimated Time</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">Hours</label>
-            <input type="number" defaultValue={1} className="w-full h-12 px-4 border border-gray-300 rounded-md text-gray-900 outline-none focus:border-blue-500" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">Minutes</label>
-            <input type="number" defaultValue={0} className="w-full h-12 px-4 border border-gray-300 rounded-md text-gray-900 outline-none focus:border-blue-500" />
-          </div>
-        </div>
-      </div>
 
+
+      {/* Due Date */}
       <div className="mt-4" ref={dueRef}>
         <h3 className="mb-4 text-base font-medium text-gray-900">Due Date</h3>
         <div style={{ position: "relative" }}>
-          <input type="text" readOnly value={dueDate} onClick={() => setShowDueCalendar(!showDueCalendar)} placeholder="mm/dd/yyyy" className="w-full h-12 px-4 pr-12 border border-gray-300 rounded-md text-gray-900 text-sm outline-none focus:border-blue-500" />
+          <input 
+            type="text" 
+            readOnly 
+            value={dueDate} 
+            onClick={() => setShowDueCalendar(!showDueCalendar)} 
+            placeholder="mm/dd/yyyy" 
+            className="w-full h-12 px-4 pr-12 border border-gray-300 rounded-md text-gray-900 text-sm outline-none focus:border-blue-500 cursor-pointer" 
+          />
           <Calendar onClick={() => setShowDueCalendar(!showDueCalendar)} style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "#3b82f6", width: "20px", cursor: "pointer" }} />
-          {showDueCalendar && <div className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-md shadow-lg p-2"><DayPicker mode="single" selected={dueDate ? new Date(dueDate) : undefined} onSelect={(date) => { if (date) { setDueDate(date.toLocaleDateString("en-US")); setShowDueCalendar(false); } }} /></div>}
+          {showDueCalendar && (
+            <div className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-md shadow-lg p-2">
+                <DayPicker 
+                    mode="single" 
+                    selected={dueDate ? new Date(dueDate) : undefined} 
+                    onSelect={(date) => { 
+                        if (date) { 
+                            setDueDate(date.toLocaleDateString("en-US")); 
+                            setShowDueCalendar(false); 
+                        } 
+                    }} 
+                />
+            </div>
+          )}
         </div>
       </div>
 
+      {/* Start Date */}
       <div className="mt-4" ref={startRef}>
         <h3 className="mb-4 text-base font-medium text-gray-900">Start Date</h3>
         <div style={{ position: "relative" }}>
-          <input type="text" readOnly value={startDate} onClick={() => setShowStartCalendar(!showStartCalendar)} placeholder="mm/dd/yyyy" className="w-full h-12 px-4 pr-12 border border-gray-300 rounded-md text-gray-900 text-sm outline-none focus:border-blue-500" />
+          <input 
+            type="text" 
+            readOnly 
+            value={startDate} 
+            onClick={() => setShowStartCalendar(!showStartCalendar)} 
+            placeholder="mm/dd/yyyy" 
+            className="w-full h-12 px-4 pr-12 border border-gray-300 rounded-md text-gray-900 text-sm outline-none focus:border-blue-500 cursor-pointer" 
+          />
           <Calendar onClick={() => setShowStartCalendar(!showStartCalendar)} style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "#3b82f6", width: "20px", cursor: "pointer" }} />
-          {showStartCalendar && <div className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-md shadow-lg p-2"><DayPicker mode="single" selected={startDate ? new Date(startDate) : undefined} onSelect={(date) => { if (date) { setStartDate(date.toLocaleDateString("en-US")); setShowStartCalendar(false); } }} /></div>}
+          {showStartCalendar && (
+            <div className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-md shadow-lg p-2">
+                <DayPicker 
+                    mode="single" 
+                    selected={startDate ? new Date(startDate) : undefined} 
+                    onSelect={(date) => { 
+                        if (date) { 
+                            setStartDate(date.toLocaleDateString("en-US")); 
+                            setShowStartCalendar(false); 
+                        } 
+                    }} 
+                />
+            </div>
+          )}
         </div>
       </div>
 
@@ -309,9 +361,8 @@ export function AssignmentAndScheduling({
                   <div key={r} onClick={() => {
                       setSelectedFreq(r);
                       setRecurrenceOpen(false);
-                      if(r === "Weekly") { 
-                        /* No default needed */
-                      } else if (r === "Monthly") { 
+                      // Reset sub-options if needed for clarity
+                      if(r === "Monthly") { 
                         setMonthMode("date"); setDayOfMonth(1); 
                       }
                     }} className={`px-4 py-3 cursor-pointer text-sm ${selectedFreq === r ? "text-blue-600 font-semibold bg-blue-50 flex justify-between" : "text-gray-700 hover:bg-gray-100"}`}>

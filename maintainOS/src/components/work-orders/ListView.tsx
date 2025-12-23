@@ -9,15 +9,19 @@ import {
   Trash2,
   Loader2,
   Settings,
+  Activity,
+  PauseCircle,
+  CheckCircle2,
+  ChevronDown
 } from "lucide-react";
 
 // Ant Design
-import { Table, Avatar, Tooltip as AntTooltip, Badge } from "antd";
+import { Table, Avatar, Tooltip as AntTooltip, Badge, Dropdown, type MenuProps } from "antd";
 import type { TableProps, TableColumnType } from "antd";
 
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store";
-import { deleteWorkOrder } from "../../store/workOrders/workOrders.thunks";
+import { deleteWorkOrder, updateWorkOrderStatus } from "../../store/workOrders/workOrders.thunks";
 
 import DeleteWorkOrderModal from "./ToDoView/DeleteWorkOrderModal";
 import { type ListViewProps } from "./types";
@@ -40,6 +44,121 @@ const STORAGE_KEY_WORK_ORDER_COLUMNS = "work_order_table_visible_columns";
 const mapAntSortOrder = (order: string) =>
   order === "asc" ? "ascend" : "descend";
 
+// --- 1. CONFIGURATIONS FOR CHIPS & STATUS (Internal) ---
+
+const PRIORITY_STYLES: Record<string, string> = {
+  high: "text-red-700 bg-red-50 border-red-200 hover:bg-red-100",
+  medium: "text-orange-700 bg-orange-50 border-orange-200 hover:bg-orange-100",
+  low: "text-green-700 bg-green-50 border-green-200 hover:bg-green-100",
+  none: "text-gray-600 bg-gray-100 border-gray-200 hover:bg-gray-200",
+};
+
+const STATUS_CONFIG = [
+  { key: "open", label: "Open", Icon: Activity, color: "text-blue-700 bg-blue-50 border-blue-200 hover:bg-blue-100" },
+  { key: "on_hold", label: "On Hold", Icon: PauseCircle, color: "text-orange-700 bg-orange-50 border-orange-200 hover:bg-orange-100" },
+  { key: "in_progress", label: "In Progress", Icon: Loader2, color: "text-purple-700 bg-purple-50 border-purple-200 hover:bg-purple-100" },
+  { key: "done", label: "Done", Icon: CheckCircle2, color: "text-green-700 bg-green-50 border-green-200 hover:bg-green-100" },
+];
+
+// --- 2. INTERNAL COMPONENTS (Priority Chip & Status Dropdown) ---
+
+// A. Priority Chip Component (Fixed Box Model)
+const PriorityChip = ({ priority }: { priority: string }) => {
+  const pKey = (priority || "none").toLowerCase();
+  const styleClass = PRIORITY_STYLES[pKey] || PRIORITY_STYLES.none;
+
+  return (
+    <div 
+      className={`
+        inline-flex items-center justify-center 
+        px-2 py-0.5  /* Reduced padding for smaller height */
+        rounded-md   /* Rectangular shape */
+        border shadow-sm 
+        text-[11px] font-medium capitalize /* Smaller font */
+        whitespace-nowrap
+        min-w-[50px]
+        ${styleClass}
+      `}
+    >
+      {priority || "None"}
+    </div>
+  );
+};
+
+// B. Status Cell Component (Dropdown Logic + Fixed Box Model)
+const StatusCell = ({ 
+  currentStatus, 
+  workOrderId, 
+  onRefresh 
+}: { 
+  currentStatus: string; 
+  workOrderId: string; 
+  onRefresh: () => void; 
+}) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const [loading, setLoading] = useState(false);
+
+  const statusKey = (currentStatus || "open").toLowerCase();
+  const activeConfig = STATUS_CONFIG.find((s) => s.key === statusKey) || STATUS_CONFIG[0];
+  const Icon = activeConfig.Icon;
+
+  const handleStatusChange = async (newStatus: string) => {
+    if (newStatus === statusKey) return;
+    setLoading(true);
+    try {
+      await dispatch(updateWorkOrderStatus({ id: workOrderId, status: newStatus })).unwrap();
+      onRefresh(); // Refresh the list to reflect changes
+      toast.success(`Status updated to ${newStatus}`);
+    } catch (error) {
+      console.error("Failed to update status", error);
+      toast.error("Failed to update status");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const menuItems: MenuProps["items"] = STATUS_CONFIG.map((s) => ({
+    key: s.key,
+    label: (
+      <div className="flex items-center gap-2 py-1 px-1">
+        <s.Icon size={13} className="text-gray-500" />
+        <span className="capitalize font-medium text-gray-700 text-xs">{s.label}</span>
+      </div>
+    ),
+    onClick: () => handleStatusChange(s.key),
+  }));
+
+  return (
+    <div onClick={(e) => e.stopPropagation()} className="flex items-center">
+      <Dropdown menu={{ items: menuItems }} trigger={["click"]} disabled={loading} placement="bottomLeft">
+        <div
+          className={`
+            inline-flex items-center gap-1.5
+            px-2 py-0.5       /* ✅ Reduced padding (Height kam) */
+            rounded-md        /* ✅ Rectangular shape */
+            border shadow-sm 
+            text-[11px] font-medium /* ✅ Smaller text */
+            cursor-pointer 
+            transition-all duration-200 
+            select-none 
+            min-w-[90px]      /* ✅ Compact width */
+            ${activeConfig.color}
+          `}
+        >
+          {loading ? (
+            <Loader2 className="w-3 h-3 animate-spin" />
+          ) : (
+            <Icon className="w-3 h-3" />
+          )}
+          <span className="capitalize flex-1">{activeConfig.label}</span>
+          <ChevronDown className="w-3 h-3 opacity-50" />
+        </div>
+      </Dropdown>
+    </div>
+  );
+};
+
+
 // --- Work Order Specific Column Configuration ---
 const allAvailableColumns = [
   "ID",
@@ -50,9 +169,12 @@ const allAvailableColumns = [
   "Categories",
   "Asset",
   "Location",
+  "Due Date",      
+  "Total Cost",    
+  "Recurrence",    
   "Created On",
   "Updated On",
-  "Procedure",
+  "Procedure", 
 ];
 
 interface WorkOrderRow {
@@ -68,6 +190,9 @@ interface WorkOrderRow {
   createdOn: string;
   updatedOn: string;
   attachedProcedure: string;
+  totalCost: number;
+  recurrence: string;
+  dueDate: string;
   full: any;
   key: string;
   [key: string]: any;
@@ -87,12 +212,12 @@ const columnConfig: Record<string, ColumnConfigItem> = {
   },
   Status: {
     dataIndex: "status",
-    width: 150,
+    width: 140, // Reduced width
     sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
   },
   Priority: {
     dataIndex: "priority",
-    width: 130,
+    width: 120,
     sorter: (a, b) => (a.priority || "").localeCompare(b.priority || ""),
   },
   "Work Type": {
@@ -119,6 +244,21 @@ const columnConfig: Record<string, ColumnConfigItem> = {
     dataIndex: "location",
     width: 150,
     sorter: (a, b) => (a.location || "").localeCompare(b.location || ""),
+  },
+  "Due Date": { 
+    dataIndex: "dueDate",
+    width: 150,
+    sorter: (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
+  },
+  "Total Cost": { 
+    dataIndex: "totalCost",
+    width: 130,
+    sorter: (a, b) => Number(a.totalCost) - Number(b.totalCost),
+  },
+  "Recurrence": { 
+    dataIndex: "recurrence",
+    width: 150,
+    sorter: (a, b) => (a.recurrence || "").localeCompare(b.recurrence || ""),
   },
   "Created On": {
     dataIndex: "createdOn",
@@ -171,6 +311,11 @@ const tableStyles = `
   .ant-table-body::-webkit-scrollbar-thumb:hover {
     background: #9ca3af; /* gray-400 */
   }
+  /* Align Cells Vertically */
+  .ant-table-cell {
+    vertical-align: middle !important;
+    padding: 10px 16px !important; /* Standard padding */
+  }
 `;
 
 export function ListView({
@@ -187,7 +332,7 @@ export function ListView({
     []
   );
 
-  // --- 1. Production Level State Initialization ---
+  // --- Production Level State Initialization ---
   const [visibleColumns, setVisibleColumns] = useState<string[]>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -277,7 +422,7 @@ export function ListView({
     }
   };
 
-  // --- 2. OPTIMIZED SETTINGS HANDLER ---
+  // --- OPTIMIZED SETTINGS HANDLER ---
   const handleApplySettings = (settings: {
     resultsPerPage: number;
     showDeleted: boolean;
@@ -386,7 +531,7 @@ export function ListView({
         const isSelected = selectedWorkOrderIds.includes(record.id);
 
         return (
-          <div className="flex items-center gap-3 font-medium text-gray-800 h-full">
+          <div className="flex items-center gap-3 h-full">
             {isEditing ? (
               // When in Editing mode, show the checkbox
               <div className="flex items-center justify-center h-8 w-8 cursor-pointer">
@@ -412,9 +557,9 @@ export function ListView({
               </div>
             )}
 
-            {/* CLICK → OPEN VIEW/EDIT MODAL */}
+            {/* Standardized Text */}
             <span
-              className="truncate cursor-pointer hover:text-blue-600 hover:underline"
+              className="truncate cursor-pointer text-gray-700 hover:text-blue-600 hover:underline"
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedWO(record.full);
@@ -436,16 +581,40 @@ export function ListView({
         if (!config) return null;
 
         let renderFunc;
-        // Apply special render functions for Status, Created On, Updated On
+        // Apply special render functions
         if (colName === "Status") {
-          renderFunc = (status: any) => (
-            // @ts-ignore - Ant Design Badge issue
-            <Badge variant="secondary">{status}</Badge>
+          // ✅ FIX: Use StatusCell Component
+          renderFunc = (status: any, record: any) => (
+            <StatusCell 
+              currentStatus={status} 
+              workOrderId={record.id} 
+              onRefresh={onRefreshWorkOrders} 
+            />
           );
-        } else if (colName === "Created On" || colName === "Updated On") {
-          // ✅ FIX: Use formatDate utility for consistent DD/MM/YYYY
+        } else if (colName === "Priority") {
+           // ✅ FIX: Use PriorityChip Component
+           renderFunc = (priority: any) => (
+            <PriorityChip priority={priority} />
+          );
+        } else if (colName === "Created On" || colName === "Updated On" || colName === "Due Date") {
+          // ✅ FIX: Use formatDate utility, uniform text
           renderFunc = (text: any) => (
-            <span className="text-gray-600">{formatDate(text)}</span>
+            <span className="text-gray-700">{formatDate(text)}</span>
+          );
+        } else if (colName === "Total Cost") {
+          // ✅ FIX: Standard text with Rupee symbol
+          renderFunc = (cost: any) => (
+            <span className="text-gray-700">₹{Number(cost || 0).toFixed(2)}</span>
+          );
+        } else if (colName === "Recurrence") {
+          // ✅ FIX: Standard text
+          renderFunc = (val: any) => (
+            <span className="text-gray-700 capitalize">{val || "One-time"}</span>
+          );
+        } else if (colName === "Procedure") {
+           // ✅ FIX: Standard text for Procedure
+           renderFunc = (val: any) => (
+            <span className="text-gray-700">{val}</span>
           );
         }
 
@@ -478,6 +647,7 @@ export function ListView({
     toggleRowSelection,
     handleDelete,
     setIsSettingsModalOpen,
+    onRefreshWorkOrders
   ]);
 
   // ✅ SAFELY MAP DATA
@@ -515,11 +685,28 @@ export function ListView({
         catStr = getSafeString(cats);
       }
 
+      // 5. Recurrence Parsing
+      let recStr = "One-time";
+      try {
+        if (item.recurrenceRule) {
+            const parsed = typeof item.recurrenceRule === 'string' 
+                ? JSON.parse(item.recurrenceRule) 
+                : item.recurrenceRule;
+            recStr = parsed.type || "Custom";
+        }
+      } catch (e) {
+          recStr = "One-time";
+      }
+
+      // ✅ 6. Procedure Mapping Fix
+      const procStr = Array.isArray(item.procedures) && item.procedures.length > 0
+        ? item.procedures.map((p: any) => p.title).join(", ")
+        : "—";
+
       return {
         key: item.id,
         id: item.id || "—",
         title: item.title || "—",
-        // Extract string values for potentially complex objects
         status: getSafeString(item.status),
         priority: getSafeString(item.priority),
         workType: getSafeString(item.work_type || item.workType),
@@ -529,7 +716,10 @@ export function ListView({
         location: locationStr,
         createdOn: item.createdAt || "—",
         updatedOn: item.updatedAt || "—",
-        attachedProcedure: getSafeString(item.attachedProcedure),
+        attachedProcedure: procStr, // ✅ FIXED MAPPING
+        totalCost: Number(item.grandTotalCost || 0),
+        recurrence: recStr,
+        dueDate: item.dueDate,
         full: item,
       };
     });

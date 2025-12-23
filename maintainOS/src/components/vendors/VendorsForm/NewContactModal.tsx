@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { vendorService } from "../../../store/vendors/vendors.service";
 
 export interface ContactFormData {
+  id?: string; // ✅ Added ID to track edits
   fullName: string;
   role: string;
   email: string;
@@ -48,11 +49,22 @@ export function NewContactModal({
   });
   const [showExtension, setShowExtension] = useState(false);
 
+  // ✅ CRITICAL FIX: Data Normalization
+  // Maps Backend keys (name, phone) to Frontend keys (fullName, phoneNumber)
   useEffect(() => {
-    if (initialData) {
-      setContact(initialData);
+    if (isOpen && initialData) {
+      setContact({
+        id: initialData.id, // Preserve ID for updates
+        fullName: initialData.fullName || initialData.name || "",
+        role: initialData.role || "",
+        email: initialData.email || "",
+        phoneNumber: initialData.phoneNumber || initialData.phone || "",
+        phoneExtension: initialData.phoneExtension || "",
+        contactColor: initialData.contactColor || initialData.color || "#EC4899",
+      });
       if (initialData.phoneExtension) setShowExtension(true);
-    } else {
+    } else if (!isOpen) {
+      // Reset when closed
       setContact({
         fullName: "",
         role: "",
@@ -65,26 +77,35 @@ export function NewContactModal({
     }
   }, [initialData, isOpen]);
 
-  const getInitial = () => contact.fullName.trim().charAt(0).toUpperCase() || "C";
+  const getInitial = () => 
+    (contact.fullName || "").trim().charAt(0).toUpperCase() || "C";
 
   const handleSave = async () => {
     try {
       let response;
 
       if (vendorId) {
-        // ✅ Save to backend
-        response = await vendorService.createVendorContact(vendorId, contact);
-        toast.success("Contact saved successfully ✅");
+        // ✅ Check if we are Updating or Creating
+        if (contact.id) {
+          // 🟢 UPDATE Existing Contact
+          // (Assuming you have an update method, otherwise adapt to your service)
+          response = await vendorService.updateVendorContact(vendorId, contact.id, contact);
+          toast.success("Contact updated successfully ✅");
+        } else {
+          // 🟢 CREATE New Contact
+          response = await vendorService.createVendorContact(vendorId, contact);
+          toast.success("Contact added successfully ✅");
+        }
 
-        // ✅ Fetch updated vendor & broadcast event
+        // ✅ Refresh Vendor Data
         const updatedVendor = await vendorService.fetchVendorById(vendorId);
         window.dispatchEvent(
           new CustomEvent("vendor-updated", { detail: updatedVendor })
         );
       } else {
-        // 🆕 Just store locally if vendor not yet created
+        // 🆕 Local State Mode (for VendorForm)
         response = contact;
-        toast.success("Contact added (will save when vendor is created)");
+        // Don't show success toast here, usually handled by parent table update
       }
 
       onSave(response);
@@ -108,12 +129,12 @@ export function NewContactModal({
           <h2 className="text-2xl font-semibold text-gray-700">
             {initialData ? "Edit Contact" : "New Contact"}
           </h2>
-          <button onClick={onClose} className="p-1">
+          <button type="button" onClick={onClose} className="p-1">
             <X className="w-6 h-6 text-gray-700" />
           </button>
         </div>
 
-        {/* Avatar */}
+        {/* Body */}
         <div className="overflow-y-auto px-6 py-8" style={{ maxHeight: "calc(90vh - 140px)" }}>
           <div className="flex justify-start mb-8">
             <div
@@ -130,7 +151,6 @@ export function NewContactModal({
             </div>
           </div>
 
-          {/* Fields */}
           <div className="grid grid-cols-2 gap-6 mb-8">
             <div>
               <label className="text-sm font-medium mb-2 block">Full Name</label>
@@ -201,6 +221,7 @@ export function NewContactModal({
             <div className="flex gap-3">
               {COLORS.map((color) => (
                 <button
+                  type="button" // ✅ Explicitly prevent submit on color click
                   key={color}
                   onClick={() => setContact({ ...contact, contactColor: color })}
                   style={{
@@ -222,10 +243,11 @@ export function NewContactModal({
 
         {/* Footer */}
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-200">
-          <button onClick={onClose} className="px-6 py-2 text-sm text-gray-700">
+          <button type="button" onClick={onClose} className="px-6 py-2 text-sm text-gray-700">
             Cancel
           </button>
           <button
+            type="button"
             onClick={handleSave}
             className="px-6 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
           >
