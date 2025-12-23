@@ -1,12 +1,22 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+"use client";
+
+import { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom'; 
 import { 
   ChevronLeft, ChevronRight, Lock, RefreshCcw, CheckCircle2, 
-  MapPin, User, X, Clock, Calendar as CalendarIcon, ChevronRight as ChevronRightIcon
+  User, X, Clock, Calendar as CalendarIcon, ChevronRight as ChevronRightIcon
 } from 'lucide-react';
-import type { WorkOrder } from "./types";
+import type { WorkOrder } from "../../store/workOrders/workOrders.types";
 
 import toast from "react-hot-toast"; 
+
+// ✅ REDUX HOOKS & ACTIONS IMPORT
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { 
+  fetchWorkOrderById, 
+  fetchWorkOrders 
+} from "../../store/workOrders/workOrders.thunks";
+import { clearSelectedWorkOrder } from "../../store/workOrders/workOrders.reducers";
 
 import {
   startOfMonth,
@@ -30,7 +40,7 @@ import {
 } from 'date-fns';
 import WorkOrderDetailModal from './Tableview/modals/WorkOrderDetailModal';
 
-// --- 1. Day List Modal (Unchanged) ---
+// --- 1. Day List Modal (For Mobile/Overflow) ---
 function DayListModal({
   date,
   workOrders,
@@ -40,7 +50,7 @@ function DayListModal({
   date: Date;
   workOrders: any[]; 
   onClose: () => void;
-  onItemClick: (e: React.MouseEvent, id: string, date: Date) => void;
+  onItemClick: (e: React.MouseEvent, id: string, date: Date, isGhost?: boolean) => void;
 }) {
   const formattedDate = format(date, 'EEEE, MMMM do, yyyy');
   const today = startOfDay(new Date());
@@ -82,29 +92,28 @@ function DayListModal({
             workOrders.map((evt) => (
               <div
                 key={evt.id}
-                onClick={(e) => onItemClick(e, evt.id, date)}
+                onClick={(e) => onItemClick(e, evt.id, date, evt.isGhost)}
                 className={`group flex items-center justify-between p-4 bg-white border border-gray-200 rounded-xl shadow-sm transition-all duration-200
-                  ${isFuture 
+                  ${evt.status === 'locked' 
                     ? 'opacity-60 cursor-not-allowed bg-gray-50 grayscale' 
                     : 'hover:shadow-md hover:border-blue-400 hover:translate-x-1 cursor-pointer'
                   }`}
               >
                 <div className="flex items-center gap-4 overflow-hidden">
-                  {/* Status Icon */}
                   <div className={`p-2.5 rounded-lg flex-shrink-0 ${
-                    evt.status === 'done' ? 'bg-green-100 text-green-600' :
+                    evt.status === 'done' || evt.status === 'completed' ? 'bg-green-100 text-green-600' :
                     evt.status === 'in_progress' ? 'bg-blue-100 text-blue-600' :
                     'bg-gray-100 text-gray-500'
                   }`}>
-                    {isFuture ? <Lock size={18} /> : 
-                     evt.status === 'done' ? <CheckCircle2 size={18} /> : 
+                    {evt.status === 'locked' ? <Lock size={18} /> : 
+                     (evt.status === 'done' || evt.status === 'completed') ? <CheckCircle2 size={18} /> : 
                      evt.status === 'in_progress' ? <RefreshCcw size={18} /> : 
                      <Clock size={18} />
                     }
                   </div>
 
                   <div className="flex flex-col min-w-0">
-                    <span className={`text-sm font-semibold truncate ${isFuture ? 'text-gray-500' : 'text-gray-900 group-hover:text-blue-700'}`}>
+                    <span className={`text-sm font-semibold truncate ${evt.status === 'locked' ? 'text-gray-500' : 'text-gray-900 group-hover:text-blue-700'}`}>
                       {evt.title}
                     </span>
                     <span className="text-xs text-gray-500 capitalize flex items-center gap-1">
@@ -113,7 +122,7 @@ function DayListModal({
                   </div>
                 </div>
 
-                {!isFuture && <ChevronRightIcon size={18} className="text-gray-300 group-hover:text-blue-500 transition-transform group-hover:translate-x-1" />}
+                {evt.status !== 'locked' && <ChevronRightIcon size={18} className="text-gray-300 group-hover:text-blue-500 transition-transform group-hover:translate-x-1" />}
               </div>
             ))
           )}
@@ -134,15 +143,17 @@ function DayListModal({
   );
 }
 
-// --- 2. Hover Popover (UPDATED: Hide Status/Due Date for Future) ---
+// --- 2. Hover Popover (Smart UI: Locked vs Details) ---
 function EventDetailPopover({ 
   workOrder, 
   anchorRect,
-  eventDate // ✅ Passed from Parent to know context date
+  eventDate,
+  isGhost
 }: { 
-  workOrder: WorkOrder; 
+  workOrder: any; 
   anchorRect: DOMRect; 
   eventDate?: Date; 
+  isGhost?: boolean;
 }) {
   const formatDate = (date?: string) => date ? format(new Date(date), 'MMM d, yyyy') : '-';
   const assignee = workOrder.assignees?.[0] || workOrder.assignedTo;
@@ -153,17 +164,12 @@ function EventDetailPopover({
       case 'in_progress': return 'bg-blue-100 text-blue-700 border-blue-200';
       case 'done':
       case 'completed': return 'bg-green-100 text-green-700 border-green-200';
+      case 'locked': return 'bg-gray-100 text-gray-500 border-gray-200';
       default: return 'bg-gray-100 text-gray-700 border-gray-200';
     }
   };
 
   const statusLabel = workOrder.status ? workOrder.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Open';
-
-  // ✅ Future Check Logic
-  const today = startOfDay(new Date());
-  // Use passed eventDate or fallback to workOrder due date or today
-  const targetDate = eventDate ? startOfDay(eventDate) : (workOrder.dueDate ? startOfDay(new Date(workOrder.dueDate)) : today);
-  const isFuture = isAfter(targetDate, today);
 
   const POPOVER_HEIGHT = 320; 
   const POPOVER_WIDTH = 300;
@@ -203,47 +209,44 @@ function EventDetailPopover({
         <h3 className="font-semibold text-gray-900 line-clamp-2 leading-tight">
           {workOrder.title || "Untitled Work Order"}
         </h3>
-        {/* Optional: Show Lock icon in header for future */}
-        {isFuture && <Lock size={16} className="text-amber-500 flex-shrink-0 mt-1" />}
+        {isGhost && <Lock size={16} className="text-amber-500 flex-shrink-0 mt-1" />}
       </div>
       
       <div className="p-4 space-y-3">
         
-        {/* ✅ HIDE STATUS IF FUTURE */}
-        {!isFuture && (
+        {!isGhost ? (
           <>
             <div className="flex justify-between items-center">
               <span className="text-gray-500">Status</span>
               <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusStyle(workOrder.status)}`}>
                 {workOrder.status === 'in_progress' && <RefreshCcw size={10} className="animate-spin-slow" />}
-                {workOrder.status === 'done' && <CheckCircle2 size={10} />}
+                {(workOrder.status === 'done' || workOrder.status === 'completed') && <CheckCircle2 size={10} />}
                 {statusLabel}
               </span>
             </div>
             <div className="h-px bg-gray-100 my-2" />
           </>
+        ) : (
+          <div className="flex justify-center items-center p-2 bg-amber-50 text-amber-700 text-xs font-medium rounded border border-amber-100 mb-2">
+             <span>Completion Required</span>
+          </div>
         )}
 
-        {/* ✅ HIDE DUE DATE IF FUTURE (or show 'Locked') */}
-        {isFuture ? (
-           <div className="flex justify-center items-center p-2 bg-amber-50 text-amber-700 text-xs font-medium rounded border border-amber-100">
-              Locked until {formatDate(targetDate.toISOString())}
-           </div>
-        ) : (
-           <div className="flex justify-between items-center">
-             <span className="text-gray-500">Due Date</span>
-             <span className="text-gray-900 font-medium">{formatDate(workOrder.dueDate)}</span>
-           </div>
-        )}
+        <div className="flex justify-between items-center">
+          <span className="text-gray-500">Due Date</span>
+          <span className="text-gray-900 font-medium">{formatDate(eventDate?.toISOString() || workOrder.dueDate)}</span>
+        </div>
 
         <div className="flex justify-between items-center">
           <span className="text-gray-500">Estimated Time</span>
           <span className="text-gray-900">{workOrder.estimatedTimeHours ? `${workOrder.estimatedTimeHours}h` : '-'}</span>
         </div>
+        
         <div className="flex justify-between items-center">
           <span className="text-gray-500">Work Type</span>
           <span className="text-gray-900">{workOrder.workType || 'Reactive'}</span>
         </div>
+
         <div className="flex justify-between items-center">
           <span className="text-gray-500">Assigned To</span>
           {assigneeName !== '-' ? (
@@ -260,29 +263,45 @@ function EventDetailPopover({
   );
 }
 
-// --- 3. Recurrence Logic (Unchanged) ---
-const checkRecurrence = (wo: any, targetDate: Date) => {
-  if (!wo.startDate) return false;
-  const start = startOfDay(new Date(wo.startDate));
-  const current = startOfDay(targetDate);
-  if (isBefore(current, start)) return false;
+// --- 3. RECURRENCE LOGIC (UPDATED: GHOST PROJECTION) ---
+
+// Pure math checker: Does this date fit the rule?
+const matchesRecurrenceRule = (ruleStr: string | any, start: Date, target: Date) => {
+  const current = startOfDay(target);
+  const startDate = startOfDay(start);
+
+  if (isBefore(current, startDate)) return false;
 
   let rule: any = null;
   try {
-    if (wo.recurrenceRule) {
-      rule = typeof wo.recurrenceRule === 'string' ? JSON.parse(wo.recurrenceRule) : wo.recurrenceRule;
-    }
-  } catch (e) { return isSameDay(current, start); }
+    rule = typeof ruleStr === 'string' ? JSON.parse(ruleStr) : ruleStr;
+  } catch (e) { return false; }
 
-  if (!rule || !rule.type || rule.type === 'do_not_repeat') return isSameDay(current, start);
+  if (!rule || !rule.type) return false;
+
   if (rule.type === 'daily') return true;
+
   if (rule.type === 'weekly') {
-    const dayIndex = getDay(current); 
-    return rule.daysOfWeek && rule.daysOfWeek.includes(dayIndex);
+    const dayIndex = getDay(current);
+    // Handle array of days (e.g. [1, 3] for Mon/Wed) or single integers
+    return Array.isArray(rule.daysOfWeek) && rule.daysOfWeek.includes(dayIndex);
   }
-  if (rule.type === 'monthly_by_date') return getDate(current) === rule.dayOfMonth;
-  if (rule.type === 'yearly') return getDate(current) === getDate(start) && current.getMonth() === start.getMonth();
+  
+  if (rule.type === 'monthly_by_date') {
+    return getDate(current) === rule.dayOfMonth;
+  }
+  
+  if (rule.type === 'yearly') {
+    return getDate(current) === getDate(startDate) && current.getMonth() === startDate.getMonth();
+  }
+
   return false;
+};
+
+// Strict check for real items
+const isStrictDueDate = (wo: any, targetDate: Date) => {
+  if (!wo.dueDate) return false;
+  return isSameDay(startOfDay(new Date(wo.dueDate)), startOfDay(targetDate));
 };
 
 const dayHeaders = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
@@ -293,6 +312,11 @@ interface CalendarViewProps {
 }
 
 export function CalendarView({ workOrders, onRefreshWorkOrders }: CalendarViewProps) {
+  // ✅ REDUX HOOKS
+  const dispatch = useAppDispatch();
+  // Fetch active WO from Global State
+  const selectedWorkOrder = useAppSelector((state) => state.workOrders.selectedWorkOrder);
+
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd')); 
@@ -300,31 +324,34 @@ export function CalendarView({ workOrders, onRefreshWorkOrders }: CalendarViewPr
   const today = startOfDay(new Date());
 
   const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
-  const [hoveredEventDate, setHoveredEventDate] = useState<Date | undefined>(undefined); // ✅ Track Date for Hover
+  const [hoveredEventDate, setHoveredEventDate] = useState<Date | undefined>(undefined); 
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
+  const [hoveredEventGhost, setHoveredEventGhost] = useState(false);
   
-  const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrder | null>(null);
+  // Local state for Day List (Mobile/Overflow) is fine as it's transient
   const [dayListModalData, setDayListModalData] = useState<{ date: Date, events: any[] } | null>(null);
 
-  const handleEventClick = (e: React.MouseEvent, id: string, eventDate: Date) => {
+  // ✅ UPDATED HANDLER: Dispatch to Redux
+  const handleEventClick = (e: React.MouseEvent, id: string, eventDate: Date, isGhost?: boolean) => {
     e.stopPropagation();
-    const isFuture = isAfter(startOfDay(eventDate), today);
 
-    if (isFuture) {
-      toast.error(`Locked until ${format(eventDate, 'MMM d')}`, {
+    // 🔒 BLOCKING: If ghost, prevent opening
+    if (isGhost || id.startsWith('ghost-')) {
+      toast('Complete previous tasks to unlock this work order', {
         icon: '🔒',
-        style: { borderRadius: '10px', background: '#333', color: '#fff' },
+        style: { borderRadius: '10px', background: '#333', color: '#fff', fontSize: '13px' },
       });
       return;
     }
 
-    const wo = workOrders.find(w => w.id === id);
-    if (wo) {
-      setDayListModalData(null); 
-      setSelectedWorkOrder(wo);
-      setHoveredEventId(null);
-      setAnchorRect(null);
-    }
+    // ✅ DISPATCH GLOBAL ACTION
+    // This saves the state in Redux so it persists across panel switches
+    dispatch(fetchWorkOrderById(id));
+    
+    // Clear other UI states
+    setDayListModalData(null); 
+    setHoveredEventId(null);
+    setAnchorRect(null);
   };
 
   const handleDayClick = (date: Date, events: any[]) => {
@@ -332,18 +359,19 @@ export function CalendarView({ workOrders, onRefreshWorkOrders }: CalendarViewPr
     setDayListModalData({ date, events });
   };
 
-  // ✅ Updated Hover Handler to capture Date
-  const handleMouseEnter = (e: React.MouseEvent, id: string, date: Date) => {
+  const handleMouseEnter = (e: React.MouseEvent, id: string, date: Date, isGhost?: boolean) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setAnchorRect(rect);
     setHoveredEventId(id);
     setHoveredEventDate(date);
+    setHoveredEventGhost(!!isGhost);
   };
 
   const handleMouseLeave = () => {
     setHoveredEventId(null);
     setAnchorRect(null);
     setHoveredEventDate(undefined);
+    setHoveredEventGhost(false);
   };
 
   const handlePrev = () => {
@@ -356,15 +384,72 @@ export function CalendarView({ workOrders, onRefreshWorkOrders }: CalendarViewPr
     else setCurrentDate(addWeeks(currentDate, 1));
   };
 
+  // ✅ CORE LOGIC: Merge Real + Ghost Events
   const getEventsForDay = (day: Date) => {
-    return workOrders
-      .filter(wo => checkRecurrence(wo, day))
+    const dayStart = startOfDay(day);
+    const todayStart = startOfDay(new Date());
+    const isFuture = isAfter(dayStart, todayStart);
+
+    // 1. Real Events (Strict Due Date)
+    const realEvents = workOrders.filter(wo => isStrictDueDate(wo, day));
+
+    // 2. Ghost Events (Projections)
+    const ghostEvents = workOrders
+      .filter(wo => {
+        // Only project from the "Active Head" of a recurring chain
+        const isActive = wo.status !== 'done' && wo.status !== 'completed' && !wo.isDeleted;
+        const hasRecurrence = !!wo.recurrenceRule;
+        
+        if (!isActive || !hasRecurrence) return false;
+
+        // Only project into the future relative to the specific WO's due date
+        // e.g. If WO is due Dec 25, we only ghost starting Dec 26.
+        const woDueDate = startOfDay(new Date(wo.dueDate));
+        if (!isAfter(dayStart, woDueDate)) return false;
+
+        // Check rule match
+        const matchesRule = matchesRecurrenceRule(wo.recurrenceRule, new Date(wo.startDate), day);
+        
+        // Don't show ghost if real item exists
+        const hasRealSibling = realEvents.some(real => real.title === wo.title && real.workType === wo.workType); 
+
+        return matchesRule && !hasRealSibling;
+      })
       .map(wo => ({
-        id: wo.id,
+        id: `ghost-${wo.id}-${day.toISOString()}`,
         title: wo.title,
-        icon: (wo.status === 'completed' || wo.status === 'done') ? 'refresh' : 'lock',
-        status: wo.status
+        status: 'locked',
+        icon: 'lock',
+        isGhost: true,
+        original: wo,
+        // Inherit props for display
+        assignees: wo.assignees,
+        workType: wo.workType,
+        estimatedTimeHours: wo.estimatedTimeHours,
+        priority: wo.priority,
+        // Ghost due date is the calendar day itself
+        dueDate: day.toISOString() 
       }));
+
+    // 3. Map Real Events to UI format
+    const uiRealEvents = realEvents.map(wo => ({
+      id: wo.id,
+      title: wo.title,
+      // Icon Logic: Done=Check, Open/In_Progress=Clock/Refresh
+      icon: (wo.status === 'done' || wo.status === 'completed') ? 'check' : 
+            (wo.status === 'in_progress' ? 'refresh' : 'clock'),
+      status: wo.status,
+      isGhost: false,
+      // Pass full object for popover
+      original: wo,
+      assignees: wo.assignees,
+      workType: wo.workType,
+      estimatedTimeHours: wo.estimatedTimeHours,
+      priority: wo.priority,
+      dueDate: wo.dueDate
+    }));
+
+    return [...uiRealEvents, ...ghostEvents];
   };
 
   const monthDays = useMemo(() => {
@@ -390,21 +475,36 @@ export function CalendarView({ workOrders, onRefreshWorkOrders }: CalendarViewPr
     }));
   }, [currentDate, workOrders]);
 
+  // Helper to find WO data for popover
+  const getPopoverData = () => {
+    if (!hoveredEventId) return null;
+    // Check if ghost
+    if (hoveredEventId.startsWith('ghost-')) {
+       const ghost = monthDays.flatMap(d => d.events).find(e => e.id === hoveredEventId);
+       return ghost ? ghost : null;
+    }
+    return workOrders.find(w => w.id === hoveredEventId);
+  };
+
+  const popoverData = getPopoverData();
+
   return (
     <div className="flex flex-col h-full bg-white p-4 relative"> 
       
-      {hoveredEventId && anchorRect && (
+      {popoverData && anchorRect && (
         <EventDetailPopover
-          workOrder={workOrders.find(w => w.id === hoveredEventId)!}
+          workOrder={popoverData}
           anchorRect={anchorRect}
-          eventDate={hoveredEventDate} // ✅ Pass date to popover
+          eventDate={hoveredEventDate}
+          isGhost={hoveredEventGhost}
         />
       )}
 
+      {/* ✅ GLOBAL MODAL CONTROL */}
       {selectedWorkOrder && (
         <WorkOrderDetailModal
           open={!!selectedWorkOrder}
-          onClose={() => setSelectedWorkOrder(null)}
+          onClose={() => dispatch(clearSelectedWorkOrder())} // Clear Redux state on close
           workOrder={selectedWorkOrder}
           onRefreshWorkOrders={onRefreshWorkOrders}
         />
@@ -449,14 +549,13 @@ export function CalendarView({ workOrders, onRefreshWorkOrders }: CalendarViewPr
                   return (
                     <div
                       key={day.fullDate.toISOString()}
-                      // CLICK: Opens Modal ONLY on Number
                       className={`relative p-2 overflow-y-auto border-r border-b border-gray-200 transition-all ${day.isCurrentMonth ? 'bg-white hover:bg-gray-50' : 'bg-gray-50 text-gray-400'} ${isSelected ? 'bg-blue-50/10' : ''}`}
                       style={{ height: '7rem' }}
                     >
                       <div className="flex justify-end p-1">
                         <span
                             onClick={(e) => {
-                                e.stopPropagation(); // Prevent row click
+                                e.stopPropagation();
                                 handleDayClick(day.fullDate, day.events);
                             }}
                             className={`text-xs font-medium flex items-center justify-center h-7 w-7 p-2 rounded-full cursor-pointer transition-all ${
@@ -470,22 +569,27 @@ export function CalendarView({ workOrders, onRefreshWorkOrders }: CalendarViewPr
                       </div>
                       <div className="mt-1 space-y-1">
                         {day.events?.map((evt: any) => {
-                          const isFuture = isAfter(startOfDay(day.fullDate), today);
+                          const isLocked = evt.isGhost;
+                          
                           return (
                             <div 
                               key={`${evt.id}-${day.date}`} 
-                              onClick={(e) => handleEventClick(e, evt.id, day.fullDate)} 
-                              onMouseEnter={(e) => handleMouseEnter(e, evt.id, day.fullDate)} // ✅ Pass Date
+                              onClick={(e) => handleEventClick(e, evt.id, day.fullDate, evt.isGhost)} 
+                              onMouseEnter={(e) => handleMouseEnter(e, evt.id, day.fullDate, evt.isGhost)}
                               onMouseLeave={handleMouseLeave}
                               className={`flex items-center gap-1.5 p-1 rounded-md border shadow-sm transition group 
-                                ${isFuture 
+                                ${isLocked
                                   ? 'bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed grayscale' 
                                   : 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-md cursor-pointer'
                                 }
                               `}
                             >
-                              {isFuture ? <Lock className="h-3 w-3 text-gray-400" /> : (evt.icon === 'refresh' ? <RefreshCcw className="h-3 w-3 text-blue-500" /> : <Clock className="h-3 w-3 text-green-600" />)}
-                              <span className={`text-xs truncate ${isFuture ? 'text-gray-400' : 'text-gray-800 group-hover:text-blue-600'}`}>
+                              {evt.icon === 'lock' ? <Lock className="h-3 w-3 text-gray-400" /> : 
+                               evt.icon === 'check' ? <CheckCircle2 className="h-3 w-3 text-green-500" /> : 
+                               evt.icon === 'refresh' ? <RefreshCcw className="h-3 w-3 text-blue-500" /> : 
+                               <Clock className="h-3 w-3 text-gray-500" />}
+                              
+                              <span className={`text-xs truncate ${isLocked ? 'text-gray-400' : 'text-gray-800 group-hover:text-blue-600'}`}>
                                 {evt.title}
                               </span>
                             </div>
@@ -524,22 +628,26 @@ export function CalendarView({ workOrders, onRefreshWorkOrders }: CalendarViewPr
                       </div>
                       <div className="mt-1 space-y-1">
                         {day.events?.map((evt: any) => {
-                          const isFuture = isAfter(startOfDay(day.fullDate), today);
+                          const isLocked = evt.isGhost;
+
                           return (
                             <div 
                               key={`${evt.id}-${day.date}`} 
-                              onClick={(e) => handleEventClick(e, evt.id, day.fullDate)}
-                              onMouseEnter={(e) => handleMouseEnter(e, evt.id, day.fullDate)} // ✅ Pass Date
+                              onClick={(e) => handleEventClick(e, evt.id, day.fullDate, evt.isGhost)}
+                              onMouseEnter={(e) => handleMouseEnter(e, evt.id, day.fullDate, evt.isGhost)}
                               onMouseLeave={handleMouseLeave}
                               className={`flex items-center gap-1.5 p-1 rounded-md border shadow-sm transition group 
-                                ${isFuture 
+                                ${isLocked
                                   ? 'bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed grayscale' 
                                   : 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-md cursor-pointer'
                                 }
                               `}
                             >
-                              {isFuture ? <Lock className="h-3 w-3 text-gray-400" /> : (evt.icon === 'refresh' ? <RefreshCcw className="h-3 w-3 text-blue-500" /> : <Clock className="h-3 w-3 text-green-600" />)}
-                              <span className={`text-xs truncate ${isFuture ? 'text-gray-400' : 'text-gray-800 group-hover:text-blue-600'}`}>
+                              {evt.icon === 'lock' ? <Lock className="h-3 w-3 text-gray-400" /> : 
+                               evt.icon === 'check' ? <CheckCircle2 className="h-3 w-3 text-green-500" /> : 
+                               evt.icon === 'refresh' ? <RefreshCcw className="h-3 w-3 text-blue-500" /> : 
+                               <Clock className="h-3 w-3 text-gray-500" />}
+                              <span className={`text-xs truncate ${isLocked ? 'text-gray-400' : 'text-gray-800 group-hover:text-blue-600'}`}>
                                 {evt.title}
                               </span>
                             </div>

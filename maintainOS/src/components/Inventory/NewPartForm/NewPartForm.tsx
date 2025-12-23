@@ -101,59 +101,39 @@ export function NewPartForm({
 
   const handleSubmitPart = async () => {
     try {
-      const formData = new FormData();
       const isEditing = !!newItem.id;
-      const original = newItem._original || {}; 
 
-      // Helper to append if value exists or changed
-      const appendIfChanged = (key: string, newVal: any, oldVal: any) => {
-        if (typeof newVal === "string" && (newVal === "[]" || newVal === "{}")) return;
+      // ✅ CONSTRUCT JSON PAYLOAD (Replaces FormData)
+      // This sends real arrays directly, preventing backend parsing errors.
+      const payload: any = {
+        organizationId: organizationId || "",
+        name: newItem.name || "",
+        description: newItem.description || "",
+        // Ensure unitCost is a number
+        unitCost: newItem.unitCost ? Number(newItem.unitCost) : 0, 
+        
+        // Handle QR Code format
+        qrCode: newItem.qrCode ? `part/${String(newItem.qrCode).replace('part/', '')}` : "",
 
-        const isEmpty =
-          newVal === "" ||
-          newVal === null ||
-          newVal === undefined ||
-          (Array.isArray(newVal) && newVal.length === 0) ||
-          (typeof newVal === "object" && !Array.isArray(newVal) && Object.keys(newVal).length === 0);
+        // ✅ Send Arrays as REAL Arrays (No JSON.stringify)
+        partsType: Array.isArray(newItem.partsType) ? newItem.partsType : [],
+        assetIds: Array.isArray(newItem.assetIds) ? newItem.assetIds : [],
+        teamsInCharge: Array.isArray(newItem.teamsInCharge) ? newItem.teamsInCharge : [],
+        vendorIds: Array.isArray(newItem.vendorIds) ? newItem.vendorIds : [],
 
-        const isChanged = !isEditing || JSON.stringify(newVal) !== JSON.stringify(oldVal);
+        // ✅ Send Metadata for Images/Docs (Assuming file upload handled separately or pre-signed URLs)
+        partImages: partImages && partImages.length > 0 ? partImages : [],
+        partDocs: partDocs && partDocs.length > 0 ? partDocs : [],
 
-        if (!isEmpty || isChanged) {
-          formData.append(key, newVal);
-        }
+        // Initialize complex fields
+        locations: [],
+        vendors: []
       };
 
-      // 1. Basic Fields
-      appendIfChanged("organizationId", organizationId || "", original.organizationId);
-      appendIfChanged("name", newItem.name || "", original.name);
-      appendIfChanged("description", newItem.description || "", original.description);
-      appendIfChanged("unitCost", newItem.unitCost ? String(newItem.unitCost) : "", original.unitCost ? String(original.unitCost) : "");
-      
-      const newQr = newItem.qrCode ? `part/${String(newItem.qrCode).replace('part/', '')}` : "";
-      if (newQr) formData.append("qrCode", newQr);
-
-      // 2. Arrays (JSON)
-      const partTypeVal = Array.isArray(newItem.partsType) ? newItem.partsType : [];
-      if (partTypeVal.length > 0) {
-        formData.append("partsType", JSON.stringify(partTypeVal));
-      }
-
-      if (Array.isArray(newItem.assetIds) && newItem.assetIds.length > 0) {
-        formData.append("assetIds", JSON.stringify(newItem.assetIds));
-      }
-      if (Array.isArray(newItem.teamsInCharge) && newItem.teamsInCharge.length > 0) {
-        formData.append("teamsInCharge", JSON.stringify(newItem.teamsInCharge));
-      }
-      if (Array.isArray(newItem.vendorIds) && newItem.vendorIds.length > 0) {
-        formData.append("vendorIds", JSON.stringify(newItem.vendorIds));
-      }
-
-      // 3. LOCATIONS LOGIC
-      let locationsPayload: any[] = [];
-
+      // 3. LOCATIONS LOGIC (Push objects to array)
       // Case A: If user added multiple locations via the list
       if (newItem.locations && newItem.locations.length > 0) {
-        locationsPayload = newItem.locations.map((loc: any) => ({
+        payload.locations = newItem.locations.map((loc: any) => ({
            locationId: loc.locationId || loc.id,
            area: loc.area || "",
            unitsInStock: Number(loc.unitsInStock ?? loc.unitInStock ?? 0),
@@ -162,7 +142,7 @@ export function NewPartForm({
       } 
       // Case B: Fallback for the single location inputs (edited via main form)
       else if (newItem.locationId || newItem.area) {
-        locationsPayload.push({
+        payload.locations.push({
            locationId: newItem.locationId || "",
            area: newItem.area || "",
            unitsInStock: Number(newItem.unitInStock || 0),
@@ -170,53 +150,21 @@ export function NewPartForm({
         });
       }
 
-      if (locationsPayload.length > 0) {
-         formData.append("locations", JSON.stringify(locationsPayload));
-      }
-
-      // 4. Photos & Files
-      if (Array.isArray(newItem.pictures) && newItem.pictures.length > 0) {
-        newItem.pictures.forEach((file: any) => {
-          if (file instanceof File) {
-            formData.append("photos", file);
-          } else if (typeof file === "string" && file.startsWith("data:")) {
-            const byteString = atob(file.split(",")[1]);
-            const mimeString = file.split(",")[0].split(":")[1].split(";")[0];
-            const ab = new ArrayBuffer(byteString.length);
-            const ia = new Uint8Array(ab);
-            for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
-            const blob = new Blob([ab], { type: mimeString });
-            formData.append("photos", blob);
-          }
-        });
-      }
-
-      if (Array.isArray(newItem.files) && newItem.files.length > 0) {
-        newItem.files.forEach((file: any) => {
-          formData.append("files", file instanceof File ? file : String(file));
-        });
-      }
-
-      // 5. Backblaze Arrays
-      const partImagesArray = partImages && partImages.length > 0 ? partImages : [];
-      const partDocsArray = partDocs && partDocs.length > 0 ? partDocs : [];
-      formData.append("partImages", JSON.stringify(partImagesArray));
-      formData.append("partDocs", JSON.stringify(partDocsArray));
-
-      // 6. Vendors Metadata
+      // 4. VENDORS METADATA LOGIC
       if (Array.isArray(newItem.vendors) && newItem.vendors.length > 0) {
-        newItem.vendors.forEach((vendor: any, index: number) => {
-          formData.append(`vendors[${index}][vendorId]`, vendor.vendorId || "");
-          formData.append(`vendors[${index}][orderingPartNumber]`, vendor.orderingPartNumber || "");
-        });
+        payload.vendors = newItem.vendors.map((vendor: any) => ({
+          vendorId: vendor.vendorId || "",
+          orderingPartNumber: vendor.orderingPartNumber || ""
+        }));
       }
 
-      // 7. Submit
+      // 5. Submit as JSON
+      // NOTE: Ensure your backend Controller is using @Body() not @UploadedFiles() for these fields now
       if (isEditing) {
-        await dispatch(updatePart({ id: String(newItem.id), partData: formData })).unwrap();
+        await dispatch(updatePart({ id: String(newItem.id), partData: payload })).unwrap();
         toast.success("Part updated successfully!");
       } else {
-        await dispatch(createPart(formData)).unwrap();
+        await dispatch(createPart(payload)).unwrap();
         toast.success("Part created successfully!");
       }
 

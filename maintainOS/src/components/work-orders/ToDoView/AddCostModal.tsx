@@ -25,12 +25,14 @@ export default function AddCostModal({
 }: AddCostModalProps) {
   const isEdit = !!initialCost;
 
+  // ✅ FIX: Robust State Initialization
   const [form, setForm] = useState({
     userId: initialCost?.userId || "",
     userName:
       initialCost?.user?.fullName ||
       initialCost?.userName ||
       (selectedWorkOrder?.assignees?.[0]?.fullName ?? ""),
+    // Initialize as string to handle "0" correctly
     amount:
       typeof initialCost?.amount !== "undefined"
         ? String(initialCost?.amount)
@@ -85,7 +87,8 @@ export default function AddCostModal({
   }, [userOptions.length]);
 
   const handlePrimary = async () => {
-    if (!form.amount || Number(form.amount) <= 0) {
+    // ✅ FIX: Allow 0 as valid amount if typed explicitly
+    if (form.amount === "" || form.amount === undefined) {
       alert("Please enter a valid amount");
       return;
     }
@@ -96,20 +99,21 @@ export default function AddCostModal({
 
     setIsSubmitting(true);
     try {
+      // ✅ FIX: Construct clean payload
       const payload = {
         id: initialCost?.id, // present only in edit
         userId: form.userId,
-        amount: Number(form.amount),
+        amount: form.amount, // Pass as string or number, Service handles it
         description: form.description?.trim() || "",
-        category: form.category?.toLowerCase(),
+        category: form.category?.toLowerCase() || "other",
         createdAt: initialCost?.createdAt || new Date().toISOString(),
         user: { id: form.userId, fullName: form.userName || "Unknown User" },
       };
 
       if (isEdit && onUpdate) {
-        onUpdate(payload);
+        await onUpdate(payload);
       } else if (onAdd) {
-        onAdd(payload);
+        await onAdd(payload);
       }
       onClose();
     } catch (e) {
@@ -183,13 +187,16 @@ export default function AddCostModal({
             <label className="text-sm font-medium text-gray-700 block mb-1">
               Amount
             </label>
-            <div className="flex items-center border border-gray-300 rounded-md px-3">
+            <div className="flex items-center border border-gray-300 rounded-md px-3 bg-white focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-400 transition-all">
               <span className="text-gray-500 mr-2">$</span>
               <input
                 type="number"
+                min="0"
+                step="0.01"
+                // ✅ FIX: Controlled Input
                 value={form.amount}
                 onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                className="flex-1 py-2 text-sm outline-none bg-transparent"
+                className="flex-1 py-2 text-sm outline-none bg-transparent text-gray-700 placeholder-gray-400"
                 placeholder="0.00"
               />
             </div>
@@ -201,12 +208,13 @@ export default function AddCostModal({
               Description (Optional)
             </label>
             <textarea
+              // ✅ FIX: Controlled Input
               value={form.description}
               onChange={(e) =>
                 setForm({ ...form, description: e.target.value })
               }
               placeholder="Add a description"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm resize-none outline-none focus-visible:border-blue-400 transition"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm resize-none outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition"
               rows={3}
             />
           </div>

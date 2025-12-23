@@ -3,11 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "../../../store/hooks";
-import { ArrowLeft, ChevronRight, ChevronLeft } from "lucide-react";
+import { ArrowLeft, ChevronRight } from "lucide-react";
 import AddCostModal from "../ToDoView/AddCostModal";
 import {
   addOtherCost,
   deleteOtherCost,
+  updateOtherCost, // ✅ Added for Edit functionality
 } from "../../../store/workOrders/workOrders.thunks";
 import toast from "react-hot-toast";
 
@@ -28,14 +29,14 @@ type Props = {
   onCancel: () => void;
   workOrderId?: string;
   selectedWorkOrder?: any;
-  onSaveSuccess?: () => void; // ✅ Added prop
+  onSaveSuccess?: () => void;
 };
 
 export default function OtherCostsPanel({
   onCancel,
   workOrderId,
   selectedWorkOrder,
-  onSaveSuccess, // ✅ Destructure prop
+  onSaveSuccess,
 }: Props) {
   const dispatch = useAppDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -78,55 +79,83 @@ export default function OtherCostsPanel({
     return map;
   }, [costs]);
 
-  // local handlers
-  const addLocal = (c: any) => setCosts((p) => [...p, c]);
-  const updateLocal = (c: any) =>
-    setCosts((p) => p.map((x) => (x.id === c.id ? { ...x, ...c } : x)));
-  const deleteLocal = (id: string) =>
-    setCosts((p) => p.filter((x) => x.id !== id));
-
   // ✅ API Handlers
   const handleAdd = async (data: any) => {
+    if (!workOrderId) return;
     try {
       const userId =
         typeof data.userId === "object" ? data.userId.id : data.userId;
 
       const payload = {
-        items: [
-          {
-            userId, // ✅ only ID string goes
-            amount: Number(data.amount || 0),
-            description: data.description || "",
-            category: data.category || "other",
-          },
-        ],
+        userId, 
+        amount: data.amount, // Service layer handles Number conversion/safety
+        description: data.description,
+        category: data.category,
       };
 
-      const res = await dispatch(addOtherCost({ id: workOrderId!, data: payload })).unwrap();
+      await dispatch(addOtherCost({ id: workOrderId, data: payload })).unwrap();
       toast.success("✅ Cost added successfully");
 
-      // ✅ Trigger Parent Refresh
+      // Trigger Parent Refresh
       if (onSaveSuccess) onSaveSuccess();
 
       // Close modal
       setIsModalOpen(false);
+      setModalInitial(null);
 
     } catch (err: any) {
+      console.error(err);
       toast.error(err?.message || "Failed to add cost");
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this cost entry?")) return;
+  const handleUpdate = async (data: any) => {
+    if (!workOrderId || !modalInitial?.id) return;
     try {
-      await dispatch(deleteOtherCost({ id: workOrderId!, costId: id })).unwrap();
+      const payload = {
+        userId: typeof data.userId === "object" ? data.userId.id : data.userId,
+        amount: data.amount,
+        description: data.description,
+        category: data.category,
+      };
+
+      await dispatch(
+        updateOtherCost({
+          workOrderId,
+          costId: modalInitial.id,
+          data: payload,
+        })
+      ).unwrap();
+      
+      toast.success("✅ Cost updated successfully");
+
+      // Trigger Parent Refresh
+      if (onSaveSuccess) onSaveSuccess();
+
+      // Close modal
+      setIsModalOpen(false);
+      setModalInitial(null);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Failed to update cost");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!workOrderId) return;
+    if (!confirm("Delete this cost entry?")) return;
+    
+    try {
+      await dispatch(deleteOtherCost({ id: workOrderId, costId: id })).unwrap();
       toast.success("🗑️ Cost deleted successfully");
       
-      // ✅ Trigger Parent Refresh
+      // Trigger Parent Refresh
       if (onSaveSuccess) onSaveSuccess();
       
-      deleteLocal(id);
+      setIsModalOpen(false); 
+      setModalInitial(null);
     } catch (err: any) {
+      console.error(err);
       toast.error(err?.message || "Failed to delete cost");
     }
   };
@@ -318,17 +347,16 @@ export default function OtherCostsPanel({
 
       {isModalOpen && (
         <AddCostModal
-          onClose={() => setIsModalOpen(false)}
+          onClose={() => {
+            setIsModalOpen(false);
+            setModalInitial(null);
+          }}
           workOrderId={workOrderId}
           selectedWorkOrder={selectedWorkOrder}
           initialCost={modalInitial}
           onAdd={handleAdd}
-          onUpdate={(upd) => {
-              // If AddCostModal handles updates internally via API:
-              if (onSaveSuccess) onSaveSuccess();
-              updateLocal(upd);
-          }}
-          onDelete={handleDelete}
+          onUpdate={handleUpdate} // ✅ Connected to robust update handler
+          onDelete={() => handleDelete(modalInitial?.id)}
         />
       )}
     </div>
