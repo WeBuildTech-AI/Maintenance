@@ -3,7 +3,7 @@
 import { useState, useLayoutEffect, useEffect, useRef } from "react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
-import { Button } from "../../ui/button";
+import { Button } from "../ui/button";
 import { subDays, subWeeks, subMonths } from "date-fns";
 
 type Props = {

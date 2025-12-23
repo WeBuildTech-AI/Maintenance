@@ -27,7 +27,7 @@ import Loader from "../../../Loader/Loader";
 import { MeterReadings } from "../../../Meters/MeterDetail/MeterReadings";
 import { Button } from "../../../ui/button";
 // 👇 Import the Custom Date Modal
-import { CustomDateRangeModal } from "../../../Meters/MeterDetail/CustomDateRangeModal";
+import { CustomDateRangeModal } from "../../../utils/CustomDateRangeModal";
 
 type Period = "1H" | "1D" | "1W" | "1M" | "3M" | "6M" | "1Y" | "Custom";
 
@@ -52,7 +52,7 @@ export default function AssetStatusMoreDetails({
     start: Date;
     end: Date;
   } | null>(null);
-  
+
   // ✅ State for Modal visibility
   const [showCustomDateModal, setShowCustomDateModal] = useState(false);
   const customDateAnchorRef = useRef<HTMLButtonElement>(null);
@@ -124,14 +124,22 @@ export default function AssetStatusMoreDetails({
     const hour = 60 * 60 * 1000;
     const day = 24 * hour;
     switch (period) {
-      case "1H": return hour;
-      case "1D": return day;
-      case "1W": return 7 * day;
-      case "1M": return 30 * day;
-      case "3M": return 90 * day;
-      case "6M": return 180 * day;
-      case "1Y": return 365 * day;
-      default: return 7 * day;
+      case "1H":
+        return hour;
+      case "1D":
+        return day;
+      case "1W":
+        return 7 * day;
+      case "1M":
+        return 30 * day;
+      case "3M":
+        return 90 * day;
+      case "6M":
+        return 180 * day;
+      case "1Y":
+        return 365 * day;
+      default:
+        return 7 * day;
     }
   };
 
@@ -182,7 +190,9 @@ export default function AssetStatusMoreDetails({
 
     return relevantLogs.map((entry) => {
       let logStart = new Date(entry.since).getTime();
-      let logEnd = entry.to ? new Date(entry.to).getTime() : new Date().getTime();
+      let logEnd = entry.to
+        ? new Date(entry.to).getTime()
+        : new Date().getTime();
 
       if (logStart < startTime) logStart = startTime;
       if (logEnd > endTime) logEnd = endTime;
@@ -276,14 +286,13 @@ export default function AssetStatusMoreDetails({
           hour: "2-digit",
           minute: "2-digit",
         });
-      }else if (selectedPeriod === "1Y") {
+      } else if (selectedPeriod === "1Y") {
         label = d.toLocaleDateString("en-GB", {
           day: "numeric",
           month: "short",
-          year:"2-digit"
+          year: "2-digit",
         });
-      } 
-      else {
+      } else {
         label = d.toLocaleDateString("en-GB", {
           day: "numeric",
           month: "short",
@@ -445,61 +454,102 @@ export default function AssetStatusMoreDetails({
 
                 {/* Timeline Chart */}
                 <div className="bg-white rounded border border-gray-200 p-4 mb-8">
-                    {/* ... (Timeline chart content same as before) ... */}
-                    {/* Use existing chart code here */}
-                    <div className="space-y-3">
-                        {/* Example Online Row */}
-                        <div className="flex items-center gap-4">
-                            <span className="text-xs text-gray-600 w-20">Online</span>
-                            <div className="flex-1 relative h-6 bg-gray-50 rounded">
-                                {timelineSegments.filter(seg => seg.status === "online").map((seg, i) => (
-                                    <div key={i} className={`absolute h-full rounded ${seg.color}`} style={{ left: `${seg.left}%`, width: `${seg.width}%` }}></div>
-                                ))}
-                            </div>
-                        </div>
-                        {/* Example Offline Row */}
-                         <div className="flex items-center gap-4">
-                            <span className="text-xs text-gray-600 w-20">Offline</span>
-                            <div className="flex-1 relative h-6 bg-gray-50 rounded">
-                                {timelineSegments.filter(seg => seg.status === "offline").map((seg, i) => (
-                                    <div key={i} className={`absolute h-full rounded ${seg.color}`} style={{ left: `${seg.left}%`, width: `${seg.width}%` }}></div>
-                                ))}
-                            </div>
-                        </div>
-                         {/* Example Do Not Track Row */}
-                         <div className="flex items-center gap-4">
-                            <span className="text-xs text-gray-600 w-20">Do Not Track</span>
-                            <div className="flex-1 relative h-6 bg-gray-50 rounded">
-                                {timelineSegments.filter(seg => seg.status === "doNotTrack").map((seg, i) => (
-                                    <div key={i} className={`absolute h-full rounded ${seg.color}`} style={{ left: `${seg.left}%`, width: `${seg.width}%` }}></div>
-                                ))}
-                            </div>
-                        </div>
+                  {/* ... (Timeline chart content same as before) ... */}
+                  {/* Use existing chart code here */}
+                  <div className="space-y-3">
+                    {/* Example Online Row */}
+                    <div className="flex items-center gap-4">
+                      <span className="text-xs text-gray-600 w-20">Online</span>
+                      <div className="flex-1 relative h-6 bg-gray-50 rounded">
+                        {timelineSegments
+                          .filter((seg) => seg.status === "online")
+                          .map((seg, i) => (
+                            <div
+                              key={i}
+                              className={`absolute h-full rounded ${seg.color}`}
+                              style={{
+                                left: `${seg.left}%`,
+                                width: `${seg.width}%`,
+                              }}
+                            ></div>
+                          ))}
+                      </div>
                     </div>
-                     {dateLabels.length > 0 && (
-                        <div className="flex justify-between mt-2 text-xs text-gray-500 px-2">
-                        {dateLabels.map((label, i) => (
-                            <span key={i}>{label}</span>
-                        ))}
-                        </div>
-                    )}
+                    {/* Example Offline Row */}
+                    <div className="flex items-center gap-4">
+                      <span className="text-xs text-gray-600 w-20">
+                        Offline
+                      </span>
+                      <div className="flex-1 relative h-6 bg-gray-50 rounded">
+                        {timelineSegments
+                          .filter((seg) => seg.status === "offline")
+                          .map((seg, i) => (
+                            <div
+                              key={i}
+                              className={`absolute h-full rounded ${seg.color}`}
+                              style={{
+                                left: `${seg.left}%`,
+                                width: `${seg.width}%`,
+                              }}
+                            ></div>
+                          ))}
+                      </div>
+                    </div>
+                    {/* Example Do Not Track Row */}
+                    <div className="flex items-center gap-4">
+                      <span className="text-xs text-gray-600 w-20">
+                        Do Not Track
+                      </span>
+                      <div className="flex-1 relative h-6 bg-gray-50 rounded">
+                        {timelineSegments
+                          .filter((seg) => seg.status === "doNotTrack")
+                          .map((seg, i) => (
+                            <div
+                              key={i}
+                              className={`absolute h-full rounded ${seg.color}`}
+                              style={{
+                                left: `${seg.left}%`,
+                                width: `${seg.width}%`,
+                              }}
+                            ></div>
+                          ))}
+                      </div>
+                    </div>
+                  </div>
+                  {dateLabels.length > 0 && (
+                    <div className="flex justify-between mt-2 text-xs text-gray-500 px-2">
+                      {dateLabels.map((label, i) => (
+                        <span key={i}>{label}</span>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Stats */}
                 <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded border border-gray-200">
-                    {/* Stats content same as before */}
-                     <div>
-                        <div className="text-2xl font-semibold text-gray-800">{uptime}h</div>
-                        <div className="text-sm text-gray-600">Uptime</div>
+                  {/* Stats content same as before */}
+                  <div>
+                    <div className="text-2xl font-semibold text-gray-800">
+                      {uptime}h
                     </div>
-                    <div>
-                        <div className="text-2xl font-semibold text-gray-800">{unplannedDowntime}h</div>
-                        <div className="text-sm text-gray-600">Unplanned Downtime</div>
+                    <div className="text-sm text-gray-600">Uptime</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-semibold text-gray-800">
+                      {unplannedDowntime}h
                     </div>
-                    <div>
-                        <div className="text-2xl font-semibold text-black">{plannedDowntime}h</div>
-                        <div className="text-sm text-gray-600">Planned Downtime</div>
+                    <div className="text-sm text-gray-600">
+                      Unplanned Downtime
                     </div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-semibold text-black">
+                      {plannedDowntime}h
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      Planned Downtime
+                    </div>
+                  </div>
                 </div>
 
                 <button
@@ -512,46 +562,83 @@ export default function AssetStatusMoreDetails({
                 {/* Table & Details Panel */}
                 <div className="flex gap-6">
                   {/* Table Code (Same as before) */}
-                   <div className="flex-1">
+                  <div className="flex-1">
                     <div className="border border-gray-200 rounded-lg overflow-hidden">
                       <div className="max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                         <table className="w-full border-collapse">
                           <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                             <tr>
-                              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600 bg-gray-50">Status</th>
-                              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600 bg-gray-50">Updated By</th>
-                              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600 bg-gray-50">Duration</th>
+                              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600 bg-gray-50">
+                                Status
+                              </th>
+                              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600 bg-gray-50">
+                                Updated By
+                              </th>
+                              <th className="text-left px-4 py-3 text-sm font-medium text-gray-600 bg-gray-50">
+                                Duration
+                              </th>
                               <th className="w-8 bg-gray-50"></th>
                             </tr>
                           </thead>
                           <tbody>
                             {logData.map((entry, index) => {
-                                // ... table row logic
-                                let durationStr = "-";
-                                // (Logic omitted for brevity - keep your existing logic)
-                                if (entry.since && entry.to) {
-                                    const since = new Date(entry.since).getTime();
-                                    const to = new Date(entry.to).getTime();
-                                    const diffMs = Math.abs(to - since);
-                                    const totalMinutes = Math.floor(diffMs / (1000 * 60));
-                                    const hours = Math.floor(totalMinutes / 60);
-                                    const minutes = totalMinutes % 60;
-                                    durationStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
-                                }
+                              // ... table row logic
+                              let durationStr = "-";
+                              // (Logic omitted for brevity - keep your existing logic)
+                              if (entry.since && entry.to) {
+                                const since = new Date(entry.since).getTime();
+                                const to = new Date(entry.to).getTime();
+                                const diffMs = Math.abs(to - since);
+                                const totalMinutes = Math.floor(
+                                  diffMs / (1000 * 60)
+                                );
+                                const hours = Math.floor(totalMinutes / 60);
+                                const minutes = totalMinutes % 60;
+                                durationStr =
+                                  hours > 0
+                                    ? `${hours}h ${minutes}m`
+                                    : `${minutes}m`;
+                              }
 
-                                return (
-                                    <tr key={index} onClick={() => setSelectedEntry(index)} className={`border-b border-gray-200 cursor-pointer hover:bg-gray-50 ${selectedEntry === index ? "bg-blue-50" : ""}`}>
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center gap-2">
-                                                 <span className={`w-2 h-2 rounded-full ${getNormalizedStatus(entry.status) === "offline" ? "bg-red-500" : getNormalizedStatus(entry.status) === "online" ? "bg-green-500" : "bg-orange-600"}`}></span>
-                                                <span className="text-sm text-gray-700 capitalize">{entry.status}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3 text-sm capitalize text-gray-700">{entry.user?.fullName || "-"} {formatDateOnly(entry?.createdAt)}</td>
-                                        <td className="px-4 py-3 text-sm text-gray-700">{durationStr}</td>
-                                        <td className="px-4 py-3"><ChevronRight className="w-4 h-4 text-gray-400" /></td>
-                                    </tr>
-                                )
+                              return (
+                                <tr
+                                  key={index}
+                                  onClick={() => setSelectedEntry(index)}
+                                  className={`border-b border-gray-200 cursor-pointer hover:bg-gray-50 ${
+                                    selectedEntry === index ? "bg-blue-50" : ""
+                                  }`}
+                                >
+                                  <td className="px-4 py-3">
+                                    <div className="flex items-center gap-2">
+                                      <span
+                                        className={`w-2 h-2 rounded-full ${
+                                          getNormalizedStatus(entry.status) ===
+                                          "offline"
+                                            ? "bg-red-500"
+                                            : getNormalizedStatus(
+                                                entry.status
+                                              ) === "online"
+                                            ? "bg-green-500"
+                                            : "bg-orange-600"
+                                        }`}
+                                      ></span>
+                                      <span className="text-sm text-gray-700 capitalize">
+                                        {entry.status}
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3 text-sm capitalize text-gray-700">
+                                    {entry.user?.fullName || "-"}{" "}
+                                    {formatDateOnly(entry?.createdAt)}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-700">
+                                    {durationStr}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                                  </td>
+                                </tr>
+                              );
                             })}
                           </tbody>
                         </table>
@@ -562,30 +649,62 @@ export default function AssetStatusMoreDetails({
                   {/* Details Panel (Same as before) */}
                   {logData[selectedEntry] && (
                     <div className="w-80 border border-gray-200 rounded-lg p-4 bg-white">
-                        {/* ... Details panel content ... */}
-                        {/* Use your existing panel code here */}
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2">
-                                <span className={`w-2 h-2 rounded-full ${getNormalizedStatus(logData[selectedEntry].status) === "offline" ? "bg-red-500" : getNormalizedStatus(logData[selectedEntry].status) === "online" ? "bg-green-500" : "bg-orange-600"}`}></span>
-                                <span className="font-semibold text-gray-800 capitalize">{logData[selectedEntry].status}</span>
-                            </div>
-                             <div className="relative">
-                                <button onClick={(e) => { e.stopPropagation(); setShowActionMenu(!showActionMenu); }} className="p-1 rounded hover:bg-gray-100">
-                                    <MoreVertical className="w-4 h-4" />
-                                </button>
-                                {showActionMenu && (
-                                    <div className="absolute right-0 left-10 top-full mt-1 mr-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                                         <button onClick={handleEditStatus} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">Edit</button>
-                                         <button onClick={() => handleDeleteStatus(logData[selectedEntry].id)} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</button>
-                                    </div>
-                                )}
-                             </div>
+                      {/* ... Details panel content ... */}
+                      {/* Use your existing panel code here */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`w-2 h-2 rounded-full ${
+                              getNormalizedStatus(
+                                logData[selectedEntry].status
+                              ) === "offline"
+                                ? "bg-red-500"
+                                : getNormalizedStatus(
+                                    logData[selectedEntry].status
+                                  ) === "online"
+                                ? "bg-green-500"
+                                : "bg-orange-600"
+                            }`}
+                          ></span>
+                          <span className="font-semibold text-gray-800 capitalize">
+                            {logData[selectedEntry].status}
+                          </span>
                         </div>
-                        {/* ... Rest of details ... */}
+                        <div className="relative">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowActionMenu(!showActionMenu);
+                            }}
+                            className="p-1 rounded hover:bg-gray-100"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+                          {showActionMenu && (
+                            <div className="absolute right-0 left-10 top-full mt-1 mr-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                              <button
+                                onClick={handleEditStatus}
+                                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleDeleteStatus(logData[selectedEntry].id)
+                                }
+                                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {/* ... Rest of details ... */}
                     </div>
                   )}
                 </div>
-                
+
                 {/* Meter Readings section */}
                 <div className="mt-4 ">
                   <h6 className="font-bold">Meter Reading</h6>
@@ -624,7 +743,7 @@ export default function AssetStatusMoreDetails({
                 fetchAssetsData={fetchAssetsData}
               />
             )}
-            
+
             {/* ❌ REMOVED: CustomDateRangeModal from here */}
           </div>
         </div>

@@ -17,8 +17,8 @@ export function WorkOrdersTab({
   dateRange,
   onNavigateToDetails,
 }: WorkOrdersTabProps) {
-  console.log("🎯 WorkOrdersTab received filters:", filters);
-  console.log("🎯 WorkOrdersTab received dateRange:", dateRange);
+  console.log(" WorkOrdersTab received filters:", filters);
+  console.log(" WorkOrdersTab received dateRange:", dateRange);
 
   return (
     <div className="space-y-6 pb-6">

@@ -16,6 +16,10 @@ import { AssetTeams } from "./sections/AssetTeams";
 import { Button } from "../../ui/button";
 import { Building2, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { CreatedVsCompletedChart } from "../../Reporting/WorkOrders/CreatedVsCompletedChart";
+import { useMemo, useState } from "react";
+import { format, subDays } from "date-fns";
+import { WorkOrderHistoryChart } from "../../utils/WorkOrderHistoryChart";
 // import { AssetWorkOrders } from "./sections/AssetWorkOrders";
 
 interface Asset {
@@ -24,6 +28,10 @@ interface Asset {
   updatedAt: string;
   createdAt: string;
   location: {
+    id: number | string;
+    name: string;
+  };
+  workOrders: {
     id: number | string;
     name: string;
   };
@@ -44,6 +52,15 @@ export function AssetDetailContent({
   createdUser,
 }: AssetDetailContentProps) {
   const navigate = useNavigate();
+  const [dateRange] = useState({
+    startDate: format(subDays(new Date(), 90), "MM/dd/yyyy"),
+    endDate: format(new Date(), "MM/dd/yyyy"),
+  });
+
+  const filters = {
+    assetIds: asset.id,
+  };
+
   return (
     <div className="relative flex flex-col flex-1 min-h-0">
       {/* Scrollable content */}
@@ -63,7 +80,17 @@ export function AssetDetailContent({
         <AssetSubAssets />
         <AssetVendor asset={asset} />
         <AssetPart asset={asset} />
-        <AssetAutomations />
+        <WorkOrderHistoryChart
+          title="Work Order History"
+          workOrderHistory={asset?.workOrders}
+          filters={filters}
+          dateRange={dateRange}
+          groupByField="createdAt"
+          lineName="Created"
+          lineColor="#0091ff"
+        />
+
+        {/* <AssetAutomations /> */}
         <AssetCreatedUpdated asset={asset} createdUser={createdUser} />
       </div>
 

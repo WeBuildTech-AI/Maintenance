@@ -58,6 +58,12 @@ export const mapFilters = (
       });
     } else if (key === "vendorOneOf") {
       mapped.push({ field: "vendorIds", operator: "eq", value: String(value) });
+    } else if (key === "assetIds") {
+      mapped.push({
+        field: "assetIds",
+        operator: "eq",
+        value: String(value),
+      });
     }
     // Add more filter mappings here as needed
   });
