@@ -3,38 +3,64 @@
 import { useState, useLayoutEffect, useEffect, useRef } from "react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
-import { Button } from "../ui/button";
+import { Button } from "../ui/button"; // Adjust path if needed
 import { subDays, subWeeks, subMonths } from "date-fns";
 
 type Props = {
   onClose: () => void;
   onApply: (start: Date, end: Date) => void;
-  anchorRef: React.RefObject<HTMLDivElement | HTMLButtonElement>; // Updated type to accept Button too
-  position?: "top" | "bottom" | "auto"; // 👈 New Prop
+  anchorRef: React.RefObject<HTMLDivElement | HTMLButtonElement>;
+  position?: "top" | "bottom" | "auto";
 };
 
 export function CustomDateRangeModal({
   onClose,
   onApply,
   anchorRef,
-  position = "auto", // Default to auto
+  position = "auto",
 }: Props) {
   const [tab, setTab] = useState<"between" | "last">("last");
   const [value, setValue] = useState<number | "">(15);
   const [unit, setUnit] = useState<"days" | "weeks" | "months">("days");
   const [range, setRange] = useState<{ from?: Date; to?: Date }>({});
 
-  // State for dynamic styling
   const [style, setStyle] = useState<React.CSSProperties>({
-    visibility: "hidden", // Hide initially until calculation is done
+    visibility: "hidden",
     position: "absolute",
     zIndex: 50,
-    right: 0, // Right align with anchor
+    right: 0,
   });
 
   const modalRef = useRef<HTMLDivElement>(null);
 
-  // 📌 Position Logic (Smart Detection)
+  // 1. ✅ NEW: Handle Click Outside to Close Modal automatically
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      // Safety check
+      if (!modalRef.current || !anchorRef.current) return;
+
+      const target = event.target as Node;
+
+      // Check if the click happened INSIDE the Modal OR on the Settings Button
+      const isClickInsideModal = modalRef.current.contains(target);
+      const isClickOnButton = anchorRef.current.contains(target);
+
+      // If click is OUTSIDE both, close the modal
+      if (!isClickInsideModal && !isClickOnButton) {
+        onClose();
+      }
+    }
+
+    // Attach the listener
+    document.addEventListener("mousedown", handleClickOutside);
+
+    // Clean up listener on unmount
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [anchorRef, onClose]);
+
+  // 2. Position Logic (Existing)
   useLayoutEffect(() => {
     if (!anchorRef.current || !modalRef.current) return;
 
@@ -42,18 +68,13 @@ export function CustomDateRangeModal({
     const modalRect = modalRef.current.getBoundingClientRect();
     const screenHeight = window.innerHeight;
 
-    // Check space below the button
     const spaceBelow = screenHeight - anchorRect.bottom;
     const spaceAbove = anchorRect.top;
-
-    // Default gap between button and modal
     const gap = 8;
 
     let finalPosition = position;
 
-    // If auto, decide based on available space
     if (position === "auto") {
-      // Agar neeche jagah kam hai (modal height se kam), toh upar dikhao
       if (spaceBelow < modalRect.height && spaceAbove > modalRect.height) {
         finalPosition = "top";
       } else {
@@ -61,11 +82,10 @@ export function CustomDateRangeModal({
       }
     }
 
-    // Apply Styles based on decision
     if (finalPosition === "top") {
       setStyle({
         position: "absolute",
-        bottom: "100%", // Anchor ke upar
+        bottom: "100%",
         marginBottom: `${gap}px`,
         right: 0,
         zIndex: 50,
@@ -74,16 +94,16 @@ export function CustomDateRangeModal({
     } else {
       setStyle({
         position: "absolute",
-        top: "100%", // Anchor ke neeche
+        top: "100%",
         marginTop: `${gap}px`,
         right: 0,
         zIndex: 50,
         visibility: "visible",
       });
     }
-  }, [anchorRef, position, tab]); // Re-calculate if tab changes (size changes)
+  }, [anchorRef, position, tab]);
 
-  // 📌 Sync calendar when LAST is selected
+  // 3. Sync calendar (Existing)
   useEffect(() => {
     if (tab !== "last" || value === "") return;
 
@@ -100,7 +120,6 @@ export function CustomDateRangeModal({
       default:
         start = subDays(now, value);
     }
-
     setRange({ from: start, to: now });
   }, [tab, value, unit]);
 
@@ -113,7 +132,7 @@ export function CustomDateRangeModal({
 
   return (
     <div
-      ref={modalRef} // 👈 Ref attached here to measure height
+      ref={modalRef}
       style={style}
       className="bg-white border rounded-lg shadow-lg w-[360px] p-3"
     >
@@ -146,16 +165,11 @@ export function CustomDateRangeModal({
             value={value}
             onChange={(e) => {
               const val = e.target.value;
-              if (val === "") {
-                setValue("");
-              } else {
-                setValue(Number(val));
-              }
+              if (val === "") setValue("");
+              else setValue(Number(val));
             }}
             onBlur={() => {
-              if (value === "" || value === 0) {
-                setValue(15);
-              }
+              if (value === "" || value === 0) setValue(15);
             }}
             className="w-20 border rounded px-2 py-1 text-sm"
           />
@@ -171,13 +185,13 @@ export function CustomDateRangeModal({
         </div>
       )}
 
-      {/* Calendar (Both tabs) */}
+      {/* Calendar */}
       <DayPicker
         mode="range"
         selected={range}
         onSelect={setRange}
         modifiersClassNames={{
-          selected: "bg-orange-600  hover:bg-orange-600",
+          selected: "bg-orange-600 hover:bg-orange-600",
           range_start: "bg-orange-600 text-white rounded-full",
           range_end: "bg-orange-600 text-white rounded-full",
           range_middle: "bg-orange-100 text-orange-900",

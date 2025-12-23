@@ -53,8 +53,8 @@ export function AssetDetailContent({
 }: AssetDetailContentProps) {
   const navigate = useNavigate();
   const [dateRange] = useState({
-    startDate: format(subDays(new Date(), 90), "MM/dd/yyyy"),
-    endDate: format(new Date(), "MM/dd/yyyy"),
+    startDate: format(subDays(new Date(), 90), "dd/MM/yyyy"),
+    endDate: format(new Date(), "dd/MM/yyyy"),
   });
 
   const filters = {
