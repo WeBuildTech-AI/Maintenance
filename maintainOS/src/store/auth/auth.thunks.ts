@@ -102,6 +102,14 @@ export const logout = createAsyncThunk(
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
       localStorage.removeItem("user");
+      sessionStorage.clear();
+
+      // Clear Cache Storage
+      if ("caches" in window) {
+        caches.keys().then((keys) => {
+          keys.forEach((key) => caches.delete(key));
+        });
+      }
     }
   }
 );

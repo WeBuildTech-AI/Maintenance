@@ -1,6 +1,12 @@
 import { Suspense, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Navigate, Route, Routes } from "react-router-dom";
+import {
+  Navigate,
+  Route,
+  Routes,
+  useNavigate,
+  useLocation,
+} from "react-router-dom"; // 1. Added useLocation & useNavigate
 import { MainLayout } from "./components/MainLayout";
 
 import type { AppDispatch, RootState } from "./store";
@@ -8,7 +14,7 @@ import { login, logout } from "./store/userSlice";
 import { lazyImport } from "./utils/lazyImport";
 import InviteUsers from "./components/Users/InviteUser/InviteUser";
 import CreateTeamForm from "./components/Users/CreateTeam/CreateTeam";
-import { client } from "./lib/apollo"; // Import the client you just created
+import { client } from "./lib/apollo";
 import { ApolloProvider } from "@apollo/client/react";
 
 // ✅ Lazy imports
@@ -79,6 +85,24 @@ export default function App() {
   const { user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch<AppDispatch>();
 
+  const navigate = useNavigate();
+  const location = useLocation(); // 2. To track current URL
+
+  // ✅ 3. Auto-Redirect Logic
+  useEffect(() => {
+    if (user) {
+      // If user is logged in AND they are on the login page or root, send to Work Orders
+      if (location.pathname === "/login" || location.pathname === "/") {
+        navigate("/work-orders");
+      }
+    } else {
+      // If user is NOT logged in (logout), force URL to be /login
+      if (location.pathname !== "/login") {
+        navigate("/login");
+      }
+    }
+  }, [user, navigate, location.pathname]);
+
   // Socket connection lifecycle management
   useEffect(() => {
     if (user?.id) {
@@ -100,8 +124,10 @@ export default function App() {
 
   const handleLogout = () => {
     dispatch(logout());
+    navigate("/login");
   };
 
+  // If not logged in, show Login component (and URL will be set to /login by useEffect)
   if (!user) {
     return (
       <>
@@ -114,34 +140,36 @@ export default function App() {
     <>
       <MainLayout user={user} onLogout={handleLogout}>
         <Suspense fallback={<div className="p-4">Loading...</div>}>
-        <ApolloProvider client = {client}>
-          <Routes>
-            {/* Redirect root to /work-orders */}
-            <Route path="/" element={<Navigate to="/work-orders" replace />} />
+          <ApolloProvider client={client}>
+            <Routes>
+              {/* Redirect root to /work-orders */}
+              <Route
+                path="/"
+                element={<Navigate to="/work-orders" replace />}
+              />
 
-            {/* Actual modules */}
-            <Route path="/work-orders/*" element={<WorkOrders />} />
-            <Route path="/purchase-orders/*" element={<PurchaseOrders />} />
-            <Route path="/reporting" element={<Reporting />} />
-            <Route path="/assets" element={<Assets />} />
-            <Route path="/messages" element={<Messages />} />
-            <Route path="/messages/new" element={<Messages />} />
-            <Route path="/categories" element={<Categories />} />
-            <Route path="/inventory/*" element={<Inventory />} />
-            <Route path="/library/*" element={<Library />} />
-            <Route path="/vendors/*" element={<Vendors />} />
-            <Route path="/meters/*" element={<Meters />} />
-            <Route path="/automations" element={<Automations />} />
-            <Route path="/locations/*" element={<Locations />} />
-            <Route path="/users" element={<TeamUsers />} />
-            <Route path="/users/invite" element={<InviteUsers />} />
-            <Route path="/users/teams/:id" element={<ManageTeam />} />
-            <Route path="/users/teams" element={<ManageTeam />} />
-            <Route path="/teams/create" element={<CreateTeamForm />} />
-            <Route path="/users/profile/:id" element={<ManageUser />} />
-          </Routes>
+              {/* Actual modules */}
+              <Route path="/work-orders/*" element={<WorkOrders />} />
+              <Route path="/purchase-orders/*" element={<PurchaseOrders />} />
+              <Route path="/reporting" element={<Reporting />} />
+              <Route path="/assets" element={<Assets />} />
+              <Route path="/messages" element={<Messages />} />
+              <Route path="/messages/new" element={<Messages />} />
+              <Route path="/categories" element={<Categories />} />
+              <Route path="/inventory/*" element={<Inventory />} />
+              <Route path="/library/*" element={<Library />} />
+              <Route path="/vendors/*" element={<Vendors />} />
+              <Route path="/meters/*" element={<Meters />} />
+              <Route path="/automations" element={<Automations />} />
+              <Route path="/locations/*" element={<Locations />} />
+              <Route path="/users" element={<TeamUsers />} />
+              <Route path="/users/invite" element={<InviteUsers />} />
+              <Route path="/users/teams/:id" element={<ManageTeam />} />
+              <Route path="/users/teams" element={<ManageTeam />} />
+              <Route path="/teams/create" element={<CreateTeamForm />} />
+              <Route path="/users/profile/:id" element={<ManageUser />} />
+            </Routes>
           </ApolloProvider>
-
         </Suspense>
       </MainLayout>
     </>

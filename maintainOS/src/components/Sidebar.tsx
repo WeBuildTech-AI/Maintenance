@@ -1,222 +1,3 @@
-// // src/components/Sidebar.tsx
-// import {
-//   ShoppingCart,
-//   TrendingUp,
-//   Package,
-//   MessageSquare,
-//   Tag,
-//   Archive,
-//   BookOpen,
-//   Gauge,
-//   Zap,
-//   MapPin,
-//   Users,
-//   Wrench,
-//   X,
-//   Settings,
-//   Handshake,
-// } from "lucide-react";
-// import { Button } from "./ui/button";
-// import { ScrollArea } from "./ui/scroll-area";
-// import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-// import {
-//   DropdownMenu,
-//   DropdownMenuContent,
-//   DropdownMenuItem,
-//   DropdownMenuTrigger,
-//   DropdownMenuSeparator,
-// } from "./ui/dropdown-menu";
-// import { NavLink } from "react-router-dom";
-
-// interface SidebarProps {
-//   onClose?: () => void;
-//   user?: { fullName: string; email: string; avatar?: string };
-//   onLogout?: () => void;
-//   expanded: boolean;
-//   setExpanded: (value: boolean) => void;
-// }
-
-// const menuItems = [
-//   { to: "/work-orders", label: "Work Orders", icon: Wrench },
-//   { to: "/purchase-orders", label: "Purchase Orders", icon: ShoppingCart },
-//   { to: "/reporting", label: "Reporting", icon: TrendingUp },
-//   { to: "/assets", label: "Assets", icon: Package },
-//   { to: "/messages", label: "Messages", icon: MessageSquare },
-//   { to: "/categories", label: "Categories", icon: Tag },
-//   { to: "/inventory", label: "Parts Inventory", icon: Archive },
-//   { to: "/library", label: "Library", icon: BookOpen },
-//   { to: "/meters", label: "Meters", icon: Gauge },
-//   { to: "/automations", label: "Automations", icon: Zap },
-//   { to: "/locations", label: "Locations", icon: MapPin },
-//   { to: "/users", label: "Team & Users", icon: Users },
-//   { to: "/vendors", label: "Vendors", icon: Handshake },
-// ];
-
-// export function Sidebar({
-//   onClose,
-//   user,
-//   onLogout,
-//   expanded,
-//   setExpanded,
-// }: SidebarProps) {
-//   const imageSrc = user?.avatar ? user.avatar : "/default-avatar.png";
-
-//   return (
-//     <div
-//       className={`h-full bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300
-//         ${expanded ? "w-64" : "w-16"}`}
-//     >
-//       {/* Header */}
-//       <div className=" border-b border-sidebar-border flex items-center justify-between">
-//         {expanded ? (
-//           <div className="flex gap-2 p-4">
-//             <img src="/Vector.svg"   alt="MaintainOS" className="h-8 w-auto" />
-//             <div className="inline-flex items-center bg-brand-yellow border border-brand-black rounded px-2 py-1">
-//               <span className="font-bold text-brand-black">
-//                 MaintainOS
-//               </span>
-//             </div>
-//             {/* <p className="text-sm text-sidebar-foreground/70">Control Center</p> */}
-//           </div>
-//         ) : (
-//           <div className="flex item-center">
-//             <button
-//               className="text-lg cursor-pointer p-4 font-bold text-sidebar-foreground"
-//               onClick={() => setExpanded(true)}
-//             >
-//               <img src="/Vector.svg"   alt="MaintainOS" className="h-8 w-auto" />
-//             </button>
-//           </div>
-//         )}
-
-//         {expanded ? (
-//           <Button
-//             className="mr-2"
-//             variant="ghost"
-//             size="sm"
-//             onClick={() => setExpanded(false)}
-//           >
-//             <X className="h-5 w-5" />
-//           </Button>
-//         ) : null}
-//       </div>
-
-//       {/* Navigation */}
-//       {expanded ? (
-//         <ScrollArea className="flex-1 px-2 py-4 ">
-//           <nav className="space-y-1">
-//             {menuItems.map((item) => {
-//               const Icon = item.icon;
-//               return (
-//                 <NavLink
-//                   key={item.to}
-//                   to={item.to}
-//                   onClick={onClose}
-//                   className={({ isActive }) =>
-//                     `flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-//                       isActive
-//                         ? "bg-sidebar-accent text-sidebar-accent-foreground"
-//                         : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-//                     }`
-//                   }
-//                 >
-//                   <Icon className="h-5 w-5 mr-3" />
-//                   {item.label}
-//                 </NavLink>
-//               );
-//             })}
-//           </nav>
-//         </ScrollArea>
-//       ) : (
-//         <ScrollArea className="flex-1 px-2 py-4">
-//           <nav className="space-y-1">
-//             {menuItems.map((item) => {
-//               const Icon = item.icon;
-//               return (
-//                 <NavLink
-//                   key={item.to}
-//                   to={item.to}
-//                   onClick={onClose}
-//                   className={({ isActive }) =>
-//                     `flex items-center px-2 py-2 rounded-md text-sm font-medium transition-colors ${
-//                       isActive
-//                         ? "bg-sidebar-accent text-sidebar-accent-foreground"
-//                         : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-//                     }`
-//                   }
-//                 >
-//                   <div className="flex text-center justify-center item-center">
-//                     <Icon className="h-4 w-4 " />
-//                   </div>
-//                   {/* {item.label} */}
-//                 </NavLink>
-//               );
-//             })}
-//           </nav>
-//         </ScrollArea>
-//       )}
-
-//       {/* User Section */}
-//       {expanded ? (
-//         <div className="p-4 border-t border-sidebar-border">
-//           <div className="flex items-center mb-3">
-//             <Avatar className="h-8 w-8">
-//               <AvatarFallback>
-//                 {user?.fullName
-//                   ?.split(" ")
-//                   .map((n) => n[0])
-//                   .join("") || "U"}
-//               </AvatarFallback>
-//             </Avatar>
-
-//             <div className="flex-1 min-w-0 text-center">
-//               <p className="text-xs font-medium text-sidebar-foreground truncate mb-1">
-//                 {user?.fullName || "User"}
-//               </p>
-//               <DropdownMenu>
-//                 <DropdownMenuTrigger asChild>
-//                   <Button
-//                     variant="ghost"
-//                     className="h-auto p-2 text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground"
-//                   >
-//                     <Settings className="h-3 w-3 mr-1 " />
-//                     Settings
-//                   </Button>
-//                 </DropdownMenuTrigger>
-//                 <DropdownMenuContent align="start" side="top">
-//                   <DropdownMenuItem>Profile</DropdownMenuItem>
-//                   <DropdownMenuItem>Account Settings</DropdownMenuItem>
-//                   <DropdownMenuSeparator />
-//                   <DropdownMenuItem onClick={onLogout}>
-//                     Sign out
-//                   </DropdownMenuItem>
-//                 </DropdownMenuContent>
-//               </DropdownMenu>
-//             </div>
-//           </div>
-//           <div className="text-xs text-sidebar-foreground/60">
-//             v1.0.0 | Support
-//           </div>
-//         </div>
-//       ) : (
-//         <div className="p-3 border-t border-sidebar-border">
-//           <div className="flex items-center gap-3 ">
-//             <Avatar className="h-8 w-8">
-//               <AvatarImage src={imageSrc} alt={user?.fullName} />
-//               <AvatarFallback>
-//                 {user?.fullName
-//                   ?.split(" ")
-//                   .map((n) => n[0])
-//                   .join("") || "U"}
-//               </AvatarFallback>
-//             </Avatar>
-//           </div>
-//         </div>
-//       )}
-//     </div>
-//   );
-// }
-
 // src/components/Sidebar.tsx
 import { useEffect, useState } from "react";
 import {
@@ -255,6 +36,7 @@ interface UserToken {
   sub: string;
   email: string;
   orgId: string;
+  orgName: string;
   fullName: string;
   role: string;
   iat: number;
@@ -323,6 +105,11 @@ export function Sidebar({
         .join("")
         .toUpperCase()
     : "U";
+
+  const formatOrgName = (name: string, maxLength = 12) => {
+    if (name.length <= maxLength) return name;
+    return name.slice(0, maxLength) + "…";
+  };
 
   return (
     <div
@@ -412,13 +199,24 @@ export function Sidebar({
                 {currentUser?.email}
               </p>
               {/* Showing Role Badge */}
-              {/* {currentUser?.role && (
-                <div className="mt-1">
-                  <span className="inline-block px-1.5 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded bg-primary/10 text-primary">
-                    {currentUser.role}
+              {currentUser?.role && currentUser?.orgName && (
+                <div className="mt-1 flex items-center">
+                  <span
+                    title={currentUser.orgName} // hover shows full name
+                    className="
+        inline-flex items-center
+        max-w-[140px]
+        truncate
+        px-2 py-0.5
+        text-[10px] uppercase font-semibold tracking-wide
+        rounded-md
+        bg-primary/10 text-primary
+      "
+                  >
+                    {formatOrgName(currentUser.orgName)}
                   </span>
                 </div>
-              )} */}
+              )}
             </div>
 
             <DropdownMenu>
@@ -427,7 +225,7 @@ export function Sidebar({
                   <Settings className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent  align="start" side="top" className="w-48">
+              <DropdownMenuContent align="start" side="top" className="w-48">
                 <DropdownMenuItem>Profile</DropdownMenuItem>
                 <DropdownMenuItem>Settings</DropdownMenuItem>
                 <DropdownMenuSeparator />
