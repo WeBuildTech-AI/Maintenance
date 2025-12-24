@@ -18,6 +18,7 @@ export type Vendor = {
 
 export type POItem = {
   id: string;
+  partId:string
   itemName: string;
   partNumber?: string;
   quantity: number;
@@ -28,8 +29,8 @@ export type NewPOForm = {
   poNumber: string;
   vendorId: string;
   items: POItem[];
-  shippingAddress: Address;
-  billingAddress: Address;
+  shippingAddress: Address[];
+  billingAddress: Address[];
   shippingAddressId?: string;
   billingAddressId?: string;
   sameShipBill: boolean;

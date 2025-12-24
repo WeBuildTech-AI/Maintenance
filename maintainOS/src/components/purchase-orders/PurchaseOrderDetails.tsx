@@ -1,3 +1,4 @@
+// FILE: PurchaseOrderDetails.tsx
 import React, { useEffect } from "react";
 import {
   Building2,
@@ -11,7 +12,8 @@ import {
   Trash2,
   Upload,
   X,
-  User, // Added User icon for contact details
+  User,
+  CopyIcon, // Added User icon for contact details
 } from "lucide-react";
 import { Button } from "../ui/button";
 import {
@@ -130,6 +132,7 @@ interface PurchaseOrderDetailsProps {
   setShowCommentBox: (show: boolean) => void;
   setComment: (comment: string) => void;
   handleEditClick: () => void;
+  handleCopyClick: () => void; // ✅ NEW PROP
   fetchPurchaseOrder: () => void;
   restoreData: String;
   onClose: () => void;
@@ -147,6 +150,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   showCommentBox,
   setShowCommentBox,
   handleEditClick,
+  handleCopyClick, // ✅ Destructure new prop
   setApproveModal,
   fetchPurchaseOrder,
   restoreData,
@@ -163,7 +167,6 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   const [log, setLog] = React.useState([]);
   const modalRef = React.useRef<HTMLDivElement>(null);
   const user = useSelector((state: RootState) => state.auth.user);
-
 
   const [contactDetails, setContactDetails] = React.useState<VendorContact[]>(
     []
@@ -356,6 +359,12 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                     }}
                   >
                     <CopyPlusIcon className="h-4 w-4 mr-2" /> Copy Link
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleCopyClick} // ✅ Use new copy handler
+                  >
+                    <CopyIcon className="h-4 w-4 mr-2" /> Copy Purchase
+                    Order
                   </DropdownMenuItem>
                   {(selectedPO.status === "approved" ||
                     selectedPO.status === "pending") && (

@@ -440,8 +440,8 @@ export function PurchaseOrders() {
     const mappedTaxLines = poToEdit.taxesAndCosts
       ? poToEdit.taxesAndCosts.map((t: any) => ({
           id: t.id || cryptoId(),
-          label: t.taxLabel || t.label || "", // ✅ 'label' key ensure ki
-          value: t.taxValue || t.value || 0, // ✅ 'value' key ensure ki
+          label: t.taxLabel || t.label || "", //  'label' key ensure ki
+          value: t.taxValue || t.value || 0, //  'value' key ensure ki
           type: t.taxCategory === "PERCENTAGE" ? "percentage" : "fixed",
           isTaxable: t.isTaxable,
         }))
@@ -517,6 +517,86 @@ export function PurchaseOrders() {
     setIsEditingPO(true);
     setApiError(null);
     setAttachedFiles([]);
+  };
+
+  // ✅ NEW HANDLER: Direct Clone & Save
+  const handleDirectCopyPurchaseOrder = async (poToCopy: any) => {
+    if (!poToCopy) return;
+    setIsLoading(true);
+
+    try {
+      // 1. Construct Payload directly from the existing PO object
+      const payload: any = {
+        poNumber: `Copy ${poToCopy.poNumber}`, // Appends " copy"
+        status: "pending", // Reset status to pending for new copies
+        vendorId: poToCopy.vendorId || poToCopy.vendor?.id,
+      };
+
+      // Map optional fields
+      if (poToCopy.dueDate) payload.dueDate = poToCopy.dueDate;
+      if (poToCopy.notes) payload.notes = poToCopy.notes;
+      if (poToCopy.extraCosts) payload.extraCosts = Number(poToCopy.extraCosts);
+      if (poToCopy.contactName) payload.contactName = poToCopy.contactName;
+      if (poToCopy.phoneOrMail) payload.phoneOrMail = poToCopy.phoneOrMail;
+
+      // Map Contacts
+      const contactIds =
+        poToCopy.vendorContactIds ||
+        (poToCopy.contacts ? poToCopy.contacts.map((c: any) => c.id) : []);
+      if (contactIds.length > 0) {
+        payload.vendorContactIds = contactIds;
+      }
+
+      // Map Addresses
+      if (poToCopy.shippingAddressId || poToCopy.shippingAddress?.id) {
+        payload.shippingAddressId =
+          poToCopy.shippingAddressId || poToCopy.shippingAddress?.id;
+      }
+      if (poToCopy.billingAddressId || poToCopy.billingAddress?.id) {
+        payload.billingAddressId =
+          poToCopy.billingAddressId || poToCopy.billingAddress?.id;
+      }
+
+      // Map Items
+      if (poToCopy.orderItems && poToCopy.orderItems.length > 0) {
+        payload.orderItems = poToCopy.orderItems.map((item: any) => ({
+          partId: item.partId || item.part?.id,
+          itemName: item.itemName,
+          partNumber: item.partNumber,
+          unitsOrdered: Number(item.unitsOrdered),
+          unitCost: Number(item.unitCost),
+          price:
+            Number(item.price) ||
+            Number(item.unitsOrdered) * Number(item.unitCost),
+        }));
+      }
+
+      // Map Taxes
+      if (poToCopy.taxesAndCosts && poToCopy.taxesAndCosts.length > 0) {
+        payload.taxesAndCosts = poToCopy.taxesAndCosts.map((tax: any) => ({
+          taxLabel: tax.taxLabel || tax.label,
+          taxValue: Number(tax.taxValue || tax.value),
+          taxCategory: tax.taxCategory || "DOLLAR", // Default fallback
+          isTaxable: !!tax.isTaxable,
+        }));
+      }
+
+      // 2. Hit the POST API immediately
+      const response = await purchaseOrderService.createPurchaseOrder(payload);
+
+      toast.success("Purchase Order copied successfully!");
+
+      // 3. Refresh List and Navigate to new PO
+      await fetchPurchaseOrder();
+      if (response && response.id) {
+        navigate(`/purchase-orders/${response.id}`);
+      }
+    } catch (error: any) {
+      console.error("Error copying PO:", error);
+      toast.error(error.message || "Failed to copy Purchase Order.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const formatTaxesForPayload = (taxLines: any[]) => {
@@ -839,10 +919,7 @@ export function PurchaseOrders() {
 
                     // Overdue Logic
                     let isOverdue = false;
-                    if (
-                      po.dueDate &&
-                      po.status !== "completed"
-                    ) {
+                    if (po.dueDate && po.status !== "completed") {
                       const today = new Date();
                       const due = new Date(po.dueDate);
                       today.setHours(0, 0, 0, 0);
@@ -869,7 +946,7 @@ export function PurchaseOrders() {
                       <div
                         key={po.id}
                         onClick={() => navigate(`/purchase-orders/${po.id}`)}
-                        // ✅ INLINE Yellow Theme Styling
+                        //  INLINE Yellow Theme Styling
                         className={`cursor-pointer border rounded-lg p-4 mb-3 transition-all duration-200 hover:shadow-md ${
                           isSelected
                             ? "border-yellow-400 bg-yellow-50 ring-1 ring-yellow-400"
@@ -987,6 +1064,10 @@ export function PurchaseOrders() {
                 // 👇 Navigate to Edit Route
                 handleEditClick={() =>
                   navigate(`/purchase-orders/${selectedPO.id}/edit`)
+                }
+                // 👇 Handle Copy Click (Direct API Call)
+                handleCopyClick={() =>
+                  handleDirectCopyPurchaseOrder(selectedPO)
                 }
                 fetchPurchaseOrder={fetchPurchaseOrder}
                 restoreData="Restore"

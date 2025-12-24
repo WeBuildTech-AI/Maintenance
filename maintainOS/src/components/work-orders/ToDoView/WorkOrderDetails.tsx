@@ -19,8 +19,8 @@ import {
   CheckCircle2,
   PauseCircle,
   RefreshCcw,
-  Activity, 
-  UserCircle2, 
+  Activity,
+  UserCircle2,
 } from "lucide-react";
 
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
@@ -33,7 +33,7 @@ import {
   patchWorkOrderComplete,
   markWorkOrderInProgress,
   updateWorkOrder,
-  updateWorkOrderStatus
+  updateWorkOrderStatus,
 } from "../../../store/workOrders/workOrders.thunks";
 
 // ✅ Import Service for User Fetching
@@ -47,6 +47,7 @@ import DeleteWorkOrderModal from "./DeleteWorkOrderModal";
 import UpdatePartsPanel from "../panels/UpdatePartsPanel";
 import TimeOverviewPanel from "../panels/TimeOverviewPanel";
 import OtherCostsPanel from "../panels/OtherCostsPanel";
+import { Tooltip } from "../../ui/tooltip";
 
 // --- Helper: Currency Formatter (Fixed to Rupee ₹) ---
 const formatCurrency = (amount: number) => {
@@ -99,19 +100,35 @@ function formatModalDateTime(isoString: string) {
 
 /* ---------------------- Recurrence parsing helpers ---------------------- */
 
-const dayNames = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const dayNames = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
 
 function ordinal(n: number) {
   if (n % 100 >= 11 && n % 100 <= 13) return `${n}th`;
   switch (n % 10) {
-    case 1: return `${n}st`;
-    case 2: return `${n}nd`;
-    case 3: return `${n}rd`;
-    default: return `${n}th`;
+    case 1:
+      return `${n}st`;
+    case 2:
+      return `${n}nd`;
+    case 3:
+      return `${n}rd`;
+    default:
+      return `${n}th`;
   }
 }
 
-function parseRecurrenceRule(raw: any, startDateIso?: string, dueDateIso?: string) {
+function parseRecurrenceRule(
+  raw: any,
+  startDateIso?: string,
+  dueDateIso?: string
+) {
   if (!raw) return null;
   let rule: any = raw;
   try {
@@ -126,19 +143,21 @@ function parseRecurrenceRule(raw: any, startDateIso?: string, dueDateIso?: strin
   if (type === "daily" || type === "day" || type === "daily_by_date") {
     return {
       title: "Repeats every day after completion of this Work Order.",
-      short: "Repeats every day after completion of this Work Order."
+      short: "Repeats every day after completion of this Work Order.",
     };
   }
 
   if (type === "weekly") {
-    const days = Array.isArray(rule.daysOfWeek) ? rule.daysOfWeek : (rule.days || []);
+    const days = Array.isArray(rule.daysOfWeek)
+      ? rule.daysOfWeek
+      : rule.days || [];
     const mapped = days
       .map((d: number) => (typeof d === "number" ? dayNames[d] : String(d)))
       .filter(Boolean);
     const daysStr = mapped.length ? mapped.join(", ") : "the selected day(s)";
     return {
       title: `Repeats every week on ${daysStr} after completion of this Work Order.`,
-      short: `Repeats every week on ${daysStr} after completion of this Work Order.`
+      short: `Repeats every week on ${daysStr} after completion of this Work Order.`,
     };
   }
 
@@ -146,8 +165,12 @@ function parseRecurrenceRule(raw: any, startDateIso?: string, dueDateIso?: strin
     const dayOfMonth = rule.dayOfMonth ?? rule.day ?? null;
     if (dayOfMonth) {
       return {
-        title: `Repeats every month on the ${ordinal(Number(dayOfMonth))} day of the month after completion of this Work Order.`,
-        short: `Repeats every month on the ${ordinal(Number(dayOfMonth))} day of the month after completion of this Work Order.`
+        title: `Repeats every month on the ${ordinal(
+          Number(dayOfMonth)
+        )} day of the month after completion of this Work Order.`,
+        short: `Repeats every month on the ${ordinal(
+          Number(dayOfMonth)
+        )} day of the month after completion of this Work Order.`,
       };
     }
     if (startDateIso) {
@@ -155,25 +178,31 @@ function parseRecurrenceRule(raw: any, startDateIso?: string, dueDateIso?: strin
         const d = new Date(startDateIso);
         const day = d.getDate();
         return {
-          title: `Repeats every month on the ${ordinal(day)} day of the month after completion of this Work Order.`,
-          short: `Repeats every month on the ${ordinal(day)} day of the month after completion of this Work Order.`
+          title: `Repeats every month on the ${ordinal(
+            day
+          )} day of the month after completion of this Work Order.`,
+          short: `Repeats every month on the ${ordinal(
+            day
+          )} day of the month after completion of this Work Order.`,
         };
       } catch {}
     }
     return {
       title: `Repeats every month after completion of this Work Order.`,
-      short: `Repeats every month after completion of this Work Order.`
+      short: `Repeats every month after completion of this Work Order.`,
     };
   }
 
   if (type === "monthly_by_weekday") {
     const weekOfMonth = rule.weekOfMonth ?? rule.week ?? null;
-    const weekday = rule.weekdayOfMonth ?? rule.weekday ?? null; 
-    const weekLabel = weekOfMonth === 5 ? "Last" : `${ordinal(Number(weekOfMonth))}`;
-    const weekdayLabel = typeof weekday === "number" ? dayNames[weekday] : weekday;
+    const weekday = rule.weekdayOfMonth ?? rule.weekday ?? null;
+    const weekLabel =
+      weekOfMonth === 5 ? "Last" : `${ordinal(Number(weekOfMonth))}`;
+    const weekdayLabel =
+      typeof weekday === "number" ? dayNames[weekday] : weekday;
     return {
       title: `Repeats every month on the ${weekLabel} ${weekdayLabel} after completion of this Work Order.`,
-      short: `Repeats every month on the ${weekLabel} ${weekdayLabel} after completion of this Work Order.`
+      short: `Repeats every month on the ${weekLabel} ${weekdayLabel} after completion of this Work Order.`,
     };
   }
 
@@ -184,22 +213,23 @@ function parseRecurrenceRule(raw: any, startDateIso?: string, dueDateIso?: strin
     if (iso) {
       try {
         const d = new Date(iso);
-        const mm = String(d.getMonth() + 1).padStart(2,"0");
-        const dd = String(d.getDate()).padStart(2,"0");
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
         dateLabel = `${mm}/${dd}`;
       } catch {}
     }
-    const every = years && Number(years) > 1 ? `every ${years} years` : "every year";
+    const every =
+      years && Number(years) > 1 ? `every ${years} years` : "every year";
     const onLabel = dateLabel ? ` on ${dateLabel}` : "";
     return {
       title: `Repeats ${every}${onLabel} after completion of this Work Order.`,
-      short: `Repeats ${every}${onLabel} after completion of this Work Order.`
+      short: `Repeats ${every}${onLabel} after completion of this Work Order.`,
     };
   }
 
   return {
     title: `Repeats based on configured schedule.`,
-    short: `Repeats based on configured schedule.`
+    short: `Repeats based on configured schedule.`,
   };
 }
 
@@ -235,34 +265,50 @@ export function WorkOrderDetails({
 
   // ✅ DYNAMIC FINANCIAL CALCULATIONS (useMemo)
   const financials = useMemo(() => {
-    if (!selectedWorkOrder) return { partsCost: 0, timeCost: 0, otherCost: 0, totalCost: 0, totalMinutes: 0 };
+    if (!selectedWorkOrder)
+      return {
+        partsCost: 0,
+        timeCost: 0,
+        otherCost: 0,
+        totalCost: 0,
+        totalMinutes: 0,
+      };
 
     // Parts Calculation
     const parts = selectedWorkOrder.partUsages || [];
     const partsCost = parts.reduce((sum: number, p: any) => {
-        const cost = Number(p.totalCost) || (Number(p.unitCost) * Number(p.quantity)) || 0;
-        return sum + cost;
+      const cost =
+        Number(p.totalCost) || Number(p.unitCost) * Number(p.quantity) || 0;
+      return sum + cost;
     }, 0);
 
     // Time Calculation
     const timeEntries = selectedWorkOrder.timeEntries || [];
-    const totalMinutes = timeEntries.reduce((acc: number, t: any) => acc + (Number(t.minutes) || 0) + (Number(t.hours) || 0) * 60, 0);
+    const totalMinutes = timeEntries.reduce(
+      (acc: number, t: any) =>
+        acc + (Number(t.minutes) || 0) + (Number(t.hours) || 0) * 60,
+      0
+    );
     // Cost derivation based on hourly rate
     const timeCost = timeEntries.reduce((sum: number, t: any) => {
-        const durationHours = ((Number(t.hours) || 0) + (Number(t.minutes) || 0) / 60);
-        return sum + (durationHours * (Number(t.hourlyRate) || 0));
+      const durationHours =
+        (Number(t.hours) || 0) + (Number(t.minutes) || 0) / 60;
+      return sum + durationHours * (Number(t.hourlyRate) || 0);
     }, 0);
 
     // Other Costs
     const otherCosts = selectedWorkOrder.otherCosts || [];
-    const otherCost = otherCosts.reduce((sum: number, c: any) => sum + (Number(c.amount || c.cost) || 0), 0);
+    const otherCost = otherCosts.reduce(
+      (sum: number, c: any) => sum + (Number(c.amount || c.cost) || 0),
+      0
+    );
 
     return {
-        partsCost,
-        timeCost,
-        otherCost,
-        totalCost: partsCost + timeCost + otherCost,
-        totalMinutes
+      partsCost,
+      timeCost,
+      otherCost,
+      totalCost: partsCost + timeCost + otherCost,
+      totalMinutes,
     };
   }, [selectedWorkOrder]);
 
@@ -305,25 +351,28 @@ export function WorkOrderDetails({
 
   // ✅ Moved User Fetching Effect UP (Before Conditional Returns)
   useEffect(() => {
-    const fetchName = async (userId: string | undefined, setFn: (s: string) => void) => {
-        if (!userId) {
-            setFn("System");
-            return;
-        }
-        // Try to find in assignees first (optimization)
-        const inAssignees = assigneesList.find((a: any) => a.id === userId);
-        if (inAssignees) {
-            setFn(inAssignees.fullName || inAssignees.name);
-            return;
-        }
-        // Fetch from API
-        try {
-            const userData = await workOrderService.fetchUserById(userId);
-            setFn(userData.fullName || "Unknown");
-        } catch (error) {
-            // console.error("Failed to fetch user name for", userId, error);
-            setFn("Unknown");
-        }
+    const fetchName = async (
+      userId: string | undefined,
+      setFn: (s: string) => void
+    ) => {
+      if (!userId) {
+        setFn("System");
+        return;
+      }
+      // Try to find in assignees first (optimization)
+      const inAssignees = assigneesList.find((a: any) => a.id === userId);
+      if (inAssignees) {
+        setFn(inAssignees.fullName || inAssignees.name);
+        return;
+      }
+      // Fetch from API
+      try {
+        const userData = await workOrderService.fetchUserById(userId);
+        setFn(userData.fullName || "Unknown");
+      } catch (error) {
+        // console.error("Failed to fetch user name for", userId, error);
+        setFn("Unknown");
+      }
     };
 
     fetchName(selectedWorkOrder.createdBy, setCreatedByName);
@@ -357,24 +406,23 @@ export function WorkOrderDetails({
     setActiveStatus(newStatus);
 
     if (!user?.id) {
-        toast.error("User not authenticated");
-        setActiveStatus(prevStatus);
-        return;
+      toast.error("User not authenticated");
+      setActiveStatus(prevStatus);
+      return;
     }
 
     if (onOptimisticUpdate && selectedWorkOrder?.id) {
-        onOptimisticUpdate(selectedWorkOrder.id, { status: newStatus });
+      onOptimisticUpdate(selectedWorkOrder.id, { status: newStatus });
     }
 
     try {
       if (newStatus === "done" || newStatus === "completed") {
         await dispatch(patchWorkOrderComplete(selectedWorkOrder.id)).unwrap();
         toast.success("Work order completed");
-      } 
-      else if (
-          newStatus === "in_progress" || 
-          newStatus === "on_hold" || 
-          newStatus === "open"
+      } else if (
+        newStatus === "in_progress" ||
+        newStatus === "on_hold" ||
+        newStatus === "open"
       ) {
         await dispatch(
           updateWorkOrderStatus({
@@ -384,9 +432,10 @@ export function WorkOrderDetails({
           })
         ).unwrap();
         const label = newStatus.replace("_", " ");
-        toast.success(`Status updated to ${label.charAt(0).toUpperCase() + label.slice(1)}`);
-      } 
-      else {
+        toast.success(
+          `Status updated to ${label.charAt(0).toUpperCase() + label.slice(1)}`
+        );
+      } else {
         await dispatch(
           updateWorkOrder({
             id: selectedWorkOrder.id,
@@ -395,7 +444,9 @@ export function WorkOrderDetails({
           })
         ).unwrap();
         const label = newStatus.replace("_", " ");
-        toast.success(`Status updated to ${label.charAt(0).toUpperCase() + label.slice(1)}`);
+        toast.success(
+          `Status updated to ${label.charAt(0).toUpperCase() + label.slice(1)}`
+        );
       }
 
       if (onRefreshWorkOrders) {
@@ -405,7 +456,6 @@ export function WorkOrderDetails({
       if (onRefreshLogs) {
         onRefreshLogs();
       }
-
     } catch (error: any) {
       console.error("Status update failed", error);
       toast.error(error?.message || "Failed to update status");
@@ -413,7 +463,7 @@ export function WorkOrderDetails({
     }
   };
 
-  // ✅ Conditional Returns (now safe because hooks are above)
+  //  Conditional Returns (now safe because hooks are above)
   if (activePanel === "parts") {
     return (
       <UpdatePartsPanel
@@ -422,9 +472,9 @@ export function WorkOrderDetails({
         selectedWorkOrder={selectedWorkOrder}
         // ✅ ADDED: Refresh handler for realtime updates
         onSaveSuccess={() => {
-            if (onRefreshWorkOrders) onRefreshWorkOrders();
-            if (onRefreshLogs) onRefreshLogs();
-            setActivePanel("details");
+          if (onRefreshWorkOrders) onRefreshWorkOrders();
+          if (onRefreshLogs) onRefreshLogs();
+          setActivePanel("details");
         }}
       />
     );
@@ -438,9 +488,9 @@ export function WorkOrderDetails({
         selectedWorkOrder={selectedWorkOrder}
         // ✅ ADDED: Refresh handler for realtime updates
         onSaveSuccess={() => {
-            if (onRefreshWorkOrders) onRefreshWorkOrders();
-            if (onRefreshLogs) onRefreshLogs();
-            setActivePanel("details");
+          if (onRefreshWorkOrders) onRefreshWorkOrders();
+          if (onRefreshLogs) onRefreshLogs();
+          setActivePanel("details");
         }}
       />
     );
@@ -454,9 +504,9 @@ export function WorkOrderDetails({
         selectedWorkOrder={selectedWorkOrder}
         // ✅ ADDED: Refresh handler for realtime updates
         onSaveSuccess={() => {
-            if (onRefreshWorkOrders) onRefreshWorkOrders();
-            if (onRefreshLogs) onRefreshLogs();
-            setActivePanel("details");
+          if (onRefreshWorkOrders) onRefreshWorkOrders();
+          if (onRefreshLogs) onRefreshLogs();
+          setActivePanel("details");
         }}
       />
     );
@@ -471,9 +521,10 @@ export function WorkOrderDetails({
   const originId = selectedWorkOrder?.id || null;
 
   // --- Avatar Logic for Creator ---
-  const creatorInitials = createdByName !== "System" && createdByName.length > 0
-    ? createdByName.charAt(0).toUpperCase()
-    : "S";
+  const creatorInitials =
+    createdByName !== "System" && createdByName.length > 0
+      ? createdByName.charAt(0).toUpperCase()
+      : "S";
 
   return (
     <>
@@ -483,14 +534,23 @@ export function WorkOrderDetails({
             <h2 className="text-lg font-medium">
               {selectedWorkOrder?.title || "Untitled Work Order"}
             </h2>
-            {CopyPageU && <CopyPageU />}
+            {/* {CopyPageU && <CopyPageU />} */}
+            <Tooltip text="Copy Link">
+              <CopyPageU
+                oonClick={() => {
+                  const url = `${window.location.origin}/work-orders/${selectedWorkOrder?.id}`;
+                  navigator.clipboard.writeText(url);
+                  toast.success("Work Order Order link copied!");
+                }}
+              />
+            </Tooltip>
           </div>
 
           <div className="flex items-center gap-2 relative">
-            {/* ✅ WO-401 FIX: onClick scrolls to internal comments */}
-            <button 
+            {/*  WO-401 FIX: onClick scrolls to internal comments */}
+            <button
               className="inline-flex items-center rounded border px-2 py-1.5 text-sm hover:bg-muted"
-              onClick={onScrollToComments} 
+              onClick={onScrollToComments}
             >
               <MessageSquare className="h-4 w-4 mr-2" />
               Comments
@@ -598,7 +658,10 @@ export function WorkOrderDetails({
       <div className="flex-1 p-6 space-y-6">
         <div>
           <h3 className="text-sm font-medium mb-2">Status</h3>
-          <div className="flex items-start justify-between gap-6 border rounded-lg p-4 bg-white sm:flex-row flex-col" role="group">
+          <div
+            className="flex items-start justify-between gap-6 border rounded-lg p-4 bg-white sm:flex-row flex-col"
+            role="group"
+          >
             <div className="flex gap-4">
               {[
                 { key: "open", label: "Open", Icon: MessageSquare },
@@ -660,15 +723,20 @@ export function WorkOrderDetails({
           <div className="flex flex-wrap gap-3">
             {assigneesList.length > 0 ? (
               assigneesList.map((assignee: any, index: number) => (
-                <div key={index} className="flex items-center gap-2 bg-gray-50 px-2 py-1 rounded-full border border-gray-100">
-                    <div className="h-6 w-6 rounded-full overflow-hidden bg-gray-200 border border-gray-300">
-                      <div className="w-full h-full flex items-center justify-center text-xs font-semibold text-gray-600">
-                        {(assignee.fullName || assignee.name || "U").charAt(0).toUpperCase()}
-                      </div>
+                <div
+                  key={index}
+                  className="flex items-center gap-2 bg-gray-50 px-2 py-1 rounded-full border border-gray-100"
+                >
+                  <div className="h-6 w-6 rounded-full overflow-hidden bg-gray-200 border border-gray-300">
+                    <div className="w-full h-full flex items-center justify-center text-xs font-semibold text-gray-600">
+                      {(assignee.fullName || assignee.name || "U")
+                        .charAt(0)
+                        .toUpperCase()}
                     </div>
-                    <span className="text-sm text-gray-800">
-                      {assignee.fullName || assignee.name || "Unknown"}
-                    </span>
+                  </div>
+                  <span className="text-sm text-gray-800">
+                    {assignee.fullName || assignee.name || "Unknown"}
+                  </span>
                 </div>
               ))
             ) : (
@@ -690,7 +758,7 @@ export function WorkOrderDetails({
             <div className="flex items-start gap-2">
               <Factory className="h-4 w-4 text-muted-foreground mt-0.5" />
               <span className="text-sm">
-                 {renderList(selectedWorkOrder.assets, "name")}
+                {renderList(selectedWorkOrder.assets, "name")}
               </span>
             </div>
           </div>
@@ -700,7 +768,9 @@ export function WorkOrderDetails({
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm">
-                {selectedWorkOrder.location?.name || selectedWorkOrder.location || "N/A"}
+                {selectedWorkOrder.location?.name ||
+                  selectedWorkOrder.location ||
+                  "N/A"}
               </span>
             </div>
           </div>
@@ -710,7 +780,9 @@ export function WorkOrderDetails({
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm">
-                {selectedWorkOrder.estimatedTimeHours ? `${selectedWorkOrder.estimatedTimeHours}h` : "N/A"}
+                {selectedWorkOrder.estimatedTimeHours
+                  ? `${selectedWorkOrder.estimatedTimeHours}h`
+                  : "N/A"}
               </span>
             </div>
           </div>
@@ -806,19 +878,24 @@ export function WorkOrderDetails({
 
               {originTitle && (
                 <div className="text-sm mt-1">
-                  <span className="text-muted-foreground">Automatically created from </span>
+                  <span className="text-muted-foreground">
+                    Automatically created from{" "}
+                  </span>
                   <a
                     href={originId ? `/procedures/${originId}` : "#"}
                     className="text-blue-600 underline"
                     onClick={(e) => {
-                      e.preventDefault(); 
+                      e.preventDefault();
                     }}
                   >
                     {originTitle}
                   </a>
                   {selectedWorkOrder.dueDate && (
                     /* ✅ FIX: Use formatDate */
-                    <span className="text-muted-foreground"> (due {formatDate(selectedWorkOrder.dueDate)})</span>
+                    <span className="text-muted-foreground">
+                      {" "}
+                      (due {formatDate(selectedWorkOrder.dueDate)})
+                    </span>
                   )}
                 </div>
               )}
@@ -828,15 +905,20 @@ export function WorkOrderDetails({
 
         {/* ✅ TIME & COST TRACKING - PIXEL PERFECT IMPLEMENTATION */}
         <div className="border-t p-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-6">Time & Cost Tracking</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-6">
+            Time & Cost Tracking
+          </h3>
 
           {/* 1. Parts Section */}
           <div className="mb-6">
             <div className="flex justify-between items-center mb-3">
               <h4 className="text-sm font-semibold text-gray-900">
-                Parts <span className="text-gray-500 font-normal">({selectedWorkOrder.partUsages?.length || 0})</span>
+                Parts{" "}
+                <span className="text-gray-500 font-normal">
+                  ({selectedWorkOrder.partUsages?.length || 0})
+                </span>
               </h4>
-              <button 
+              <button
                 onClick={() => setActivePanel("parts")}
                 className="text-sm text-blue-600 font-medium hover:underline"
               >
@@ -849,32 +931,60 @@ export function WorkOrderDetails({
               <table className="w-full text-left text-sm">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-4 py-2 font-medium text-gray-500 uppercase text-xs">Part</th>
-                    <th className="px-4 py-2 font-medium text-gray-500 uppercase text-xs">Location</th>
-                    <th className="px-4 py-2 font-medium text-gray-500 uppercase text-xs text-right">Quantity</th>
-                    <th className="px-4 py-2 font-medium text-gray-500 uppercase text-xs text-right">Unit Cost</th>
+                    <th className="px-4 py-2 font-medium text-gray-500 uppercase text-xs">
+                      Part
+                    </th>
+                    <th className="px-4 py-2 font-medium text-gray-500 uppercase text-xs">
+                      Location
+                    </th>
+                    <th className="px-4 py-2 font-medium text-gray-500 uppercase text-xs text-right">
+                      Quantity
+                    </th>
+                    <th className="px-4 py-2 font-medium text-gray-500 uppercase text-xs text-right">
+                      Unit Cost
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {(selectedWorkOrder.partUsages || []).length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-4 py-4 text-center text-gray-400 italic">No parts added</td>
+                      <td
+                        colSpan={4}
+                        className="px-4 py-4 text-center text-gray-400 italic"
+                      >
+                        No parts added
+                      </td>
                     </tr>
                   ) : (
-                    selectedWorkOrder.partUsages.map((part: any, idx: number) => (
-                      <tr key={idx} className="bg-white">
-                        <td className="px-4 py-3 text-gray-900 font-medium">{part.part?.name || "Unknown Part"}</td>
-                        <td className="px-4 py-3 text-gray-600">{part.location?.name || "—"}</td>
-                        <td className="px-4 py-3 text-gray-900 text-right">{part.quantity}</td>
-                        <td className="px-4 py-3 text-gray-900 text-right">{formatCurrency(Number(part.unitCost) || 0)}</td>
-                      </tr>
-                    ))
+                    selectedWorkOrder.partUsages.map(
+                      (part: any, idx: number) => (
+                        <tr key={idx} className="bg-white">
+                          <td className="px-4 py-3 text-gray-900 font-medium">
+                            {part.part?.name || "Unknown Part"}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600">
+                            {part.location?.name || "—"}
+                          </td>
+                          <td className="px-4 py-3 text-gray-900 text-right">
+                            {part.quantity}
+                          </td>
+                          <td className="px-4 py-3 text-gray-900 text-right">
+                            {formatCurrency(Number(part.unitCost) || 0)}
+                          </td>
+                        </tr>
+                      )
+                    )
                   )}
                 </tbody>
                 {/* Parts Footer */}
                 <tfoot className="bg-white border-t border-gray-200">
                   <tr>
-                    <td colSpan={3} className="px-4 py-3 font-medium text-gray-900">Parts Cost</td>
+                    <td
+                      colSpan={3}
+                      className="px-4 py-3 font-medium text-gray-900"
+                    >
+                      Parts Cost
+                    </td>
                     <td className="px-4 py-3 font-medium text-gray-900 text-right">
                       {formatCurrency(financials.partsCost)}
                     </td>
@@ -888,7 +998,7 @@ export function WorkOrderDetails({
           <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
               <h4 className="text-sm font-semibold text-gray-900">Time</h4>
-              <button 
+              <button
                 onClick={() => setActivePanel("time")}
                 className="text-sm text-blue-600 font-medium hover:underline"
               >
@@ -897,15 +1007,19 @@ export function WorkOrderDetails({
             </div>
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-sm text-gray-900">Time Cost</span>
-              <span className="text-sm font-medium text-gray-900">{formatCurrency(financials.timeCost)}</span>
+              <span className="text-sm font-medium text-gray-900">
+                {formatCurrency(financials.timeCost)}
+              </span>
             </div>
           </div>
 
           {/* 3. Other Costs Section */}
           <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
-              <h4 className="text-sm font-semibold text-gray-900">Other Costs</h4>
-              <button 
+              <h4 className="text-sm font-semibold text-gray-900">
+                Other Costs
+              </h4>
+              <button
                 onClick={() => setActivePanel("cost")}
                 className="text-sm text-blue-600 font-medium hover:underline"
               >
@@ -914,44 +1028,48 @@ export function WorkOrderDetails({
             </div>
             {/* List other costs if they exist, or just show total line */}
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
-               <span className="text-sm text-gray-900">Other Costs Total</span>
-               <span className="text-sm font-medium text-gray-900">{formatCurrency(financials.otherCost)}</span>
+              <span className="text-sm text-gray-900">Other Costs Total</span>
+              <span className="text-sm font-medium text-gray-900">
+                {formatCurrency(financials.otherCost)}
+              </span>
             </div>
           </div>
 
           {/* 4. Total Summary Section */}
           <div className="bg-gray-50 rounded-lg p-4 flex justify-between items-center mt-4 border border-gray-200">
-            <span className="text-sm font-semibold text-gray-900">Total Work Order Cost</span>
-            <span className="text-lg font-bold text-gray-900">{formatCurrency(financials.totalCost)}</span>
+            <span className="text-sm font-semibold text-gray-900">
+              Total Work Order Cost
+            </span>
+            <span className="text-lg font-bold text-gray-900">
+              {formatCurrency(financials.totalCost)}
+            </span>
           </div>
         </div>
 
         {/* ✅ UPDATED FOOTER WITH EXACT MATCH */}
         <div className="border-t p-6">
-             <div className="space-y-3">
-              <div className="flex items-center gap-1 text-sm ">
-                <UserCircle2 className="w-4 h-4 text-yellow-500" />
-                <span>
-                  Created {createdByName ? `by ${createdByName}` : ""}
-                </span>
-               
-                <span>
-                  {/* ✅ FIX: Use formatDate */}
-                  {formatDate(selectedWorkOrder.createdAt, true)}
-                </span>
-              </div>
-              <div className="flex items-center gap-1 text-sm ">
-                <UserCircle2 className="w-4 h-4 text-yellow-500" />
-                <span>
-                  Last Updated {updatedByName ? `by ${updatedByName}` : ""}
-                </span>
-               
-                <span>
-                  {/* ✅ FIX: Use formatDate */}
-                  {formatDate(selectedWorkOrder.updatedAt, true)}
-                </span>
-              </div>
+          <div className="space-y-3">
+            <div className="flex items-center gap-1 text-sm ">
+              <UserCircle2 className="w-4 h-4 text-yellow-500" />
+              <span>Created {createdByName ? `by ${createdByName}` : ""}</span>
+
+              <span>
+                {/* ✅ FIX: Use formatDate */}
+                {formatDate(selectedWorkOrder.createdAt, true)}
+              </span>
             </div>
+            <div className="flex items-center gap-1 text-sm ">
+              <UserCircle2 className="w-4 h-4 text-yellow-500" />
+              <span>
+                Last Updated {updatedByName ? `by ${updatedByName}` : ""}
+              </span>
+
+              <span>
+                {/* ✅ FIX: Use formatDate */}
+                {formatDate(selectedWorkOrder.updatedAt, true)}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </>
