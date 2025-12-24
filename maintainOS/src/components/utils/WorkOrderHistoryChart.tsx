@@ -209,9 +209,9 @@ export function WorkOrderHistoryChart({
   return (
     <>
       {workOrderHistory && (
-        <Card>
+        <Card className="rounded-lg">
           <CardHeader className="pb-2 flex flex-row justify-between items-center z-10 relative">
-            <CardTitle className="text-base font-medium">{title}</CardTitle>
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
             <div className="relative">
               <button
                 ref={settingsRef}
@@ -233,22 +233,45 @@ export function WorkOrderHistoryChart({
 
           <CardContent className="relative min-h-[250px]">
             {isLoading && (
-              <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60 backdrop-blur-[1px] rounded-md transition-all duration-300">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-              </div>
+              // <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60 backdrop-blur-[1px] rounded-md transition-all duration-300">
+              //   <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+              // </div>
+              null
             )}
 
             <div className="text-xs text-muted-foreground mb-4 text-right">
-              {selectedDateRange.startDate} - {selectedDateRange.endDate}
+              {isValid(
+                parse(selectedDateRange.startDate, "MM/dd/yyyy", new Date())
+              )
+                ? format(
+                    parse(
+                      selectedDateRange.startDate,
+                      "MM/dd/yyyy",
+                      new Date()
+                    ),
+                    "dd MMM, yyyy"
+                  )
+                : selectedDateRange.startDate}
+              {" - "}
+              {isValid(
+                parse(selectedDateRange.endDate, "MM/dd/yyyy", new Date())
+              )
+                ? format(
+                    parse(selectedDateRange.endDate, "MM/dd/yyyy", new Date()),
+                    "dd MMM, yyyy"
+                  )
+                : selectedDateRange.endDate}
             </div>
 
             <ResponsiveContainer width="100%" height={350}>
-              <LineChart data={chartData}>
+              <LineChart
+                data={chartData}
+                margin={{ top: 20, right: 30, bottom: 10 }}
+              >
                 <CartesianGrid
                   strokeDasharray=""
                   stroke="#e5e7eb"
                   vertical={true}
-                  
                 />
                 <XAxis
                   dataKey="date"
@@ -274,7 +297,7 @@ export function WorkOrderHistoryChart({
                     boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                   }}
                 />
-                {showLegend && <Legend verticalAlign="top" height={36} />}
+                {showLegend && <Legend verticalAlign="bottom" height={36} />}
                 <Line
                   type="monotone"
                   dataKey="created"

@@ -400,8 +400,6 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
           </div>
         </div>
 
-        <hr className="my-4" />
-
         <WorkOrderHistoryChart
           id="work-order-history" // [!code ++] Pass a unique ID
           title="Work Order History"
@@ -413,7 +411,6 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
           lineName="Created"
           lineColor="#0091ff"
         />
-        <hr className="my-4" />
 
         {/* Footer Info */}
         <div className="text-sm text-gray-500 mt-2 pb-10">
