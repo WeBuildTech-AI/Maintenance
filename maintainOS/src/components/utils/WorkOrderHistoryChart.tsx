@@ -20,7 +20,7 @@ import {
   eachDayOfInterval,
   parse,
   differenceInDays,
-  subDays, // ✅ Imported subDays
+  subDays,
 } from "date-fns";
 import { mapFilters } from "../Reporting/filterUtils";
 import { CustomDateRangeModal } from "./CustomDateRangeModal";
@@ -30,11 +30,9 @@ interface ChartItem {
   groupValues: string[];
   value: number;
 }
-
 interface ChartResponse {
   getChartData: ChartItem[];
 }
-
 interface ProcessedChartPoint {
   date: string;
   rawDate: string;
@@ -43,27 +41,31 @@ interface ProcessedChartPoint {
 }
 
 interface WorkOrderHistoryChartProps {
+  id: string; // [!code ++] NEW: Unique Identifier
   title?: string;
   filters: Record<string, any>;
-  dateRange?: { startDate: string; endDate: string }; // ✅ Made Optional
+  dateRange?: { startDate: string; endDate: string };
+  onDateRangeChange?: (id: string, start: Date, end: Date) => void; // [!code ++] NEW: Callback
   showLegend?: boolean;
   workOrderHistory: { id: number | string; name: string };
 }
 
 export function WorkOrderHistoryChart({
+  id, // [!code ++]
   title = "Work Order History",
-  filters,
-  dateRange, // Now optional
+  filters = {},
+  dateRange,
+  onDateRangeChange, // [!code ++]
   showLegend = true,
   workOrderHistory,
 }: WorkOrderHistoryChartProps) {
-  // ✅ 1. Initialize State with Last 7 Days Default
+  // --- State Initialization ---
   const [selectedDateRange, setSelectedDateRange] = useState(() => {
-    // If parent provides a range, use it. Otherwise, default to Last 7 Days.
-    if (dateRange) return dateRange;
-
+    if (dateRange && dateRange.startDate && dateRange.endDate) {
+      return dateRange;
+    }
     const end = new Date();
-    const start = subDays(end, 7); // 7 days ago
+    const start = subDays(end, 6);
     return {
       startDate: format(start, "MM/dd/yyyy"),
       endDate: format(end, "MM/dd/yyyy"),
@@ -73,26 +75,33 @@ export function WorkOrderHistoryChart({
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const settingsRef = useRef<HTMLButtonElement>(null);
 
-  // ✅ 2. Sync with prop ONLY if prop changes and is valid
   useEffect(() => {
-    if (dateRange) {
+    if (dateRange && dateRange.startDate && dateRange.endDate) {
       setSelectedDateRange(dateRange);
     }
   }, [dateRange]);
 
   const handleApplyFilter = (start: Date, end: Date) => {
-    setSelectedDateRange({
+    const newRange = {
       startDate: format(start, "MM/dd/yyyy"),
       endDate: format(end, "MM/dd/yyyy"),
-    });
+    };
+
+    setSelectedDateRange(newRange);
+
+    // [!code ++] Notify parent with ID
+    if (onDateRangeChange) {
+      onDateRangeChange(id, start, end);
+    }
+
     setIsFilterOpen(false);
   };
 
   const apiFilters = useMemo(() => {
-    return mapFilters(filters, selectedDateRange);
+    const safeFilters = filters || {};
+    return mapFilters(safeFilters, selectedDateRange);
   }, [filters, selectedDateRange]);
 
-  // Calculate Days Difference for Dynamic Interval
   const daysDiff = useMemo(() => {
     try {
       const start = parse(
@@ -107,7 +116,7 @@ export function WorkOrderHistoryChart({
     }
   }, [selectedDateRange]);
 
-  // --- Fetch Created Data ---
+  // --- Queries ---
   const { data: createdData, loading: createdLoading } =
     useQuery<ChartResponse>(GET_CHART_DATA, {
       variables: {
@@ -121,7 +130,6 @@ export function WorkOrderHistoryChart({
       fetchPolicy: "cache-and-network",
     });
 
-  // --- Fetch Completed Data ---
   const { data: completedData, loading: completedLoading } =
     useQuery<ChartResponse>(GET_CHART_DATA, {
       variables: {
@@ -135,7 +143,9 @@ export function WorkOrderHistoryChart({
       fetchPolicy: "cache-and-network",
     });
 
-  // --- Fill in Gaps & Process Data ---
+  const isLoading = createdLoading || completedLoading;
+
+  // --- Process Data Logic ---
   const chartData = useMemo<ProcessedChartPoint[]>(() => {
     const createdMap = new Map<string, number>();
     const completedMap = new Map<string, number>();
@@ -145,13 +155,10 @@ export function WorkOrderHistoryChart({
         const dateValue = !isNaN(Number(dateStr))
           ? new Date(Number(dateStr))
           : parseISO(dateStr);
-        if (isValid(dateValue)) {
-          return format(dateValue, "yyyy-MM-dd");
-        }
-      } catch (e) {
+        return isValid(dateValue) ? format(dateValue, "yyyy-MM-dd") : null;
+      } catch {
         return null;
       }
-      return null;
     };
 
     const processItems = (items: ChartItem[], map: Map<string, number>) => {
@@ -160,8 +167,7 @@ export function WorkOrderHistoryChart({
         if (rawLabel && rawLabel !== "Unassigned") {
           const normalizedKey = normalizeDate(rawLabel);
           if (normalizedKey) {
-            const existing = map.get(normalizedKey) || 0;
-            map.set(normalizedKey, existing + item.value);
+            map.set(normalizedKey, (map.get(normalizedKey) || 0) + item.value);
           }
         }
       });
@@ -180,12 +186,11 @@ export function WorkOrderHistoryChart({
         new Date()
       );
       const end = parse(selectedDateRange.endDate, "MM/dd/yyyy", new Date());
-
       if (isValid(start) && isValid(end)) {
         allDays = eachDayOfInterval({ start, end });
       }
     } catch (e) {
-      console.error("Error generating date interval", e);
+      console.error("Date Parsing Error", e);
     }
 
     return allDays.map((day) => {
@@ -200,14 +205,6 @@ export function WorkOrderHistoryChart({
       };
     });
   }, [createdData, completedData, selectedDateRange]);
-
-  if (createdLoading || completedLoading) {
-    return (
-      <Card className="h-[300px] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-      </Card>
-    );
-  }
 
   return (
     <>
@@ -233,10 +230,18 @@ export function WorkOrderHistoryChart({
               )}
             </div>
           </CardHeader>
-          <CardContent>
+
+          <CardContent className="relative min-h-[250px]">
+            {isLoading && (
+              <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60 backdrop-blur-[1px] rounded-md transition-all duration-300">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+              </div>
+            )}
+
             <div className="text-xs text-muted-foreground mb-4 text-right">
               {selectedDateRange.startDate} - {selectedDateRange.endDate}
             </div>
+
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={chartData}>
                 <CartesianGrid
@@ -252,8 +257,7 @@ export function WorkOrderHistoryChart({
                   height={60}
                   tickLine={false}
                   axisLine={false}
-                  // ✅ Dynamic Interval Logic
-                  interval={daysDiff > 7 ? 6 : 0}
+                  interval={daysDiff > 8 ? "preserveStartEnd" : 0}
                   minTickGap={10}
                 />
                 <YAxis

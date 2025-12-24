@@ -33,7 +33,7 @@ export function CustomDateRangeModal({
 
   const modalRef = useRef<HTMLDivElement>(null);
 
-  // 1. ✅ NEW: Handle Click Outside to Close Modal automatically
+  // 1.  NEW: Handle Click Outside to Close Modal automatically
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       // Safety check
