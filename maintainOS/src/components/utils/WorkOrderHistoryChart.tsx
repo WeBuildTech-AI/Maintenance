@@ -41,21 +41,21 @@ interface ProcessedChartPoint {
 }
 
 interface WorkOrderHistoryChartProps {
-  id: string; // [!code ++] NEW: Unique Identifier
+  id: string;
   title?: string;
   filters: Record<string, any>;
   dateRange?: { startDate: string; endDate: string };
-  onDateRangeChange?: (id: string, start: Date, end: Date) => void; // [!code ++] NEW: Callback
+  onDateRangeChange?: (id: string, start: Date, end: Date) => void;
   showLegend?: boolean;
   workOrderHistory: { id: number | string; name: string };
 }
 
 export function WorkOrderHistoryChart({
-  id, // [!code ++]
+  id,
   title = "Work Order History",
   filters = {},
   dateRange,
-  onDateRangeChange, // [!code ++]
+  onDateRangeChange,
   showLegend = true,
   workOrderHistory,
 }: WorkOrderHistoryChartProps) {
@@ -242,12 +242,13 @@ export function WorkOrderHistoryChart({
               {selectedDateRange.startDate} - {selectedDateRange.endDate}
             </div>
 
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={350}>
               <LineChart data={chartData}>
                 <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#f0f0f0"
-                  vertical={false}
+                  strokeDasharray=""
+                  stroke="#e5e7eb"
+                  vertical={true}
+                  
                 />
                 <XAxis
                   dataKey="date"

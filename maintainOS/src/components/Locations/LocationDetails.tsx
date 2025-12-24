@@ -13,7 +13,7 @@ import {
   ClipboardList,
   Settings2,
 } from "lucide-react";
-import React from "react";
+import React, { useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import {
@@ -30,6 +30,8 @@ import { LocationImages } from "./LocationImages";
 import { LocationFiles } from "./LocationFiles";
 import { Tooltip } from "../ui/tooltip";
 import { locationService } from "../../store/locations";
+import { format, subDays } from "date-fns";
+import { WorkOrderHistoryChart } from "../utils/WorkOrderHistoryChart";
 
 // Props interface
 interface LocationDetailsProps {
@@ -48,6 +50,8 @@ interface LocationDetailsProps {
   setShowSubLocation: (show: boolean) => void;
   onSubLocationClick: (location: any) => void;
 }
+
+type DateRange = { startDate: string; endDate: string };
 
 const LocationDetails: React.FC<LocationDetailsProps> = ({
   selectedLocation,
@@ -77,8 +81,8 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
   // ✅ UPDATED: Pass the FULL location object, not just ID
   const handleUseInWorkOrder = () => {
     navigate("/work-orders/create", {
-      state: { 
-        preselectedLocation: selectedLocation 
+      state: {
+        preselectedLocation: selectedLocation,
       },
     });
   };
@@ -103,9 +107,34 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
     );
   };
 
+  // work order Graph
+
+  const [chartDateRanges, setChartDateRanges] = useState<
+    Record<string, DateRange>
+  >({
+    "work-order-history": {
+      startDate: format(subDays(new Date(), 7), "MM/dd/yyyy"), // Ensure format matches what Chart expects (MM/dd/yyyy)
+      endDate: format(new Date(), "MM/dd/yyyy"),
+    },
+  });
+
+  const filters = {
+    locationId: selectedLocation.id,
+  };
+
+  // [!code ++] Handler to update only the specific chart ID
+  const handleDateRangeChange = (id: string, start: Date, end: Date) => {
+    setChartDateRanges((prev) => ({
+      ...prev,
+      [id]: {
+        startDate: format(start, "MM/dd/yyyy"),
+        endDate: format(end, "MM/dd/yyyy"),
+      },
+    }));
+  };
+
   return (
     <div className="mx-auto flex flex-col h-full bg-white relative">
-      {/* Header */}
       <div className="flex-none border-b bg-white px-6 py-4 z-10">
         <div className="flex items-center justify-between">
           <h2 className="capitalize text-xl font-semibold text-gray-800">
@@ -303,7 +332,6 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
             </div>
           )}
 
- 
         <hr className="my-4" />
 
         <LocationImages location={selectedLocation} />
@@ -372,6 +400,19 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
           </div>
         </div>
 
+        <hr className="my-4" />
+
+        <WorkOrderHistoryChart
+          id="work-order-history" // [!code ++] Pass a unique ID
+          title="Work Order History"
+          workOrderHistory={selectedLocation?.workOrders}
+          filters={filters}
+          dateRange={chartDateRanges["work-order-history"]} // [!code ++] Use specific range
+          onDateRangeChange={handleDateRangeChange} // [!code ++] Pass handler
+          groupByField="createdAt"
+          lineName="Created"
+          lineColor="#0091ff"
+        />
         <hr className="my-4" />
 
         {/* Footer Info */}

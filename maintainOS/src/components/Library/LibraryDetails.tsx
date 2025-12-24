@@ -10,12 +10,17 @@ import { useState, useEffect } from "react";
 import { ProcedureForm } from "./GenerateProcedure/components/ProcedureForm";
 import { MoreActionsMenu } from "./GenerateProcedure/components/MoreActionsMenu";
 
-import { useDispatch, useSelector } from "react-redux"; 
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { batchDeleteProcedures, duplicateProcedure } from "../../store/procedures/procedures.thunks"; 
-import type { AppDispatch, RootState } from "../../store"; 
+import {
+  batchDeleteProcedures,
+  duplicateProcedure,
+} from "../../store/procedures/procedures.thunks";
+import type { AppDispatch, RootState } from "../../store";
 
 import { ConfirmationModal } from "./GenerateProcedure/components/ConfirmationModal";
+import { WorkOrderHistoryChart } from "../utils/WorkOrderHistoryChart";
+import { format, subDays } from "date-fns";
 
 // --- Helper function to format dates ---
 function formatDisplayDate(dateString: string) {
@@ -34,6 +39,8 @@ function formatDisplayDate(dateString: string) {
   }
 }
 
+type DateRange = { startDate: string; endDate: string };
+
 // --- DetailsTabContent component ---
 const DetailsTabContent = ({ procedure }: { procedure: any }) => {
   const createdDate = formatDisplayDate(procedure.createdAt);
@@ -47,26 +54,35 @@ const DetailsTabContent = ({ procedure }: { procedure: any }) => {
   const assets = procedure.assets || [];
   const locations = procedure.locations || [];
   const teams = procedure.teams || [];
-  
+
   // ✅ FIX: Robust extraction for categories
   // Checks for 'categories' (plural) first, then falls back to 'category' (singular) if needed
   let categories = procedure.categories || [];
   if (categories.length === 0 && procedure.category) {
-      categories = Array.isArray(procedure.category) ? procedure.category : [procedure.category];
+    categories = Array.isArray(procedure.category)
+      ? procedure.category
+      : [procedure.category];
   }
 
   const renderBadgeList = (items: any[]) => {
-    if (!items || items.length === 0) return <span className="text-sm text-gray-500">—</span>;
+    if (!items || items.length === 0)
+      return <span className="text-sm text-gray-500">—</span>;
     return (
       <div className="flex flex-wrap gap-2">
         {items.map((item, idx) => {
-            // Handle both string IDs and Objects (API returns objects with name)
-            const label = typeof item === 'string' ? item : (item.name || item.title || "Unknown");
-            return (
-                <span key={idx} className="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800 ">
-                    {label}
-                </span>
-            )
+          // Handle both string IDs and Objects (API returns objects with name)
+          const label =
+            typeof item === "string"
+              ? item
+              : item.name || item.title || "Unknown";
+          return (
+            <span
+              key={idx}
+              className="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800 "
+            >
+              {label}
+            </span>
+          );
         })}
       </div>
     );
@@ -80,42 +96,50 @@ const DetailsTabContent = ({ procedure }: { procedure: any }) => {
           <User size={16} className="text-blue-600" />
           <span>
             Created By{" "}
-            <span className="font-semibold text-gray-900">{fullName || "Unknown User"}</span> on{" "}
-            {createdDate}
+            <span className="font-semibold text-gray-900">
+              {fullName || "Unknown User"}
+            </span>{" "}
+            on {createdDate}
           </span>
         </div>
         <div className="flex items-center text-sm text-gray-600 pl-8">
           <span>
-            Last updated by <span className="font-semibold text-gray-900">{fullName || "Unknown User"}</span> on {updatedDate}
+            Last updated by{" "}
+            <span className="font-semibold text-gray-900">
+              {fullName || "Unknown User"}
+            </span>{" "}
+            on {updatedDate}
           </span>
         </div>
       </div>
 
       {/* Details Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-gray-200">
-          {/* Assets */}
-          <div>
-              <h4 className="text-sm font-medium text-gray-900 mb-3">Assets</h4>
-              {renderBadgeList(assets)}
-          </div>
+        {/* Assets */}
+        <div>
+          <h4 className="text-sm font-medium text-gray-900 mb-3">Assets</h4>
+          {renderBadgeList(assets)}
+        </div>
 
-           {/* Locations */}
-           <div>
-              <h4 className="text-sm font-medium text-gray-900 mb-3">Locations</h4>
-              {renderBadgeList(locations)}
-          </div>
-          
-           {/* Teams */}
-           <div>
-              <h4 className="text-sm font-medium text-gray-900 mb-3">Teams in Charge</h4>
-              {renderBadgeList(teams)}
-          </div>
+        {/* Locations */}
+        <div>
+          <h4 className="text-sm font-medium text-gray-900 mb-3">Locations</h4>
+          {renderBadgeList(locations)}
+        </div>
 
-           {/* ✅ FIX: Explicitly added Categories Section */}
-           <div>
-              <h4 className="text-sm font-medium text-gray-900 mb-3">Categories</h4>
-              {renderBadgeList(categories)}
-          </div>
+        {/* Teams */}
+        <div>
+          <h4 className="text-sm font-medium text-gray-900 mb-3">
+            Teams in Charge
+          </h4>
+          {renderBadgeList(teams)}
+        </div>
+
+        {/* ✅ FIX: Explicitly added Categories Section */}
+        <div>
+          <h4 className="text-sm font-medium text-gray-900 mb-3">Categories</h4>
+          {renderBadgeList(categories)}
+        </div>
       </div>
 
       <div className="pt-6 border-t border-gray-200">
@@ -134,11 +158,11 @@ const DetailsTabContent = ({ procedure }: { procedure: any }) => {
 // --- Main LibraryDetails Component ---
 export function LibraryDetails({
   selectedProcedure,
-  onRefresh, 
+  onRefresh,
   onEdit,
 }: {
   selectedProcedure: any;
-  onRefresh: () => void; 
+  onRefresh: () => void;
   onEdit: (id: string) => void;
 }) {
   const [activeTab, setActiveTab] = useState<"fields" | "details" | "history">(
@@ -147,7 +171,7 @@ export function LibraryDetails({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const dispatch = useDispatch<AppDispatch>();
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
 
   useEffect(() => {
     setActiveTab("fields");
@@ -158,7 +182,7 @@ export function LibraryDetails({
 
     try {
       await dispatch(batchDeleteProcedures([selectedProcedure.id])).unwrap();
-      onRefresh(); 
+      onRefresh();
       navigate("/library");
     } catch (error) {
       console.error("Failed to delete procedure:", error);
@@ -187,11 +211,11 @@ export function LibraryDetails({
 
   const handleUseInWorkOrder = () => {
     if (!selectedProcedure) return;
-    
+
     navigate(`/work-orders/create?procedureId=${selectedProcedure.id}`, {
-      state: { 
-        procedureData: selectedProcedure 
-      }
+      state: {
+        procedureData: selectedProcedure,
+      },
     });
   };
 
@@ -202,6 +226,32 @@ export function LibraryDetails({
       </div>
     );
   }
+
+  // work order graph
+
+  const [chartDateRanges, setChartDateRanges] = useState<
+    Record<string, DateRange>
+  >({
+    "work-order-history": {
+      startDate: format(subDays(new Date(), 7), "MM/dd/yyyy"), // Ensure format matches what Chart expects (MM/dd/yyyy)
+      endDate: format(new Date(), "MM/dd/yyyy"),
+    },
+  });
+
+  const filters = {
+    procedureIds: selectedProcedure.id,
+  };
+
+  // [!code ++] Handler to update only the specific chart ID
+  const handleDateRangeChange = (id: string, start: Date, end: Date) => {
+    setChartDateRanges((prev) => ({
+      ...prev,
+      [id]: {
+        startDate: format(start, "MM/dd/yyyy"),
+        endDate: format(end, "MM/dd/yyyy"),
+      },
+    }));
+  };
 
   const rootFields = selectedProcedure.fields || [];
   const rootHeadings = selectedProcedure.headings || [];
@@ -224,14 +274,14 @@ export function LibraryDetails({
 
           {/* Buttons */}
           <div className="flex items-center gap-2 relative">
-            <button 
+            <button
               onClick={() => onEdit(selectedProcedure.id)}
               className="inline-flex items-center rounded border border-blue-500 text-blue-600 px-4 py-1.5 text-sm font-medium hover:bg-blue-50"
             >
               <Pencil className="h-4 w-4 mr-2" />
               Edit
             </button>
-            <MoreActionsMenu 
+            <MoreActionsMenu
               onDelete={handleDeleteClick}
               onDuplicate={handleDuplicate}
             >
@@ -280,10 +330,7 @@ export function LibraryDetails({
       </div>
 
       {/* --- CONTENT --- */}
-      <div
-        className="flex-1 overflow-y-auto"
-        style={{ background: "#f9fafb" }}
-      >
+      <div className="flex-1 overflow-y-auto" style={{ background: "#f9fafb" }}>
         {activeTab === "fields" && (
           <div className="p-6">
             <ProcedureForm
@@ -300,9 +347,17 @@ export function LibraryDetails({
         )}
 
         {activeTab === "history" && (
-          <div className="p-6 text-center text-gray-500">
-            Loading
-          </div>
+          <WorkOrderHistoryChart
+            id="work-order-history"
+            title="Work Order History"
+            workOrderHistory={selectedProcedure?.workOrders}
+            filters={filters}
+            dateRange={chartDateRanges["work-order-history"]}
+            onDateRangeChange={handleDateRangeChange}
+            groupByField="createdAt"
+            lineName="Created"
+            lineColor="#0091ff"
+          />
         )}
 
         <div style={{ height: 96 }} />
@@ -333,7 +388,7 @@ export function LibraryDetails({
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleConfirmDelete}
-        title="Delete Procedure" 
+        title="Delete Procedure"
         message={`Are you sure you want to delete "${selectedProcedure?.title}"?`}
       />
     </div>

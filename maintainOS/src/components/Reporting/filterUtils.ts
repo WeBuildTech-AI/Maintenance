@@ -64,6 +64,24 @@ export const mapFilters = (
         operator: "eq",
         value: String(value),
       });
+    } else if (key === "locationId") {
+      mapped.push({
+        field: "locationId",
+        operator: "eq",
+        value: String(value),
+      });
+    } else if (key === "vendorIds") {
+      mapped.push({
+        field: "vendorIds",
+        operator: "eq",
+        value: String(value),
+      });
+    } else if (key === "partIds") {
+      mapped.push({
+        field: "partIds",
+        operator: "eq",
+        value: String(value),
+      });
     }
     // Add more filter mappings here as needed
   });

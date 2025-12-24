@@ -38,6 +38,10 @@ import { NewPartForm } from "../NewPartForm/NewPartForm";
 // ✅ Import API to fetch users
 import api from "../../../store/auth/auth.service";
 import { Tooltip } from "../../ui/tooltip";
+import { format, subDays } from "date-fns";
+import { WorkOrderHistoryChart } from "../../utils/WorkOrderHistoryChart";
+
+type DateRange = { startDate: string; endDate: string };
 
 export function PartDetails({
   item,
@@ -58,17 +62,17 @@ export function PartDetails({
 }) {
   const [activeTab, setActiveTab] = useState<"details" | "history">("details");
 
-  // ✅ 1. Local State for Real-time Updates
+  //  1. Local State for Real-time Updates
   const [partData, setPartData] = useState<any>(item);
 
-  // ✅ View States
+  //  View States
   const [isEditing, setIsEditing] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
 
-  // ✅ Resize State
+  //  Resize State
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // ✅ Dropdown & Modal States
+  //  Dropdown & Modal States
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -76,14 +80,14 @@ export function PartDetails({
   const [isCopied, setIsCopied] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // ✅ User Names State
+  //  User Names State
   const [createdByName, setCreatedByName] = useState<string>("");
   const [updatedByName, setUpdatedByName] = useState<string>("");
 
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
 
-  // ✅ Get organizationId from Auth State
+  //  Get organizationId from Auth State
   const organizationId = useSelector(
     (state: RootState) => state.auth?.user?.organizationId
   );
@@ -94,7 +98,7 @@ export function PartDetails({
     setIsEditing(false);
   }, [item]);
 
-  // ✅ Refresh Logic
+  //  Refresh Logic
   const refreshLocalData = async () => {
     if (!partData?.id) return;
     try {
@@ -106,7 +110,7 @@ export function PartDetails({
     }
   };
 
-  // ✅ Fetch User Names
+  //  Fetch User Names
   useEffect(() => {
     const fetchUserNames = async () => {
       // 1. Fetch Creator Name
@@ -149,7 +153,7 @@ export function PartDetails({
     fetchUserNames();
   }, [partData.createdBy, partData.updatedBy]);
 
-  // ✅ Edit Data Fetch
+  //  Edit Data Fetch
   useEffect(() => {
     if (isEditing && partData?.id) {
       setLoading(true);
@@ -178,7 +182,7 @@ export function PartDetails({
   }, [isEditing, partData]);
 
   /* -------------------------------------------------------------------------- */
-  /* ✅ DIRECT DUPLICATE ACTION (FIXED FOR 500 ERROR)                           */
+  /*  DIRECT DUPLICATE ACTION (FIXED FOR 500 ERROR)                           */
   /* -------------------------------------------------------------------------- */
   const handleDuplicatePart = async () => {
     const loadingToast = toast.loading("Duplicating part...");
@@ -192,7 +196,9 @@ export function PartDetails({
       formData.append("unitCost", String(partData.unitCost || 0));
 
       // 2. Arrays (must be stringified JSON for your backend logic)
-      const partsType = Array.isArray(partData.partsType) ? partData.partsType : [];
+      const partsType = Array.isArray(partData.partsType)
+        ? partData.partsType
+        : [];
       formData.append("partsType", JSON.stringify(partsType));
 
       const assetIds = partData.assets?.map((a: any) => a.id) || [];
@@ -221,7 +227,10 @@ export function PartDetails({
       if (Array.isArray(partData.vendors) && partData.vendors.length > 0) {
         partData.vendors.forEach((vendor: any, index: number) => {
           formData.append(`vendors[${index}][vendorId]`, vendor.id || "");
-          formData.append(`vendors[${index}][orderingPartNumber]`, vendor.orderingPartNumber || "");
+          formData.append(
+            `vendors[${index}][orderingPartNumber]`,
+            vendor.orderingPartNumber || ""
+          );
         });
       }
 
@@ -235,7 +244,9 @@ export function PartDetails({
       navigate(`/inventory/${result.id}`);
     } catch (error: any) {
       console.error("❌ Duplicate failed:", error);
-      toast.error(error?.message || "Failed to duplicate part", { id: loadingToast });
+      toast.error(error?.message || "Failed to duplicate part", {
+        id: loadingToast,
+      });
     }
   };
 
@@ -348,6 +359,29 @@ export function PartDetails({
   const partType = Array.isArray(partData.partsType)
     ? partData.partsType[0]?.name || partData.partsType[0] || "N/A"
     : partData.partsType?.name || "N/A";
+
+  const [chartDateRanges, setChartDateRanges] = useState<
+    Record<string, DateRange>
+  >({
+    "work-order-history": {
+      startDate: format(subDays(new Date(), 7), "MM/dd/yyyy"), // Ensure format matches what Chart expects (MM/dd/yyyy)
+      endDate: format(new Date(), "MM/dd/yyyy"),
+    },
+  });
+
+  const filters = {
+    partIds: partData.id,
+  };
+
+  const handleDateRangeChange = (id: string, start: Date, end: Date) => {
+    setChartDateRanges((prev) => ({
+      ...prev,
+      [id]: {
+        startDate: format(start, "MM/dd/yyyy"),
+        endDate: format(end, "MM/dd/yyyy"),
+      },
+    }));
+  };
 
   return (
     <div
@@ -689,6 +723,18 @@ export function PartDetails({
                 <p className="text-gray-500 text-sm">No teams linked</p>
               )}
             </div>
+
+            <WorkOrderHistoryChart
+              id="work-order-history" // [!code ++] Pass a unique ID
+              title="Work Order History"
+              workOrderHistory={partData?.workOrders}
+              filters={filters}
+              dateRange={chartDateRanges["work-order-history"]} // [!code ++] Use specific range
+              onDateRangeChange={handleDateRangeChange} // [!code ++] Pass handler
+              groupByField="createdAt"
+              lineName="Created"
+              lineColor="#0091ff"
+            />
 
             <div className="space-y-3 mb-8 mt-4">
               <div className="flex items-center gap-1 text-sm text-gray-600">

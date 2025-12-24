@@ -11,12 +11,7 @@ import {
 } from "../VendorsForm/NewContactModal";
 import { type Vendor } from "../vendors.types";
 
-import {
-  Briefcase,
-  AlertTriangle,
-  Factory,
-  Truck,
-} from "lucide-react";
+import { Briefcase, AlertTriangle, Factory, Truck } from "lucide-react";
 
 import VendorHeader from "./VendorHeader";
 import VendorContactList from "./VendorContactList";
@@ -27,6 +22,9 @@ import DeleteModal from "./DeleteModal";
 import { VendorImages } from "./VendorImages";
 import { VendorFiles } from "./VendorFiles";
 import VendorAssetsSection from "./VendorAssetsSection";
+import { format, subDays } from "date-fns";
+
+import { WorkOrderHistoryChart } from "../../utils/WorkOrderHistoryChart";
 // ❌ Removed VendorWorkOrdersSection import
 
 interface VendorDetailsProps {
@@ -37,6 +35,8 @@ interface VendorDetailsProps {
   onClose: () => void;
   fetchVendors: () => void;
 }
+
+type DateRange = { startDate: string; endDate: string };
 
 export default function VendorDetails({
   vendor,
@@ -160,6 +160,31 @@ export default function VendorDetails({
 
   const vendorTypeStyle = getVendorTypeListItemStyles(vendor.vendorType);
 
+  // work order graph
+
+  const [chartDateRanges, setChartDateRanges] = useState<
+    Record<string, DateRange>
+  >({
+    "work-order-history": {
+      startDate: format(subDays(new Date(), 7), "MM/dd/yyyy"), // Ensure format matches what Chart expects (MM/dd/yyyy)
+      endDate: format(new Date(), "MM/dd/yyyy"),
+    },
+  });
+
+  const filters = {
+    vendorIds: vendor.id,
+  };
+
+  const handleDateRangeChange = (id: string, start: Date, end: Date) => {
+    setChartDateRanges((prev) => ({
+      ...prev,
+      [id]: {
+        startDate: format(start, "MM/dd/yyyy"),
+        endDate: format(end, "MM/dd/yyyy"),
+      },
+    }));
+  };
+
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-lg border relative bg-white">
       {/* Header */}
@@ -236,6 +261,19 @@ export default function VendorDetails({
 
         {/* 4. Parts (API Field: parts & partIds) */}
         <VendorPartsSection vendor={vendor} />
+
+        {/* work order graph */}
+        <WorkOrderHistoryChart
+          id="work-order-history"
+          title="Work Order History"
+          workOrderHistory={vendor?.workOrderIds}
+          filters={filters}
+          dateRange={chartDateRanges["work-order-history"]} 
+          onDateRangeChange={handleDateRangeChange} 
+          groupByField="createdAt"
+          lineName="Created"
+          lineColor="#0091ff"
+        />
 
         {/* 5. Media (API Field: vendorImages, vendorDocs) */}
         <VendorImages vendor={vendor} />
