@@ -97,7 +97,6 @@ export const workOrderService = {
     } catch (e) { return []; }
   },
 
-  // ✅ FIXED: Updated Endpoint Path
   fetchWorkOrderLogs: async (id: string): Promise<WorkOrderLog[]> => {
     if (!id) return [];
     try {
@@ -122,22 +121,32 @@ export const workOrderService = {
   },
 
   addOtherCost: async (id: string, data: CreateOtherCostData) => {
+    // ✅ FIX: Robust payload construction that allows 0 and empty strings
     const item = {
       userId: data.userId,
-      amount: Number(data.amount) || 0,
-      description: data.description || "",
+      // Check for existence specifically, allowing 0
+      amount: (data.amount !== "" && data.amount !== undefined && data.amount !== null) 
+        ? Number(data.amount) 
+        : 0,
+      // Use nullish coalescing to allow empty strings
+      description: data.description ?? "",
       category: data.category || "other"
     };
+    
+    // API expects items array
     const payload = { items: [item] };
     const res = await api.post(`/work-orders/${id}/other-costs`, payload);
     return res.data;
   },
 
   updateOtherCost: async (workOrderId: string, costId: string, data: CreateOtherCostData) => {
+    // ✅ FIX: Apply same robust logic to updates
     const payload = {
       userId: data.userId,
-      amount: Number(data.amount) || 0,
-      description: data.description || "",
+      amount: (data.amount !== "" && data.amount !== undefined && data.amount !== null) 
+        ? Number(data.amount) 
+        : 0,
+      description: data.description ?? "",
       category: data.category || "other"
     };
     const res = await api.patch(`/work-orders/${workOrderId}/other-costs/${costId}`, payload);

@@ -15,6 +15,7 @@ import type { SelectOption } from "../NewWorkOrderForm/DynamicSelect";
 import {
   createWorkOrder,
   updateWorkOrder,
+  fetchWorkOrderById, 
 } from "../../../store/workOrders/workOrders.thunks";
 import { fetchFilterData } from "../../utils/filterDataFetcher";
 import { procedureService } from "../../../store/procedures/procedures.service";
@@ -27,19 +28,29 @@ import TimeOverviewPanel from "./../panels/TimeOverviewPanel";
 import OtherCostsPanel from "./../panels/OtherCostsPanel";
 import UpdatePartsPanel from "./../panels/UpdatePartsPanel";
 
-// Helper: Dates to ISO
+// ✅ FIXED Helper: Forces UTC Date (Prevents "Previous Day" bug)
 function parseDateInputToISO(input?: string): string | null {
   if (!input) return null;
-  const v = input.trim();
-  if (!v) return null;
-  const maybe = Date.parse(v);
-  if (!Number.isNaN(maybe)) return new Date(maybe).toISOString();
-  return null;
+  const date = new Date(input);
+  if (isNaN(date.getTime())) return null;
+
+  // Construct a UTC Date using the LOCAL Year/Month/Day
+  // This ignores the browser's timezone offset
+  const utcDate = new Date(Date.UTC(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate()
+  ));
+
+  return utcDate.toISOString();
 }
 
-// ✅ FIXED HELPER: Robust Diffing Logic
+// ✅ FIXED HELPER: Robust Diffing Logic with EXTREME LOGGING
 const getChangedFields = (original: any, current: any) => {
     const changes: any = {};
+    console.group("🚀 [DEBUG] PAYLOAD GENERATION");
+    console.log("1. Original Data (Backend):", original);
+    console.log("2. Current Form Data (UI):", current);
 
     // 1. Simple Fields
     const simpleFields = [
@@ -49,27 +60,49 @@ const getChangedFields = (original: any, current: any) => {
 
     simpleFields.forEach((key) => {
       if (current[key] !== undefined && original[key] !== current[key]) {
+        console.log(`✅ Field Changed: ${key}`, { from: original[key], to: current[key] });
         changes[key] = current[key];
       }
     });
 
-    // 2. Estimated Time (Number) - Handle 0 explicitly
-    // Convert both to numbers to ensure safe comparison (e.g. "4" vs 4)
-    const origTime = Number(original.estimatedTimeHours || 0);
-    const currTime = Number(current.estimatedTimeHours || 0);
+    // 2. Estimated Time (Number)
+    const origTime = original.estimatedTimeHours === null || original.estimatedTimeHours === undefined 
+                     ? 0 
+                     : Number(original.estimatedTimeHours);
+    const currTime = Number(current.estimatedTimeHours ?? 0);
     
-    if (origTime !== currTime) {
+    console.log(`🔍 Checking Time: Original(${origTime}) vs Current(${currTime})`);
+
+    if (Math.abs(origTime - currTime) > 0.001) {
+        console.log(`✅ Time Changed! Adding to payload:`, currTime);
         changes.estimatedTimeHours = currTime;
     }
 
-    // 3. Date Fields (Compare ISO Strings)
+    // 3. Date Fields
     const dateFields = ["startDate", "dueDate"];
     dateFields.forEach((key) => {
-        const origDate = original[key] || null; // Backend usually gives ISO string or null
-        const currDate = current[key] || null; // Form state is ISO string or null
-        
-        if (origDate !== currDate) {
-            changes[key] = currDate;
+        const origVal = original[key];
+        const currVal = current[key];
+
+        console.log(`🔍 Checking ${key}: Original(${origVal}) vs Current(${currVal})`);
+
+        if ((origVal && !currVal) || (!origVal && currVal)) {
+            changes[key] = currVal;
+            console.log(`✅ ${key} Changed (Existence)`);
+        } 
+        else if (origVal && currVal) {
+             const d1 = new Date(origVal);
+             const d2 = new Date(currVal);
+             
+             // Compare purely on DATE string YYYY-MM-DD (UTC)
+             // This ensures 2025-12-25T00:00 and 2025-12-26T00:00 are different
+             const dateStr1 = d1.toISOString().split('T')[0];
+             const dateStr2 = d2.toISOString().split('T')[0];
+
+             if (dateStr1 !== dateStr2) {
+                 console.log(`✅ ${key} Changed (Day Mismatch)`, { from: dateStr1, to: dateStr2 });
+                 changes[key] = currVal;
+             }
         }
     });
 
@@ -99,15 +132,24 @@ const getChangedFields = (original: any, current: any) => {
         const currentIds = current[payloadKey] || [];
 
         if (hasArrayChanged(originalIds, currentIds)) {
+            console.log(`✅ Array Changed: ${payloadKey}`, { from: originalIds, to: currentIds });
             changes[payloadKey] = currentIds;
         }
     });
 
     // 5. Recurrence Rule
-    if (JSON.stringify(original.recurrenceRule) !== JSON.stringify(current.recurrenceRule)) {
+    let originalRule = original.recurrenceRule;
+    if (typeof originalRule === 'string') {
+        try { originalRule = JSON.parse(originalRule); } catch (e) {}
+    }
+
+    if (JSON.stringify(originalRule) !== JSON.stringify(current.recurrenceRule)) {
+        console.log(`✅ Recurrence Changed`, { from: originalRule, to: current.recurrenceRule });
         changes.recurrenceRule = current.recurrenceRule;
     }
 
+    console.log("📦 FINAL PAYLOAD:", changes);
+    console.groupEnd();
     return changes;
 };
 
@@ -147,7 +189,6 @@ export function NewWorkOrderForm({
   const [description, setDescription] = useState("");
   const [locationId, setLocationId] = useState("");
   
-  // ✅ ADDED: Estimated Time State
   const [estimatedTime, setEstimatedTime] = useState(""); 
 
   const [assetIds, setAssetIds] = useState<string[]>([]);
@@ -180,18 +221,12 @@ export function NewWorkOrderForm({
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isAddProcModalOpen, setIsAddProcModalOpen] = useState(false);
 
-  // ... (Effects for prefilled parts, fetching options, etc. - kept same) ...
+  // ... (Effects for prefilled parts - kept same) ...
   useEffect(() => {
     if (location.state?.prefilledPart) {
       const part = location.state.prefilledPart;
-      setPartIds((prev) => {
-        if (prev.includes(part.id)) return prev;
-        return [...prev, part.id];
-      });
-      setPartOptions((prev) => {
-        if (prev.some((opt) => opt.id === part.id)) return prev;
-        return [...prev, { id: part.id, name: part.name }];
-      });
+      setPartIds((prev) => prev.includes(part.id) ? prev : [...prev, part.id]);
+      setPartOptions((prev) => prev.some((opt) => opt.id === part.id) ? prev : [...prev, { id: part.id, name: part.name }]);
     }
   }, [location.state]);
 
@@ -208,7 +243,6 @@ export function NewWorkOrderForm({
     }
   };
 
-  // ... (Procedure loading effects - kept same) ...
   useEffect(() => {
     if (location.state?.procedureData) {
       setLinkedProcedure(location.state.procedureData);
@@ -217,22 +251,20 @@ export function NewWorkOrderForm({
       if (queryProcId && !linkedProcedure && !isProcedureLoading) {
          setIsProcedureLoading(true);
          procedureService.fetchProcedureById(queryProcId)
-           .then((proc) => {
-             if(proc) setLinkedProcedure(proc);
-           })
+           .then((proc) => { if(proc) setLinkedProcedure(proc); })
            .finally(() => setIsProcedureLoading(false));
       }
     }
   }, [location.state, searchParams]); 
 
-  // ... (Restore previous form state effect - kept same) ...
+  // ... (Restore form state - kept same) ...
   useEffect(() => {
     if (location.state?.previousFormState) {
       const s = location.state.previousFormState;
       if (s.workOrderName) setWorkOrderName(s.workOrderName);
       if (s.description) setDescription(s.description);
       if (s.locationId) setLocationId(s.locationId);
-      if (s.estimatedTime) setEstimatedTime(s.estimatedTime); // Restore time
+      if (s.estimatedTime) setEstimatedTime(s.estimatedTime); 
       if (s.assetIds) setAssetIds(s.assetIds);
       if (s.selectedUsers) setSelectedUsers(s.selectedUsers);
       if (s.dueDate) setDueDate(s.dueDate);
@@ -256,11 +288,7 @@ export function NewWorkOrderForm({
         try {
           const foundProc = await procedureService.fetchProcedureById(deepEditingProcedureId);
           if (foundProc) setLinkedProcedure(foundProc);
-        } catch (err) {
-          console.error("API Error:", err);
-        } finally {
-          setIsProcedureLoading(false);
-        }
+        } catch (err) { console.error("API Error:", err); } finally { setIsProcedureLoading(false); }
       };
       fetchSpecificProcedure();
     }
@@ -276,34 +304,28 @@ export function NewWorkOrderForm({
       setWorkOrderName(data.title || "");
       setDescription(data.description || "");
       
-      // ✅ Populate Estimated Time
-      setEstimatedTime(data.estimatedTimeHours ? String(data.estimatedTimeHours) : "");
+      if (data.estimatedTimeHours !== undefined && data.estimatedTimeHours !== null) {
+          setEstimatedTime(String(data.estimatedTimeHours));
+      } else {
+          setEstimatedTime("");
+      }
 
       setDueDate(data.dueDate ? new Date(data.dueDate).toLocaleDateString("en-US") : "");
       setStartDate(data.startDate ? new Date(data.startDate).toLocaleDateString("en-US") : "");
       
       setSelectedWorkType(data.workType || "Reactive");
-      setSelectedPriority(
-        data.priority ? data.priority.charAt(0).toUpperCase() + data.priority.slice(1) : "None"
-      );
-      
+      setSelectedPriority(data.priority ? data.priority.charAt(0).toUpperCase() + data.priority.slice(1) : "None");
       setQrCodeValue(data.qrCode || "");
       
-      // Recurrence
       if (data.recurrenceRule) {
         try {
-          const parsed = typeof data.recurrenceRule === 'string' 
-            ? JSON.parse(data.recurrenceRule) 
-            : data.recurrenceRule;
+          const parsed = typeof data.recurrenceRule === 'string' ? JSON.parse(data.recurrenceRule) : data.recurrenceRule;
           setRecurrenceRule(parsed);
-        } catch(e) {
-          setRecurrenceRule(null);
-        }
+        } catch(e) { setRecurrenceRule(null); }
       } else {
         setRecurrenceRule(null);
       }
 
-      // Location
       if (data.location) {
         setLocationId(data.location.id);
         setLocationOptions([{ id: data.location.id, name: data.location.name || "Unknown Location" }]);
@@ -311,70 +333,47 @@ export function NewWorkOrderForm({
         setLocationId(data.locationId);
       }
 
-      // Arrays (Assets, Teams, etc.)
-      if (data.assets && data.assets.length > 0) {
+      if (data.assets) {
         setAssetIds(data.assets.map((a: any) => a.id));
         setAssetOptions(data.assets.map((a: any) => ({ id: a.id, name: a.name || "Unknown Asset" })));
-      } else {
-        setAssetIds(data.assetIds || []);
-      }
+      } else { setAssetIds(data.assetIds || []); }
 
-      if (data.teams && data.teams.length > 0) {
+      if (data.teams) {
         setTeamIds(data.teams.map((t: any) => t.id));
         setTeamOptions(data.teams.map((t: any) => ({ id: t.id, name: t.name || "Unknown Team" })));
-      } else {
-        setTeamIds(data.assignedTeamIds || []);
-      }
+      } else { setTeamIds(data.assignedTeamIds || []); }
 
-      if (data.categories && data.categories.length > 0) {
+      if (data.categories) {
         setCategoryIds(data.categories.map((c: any) => c.id));
         setCategoryOptions(data.categories.map((c: any) => ({ id: c.id, name: c.name || "Unknown Category" })));
-      } else {
-        setCategoryIds(data.categoryIds || []);
-      }
+      } else { setCategoryIds(data.categoryIds || []); }
 
-      if (data.parts && data.parts.length > 0) {
+      if (data.parts) {
         setPartIds(data.parts.map((p: any) => p.id));
         setPartOptions(data.parts.map((p: any) => ({ id: p.id, name: p.name || "Unknown Part" })));
-      } else {
-        setPartIds(data.partIds || []);
-      }
+      } else { setPartIds(data.partIds || []); }
 
-      if (data.vendors && data.vendors.length > 0) {
+      if (data.vendors) {
         setVendorIds(data.vendors.map((v: any) => v.id));
         setVendorOptions(data.vendors.map((v: any) => ({ id: v.id, name: v.name || "Unknown Vendor" })));
-      } else {
-        setVendorIds(data.vendorIds || []);
-      }
+      } else { setVendorIds(data.vendorIds || []); }
 
-      if (data.assignees && data.assignees.length > 0) {
+      if (data.assignees) {
         setSelectedUsers(data.assignees.map((u: any) => u.id));
-        setAssigneeOptions(data.assignees.map((u: any) => ({
-            id: u.id, 
-            name: u.fullName || u.name || "Unknown"
-        })));
-      } else {
-        setSelectedUsers(data.assigneeIds || []);
-        setAssigneeOptions([]);
-      }
+        setAssigneeOptions(data.assignees.map((u: any) => ({ id: u.id, name: u.fullName || u.name || "Unknown" })));
+      } else { setSelectedUsers(data.assigneeIds || []); setAssigneeOptions([]); }
       
-      // Procedures
-      if (data.procedures && data.procedures.length > 0) {
-        setLinkedProcedure(data.procedures[0]);
-      } else if (data.procedure) {
-        setLinkedProcedure(data.procedure);
-      } else if (data.procedureIds && data.procedureIds.length > 0) {
+      if (data.procedures && data.procedures.length > 0) setLinkedProcedure(data.procedures[0]);
+      else if (data.procedure) setLinkedProcedure(data.procedure);
+      else if (data.procedureIds && data.procedureIds.length > 0) {
         const procId = data.procedureIds[0];
-        procedureService.fetchProcedureById(procId).then((proc) => {
-            setLinkedProcedure(proc);
-        }).catch(e => console.error("Failed to lazy load procedure", e));
+        procedureService.fetchProcedureById(procId).then((proc) => setLinkedProcedure(proc)).catch(console.error);
       }
     };
 
     const loadWorkOrder = async () => {
       if (isEditMode && id) {
         if (location.state?.previousFormState) {
-            // Restore procedure from state if exists
             if (location.state.previousFormState.procedureId && !linkedProcedure) {
                  const pId = location.state.previousFormState.procedureId;
                  const proc = await procedureService.fetchProcedureById(pId);
@@ -388,8 +387,12 @@ export function NewWorkOrderForm({
           if (existingWorkOrder && existingWorkOrder.id === id) {
             fillFields(existingWorkOrder);
           } else {
-            const data = await (dispatch as any).unwrap();
-            fillFields(data);
+            const resultAction = await dispatch(fetchWorkOrderById(id));
+            if (fetchWorkOrderById.fulfilled.match(resultAction)) {
+                fillFields(resultAction.payload);
+            } else {
+                toast.error("Failed to fetch work order data");
+            }
           }
         } catch (e) {
           console.error(e);
@@ -405,99 +408,44 @@ export function NewWorkOrderForm({
     loadWorkOrder();
   }, [dispatch, id, existingWorkOrder, isEditMode, isCreateRoute, location.state]);
 
-  // ... (Edit Linked Procedure & Back Handlers - kept same) ...
   const handleEditLinkedProcedure = () => {
     if (linkedProcedure?.id) {
       const currentFormState = {
-        workOrderName,
-        description,
-        locationId,
-        estimatedTime, // Save state
-        assetIds,
-        selectedUsers,
-        dueDate,
-        startDate,
-        selectedWorkType,
-        selectedPriority,
-        qrCodeValue,
-        recurrenceRule,
-        teamIds,
-        categoryIds,
-        partIds,
-        vendorIds,
-        procedureId: linkedProcedure.id 
+        workOrderName, description, locationId, estimatedTime, assetIds, selectedUsers, dueDate, startDate, selectedWorkType, selectedPriority, qrCodeValue, recurrenceRule, teamIds, categoryIds, partIds, vendorIds, procedureId: linkedProcedure.id 
       };
-
-      navigate(`/library/${linkedProcedure.id}/edit`, {
-        state: { 
-          returnPath: location.pathname,
-          previousFormState: currentFormState 
-        }
-      });
+      navigate(`/library/${linkedProcedure.id}/edit`, { state: { returnPath: location.pathname, previousFormState: currentFormState } });
     }
   };
 
   const handleEditorBack = async () => {
-    if (id) {
-        navigate(`/work-orders/${id}/edit`);
-    }
-    
+    if (id) navigate(`/work-orders/${id}/edit`);
     if (linkedProcedure?.id) {
       try {
         setIsProcedureLoading(true);
         const updatedProc = await procedureService.fetchProcedureById(linkedProcedure.id);
-        if (updatedProc) {
-          setLinkedProcedure(updatedProc);
-          toast.success("Procedure updated");
-        }
-      } catch (e) {
-        console.error("Failed to refresh procedure", e);
-      } finally {
-        setIsProcedureLoading(false);
-      }
+        if (updatedProc) { setLinkedProcedure(updatedProc); toast.success("Procedure updated"); }
+      } catch (e) { console.error(e); } finally { setIsProcedureLoading(false); }
     }
   };
 
-  // --- SUBMIT HANDLER ---
   const handleSubmit = async () => {
     try {
-      if (!workOrderName.trim()) {
-        toast.error("Work order title is required");
-        return;
-      }
-
+      if (!workOrderName.trim()) { toast.error("Work order title is required"); return; }
       const authorId = authUser?.id;
-      if (!authorId) {
-        toast.error("User information missing. Please re-login.");
-        return;
-      }
+      if (!authorId) { toast.error("User information missing. Please re-login."); return; }
 
-      // ✅ CONSTRUCT FORM STATE (Full Object)
       const formState: any = {
         title: workOrderName,
         description,
         status: "open",
         workType: selectedWorkType,
         qrCode: qrCodeValue || undefined,
-        priority: {
-          None: "low", Low: "low", Medium: "medium", High: "high", Urgent: "urgent"
-        }[selectedPriority] || "low",
-        
+        priority: { None: "low", Low: "low", Medium: "medium", High: "high", Urgent: "urgent" }[selectedPriority] || "low",
         locationId: locationId || null,
-        
-        // Ensure estimatedTime is a number or 0
-        estimatedTimeHours: estimatedTime ? Number(estimatedTime) : 0,
-        
-        assetIds: assetIds,
-        vendorIds: vendorIds,
-        partIds: partIds,
-        assignedTeamIds: teamIds,
-        categoryIds: categoryIds,
-        assigneeIds: selectedUsers,
-        
+        estimatedTimeHours: estimatedTime !== "" ? Number(estimatedTime) : 0,
+        assetIds, vendorIds, partIds, assignedTeamIds: teamIds, categoryIds, assigneeIds: selectedUsers,
         procedureIds: linkedProcedure ? [linkedProcedure.id] : [],
-        
-        // Convert to ISO Strings
+        // ✅ NEW PARSER HERE
         dueDate: parseDateInputToISO(dueDate),
         startDate: parseDateInputToISO(startDate),
       };
@@ -510,50 +458,35 @@ export function NewWorkOrderForm({
       setLoading(true);
 
       if (isEditMode && id) {
-        // ✅ DIFFING LOGIC for PATCH
-        // Compares 'existingWorkOrder' (from DB) with 'formState' (Current UI)
         const payload = getChangedFields(existingWorkOrder || {}, formState);
-        
         console.log("📝 [DEBUG] Form State:", formState);
         console.log("🚀 [DEBUG] Final API Payload (Diff):", payload);
 
         if (Object.keys(payload).length === 0) {
             toast("No changes detected.");
-            if (onCreate) onCreate();
-            else navigate("/work-orders");
+            if (onCreate) onCreate(); else navigate("/work-orders");
             return;
         }
 
-        await dispatch(updateWorkOrder({ 
-            id, 
-            authorId, 
-            data: payload 
-        })).unwrap();
+        await dispatch(updateWorkOrder({ id, authorId, data: payload })).unwrap();
         toast.success("✅ Work order updated successfully");
       } else {
         await dispatch(createWorkOrder(formState)).unwrap();
         toast.success("✅ Work order created successfully");
       }
 
-      if (onCreate) onCreate();
-      else navigate("/work-orders");
+      if (onCreate) onCreate(); else navigate("/work-orders");
 
     } catch (err: any) {
       console.error("❌ Error saving work order:", err);
-      const errorMsg = err?.message || (typeof err === 'string' ? err : "Failed to save work order");
-      toast.error(errorMsg);
+      toast.error(err?.message || "Failed to save work order");
     } finally {
       setLoading(false);
     }
   };
 
   if (loading || isProcedureLoading)
-    return (
-      <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-500">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <p className="text-sm font-medium">Loading...</p>
-      </div>
-    );
+    return (<div className="flex flex-col items-center justify-center h-full gap-2 text-gray-500"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /><p className="text-sm font-medium">Loading...</p></div>);
 
   if (currentPanel === 'time') return <TimeOverviewPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={existingWorkOrder} workOrderId={id} />;
   if (currentPanel === 'cost') return <OtherCostsPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={existingWorkOrder} workOrderId={id} />;
@@ -562,154 +495,49 @@ export function NewWorkOrderForm({
   return (
     <>
       <div className="flex h-full flex-col overflow-hidden rounded-lg border bg-white relative">
-        
-        {deepEditingProcedureId && linkedProcedure && (
-          <div className="absolute inset-0 z-50 bg-white flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4">
-            <GenerateProcedure 
-              onBack={handleEditorBack}
-              editingProcedureId={deepEditingProcedureId}
-            />
-          </div>
-        )}
-
-        <div className="flex-none border-b px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold">
-            {isEditMode ? "Edit Work Order" : "New Work Order"}
-          </h2>
-        </div>
-
+        {deepEditingProcedureId && linkedProcedure && <div className="absolute inset-0 z-50 bg-white flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4"><GenerateProcedure onBack={handleEditorBack} editingProcedureId={deepEditingProcedureId} /></div>}
+        <div className="flex-none border-b px-6 py-4 flex items-center justify-between"><h2 className="text-xl font-semibold">{isEditMode ? "Edit Work Order" : "New Work Order"}</h2></div>
         <div className="min-h-0 flex-1 overflow-y-auto p-6">
           <WorkOrderDetails
-            name={workOrderName}
-            onNameChange={setWorkOrderName}
-            description={description}
-            onDescriptionChange={setDescription}
-            
-            // ✅ PASSING ESTIMATED TIME
-            estimatedTime={estimatedTime}
-            onEstimatedTimeChange={setEstimatedTime}
-
-            locationId={locationId}
-            onLocationSelect={(val) => setLocationId(val as string)}
-            locationOptions={locationOptions}
-            isLocationsLoading={false}
-            onFetchLocations={() => handleFetch("locations", setLocationOptions)}
-            onCreateLocation={() => toast("Open Create Location Modal")}
-            activeDropdown={activeDropdown}
-            setActiveDropdown={setActiveDropdown}
+            name={workOrderName} onNameChange={setWorkOrderName}
+            description={description} onDescriptionChange={setDescription}
+            estimatedTime={estimatedTime} onEstimatedTimeChange={setEstimatedTime}
+            locationId={locationId} onLocationSelect={(val) => setLocationId(val as string)}
+            locationOptions={locationOptions} isLocationsLoading={false} onFetchLocations={() => handleFetch("locations", setLocationOptions)} onCreateLocation={() => toast("Open Create Location Modal")}
+            activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown}
           />
-
           <AssetsAndProcedures
-            assetIds={assetIds}
-            onAssetSelect={(val) => setAssetIds(val as string[])}
-            assetOptions={assetOptions}
-            isAssetsLoading={false}
-            onFetchAssets={() => handleFetch("assets", setAssetOptions)}
-            onCreateAsset={() => toast("Open Create Asset Modal")}
-            activeDropdown={activeDropdown}
-            setActiveDropdown={setActiveDropdown}
-            linkedProcedure={linkedProcedure}
-            onRemoveProcedure={() => setLinkedProcedure(null)}
-            onPreviewProcedure={() => setIsPreviewOpen(true)}
-            onEditProcedure={handleEditLinkedProcedure}
-            onOpenProcedureModal={() => setIsAddProcModalOpen(true)}
-            setLinkedProcedure={setLinkedProcedure} 
+            assetIds={assetIds} onAssetSelect={(val) => setAssetIds(val as string[])}
+            assetOptions={assetOptions} isAssetsLoading={false} onFetchAssets={() => handleFetch("assets", setAssetOptions)} onCreateAsset={() => toast("Open Create Asset Modal")}
+            activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown}
+            linkedProcedure={linkedProcedure} onRemoveProcedure={() => setLinkedProcedure(null)} onPreviewProcedure={() => setIsPreviewOpen(true)} onEditProcedure={handleEditLinkedProcedure} onOpenProcedureModal={() => setIsAddProcModalOpen(true)} setLinkedProcedure={setLinkedProcedure} 
           />
-
           <AssignmentAndScheduling
-            selectedUsers={selectedUsers}
-            setSelectedUsers={setSelectedUsers}
-            dueDate={dueDate}
-            setDueDate={setDueDate}
-            startDate={startDate}
-            setStartDate={setStartDate}
-            selectedWorkType={selectedWorkType}
-            setSelectedWorkType={setSelectedWorkType}
-            recurrenceRule={recurrenceRule}
-            setRecurrenceRule={setRecurrenceRule}
-            recurrence="Custom" 
-            setRecurrence={() => {}}
-            onOpenInviteModal={() => toast("Invite modal open")}
-            initialAssignees={assigneeOptions}
+            selectedUsers={selectedUsers} setSelectedUsers={setSelectedUsers}
+            dueDate={dueDate} setDueDate={setDueDate} startDate={startDate} setStartDate={setStartDate}
+            selectedWorkType={selectedWorkType} setSelectedWorkType={setSelectedWorkType}
+            recurrenceRule={recurrenceRule} setRecurrenceRule={setRecurrenceRule} recurrence="Custom" setRecurrence={() => {}}
+            onOpenInviteModal={() => toast("Invite modal open")} initialAssignees={assigneeOptions}
+            estimatedTime={estimatedTime} setEstimatedTime={setEstimatedTime}
           />
-
           <WorkOrderClassificationAndLinks
-            selectedPriority={selectedPriority}
-            onPriorityChange={setSelectedPriority}
-            qrCodeValue={qrCodeValue}
-            onQrCodeChange={setQrCodeValue}
-            teamIds={teamIds}
-            onTeamSelect={(val) => setTeamIds(val as string[])}
-            teamOptions={teamOptions}
-            isTeamsLoading={false}
-            onFetchTeams={() => handleFetch("team-members", setTeamOptions)}
-            onCreateTeam={() => toast("Open Create Team Modal")}
-            
-            categoryIds={categoryIds}
-            onCategorySelect={(val) => setCategoryIds(val as string[])}
-            categoryOptions={categoryOptions}
-            isCategoriesLoading={false}
-            onFetchCategories={() => handleFetch("categories", setCategoryOptions)}
-            onCreateCategory={() => toast("Open Create Category Modal")}
-            
-            partIds={partIds}
-            onPartSelect={(val) => setPartIds(val as string[])}
-            partOptions={partOptions}
-            isPartsLoading={false}
-            onFetchParts={() => handleFetch("parts", setPartOptions)}
-            onCreatePart={() => toast("Open Create Part Modal")}
-            
-            vendorIds={vendorIds}
-            onVendorSelect={(val) => setVendorIds(val as string[])}
-            vendorOptions={vendorOptions}
-            isVendorsLoading={false}
-            onFetchVendors={() => handleFetch("vendors", setVendorOptions)}
-            onCreateVendor={() => toast("Open Create Vendor Modal")}
-            
-            activeDropdown={activeDropdown}
-            setActiveDropdown={setActiveDropdown}
-            
-            onPanelClick={setCurrentPanel}
-            isEditMode={isEditMode}
-            partUsages={existingWorkOrder?.partUsages}
+            selectedPriority={selectedPriority} onPriorityChange={setSelectedPriority}
+            qrCodeValue={qrCodeValue} onQrCodeChange={setQrCodeValue}
+            teamIds={teamIds} onTeamSelect={(val) => setTeamIds(val as string[])} teamOptions={teamOptions} isTeamsLoading={false} onFetchTeams={() => handleFetch("team-members", setTeamOptions)} onCreateTeam={() => toast("Open Create Team Modal")}
+            categoryIds={categoryIds} onCategorySelect={(val) => setCategoryIds(val as string[])} categoryOptions={categoryOptions} isCategoriesLoading={false} onFetchCategories={() => handleFetch("categories", setCategoryOptions)} onCreateCategory={() => toast("Open Create Category Modal")}
+            partIds={partIds} onPartSelect={(val) => setPartIds(val as string[])} partOptions={partOptions} isPartsLoading={false} onFetchParts={() => handleFetch("parts", setPartOptions)} onCreatePart={() => toast("Open Create Part Modal")}
+            vendorIds={vendorIds} onVendorSelect={(val) => setVendorIds(val as string[])} vendorOptions={vendorOptions} isVendorsLoading={false} onFetchVendors={() => handleFetch("vendors", setVendorOptions)} onCreateVendor={() => toast("Open Create Vendor Modal")}
+            activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown}
+            onPanelClick={setCurrentPanel} isEditMode={isEditMode} partUsages={existingWorkOrder?.partUsages}
           />
         </div>
-
         <div className="sticky bottom-0 flex items-center justify-end gap-3 border-t bg-white px-6 py-4">
-          <button
-            type="button"
-            onClick={() => {
-              if (onCancel) onCancel();
-              else navigate("/work-orders");
-            }}
-            className="rounded-md border border-gray-300 px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            className="rounded-md border border-orange-600 bg-orange-600 px-6 py-2 text-sm font-medium text-white hover:bg-orange-700 transition-colors"
-          >
-            {isEditMode ? "Update" : "Create"}
-          </button>
+          <button type="button" onClick={() => { if (onCancel) onCancel(); else navigate("/work-orders"); }} className="rounded-md border border-gray-300 px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors">Cancel</button>
+          <button type="button" onClick={handleSubmit} className="rounded-md border border-orange-600 bg-orange-600 px-6 py-2 text-sm font-medium text-white hover:bg-orange-700 transition-colors">{isEditMode ? "Update" : "Create"}</button>
         </div>
       </div>
-      
-      <LinkedProcedurePreviewModal
-        isOpen={isPreviewOpen}
-        onClose={() => setIsPreviewOpen(false)}
-        procedure={linkedProcedure}
-      />
-      
-      <AddProcedureModal
-        isOpen={isAddProcModalOpen}
-        onClose={() => setIsAddProcModalOpen(false)}
-        onSelect={(proc: any) => {
-            setLinkedProcedure(proc);
-            setIsAddProcModalOpen(false);
-        }}
-      />
+      <LinkedProcedurePreviewModal isOpen={isPreviewOpen} onClose={() => setIsPreviewOpen(false)} procedure={linkedProcedure} />
+      <AddProcedureModal isOpen={isAddProcModalOpen} onClose={() => setIsAddProcModalOpen(false)} onSelect={(proc: any) => { setLinkedProcedure(proc); setIsAddProcModalOpen(false); }} />
     </>
   );
 }

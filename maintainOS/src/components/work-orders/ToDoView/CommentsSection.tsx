@@ -308,7 +308,7 @@ export const CommentsSection = forwardRef<
                     className={`text-sm leading-relaxed w-fit max-w-full break-words ${
                       isLog
                         ? "text-gray-700 italic px-1"
-                        : "text-gray-800 bg-gray-100 rounded-lg px-3 py-2"
+                        : "bg-[#FFFCF5]  shadow-[0_2px_8px_-3px_rgba(234,179,8,0.15)] rounded-lg hover:shadow-[0_4px_12px_-4px_rgba(234,179,8,0.2)] transition-shadow"
                     }`}
                   >
                     {messageText?.split("\n").map((line: string, i: number) => (
