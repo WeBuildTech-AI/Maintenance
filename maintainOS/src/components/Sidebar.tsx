@@ -208,7 +208,7 @@ export function Sidebar({
         max-w-[140px]
         truncate
         px-2 py-0.5
-        text-[10px] uppercase font-semibold tracking-wide
+        text-xs uppercase font-semibold tracking-wide
         rounded-md
         bg-primary/10 text-primary
       "
