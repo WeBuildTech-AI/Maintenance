@@ -1,8 +1,41 @@
+// import { createAsyncThunk } from "@reduxjs/toolkit";
+// import { authService } from "./auth.service";
+// import type { LoginData, RegisterData, AuthResponse } from "./auth.types";
+
+// // Login thunk
+// export const login = createAsyncThunk<AuthResponse, LoginData>(
+//   "auth/login",
+//   async (loginData, { rejectWithValue }) => {
+//     try {
+//       const response = await authService.login(loginData);
+//       localStorage.setItem("accessToken", response.accessToken);
+//       return response;
+//     } catch (error: any) {
+//       return rejectWithValue(error.response?.data?.message || "Login failed");
+//     }
+//   }
+// );
+
+// // Register thunk
+// export const register = createAsyncThunk<AuthResponse, RegisterData>(
+//   "auth/register",
+//   async (registerData, { rejectWithValue }) => {
+//     try {
+//       const response = await authService.register(registerData);
+//       localStorage.setItem("accessToken", response.accessToken);
+//       return response;
+//     } catch (error: any) {
+//       return rejectWithValue(
+//         error.response?.data?.message || "Registration failed"
+//       );
+//     }
+//   }
+// );
+
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { authService } from "./auth.service";
 import type { User } from "./auth.service"; // 👈 Import new User type
 import type { LoginData, RegisterData } from "./auth.types";
-import { jwtDecode } from "jwt-decode";
 
 // // Login thunk
 // export const login = createAsyncThunk<User, LoginData>(
@@ -31,19 +64,15 @@ export const login = createAsyncThunk<User, LoginData>(
       const { accessToken, refreshToken } = await authService.login(loginData);
 
       // 2. Save tokens to localStorage
-      localStorage.setItem("accessToken", accessToken);
-      localStorage.setItem("refreshToken", refreshToken);
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
 
       // 3. Call profile to get user data
-      // const user = await authService.getProfile();
-      const user = jwtDecode<User>(accessToken);
-
-      // 4. Save user to localStorage (optional, but keeps state persisted)
-      localStorage.setItem("user", JSON.stringify(user));
+      const user = await authService.getProfile();
 
       // 4. Save user to localStorage
-      // localStorage.setItem('user', JSON.stringify(user));
-
+      localStorage.setItem('user', JSON.stringify(user));
+      
       return user; // Return user to slice
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || "Login failed");
@@ -60,10 +89,6 @@ export const register = createAsyncThunk<User, RegisterData>(
 
       // 2. Call profile to get the new user's data.
       const user = await authService.getProfile();
-      // const user = jwtDecode<User>(accessToken);
-
-      // 4. Save user to localStorage (optional, but keeps state persisted)
-      localStorage.setItem("user", JSON.stringify(user));
 
       // 3. Return the user
       return user;
@@ -96,20 +121,12 @@ export const logout = createAsyncThunk(
     } catch (error: any) {
       // Even if backend fails, clear frontend
       console.error("Logout failed on server, clearing client anyway");
-      rejectWithValue("Logout failed");
+      rejectWithValue("Logout failed")
     } finally {
       // Always clear localStorage on logout
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      localStorage.removeItem("user");
-      sessionStorage.clear();
-
-      // Clear Cache Storage
-      if ("caches" in window) {
-        caches.keys().then((keys) => {
-          keys.forEach((key) => caches.delete(key));
-        });
-      }
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
     }
   }
 );

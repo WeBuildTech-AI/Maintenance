@@ -6,7 +6,7 @@ import {
   Routes,
   useNavigate,
   useLocation,
-} from "react-router-dom"; // 1. Added useLocation & useNavigate
+} from "react-router-dom";
 import { MainLayout } from "./components/MainLayout";
 
 import type { AppDispatch, RootState } from "./store";
@@ -88,7 +88,7 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation(); // 2. To track current URL
 
-  // ✅ 3. Auto-Redirect Logic
+  // 3. Auto-Redirect Logic
   useEffect(() => {
     if (user) {
       // If user is logged in AND they are on the login page or root, send to Work Orders
@@ -127,7 +127,6 @@ export default function App() {
     navigate("/login");
   };
 
-  // If not logged in, show Login component (and URL will be set to /login by useEffect)
   if (!user) {
     return (
       <>
