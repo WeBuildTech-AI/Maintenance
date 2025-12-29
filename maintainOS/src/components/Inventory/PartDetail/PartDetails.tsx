@@ -62,17 +62,17 @@ export function PartDetails({
 }) {
   const [activeTab, setActiveTab] = useState<"details" | "history">("details");
 
-  //  1. Local State for Real-time Updates
+  // ✅ 1. Local State for Real-time Updates
   const [partData, setPartData] = useState<any>(item);
 
-  //  View States
+  // ✅ View States
   const [isEditing, setIsEditing] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
 
-  //  Resize State
+  // ✅ Resize State
   const [isExpanded, setIsExpanded] = useState(false);
 
-  //  Dropdown & Modal States
+  // ✅ Dropdown & Modal States
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -80,14 +80,24 @@ export function PartDetails({
   const [isCopied, setIsCopied] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  //  User Names State
+  // ✅ User Names State
   const [createdByName, setCreatedByName] = useState<string>("");
   const [updatedByName, setUpdatedByName] = useState<string>("");
+
+  // ✅ Chart State (Moved to top to fix Hook Error)
+  const [chartDateRanges, setChartDateRanges] = useState<
+    Record<string, DateRange>
+  >({
+    "work-order-history": {
+      startDate: format(subDays(new Date(), 7), "MM/dd/yyyy"),
+      endDate: format(new Date(), "MM/dd/yyyy"),
+    },
+  });
 
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
 
-  //  Get organizationId from Auth State
+  // ✅ Get organizationId from Auth State
   const organizationId = useSelector(
     (state: RootState) => state.auth?.user?.organizationId
   );
@@ -98,7 +108,7 @@ export function PartDetails({
     setIsEditing(false);
   }, [item]);
 
-  //  Refresh Logic
+  // ✅ Refresh Logic
   const refreshLocalData = async () => {
     if (!partData?.id) return;
     try {
@@ -110,7 +120,7 @@ export function PartDetails({
     }
   };
 
-  //  Fetch User Names
+  // ✅ Fetch User Names
   useEffect(() => {
     const fetchUserNames = async () => {
       // 1. Fetch Creator Name
@@ -153,7 +163,7 @@ export function PartDetails({
     fetchUserNames();
   }, [partData.createdBy, partData.updatedBy]);
 
-  //  Edit Data Fetch
+  // ✅ Edit Data Fetch
   useEffect(() => {
     if (isEditing && partData?.id) {
       setLoading(true);
@@ -182,60 +192,52 @@ export function PartDetails({
   }, [isEditing, partData]);
 
   /* -------------------------------------------------------------------------- */
-  /*  DIRECT DUPLICATE ACTION (FIXED FOR 500 ERROR)                           */
+  /* ✅ DUPLICATE ACTION (UPDATED: Matches Create Part Logic Exactly)           */
   /* -------------------------------------------------------------------------- */
   const handleDuplicatePart = async () => {
     const loadingToast = toast.loading("Duplicating part...");
     try {
-      const formData = new FormData();
+      // 1. Construct CLEAN JSON Payload (No FormData, No Stringified Arrays)
+      const payload: any = {
+        organizationId: organizationId || "",
+        name: `Copy - ${partData.name}`,
+        description: partData.description || "",
+        unitCost: partData.unitCost ? Number(partData.unitCost) : 0,
 
-      // 1. Basic Info
-      formData.append("organizationId", organizationId || "");
-      formData.append("name", `Copy - ${partData.name}`);
-      formData.append("description", partData.description || "");
-      formData.append("unitCost", String(partData.unitCost || 0));
+        // Handle QR Code (Empty or Copy)
+        qrCode: "", // Usually a new part gets a new/empty QR code
 
-      // 2. Arrays (must be stringified JSON for your backend logic)
-      const partsType = Array.isArray(partData.partsType)
-        ? partData.partsType
-        : [];
-      formData.append("partsType", JSON.stringify(partsType));
+        // ✅ Arrays: Extract IDs properly from objects
+        partsType: Array.isArray(partData.partsType)
+          ? partData.partsType.map((t: any) =>
+              typeof t === "string" ? t : t.name || t
+            )
+          : [],
+        
+        assetIds: partData.assets?.map((a: any) => a.id) || partData.assetIds || [],
+        teamsInCharge: partData.teams?.map((t: any) => t.id) || partData.teamsInCharge || [],
+        vendorIds: partData.vendors?.map((v: any) => v.id || v.vendorId) || partData.vendorIds || [],
 
-      const assetIds = partData.assets?.map((a: any) => a.id) || [];
-      formData.append("assetIds", JSON.stringify(assetIds));
+        // Metadata
+        partImages: partData.partImages || [],
+        partDocs: partData.partDocs || [],
 
-      const teamsInCharge = partData.teams?.map((t: any) => t.id) || [];
-      formData.append("teamsInCharge", JSON.stringify(teamsInCharge));
+        locations: [],
+        // vendors: [] <--- Removed, only sending vendorIds as requested
+      };
 
-      const vendorIds = partData.vendors?.map((v: any) => v.id) || [];
-      formData.append("vendorIds", JSON.stringify(vendorIds));
-
-      // 3. Locations Array (Matching Case A in your logic)
-      const locationsPayload = (partData.locations || []).map((loc: any) => ({
-        locationId: loc.locationId || loc.id,
-        area: loc.area || "",
-        unitsInStock: Number(loc.unitsInStock ?? 0),
-        minimumInStock: Number(loc.minimumInStock ?? 0),
-      }));
-      formData.append("locations", JSON.stringify(locationsPayload));
-
-      // 4. Blobs/Files Metadata
-      formData.append("partImages", JSON.stringify(partData.partImages || []));
-      formData.append("partDocs", JSON.stringify(partData.partDocs || []));
-
-      // 5. Vendors Metadata Row Mapping
-      if (Array.isArray(partData.vendors) && partData.vendors.length > 0) {
-        partData.vendors.forEach((vendor: any, index: number) => {
-          formData.append(`vendors[${index}][vendorId]`, vendor.id || "");
-          formData.append(
-            `vendors[${index}][orderingPartNumber]`,
-            vendor.orderingPartNumber || ""
-          );
-        });
+      // 2. Locations Logic
+      if (partData.locations && partData.locations.length > 0) {
+        payload.locations = partData.locations.map((loc: any) => ({
+          locationId: loc.locationId || loc.id,
+          area: loc.area || "",
+          unitsInStock: Number(loc.unitsInStock ?? 0),
+          minimumInStock: Number(loc.minimumInStock ?? 0),
+        }));
       }
 
-      // 6. Direct API Call
-      const result = await dispatch(createPart(formData)).unwrap();
+      // 3. Direct API Call (JSON)
+      const result = await dispatch(createPart(payload)).unwrap();
 
       toast.success("Part duplicated successfully!", { id: loadingToast });
       setIsDropdownOpen(false);
@@ -302,6 +304,34 @@ export function PartDetails({
     });
   };
 
+  // Chart Filters Helper
+  const filters = {
+    partIds: partData.id,
+  };
+
+  // Chart Date Change Helper
+  const handleDateRangeChange = (id: string, start: Date, end: Date) => {
+    setChartDateRanges((prev) => ({
+      ...prev,
+      [id]: {
+        startDate: format(start, "MM/dd/yyyy"),
+        endDate: format(end, "MM/dd/yyyy"),
+      },
+    }));
+  };
+
+  // View Logic Variables
+  const availableUnits =
+    partData.unitsInStock ?? partData.locations?.[0]?.unitsInStock ?? 0;
+  const minUnits =
+    partData.minInStock ?? partData.locations?.[0]?.minimumInStock ?? 0;
+  const partType = Array.isArray(partData.partsType)
+    ? partData.partsType[0]?.name || partData.partsType[0] || "N/A"
+    : partData.partsType?.name || "N/A";
+
+  // --------------------------------------------------------------------------
+  // EDIT MODE RENDER
+  // --------------------------------------------------------------------------
   if (isEditing) {
     if (loading || !editItem) {
       return (
@@ -352,37 +382,9 @@ export function PartDetails({
     );
   }
 
-  const availableUnits =
-    partData.unitsInStock ?? partData.locations?.[0]?.unitsInStock ?? 0;
-  const minUnits =
-    partData.minInStock ?? partData.locations?.[0]?.minimumInStock ?? 0;
-  const partType = Array.isArray(partData.partsType)
-    ? partData.partsType[0]?.name || partData.partsType[0] || "N/A"
-    : partData.partsType?.name || "N/A";
-
-  const [chartDateRanges, setChartDateRanges] = useState<
-    Record<string, DateRange>
-  >({
-    "work-order-history": {
-      startDate: format(subDays(new Date(), 7), "MM/dd/yyyy"), // Ensure format matches what Chart expects (MM/dd/yyyy)
-      endDate: format(new Date(), "MM/dd/yyyy"),
-    },
-  });
-
-  const filters = {
-    partIds: partData.id,
-  };
-
-  const handleDateRangeChange = (id: string, start: Date, end: Date) => {
-    setChartDateRanges((prev) => ({
-      ...prev,
-      [id]: {
-        startDate: format(start, "MM/dd/yyyy"),
-        endDate: format(end, "MM/dd/yyyy"),
-      },
-    }));
-  };
-
+  // --------------------------------------------------------------------------
+  // VIEW MODE RENDER
+  // --------------------------------------------------------------------------
   return (
     <div
       className={`flex flex-col h-full bg-white shadow-sm border relative transition-all duration-200 
@@ -725,12 +727,12 @@ export function PartDetails({
             </div>
 
             <WorkOrderHistoryChart
-              id="work-order-history" // [!code ++] Pass a unique ID
+              id="work-order-history"
               title="Work Order History"
               workOrderHistory={partData?.workOrders}
               filters={filters}
-              dateRange={chartDateRanges["work-order-history"]} // [!code ++] Use specific range
-              onDateRangeChange={handleDateRangeChange} // [!code ++] Pass handler
+              dateRange={chartDateRanges["work-order-history"]}
+              onDateRangeChange={handleDateRangeChange}
               groupByField="createdAt"
               lineName="Created"
               lineColor="#0091ff"

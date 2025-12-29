@@ -8,13 +8,13 @@ import { PartHeader } from "./PartHeader";
 import { PartBasicDetails } from "./PartBasicDetails";
 import { PartQRCodeSection } from "./PartQRCodeSection";
 import { PartLocationSection } from "./PartLocationSection";
-
 import { PartFilesSection } from "./PartFilesSection";
 import { PartFooter } from "./PartFooter";
 import PartType from "./PartType";
 import toast from "react-hot-toast";
 import PartVendorsSection from "./PartVendorsSection";
 import type { BUD } from "../../utils/BlobUpload";
+//
 
 export function NewPartForm({
   newItem,
@@ -48,26 +48,20 @@ export function NewPartForm({
     }
   };
 
+  // Sync images/docs from newItem (Edit Mode)
   React.useEffect(() => {
-    if (newItem?.partImages) {
-      setPartImages(newItem.partImages);
-    }
-    if (newItem?.partDocs) {
-      setPartDocs(newItem.partDocs);
-    }
+    if (newItem?.partImages) setPartImages(newItem.partImages);
+    if (newItem?.partDocs) setPartDocs(newItem.partDocs);
   }, [newItem?.partImages, newItem?.partDocs]);
 
-  // ✅ FIXED: Normalize Data (Pre-fill Locations, Assets, etc.)
+  // Normalize Data on Load (Pre-fill Locations, Assets, etc.)
   React.useEffect(() => {
     if (!newItem) return;
-
     setNewItem((prev: any) => {
-      // 1. Extract First Location Data (if exists)
       const firstLoc = prev.locations?.[0];
-
       return {
         ...prev,
-        // Arrays Normalization
+        // Arrays Normalization to prevent undefined errors
         assetIds:
           prev.assetIds && prev.assetIds.length > 0
             ? prev.assetIds
@@ -80,88 +74,158 @@ export function NewPartForm({
           prev.vendorIds && prev.vendorIds.length > 0
             ? prev.vendorIds
             : prev.vendors?.map((v: any) => v.id) || [],
-        partsType:
-          prev.partsType && prev.partsType.length > 0
-            ? prev.partsType
-            : Array.isArray(prev.partsType)
-            ? prev.partsType
-            : prev.partsType
-            ? [prev.partsType]
-            : [],
+        partsType: Array.isArray(prev.partsType)
+          ? prev.partsType
+          : prev.partsType
+          ? [prev.partsType]
+          : [],
 
-        // ✅ FIX: Map Location Data to Top-Level Fields for Inputs
-        locationId: prev.locationId || firstLoc?.locationId || firstLoc?.id || "",
+        // Map Location Data to Top-Level Fields for Inputs
+        locationId:
+          prev.locationId || firstLoc?.locationId || firstLoc?.id || "",
         area: prev.area || firstLoc?.area || "",
-        // Handle 0 values correctly using nullish coalescing (??)
         unitInStock: prev.unitInStock ?? firstLoc?.unitsInStock ?? 0,
         minInStock: prev.minInStock ?? firstLoc?.minimumInStock ?? 0,
       };
     });
   }, [newItem?.id, setNewItem]);
 
+  // ✅ HELPER: Compare Arrays (Order doesn't matter)
+  const areArraysEqual = (arr1: any[], arr2: any[]) => {
+    if (!Array.isArray(arr1) || !Array.isArray(arr2)) return false;
+    if (arr1.length !== arr2.length) return false;
+    const sorted1 = [...arr1].sort();
+    const sorted2 = [...arr2].sort();
+    return JSON.stringify(sorted1) === JSON.stringify(sorted2);
+  };
+
   const handleSubmitPart = async () => {
     try {
       const isEditing = !!newItem.id;
+      const original = newItem._original || {}; // The original data before editing
 
-      // ✅ CONSTRUCT JSON PAYLOAD (Replaces FormData)
-      // This sends real arrays directly, preventing backend parsing errors.
-      const payload: any = {
-        organizationId: organizationId || "",
-        name: newItem.name || "",
-        description: newItem.description || "",
-        // Ensure unitCost is a number
-        unitCost: newItem.unitCost ? Number(newItem.unitCost) : 0, 
-        
-        // Handle QR Code format
-        qrCode: newItem.qrCode ? `part/${String(newItem.qrCode).replace('part/', '')}` : "",
+      // 1. Prepare Current Values (Cleaned)
+      const currentUnitCost = newItem.unitCost ? Number(newItem.unitCost) : 0;
+      const currentQrCode = newItem.qrCode
+        ? newItem.qrCode.startsWith("part/")
+          ? newItem.qrCode
+          : `part/${newItem.qrCode}`
+        : "";
 
-        // ✅ Send Arrays as REAL Arrays (No JSON.stringify)
-        partsType: Array.isArray(newItem.partsType) ? newItem.partsType : [],
-        assetIds: Array.isArray(newItem.assetIds) ? newItem.assetIds : [],
-        teamsInCharge: Array.isArray(newItem.teamsInCharge) ? newItem.teamsInCharge : [],
-        vendorIds: Array.isArray(newItem.vendorIds) ? newItem.vendorIds : [],
+      // Arrays
+      const currentPartsType = Array.isArray(newItem.partsType) ? newItem.partsType : [];
+      const currentAssetIds = Array.isArray(newItem.assetIds) ? newItem.assetIds : [];
+      const currentTeams = Array.isArray(newItem.teamsInCharge) ? newItem.teamsInCharge : [];
+      const currentVendorIds = Array.isArray(newItem.vendorIds) ? newItem.vendorIds : [];
+      
+      // Images/Docs
+      const currentImages = Array.isArray(partImages) ? partImages : [];
+      const currentDocs = Array.isArray(partDocs) ? partDocs : [];
 
-        // ✅ Send Metadata for Images/Docs (Assuming file upload handled separately or pre-signed URLs)
-        partImages: partImages && partImages.length > 0 ? partImages : [],
-        partDocs: partDocs && partDocs.length > 0 ? partDocs : [],
-
-        // Initialize complex fields
-        locations: [],
-        vendors: []
-      };
-
-      // 3. LOCATIONS LOGIC (Push objects to array)
-      // Case A: If user added multiple locations via the list
+      // Locations Logic (Construct the new location array to compare)
+      let currentLocations: any[] = [];
       if (newItem.locations && newItem.locations.length > 0) {
-        payload.locations = newItem.locations.map((loc: any) => ({
-           locationId: loc.locationId || loc.id,
-           area: loc.area || "",
-           unitsInStock: Number(loc.unitsInStock ?? loc.unitInStock ?? 0),
-           minimumInStock: Number(loc.minimumInStock ?? loc.minInStock ?? 0)
+        currentLocations = newItem.locations.map((loc: any) => ({
+          locationId: loc.locationId || loc.id,
+          area: loc.area || "",
+          unitsInStock: Number(loc.unitsInStock ?? loc.unitInStock ?? 0),
+          minimumInStock: Number(loc.minimumInStock ?? loc.minInStock ?? 0),
         }));
-      } 
-      // Case B: Fallback for the single location inputs (edited via main form)
-      else if (newItem.locationId || newItem.area) {
-        payload.locations.push({
-           locationId: newItem.locationId || "",
-           area: newItem.area || "",
-           unitsInStock: Number(newItem.unitInStock || 0),
-           minimumInStock: Number(newItem.minInStock || 0)
+      } else if (newItem.locationId || newItem.area) {
+        currentLocations.push({
+          locationId: newItem.locationId || "",
+          area: newItem.area || "",
+          unitsInStock: Number(newItem.unitInStock || 0),
+          minimumInStock: Number(newItem.minInStock || 0),
         });
       }
 
-      // 4. VENDORS METADATA LOGIC
-      if (Array.isArray(newItem.vendors) && newItem.vendors.length > 0) {
-        payload.vendors = newItem.vendors.map((vendor: any) => ({
-          vendorId: vendor.vendorId || "",
-          orderingPartNumber: vendor.orderingPartNumber || ""
+      // ---------------------------------------------------------
+      // 🛠️ BUILD PAYLOAD (ONLY CHANGED FIELDS)
+      // ---------------------------------------------------------
+      const payload: any = {};
+
+      if (isEditing) {
+        // --- Basic Fields ---
+        if (newItem.name !== original.name) payload.name = newItem.name;
+        if (newItem.description !== original.description) payload.description = newItem.description;
+        if (currentUnitCost !== (original.unitCost || 0)) payload.unitCost = currentUnitCost;
+        if (currentQrCode !== (original.qrCode || "")) payload.qrCode = currentQrCode;
+
+        // --- Simple Arrays (Asset, Teams, Types, Vendors) ---
+        if (!areArraysEqual(currentPartsType, original.partsType || [])) {
+          payload.partsType = currentPartsType;
+        }
+        
+        // Check Asset IDs (Compare with original asset list IDs)
+        const originalAssetIds = original.assets?.map((a: any) => a.id) || original.assetIds || [];
+        if (!areArraysEqual(currentAssetIds, originalAssetIds)) {
+          payload.assetIds = currentAssetIds;
+        }
+
+        // Check Team IDs
+        const originalTeamIds = original.teams?.map((t: any) => t.id) || original.teamsInCharge || [];
+        if (!areArraysEqual(currentTeams, originalTeamIds)) {
+          payload.teamsInCharge = currentTeams;
+        }
+
+        // Check Vendor IDs
+        const originalVendorIds = original.vendors?.map((v: any) => v.id) || original.vendorIds || [];
+        if (!areArraysEqual(currentVendorIds, originalVendorIds)) {
+          payload.vendorIds = currentVendorIds;
+        }
+
+        // --- Complex Objects (Locations) ---
+        // For locations, strict equality is hard. We stringify to check "dirty".
+        // Note: original locations might have extra fields, so this is a simplified dirty check.
+        // Usually safe to send locations if user touched the form, or deep compare specific fields.
+        // Simplest strategy: If the constructed 'currentLocations' differs from a reconstructed 'original', send it.
+        const originalLocsMapped = (original.locations || []).map((loc: any) => ({
+             locationId: loc.locationId || loc.id,
+             area: loc.area || "",
+             unitsInStock: Number(loc.unitsInStock ?? 0),
+             minimumInStock: Number(loc.minimumInStock ?? 0),
         }));
+        
+        if (JSON.stringify(currentLocations) !== JSON.stringify(originalLocsMapped)) {
+            payload.locations = currentLocations;
+        }
+
+        // --- Files (Images / Docs) ---
+        if (JSON.stringify(currentImages) !== JSON.stringify(original.partImages || [])) {
+           payload.partImages = currentImages;
+        }
+        if (JSON.stringify(currentDocs) !== JSON.stringify(original.partDocs || [])) {
+           payload.partDocs = currentDocs;
+        }
+
+      } else {
+        // --- CREATE MODE: Send Everything ---
+        payload.organizationId = organizationId || "";
+        payload.name = newItem.name;
+        payload.description = newItem.description || "";
+        payload.unitCost = currentUnitCost;
+        payload.qrCode = currentQrCode;
+        payload.partsType = currentPartsType;
+        payload.assetIds = currentAssetIds;
+        payload.teamsInCharge = currentTeams;
+        payload.vendorIds = currentVendorIds;
+        payload.locations = currentLocations;
+        payload.partImages = currentImages;
+        payload.partDocs = currentDocs;
       }
 
-      // 5. Submit as JSON
-      // NOTE: Ensure your backend Controller is using @Body() not @UploadedFiles() for these fields now
+      // 🛑 Final Safety Check: If Edit Mode and Payload is empty, warn user
+      if (isEditing && Object.keys(payload).length === 0) {
+        toast("No changes detected.");
+        return;
+      }
+
+      // 🔥 Dispatch (JSON Payload)
       if (isEditing) {
-        await dispatch(updatePart({ id: String(newItem.id), partData: payload })).unwrap();
+        await dispatch(
+          updatePart({ id: String(newItem.id), partData: payload })
+        ).unwrap();
         toast.success("Part updated successfully!");
       } else {
         await dispatch(createPart(payload)).unwrap();
@@ -171,7 +235,7 @@ export function NewPartForm({
       onCreate();
     } catch (error: any) {
       console.error("❌ Error saving part:", error);
-      toast.error("Failed to save part");
+      toast.error(error?.message || "Failed to save part");
     }
   };
 

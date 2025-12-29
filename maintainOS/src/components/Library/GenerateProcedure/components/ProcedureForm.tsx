@@ -1,26 +1,35 @@
 import React, { useState, useCallback, memo, useEffect, useRef } from "react";
-import { Camera, Check, Trash2, ChevronDown, Plus, Upload, X, Calendar as CalendarIcon, FileText } from "lucide-react";
+import {
+  Camera,
+  Check,
+  Trash2,
+  ChevronDown,
+  Plus,
+  Upload,
+  X,
+  Calendar as CalendarIcon,
+  FileText,
+} from "lucide-react";
 import type { ConditionData } from "../types";
 
 // --- External Libraries for Work Order Runner ---
-// Ensure you have installed: npm install react-signature-canvas react-day-picker date-fns
 import SignatureCanvas from "react-signature-canvas";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import { format, isValid } from "date-fns";
 
 // ==========================================
-// 1. INTERNAL RUNNER COMPONENTS (Merged Here)
+// 1. INTERNAL RUNNER COMPONENTS
 // ==========================================
 
 // --- Inspection Check Runner ---
-function InspectionCheckRunner({ 
-  value, 
-  onChange, 
-  onSave 
-}: { 
-  value: any; 
-  onChange: (val: any) => void; 
+function InspectionCheckRunner({
+  value,
+  onChange,
+  onSave,
+}: {
+  value: any;
+  onChange: (val: any) => void;
   onSave?: (val: any) => void; // Explicit API trigger
 }) {
   const safeValue =
@@ -42,20 +51,20 @@ function InspectionCheckRunner({
   const handleStatusClick = (newStatus: string) => {
     const newVal = { ...safeValue, status: newStatus };
     onChange(newVal); // Update UI state
-    
+
     // ✅ Trigger API Save Immediately on Status Change (Button Click)
     if (onSave) onSave(newVal);
 
     // reset extra fields on status change logic (optional UI preference)
     if (newStatus !== "pass") {
-       setShowNote(true);
-       setShowFileBox(true);
+      setShowNote(true);
+      setShowFileBox(true);
     }
   };
 
   // ✅ Trigger API Save only when user leaves the note field (Blur)
   const handleNoteBlur = () => {
-    if (onSave) onSave(safeValue); 
+    if (onSave) onSave(safeValue);
   };
 
   return (
@@ -117,7 +126,9 @@ function InspectionCheckRunner({
             }}
           >
             <Upload size={16} style={{ color: "#3b82f6", marginBottom: 8 }} />
-            <div style={{ color: "#3b82f6", fontWeight: 600 }}>Add Pictures/Files</div>
+            <div style={{ color: "#3b82f6", fontWeight: 600 }}>
+              Add Pictures/Files
+            </div>
           </div>
 
           {/* Note Box */}
@@ -157,7 +168,9 @@ function InspectionCheckRunner({
             }}
           >
             <Upload size={16} style={{ color: "#3b82f6", marginBottom: 8 }} />
-            <div style={{ color: "#3b82f6", fontWeight: 600 }}>Add Pictures/Files</div>
+            <div style={{ color: "#3b82f6", fontWeight: 600 }}>
+              Add Pictures/Files
+            </div>
           </div>
 
           {/* Note Box */}
@@ -250,7 +263,9 @@ function InspectionCheckRunner({
               }}
             >
               <Upload size={16} style={{ color: "#3b82f6", marginBottom: 8 }} />
-              <div style={{ color: "#3b82f6", fontWeight: 600 }}>Add Pictures/Files</div>
+              <div style={{ color: "#3b82f6", fontWeight: 600 }}>
+                Add Pictures/Files
+              </div>
             </div>
           )}
         </div>
@@ -259,15 +274,28 @@ function InspectionCheckRunner({
   );
 }
 
-
 // --- Signature Runner ---
-function SignatureRunner({ value, onChange }: { value: string | null; onChange: (val: string | null) => void }) {
+function SignatureRunner({
+  value,
+  onChange,
+}: {
+  value: string | null;
+  onChange: (val: string | null) => void;
+}) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const sigCanvas = useRef<any>({});
+  const sigCanvas = useRef<any>(null); // ✅ Fixed: Initialized with null
 
   const handleSave = () => {
     if (sigCanvas.current) {
-      const dataURL = sigCanvas.current.getTrimmedCanvas().toDataURL("image/png");
+      if (sigCanvas.current.isEmpty()) {
+        alert("Please provide a signature before saving.");
+        return;
+      }
+      
+      // ✅ FIX: Removed 'getTrimmedCanvas()' which causes the crash.
+      // Used standard 'toDataURL()' instead.
+      const dataURL = sigCanvas.current.toDataURL("image/png");
+      
       onChange(dataURL);
       setIsModalOpen(false);
     }
@@ -279,7 +307,7 @@ function SignatureRunner({ value, onChange }: { value: string | null; onChange: 
 
   return (
     <>
-      {/* ===== OUTER SIGNATURE BLOCK (CASE STYLE EXACT) ===== */}
+      {/* ===== OUTER SIGNATURE BLOCK ===== */}
       <div
         onClick={() => setIsModalOpen(true)}
         style={{
@@ -311,14 +339,14 @@ function SignatureRunner({ value, onChange }: { value: string | null; onChange: 
         )}
       </div>
 
-      {/* ===== MODAL (same as before) ===== */}
+      {/* ===== MODAL ===== */}
       {isModalOpen && (
         <div
           onClick={() => setIsModalOpen(false)}
           style={{
             position: "fixed",
             inset: 0,
-
+            backgroundColor: "rgba(0,0,0,0.5)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -330,7 +358,7 @@ function SignatureRunner({ value, onChange }: { value: string | null; onChange: 
             onClick={(e) => e.stopPropagation()}
             style={{
               width: "100%",
-              maxWidth: "600px",           // <<< FIX: modal no longer huge
+              maxWidth: "600px",
               background: "white",
               borderRadius: "10px",
               boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
@@ -339,7 +367,6 @@ function SignatureRunner({ value, onChange }: { value: string | null; onChange: 
               flexDirection: "column",
             }}
           >
-
             {/* HEADER */}
             <div
               style={{
@@ -350,7 +377,9 @@ function SignatureRunner({ value, onChange }: { value: string | null; onChange: 
                 justifyContent: "space-between",
               }}
             >
-              <h3 style={{ fontSize: "1.1rem", fontWeight: 600 }}>Sign below:</h3>
+              <h3 style={{ fontSize: "1.1rem", fontWeight: 600 }}>
+                Sign below:
+              </h3>
 
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -440,11 +469,9 @@ function SignatureRunner({ value, onChange }: { value: string | null; onChange: 
           </div>
         </div>
       )}
-
     </>
   );
 }
-
 
 // --- Upload Runner ---
 function UploadRunner({
@@ -549,14 +576,23 @@ function UploadRunner({
 }
 
 // --- Date Runner ---
-function DateRunner({ value, onChange }: { value: string | null; onChange: (val: string | null) => void }) {
+function DateRunner({
+  value,
+  onChange,
+}: {
+  value: string | null;
+  onChange: (val: string | null) => void;
+}) {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Close on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
         setIsCalendarOpen(false);
       }
     };
@@ -573,7 +609,9 @@ function DateRunner({ value, onChange }: { value: string | null; onChange: (val:
   };
 
   const displayDate =
-    value && isValid(new Date(value)) ? format(new Date(value), "MM/dd/yyyy") : "";
+    value && isValid(new Date(value))
+      ? format(new Date(value), "MM/dd/yyyy")
+      : "";
 
   return (
     <div style={{ position: "relative", marginTop: "8px" }} ref={containerRef}>
@@ -671,17 +709,19 @@ function DateRunner({ value, onChange }: { value: string | null; onChange: (val:
   );
 }
 
-
-function YesNoRunner({ 
-  value, 
-  onChange, 
-  onSave 
-}: { 
-  value: any; 
-  onChange: (val: any) => void; 
+function YesNoRunner({
+  value,
+  onChange,
+  onSave,
+}: {
+  value: any;
+  onChange: (val: any) => void;
   onSave?: (val: any) => void;
 }) {
-  const safeValue = typeof value === 'object' && value !== null ? value : { status: value || null, note: '', file: null };
+  const safeValue =
+    typeof value === "object" && value !== null
+      ? value
+      : { status: value || null, note: "", file: null };
   const status = safeValue.status;
   const note = safeValue.note || "";
   const file = safeValue.file || null;
@@ -699,7 +739,7 @@ function YesNoRunner({
     onChange(newVal);
     // ✅ Trigger API Save Immediately
     if (onSave) onSave(newVal);
-    
+
     setShowNote(!!note);
     setShowUpload(!!file);
   };
@@ -707,7 +747,7 @@ function YesNoRunner({
   const handleNoteChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     onChange({ ...safeValue, note: e.target.value });
   };
-  
+
   // ✅ Trigger API Save on Blur (Note)
   const handleNoteBlur = () => {
     if (onSave) onSave(safeValue);
@@ -717,7 +757,7 @@ function YesNoRunner({
     const f = e.target.files?.[0];
     if (f) {
       const r = new FileReader();
-      r.onload = ev => onChange({ ...safeValue, file: ev.target?.result });
+      r.onload = (ev) => onChange({ ...safeValue, file: ev.target?.result });
       r.readAsDataURL(f);
     }
   };
@@ -728,9 +768,23 @@ function YesNoRunner({
   };
 
   const statusConfig: any = {
-    yes: { label: "Yes", active: "bg-emerald-50 border-emerald-500 text-emerald-700 ring-1 ring-emerald-500", inactive: "bg-white border-gray-200 text-emerald-600 hover:border-emerald-300" },
-    no: { label: "No", active: "bg-red-50 border-red-500 text-red-700 ring-1 ring-red-500", inactive: "bg-white border-gray-200 text-red-500 hover:border-red-300" },
-    "n/a": { label: "N/A", active: "bg-gray-100 border-gray-500 text-gray-800 ring-1 ring-gray-500", inactive: "bg-white border-gray-200 text-gray-600 hover:border-gray-300" },
+    yes: {
+      label: "Yes",
+      active:
+        "bg-emerald-50 border-emerald-500 text-emerald-700 ring-1 ring-emerald-500",
+      inactive: "bg-white border-gray-200 text-emerald-600 hover:border-emerald-300",
+    },
+    no: {
+      label: "No",
+      active: "bg-red-50 border-red-500 text-red-700 ring-1 ring-red-500",
+      inactive: "bg-white border-gray-200 text-red-500 hover:border-red-300",
+    },
+    "n/a": {
+      label: "N/A",
+      active:
+        "bg-gray-100 border-gray-500 text-gray-800 ring-1 ring-gray-500",
+      inactive: "bg-white border-gray-200 text-gray-600 hover:border-gray-300",
+    },
   };
 
   return (
@@ -744,8 +798,9 @@ function YesNoRunner({
               key={key}
               type="button"
               onClick={() => handleStatusClick(key)}
-              className={`flex items-center justify-center h-12 rounded-md border text-base font-medium transition-all duration-200 ${isActive ? config.active : config.inactive
-                }`}
+              className={`flex items-center justify-center h-12 rounded-md border text-base font-medium transition-all duration-200 ${
+                isActive ? config.active : config.inactive
+              }`}
             >
               {config.label}
             </button>
@@ -757,14 +812,31 @@ function YesNoRunner({
         <div className="animate-in fade-in slide-in-from-top-2 pt-1">
           {file ? (
             <div className="relative w-fit group">
-              <img src={file} alt="Proof" className="h-32 w-auto rounded-md border border-gray-200 shadow-sm object-cover" />
-              <button onClick={removeFile} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors" type="button"><X size={12} /></button>
+              <img
+                src={file}
+                alt="Proof"
+                className="h-32 w-auto rounded-md border border-gray-200 shadow-sm object-cover"
+              />
+              <button
+                onClick={removeFile}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
+                type="button"
+              >
+                <X size={12} />
+              </button>
             </div>
           ) : (
             <label className="border-2 border-dashed border-blue-300 bg-blue-50/50 rounded-lg p-6 flex flex-col items-center justify-center text-blue-500 cursor-pointer hover:bg-blue-50 transition-colors w-full h-32">
-              <div className="bg-blue-500 text-white p-1.5 rounded-md mb-2 shadow-sm"><Upload size={16} /></div>
+              <div className="bg-blue-500 text-white p-1.5 rounded-md mb-2 shadow-sm">
+                <Upload size={16} />
+              </div>
               <span className="text-sm font-medium">Add Pictures/Files</span>
-              <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+              />
             </label>
           )}
         </div>
@@ -785,10 +857,22 @@ function YesNoRunner({
       {status && (
         <div className="flex gap-6 pt-1">
           {!showNote && (
-            <button type="button" onClick={() => setShowNote(true)} className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"><Plus size={16} /> Add notes</button>
+            <button
+              type="button"
+              onClick={() => setShowNote(true)}
+              className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+            >
+              <Plus size={16} /> Add notes
+            </button>
           )}
           {!showUpload && (
-            <button type="button" onClick={() => setShowUpload(true)} className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"><Plus size={16} /> Add Pictures/Files</button>
+            <button
+              type="button"
+              onClick={() => setShowUpload(true)}
+              className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+            >
+              <Plus size={16} /> Add Pictures/Files
+            </button>
           )}
         </div>
       )}
@@ -801,23 +885,20 @@ function YesNoRunner({
 // ==========================================
 
 // --- Helper: checkCondition (Full logic - NO CHANGE) ---
-function checkCondition(
-  condition: ConditionData,
-  parentAnswer: any
-): boolean {
+function checkCondition(condition: ConditionData, parentAnswer: any): boolean {
   const op = condition.conditionOperator || condition.type;
 
   // --- [FIX FOR RUNNER]: Handle Object answers (Inspection Check) ---
   let valToCheck = parentAnswer;
-  if (typeof parentAnswer === 'object' && parentAnswer !== null && 'status' in parentAnswer) {
+  if (
+    typeof parentAnswer === "object" &&
+    parentAnswer !== null &&
+    "status" in parentAnswer
+  ) {
     valToCheck = parentAnswer.status;
   }
 
-  if (
-    valToCheck === undefined ||
-    valToCheck === null ||
-    valToCheck === ""
-  ) {
+  if (valToCheck === undefined || valToCheck === null || valToCheck === "") {
     if (op === "is not checked" || op === "is_not_checked") {
       return true;
     }
@@ -853,7 +934,8 @@ function checkCondition(
   if (op === "higher than" || op === "higher_than") return numAnswer > numVal;
   if (op === "lower than" || op === "lower_than") return numAnswer < numVal;
   if (op === "equal to" || op === "equal_to") return numAnswer === numVal;
-  if (op === "not equal to" || op === "not_equal_to") return numAnswer !== numVal;
+  if (op === "not equal to" || op === "not_equal_to")
+    return numAnswer !== numVal;
 
   if (op === "between") {
     if (isNaN(numVal) || isNaN(numVal2)) return false;
@@ -899,7 +981,10 @@ const PreviewField = memo(function PreviewField({
   // --- [NEW] Meter reading ke liye specific data normalize karein ---
   const fieldUnit = field.config?.meterUnit || field.meterUnit;
   const meterName = field.selectedMeterName || field.config?.meterName;
-  const lastReading = field.lastReading !== undefined ? field.lastReading : field.config?.lastReading;
+  const lastReading =
+    field.lastReading !== undefined
+      ? field.lastReading
+      : field.config?.lastReading;
 
   const isRequired = field.required || field.isRequired;
 
@@ -911,7 +996,7 @@ const PreviewField = memo(function PreviewField({
         updateAnswer(fieldId, loadEvent.target?.result);
         // ✅ Immediate save for image upload
         if (onFieldSave && variant === "runner") {
-             onFieldSave(fieldId, loadEvent.target?.result);
+          onFieldSave(fieldId, loadEvent.target?.result);
         }
       };
       reader.readAsDataURL(file);
@@ -944,38 +1029,80 @@ const PreviewField = memo(function PreviewField({
     // ✅ [ADDED]: RUNNER MODE LOGIC (Work Order)
     if (variant === "runner") {
       switch (fieldType) {
-        case "inspection_check": case "Inspection Check":
-          return <InspectionCheckRunner value={currentValue} onChange={(val) => updateAnswer(fieldId, val)} onSave={handleRunnerSave} />;
-        case "signature_block": case "Signature Block":
-          return <SignatureRunner value={currentValue} onChange={handleImmediateSave} />;
-        case "picture_file": case "Picture/File Field":
-          return <UploadRunner value={currentValue} onChange={handleImmediateSave} />;
-        case "Date":
-          return <DateRunner value={currentValue} onChange={handleImmediateSave} />;
-        case "yes_no_NA": case "Yes, No, N/A": 
-          return <YesNoRunner value={currentValue} onChange={(val) => updateAnswer(fieldId, val)} onSave={handleRunnerSave} />;
-
-        // Interactive inputs for standard fields
-        case "text_field": case "Text Field":
+        case "inspection_check":
+        case "Inspection Check":
           return (
-            <input 
-              type="text" 
-              value={currentValue || ""} 
-              onChange={e => updateAnswer(fieldId, e.target.value)} 
-              onBlur={handleBlur} 
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" 
-              placeholder="Enter Text" 
+            <InspectionCheckRunner
+              value={currentValue}
+              onChange={(val) => updateAnswer(fieldId, val)}
+              onSave={handleRunnerSave}
             />
           );
-        case "number_field": case "Number Field":
+        case "signature_block":
+        case "Signature Block":
           return (
-            <input 
-              type="number" 
-              value={currentValue || ""} 
-              onChange={e => updateAnswer(fieldId, e.target.value)} 
-              onBlur={handleBlur} 
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" 
-              placeholder="Enter Number" 
+            <div className="w-full">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {fieldLabel}
+                {isRequired && <span className="text-red-500 ml-1">*</span>}
+              </label>
+
+              {/* 👇 Integration Here */}
+              <SignatureRunner
+                value={currentValue}
+                onChange={handleImmediateSave}
+              />
+
+              {fieldDesc && (
+                <p className="text-sm text-gray-500 mt-1">{fieldDesc}</p>
+              )}
+            </div>
+          );
+        case "picture_file":
+        case "Picture/File Field":
+          return (
+            <UploadRunner
+              value={currentValue}
+              onChange={handleImmediateSave}
+            />
+          );
+        case "Date":
+          return (
+            <DateRunner value={currentValue} onChange={handleImmediateSave} />
+          );
+        case "yes_no_NA":
+        case "Yes, No, N/A":
+          return (
+            <YesNoRunner
+              value={currentValue}
+              onChange={(val) => updateAnswer(fieldId, val)}
+              onSave={handleRunnerSave}
+            />
+          );
+
+        // Interactive inputs for standard fields
+        case "text_field":
+        case "Text Field":
+          return (
+            <input
+              type="text"
+              value={currentValue || ""}
+              onChange={(e) => updateAnswer(fieldId, e.target.value)}
+              onBlur={handleBlur}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+              placeholder="Enter Text"
+            />
+          );
+        case "number_field":
+        case "Number Field":
+          return (
+            <input
+              type="number"
+              value={currentValue || ""}
+              onChange={(e) => updateAnswer(fieldId, e.target.value)}
+              onBlur={handleBlur}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+              placeholder="Enter Number"
             />
           );
         case "amount":
@@ -1016,18 +1143,87 @@ const PreviewField = memo(function PreviewField({
             </div>
           );
 
-        case "checkbox": case "Checkbox":
-          return <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={currentValue === true} onChange={e => handleImmediateSave(e.target.checked)} className="rounded border-gray-300 text-blue-600" /><span className="text-sm">{fieldLabel}</span></label>;
-        case "mulitple_choice": case "Multiple Choice":
-          return <div className="flex flex-col gap-2">{fieldOptions?.map((opt: any, idx: number) => <label key={idx} className="flex items-center gap-2 cursor-pointer"><input type="radio" name={fieldId} checked={currentValue === opt} onChange={() => handleImmediateSave(opt)} /><span className="text-sm">{opt}</span></label>)}</div>;
-        case "checklist": case "Checklist":
+        case "checkbox":
+        case "Checkbox":
+          return (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={currentValue === true}
+                onChange={(e) => handleImmediateSave(e.target.checked)}
+                className="rounded border-gray-300 text-blue-600"
+              />
+              <span className="text-sm">{fieldLabel}</span>
+            </label>
+          );
+        case "mulitple_choice":
+        case "Multiple Choice":
+          return (
+            <div className="flex flex-col gap-2">
+              {fieldOptions?.map((opt: any, idx: number) => (
+                <label key={idx} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name={fieldId}
+                    checked={currentValue === opt}
+                    onChange={() => handleImmediateSave(opt)}
+                  />
+                  <span className="text-sm">{opt}</span>
+                </label>
+              ))}
+            </div>
+          );
+        case "checklist":
+        case "Checklist":
           const cl = currentValue || [];
-          return <div className="flex flex-col gap-2">{fieldOptions?.map((opt: any, idx: number) => <label key={idx} className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={cl.includes(opt)} onChange={e => { const nl = e.target.checked ? [...cl, opt] : cl.filter((x: any) => x !== opt); handleImmediateSave(nl); }} /><span className="text-sm">{opt}</span></label>)}</div>;
-        case "meter_reading": case "Meter Reading":
-          return <><div className="mb-1 text-xs text-gray-500">Last: {lastReading ?? 'N/A'}</div><div className="relative"><input type="number" value={currentValue || ""} onChange={e => updateAnswer(fieldId, e.target.value)} onBlur={handleBlur} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" placeholder="Enter Reading" /><span className="absolute right-3 top-2 text-gray-400 text-xs">{fieldUnit}</span></div></>;
-        
+          return (
+            <div className="flex flex-col gap-2">
+              {fieldOptions?.map((opt: any, idx: number) => (
+                <label key={idx} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={cl.includes(opt)}
+                    onChange={(e) => {
+                      const nl = e.target.checked
+                        ? [...cl, opt]
+                        : cl.filter((x: any) => x !== opt);
+                      handleImmediateSave(nl);
+                    }}
+                  />
+                  <span className="text-sm">{opt}</span>
+                </label>
+              ))}
+            </div>
+          );
+        case "meter_reading":
+        case "Meter Reading":
+          return (
+            <>
+              <div className="mb-1 text-xs text-gray-500">
+                Last: {lastReading ?? "N/A"}
+              </div>
+              <div className="relative">
+                <input
+                  type="number"
+                  value={currentValue || ""}
+                  onChange={(e) => updateAnswer(fieldId, e.target.value)}
+                  onBlur={handleBlur}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                  placeholder="Enter Reading"
+                />
+                <span className="absolute right-3 top-2 text-gray-400 text-xs">
+                  {fieldUnit}
+                </span>
+              </div>
+            </>
+          );
+
         default:
-          return <p className="text-xs text-gray-400">Field type not supported in runner: {fieldType}</p>;
+          return (
+            <p className="text-xs text-gray-400">
+              Field type not supported in runner: {fieldType}
+            </p>
+          );
       }
     }
 
@@ -1133,14 +1329,27 @@ const PreviewField = memo(function PreviewField({
         return (
           <>
             {/* Last Reading (View mode jaisa) */}
-            {(lastReading !== null && lastReading !== undefined) && (
-              <p style={{ fontSize: "0.75rem", color: "#6b7280", marginBottom: "4px" }}>
+            {lastReading !== null && lastReading !== undefined && (
+              <p
+                style={{
+                  fontSize: "0.75rem",
+                  color: "#6b7280",
+                  marginBottom: "4px",
+                }}
+              >
                 Last Reading: {lastReading} {fieldUnit || ""}
               </p>
             )}
             {/* Meter Name (View mode jaisa) */}
             {meterName && (
-              <p style={{ fontSize: "0.875rem", color: "#2563eb", marginBottom: "8px", fontWeight: 500 }}>
+              <p
+                style={{
+                  fontSize: "0.875rem",
+                  color: "#2563eb",
+                  marginBottom: "8px",
+                  fontWeight: 500,
+                }}
+              >
                 {meterName}
               </p>
             )}
@@ -1324,8 +1533,9 @@ const PreviewField = memo(function PreviewField({
                   onClick={() => updateAnswer(fieldId, opt.toLowerCase())}
                   style={{
                     padding: "10px",
-                    border: `1px solid ${isSelected ? style.border : "#d1d5db"
-                      }`,
+                    border: `1px solid ${
+                      isSelected ? style.border : "#d1d5db"
+                    }`,
                     borderRadius: "6px",
                     background: isSelected ? style.bg : "white",
                     color: isSelected ? style.text : "#374151",
@@ -1366,8 +1576,9 @@ const PreviewField = memo(function PreviewField({
                   onClick={() => updateAnswer(fieldId, opt.toLowerCase())}
                   style={{
                     padding: "10px",
-                    border: `1px solid ${isSelected ? "#007AFF" : "#d1d5db"
-                      }`,
+                    border: `1px solid ${
+                      isSelected ? "#007AFF" : "#d1d5db"
+                    }`,
                     borderRadius: "6px",
                     background: isSelected ? "#f0f7ff" : "white",
                     color: isSelected ? "#007AFF" : "#374151",
@@ -1387,9 +1598,7 @@ const PreviewField = memo(function PreviewField({
       case "mulitple_choice":
       case "Multiple Choice":
         return (
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "8px" }}
-          >
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {fieldOptions?.map((opt: string, index: number) => (
               <label
                 key={index}
@@ -1423,9 +1632,7 @@ const PreviewField = memo(function PreviewField({
           updateAnswer(fieldId, newList);
         };
         return (
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "8px" }}
-          >
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {fieldOptions?.map((opt: string, index: number) => (
               <label
                 key={index}
@@ -1439,9 +1646,7 @@ const PreviewField = memo(function PreviewField({
                 <input
                   type="checkbox"
                   checked={currentList.includes(opt)}
-                  onChange={(e) =>
-                    handleChecklistChange(opt, e.target.checked)
-                  }
+                  onChange={(e) => handleChecklistChange(opt, e.target.checked)}
                   disabled
                 />
                 <span>{opt}</span>
@@ -1516,8 +1721,9 @@ const PreviewSection = memo(function PreviewSection({
 
   const sectionFields = section.fields || [];
   const sectionHeadings = section.headings || [];
-  const combinedSectionItems = [...sectionFields, ...sectionHeadings]
-    .sort((a, b) => (a.order || 0) - (b.order || 0));
+  const combinedSectionItems = [...sectionFields, ...sectionHeadings].sort(
+    (a, b) => (a.order || 0) - (b.order || 0)
+  );
 
   const fieldCount = sectionFields.length;
   const sectionLabel = section.sectionName || section.label;
@@ -1576,10 +1782,7 @@ const PreviewSection = memo(function PreviewSection({
             gap: "24px",
           }}
         >
-          {props.renderAllItems(
-            combinedSectionItems,
-            props.allFieldsInScope
-          )}
+          {props.renderAllItems(combinedSectionItems, props.allFieldsInScope)}
         </div>
       )}
     </div>
@@ -1644,9 +1847,8 @@ export function ProcedureForm({
   onAnswersChange,
   variant = "preview", // ✅ [ADDED] Pass variant down
   onFieldSave, // ✅ [ADDED] Pass callback down
-  initialAnswers = {} // ✅ [ADDED] Default empty
+  initialAnswers = {}, // ✅ [ADDED] Default empty
 }: ProcedureFormProps) {
-  
   const [answers, setAnswers] = useState<Record<string, any>>(initialAnswers);
 
   // --- ✅ 1. Sync Initial Answers when they load ---
@@ -1655,7 +1857,7 @@ export function ProcedureForm({
       console.log("📥 Loading saved answers into form:", initialAnswers);
       setAnswers((prev) => ({
         ...prev,
-        ...initialAnswers
+        ...initialAnswers,
       }));
     }
   }, [initialAnswers]);
@@ -1665,20 +1867,20 @@ export function ProcedureForm({
     setAnswers(initialAnswers || {});
   }, [resetKey]);
 
-  const updateAnswer = useCallback((fieldId: string, value: any) => {
-    setAnswers((prev) => {
-      const next = { ...prev, [fieldId]: value };
-      if (onAnswersChange) onAnswersChange(next);
-      return next;
-    });
-  }, [onAnswersChange]);
+  const updateAnswer = useCallback(
+    (fieldId: string, value: any) => {
+      setAnswers((prev) => {
+        const next = { ...prev, [fieldId]: value };
+        if (onAnswersChange) onAnswersChange(next);
+        return next;
+      });
+    },
+    [onAnswersChange]
+  );
 
   // --- This function renders a list of fields (from root or section) ---
   const renderAllItems = useCallback(
-    (
-      items: any[],
-      allFieldsInScope: any[]
-    ): React.ReactNode[] => {
+    (items: any[], allFieldsInScope: any[]): React.ReactNode[] => {
       const visibleItems: React.ReactNode[] = [];
       const parentFields = items.filter((f) => !f.parentId); // Top-level fields
       const childFields = items.filter((f) => f.parentId); // Conditional fields
@@ -1708,7 +1910,10 @@ export function ProcedureForm({
           );
           if (isMet) {
             visibleItems.push(
-              <div key={child.id} className="pl-6 border-l-2 border-blue-100 ml-2 animate-in fade-in slide-in-from-left-2">
+              <div
+                key={child.id}
+                className="pl-6 border-l-2 border-blue-100 ml-2 animate-in fade-in slide-in-from-left-2"
+              >
                 <RenderPreviewItem
                   item={child}
                   answers={answers}
@@ -1729,8 +1934,9 @@ export function ProcedureForm({
     [answers, updateAnswer, variant, onFieldSave] // ✅ [ADDED] Depend on variant
   );
 
-  const combinedRootItems = [...(rootFields || []), ...(rootHeadings || [])]
-    .sort((a, b) => (a.order || 0) - (b.order || 0));
+  const combinedRootItems = [...(rootFields || []), ...(rootHeadings || [])].sort(
+    (a, b) => (a.order || 0) - (b.order || 0)
+  );
 
   const allRootFieldsForLogic = rootFields || [];
 

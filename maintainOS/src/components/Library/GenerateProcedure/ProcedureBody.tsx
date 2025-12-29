@@ -98,15 +98,18 @@ export default function ProcedureBody({ name, description }: ProcedureBodyProps)
                 items={fields.map((f) => f.id)}
                 strategy={verticalListSortingStrategy}
               >
-                {fields.map((field, index) => (
-                  <ProcedureBlock
-                    key={field.id}
-                    field={field}
-                    index={index}
-                    isNested={false}
-                    containerId="root"
-                  />
-                ))}
+                {/* CHANGED: Added 'flex flex-col gap-6' for better spacing between root fields */}
+                <div className="flex flex-col gap-6">
+                  {fields.map((field, index) => (
+                    <ProcedureBlock
+                      key={field.id}
+                      field={field}
+                      index={index}
+                      isNested={false}
+                      containerId="root"
+                    />
+                  ))}
+                </div>
               </SortableContext>
             )}
           </div>
