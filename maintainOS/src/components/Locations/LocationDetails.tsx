@@ -11,7 +11,6 @@ import {
   Box,
   Activity,
   ClipboardList,
-  Settings2,
 } from "lucide-react";
 import React, { useState } from "react";
 import toast from "react-hot-toast";
@@ -78,7 +77,6 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
     }
   };
 
-  // ✅ UPDATED: Pass the FULL location object, not just ID
   const handleUseInWorkOrder = () => {
     navigate("/work-orders/create", {
       state: {
@@ -107,13 +105,11 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
     );
   };
 
-  // work order Graph
-
   const [chartDateRanges, setChartDateRanges] = useState<
     Record<string, DateRange>
   >({
     "work-order-history": {
-      startDate: format(subDays(new Date(), 7), "MM/dd/yyyy"), // Ensure format matches what Chart expects (MM/dd/yyyy)
+      startDate: format(subDays(new Date(), 7), "MM/dd/yyyy"),
       endDate: format(new Date(), "MM/dd/yyyy"),
     },
   });
@@ -122,7 +118,6 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
     locationId: selectedLocation.id,
   };
 
-  // [!code ++] Handler to update only the specific chart ID
   const handleDateRangeChange = (id: string, start: Date, end: Date) => {
     setChartDateRanges((prev) => ({
       ...prev,
@@ -216,7 +211,8 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
                 {selectedLocation.teams.map((team: any) => (
                   <span
                     key={team.id}
-                    className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded border border-blue-100"
+                    onClick={() => navigate(`/teams/${team.id}`)}
+                    className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors"
                   >
                     {team.name}
                   </span>
@@ -234,7 +230,8 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
                 {selectedLocation.vendors.map((vendor: any) => (
                   <span
                     key={vendor.id}
-                    className="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded border border-purple-100"
+                    onClick={() => navigate(`/vendors/${vendor.id}`)}
+                    className="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded border border-purple-100 cursor-pointer hover:bg-purple-100 transition-colors"
                   >
                     {vendor.name}
                   </span>
@@ -255,7 +252,8 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
               {selectedLocation.assets.map((asset: any) => (
                 <div
                   key={asset.id}
-                  className="flex items-center justify-between p-3 border rounded-lg bg-gray-50"
+                  onClick={() => navigate(`/assets/${asset.id}`)}
+                  className="flex items-center justify-between p-3 border rounded-lg bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
                 >
                   <span className="text-sm font-medium text-gray-700">
                     {asset.name}
@@ -278,7 +276,8 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
               {selectedLocation.meters.map((meter: any) => (
                 <div
                   key={meter.id}
-                  className="flex items-center justify-between p-3 border rounded-lg bg-gray-50"
+                  onClick={() => navigate(`/meters/${meter.id}`)} // Assuming /meters/:id route exists
+                  className="flex items-center justify-between p-3 border rounded-lg bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
                 >
                   <span className="text-sm font-medium text-gray-700">
                     {meter.name}
@@ -304,7 +303,8 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
                 {selectedLocation.workOrders.map((wo: any) => (
                   <div
                     key={wo.id}
-                    className="p-3 border rounded-lg bg-white hover:shadow-sm transition"
+                    onClick={() => navigate(`/work-orders/${wo.id}`)}
+                    className="p-3 border rounded-lg bg-white hover:shadow-md transition-shadow cursor-pointer"
                   >
                     <div className="flex justify-between items-start">
                       <h4 className="text-sm font-medium text-gray-800">
@@ -358,7 +358,6 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
         <hr className="my-4" />
 
         <div className="mt-4">
-          {/* Sub Locations List */}
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-sm font-semibold text-gray-900">
               Sub-Locations ({selectedLocation?.children?.length || 0})
@@ -401,12 +400,12 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
         </div>
 
         <WorkOrderHistoryChart
-          id="work-order-history" // [!code ++] Pass a unique ID
+          id="work-order-history"
           title="Work Order History"
           workOrderHistory={selectedLocation?.workOrders}
           filters={filters}
-          dateRange={chartDateRanges["work-order-history"]} // [!code ++] Use specific range
-          onDateRangeChange={handleDateRangeChange} // [!code ++] Pass handler
+          dateRange={chartDateRanges["work-order-history"]}
+          onDateRangeChange={handleDateRangeChange}
           groupByField="createdAt"
           lineName="Created"
           lineColor="#0091ff"

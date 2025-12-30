@@ -8,7 +8,6 @@ import {
   Users,
   Briefcase,
   Box,
-  Activity,
   ClipboardList,
   Building2,
 } from "lucide-react";
@@ -30,7 +29,6 @@ const SubLocation: React.FC<LocationDetailsProps> = ({
   if (!selectedLocation) return null;
   const user = useSelector((state: RootState) => state.auth.user);
 
-  // ✅ UPDATED: Pass the FULL location object
   const handleUseInWorkOrder = () => {
     navigate("/work-orders/create", {
       state: { 
@@ -39,7 +37,6 @@ const SubLocation: React.FC<LocationDetailsProps> = ({
     });
   };
 
-  // Helper for Status Badge
   const StatusBadge = ({ status }: { status: string }) => {
     const colors: any = {
       online: "bg-green-100 text-green-700 border-green-200",
@@ -119,7 +116,8 @@ const SubLocation: React.FC<LocationDetailsProps> = ({
                 {selectedLocation.teams.map((team: any) => (
                   <span
                     key={team.id}
-                    className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded border border-blue-100"
+                    onClick={() => navigate(`/teams/${team.id}`)}
+                    className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors"
                   >
                     {team.name}
                   </span>
@@ -136,7 +134,8 @@ const SubLocation: React.FC<LocationDetailsProps> = ({
                 {selectedLocation.vendors.map((vendor: any) => (
                   <span
                     key={vendor.id}
-                    className="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded border border-purple-100"
+                    onClick={() => navigate(`/vendors/${vendor.id}`)}
+                    className="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded border border-purple-100 cursor-pointer hover:bg-purple-100 transition-colors"
                   >
                     {vendor.name}
                   </span>
@@ -157,7 +156,8 @@ const SubLocation: React.FC<LocationDetailsProps> = ({
               {selectedLocation.assets.map((asset: any) => (
                 <div
                   key={asset.id}
-                  className="flex items-center justify-between p-3 border rounded-lg bg-gray-50"
+                  onClick={() => navigate(`/assets/${asset.id}`)}
+                  className="flex items-center justify-between p-3 border rounded-lg bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
                 >
                   <span className="text-sm font-medium text-gray-700">
                     {asset.name}
@@ -181,7 +181,8 @@ const SubLocation: React.FC<LocationDetailsProps> = ({
                 {selectedLocation.workOrders.map((wo: any) => (
                   <div
                     key={wo.id}
-                    className="p-3 border rounded-lg bg-white hover:shadow-sm transition"
+                    onClick={() => navigate(`/work-orders/${wo.id}`)}
+                    className="p-3 border rounded-lg bg-white hover:shadow-md transition-shadow cursor-pointer"
                   >
                     <div className="flex justify-between items-start">
                       <h4 className="text-sm font-medium text-gray-800">

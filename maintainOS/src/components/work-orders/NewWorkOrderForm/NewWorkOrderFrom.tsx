@@ -28,30 +28,45 @@ import TimeOverviewPanel from "./../panels/TimeOverviewPanel";
 import OtherCostsPanel from "./../panels/OtherCostsPanel";
 import UpdatePartsPanel from "./../panels/UpdatePartsPanel";
 
-// ✅ FIXED Helper: Forces UTC Date (Prevents "Previous Day" bug)
+// ✅ Helper: Forces UTC Date
 function parseDateInputToISO(input?: string): string | null {
   if (!input) return null;
   const date = new Date(input);
   if (isNaN(date.getTime())) return null;
-
-  // Construct a UTC Date using the LOCAL Year/Month/Day
-  // This ignores the browser's timezone offset
-  const utcDate = new Date(Date.UTC(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate()
-  ));
-
+  const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   return utcDate.toISOString();
 }
 
-// ✅ FIXED HELPER: Robust Diffing Logic with EXTREME LOGGING
+// 🛠️ HELPER: UI String ("4:30") -> Backend Number (4.5)
+const parseTimeToDecimal = (timeStr: string): number => {
+  if (!timeStr) return 0;
+  if (!timeStr.includes(":")) return Number(timeStr);
+
+  const [hours, minutes] = timeStr.split(":");
+  const h = parseInt(hours || "0", 10);
+  const m = parseInt(minutes || "0", 10);
+  
+  // Standard Time Math: Minutes / 60
+  return h + (m / 60);
+};
+
+// 🛠️ HELPER: Backend Number (4.666) -> UI String ("4:40")
+const parseDecimalToTime = (val: number): string => {
+   if (val === undefined || val === null) return "";
+   
+   const h = Math.floor(val);
+   const decimalPart = val - h;
+   // Standard Time Math: .666 * 60 = 40 mins
+   const m = Math.round(decimalPart * 60); 
+
+   return `${h}:${m}`;
+};
+
+// ✅ FIXED HELPER: Robust Diffing Logic
 const getChangedFields = (original: any, current: any) => {
     const changes: any = {};
     console.group("🚀 [DEBUG] PAYLOAD GENERATION");
-    console.log("1. Original Data (Backend):", original);
-    console.log("2. Current Form Data (UI):", current);
-
+    
     // 1. Simple Fields
     const simpleFields = [
       "title", "description", "priority", "status", "workType", 
@@ -60,21 +75,20 @@ const getChangedFields = (original: any, current: any) => {
 
     simpleFields.forEach((key) => {
       if (current[key] !== undefined && original[key] !== current[key]) {
-        console.log(`✅ Field Changed: ${key}`, { from: original[key], to: current[key] });
         changes[key] = current[key];
       }
     });
 
-    // 2. Estimated Time (Number)
+    // 2. Estimated Time (Number Comparison)
     const origTime = original.estimatedTimeHours === null || original.estimatedTimeHours === undefined 
                      ? 0 
                      : Number(original.estimatedTimeHours);
-    const currTime = Number(current.estimatedTimeHours ?? 0);
     
-    console.log(`🔍 Checking Time: Original(${origTime}) vs Current(${currTime})`);
-
+    // current.estimatedTimeHours is already converted to Number by handleSubmit
+    const currTime = Number(current.estimatedTimeHours || 0);
+    
     if (Math.abs(origTime - currTime) > 0.001) {
-        console.log(`✅ Time Changed! Adding to payload:`, currTime);
+        console.log(`✅ Time Changed: ${origTime} -> ${currTime}`);
         changes.estimatedTimeHours = currTime;
     }
 
@@ -84,23 +98,16 @@ const getChangedFields = (original: any, current: any) => {
         const origVal = original[key];
         const currVal = current[key];
 
-        console.log(`🔍 Checking ${key}: Original(${origVal}) vs Current(${currVal})`);
-
         if ((origVal && !currVal) || (!origVal && currVal)) {
             changes[key] = currVal;
-            console.log(`✅ ${key} Changed (Existence)`);
         } 
         else if (origVal && currVal) {
              const d1 = new Date(origVal);
              const d2 = new Date(currVal);
-             
-             // Compare purely on DATE string YYYY-MM-DD (UTC)
-             // This ensures 2025-12-25T00:00 and 2025-12-26T00:00 are different
              const dateStr1 = d1.toISOString().split('T')[0];
              const dateStr2 = d2.toISOString().split('T')[0];
 
              if (dateStr1 !== dateStr2) {
-                 console.log(`✅ ${key} Changed (Day Mismatch)`, { from: dateStr1, to: dateStr2 });
                  changes[key] = currVal;
              }
         }
@@ -132,7 +139,6 @@ const getChangedFields = (original: any, current: any) => {
         const currentIds = current[payloadKey] || [];
 
         if (hasArrayChanged(originalIds, currentIds)) {
-            console.log(`✅ Array Changed: ${payloadKey}`, { from: originalIds, to: currentIds });
             changes[payloadKey] = currentIds;
         }
     });
@@ -144,7 +150,6 @@ const getChangedFields = (original: any, current: any) => {
     }
 
     if (JSON.stringify(originalRule) !== JSON.stringify(current.recurrenceRule)) {
-        console.log(`✅ Recurrence Changed`, { from: originalRule, to: current.recurrenceRule });
         changes.recurrenceRule = current.recurrenceRule;
     }
 
@@ -175,8 +180,10 @@ export function NewWorkOrderForm({
   const procedureEditMatch = useMatch("/work-orders/:workOrderId/edit/library/:procedureId");
   const deepEditingProcedureId = procedureEditMatch?.params?.procedureId;
 
-  const isEditMode = propIsEditMode ?? location.pathname.includes("/edit");
-  const id = editId ?? existingWorkOrder?.id ?? null;
+  // 🚀 CRITICAL FIX: Update logic detection
+  const activeId = editId ?? existingWorkOrder?.id ?? null;
+  const isEditing = !!activeId; 
+  
   const isCreateRoute = location.pathname.endsWith("/create");
 
   const [currentPanel, setCurrentPanel] = useState<'form' | 'time' | 'cost' | 'parts'>('form');
@@ -189,6 +196,7 @@ export function NewWorkOrderForm({
   const [description, setDescription] = useState("");
   const [locationId, setLocationId] = useState("");
   
+  // Stores "HH:MM" string for UI display
   const [estimatedTime, setEstimatedTime] = useState(""); 
 
   const [assetIds, setAssetIds] = useState<string[]>([]);
@@ -296,16 +304,22 @@ export function NewWorkOrderForm({
 
   // --- FILL FIELDS Logic ---
   useEffect(() => {
-    if (isCreateRoute && !editId && !location.state?.previousFormState) return; 
+    // If explicit create route AND no ID, do nothing (empty form)
+    if (isCreateRoute && !activeId && !location.state?.previousFormState) return; 
 
     const fillFields = (data: any) => {
       if (!data) return;
 
+      console.log("📝 Filling Fields with Data:", data);
+
       setWorkOrderName(data.title || "");
       setDescription(data.description || "");
       
+      // ✅ FIX: Convert Backend Decimal (4.66) -> UI Time "4:40"
       if (data.estimatedTimeHours !== undefined && data.estimatedTimeHours !== null) {
-          setEstimatedTime(String(data.estimatedTimeHours));
+          const timeStr = parseDecimalToTime(Number(data.estimatedTimeHours));
+          console.log(`⏰ Time Converted: ${data.estimatedTimeHours} -> ${timeStr}`);
+          setEstimatedTime(timeStr);
       } else {
           setEstimatedTime("");
       }
@@ -372,7 +386,9 @@ export function NewWorkOrderForm({
     };
 
     const loadWorkOrder = async () => {
-      if (isEditMode && id) {
+      // 🚀 Load Logic if ID exists
+      if (activeId) {
+        // Procedure check from state
         if (location.state?.previousFormState) {
             if (location.state.previousFormState.procedureId && !linkedProcedure) {
                  const pId = location.state.previousFormState.procedureId;
@@ -384,10 +400,12 @@ export function NewWorkOrderForm({
 
         try {
           setLoading(true);
-          if (existingWorkOrder && existingWorkOrder.id === id) {
+          // If we have existing data prop, use it directly (Immediate Fill)
+          if (existingWorkOrder && existingWorkOrder.id === activeId) {
             fillFields(existingWorkOrder);
           } else {
-            const resultAction = await dispatch(fetchWorkOrderById(id));
+            // Else fetch from API
+            const resultAction = await dispatch(fetchWorkOrderById(activeId));
             if (fetchWorkOrderById.fulfilled.match(resultAction)) {
                 fillFields(resultAction.payload);
             } else {
@@ -401,12 +419,13 @@ export function NewWorkOrderForm({
           setLoading(false);
         }
       } else if (existingWorkOrder) {
+        // Fallback for cases where existingWorkOrder is passed but logic didn't catch above
         fillFields(existingWorkOrder);
       }
     };
 
     loadWorkOrder();
-  }, [dispatch, id, existingWorkOrder, isEditMode, isCreateRoute, location.state]);
+  }, [dispatch, activeId, existingWorkOrder, isCreateRoute, location.state]);
 
   const handleEditLinkedProcedure = () => {
     if (linkedProcedure?.id) {
@@ -418,7 +437,7 @@ export function NewWorkOrderForm({
   };
 
   const handleEditorBack = async () => {
-    if (id) navigate(`/work-orders/${id}/edit`);
+    if (activeId) navigate(`/work-orders/${activeId}/edit`);
     if (linkedProcedure?.id) {
       try {
         setIsProcedureLoading(true);
@@ -442,10 +461,12 @@ export function NewWorkOrderForm({
         qrCode: qrCodeValue || undefined,
         priority: { None: "low", Low: "low", Medium: "medium", High: "high", Urgent: "urgent" }[selectedPriority] || "low",
         locationId: locationId || null,
-        estimatedTimeHours: estimatedTime !== "" ? Number(estimatedTime) : 0,
+        
+        // 🚀 FIX: Convert UI Time "4:30" -> Backend Decimal 4.5
+        estimatedTimeHours: parseTimeToDecimal(estimatedTime),
+        
         assetIds, vendorIds, partIds, assignedTeamIds: teamIds, categoryIds, assigneeIds: selectedUsers,
         procedureIds: linkedProcedure ? [linkedProcedure.id] : [],
-        // ✅ NEW PARSER HERE
         dueDate: parseDateInputToISO(dueDate),
         startDate: parseDateInputToISO(startDate),
       };
@@ -457,7 +478,9 @@ export function NewWorkOrderForm({
 
       setLoading(true);
 
-      if (isEditMode && id) {
+      // 🚀 CRITICAL: Update vs Create Logic based on activeId
+      if (activeId) {
+        console.log("🔵 Updating existing Work Order:", activeId);
         const payload = getChangedFields(existingWorkOrder || {}, formState);
         console.log("📝 [DEBUG] Form State:", formState);
         console.log("🚀 [DEBUG] Final API Payload (Diff):", payload);
@@ -468,9 +491,10 @@ export function NewWorkOrderForm({
             return;
         }
 
-        await dispatch(updateWorkOrder({ id, authorId, data: payload })).unwrap();
+        await dispatch(updateWorkOrder({ id: activeId, authorId, data: payload })).unwrap();
         toast.success("✅ Work order updated successfully");
       } else {
+        console.log("🟢 Creating NEW Work Order");
         await dispatch(createWorkOrder(formState)).unwrap();
         toast.success("✅ Work order created successfully");
       }
@@ -488,15 +512,17 @@ export function NewWorkOrderForm({
   if (loading || isProcedureLoading)
     return (<div className="flex flex-col items-center justify-center h-full gap-2 text-gray-500"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /><p className="text-sm font-medium">Loading...</p></div>);
 
-  if (currentPanel === 'time') return <TimeOverviewPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={existingWorkOrder} workOrderId={id} />;
-  if (currentPanel === 'cost') return <OtherCostsPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={existingWorkOrder} workOrderId={id} />;
-  if (currentPanel === 'parts') return <UpdatePartsPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={existingWorkOrder} workOrderId={id} />;
+  if (currentPanel === 'time') return <TimeOverviewPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={existingWorkOrder} workOrderId={activeId} />;
+  if (currentPanel === 'cost') return <OtherCostsPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={existingWorkOrder} workOrderId={activeId} />;
+  if (currentPanel === 'parts') return <UpdatePartsPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={existingWorkOrder} workOrderId={activeId} />;
 
   return (
     <>
       <div className="flex h-full flex-col overflow-hidden rounded-lg border bg-white relative">
         {deepEditingProcedureId && linkedProcedure && <div className="absolute inset-0 z-50 bg-white flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4"><GenerateProcedure onBack={handleEditorBack} editingProcedureId={deepEditingProcedureId} /></div>}
-        <div className="flex-none border-b px-6 py-4 flex items-center justify-between"><h2 className="text-xl font-semibold">{isEditMode ? "Edit Work Order" : "New Work Order"}</h2></div>
+        <div className="flex-none border-b px-6 py-4 flex items-center justify-between">
+          <h2 className="text-xl font-semibold">{isEditing ? "Edit Work Order" : "New Work Order"}</h2>
+        </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-6">
           <WorkOrderDetails
             name={workOrderName} onNameChange={setWorkOrderName}
@@ -528,12 +554,12 @@ export function NewWorkOrderForm({
             partIds={partIds} onPartSelect={(val) => setPartIds(val as string[])} partOptions={partOptions} isPartsLoading={false} onFetchParts={() => handleFetch("parts", setPartOptions)} onCreatePart={() => toast("Open Create Part Modal")}
             vendorIds={vendorIds} onVendorSelect={(val) => setVendorIds(val as string[])} vendorOptions={vendorOptions} isVendorsLoading={false} onFetchVendors={() => handleFetch("vendors", setVendorOptions)} onCreateVendor={() => toast("Open Create Vendor Modal")}
             activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown}
-            onPanelClick={setCurrentPanel} isEditMode={isEditMode} partUsages={existingWorkOrder?.partUsages}
+            onPanelClick={setCurrentPanel} isEditMode={isEditing} partUsages={existingWorkOrder?.partUsages}
           />
         </div>
         <div className="sticky bottom-0 flex items-center justify-end gap-3 border-t bg-white px-6 py-4">
           <button type="button" onClick={() => { if (onCancel) onCancel(); else navigate("/work-orders"); }} className="rounded-md border border-gray-300 px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors">Cancel</button>
-          <button type="button" onClick={handleSubmit} className="rounded-md border border-orange-600 bg-orange-600 px-6 py-2 text-sm font-medium text-white hover:bg-orange-700 transition-colors">{isEditMode ? "Update" : "Create"}</button>
+          <button type="button" onClick={handleSubmit} className="rounded-md border border-orange-600 bg-orange-600 px-6 py-2 text-sm font-medium text-white hover:bg-orange-700 transition-colors">{isEditing ? "Update" : "Create"}</button>
         </div>
       </div>
       <LinkedProcedurePreviewModal isOpen={isPreviewOpen} onClose={() => setIsPreviewOpen(false)} procedure={linkedProcedure} />

@@ -3,17 +3,23 @@ import { Package, Upload } from "lucide-react";
 import { DynamicSelect, type SelectOption } from "./DynamicSelect";
 
 interface Props {
-  name: string; onNameChange: (value: string) => void;
-  description: string; onDescriptionChange: (value: string) => void;
+  name: string;
+  onNameChange: (value: string) => void;
+  description: string;
+  onDescriptionChange: (value: string) => void;
   
-  // ✅ Props for Time
+  // Parent sends "HH:MM" string here (e.g. "4:40")
   estimatedTime: string; 
   onEstimatedTimeChange: (value: string) => void;
 
-  locationId: string; onLocationSelect: (value: string | string[]) => void;
-  locationOptions: SelectOption[]; isLocationsLoading: boolean;
-  onFetchLocations: () => void; onCreateLocation: () => void;
-  activeDropdown: string | null; setActiveDropdown: (name: string | null) => void;
+  locationId: string;
+  onLocationSelect: (value: string | string[]) => void;
+  locationOptions: SelectOption[];
+  isLocationsLoading: boolean;
+  onFetchLocations: () => void;
+  onCreateLocation: () => void;
+  activeDropdown: string | null;
+  setActiveDropdown: (name: string | null) => void;
 }
 
 export function WorkOrderDetails({
@@ -24,48 +30,39 @@ export function WorkOrderDetails({
   activeDropdown, setActiveDropdown
 }: Props) {
 
-  // ✅ Local State for UI splitting (Hours vs Minutes)
   const [hours, setHours] = useState("");
   const [minutes, setMinutes] = useState("");
 
-  // ✅ SYNC: When Parent sends data (e.g. from API "1.5"), update local inputs ("1" and "30")
+  // ✅ SYNC: Jab Parent se "HH:MM" aaye, toh usse split karke inputs me dikhao
   useEffect(() => {
-    const totalHours = Number(estimatedTime);
-    
-    // Handle empty or 0 initial state safely
-    if (!estimatedTime || isNaN(totalHours)) {
-        if (estimatedTime === "") {
-            setHours("");
-            setMinutes("");
-        }
-        return;
+    if (!estimatedTime) {
+      setHours("");
+      setMinutes("");
+      return;
     }
 
-    const h = Math.floor(totalHours);
-    // Extract minutes from decimal part (0.5 * 60 = 30)
-    const m = Math.round((totalHours - h) * 60);
-
-    setHours(h > 0 ? String(h) : "");
-    setMinutes(m > 0 ? String(m) : "");
+    // Check if format is "H:M"
+    if (estimatedTime.includes(":")) {
+      const [h, m] = estimatedTime.split(":");
+      setHours(h === "0" ? "" : h);
+      setMinutes(m === "0" ? "" : m);
+    } else {
+      // Fallback if somehow a plain number comes
+      setHours(estimatedTime);
+      setMinutes("");
+    }
   }, [estimatedTime]);
 
-  // ✅ HANDLER: Calculate Total and Send to Parent
+  // ✅ HANDLER: Jab user type kare, toh wapas "HH:MM" bana kar parent ko bhejo
   const handleTimeChange = (newHours: string, newMinutes: string) => {
-    // Update local state immediately for typing feel
     setHours(newHours);
     setMinutes(newMinutes);
 
-    const h = parseInt(newHours || "0", 10);
-    const m = parseInt(newMinutes || "0", 10);
+    const h = newHours || "0";
+    const m = newMinutes || "0";
     
-    // Logic: Total Hours = Hours + (Minutes / 60)
-    const total = h + (m / 60);
-    
-    // If both empty, send empty string (so backend doesn't receive 0 unexpectedly)
-    // If has value, send stringified number
-    const finalValue = (newHours === "" && newMinutes === "") ? "" : total.toString();
-
-    onEstimatedTimeChange(finalValue);
+    // Always send formatted string "H:M"
+    onEstimatedTimeChange(`${h}:${m}`);
   };
 
   return (
@@ -92,7 +89,7 @@ export function WorkOrderDetails({
         <textarea value={description} onChange={(e) => onDescriptionChange(e.target.value)} placeholder="Add a description" className="mt-2 w-full min-h-[96px] rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
       </div>
 
-      {/* ✅ UPDATED: Estimated Time Section (Design Match) */}
+      {/* ✅ UPDATED: Estimated Time Inputs */}
       <div className="mt-4">
         <h3 className="mb-4 text-sm font-medium text-gray-900">Estimated Time</h3>
         <div className="flex items-center gap-4">
@@ -104,6 +101,7 @@ export function WorkOrderDetails({
                     value={hours}
                     onChange={(e) => handleTimeChange(e.target.value, minutes)}
                     className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="0"
                 />
                 <span className="text-sm font-medium text-gray-900">H</span>
             </div>
@@ -116,6 +114,7 @@ export function WorkOrderDetails({
                     value={minutes}
                     onChange={(e) => handleTimeChange(hours, e.target.value)}
                     className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="0"
                 />
                 <span className="text-sm font-medium text-gray-900">M</span>
             </div>
