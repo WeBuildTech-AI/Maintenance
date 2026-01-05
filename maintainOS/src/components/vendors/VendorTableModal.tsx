@@ -1,11 +1,16 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
-import VendorDetails from "./VendorDetails/VendorDetails"; // Adjust path if needed
+import { useDispatch } from "react-redux";
+import type { AppDispatch } from "../../store";
+import { updateVendor } from "../../store/vendors";
+
+// ✅ Correct Imports
+import VendorDetails from "./VendorDetails/VendorDetails";
+import { VendorForm } from "./VendorsForm/VendorForm";
 
 interface VendorTableModalProps {
   vendor: any;
   onClose: () => void;
-  onEdit: () => void;
   fetchData: () => void;
   showDeleted?: boolean;
 }
@@ -13,45 +18,89 @@ interface VendorTableModalProps {
 export default function VendorTableModal({
   vendor,
   onClose,
-  onEdit,
   fetchData,
   showDeleted = false,
 }: VendorTableModalProps) {
+  const dispatch = useDispatch<AppDispatch>();
+
+  // State: Toggle between Details (View) and Form (Edit)
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Reset to View mode whenever a new vendor opens
+  useEffect(() => {
+    setIsEditing(false);
+  }, [vendor?.id]);
+
+  const handleContentClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
   if (!vendor) return null;
 
   return (
-    // 1. Overlay (Backdrop)
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-      
-      {/* 2. Modal Container (White Box) - Same design as AssetTableModal */}
-      <div 
-        className="relative w-full max-w-5xl h-[90vh] bg-white rounded-lg shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-200"
-        role="dialog"
-        aria-modal="true"
+    // ✅ Overlay matching AssetTableModal (z-50, backdrop-blur, etc.)
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 bg-black/50 flex w-full items-center justify-center p-4 z-50 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      {/* ✅ Container matching AssetTableModal */}
+      <div
+        className="bg-card rounded-lg shadow-md w-200 h-full flex flex-col overflow-auto bg-white"
+        onClick={handleContentClick}
       >
-        
-        {/* 3. Close Button (Absolute Top Right) */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-2 bg-white/80 hover:bg-gray-100 rounded-full text-gray-500 hover:text-gray-700 shadow-sm z-[100] border border-gray-100 transition-colors"
-          aria-label="Close"
-        >
-          <X size={20} />
-        </button>
+        {/* ✅ Header matching AssetTableModal */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h2 className="text-lg font-semibold capitalize">
+            Vendor Details
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 cursor-pointer rounded-full transition-colors"
+          >
+            <X className="h-5 w-5 text-gray-500" />
+          </button>
+        </div>
 
-        {/* 4. Content Area */}
-        <div className="flex-1 overflow-hidden flex flex-col bg-white">
-          <VendorDetails
-            vendor={vendor}
-            onEdit={onEdit}
-            onDeleteSuccess={() => {
-              fetchData();
-              onClose();
-            }}
-            restoreData={showDeleted ? "true" : ""}
-            onClose={onClose}
-            fetchVendors={fetchData}
-          />
+        {/* ✅ Content Body matching AssetTableModal */}
+        <div className="flex-1 overflow-y-auto">
+          {isEditing ? (
+            /* ---------------- EDIT MODE ---------------- */
+            // Wrapped in p-4 div to match AssetTableModal edit form style
+            <div className="p-4">
+               <VendorForm
+                  initialData={vendor} 
+                  
+                  // Cancel -> Switch back to View Mode (Does NOT close modal)
+                  onCancel={() => setIsEditing(false)} 
+                  
+                  // Submit -> Call PATCH API via Redux
+                  onSubmit={(data: FormData) => {
+                    return dispatch(updateVendor({ id: vendor.id, data })).unwrap();
+                  }}
+                  
+                  // Success -> Refresh Table & Close Modal
+                  onSuccess={() => {
+                    fetchData(); 
+                    onClose();   
+                  }}
+                />
+            </div>
+          ) : (
+            /* ---------------- VIEW MODE ---------------- */
+            <VendorDetails
+              vendor={vendor}
+              
+              // Switch to Edit Mode
+              onEdit={() => setIsEditing(true)} 
+              
+              onDeleteSuccess={onClose}
+              restoreData={showDeleted ? "Restore" : ""}
+              onClose={onClose}
+              fetchVendors={fetchData}
+            />
+          )}
         </div>
       </div>
     </div>

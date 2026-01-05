@@ -4,12 +4,14 @@ import toast from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import type { AppDispatch, RootState } from "../../../store";
-import { deleteVendor, vendorService } from "../../../store/vendors";
+import { deleteVendor, updateVendor } from "../../../store/vendors";
 import {
   NewContactModal,
   type ContactFormData,
 } from "../VendorsForm/NewContactModal";
 import { type Vendor } from "../vendors.types";
+
+import { VendorForm } from "../VendorsForm/VendorForm";
 
 import { Briefcase, AlertTriangle, Factory, Truck } from "lucide-react";
 
@@ -25,11 +27,10 @@ import VendorAssetsSection from "./VendorAssetsSection";
 import { format, subDays } from "date-fns";
 
 import { WorkOrderHistoryChart } from "../../utils/WorkOrderHistoryChart";
-// ❌ Removed VendorWorkOrdersSection import
 
 interface VendorDetailsProps {
   vendor?: any;
-  onEdit: (vendor: Vendor) => void;
+  onEdit?: (vendor: Vendor) => void;
   onDeleteSuccess?: (id: string) => void;
   restoreData: string;
   onClose: () => void;
@@ -46,20 +47,21 @@ export default function VendorDetails({
   onClose,
   fetchVendors,
 }: VendorDetailsProps) {
-  if (!vendor) {
-    return (
-      <div className="flex flex-1 items-center justify-center text-muted-foreground">
-        Select a vendor to view details.
-      </div>
-    );
-  }
-
+  
+  // =========================================================================
+  // ✅ 1. ALL HOOKS MUST BE DECLARED AT THE TOP (Before any return)
+  // =========================================================================
+  
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
 
-  // Contacts Parse Logic
+  // State: Edit Mode
+  const [isEditing, setIsEditing] = useState(false);
+
+  // State: Contacts (Handle null vendor safely inside initializer)
   const [contacts, setContacts] = useState<any[]>(() => {
+    if (!vendor) return [];
     try {
       if (Array.isArray(vendor.contacts)) return vendor.contacts;
       if (typeof vendor.contacts === "string")
@@ -72,24 +74,35 @@ export default function VendorDetails({
     }
   });
 
+  // State: Modals & UI
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingContact, setEditingContact] = useState<ContactFormData | null>(
-    null
-  );
+  const [editingContact, setEditingContact] = useState<ContactFormData | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleteContactEmail, setDeleteContactEmail] = useState<string | null>(
-    null
-  );
+  const [deleteContactEmail, setDeleteContactEmail] = useState<string | null>(null);
+  
   const modalRef = useRef<HTMLDivElement | null>(null);
 
-  // Update contacts when vendor prop changes
+  // State: Chart Date Ranges
+  const [chartDateRanges, setChartDateRanges] = useState<Record<string, DateRange>>({
+    "work-order-history": {
+      startDate: format(subDays(new Date(), 7), "MM/dd/yyyy"),
+      endDate: format(new Date(), "MM/dd/yyyy"),
+    },
+  });
+
+  // Effect: Reset editing when vendor changes
+  useEffect(() => {
+    setIsEditing(false);
+  }, [vendor?.id]);
+
+  // Effect: Update contacts when vendor prop changes
   useEffect(() => {
     if (vendor?.contacts) {
       if (Array.isArray(vendor.contacts)) setContacts(vendor.contacts);
     }
   }, [vendor]);
 
-  // Click Outside Logic
+  // Effect: Click Outside Logic
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -104,6 +117,19 @@ export default function VendorDetails({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showDeleteConfirm]);
 
+  // =========================================================================
+  // ✅ 2. CONDITIONAL RETURNS (Only AFTER all hooks are declared)
+  // =========================================================================
+
+  if (!vendor) {
+    return (
+      <div className="flex flex-1 items-center justify-center text-muted-foreground">
+        Select a vendor to view details.
+      </div>
+    );
+  }
+
+  // --- Handlers ---
   const openDeleteModal = (email: string) => {
     setDeleteContactEmail(email);
     setShowDeleteConfirm(true);
@@ -127,11 +153,29 @@ export default function VendorDetails({
       .catch(() => toast.error("Failed to delete vendor."));
   };
 
+  // ✅ UPDATED: Pass vendor details in state
   const handleUseInWorkOrder = () => {
-    navigate(`/work-orders/create?vendorId=${vendor.id}`);
+    navigate("/work-orders/create", {
+      state: {
+        preselectedVendor: {
+          id: vendor.id,
+          name: vendor.companyName || vendor.name || "Unknown Vendor",
+        },
+      },
+    });
   };
 
-  // Styles Helper
+  const handleDateRangeChange = (id: string, start: Date, end: Date) => {
+    setChartDateRanges((prev) => ({
+      ...prev,
+      [id]: {
+        startDate: format(start, "MM/dd/yyyy"),
+        endDate: format(end, "MM/dd/yyyy"),
+      },
+    }));
+  };
+
+  // --- Render Helpers ---
   const getVendorTypeListItemStyles = (type?: string) => {
     const t = type?.toLowerCase();
     if (t === "manufacturer") {
@@ -159,39 +203,40 @@ export default function VendorDetails({
   };
 
   const vendorTypeStyle = getVendorTypeListItemStyles(vendor.vendorType);
+  const filters = { vendorIds: vendor.id };
 
-  // work order graph
+  // =========================================================================
+  // ✅ 3. RENDER (Edit Mode vs View Mode)
+  // =========================================================================
 
-  const [chartDateRanges, setChartDateRanges] = useState<
-    Record<string, DateRange>
-  >({
-    "work-order-history": {
-      startDate: format(subDays(new Date(), 7), "MM/dd/yyyy"), // Ensure format matches what Chart expects (MM/dd/yyyy)
-      endDate: format(new Date(), "MM/dd/yyyy"),
-    },
-  });
+  if (isEditing) {
+    return (
+      <div className="flex h-full flex-col bg-white rounded-lg border overflow-hidden">
+        <div className="flex-1 overflow-hidden relative bg-gray-50 flex flex-col">
+            <VendorForm
+            initialData={vendor}
+            onCancel={() => setIsEditing(false)} // Go back to details
+            onSubmit={(data: FormData) => {
+                return dispatch(updateVendor({ id: vendor.id, data })).unwrap();
+            }}
+            onSuccess={() => {
+                fetchVendors();
+                setIsEditing(false); // Switch back to details view
+            }}
+            />
+        </div>
+      </div>
+    );
+  }
 
-  const filters = {
-    vendorIds: vendor.id,
-  };
-
-  const handleDateRangeChange = (id: string, start: Date, end: Date) => {
-    setChartDateRanges((prev) => ({
-      ...prev,
-      [id]: {
-        startDate: format(start, "MM/dd/yyyy"),
-        endDate: format(end, "MM/dd/yyyy"),
-      },
-    }));
-  };
-
+  // --- VIEW MODE ---
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-lg border relative bg-white">
       {/* Header */}
       <div className="flex-none z-20 border-b bg-white shadow-sm">
         <VendorHeader
           vendor={vendor}
-          onEdit={onEdit}
+          onEdit={() => setIsEditing(true)} 
           handleDeleteVendor={handleDeleteVendor}
           restoreData={restoreData}
           onClose={onClose}
@@ -213,7 +258,6 @@ export default function VendorDetails({
 
         {/* General Details */}
         <div className="space-y-6">
-          {/* Type */}
           <div>
             <h3 className="text-sm font-semibold text-gray-800 mb-3">
               Vendor Type
@@ -232,7 +276,6 @@ export default function VendorDetails({
             </div>
           </div>
 
-          {/* Description */}
           <div>
             <h3 className="text-sm font-semibold text-gray-800 mb-1">
               Description
@@ -243,26 +286,17 @@ export default function VendorDetails({
           </div>
         </div>
 
-        {/* 1. Contacts */}
+        {/* Sections */}
         <VendorContactList
           contacts={contacts}
           setEditingContact={setEditingContact}
           setIsModalOpen={setIsModalOpen}
           openDeleteModal={openDeleteModal}
         />
-
-        {/* ❌ Removed VendorWorkOrdersSection from here */}
-
-        {/* 2. Assets (API Field: assets & assetIds) */}
         <VendorAssetsSection vendor={vendor} />
-
-        {/* 3. Locations (API Field: locations) */}
         <VendorLocationsSection vendor={vendor} />
-
-        {/* 4. Parts (API Field: parts & partIds) */}
         <VendorPartsSection vendor={vendor} />
 
-        {/* work order graph */}
         <WorkOrderHistoryChart
           id="work-order-history"
           title="Work Order History"
@@ -275,14 +309,10 @@ export default function VendorDetails({
           lineColor="#0091ff"
         />
 
-        {/* 5. Media (API Field: vendorImages, vendorDocs) */}
         <VendorImages vendor={vendor} />
         <VendorFiles vendor={vendor} />
-
-        {/* 6. System Info (Footer Section: Created/Updated/IDs) */}
         <VendorFooter user={user} vendor={vendor} />
 
-        {/* Spacer for Floating Button */}
         <div style={{ height: 60 }} />
       </div>
 
@@ -308,7 +338,6 @@ export default function VendorDetails({
               setContacts((prev) => [...prev, newContact]);
               toast.success("New contact added!");
             }
-            // Trigger fetch to sync IDs from backend if needed
             fetchVendors();
             setIsModalOpen(false);
           } catch (error) {

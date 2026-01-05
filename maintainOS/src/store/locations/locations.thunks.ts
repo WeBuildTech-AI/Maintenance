@@ -33,6 +33,19 @@ export const fetchLocationsName = createAsyncThunk(
     }
   }
 );
+export const fetchParentLocations = createAsyncThunk(
+  "locations/fetchParentLocations",
+  async (_, { rejectWithValue }) => {
+    try {
+      const locations = await locationService.fetchParentLocations();
+      return locations;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch Parent locations"
+      );
+    }
+  }
+);
 
 export const fetchLocationById = createAsyncThunk(
   "locations/fetchLocationById",

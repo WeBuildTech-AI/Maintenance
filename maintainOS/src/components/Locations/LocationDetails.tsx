@@ -12,7 +12,7 @@ import {
   Activity,
   ClipboardList,
 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import {
@@ -31,6 +31,8 @@ import { Tooltip } from "../ui/tooltip";
 import { locationService } from "../../store/locations";
 import { format, subDays } from "date-fns";
 import { WorkOrderHistoryChart } from "../utils/WorkOrderHistoryChart";
+// ✅ IMPORT API INSTANCE
+import api from "../../store/auth/auth.service";
 
 // Props interface
 interface LocationDetailsProps {
@@ -66,6 +68,10 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
   const [openDeleteModal, setOpenDeleteModal] = React.useState(false);
   const modalRef = React.useRef<HTMLDivElement>(null);
 
+  // ✅ STATES FOR CREATOR AND UPDATER NAMES
+  const [createdByName, setCreatedByName] = useState<string>("");
+  const [updatedByName, setUpdatedByName] = useState<string>("");
+
   const handleRestoreLocationData = async (id: string) => {
     try {
       await locationService.restoreLocationData(id);
@@ -78,12 +84,39 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
   };
 
   const handleUseInWorkOrder = () => {
-    navigate("/work-orders/create", {
-      state: {
-        preselectedLocation: selectedLocation,
-      },
+    navigate({
+      pathname: "/work-orders/create",
+      search: `?locationId=${selectedLocation.id}`,
     });
   };
+
+  // ✅ FETCH USER DETAILS LOGIC
+  useEffect(() => {
+    const fetchUserName = async (userId: string, setter: (name: string) => void) => {
+      if (!userId) {
+        setter("Unknown");
+        return;
+      }
+      try {
+        const res = await api.get(`/users/${userId}`);
+        if (res.data) {
+          // Assuming response has fullName, otherwise fallback to first+last
+          const name = res.data.fullName || `${res.data.firstName || ''} ${res.data.lastName || ''}`.trim() || "Unknown";
+          setter(name);
+        }
+      } catch (error) {
+        console.error(`Failed to fetch user ${userId}`, error);
+        setter("Unknown");
+      }
+    };
+
+    if (selectedLocation?.createdBy) {
+      fetchUserName(selectedLocation.createdBy, setCreatedByName);
+    }
+    if (selectedLocation?.updatedBy) {
+      fetchUserName(selectedLocation.updatedBy, setUpdatedByName);
+    }
+  }, [selectedLocation]);
 
   // Helper for Status Badge
   const StatusBadge = ({ status }: { status: string }) => {
@@ -411,13 +444,28 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
           lineColor="#0091ff"
         />
 
-        {/* Footer Info */}
-        <div className="text-sm text-gray-500 mt-2 pb-10">
-          Created By{" "}
-          <span className="capitalize font-medium text-gray-700">
-            {user?.fullName}
-          </span>{" "}
-          on {formatDate(selectedLocation.createdAt)}
+        {/* ✅ UPDATED FOOTER INFO */}
+        <div className="text-sm text-gray-500 mt-4 pb-10 flex flex-col gap-2 border-t pt-4">
+          <div>
+            Created By{" "}
+            <span className="capitalize font-medium text-gray-700">
+              {createdByName || "Loading..."}
+            </span>{" "}
+            on{" "}
+            {selectedLocation.createdAt
+              ? format(new Date(selectedLocation.createdAt), "dd/MM/yyyy, HH:mm")
+              : "-"}
+          </div>
+          <div>
+            Updated By{" "}
+            <span className="capitalize font-medium text-gray-700">
+              {updatedByName || "Loading..."}
+            </span>{" "}
+            on{" "}
+            {selectedLocation.updatedAt
+              ? format(new Date(selectedLocation.updatedAt), "dd/MM/yyyy, HH:mm")
+              : "-"}
+          </div>
         </div>
       </div>
 

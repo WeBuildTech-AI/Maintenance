@@ -1832,7 +1832,7 @@ interface ProcedureFormProps {
   rootFields: any[];
   rootHeadings: any[];
   sections: any[];
-  resetKey: string;
+  resetKey?: string;
   onAnswersChange?: (answers: Record<string, any>) => void;
   variant?: "preview" | "runner"; // ✅ [ADDED] Default is Preview
   onFieldSave?: (fieldId: string, value: any) => void; // ✅ [ADDED] Save Callback
@@ -1864,7 +1864,9 @@ export function ProcedureForm({
 
   // --- Reset answers when procedure ID changes ---
   useEffect(() => {
-    setAnswers(initialAnswers || {});
+    if (resetKey) {
+        setAnswers(initialAnswers || {});
+    }
   }, [resetKey]);
 
   const updateAnswer = useCallback(

@@ -27,6 +27,7 @@ import GenerateProcedure from "../../Library/GenerateProcedure/GenerateProcedure
 import TimeOverviewPanel from "./../panels/TimeOverviewPanel";
 import OtherCostsPanel from "./../panels/OtherCostsPanel";
 import UpdatePartsPanel from "./../panels/UpdatePartsPanel";
+import { locationService } from "../../../store/locations";
 
 // ✅ Helper: Forces UTC Date
 function parseDateInputToISO(input?: string): string | null {
@@ -158,6 +159,7 @@ const getChangedFields = (original: any, current: any) => {
     return changes;
 };
 
+// 🔴 FIX: Renamed NewWorkOrderFrom -> NewWorkOrderForm
 export function NewWorkOrderForm({
   onCreate,
   existingWorkOrder,
@@ -180,7 +182,6 @@ export function NewWorkOrderForm({
   const procedureEditMatch = useMatch("/work-orders/:workOrderId/edit/library/:procedureId");
   const deepEditingProcedureId = procedureEditMatch?.params?.procedureId;
 
-  // 🚀 CRITICAL FIX: Update logic detection
   const activeId = editId ?? existingWorkOrder?.id ?? null;
   const isEditing = !!activeId; 
   
@@ -196,7 +197,6 @@ export function NewWorkOrderForm({
   const [description, setDescription] = useState("");
   const [locationId, setLocationId] = useState("");
   
-  // Stores "HH:MM" string for UI display
   const [estimatedTime, setEstimatedTime] = useState(""); 
 
   const [assetIds, setAssetIds] = useState<string[]>([]);
@@ -229,7 +229,34 @@ export function NewWorkOrderForm({
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isAddProcModalOpen, setIsAddProcModalOpen] = useState(false);
 
-  // ... (Effects for prefilled parts - kept same) ...
+  useEffect(() => {
+    const paramLocationId = searchParams.get("locationId");
+    if (paramLocationId && !activeId) {
+        setLocationId(paramLocationId);
+        
+        locationService.fetchLocationById(paramLocationId)
+            .then((loc: any) => {
+                if (loc) {
+                    setLocationOptions([{ id: loc.id, name: loc.name }]);
+                }
+            })
+            .catch((err: any) => console.error("Error prefilling location:", err));
+    }
+  }, [searchParams, activeId]);
+
+  // ✅ ADDED: Detect preselected vendor from navigation state
+  useEffect(() => {
+    if (location.state?.preselectedVendor) {
+      const { id, name } = location.state.preselectedVendor;
+      setVendorIds([id]);
+      setVendorOptions((prev) => {
+        // Prevent duplicates if already fetched
+        if (prev.some((opt) => opt.id === id)) return prev;
+        return [...prev, { id, name }];
+      });
+    }
+  }, [location.state]);
+
   useEffect(() => {
     if (location.state?.prefilledPart) {
       const part = location.state.prefilledPart;
@@ -265,7 +292,6 @@ export function NewWorkOrderForm({
     }
   }, [location.state, searchParams]); 
 
-  // ... (Restore form state - kept same) ...
   useEffect(() => {
     if (location.state?.previousFormState) {
       const s = location.state.previousFormState;
@@ -288,7 +314,6 @@ export function NewWorkOrderForm({
     }
   }, [location.state]);
 
-  // ... (Deep editing effect - kept same) ...
   useEffect(() => {
     if (deepEditingProcedureId && linkedProcedure?.id !== deepEditingProcedureId) {
       const fetchSpecificProcedure = async () => {
@@ -302,9 +327,7 @@ export function NewWorkOrderForm({
     }
   }, [deepEditingProcedureId]);
 
-  // --- FILL FIELDS Logic ---
   useEffect(() => {
-    // If explicit create route AND no ID, do nothing (empty form)
     if (isCreateRoute && !activeId && !location.state?.previousFormState) return; 
 
     const fillFields = (data: any) => {
@@ -315,7 +338,6 @@ export function NewWorkOrderForm({
       setWorkOrderName(data.title || "");
       setDescription(data.description || "");
       
-      // ✅ FIX: Convert Backend Decimal (4.66) -> UI Time "4:40"
       if (data.estimatedTimeHours !== undefined && data.estimatedTimeHours !== null) {
           const timeStr = parseDecimalToTime(Number(data.estimatedTimeHours));
           console.log(`⏰ Time Converted: ${data.estimatedTimeHours} -> ${timeStr}`);
@@ -386,9 +408,7 @@ export function NewWorkOrderForm({
     };
 
     const loadWorkOrder = async () => {
-      // 🚀 Load Logic if ID exists
       if (activeId) {
-        // Procedure check from state
         if (location.state?.previousFormState) {
             if (location.state.previousFormState.procedureId && !linkedProcedure) {
                  const pId = location.state.previousFormState.procedureId;
@@ -400,11 +420,9 @@ export function NewWorkOrderForm({
 
         try {
           setLoading(true);
-          // If we have existing data prop, use it directly (Immediate Fill)
           if (existingWorkOrder && existingWorkOrder.id === activeId) {
             fillFields(existingWorkOrder);
           } else {
-            // Else fetch from API
             const resultAction = await dispatch(fetchWorkOrderById(activeId));
             if (fetchWorkOrderById.fulfilled.match(resultAction)) {
                 fillFields(resultAction.payload);
@@ -419,7 +437,6 @@ export function NewWorkOrderForm({
           setLoading(false);
         }
       } else if (existingWorkOrder) {
-        // Fallback for cases where existingWorkOrder is passed but logic didn't catch above
         fillFields(existingWorkOrder);
       }
     };
@@ -462,7 +479,6 @@ export function NewWorkOrderForm({
         priority: { None: "low", Low: "low", Medium: "medium", High: "high", Urgent: "urgent" }[selectedPriority] || "low",
         locationId: locationId || null,
         
-        // 🚀 FIX: Convert UI Time "4:30" -> Backend Decimal 4.5
         estimatedTimeHours: parseTimeToDecimal(estimatedTime),
         
         assetIds, vendorIds, partIds, assignedTeamIds: teamIds, categoryIds, assigneeIds: selectedUsers,
@@ -478,7 +494,6 @@ export function NewWorkOrderForm({
 
       setLoading(true);
 
-      // 🚀 CRITICAL: Update vs Create Logic based on activeId
       if (activeId) {
         console.log("🔵 Updating existing Work Order:", activeId);
         const payload = getChangedFields(existingWorkOrder || {}, formState);

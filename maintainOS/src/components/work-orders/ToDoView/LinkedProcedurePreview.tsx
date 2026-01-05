@@ -96,6 +96,7 @@ export function LinkedProcedurePreview({ selectedWorkOrder }: LinkedProcedurePre
       return; 
     }
 
+    // Allow saving null/empty strings if needed, but skip undefined
     if (value === undefined) return;
 
     const payload = {
@@ -107,6 +108,8 @@ export function LinkedProcedurePreview({ selectedWorkOrder }: LinkedProcedurePre
 
     try {
       await dispatch(submitFieldResponse(payload)).unwrap();
+      // Optional: Toast for success could be added here, 
+      // but might be too noisy for every blur event.
     } catch (error: any) {
       console.error("❌ Save failed:", error);
       toast.error("Failed to save progress");
