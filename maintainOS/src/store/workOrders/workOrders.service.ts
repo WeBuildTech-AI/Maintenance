@@ -224,7 +224,7 @@ export const workOrderService = {
   },
 
   getFieldResponses: async (submissionId: string) => {
-    const res = await api.get(`/procedure-field-responses?submissionId=${submissionId}`);
+    const res = await api.get(`/procedure-field-responses/submission/${submissionId}`);
     return res.data; 
   },
 

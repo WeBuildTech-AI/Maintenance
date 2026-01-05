@@ -22,7 +22,11 @@ export const locationService = {
   },
 
   fetchLocationsName: async (): Promise<LocationResponse[]> => {
-    const res = await api.get("/locations/summary");
+  const res = await api.get("/locations/summary");
+    return res.data;
+  },
+  fetchParentLocations: async (): Promise<LocationResponse[]> => {
+  const res = await api.get("/locations/summary/parents");
     return res.data;
   },
 

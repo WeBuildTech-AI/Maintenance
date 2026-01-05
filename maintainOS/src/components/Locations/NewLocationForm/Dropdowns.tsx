@@ -80,7 +80,7 @@ export function Dropdowns({
           } else if (stage === "teams") {
             res = await teamService.fetchTeamsName();
           } else {
-            res = await locationService.fetchLocationsName();
+            res = await locationService.fetchParentLocations();
           }
           setFetchedOptions(res);
           setHasFetched(true);
