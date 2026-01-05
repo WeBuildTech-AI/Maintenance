@@ -1,3 +1,4 @@
+// NewPartForm.tsx
 "use client";
 
 import * as React from "react";
@@ -14,7 +15,6 @@ import PartType from "./PartType";
 import toast from "react-hot-toast";
 import PartVendorsSection from "./PartVendorsSection";
 import type { BUD } from "../../utils/BlobUpload";
-//
 
 export function NewPartForm({
   newItem,
@@ -122,22 +122,43 @@ export function NewPartForm({
       const currentImages = Array.isArray(partImages) ? partImages : [];
       const currentDocs = Array.isArray(partDocs) ? partDocs : [];
 
-      // Locations Logic (Construct the new location array to compare)
+      // ---------------------------------------------------------
+      // 🛠️ FIXED LOCATIONS LOGIC
+      // ---------------------------------------------------------
+      // Capture the PRIMARY location from the flat form fields (updated by PartLocationSection)
+      const primaryLocationUpdate = {
+        locationId: newItem.locationId || "",
+        area: newItem.area || "",
+        unitsInStock: Number(newItem.unitInStock ?? 0),
+        minimumInStock: Number(newItem.minInStock ?? 0),
+      };
+
       let currentLocations: any[] = [];
+
       if (newItem.locations && newItem.locations.length > 0) {
-        currentLocations = newItem.locations.map((loc: any) => ({
-          locationId: loc.locationId || loc.id,
-          area: loc.area || "",
-          unitsInStock: Number(loc.unitsInStock ?? loc.unitInStock ?? 0),
-          minimumInStock: Number(loc.minimumInStock ?? loc.minInStock ?? 0),
-        }));
-      } else if (newItem.locationId || newItem.area) {
-        currentLocations.push({
-          locationId: newItem.locationId || "",
-          area: newItem.area || "",
-          unitsInStock: Number(newItem.unitInStock || 0),
-          minimumInStock: Number(newItem.minInStock || 0),
+        // If locations exist, we update the FIRST one with the flat form data
+        currentLocations = newItem.locations.map((loc: any, index: number) => {
+            if (index === 0) {
+                // Override first location with active form inputs
+                return {
+                    ...loc,
+                    ...primaryLocationUpdate,
+                    locationId: primaryLocationUpdate.locationId // Explicitly ensure ID is updated
+                };
+            }
+            // Return other locations unchanged (normalized)
+            return {
+                locationId: loc.locationId || loc.id,
+                area: loc.area || "",
+                unitsInStock: Number(loc.unitsInStock ?? 0),
+                minimumInStock: Number(loc.minimumInStock ?? 0),
+            };
         });
+      } else {
+         // If no locations array, create one from flat fields if locationId is present
+         if (primaryLocationUpdate.locationId) {
+             currentLocations.push(primaryLocationUpdate);
+         }
       }
 
       // ---------------------------------------------------------
@@ -157,7 +178,7 @@ export function NewPartForm({
           payload.partsType = currentPartsType;
         }
         
-        // Check Asset IDs (Compare with original asset list IDs)
+        // Check Asset IDs
         const originalAssetIds = original.assets?.map((a: any) => a.id) || original.assetIds || [];
         if (!areArraysEqual(currentAssetIds, originalAssetIds)) {
           payload.assetIds = currentAssetIds;
@@ -176,10 +197,6 @@ export function NewPartForm({
         }
 
         // --- Complex Objects (Locations) ---
-        // For locations, strict equality is hard. We stringify to check "dirty".
-        // Note: original locations might have extra fields, so this is a simplified dirty check.
-        // Usually safe to send locations if user touched the form, or deep compare specific fields.
-        // Simplest strategy: If the constructed 'currentLocations' differs from a reconstructed 'original', send it.
         const originalLocsMapped = (original.locations || []).map((loc: any) => ({
              locationId: loc.locationId || loc.id,
              area: loc.area || "",
@@ -187,6 +204,7 @@ export function NewPartForm({
              minimumInStock: Number(loc.minimumInStock ?? 0),
         }));
         
+        // Compare constructed currentLocations vs original
         if (JSON.stringify(currentLocations) !== JSON.stringify(originalLocsMapped)) {
             payload.locations = currentLocations;
         }
