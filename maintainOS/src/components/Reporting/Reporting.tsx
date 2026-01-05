@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { Dialog, DialogContent } from "../ui/dialog";
 import { cn } from "../ui/utils";
 import { WorkOrdersTab } from "./WorkOrders";
 import ReportingFilterBar from "./ReportingFilterBar";
@@ -35,6 +35,87 @@ export function Reporting() {
   const [selectedDetailChart, setSelectedDetailChart] = useState<string | null>(
     null
   );
+  const [startDateError, setStartDateError] = useState<string | null>(null);
+  const [endDateError, setEndDateError] = useState<string | null>(null);
+
+  // Validate date format MM/DD/YYYY
+  const isValidDateFormat = (dateStr: string): boolean => {
+    const regex = /^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])\/(19|20)\d{2}$/;
+    return regex.test(dateStr);
+  };
+
+  // Parse date string to Date object
+  const parseDate = (dateStr: string): Date | null => {
+    if (!isValidDateFormat(dateStr)) return null;
+    const [month, day, year] = dateStr.split('/').map(Number);
+    const date = new Date(year, month - 1, day);
+    // Check if date is valid (handles cases like 02/31/2025)
+    if (date.getMonth() !== month - 1 || date.getDate() !== day) {
+      return null;
+    }
+    return date;
+  };
+
+  // Format input as user types (auto-add slashes)
+  const formatDateInput = (value: string): string => {
+    // Remove non-numeric characters except slashes
+    const cleaned = value.replace(/[^0-9/]/g, '');
+    const numbers = cleaned.replace(/\//g, '');
+    
+    if (numbers.length <= 2) {
+      return numbers;
+    } else if (numbers.length <= 4) {
+      return `${numbers.slice(0, 2)}/${numbers.slice(2)}`;
+    } else {
+      return `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4, 8)}`;
+    }
+  };
+
+  // Handle start date input change
+  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatDateInput(e.target.value);
+    setTempStartDate(formatted);
+    
+    if (formatted.length === 10) {
+      const date = parseDate(formatted);
+      if (date) {
+        setStartDateError(null);
+        // Sync calendar to show this month
+        setSelectedMonth(date.getMonth());
+        setSelectedYear(date.getFullYear());
+      } else {
+        setStartDateError('Invalid date');
+      }
+    } else if (formatted.length > 0 && formatted.length < 10) {
+      setStartDateError(null); // Clear error while typing
+    } else {
+      setStartDateError(null);
+    }
+  };
+
+  // Handle end date input change
+  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatDateInput(e.target.value);
+    setTempEndDate(formatted);
+    
+    if (formatted.length === 10) {
+      const date = parseDate(formatted);
+      if (date) {
+        setEndDateError(null);
+        // Validate end date is after start date
+        const startDateParsed = parseDate(tempStartDate);
+        if (startDateParsed && date < startDateParsed) {
+          setEndDateError('End date must be after start date');
+        }
+      } else {
+        setEndDateError('Invalid date');
+      }
+    } else if (formatted.length > 0 && formatted.length < 10) {
+      setEndDateError(null); // Clear error while typing
+    } else {
+      setEndDateError(null);
+    }
+  };
 
   const tabs: { id: TabType; label: string; icon?: React.ReactNode }[] = [
     { id: "work-orders", label: "Work Orders" },
@@ -101,8 +182,27 @@ export function Reporting() {
   };
 
   const handleApplyDates = () => {
-    if (tempStartDate) setStartDate(tempStartDate);
-    if (tempEndDate) setEndDate(tempEndDate);
+    // Validate both dates before applying
+    const startValid = parseDate(tempStartDate);
+    const endValid = parseDate(tempEndDate);
+    
+    if (!startValid) {
+      setStartDateError('Please enter a valid start date');
+      return;
+    }
+    if (!endValid) {
+      setEndDateError('Please enter a valid end date');
+      return;
+    }
+    if (endValid < startValid) {
+      setEndDateError('End date must be after start date');
+      return;
+    }
+    
+    setStartDate(tempStartDate);
+    setEndDate(tempEndDate);
+    setStartDateError(null);
+    setEndDateError(null);
     setShowDatePicker(false);
   };
 
@@ -196,14 +296,14 @@ export function Reporting() {
               {startDate} - {endDate}
             </Button>
 
-            <Button
+            {/* <Button
               variant="outline"
               size="sm"
               className="flex items-center gap-2"
             >
               This Week
               <ChevronDown className="h-4 w-4" />
-            </Button>
+            </Button> */}
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -255,7 +355,7 @@ export function Reporting() {
       {/* Filters */}
       <div
         className="border-b border-border bg-white px-6 py-3"
-        style={{ position: "relative", zIndex: 999, overflow: "visible" }}
+        style={{ position: "relative", overflow: "visible" }}
       >
         <ReportingFilterBar onParamsChange={handleFilterChange} />
       </div>
@@ -296,33 +396,46 @@ export function Reporting() {
 
       {/* Date Picker Dialog */}
       <Dialog open={showDatePicker} onOpenChange={setShowDatePicker}>
-        <DialogContent className="max-w-md p-4" style={{ zIndex: 9999 }}>
-          <DialogHeader>
-            <DialogTitle className="text-base">Select Date Range</DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-3">
-            {/* Date Inputs */}
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={tempStartDate}
-                readOnly
-                className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm bg-gray-50"
-                placeholder="Start date"
-              />
-              <span className="text-gray-400 text-sm">to</span>
-              <input
-                type="text"
-                value={tempEndDate}
-                readOnly
-                className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm bg-gray-50"
-                placeholder="End date"
-              />
-            </div>
+        <DialogContent className="max-w-md p-0 overflow-hidden" style={{ zIndex: 9999 }}>
+          <div className="p-4">
+            <div className="text-base font-semibold mb-3">Select Date Range</div>
 
             {/* Calendar */}
-            <div className="border rounded-lg p-3">
+            <div className="p-0">
+            {/* Date Inputs */}
+            <div className="flex items-center gap-2 mb-3">
+              <div className="flex-1">
+                <input
+                  type="text"
+                  value={tempStartDate}
+                  onChange={handleStartDateChange}
+                  maxLength={10}
+                  className={`w-full px-2 py-1 border rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    startDateError ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="MM/DD/YYYY"
+                />
+                {startDateError && (
+                  <p className="text-xs text-red-500 mt-1">{startDateError}</p>
+                )}
+              </div>
+              <span className="text-gray-400 text-sm">to</span>
+              <div className="flex-1">
+                <input
+                  type="text"
+                  value={tempEndDate}
+                  onChange={handleEndDateChange}
+                  maxLength={10}
+                  className={`w-full px-2 py-1 border rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    endDateError ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="MM/DD/YYYY"
+                />
+                {endDateError && (
+                  <p className="text-xs text-red-500 mt-1">{endDateError}</p>
+                )}
+              </div>
+            </div>
               {/* Month/Year Selector */}
               <div className="flex items-center justify-between mb-3">
                 <button
@@ -370,15 +483,15 @@ export function Reporting() {
 
               {/* Calendar Grid */}
               <div className="grid grid-cols-7 gap-1">{renderCalendar()}</div>
-            </div>
 
-            {/* Timezone */}
-            <div className="text-xs text-gray-500 text-center pt-2">
-              Time zone: Asia/Kolkata
+              {/* Timezone */}
+              <div className="text-xs text-gray-500 text-center pt-2">
+                Time zone: Asia/Kolkata
+              </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex justify-end gap-3 pt-4 border-t">
+            <div className="flex justify-end gap-3 pt-4">
               <Button
                 variant="outline"
                 onClick={() => {
