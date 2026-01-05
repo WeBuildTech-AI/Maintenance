@@ -204,8 +204,8 @@ export function PartDetails({
         description: partData.description || "",
         unitCost: partData.unitCost ? Number(partData.unitCost) : 0,
 
-        // Handle QR Code (Empty or Copy)
-        qrCode: "", // Usually a new part gets a new/empty QR code
+        // ❌ REMOVED: qrCode field so it doesn't send "" (backend should handle or ignore)
+        // qrCode: "", 
 
         // ✅ Arrays: Extract IDs properly from objects
         partsType: Array.isArray(partData.partsType)
