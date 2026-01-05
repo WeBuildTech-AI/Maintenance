@@ -5,6 +5,7 @@ import { WorkOrdersRepeatingChart } from "./Non-repeatingVsRepeatingChart";
 import { WorkOrdersByTypeChart } from "./WorkOrdersByTypeChart";
 import { TimeVsCostChart } from "./TimeVsCostChart";
 import { TimeToCompleteChart } from "./TimeToCompleteChart";
+import { InspectionCheckChart } from "./InspectionCheckChart";
 
 interface WorkOrdersTabProps {
   filters: Record<string, any>;
@@ -60,6 +61,11 @@ export function WorkOrdersTab({
         filters={filters}
         dateRange={dateRange}
         onNavigateToDetails={() => onNavigateToDetails?.("time-to-complete")}
+      />
+      <InspectionCheckChart
+        filters={filters}
+        dateRange={dateRange}
+        onNavigateToDetails={() => onNavigateToDetails?.("inspection-check")}
       />
     </div>
   );

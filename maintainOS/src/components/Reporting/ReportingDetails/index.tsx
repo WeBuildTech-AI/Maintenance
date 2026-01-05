@@ -15,6 +15,7 @@ import { PriorityDetail } from "./PriorityDetail";
 import { WorkOrdersByTypeDetail } from "./WorkOrdersByTypeDetail";
 import { TimeVsCostDetail } from "./TimeVsCostDetail";
 import { TimeToCompleteDetail } from "./TimeToCompleteDetail";
+import { InspectionCheckDetail } from "./InspectionCheckDetail";
 
 interface ReportingDetailsProps {
   filters: Record<string, any>;
@@ -29,7 +30,8 @@ type ChartType =
   | "priority"
   | "work-orders-by-type"
   | "time-vs-cost"
-  | "time-to-complete";
+  | "time-to-complete"
+  | "inspection-check";
 
 const chartOptions = [
   { id: "created-vs-completed" as ChartType, label: "Created vs. Completed" },
@@ -42,6 +44,7 @@ const chartOptions = [
   { id: "work-orders-by-type" as ChartType, label: "Work Orders by Type" },
   { id: "time-vs-cost" as ChartType, label: "Time vs. Cost Reports" },
   { id: "time-to-complete" as ChartType, label: "Time to Complete" },
+  { id: "inspection-check" as ChartType, label: "Inspection Check" },
 ];
 
 export function ReportingDetails({
@@ -149,6 +152,9 @@ export function ReportingDetails({
         )}
         {selectedChart === "time-to-complete" && (
           <TimeToCompleteDetail filters={filters} dateRange={dateRange} />
+        )}
+        {selectedChart === "inspection-check" && (
+          <InspectionCheckDetail filters={filters} dateRange={dateRange} />
         )}
       </div>
     </div>
