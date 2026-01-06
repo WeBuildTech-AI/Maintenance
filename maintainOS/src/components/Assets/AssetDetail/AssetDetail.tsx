@@ -1,16 +1,12 @@
 import {
   useState,
   type FC,
-  type Dispatch,
-  type SetStateAction,
   useEffect,
 } from "react";
 import { AssetDetailContent } from "./AssetDetailContent";
 import { AssetDetailHeader } from "./AssetDetailHeader";
-import { useSelector } from "react-redux";
-import type { RootState } from "../../../store";
 import { MapPin } from "lucide-react";
-import { formatDate, formatFriendlyDate } from "../../utils/Date";
+import { formatDate } from "../../utils/Date";
 import { workOrderService } from "../../../store/workOrders";
 
 interface Asset {
@@ -18,7 +14,9 @@ interface Asset {
   name: string;
   updatedAt: string;
   createdAt: string;
-  location: any[];
+  location: any;
+  createdBy: string;
+  updatedBy: string;
   [key: string]: any;
 }
 
@@ -26,7 +24,7 @@ interface AssetDetailProps {
   asset: any;
   onEdit: (asset: Asset) => void;
   onDelete: (id: string | number) => void;
-  onCopy: (asset: Asset) => void; // ✅ Added onCopy prop
+  onCopy: (asset: Asset) => void;
   fetchAssetsData: () => void;
   setSeeMoreAssetStatus: (value: boolean) => void;
   onClose: () => void;
@@ -38,7 +36,7 @@ export const AssetDetail: FC<AssetDetailProps> = ({
   asset,
   onEdit,
   onDelete,
-  onCopy, // Destructure onCopy
+  onCopy,
   fetchAssetsData,
   setSeeMoreAssetStatus,
   onClose,
@@ -46,24 +44,35 @@ export const AssetDetail: FC<AssetDetailProps> = ({
   showDeleted,
 }) => {
   const [showHistory, setShowHistory] = useState<boolean>(false);
-  const user = useSelector((state: RootState) => state.auth.user);
-  const [createdUser, setCreatedUser] = useState("");
+  const [createdUserName, setCreatedUserName] = useState<string>("Loading...");
+  const [updatedUserName, setUpdatedUserName] = useState<string>("Loading...");
 
-  const fetchUser = async () => {
-    let res: any;
+  const fetchUserNames = async () => {
     try {
-      res = await workOrderService.fetchUserById(asset.createdBy);
-      setCreatedUser(res.fullName);
+      // Fetch Creator Name
+      if (asset.createdBy) {
+        const creatorRes: any = await workOrderService.fetchUserById(asset.createdBy);
+        setCreatedUserName(creatorRes.fullName || "Unknown User");
+      }
+      
+      // Fetch Updater Name
+      if (asset.updatedBy) {
+        const updaterRes: any = await workOrderService.fetchUserById(asset.updatedBy);
+        setUpdatedUserName(updaterRes.fullName || "Unknown User");
+      }
     } catch (err) {
-      console.log(err);
+      console.error("Error fetching user details:", err);
+      setCreatedUserName("Error loading");
+      setUpdatedUserName("Error loading");
     }
   };
+
   useEffect(() => {
-    // fetchUser();
-  });
+    fetchUserNames();
+  }, [asset.createdBy, asset.updatedBy]);
 
   const renderInitials = (text: string) =>
-    text
+    text && text !== "Loading..."
       ? text
           .split(" ")
           .map((p) => p[0])
@@ -73,14 +82,13 @@ export const AssetDetail: FC<AssetDetailProps> = ({
       : "NA";
 
   return (
-    //  Maintained your original styling exactly
     <div className="h-full border mr-3 mb-2 flex flex-col min-h-0">
       <AssetDetailHeader
         asset={asset}
         setShowHistory={setShowHistory}
         onEdit={onEdit}
         onDelete={onDelete}
-        onCopy={onCopy} // ✅ Passed to Header
+        onCopy={onCopy}
         onClose={onClose}
         restoreData={restoreData}
         fetchAssetsData={fetchAssetsData}
@@ -89,16 +97,13 @@ export const AssetDetail: FC<AssetDetailProps> = ({
 
       {showHistory ? (
         <div className="flex items-start gap-3 p-3 border-b border-gray-100">
-          {/* Avatar */}
           <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-semibold text-blue-600">
-            {renderInitials(createdUser)}
+            {renderInitials(createdUserName)}
           </div>
 
-          {/* Content */}
           <div className="flex-1">
-            {/* Header */}
             <div className="text-sm text-gray-800">
-              <span className="font-semibold">{createdUser}</span>
+              <span className="font-semibold">{createdUserName}</span>
               <span className="text-gray-500 ml-2">
                 {formatDate(asset.createdAt)}
               </span>
@@ -106,12 +111,11 @@ export const AssetDetail: FC<AssetDetailProps> = ({
 
             <div className="text-sm text-gray-700 mt-0.5 flex items-center">
               <span>Created the asset at location</span>
-              {/* Message */}
               {asset?.location ? (
                 <>
                   <MapPin className="w-4 h-4 text-orange-600 mx-1" />
                   <span className="font-medium">
-                    {asset.location && asset.location.name}
+                    {asset.location.name}
                   </span>
                 </>
               ) : (
@@ -125,7 +129,8 @@ export const AssetDetail: FC<AssetDetailProps> = ({
           fetchAssetsData={fetchAssetsData}
           asset={asset}
           setSeeMoreAssetStatus={setSeeMoreAssetStatus}
-          createdUser={createdUser}
+          createdUser={createdUserName}
+          updatedUser={updatedUserName}
         />
       )}
     </div>

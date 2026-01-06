@@ -63,10 +63,13 @@ function getChangedFields(
     "billingAddressId",
     "sameShipBill",
     "vendorContactIds",
+    "contactName", // ✅ ADDED: Detects changes in manual contact name
+    "phoneOrMail", // ✅ ADDED: Detects changes in manual phone/email
   ];
 
   for (const key of keysToCompare) {
     if (key === "vendorContactIds") {
+      // @ts-ignore
       if (JSON.stringify(original[key]) !== JSON.stringify(current[key])) {
         // @ts-ignore
         changes[key] = current[key];
