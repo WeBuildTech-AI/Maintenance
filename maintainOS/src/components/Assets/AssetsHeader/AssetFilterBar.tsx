@@ -9,9 +9,9 @@ const ALL_FILTERS = [
     icon: <Tag size={16} />,
     // 👇 Added User's Requested Options
     options: [
-      { label: "Critical", value: "high" },
-      { label: "Important", value: "medium" }, // Assuming 'Important' maps to High, or use value: "Important" if backend expects that
-      { label: "Normal", value: "low" }   // Assuming 'Normal' maps to Medium, or use value: "Normal"
+      { label: "High", value: "high" },
+      { label: "Medium", value: "medium" }, // Assuming 'Important' maps to High, or use value: "Important" if backend expects that
+      { label: "Low", value: "low" }   // Assuming 'Normal' maps to Medium, or use value: "Normal"
     ]
   },
   { 

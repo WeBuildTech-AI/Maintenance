@@ -55,7 +55,8 @@ const allAvailableColumns = [
   "Type",
   "Asset",
   "Location",
-  "Last Reading",
+  "Last Reading",    // Keeps the Frequency (existing logic)
+  "Last Reading On", // ✅ NEW: Shows Date dd/mm/yyyy
   "Status",
   "Updated At",
   "Created At",
@@ -92,6 +93,17 @@ const columnConfig: {
     dataIndex: "lastReading",
     width: 150,
     sorter: (a, b) => (a.lastReading || "").localeCompare(b.lastReading || ""),
+  },
+  // ✅ NEW COLUMN CONFIGURATION
+  "Last Reading On": {
+    dataIndex: "lastReadingOn",
+    width: 160,
+    // Sorts using the raw ISO string for accuracy
+    sorter: (a, b) => {
+      const dateA = a.lastReadingOnRaw ? new Date(a.lastReadingOnRaw).getTime() : 0;
+      const dateB = b.lastReadingOnRaw ? new Date(b.lastReadingOnRaw).getTime() : 0;
+      return dateA - dateB;
+    },
   },
   Status: {
     dataIndex: "status",
@@ -166,11 +178,8 @@ export function MeterTable({
       const updatedMeter = meter.find((m) => m.id === selectedMeterTable.key);
       
       if (updatedMeter) {
-        // Compare updatedAt to determine if we need to refresh the modal state
-        // This prevents infinite loops if the object reference is different but data is same
         if (selectedMeterTable.fullMeter.updatedAt !== updatedMeter.updatedAt) {
           
-          // Re-construct the table row object structure (matching dataSource logic)
           const updatedRecord = {
             key: updatedMeter.id,
             id: updatedMeter.id || "—",
@@ -182,11 +191,16 @@ export function MeterTable({
               updatedMeter.readingFrequency?.time && updatedMeter.readingFrequency?.interval
                 ? `${updatedMeter.readingFrequency.time} ${updatedMeter.readingFrequency.interval}`
                 : "—",
+            // ✅ Handle new field in sync
+            lastReadingOnRaw: updatedMeter.last_reading?.timestamp || null,
+            lastReadingOn: updatedMeter.last_reading?.timestamp
+                ? new Date(updatedMeter.last_reading.timestamp).toLocaleDateString("en-GB")
+                : "—",
             status: updatedMeter.status || "—",
             isOverdue: updatedMeter.isOverdue || false,
             createdAt: updatedMeter.createdAt || "—",
             updatedAt: updatedMeter.updatedAt || "—",
-            fullMeter: updatedMeter, // Crucial: This updates the data passed to AssetTableModal
+            fullMeter: updatedMeter, 
           };
 
           setSelectedMeterTable(updatedRecord);
@@ -239,14 +253,9 @@ export function MeterTable({
     setIsDeleting(true);
 
     try {
-      // Assuming your service has a batchDeleteMeter function
       await meterService.batchDeleteMeter(selectedMeterIds);
-
       toast.success("Meters deleted successfully!");
-
       setSelectedMeterIds([]);
-
-      // Call the new prop to refresh the list
       fetchMeters();
     } catch (err) {
       console.error("Error bulk deleting meters:", err);
@@ -281,17 +290,14 @@ export function MeterTable({
     sortColumn: string;
     visibleColumns: string[];
   }) => {
-    // Apply visible columns
     setVisibleColumns(settings.visibleColumns);
 
-    // Apply showDeleted toggle from modal and refresh list
     try {
       setShowDeleted(settings.showDeleted);
     } catch (e) {
       console.warn("setShowDeleted is not a function", e);
     }
 
-    // Persistence Logic
     if (typeof window !== "undefined") {
       const hasSameLength =
         settings.visibleColumns.length === allAvailableColumns.length;
@@ -311,10 +317,8 @@ export function MeterTable({
       }
     }
 
-    // Close modal
     setIsSettingsModalOpen(false);
 
-    // Refresh meters to reflect the new showDeleted value
     if (typeof fetchMeters === "function") {
       fetchMeters();
     }
@@ -340,7 +344,6 @@ export function MeterTable({
             </div>
           );
         }
-        // --- Bulk Edit Header ---
         return (
           <div className="flex items-center gap-4 h-full">
             <input
@@ -354,7 +357,6 @@ export function MeterTable({
               Edit {selectedCount} {selectedCount === 1 ? "Item" : "Items"}
             </span>
 
-            {/* Delete Button */}
             <Tooltip text="Delete">
               <button
                 onClick={handleDelete}
@@ -447,6 +449,10 @@ export function MeterTable({
           );
         } else if (colName === "Created At" || colName === "Updated At") {
           renderFunc = (text: string) => formatDateOnly(text) || "—";
+        } 
+        // ✅ NEW: Handle specific formatting for Last Reading On if needed
+        else if (colName === "Last Reading On") {
+             renderFunc = (text: string) => text || "—";
         }
 
         return {
@@ -488,6 +494,13 @@ export function MeterTable({
         m.readingFrequency?.time && m.readingFrequency?.interval
           ? `${m.readingFrequency.time} ${m.readingFrequency.interval}`
           : "—",
+      
+      // ✅ MAP THE NEW FIELD
+      // API provides last_reading: { timestamp: "..." }
+      lastReadingOnRaw: m.last_reading?.timestamp || null, // Stored for sorting
+      lastReadingOn: m.last_reading?.timestamp 
+        ? new Date(m.last_reading.timestamp).toLocaleDateString("en-GB") // Formats as dd/mm/yyyy
+        : "—",
 
       status: m.status || "—",
       isOverdue: m.isOverdue || false,

@@ -59,10 +59,9 @@ export const CommentsSection = forwardRef<
     }
   }, [selectedWorkOrder]);
 
-  // ✅ Fetch Data (Triggered by mount OR refreshTrigger)
+  // Fetch Data
   useEffect(() => {
     if (selectedWorkOrder?.id) {
-      // Only show loader on initial load, not on background refresh
       if (!refreshTrigger || refreshTrigger === 0) setIsLoading(true);
 
       Promise.all([
@@ -76,10 +75,9 @@ export const CommentsSection = forwardRef<
             if (Array.isArray(res)) setLocalLogs(res);
           }),
       ])
-        .catch((err) => console.error("Failed to fetch logs/comments:", err))
         .finally(() => setIsLoading(false));
     }
-  }, [dispatch, selectedWorkOrder?.id, refreshTrigger]); // ✅ refreshTrigger ensures updates run
+  }, [dispatch, selectedWorkOrder?.id, refreshTrigger]);
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
@@ -279,21 +277,7 @@ export const CommentsSection = forwardRef<
                 key={`${item.type}-${item.id || index}`}
                 className="flex gap-3 items-start group"
               >
-                {/* AVATAR */}
-                <div
-                  className="w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center 
-                  text-white font-semibold text-sm shadow-sm overflow-hidden bg-blue-600"
-                >
-                  {authorAvatar ? (
-                    <img
-                      src={authorAvatar}
-                      alt={authorName}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    initials
-                  )}
-                </div>
+                
 
                 {/* CONTENT */}
                 <div className="flex-1">
