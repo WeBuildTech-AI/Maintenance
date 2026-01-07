@@ -10,6 +10,7 @@ import {
   fetchAutomationById,
   fetchAutomations,
   updateAutomation,
+  switchAutomation,
 } from "./automations.thunks";
 
 const initialState: AutomationsState = {
@@ -109,6 +110,26 @@ const automationsSlice = createSlice({
         }
       })
       .addCase(deleteAutomation.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(switchAutomation.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(switchAutomation.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.automations.findIndex(
+          (automation) => automation.id === action.payload
+        );
+        if (index !== -1) {
+          state.automations[index].isEnabled = !state.automations[index].isEnabled;
+        }
+        if (state.selectedAutomation?.id === action.payload) {
+          state.selectedAutomation.isEnabled = !state.selectedAutomation.isEnabled;
+        }
+      })
+      .addCase(switchAutomation.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

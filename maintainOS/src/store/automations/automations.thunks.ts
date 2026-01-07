@@ -89,3 +89,17 @@ export const deleteAutomation = createAsyncThunk(
     }
   }
 );
+
+export const switchAutomation = createAsyncThunk(
+  "automations/switchAutomation",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      await automationService.switchAutomation(id);
+      return id;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to switch automation"
+      );
+    }
+  }
+);

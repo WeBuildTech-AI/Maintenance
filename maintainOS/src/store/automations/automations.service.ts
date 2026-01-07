@@ -5,17 +5,18 @@ import type {
   CreateAutomationData,
   UpdateAutomationData,
 } from "./automations.types";
+import api from "../auth/auth.service";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 export const automationService = {
   fetchAutomations: async (): Promise<AutomationResponse[]> => {
-    const res = await axios.get(`${API_URL}/automations`);
+    const res = await api.get(`${API_URL}/automations`);
     return res.data;
   },
 
   fetchAutomationById: async (id: string): Promise<AutomationResponse> => {
-    const res = await axios.get(`${API_URL}/automations/${id}`);
+    const res = await api.get(`${API_URL}/automations/${id}`);
     return res.data;
   },
 
@@ -36,5 +37,9 @@ export const automationService = {
 
   deleteAutomation: async (id: string): Promise<void> => {
     await axios.delete(`${API_URL}/automations/${id}`);
+  },
+
+  switchAutomation: async (id: string): Promise<void> => {
+    await api.patch(`${API_URL}/automations/${id}/switch-enable`);
   },
 };

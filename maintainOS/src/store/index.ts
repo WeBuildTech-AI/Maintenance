@@ -5,7 +5,7 @@ import userReducer from "./userSlice";
 // import { usersReducer } from "./users";
 // import { organizationsReducer } from "./organization";
 // import { assetsReducer } from "./assets";
-// import { automationsReducer } from "./automations";
+import { automationsReducer } from "./automations";
 // import { categoriesReducer } from "./categories";
 // import { metersReducer } from "./meters";
 // import { partsReducer } from "./parts";
@@ -28,10 +28,10 @@ export const store = configureStore({
     auth: authReducer,
     messaging : messageReducer,
     workOrders: workOrdersReducer,
+    automations: automationsReducer,
     // users: usersReducer,
     // organizations: organizationsReducer,
     // assets: assetsReducer,
-    // automations: automationsReducer,
     // categories: categoriesReducer,
     // meters: metersReducer,
     // parts: partsReducer,
