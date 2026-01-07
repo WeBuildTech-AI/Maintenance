@@ -3,19 +3,18 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Card, CardContent } from "../ui/card";
 import { Avatar as ShadCNAvatar, AvatarFallback } from "../ui/avatar";
 import { Settings, Trash2, Loader2 } from "lucide-react";
-import { Tooltip } from "../ui/tooltip"; // ShadCN Tooltip
+import { Tooltip } from "../ui/tooltip";
 import SettingsModal from "../utils/SettingsModal";
 import { formatDateOnly } from "../utils/Date";
-import { Table, Avatar, Tooltip as AntTooltip, Collapse } from "antd";
+import { Table } from "antd";
 import type { TableProps, TableColumnType } from "antd";
 import toast from "react-hot-toast";
 import { meterService } from "../../store/meters";
 import AssetTableModal from "../utils/AssetTableModal";
+import { useNavigate } from "react-router-dom"; // ✅ Import Navigation Hook
 
 // --- Constants ---
 const STORAGE_KEY_METER_COLUMNS = "meter_table_visible_columns";
-
-type Sorter = Parameters<NonNullable<TableProps<any>["onChange"]>>[2];
 
 const mapAntSortOrder = (order: "asc" | "desc"): "ascend" | "descend" =>
   order === "asc" ? "ascend" : "descend";
@@ -23,7 +22,7 @@ const mapAntSortOrder = (order: "asc" | "desc"): "ascend" | "descend" =>
 // Row Styling
 const tableStyles = `
   .selected-row-class > td {
-    background-color: #f0f9ff !important; /* Primary/5 equivalent */
+    background-color: #f0f9ff !important;
   }
   .selected-row-class:hover > td {
     background-color: #f9fafb !important;
@@ -37,17 +36,16 @@ const tableStyles = `
     background-color: #f9fafb !important;
   }
   .ant-table-thead > tr > th {
-    background-color: #f9fafb !important; /* Header BG */
+    background-color: #f9fafb !important;
     text-transform: uppercase;
     font-size: 12px;
     font-weight: 600;
     color: #6b7280;
   }
   .ant-table-tbody > tr > td {
-    border-bottom: 1px solid #f3f4f6; /* Lighter border */
+    border-bottom: 1px solid #f3f4f6;
   }
 `;
-// --- End Helper Functions ---
 
 // Column Configuration
 const allAvailableColumns = [
@@ -55,8 +53,8 @@ const allAvailableColumns = [
   "Type",
   "Asset",
   "Location",
-  "Last Reading",    // Keeps the Frequency (existing logic)
-  "Last Reading On", // ✅ NEW: Shows Date dd/mm/yyyy
+  "Last Reading",
+  "Last Reading On",
   "Status",
   "Updated At",
   "Created At",
@@ -94,11 +92,9 @@ const columnConfig: {
     width: 150,
     sorter: (a, b) => (a.lastReading || "").localeCompare(b.lastReading || ""),
   },
-  // ✅ NEW COLUMN CONFIGURATION
   "Last Reading On": {
     dataIndex: "lastReadingOn",
     width: 160,
-    // Sorts using the raw ISO string for accuracy
     sorter: (a, b) => {
       const dateA = a.lastReadingOnRaw ? new Date(a.lastReadingOnRaw).getTime() : 0;
       const dateB = b.lastReadingOnRaw ? new Date(b.lastReadingOnRaw).getTime() : 0;
@@ -141,7 +137,8 @@ export function MeterTable({
   showDeleted: boolean;
   setShowDeleted: (v: boolean) => void;
 }) {
-  // --- 1. Production Level State Initialization ---
+  const navigate = useNavigate(); // ✅ Initialize Navigation
+
   const [visibleColumns, setVisibleColumns] = useState<string[]>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -161,37 +158,30 @@ export function MeterTable({
 
   const [sortType, setSortType] = useState<string>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [selectedMeterTable, setSelectedMeterTable] = useState<any | null>(
-    null
-  );
+  const [selectedMeterTable, setSelectedMeterTable] = useState<any | null>(null);
   const [selectedMeterIds, setSelectedMeterIds] = useState<string[]>([]);
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
   const [isOpenMeterDetailsModal, setIsOpenMeterDetailsModal] = useState(false);
-
-  // New: Deleting state
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // ✅ NEW: Sync Effect to update Modal Data when 'meter' list changes
   useEffect(() => {
     if (selectedMeterTable && meter.length > 0) {
-      // Find the updated version of the currently open meter
       const updatedMeter = meter.find((m) => m.id === selectedMeterTable.key);
-      
       if (updatedMeter) {
         if (selectedMeterTable.fullMeter.updatedAt !== updatedMeter.updatedAt) {
-          
           const updatedRecord = {
             key: updatedMeter.id,
             id: updatedMeter.id || "—",
             name: updatedMeter.name || "—",
             meterType: updatedMeter.meterType || "—",
             asset: updatedMeter.asset?.name || "—",
+            assetId: updatedMeter.asset?.id || updatedMeter.assetId,
             location: updatedMeter.location?.name || "—",
+            locationId: updatedMeter.location?.id || updatedMeter.locationId,
             lastReading:
               updatedMeter.readingFrequency?.time && updatedMeter.readingFrequency?.interval
                 ? `${updatedMeter.readingFrequency.time} ${updatedMeter.readingFrequency.interval}`
                 : "—",
-            // ✅ Handle new field in sync
             lastReadingOnRaw: updatedMeter.last_reading?.timestamp || null,
             lastReadingOn: updatedMeter.last_reading?.timestamp
                 ? new Date(updatedMeter.last_reading.timestamp).toLocaleDateString("en-GB")
@@ -202,7 +192,6 @@ export function MeterTable({
             updatedAt: updatedMeter.updatedAt || "—",
             fullMeter: updatedMeter, 
           };
-
           setSelectedMeterTable(updatedRecord);
         }
       }
@@ -210,19 +199,12 @@ export function MeterTable({
   }, [meter, selectedMeterTable]);
 
   const renderInitials = (text: string) =>
-    text
-      .split(" ")
-      .map((p) => p[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase();
+    text.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 
-  // Selection Logic
   const allMeterIds = useMemo(() => meter.map((p) => p.id), [meter]);
   const selectedCount = selectedMeterIds.length;
   const isEditing = selectedCount > 0;
-  const areAllSelected =
-    allMeterIds.length > 0 && selectedCount === allMeterIds.length;
+  const areAllSelected = allMeterIds.length > 0 && selectedCount === allMeterIds.length;
   const isIndeterminate = selectedCount > 0 && !areAllSelected;
 
   useEffect(() => {
@@ -241,17 +223,13 @@ export function MeterTable({
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
-  // --- End Selection Logic ---
 
-  // New: Bulk Delete Handler
   const handleDelete = async () => {
     if (selectedMeterIds.length === 0) {
       toast.error("No meters selected to delete.");
       return;
     }
-
     setIsDeleting(true);
-
     try {
       await meterService.batchDeleteMeter(selectedMeterIds);
       toast.success("Meters deleted successfully!");
@@ -265,11 +243,7 @@ export function MeterTable({
     }
   };
 
-  const handleTableChange: TableProps<any>["onChange"] = (
-    pagination,
-    filters,
-    sorter
-  ) => {
+  const handleTableChange: TableProps<any>["onChange"] = (pagination, filters, sorter) => {
     const s = Array.isArray(sorter) ? sorter[0] : sorter;
     if (s && s.field && s.order) {
       setSortType(s.field as string);
@@ -283,7 +257,6 @@ export function MeterTable({
     }
   };
 
-  // --- 2. OPTIMIZED SETTINGS HANDLER ---
   const handleApplySettings = (settings: {
     resultsPerPage: number;
     showDeleted: boolean;
@@ -291,40 +264,26 @@ export function MeterTable({
     visibleColumns: string[];
   }) => {
     setVisibleColumns(settings.visibleColumns);
-
     try {
       setShowDeleted(settings.showDeleted);
     } catch (e) {
       console.warn("setShowDeleted is not a function", e);
     }
-
     if (typeof window !== "undefined") {
-      const hasSameLength =
-        settings.visibleColumns.length === allAvailableColumns.length;
-      const hasAllColumns =
-        hasSameLength &&
-        allAvailableColumns.every((col) =>
-          settings.visibleColumns.includes(col)
-        );
-
+      const hasSameLength = settings.visibleColumns.length === allAvailableColumns.length;
+      const hasAllColumns = hasSameLength && allAvailableColumns.every((col) => settings.visibleColumns.includes(col));
       if (hasAllColumns) {
         localStorage.removeItem(STORAGE_KEY_METER_COLUMNS);
       } else {
-        localStorage.setItem(
-          STORAGE_KEY_METER_COLUMNS,
-          JSON.stringify(settings.visibleColumns)
-        );
+        localStorage.setItem(STORAGE_KEY_METER_COLUMNS, JSON.stringify(settings.visibleColumns));
       }
     }
-
     setIsSettingsModalOpen(false);
-
     if (typeof fetchMeters === "function") {
       fetchMeters();
     }
   };
 
-  // Columns Definition
   const columns: TableColumnType<any>[] = useMemo(() => {
     const nameColumn: TableColumnType<any> = {
       title: () => {
@@ -356,7 +315,6 @@ export function MeterTable({
             <span className="text-sm font-medium text-gray-900">
               Edit {selectedCount} {selectedCount === 1 ? "Item" : "Items"}
             </span>
-
             <Tooltip text="Delete">
               <button
                 onClick={handleDelete}
@@ -367,11 +325,7 @@ export function MeterTable({
                     : "text-orange-600 hover:text-orange-600 cursor-pointer"
                 }`}
               >
-                {isDeleting ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <Trash2 size={16} />
-                )}
+                {isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
               </button>
             </Tooltip>
           </div>
@@ -449,10 +403,45 @@ export function MeterTable({
           );
         } else if (colName === "Created At" || colName === "Updated At") {
           renderFunc = (text: string) => formatDateOnly(text) || "—";
-        } 
-        // ✅ NEW: Handle specific formatting for Last Reading On if needed
-        else if (colName === "Last Reading On") {
+        } else if (colName === "Last Reading On") {
              renderFunc = (text: string) => text || "—";
+        }
+        
+        // ✅ CLICKABLE ASSET - Matches your VendorAssetsSection logic
+        else if (colName === "Asset") {
+          renderFunc = (text: string, record: any) => {
+            if (!text || text === "—" || !record.assetId) return text || "—";
+            return (
+              <span
+                className="text-orange-600 cursor-pointer hover:underline relative z-10"
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent row click
+                  // Matches your URL structure
+                  navigate(`/assets?assetId=${record.assetId}&page=1&limit=50`); 
+                }}
+              >
+                {text}
+              </span>
+            );
+          };
+        }
+        
+        // ✅ CLICKABLE LOCATION - Matches logic
+        else if (colName === "Location") {
+          renderFunc = (text: string, record: any) => {
+            if (!text || text === "—" || !record.locationId) return text || "—";
+            return (
+              <span
+                className="text-orange-600 cursor-pointer hover:underline relative z-10"
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent row click
+                  navigate(`/locations?locationId=${record.locationId}&page=1&limit=50`);
+                }}
+              >
+                {text}
+              </span>
+            );
+          };
         }
 
         return {
@@ -480,6 +469,7 @@ export function MeterTable({
     selectedCount,
     selectedMeterIds,
     isDeleting,
+    navigate,
   ]);
 
   const dataSource = useMemo(() => {
@@ -488,18 +478,21 @@ export function MeterTable({
       id: m.id || "—",
       name: m.name || "—",
       meterType: m.meterType || "—",
+      
       asset: m.asset?.name || "—",
+      assetId: m.asset?.id || m.assetId,
+      
       location: m.location?.name || "—",
+      locationId: m.location?.id || m.locationId,
+
       lastReading:
         m.readingFrequency?.time && m.readingFrequency?.interval
           ? `${m.readingFrequency.time} ${m.readingFrequency.interval}`
           : "—",
       
-      // ✅ MAP THE NEW FIELD
-      // API provides last_reading: { timestamp: "..." }
-      lastReadingOnRaw: m.last_reading?.timestamp || null, // Stored for sorting
+      lastReadingOnRaw: m.last_reading?.timestamp || null, 
       lastReadingOn: m.last_reading?.timestamp 
-        ? new Date(m.last_reading.timestamp).toLocaleDateString("en-GB") // Formats as dd/mm/yyyy
+        ? new Date(m.last_reading.timestamp).toLocaleDateString("en-GB") 
         : "—",
 
       status: m.status || "—",
@@ -540,7 +533,6 @@ export function MeterTable({
         </CardContent>
       </Card>
 
-      {/* Settings Modal */}
       <SettingsModal
         isOpen={isSettingsModalOpen}
         onClose={() => setIsSettingsModalOpen(false)}

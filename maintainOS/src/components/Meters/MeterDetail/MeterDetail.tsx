@@ -27,6 +27,7 @@ import { Tooltip } from "../../ui/tooltip";
 import { meterService, createMeter } from "../../../store/meters";
 import { workOrderService } from "../../../store/workOrders";
 import { NewMeterForm } from "../NewMeterForm/NewMeterForm";
+import { useNavigate } from "react-router-dom"; // ✅ Import
 
 export function MeterDetail({
   selectedMeter,
@@ -38,15 +39,13 @@ export function MeterDetail({
   onClose,
 }: any) {
   const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate(); // ✅ Hook
   const user = useSelector((state: RootState) => state.auth.user);
   
-  // ✅ State to store fetched names
   const [createdUserName, setCreatedUserName] = useState("Unknown");
   const [updatedUserName, setUpdatedUserName] = useState("Unknown");
-  
   const [openMeterDeleteModal, setOpenMeterDeleteModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  
   const modalRef = React.useRef<HTMLDivElement>(null);
 
   const handleRestoreData = async () => {
@@ -59,30 +58,17 @@ export function MeterDetail({
     }
   };
 
-  // ✅ FIX: Fetch BOTH Created By and Updated By users
   const fetchMeterUsers = async () => {
     try {
-      // 1. Fetch Creator
       if (selectedMeter.createdBy) {
         const res = await workOrderService.fetchUserById(selectedMeter.createdBy);
         setCreatedUserName(res.fullName || "Unknown");
       } else {
         setCreatedUserName("Unknown");
       }
-
-      // 2. Fetch Updater (Only if updatedBy exists)
       if (selectedMeter.updatedBy) {
-        // Optimization: If createdBy == updatedBy, don't fetch twice
-        if (selectedMeter.updatedBy === selectedMeter.createdBy) {
-           // We can rely on the state set above, but safely we can just set it here too if we want, 
-           // usually simpler to just fetch or reuse the logic. 
-           // For simplicity and speed, let's just fetch it to be sure.
-           const res = await workOrderService.fetchUserById(selectedMeter.updatedBy);
-           setUpdatedUserName(res.fullName || "Unknown");
-        } else {
-           const res = await workOrderService.fetchUserById(selectedMeter.updatedBy);
-           setUpdatedUserName(res.fullName || "Unknown");
-        }
+          const res = await workOrderService.fetchUserById(selectedMeter.updatedBy);
+          setUpdatedUserName(res.fullName || "Unknown");
       } else {
         setUpdatedUserName("Unknown");
       }
@@ -215,7 +201,11 @@ export function MeterDetail({
 
           <div className="flex items-center gap-4 text-muted-foreground">
             {selectedMeter?.assetId && (
-              <div className="flex items-center cursor-pointer gap-2">
+              <div 
+                // ✅ UPDATED: Add Click Handler for Interlinking
+                onClick={() => navigate(`/assets?assetId=${selectedMeter.assetId}&page=1&limit=50`)}
+                className="flex items-center cursor-pointer gap-2 hover:text-orange-600 hover:underline"
+              >
                 <Building2 className="h-4 w-4" />
                 <span>
                   {selectedMeter.asset && selectedMeter.asset.name}
@@ -223,7 +213,11 @@ export function MeterDetail({
               </div>
             )}
             {selectedMeter?.locationId && (
-              <div className="flex items-center gap-2 cursor-pointer">
+              <div 
+                // ✅ UPDATED: Add Click Handler for Interlinking
+                onClick={() => navigate(`/locations?locationId=${selectedMeter.locationId}&page=1&limit=50`)}
+                className="flex items-center gap-2 cursor-pointer hover:text-orange-600 hover:underline"
+              >
                 <MapPin className="h-4 w-4" />
                 <span>
                   {selectedMeter.location && selectedMeter.location.name}
@@ -241,7 +235,6 @@ export function MeterDetail({
           />
           <MeterDetailsSection selectedMeter={selectedMeter} />
           
-          {/* ✅ Corrected Created By Section */}
           <div className="text-sm text-gray-500 mt-6">
             Created By{" "}
             <span className="font-medium text-gray-700 capitalize">
@@ -250,7 +243,6 @@ export function MeterDetail({
             on {formatDate(selectedMeter.createdAt)}
           </div>
 
-          {/* ✅ Corrected Updated By Section */}
           {selectedMeter.createdAt !== selectedMeter.updatedAt && (
              <div className="text-sm text-gray-500 mt-1">
                 Updated By{" "}
@@ -261,7 +253,6 @@ export function MeterDetail({
              </div>
           )}
 
-          {/* Delete Modal */}
           {openMeterDeleteModal && (
             <MeterDeleteModal
               modalRef={modalRef}
