@@ -59,9 +59,10 @@ export const CommentsSection = forwardRef<
     }
   }, [selectedWorkOrder]);
 
-  // Fetch Data
+  // ✅ Fetch Data (Triggered by mount OR refreshTrigger)
   useEffect(() => {
     if (selectedWorkOrder?.id) {
+      // Only show loader on initial load, not on background refresh
       if (!refreshTrigger || refreshTrigger === 0) setIsLoading(true);
 
       Promise.all([
@@ -75,9 +76,10 @@ export const CommentsSection = forwardRef<
             if (Array.isArray(res)) setLocalLogs(res);
           }),
       ])
+        .catch((err) => console.error("Failed to fetch logs/comments:", err))
         .finally(() => setIsLoading(false));
     }
-  }, [dispatch, selectedWorkOrder?.id, refreshTrigger]);
+  }, [dispatch, selectedWorkOrder?.id, refreshTrigger]); // ✅ refreshTrigger ensures updates run
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;

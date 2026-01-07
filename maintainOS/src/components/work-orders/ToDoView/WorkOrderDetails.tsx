@@ -129,6 +129,7 @@ export function WorkOrderDetails({
   activePanel,
   setActivePanel,
   onScrollToComments,
+  onStatusChangeSuccess, // ✅ Added prop to trigger parent refresh
 }: any) {
   const navigate = useNavigate();
   const dispatch = useDispatch<any>();
@@ -244,6 +245,9 @@ export function WorkOrderDetails({
         await dispatch(updateWorkOrder({ id: selectedWorkOrder.id, authorId: user.id, data: { status: newStatus as any } })).unwrap();
         toast.success(`Status updated`);
       }
+
+      // ✅ Call the parent trigger to refresh logs
+      if (onStatusChangeSuccess) onStatusChangeSuccess();
 
       if (onRefreshWorkOrders) onRefreshWorkOrders();
 
