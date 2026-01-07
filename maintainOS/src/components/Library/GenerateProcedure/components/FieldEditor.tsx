@@ -421,7 +421,7 @@ export function FieldEditor({
                       e.stopPropagation();
                       handleToggleLogicEditor(field.id);
                     }}
-                    title="Add/Edit Logic" // ✅ Added Tooltip
+                    title="Add/Edit Conditions" // ✅ Added Tooltip
                     className={`hover:text-blue-600 ${
                       logicEditorOpen === field.id ? "text-blue-600" : ""
                     }`}
