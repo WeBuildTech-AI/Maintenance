@@ -23,6 +23,8 @@ import { ConfirmDeleteActionModal } from "./modals/ConfirmDeleteActionModal";
 import { CreateBlankWorkOrderForm } from "./workorders/CreateBlankWorkOrderForm";
 import { ActionItem } from "./shared/ActionItem";
 import { TriggerCard } from "./triggers/TriggerCard";
+import type { SelectOption } from "../work-orders/NewWorkOrderForm/DynamicSelect";
+import { fetchFilterData } from "../utils/filterDataFetcher";
 
 export function NewAutomationForm({ onBack }: { onBack: () => void }) {
   const [showDiscardModal, setShowDiscardModal] = useState(false);
@@ -31,6 +33,50 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
   const [showCreateBlankForm, setShowCreateBlankForm] = useState(false);
 
   const [triggers, setTriggers] = useState<string[]>(["Meter Reading"]);
+  
+  // Dynamic dropdown state
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [assetOptions, setAssetOptions] = useState<SelectOption[]>([]);
+  const [meterOptions, setMeterOptions] = useState<SelectOption[]>([]);
+  const [isAssetsLoading, setIsAssetsLoading] = useState(false);
+  const [isMetersLoading, setIsMetersLoading] = useState(false);
+
+  // Fetch handlers
+  const handleFetchAssets = async () => {
+    try {
+      setIsAssetsLoading(true);
+      const { data } = await fetchFilterData("assets");
+      const normalized = Array.isArray(data)
+        ? data.map((d: any) => ({
+            id: d.id,
+            name: d.name || "Unknown Asset",
+          }))
+        : [];
+      setAssetOptions(normalized);
+    } catch (error) {
+      console.error("Failed to fetch assets:", error);
+    } finally {
+      setIsAssetsLoading(false);
+    }
+  };
+
+  const handleFetchMeters = async () => {
+    try {
+      setIsMetersLoading(true);
+      const { data } = await fetchFilterData("meters");
+      const normalized = Array.isArray(data)
+        ? data.map((d: any) => ({
+            id: d.id,
+            name: d.name || "Unknown Meter",
+          }))
+        : [];
+      setMeterOptions(normalized);
+    } catch (error) {
+      console.error("Failed to fetch meters:", error);
+    } finally {
+      setIsMetersLoading(false);
+    }
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -91,6 +137,14 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
                 onDelete={() =>
                   setTriggers((prev) => prev.filter((_, i) => i !== index))
                 }
+                assetOptions={assetOptions}
+                meterOptions={meterOptions}
+                isAssetsLoading={isAssetsLoading}
+                isMetersLoading={isMetersLoading}
+                onFetchAssets={handleFetchAssets}
+                onFetchMeters={handleFetchMeters}
+                activeDropdown={activeDropdown}
+                setActiveDropdown={setActiveDropdown}
               />
             ))}
 

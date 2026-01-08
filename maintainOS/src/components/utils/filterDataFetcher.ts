@@ -184,7 +184,7 @@ export async function fetchFilterData(filterType: string) {
        */
       case "meter":
       case "meters": {
-        list = await meterService.fetchMeters(1000, 1, 0);
+        list = await meterService.fetchMeters({ limit: 1000, page: 1 });
         result = (list || []).map((m: any) => ({
           id: m.id,
           name: m.name,

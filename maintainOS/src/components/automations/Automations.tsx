@@ -14,7 +14,7 @@ import { fetchAutomations } from "../../store/automations/automations.thunks";
 export function Automations() {
   const dispatch = useDispatch<AppDispatch>();
 
-  const { automations, selectedAutomation, loading, error } = useSelector(
+  const { automations, selectedAutomation } = useSelector(
     (state: RootState) => state.automations
   );
 
