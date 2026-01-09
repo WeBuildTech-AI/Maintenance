@@ -9,6 +9,17 @@ interface Condition {
   value: string;
 }
 
+export interface TriggerData {
+  meterId: string;
+  assetId: string;
+  conditions: Condition[];
+  forOption: string;
+  multipleReadingsCount: string;
+  lastReadingsCount: string;
+  durationValue: string;
+  timeUnit: string;
+}
+
 interface TriggerCardProps {
   title: string;
   onDelete: () => void;
@@ -20,6 +31,7 @@ interface TriggerCardProps {
   onFetchMeters: () => void;
   activeDropdown: string | null;
   setActiveDropdown: (name: string | null) => void;
+  onChange?: (data: TriggerData) => void;
 }
 
 export function TriggerCard({
@@ -33,6 +45,7 @@ export function TriggerCard({
   onFetchMeters,
   activeDropdown,
   setActiveDropdown,
+  onChange,
 }: TriggerCardProps) {
   const [selectedAssetId, setSelectedAssetId] = useState<string>("");
   const [selectedMeterId, setSelectedMeterId] = useState<string>("");
@@ -47,6 +60,22 @@ export function TriggerCard({
   // For "A reading longer than" option
   const [durationValue, setDurationValue] = useState<string>("");
   const [timeUnit, setTimeUnit] = useState<string>("minutes");
+
+  // Notify parent of data changes
+  useEffect(() => {
+    if (onChange) {
+      onChange({
+        meterId: selectedMeterId,
+        assetId: selectedAssetId,
+        conditions,
+        forOption,
+        multipleReadingsCount,
+        lastReadingsCount,
+        durationValue,
+        timeUnit,
+      });
+    }
+  }, [selectedMeterId, selectedAssetId, conditions, forOption, multipleReadingsCount, lastReadingsCount, durationValue, timeUnit, onChange]);
 
   // Auto-populate asset when meter is selected
   useEffect(() => {

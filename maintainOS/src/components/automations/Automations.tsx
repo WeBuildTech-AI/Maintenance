@@ -92,8 +92,8 @@ export function Automations() {
       return {
         id: apiItem.id,
         name: apiItem.name,
-        asset: latestRun?.asset?.name || "No Asset Linked",
-        location: latestRun?.meter?.name || "General", 
+        asset: latestRun?.asset?.name || "Awaiting First Run",
+        location: latestRun?.meter?.name || "Not Yet Triggered", 
         lastRun: lastRunText,
         enabled: apiItem.isEnabled,
         description: apiItem.description,

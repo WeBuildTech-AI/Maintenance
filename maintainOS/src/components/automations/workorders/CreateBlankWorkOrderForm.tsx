@@ -1,6 +1,41 @@
+import { useState, useEffect } from "react";
 import { Settings, Trash2 } from "lucide-react";
 
-export function CreateBlankWorkOrderForm({ onBack }: { onBack: () => void }) {
+export interface WorkOrderActionData {
+  title: string;
+  description: string;
+  assetId: string;
+  assigneeUserIds: string[];
+  assigneeTeamIds: string[];
+  onlyIfPreviousClosed: boolean;
+}
+
+interface CreateBlankWorkOrderFormProps {
+  onBack: () => void;
+  onChange?: (data: WorkOrderActionData) => void;
+}
+
+export function CreateBlankWorkOrderForm({ onBack, onChange }: CreateBlankWorkOrderFormProps) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [assetId, setAssetId] = useState("");
+  const [assignees, setAssignees] = useState("");
+  const [onlyIfPreviousClosed, setOnlyIfPreviousClosed] = useState(true);
+
+  // Notify parent of data changes
+  useEffect(() => {
+    if (onChange) {
+      onChange({
+        title,
+        description,
+        assetId,
+        assigneeUserIds: [], // TODO: Parse assignees string to user IDs
+        assigneeTeamIds: [], // TODO: Parse assignees string to team IDs
+        onlyIfPreviousClosed,
+      });
+    }
+  }, [title, description, assetId, assignees, onlyIfPreviousClosed, onChange]);
+
   return (
     <div className="border rounded-md shadow bg-white mb-6">
       {/* Header */}
@@ -29,27 +64,42 @@ export function CreateBlankWorkOrderForm({ onBack }: { onBack: () => void }) {
           </label>
           <input
             type="text"
-            placeholder="What needs to be done?"
+            placeholder="e.g., High consumption detected on {{asset.name}}"
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
           />
+          <p className="text-xs text-gray-500 mt-1">
+            You can use variables like {`{{asset.name}}`} and {`{{reading.value}}`}
+          </p>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-900 mb-2">Description</label>
           <textarea
-            placeholder="Add a description"
+            placeholder="e.g., Meter reading reached {{reading.value}} units."
             rows={3}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm resize-y"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
           />
+          <p className="text-xs text-gray-500 mt-1">
+            You can use variables like {`{{asset.name}}`} and {`{{reading.value}}`}
+          </p>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-900 mb-2">Asset</label>
           <input
             type="text"
-            placeholder="Start typing..."
+            placeholder="Use {{asset.id}} for dynamic asset from trigger"
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+            value={assetId}
+            onChange={(e) => setAssetId(e.target.value)}
           />
+          <p className="text-xs text-gray-500 mt-1">
+            Use {`{{asset.id}}`} to automatically use the asset from the trigger
+          </p>
         </div>
 
         <div>
@@ -58,11 +108,19 @@ export function CreateBlankWorkOrderForm({ onBack }: { onBack: () => void }) {
             type="text"
             placeholder="Type name, email or phone number"
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+            value={assignees}
+            onChange={(e) => setAssignees(e.target.value)}
           />
         </div>
 
         <div className="flex items-center gap-2">
-          <input type="checkbox" id="createOnlyIfClosed" className="h-4 w-4 border-gray-300 rounded text-blue-600" />
+          <input 
+            type="checkbox" 
+            id="createOnlyIfClosed" 
+            className="h-4 w-4 border-gray-300 rounded text-blue-600"
+            checked={onlyIfPreviousClosed}
+            onChange={(e) => setOnlyIfPreviousClosed(e.target.checked)}
+          />
           <label htmlFor="createOnlyIfClosed" className="text-sm text-gray-700 cursor-pointer">
             Create only if previous Work Order generated from Automation is closed
           </label>

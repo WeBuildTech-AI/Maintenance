@@ -61,7 +61,6 @@ export interface AutomationResponse {
 }
 
 export interface CreateAutomationData {
-  organizationId: string;
   name: string;
   description?: string;
   isEnabled?: boolean;
