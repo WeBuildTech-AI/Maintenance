@@ -65,42 +65,34 @@ export function CreateBlankWorkOrderForm({ onBack, onChange }: CreateBlankWorkOr
           </label>
           <input
             type="text"
-            placeholder="e.g., High consumption detected on {{asset.name}}"
+            placeholder="Enter title for the work order"
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
-          <p className="text-xs text-gray-500 mt-1">
-            You can use variables like {`{{asset.name}}`} and {`{{reading.value}}`}
-          </p>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-900 mb-2">Description</label>
           <textarea
-            placeholder="e.g., Meter reading reached {{reading.value}} units."
+            placeholder="Enter description for the work order"
             rows={3}
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm resize-y"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
-          <p className="text-xs text-gray-500 mt-1">
-            You can use variables like {`{{asset.name}}`} and {`{{reading.value}}`}
-          </p>
+
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-900 mb-2">Asset</label>
           <input
             type="text"
-            placeholder="Use {{asset.id}} for dynamic asset from trigger"
+            placeholder=""
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
             value={assetId}
             onChange={(e) => setAssetId(e.target.value)}
           />
-          <p className="text-xs text-gray-500 mt-1">
-            Use {`{{asset.id}}`} to automatically use the asset from the trigger
-          </p>
         </div>
 
         <div>

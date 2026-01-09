@@ -133,7 +133,7 @@ export function Automations() {
         },
         
         // Map History
-        actionHistory: apiItem.runs.map(run => ({
+        actionHistory: (apiItem.runs || []).map(run => ({
           time: formatRelativeTime(run.lastTriggeredAt),
           status: "executed",
           value: "Triggered", 

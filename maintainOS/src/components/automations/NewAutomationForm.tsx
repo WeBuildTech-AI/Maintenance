@@ -158,11 +158,11 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
             value: parseFloat(condition.value) || 0
           }));
 
-          console.log("Building trigger:", { meterId: data.meterId, rules, conditions: data.conditions });
 
           return {
             type: "meter_reading",
             meterId: data.meterId,
+            assetId: data.assetId,
             rules,
             scope: {
               type: scopeTypeMap[data.forOption] || "one_reading"
