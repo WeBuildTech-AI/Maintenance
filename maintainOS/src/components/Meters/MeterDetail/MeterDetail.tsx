@@ -39,7 +39,7 @@ export function MeterDetail({
   onClose,
 }: any) {
   const dispatch = useDispatch<AppDispatch>();
-  const navigate = useNavigate(); // ✅ Hook
+  const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
   
   const [createdUserName, setCreatedUserName] = useState("Unknown");
@@ -202,8 +202,11 @@ export function MeterDetail({
           <div className="flex items-center gap-4 text-muted-foreground">
             {selectedMeter?.assetId && (
               <div 
-                // ✅ UPDATED: Add Click Handler for Interlinking
-                onClick={() => navigate(`/assets?assetId=${selectedMeter.assetId}&page=1&limit=50`)}
+                // ✅ UPDATED: Path-based Routing
+                onClick={() => {
+                  console.log("👉 Detail View Asset Click:", selectedMeter.assetId);
+                  navigate(`/assets/${selectedMeter.assetId}`);
+                }}
                 className="flex items-center cursor-pointer gap-2 hover:text-orange-600 hover:underline"
               >
                 <Building2 className="h-4 w-4" />
@@ -214,8 +217,11 @@ export function MeterDetail({
             )}
             {selectedMeter?.locationId && (
               <div 
-                // ✅ UPDATED: Add Click Handler for Interlinking
-                onClick={() => navigate(`/locations?locationId=${selectedMeter.locationId}&page=1&limit=50`)}
+                // ✅ UPDATED: Path-based Routing
+                onClick={() => {
+                   console.log("👉 Detail View Location Click:", selectedMeter.locationId);
+                   navigate(`/locations/${selectedMeter.locationId}`);
+                }}
                 className="flex items-center gap-2 cursor-pointer hover:text-orange-600 hover:underline"
               >
                 <MapPin className="h-4 w-4" />

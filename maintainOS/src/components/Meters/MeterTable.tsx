@@ -11,7 +11,7 @@ import type { TableProps, TableColumnType } from "antd";
 import toast from "react-hot-toast";
 import { meterService } from "../../store/meters";
 import AssetTableModal from "../utils/AssetTableModal";
-import { useNavigate } from "react-router-dom"; // ✅ Import Navigation Hook
+import { useNavigate } from "react-router-dom"; // ✅ Import Navigate
 
 // --- Constants ---
 const STORAGE_KEY_METER_COLUMNS = "meter_table_visible_columns";
@@ -137,7 +137,7 @@ export function MeterTable({
   showDeleted: boolean;
   setShowDeleted: (v: boolean) => void;
 }) {
-  const navigate = useNavigate(); // ✅ Initialize Navigation
+  const navigate = useNavigate();
 
   const [visibleColumns, setVisibleColumns] = useState<string[]>(() => {
     if (typeof window !== "undefined") {
@@ -174,10 +174,13 @@ export function MeterTable({
             id: updatedMeter.id || "—",
             name: updatedMeter.name || "—",
             meterType: updatedMeter.meterType || "—",
+            
             asset: updatedMeter.asset?.name || "—",
             assetId: updatedMeter.asset?.id || updatedMeter.assetId,
+            
             location: updatedMeter.location?.name || "—",
             locationId: updatedMeter.location?.id || updatedMeter.locationId,
+
             lastReading:
               updatedMeter.readingFrequency?.time && updatedMeter.readingFrequency?.interval
                 ? `${updatedMeter.readingFrequency.time} ${updatedMeter.readingFrequency.interval}`
@@ -407,17 +410,20 @@ export function MeterTable({
              renderFunc = (text: string) => text || "—";
         }
         
-        // ✅ CLICKABLE ASSET - Matches your VendorAssetsSection logic
+        // ✅ CLICKABLE ASSET: Now correctly navigating to /assets/:id
         else if (colName === "Asset") {
           renderFunc = (text: string, record: any) => {
-            if (!text || text === "—" || !record.assetId) return text || "—";
+            if (!text || text === "—") return "—";
             return (
               <span
                 className="text-orange-600 cursor-pointer hover:underline relative z-10"
                 onClick={(e) => {
-                  e.stopPropagation(); // Prevent row click
-                  // Matches your URL structure
-                  navigate(`/assets?assetId=${record.assetId}&page=1&limit=50`); 
+                  e.stopPropagation();
+                  e.preventDefault();
+                  console.log("Navigating to Asset:", `/assets/${record.assetId}`);
+                  if (record.assetId) {
+                    navigate(`/assets/${record.assetId}`); // URL path based
+                  }
                 }}
               >
                 {text}
@@ -426,16 +432,20 @@ export function MeterTable({
           };
         }
         
-        // ✅ CLICKABLE LOCATION - Matches logic
+        // ✅ CLICKABLE LOCATION: Now correctly navigating to /locations/:id
         else if (colName === "Location") {
           renderFunc = (text: string, record: any) => {
-            if (!text || text === "—" || !record.locationId) return text || "—";
+            if (!text || text === "—") return "—";
             return (
               <span
                 className="text-orange-600 cursor-pointer hover:underline relative z-10"
                 onClick={(e) => {
-                  e.stopPropagation(); // Prevent row click
-                  navigate(`/locations?locationId=${record.locationId}&page=1&limit=50`);
+                  e.stopPropagation();
+                  e.preventDefault();
+                  console.log("Navigating to Location:", `/locations/${record.locationId}`);
+                  if (record.locationId) {
+                    navigate(`/locations/${record.locationId}`); // URL path based
+                  }
                 }}
               >
                 {text}
@@ -479,6 +489,7 @@ export function MeterTable({
       name: m.name || "—",
       meterType: m.meterType || "—",
       
+      // ✅ Populate IDs safely
       asset: m.asset?.name || "—",
       assetId: m.asset?.id || m.assetId,
       

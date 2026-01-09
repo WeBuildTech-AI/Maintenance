@@ -3,14 +3,25 @@
 import { useState, useLayoutEffect, useEffect, useRef } from "react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
-import { Button } from "../ui/button"; // Adjust path if needed
+import { Button } from "../ui/button";
 import { subDays, subWeeks, subMonths } from "date-fns";
+
+// ✅ Type Export kar rahe hain taaki Parent use kar sake
+export type DateFilterConfig = {
+  tab: "between" | "last";
+  value: number | "";
+  unit: "days" | "weeks" | "months";
+};
 
 type Props = {
   onClose: () => void;
-  onApply: (start: Date, end: Date) => void;
+  // ✅ Updated: Ab ye config bhi return karega
+  onApply: (start: Date, end: Date, config: DateFilterConfig) => void;
   anchorRef: React.RefObject<HTMLDivElement | HTMLButtonElement>;
   position?: "top" | "bottom" | "auto";
+  initialDateRange?: { from: Date; to: Date };
+  // ✅ New Prop: Purani settings receive karne ke liye
+  initialConfig?: DateFilterConfig; 
 };
 
 export function CustomDateRangeModal({
@@ -18,11 +29,26 @@ export function CustomDateRangeModal({
   onApply,
   anchorRef,
   position = "auto",
+  initialDateRange,
+  initialConfig, // ✅ Destructure
 }: Props) {
-  const [tab, setTab] = useState<"between" | "last">("last");
-  const [value, setValue] = useState<number | "">(15);
-  const [unit, setUnit] = useState<"days" | "weeks" | "months">("days");
-  const [range, setRange] = useState<{ from?: Date; to?: Date }>({});
+  
+  // ✅ State Initialize karte waqt initialConfig ka use karein
+  const [tab, setTab] = useState<"between" | "last">(() => 
+    initialConfig?.tab || (initialDateRange ? "between" : "last")
+  );
+
+  const [value, setValue] = useState<number | "">(() => 
+    initialConfig?.value !== undefined ? initialConfig.value : 15
+  );
+
+  const [unit, setUnit] = useState<"days" | "weeks" | "months">(() => 
+    initialConfig?.unit || "days"
+  );
+  
+  const [range, setRange] = useState<{ from?: Date; to?: Date }>(() =>
+    initialDateRange ? initialDateRange : {}
+  );
 
   const [style, setStyle] = useState<React.CSSProperties>({
     visibility: "hidden",
@@ -33,34 +59,25 @@ export function CustomDateRangeModal({
 
   const modalRef = useRef<HTMLDivElement>(null);
 
-  // 1.  NEW: Handle Click Outside to Close Modal automatically
+  // 1. Handle Click Outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      // Safety check
       if (!modalRef.current || !anchorRef.current) return;
-
       const target = event.target as Node;
-
-      // Check if the click happened INSIDE the Modal OR on the Settings Button
       const isClickInsideModal = modalRef.current.contains(target);
       const isClickOnButton = anchorRef.current.contains(target);
 
-      // If click is OUTSIDE both, close the modal
       if (!isClickInsideModal && !isClickOnButton) {
         onClose();
       }
     }
-
-    // Attach the listener
     document.addEventListener("mousedown", handleClickOutside);
-
-    // Clean up listener on unmount
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [anchorRef, onClose]);
 
-  // 2. Position Logic (Existing)
+  // 2. Position Logic
   useLayoutEffect(() => {
     if (!anchorRef.current || !modalRef.current) return;
 
@@ -103,7 +120,7 @@ export function CustomDateRangeModal({
     }
   }, [anchorRef, position, tab]);
 
-  // 3. Sync calendar (Existing)
+  // 3. Sync calendar
   useEffect(() => {
     if (tab !== "last" || value === "") return;
 
@@ -125,7 +142,8 @@ export function CustomDateRangeModal({
 
   const handleApply = () => {
     if (range.from && range.to) {
-      onApply(range.from, range.to);
+      // ✅ Pass current config back to parent
+      onApply(range.from, range.to, { tab, value, unit });
     }
     onClose();
   };

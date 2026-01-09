@@ -28,6 +28,7 @@ import {
   useMatch,
   useParams,
   useSearchParams,
+  useLocation, 
 } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import LocationDetails from "./LocationDetails";
@@ -38,6 +39,7 @@ export function Locations() {
 
   // ✅ 1. URL Search Params Setup
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation(); 
 
   // ✅ 2. Initialize State
   const [searchQuery, setSearchQuery] = useState(
@@ -53,9 +55,8 @@ export function Locations() {
   });
 
   // ✅ SERVER-SIDE PAGINATION STATE
-  // "page" param ko URL se read karte hain (Default: 1)
   const currentPage = Number(searchParams.get("page")) || 1;
-  const itemsPerPage = 50; // Server limit matches this
+  const itemsPerPage = 50; 
 
   const [filterParams, setFilterParams] = useState<FetchLocationsParams>({
     page: currentPage,
@@ -71,6 +72,7 @@ export function Locations() {
 
   const [activeSubLocation, setActiveSubLocation] = useState<any>(null);
 
+  // ✅ Get Location ID from URL Params
   const { locationId } = useParams();
 
   const [showSettings, setShowSettings] = useState(false);
@@ -133,20 +135,22 @@ export function Locations() {
     return null;
   }, [isEditMode, isEditRoute, locations, selectedLocation]);
 
-  // ✅ Sync State TO URL (Pagination & Search)
+  // ✅ Sync State TO URL
   useEffect(() => {
     const params: any = {};
     if (debouncedSearch) params.search = debouncedSearch;
-    
-    // Sirf tab param add karein agar page > 1 hai
     if (filterParams.page && filterParams.page > 1) {
       params.page = filterParams.page.toString();
     }
-      
-    setSearchParams(params, { replace: true });
-  }, [debouncedSearch, filterParams.page, setSearchParams]);
 
-  // ✅ URL Change Listener: Update FilterParams when URL changes (e.g. Back button)
+    const currentSearch = searchParams.get("search") || "";
+    const currentPageStr = searchParams.get("page") || "";
+    
+    if (currentSearch !== (params.search || "") || currentPageStr !== (params.page || "")) {
+        setSearchParams(params, { replace: true });
+    }
+  }, [debouncedSearch, filterParams.page, setSearchParams, searchParams]);
+
   useEffect(() => {
     const pageFromUrl = Number(searchParams.get("page")) || 1;
     if (pageFromUrl !== filterParams.page) {
@@ -175,7 +179,6 @@ export function Locations() {
         });
       } catch (err) {
         console.error("Failed to fetch location by ID:", err);
-        toast.error("Could not load the selected location.");
       } finally {
         setDetailsLoading(false);
       }
@@ -214,43 +217,66 @@ export function Locations() {
     } finally {
       setLoading(false);
     }
-  }, [showDeleted, filterParams, debouncedSearch, selectedLocation]); 
+  }, [showDeleted, filterParams, debouncedSearch]); 
 
   useEffect(() => {
     fetchLocations();
   }, [fetchLocations]);
 
-  // ✅ Selection Logic
+  // 🔥🔥🔥 ULTRA-STRICT REDIRECT LOGIC v2.0 🔥🔥🔥
   useEffect(() => {
-    if (isCreateRoute || isCreateSubLocationRoute) {
-      return;
+    // 1. Check if we are on the EXACT Root path
+    // If URL has any ID, this will be FALSE.
+    const isExactlyRoot = location.pathname === "/locations" || location.pathname === "/locations/";
+
+    // 2. Extract ID from URL manually (Safety net for slow useParams)
+    const pathParts = location.pathname.split('/').filter(Boolean);
+    let urlIdFromPath = null;
+    
+    // If path is like /locations/ID, part[0] is locations, part[1] is ID
+    if (pathParts.length >= 2 && pathParts[0] === 'locations') {
+        const segment = pathParts[1];
+        if (segment !== 'create' && segment !== 'edit') {
+            urlIdFromPath = segment;
+        }
     }
 
-    if (locationId) {
-      if (selectedLocation?.id === locationId) return;
-      
-      const foundInList = findLocationDeep(locations, locationId);
-      if (foundInList) {
-        setSelectedLocation(foundInList);
-      } else {
-        fetchLocationById(locationId);
-      }
-      return;
-    } 
-    else if (!loading && locations.length > 0 && !selectedLocation) {
-      const firstLocation = locations[0];
-      setSelectedLocation(firstLocation);
-      navigate(`/locations/${firstLocation.id}`, { replace: true });
+    // 3. IGNORE Special Routes
+    if (isCreateRoute || isCreateSubLocationRoute || isEditRoute) return;
+
+    // 🛑 Case 1: URL HAS AN ID (e.g., from Asset click)
+    // DO NOT REDIRECT. Just load the data.
+    if (urlIdFromPath) {
+       if (selectedLocation?.id !== urlIdFromPath) {
+           const found = findLocationDeep(locations, urlIdFromPath);
+           if (found) {
+               setSelectedLocation(found);
+           } else {
+               if (!detailsLoading) fetchLocationById(urlIdFromPath);
+           }
+       }
+       return; // Stop here.
     }
+
+    // 🛑 Case 2: URL IS EXACTLY ROOT (Default View)
+    // Only redirect if we are SURE we are on the root path and no ID exists.
+    if (isExactlyRoot && !loading && locations.length > 0 && !selectedLocation) {
+        const firstLocation = locations[0];
+        setSelectedLocation(firstLocation);
+        navigate(`/locations/${firstLocation.id}`, { replace: true });
+    }
+
   }, [
-    locationId,
+    location.pathname, // ✅ Re-run immediately on URL change
     locations,
     isCreateRoute,
-    isCreateSubLocationRoute,
+    isCreateSubLocationRoute, 
+    isEditRoute,
     fetchLocationById,
     navigate,
     selectedLocation,
-    loading
+    loading,
+    detailsLoading
   ]);
 
   const handleShowNewLocationForm = () => navigate("/locations/create");
@@ -300,7 +326,7 @@ export function Locations() {
     []
   );
 
-  // ✅ Sorting Logic (Client side sorting of current page)
+  // ✅ Sorting Logic
   const sortedLocations = useMemo(() => {
     let items = [...locations];
     items.sort((a, b) => {
@@ -333,8 +359,6 @@ export function Locations() {
   };
 
   const handleNextPage = () => {
-    // Note: Since we don't have total count, we allow next if current list is full size
-    // or if you want to allow indefinite next until empty array
     if (locations.length > 0) { 
        setFilterParams((prev) => ({ ...prev, page: Number(prev.page || 1) + 1 }));
     }
@@ -635,8 +659,6 @@ export function Locations() {
                     </button>
                     <button
                       onClick={handleNextPage}
-                      // Disable next if we fetched fewer items than limit (means last page)
-                      // Or if locations array is empty
                       disabled={locations.length < itemsPerPage}
                       className="text-gray-400 hover:text-gray-800 disabled:opacity-30 disabled:cursor-not-allowed"
                     >

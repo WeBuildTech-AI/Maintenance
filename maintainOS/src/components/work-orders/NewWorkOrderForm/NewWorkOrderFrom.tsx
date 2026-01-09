@@ -75,15 +75,22 @@ const getChangedFields = (original: any, current: any) => {
     ];
 
     simpleFields.forEach((key) => {
-      if (current[key] !== undefined && original[key] !== current[key]) {
+      let origVal = original[key];
+
+      // 🛠️ FIX: Handle location edge case (Backend sends object, Form has ID)
+      if (key === "locationId" && origVal === undefined && original.location?.id) {
+        origVal = original.location.id;
+      }
+
+      if (current[key] !== undefined && origVal !== current[key]) {
         changes[key] = current[key];
       }
     });
 
     // 2. Estimated Time (Number Comparison)
     const origTime = original.estimatedTimeHours === null || original.estimatedTimeHours === undefined 
-                     ? 0 
-                     : Number(original.estimatedTimeHours);
+                      ? 0 
+                      : Number(original.estimatedTimeHours);
     
     // current.estimatedTimeHours is already converted to Number by handleSubmit
     const currTime = Number(current.estimatedTimeHours || 0);
@@ -177,6 +184,9 @@ export function NewWorkOrderForm({
   const location = useLocation();
   const [searchParams] = useSearchParams(); 
   const authUser = useSelector((state: any) => state.auth.user);
+
+  // ✅ LOCAL STATE TO HOLD BASELINE DATA (Fixes issue where 'existingWorkOrder' prop is stale)
+  const [originalData, setOriginalData] = useState<any>(existingWorkOrder || {});
 
   const procedureEditMatch = useMatch("/work-orders/:workOrderId/edit/library/:procedureId");
   const deepEditingProcedureId = procedureEditMatch?.params?.procedureId;
@@ -334,10 +344,20 @@ export function NewWorkOrderForm({
   }, [deepEditingProcedureId]);
 
   useEffect(() => {
+    // Sync prop changes to local state if available
+    if (existingWorkOrder) {
+        setOriginalData(existingWorkOrder);
+    }
+  }, [existingWorkOrder]);
+
+  useEffect(() => {
     if (isCreateRoute && !activeId && !location.state?.previousFormState) return; 
 
     const fillFields = (data: any) => {
       if (!data) return;
+
+      // ✅ UPDATE BASELINE FOR DIFFING
+      setOriginalData(data);
 
       setWorkOrderName(data.title || "");
       setDescription(data.description || "");
@@ -476,7 +496,8 @@ export function NewWorkOrderForm({
       const formState: any = {
         title: workOrderName,
         description,
-        status: "open",
+        // ✅ FIX: Use 'open' only for CREATE. For EDIT, use existing status.
+        status: isEditing ? originalData.status : "open",
         workType: selectedWorkType,
         qrCode: qrCodeValue || undefined,
         priority: { None: "low", Low: "low", Medium: "medium", High: "high", Urgent: "urgent" }[selectedPriority] || "low",
@@ -496,7 +517,9 @@ export function NewWorkOrderForm({
       setLoading(true);
 
       if (activeId) {
-        const payload = getChangedFields(existingWorkOrder || {}, formState);
+        // ✅ CALL THE DIFF FUNCTION with the CORRECT original data
+        const payload = getChangedFields(originalData || {}, formState);
+        
         if (Object.keys(payload).length === 0) {
             toast("No changes detected.");
             if (onCreate) onCreate(); else navigate("/work-orders");

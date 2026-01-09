@@ -26,10 +26,24 @@ const LocationTableModal: React.FC<LocationTableModalProps> = ({
 }) => {
   // ✅ Switch between View and Edit Mode internally
   const [isEditing, setIsEditing] = useState(false);
+  
+  // ✅ Local state to hold the latest data inside the modal
+  const [currentData, setCurrentData] = useState(data);
+
   const modalRef = useRef<HTMLDivElement>(null);
 
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector((state: RootState) => state.auth.user);
+
+  // ✅ Sync state if the prop 'data' changes (e.g. if parent re-renders)
+  useEffect(() => {
+    // Only update if IDs match to avoid overwriting edits with stale props
+    if (data?.id === currentData?.id) {
+        setCurrentData((prev: any) => ({ ...prev, ...data }));
+    } else {
+        setCurrentData(data);
+    }
+  }, [data]);
 
   const handleContentClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -85,19 +99,22 @@ const LocationTableModal: React.FC<LocationTableModalProps> = ({
             <div className="p-4">
               <NewLocationForm
                 // ⭐ CRITICAL: Key forces re-render so prefill works immediately
-                key={data?.id || "edit-form"} 
+                key={currentData?.id || "edit-form"} 
                 isEdit={true}
-                editData={data} // ✅ Passing full data object directly
+                editData={currentData} // ✅ Passing LOCAL state data
                 
                 fetchLocations={fetchData}
                 fetchLocationById={() => {}}
                 
-                // ✅ Cancel brings back to Details View (No URL change)
+                // ✅ Cancel brings back to Details View
                 onCancel={() => setIsEditing(false)}
                 
-                // ✅ Success refreshes data and brings back to Details View
-                onSuccess={() => {
-                  fetchData(); // Refresh Table Data
+                // ✅ Success refreshes data locally AND globally
+                onSuccess={(updatedLocation: any) => {
+                  // 🔥 FIXED: Merge updated fields with existing full object
+                  setCurrentData((prev: any) => ({ ...prev, ...updatedLocation })); 
+                  
+                  fetchData(); // Refresh Table Data in background
                   setIsEditing(false); // Go back to details
                 }}
                 
@@ -110,8 +127,8 @@ const LocationTableModal: React.FC<LocationTableModalProps> = ({
           ) : (
             // 👀 VIEW MODE (Details)
             <LocationDetails
-              selectedLocation={data}
-              // ✅ Switch to Edit Mode locally (No Navigation)
+              selectedLocation={currentData} // ✅ Showing LOCAL state data
+            
               onEdit={() => setIsEditing(true)}
               handleDeleteLocation={handleDeleteLocation}
               handleShowNewSubLocationForm={() => {}} 

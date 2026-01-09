@@ -74,16 +74,26 @@ export function NewPOForm(props: NewPOFormProps) {
   } = props;
 
   // --- Vendor State ---
-  const [vendors, setVendors] = useState<Vendor[]>([]);
+  // ✅ FIX 1: Initialize vendors with the current vendor object if available (Edit Mode Fix)
+  const [vendors, setVendors] = useState<Vendor[]>(
+    (newPO as any).vendor ? [(newPO as any).vendor] : []
+  );
+  
   const [isLoadingVendors, setIsLoadingVendors] = useState(false);
   const [hasFetchedVendors, setHasFetchedVendors] = useState(false);
   const [vendorSearchQuery, setVendorSearchQuery] = useState("");
   const [isVendorSearchFocused, setIsVendorSearchFocused] = useState(false);
 
-  const selectedVendor = vendors.find((v) => v.id === newPO.vendorId);
+  // ✅ FIX 2: Fallback logic for finding selected vendor
+  const selectedVendor = 
+    vendors.find((v) => v.id === newPO.vendorId) || (newPO as any).vendor;
 
   // --- Contact Logic State ---
-  const [vendorContacts, setVendorContacts] = useState<any[]>([]);
+  // ✅ FIX 3: Initialize contacts state from the mapped prop passed during Edit Mode
+  const [vendorContacts, setVendorContacts] = useState<any[]>(
+    (newPO as any).initialVendorContacts || []
+  );
+  
   const [isContactLoading, setIsContactLoading] = useState(false);
   const [isContactDropdownOpen, setIsContactDropdownOpen] = useState(false);
   const [contactSearchQuery, setContactSearchQuery] = useState("");
@@ -527,7 +537,7 @@ export function NewPOForm(props: NewPOFormProps) {
                   <div className="flex items-center z-50 justify-between h-9 px-3 py-2 text-sm border rounded-md bg-muted/50">
                     <div className="flex items-center gap-2">
                       <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-[10px] text-white font-bold">
-                        {selectedVendor.name.charAt(0).toUpperCase()}
+                        {selectedVendor.name?.charAt(0).toUpperCase()}
                       </div>
                       <span>{selectedVendor.name}</span>
                     </div>
