@@ -46,6 +46,11 @@ export interface AutomationAction {
   [key: string]: any;
 }
 
+export interface AutomationPreviewContext {
+  meters?: { id: string; name: string }[];
+  assets?: { id: string; name: string }[];
+}
+
 export interface AutomationResponse {
   id: string;
   organizationId: string;
@@ -55,6 +60,7 @@ export interface AutomationResponse {
   triggers: AutomationTriggers;
   conditions: AutomationConditions;
   actions: AutomationAction[];
+  previewContext?: AutomationPreviewContext | null;
   createdAt: string;
   updatedAt: string;
   runs: AutomationRun[];

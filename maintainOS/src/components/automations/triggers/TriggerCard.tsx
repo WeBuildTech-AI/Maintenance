@@ -75,7 +75,8 @@ export function TriggerCard({
         timeUnit,
       });
     }
-  }, [selectedMeterId, selectedAssetId, conditions, forOption, multipleReadingsCount, lastReadingsCount, durationValue, timeUnit, onChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMeterId, selectedAssetId, conditions, forOption, multipleReadingsCount, lastReadingsCount, durationValue, timeUnit]);
 
   // Auto-populate asset when meter is selected
   useEffect(() => {

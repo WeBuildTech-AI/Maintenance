@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
@@ -93,18 +93,18 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
   };
 
   // Handle trigger data changes
-  const handleTriggerChange = (index: number, data: TriggerData) => {
+  const handleTriggerChange = useCallback((index: number, data: TriggerData) => {
     setTriggerDataMap(prev => {
       const newMap = new Map(prev);
       newMap.set(index, data);
       return newMap;
     });
-  };
+  }, []);
 
   // Handle work order action data changes
-  const handleWorkOrderChange = (data: WorkOrderActionData) => {
+  const handleWorkOrderChange = useCallback((data: WorkOrderActionData) => {
     setWorkOrderActionData(data);
-  };
+  }, []);
 
   // Handle automation creation
   const handleCreate = async () => {
@@ -129,7 +129,7 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
 
       // Build triggers from collected data
       const triggersData = Array.from(triggerDataMap.values())
-        .filter(data => data.meterId) // Only include triggers with a meter selected
+        .filter(data => data.meterId && data.conditions.length > 0) // Only include triggers with meter AND conditions
         .map(data => {
           // Map operator strings to API format
           const operatorMap: Record<string, string> = {
@@ -153,13 +153,17 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
             "readingLongerThan": "reading_longer_than"
           };
 
+          const rules = data.conditions.map(condition => ({
+            op: operatorMap[condition.operator] || condition.operator,
+            value: parseFloat(condition.value) || 0
+          }));
+
+          console.log("Building trigger:", { meterId: data.meterId, rules, conditions: data.conditions });
+
           return {
             type: "meter_reading",
             meterId: data.meterId,
-            rules: data.conditions.map(condition => ({
-              op: operatorMap[condition.operator] || condition.operator,
-              value: parseFloat(condition.value) || 0
-            })),
+            rules,
             scope: {
               type: scopeTypeMap[data.forOption] || "one_reading"
             }
@@ -200,7 +204,14 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
       onBack();
     } catch (error: any) {
       console.error("Failed to create automation:", error);
-      toast.error(error || "Failed to create automation");
+      
+      // Extract detailed error message
+      const errorMessage = error?.message 
+        || error?.error 
+        || error 
+        || "Failed to create automation";
+      
+      toast.error(errorMessage);
     } finally {
       setIsCreating(false);
     }

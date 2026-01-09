@@ -18,7 +18,7 @@ interface CreateBlankWorkOrderFormProps {
 export function CreateBlankWorkOrderForm({ onBack, onChange }: CreateBlankWorkOrderFormProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [assetId, setAssetId] = useState("");
+  const [assetId, setAssetId] = useState("{{asset.id}}"); // Default to template
   const [assignees, setAssignees] = useState("");
   const [onlyIfPreviousClosed, setOnlyIfPreviousClosed] = useState(true);
 
@@ -34,7 +34,8 @@ export function CreateBlankWorkOrderForm({ onBack, onChange }: CreateBlankWorkOr
         onlyIfPreviousClosed,
       });
     }
-  }, [title, description, assetId, assignees, onlyIfPreviousClosed, onChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, description, assetId, assignees, onlyIfPreviousClosed]);
 
   return (
     <div className="border rounded-md shadow bg-white mb-6">

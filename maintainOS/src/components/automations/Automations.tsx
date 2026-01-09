@@ -88,12 +88,21 @@ export function Automations() {
           .join(' ');
       };
 
+      // Get meter and asset names from previewContext or latest run
+      const meterName = latestRun?.meter?.name 
+        || apiItem.previewContext?.meters?.[0]?.name 
+        || "Not Yet Triggered";
+      
+      const assetName = latestRun?.asset?.name 
+        || apiItem.previewContext?.assets?.[0]?.name 
+        || "Awaiting First Run";
+
       // Map to UI Interface
       return {
         id: apiItem.id,
         name: apiItem.name,
-        asset: latestRun?.asset?.name || "Awaiting First Run",
-        location: latestRun?.meter?.name || "Not Yet Triggered", 
+        asset: assetName,
+        location: meterName, 
         lastRun: lastRunText,
         enabled: apiItem.isEnabled,
         description: apiItem.description,
@@ -110,8 +119,8 @@ export function Automations() {
         // Map nested Trigger object
         trigger: {
           condition: `Meter Reading ${formatOperator(firstTrigger?.rules[0]?.op)} ${firstTrigger?.rules[0]?.value}`,
-          assets: latestRun?.asset?.name || "N/A",
-          meters: latestRun?.meter?.name || "N/A",
+          assets: assetName !== "Awaiting First Run" ? assetName : "N/A",
+          meters: meterName !== "Not Yet Triggered" ? meterName : "N/A",
           frequency: formatScopeType(firstTrigger?.scope?.type || "continuous"),
         },
         
@@ -120,7 +129,7 @@ export function Automations() {
           type: formatActionType(firstAction?.type) || "Unknown Action",
           frequency: "Immediate",
           title: formatActionType(firstAction?.type) || "Action",
-          asset: latestRun?.asset?.name || "N/A",
+          asset: assetName !== "Awaiting First Run" ? assetName : "N/A",
         },
         
         // Map History
