@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Pencil, MoreVertical, Clock, Building2, Gauge, Timer, Play, FileText, ExternalLink, Loader2 } from "lucide-react";
 import { Switch } from "../ui/switch-automations";
 import type { Automation } from "./AutomationsList";
-import { useAppDispatch } from "../../store/hooks";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { deleteAutomation, switchAutomation } from "../../store/automations/automations.thunks";
 import { AutomationOptionsModal } from "./modals/AutomationOptionsModal";
 import DeleteAutomationModal from "./modals/DeleteAutomationModal";
+import { meterService } from "../../store/meters/meters.service";
 
 interface AutomationDetailsProps {
   automation: Automation;
@@ -16,11 +18,35 @@ interface AutomationDetailsProps {
 
 export function AutomationDetails({ automation, onEdit }: AutomationDetailsProps) {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const selectedAutomation = useAppSelector((state) => state.automations.selectedAutomation);
   const [isSwitching, setIsSwitching] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [meterUnit, setMeterUnit] = useState<string>("");
+
   const moreButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Fetch meter unit when automation is loaded
+  useEffect(() => {
+    const fetchMeterUnit = async () => {
+      if (!selectedAutomation?.triggers?.when?.[0]?.meterId) return;
+      
+      try {
+        const meterId = selectedAutomation.triggers.when[0].meterId;
+        const meter = await meterService.fetchMeterById(meterId);
+        
+        if (meter?.measurement?.name) {
+          setMeterUnit(meter.measurement.name);
+        }
+      } catch (error) {
+        console.error("Failed to fetch meter unit:", error);
+      }
+    };
+
+    fetchMeterUnit();
+  }, [selectedAutomation]);
 
   const handleSwitchToggle = async () => {
     setIsSwitching(true);
@@ -32,6 +58,8 @@ export function AutomationDetails({ automation, onEdit }: AutomationDetailsProps
       setIsSwitching(false);
     }
   };
+
+
 
   const handleCopyAutomation = () => {
     // TODO: Implement copy automation logic
@@ -153,7 +181,7 @@ export function AutomationDetails({ automation, onEdit }: AutomationDetailsProps
               <div className="bg-orange-50 border border-orange-200 rounded-md p-3 mb-4">
                 <p className="text-sm text-gray-800">
                   <span className="font-medium text-orange-700">When: </span>
-                  {automation.trigger.condition}
+                  {automation.trigger.condition} {meterUnit}
                 </p>
               </div>
 
@@ -250,10 +278,39 @@ export function AutomationDetails({ automation, onEdit }: AutomationDetailsProps
                       Skipped ({history.skippedCount})
                     </span>
                   ) : (
-                    <button className="flex items-center gap-1 text-orange-600 hover:text-orange-700 text-sm font-medium">
-                      See Work Order
-                      <ExternalLink className="w-3 h-3" />
-                    </button>
+                    <>
+                      {/* Show "See Work Order" if there's a work order link */}
+                      {history.workOrderLink ? (
+                        <button 
+                          onClick={() => {
+                            const workOrderId = history.workOrderLink?.replace('#', '');
+                            if (workOrderId) {
+                              navigate(`/work-orders/${workOrderId}`);
+                            }
+                          }}
+                          className="flex items-center gap-1 text-orange-600 hover:text-orange-700 text-sm font-medium"
+                        >
+                          See Work Order
+                          <ExternalLink className="w-3 h-3" />
+                        </button>
+                      ) : null}
+                      
+                      {/* Show "See Asset" if action type is asset status change and we have an assetId */}
+                      {automation.action.type.toLowerCase().includes('asset status') && automation.action.assetId && automation.action.assetId !== '{{asset.id}}' ? (
+                        <button 
+                          onClick={() => {
+                            const assetId = automation.action.assetId;
+                            if (assetId) {
+                              navigate(`/assets?assetId=${assetId}&page=1&limit=50`);
+                            }
+                          }}
+                          className="flex items-center gap-1 text-orange-600 hover:text-orange-700 text-sm font-medium"
+                        >
+                          See Asset
+                          <ExternalLink className="w-3 h-3" />
+                        </button>
+                      ) : null}
+                    </>
                   )}
                 </div>
               </div>

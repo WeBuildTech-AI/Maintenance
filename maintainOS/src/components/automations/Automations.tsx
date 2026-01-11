@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, useParams } from "react-router-dom";
 import type { AppDispatch, RootState } from "../../store"
 import { NewAutomationForm } from "./NewAutomationForm";
 import { EditAutomationForm } from "./EditAutomationForm";
@@ -14,6 +15,8 @@ import { setSelectedAutomation } from "../../store/automations/automations.reduc
 import { fetchAutomations } from "../../store/automations/automations.thunks";
 export function Automations() {
   const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
+  const { id: automationIdFromUrl } = useParams<{ id: string }>();
 
   const { automations, selectedAutomation } = useSelector(
     (state: RootState) => state.automations
@@ -133,6 +136,7 @@ export function Automations() {
           frequency: "Immediate",
           title: formatActionType(firstAction?.type) || "Action",
           asset: assetName !== "Awaiting First Run" ? assetName : "N/A",
+          assetId: firstAction?.assetId,
         },
         
         // Map History
@@ -158,13 +162,25 @@ export function Automations() {
     });
   }, [uiAutomations, selectedTab, searchQuery]);
 
-  // Handle Selection - maps UI selection back to Redux
+  // Handle Selection - maps UI selection back to Redux and updates URL
   const handleSelect = (uiAuto: Automation) => {
     const originalApiObject = automations.find((a: AutomationResponse) => a.id === uiAuto.id);
     if (originalApiObject) {
       dispatch(setSelectedAutomation(originalApiObject));
+      // Update URL with automation ID
+      navigate(`/automations/${uiAuto.id}`, { replace: true });
     }
   };
+
+  // Sync URL with selected automation on mount and when URL changes
+  useEffect(() => {
+    if (automationIdFromUrl && automations.length > 0) {
+      const automationFromUrl = automations.find((a) => a.id === automationIdFromUrl);
+      if (automationFromUrl && automationFromUrl.id !== selectedAutomation?.id) {
+        dispatch(setSelectedAutomation(automationFromUrl));
+      }
+    }
+  }, [automationIdFromUrl, automations, selectedAutomation, dispatch]);
 
   // Convert Redux selected item to UI format for the list highlight
   const selectedUiAutomation = useMemo(() => {
@@ -182,7 +198,13 @@ export function Automations() {
       (a) => (tab === "enabled" ? a.isEnabled : !a.isEnabled)
     );
     
-    dispatch(setSelectedAutomation(firstInTab || null));
+    if (firstInTab) {
+      dispatch(setSelectedAutomation(firstInTab));
+      navigate(`/automations/${firstInTab.id}`, { replace: true });
+    } else {
+      dispatch(setSelectedAutomation(null));
+      navigate('/automations', { replace: true });
+    }
   };
 
   // Memoize the onBack callback to prevent infinite re-renders

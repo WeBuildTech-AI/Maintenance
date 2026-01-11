@@ -23,6 +23,7 @@ export interface Automation {
     frequency: string;
     title: string;
     asset: string;
+    assetId?: string;
   };
   actionHistory: {
     time: string;

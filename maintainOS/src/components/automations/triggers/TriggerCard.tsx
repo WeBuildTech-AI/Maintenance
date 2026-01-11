@@ -189,17 +189,19 @@ export function TriggerCard({
           Meter <span className="text-red-500">(Required)</span>
         </label>
         <div className="relative">
-          <DynamicSelect
-            name="trigger-meter"
-            placeholder="Start typing..."
-            options={meterOptions}
-            loading={isMetersLoading}
-            value={selectedMeterId}
-            onSelect={handleMeterSelect}
-            onFetch={onFetchMeters}
-            activeDropdown={activeDropdown}
-            setActiveDropdown={setActiveDropdown}
-          />
+          <div className={selectedMeterId ? "pr-8" : ""}>
+            <DynamicSelect
+              name="trigger-meter"
+              placeholder="Start typing..."
+              options={meterOptions}
+              loading={isMetersLoading}
+              value={selectedMeterId}
+              onSelect={handleMeterSelect}
+              onFetch={onFetchMeters}
+              activeDropdown={activeDropdown}
+              setActiveDropdown={setActiveDropdown}
+            />
+          </div>
           {selectedMeterId && (
             <button
               onClick={handleClearMeter}
