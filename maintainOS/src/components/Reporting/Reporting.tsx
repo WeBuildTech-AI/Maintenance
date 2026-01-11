@@ -22,13 +22,37 @@ type TabType =
   | "export-data"
   | "custom-dashboards";
 
+// Helper function to format date as MM/DD/YYYY
+const formatDate = (date: Date): string => {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${month}/${day}/${year}`;
+};
+
+// Calculate default date range (last one month)
+const getDefaultDateRange = () => {
+  const today = new Date();
+  const oneMonthAgo = new Date(today);
+  oneMonthAgo.setMonth(today.getMonth() - 1);
+  
+  return {
+    startDate: formatDate(oneMonthAgo),
+    endDate: formatDate(today),
+    currentMonth: today.getMonth(),
+    currentYear: today.getFullYear(),
+  };
+};
+
 export function Reporting() {
+  const defaultDates = getDefaultDateRange();
+  
   const [activeTab, setActiveTab] = useState<TabType>("work-orders");
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [startDate, setStartDate] = useState("10/01/2025");
-  const [endDate, setEndDate] = useState("12/05/2025");
-  const [selectedMonth, setSelectedMonth] = useState(9); // October (0-indexed)
-  const [selectedYear, setSelectedYear] = useState(2025);
+  const [startDate, setStartDate] = useState(defaultDates.startDate);
+  const [endDate, setEndDate] = useState(defaultDates.endDate);
+  const [selectedMonth, setSelectedMonth] = useState(defaultDates.currentMonth);
+  const [selectedYear, setSelectedYear] = useState(defaultDates.currentYear);
   const [filterParams, setFilterParams] = useState<Record<string, any>>({});
   const [tempStartDate, setTempStartDate] = useState(startDate);
   const [tempEndDate, setTempEndDate] = useState(endDate);
