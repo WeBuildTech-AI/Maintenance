@@ -1,19 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Pencil, MoreVertical, Clock, Building2, Gauge, Timer, Play, FileText, ExternalLink, Loader2 } from "lucide-react";
 import { Switch } from "../ui/switch-automations";
 import type { Automation } from "./AutomationsList";
 import { useAppDispatch } from "../../store/hooks";
-import { switchAutomation } from "../../store/automations/automations.thunks";
+import { deleteAutomation, switchAutomation } from "../../store/automations/automations.thunks";
+import { AutomationOptionsModal } from "./modals/AutomationOptionsModal";
+import DeleteAutomationModal from "./modals/DeleteAutomationModal";
 
 interface AutomationDetailsProps {
   automation: Automation;
+  onEdit?: () => void;
 }
 
-export function AutomationDetails({ automation }: AutomationDetailsProps) {
+export function AutomationDetails({ automation, onEdit }: AutomationDetailsProps) {
   const dispatch = useAppDispatch();
   const [isSwitching, setIsSwitching] = useState(false);
+  const [showOptionsModal, setShowOptionsModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const moreButtonRef = useRef<HTMLButtonElement>(null);
 
   const handleSwitchToggle = async () => {
     setIsSwitching(true);
@@ -23,6 +30,29 @@ export function AutomationDetails({ automation }: AutomationDetailsProps) {
       console.error("Failed to switch automation:", error);
     } finally {
       setIsSwitching(false);
+    }
+  };
+
+  const handleCopyAutomation = () => {
+    // TODO: Implement copy automation logic
+    console.log("Copy automation:", automation.id);
+  };
+
+  const handleDeleteClick = () => {
+    // Show confirmation modal
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await dispatch(deleteAutomation(automation.id)).unwrap();
+      setShowDeleteModal(false);
+      // Optionally navigate back or refresh the list
+    } catch (error) {
+      console.error("Failed to delete automation:", error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -43,13 +73,31 @@ export function AutomationDetails({ automation }: AutomationDetailsProps) {
             <p className="text-sm text-gray-500">Created on {automation.createdOn}</p>
           </div>
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-1 text-orange-600 hover:text-orange-700 text-sm font-medium">
+            <button 
+              className="flex items-center gap-1 text-orange-600 hover:text-orange-700 text-sm font-medium"
+              onClick={onEdit}
+            >
               <Pencil className="w-4 h-4" />
               Edit
             </button>
-            <button className="p-1 hover:bg-gray-100 rounded">
-              <MoreVertical className="w-5 h-5 text-gray-500" />
-            </button>
+            <div className="relative">
+              <button 
+                ref={moreButtonRef}
+                className="p-1 hover:bg-gray-100 rounded"
+                onClick={() => setShowOptionsModal(true)}
+              >
+                <MoreVertical className="w-5 h-5 text-gray-500" />
+              </button>
+              
+              {/* Automation Options Dropdown */}
+              <AutomationOptionsModal
+                open={showOptionsModal}
+                onClose={() => setShowOptionsModal(false)}
+                onCopy={handleCopyAutomation}
+                onDelete={handleDeleteClick}
+                buttonRef={moreButtonRef}
+              />
+            </div>
           </div>
         </div>
 
@@ -213,6 +261,13 @@ export function AutomationDetails({ automation }: AutomationDetailsProps) {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteAutomationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }

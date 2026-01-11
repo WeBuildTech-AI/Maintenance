@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store"
 import { NewAutomationForm } from "./NewAutomationForm";
+import { EditAutomationForm } from "./EditAutomationForm";
 import { AutomationsHeaderComponent } from "./AutomationsHeader";
 import { AutomationsList, type Automation } from "./AutomationsList";
 import { AutomationDetails } from "./AutomationDetails";
@@ -20,6 +21,8 @@ export function Automations() {
 
   // Local State
   const [isCreatingRule, setIsCreatingRule] = useState(false);
+  const [isEditingAutomation, setIsEditingAutomation] = useState(false);
+  const [editingAutomationId, setEditingAutomationId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("panel");
   const [searchQuery, setSearchQuery] = useState("");
@@ -182,8 +185,25 @@ export function Automations() {
     dispatch(setSelectedAutomation(firstInTab || null));
   };
 
+  // Memoize the onBack callback to prevent infinite re-renders
+  const handleEditBack = useCallback(() => {
+    setIsEditingAutomation(false);
+    setEditingAutomationId(null);
+    // Refresh automations list
+    dispatch(fetchAutomations());
+  }, [dispatch]);
+
   if (isCreatingRule) {
     return <NewAutomationForm onBack={() => setIsCreatingRule(false)} />;
+  }
+
+  if (isEditingAutomation && editingAutomationId) {
+    return (
+      <EditAutomationForm
+        automationId={editingAutomationId}
+        onBack={handleEditBack}
+      />
+    );
   }
 
   return (
@@ -219,7 +239,13 @@ export function Automations() {
         <div className="flex-1 border border-border bg-card min-h-0 flex flex-col overflow-hidden">
           {selectedUiAutomation ? (
             <div className="overflow-y-auto h-full">
-              <AutomationDetails automation={selectedUiAutomation} />
+              <AutomationDetails 
+                automation={selectedUiAutomation}
+                onEdit={() => {
+                  setIsEditingAutomation(true);
+                  setEditingAutomationId(selectedUiAutomation.id);
+                }}
+              />
             </div>
           ) : (
             <div className="flex-1 flex items-center justify-center bg-card h-full">

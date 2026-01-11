@@ -32,6 +32,7 @@ interface TriggerCardProps {
   activeDropdown: string | null;
   setActiveDropdown: (name: string | null) => void;
   onChange?: (data: TriggerData) => void;
+  initialData?: TriggerData;
 }
 
 export function TriggerCard({
@@ -46,20 +47,21 @@ export function TriggerCard({
   activeDropdown,
   setActiveDropdown,
   onChange,
+  initialData,
 }: TriggerCardProps) {
-  const [selectedAssetId, setSelectedAssetId] = useState<string>("");
-  const [selectedMeterId, setSelectedMeterId] = useState<string>("");
-  const [conditions, setConditions] = useState<Condition[]>([]);
+  const [selectedAssetId, setSelectedAssetId] = useState<string>(initialData?.assetId || "");
+  const [selectedMeterId, setSelectedMeterId] = useState<string>(initialData?.meterId || "");
+  const [conditions, setConditions] = useState<Condition[]>(initialData?.conditions || []);
   const [meterUnit, setMeterUnit] = useState<string>("");
-  const [forOption, setForOption] = useState<string>("oneReading");
+  const [forOption, setForOption] = useState<string>(initialData?.forOption || "oneReading");
   
   // For "Multiple readings" option
-  const [multipleReadingsCount, setMultipleReadingsCount] = useState<string>("");
-  const [lastReadingsCount, setLastReadingsCount] = useState<string>("");
+  const [multipleReadingsCount, setMultipleReadingsCount] = useState<string>(initialData?.multipleReadingsCount || "");
+  const [lastReadingsCount, setLastReadingsCount] = useState<string>(initialData?.lastReadingsCount || "");
   
   // For "A reading longer than" option
-  const [durationValue, setDurationValue] = useState<string>("");
-  const [timeUnit, setTimeUnit] = useState<string>("minutes");
+  const [durationValue, setDurationValue] = useState<string>(initialData?.durationValue || "");
+  const [timeUnit, setTimeUnit] = useState<string>(initialData?.timeUnit || "minutes");
 
   // Notify parent of data changes
   useEffect(() => {
@@ -157,11 +159,11 @@ export function TriggerCard({
   ];
 
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-4 mb-4">
+    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 space-y-4 mb-4">
       <div className="flex justify-between items-center">
         <p className="font-medium text-blue-800">When: {title}</p>
         <button className="p-2 hover:bg-blue-100 rounded" onClick={onDelete}>
-          <Trash2 className="h-4 w-4 text-blue-600" />
+          <Trash2 className="h-5 w-5 text-red-600" />
         </button>
       </div>
 

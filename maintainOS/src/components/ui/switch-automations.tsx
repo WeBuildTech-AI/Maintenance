@@ -2,47 +2,45 @@
 
 import * as React from "react";
 
-interface SwitchProps
-  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onChange"> {
+export interface SwitchProps {
   checked?: boolean;
   onCheckedChange?: (checked: boolean) => void;
+  disabled?: boolean;
+  className?: string;
 }
 
-const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
-  ({ className, checked, onCheckedChange, ...props }, ref) => {
+export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
+  ({ className = "", checked = false, onCheckedChange, disabled = false }, ref) => {
+    const handleClick = () => {
+      if (!disabled && onCheckedChange) {
+        onCheckedChange(!checked);
+      }
+    };
+
     return (
       <button
+        ref={ref}
         type="button"
         role="switch"
         aria-checked={checked}
-        data-state={checked ? "checked" : "unchecked"}
-        ref={ref}
-        onClick={() => onCheckedChange && onCheckedChange(!checked)}
+        disabled={disabled}
+        onClick={handleClick}
         className={`
-          relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 
-          transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-          disabled:opacity-50 disabled:cursor-not-allowed
-          
-          /* --- COLOR LOGIC --- */
-          ${checked 
-            ? "bg-orange-600 border-orange-600"  // ON: Orange fill, Orange border
-            : "bg-gray-200 border-gray-200"      // OFF: Gray fill, Gray border
-          }
+          relative inline-flex h-6 w-11 items-center rounded-full
+          transition-colors duration-200 ease-in-out
+          focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2
+          border-2
+          ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+          ${checked ? 'bg-orange-500 hover:bg-orange-600 border-orange-600' : 'bg-gray-300 hover:bg-gray-400 border-gray-400'}
           ${className}
         `}
-        {...props}
       >
+        <span className="sr-only">On/Off</span>
         <span
-          aria-hidden="true"
           className={`
-            pointer-events-none inline-block h-4 w-4 transform rounded-full shadow-lg ring-0 
-            transition duration-200 ease-in-out mt-0.5
-            
-            /* --- KNOB MOVEMENT & COLOR --- */
-            ${checked 
-              ? "translate-x-5 bg-white"        // ON: Move Right, White Knob
-              : "translate-x-0.5 bg-white"      // OFF: Left, White Knob
-            }
+            inline-block h-5 w-5 transform rounded-full bg-white shadow-lg
+            transition-transform duration-200 ease-in-out
+            ${checked ? 'translate-x-5' : 'translate-x-0'}
           `}
         />
       </button>
@@ -51,5 +49,3 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
 );
 
 Switch.displayName = "Switch";
-
-export { Switch };
