@@ -1,3 +1,11 @@
+export interface MeasurementUnit {
+  id: string;
+  name: string;
+  symbol: string;
+  category: string;
+  organizationId: string;
+}
+
 export interface MeterResponse {
   id: string;
   organizationId: string;
@@ -11,7 +19,7 @@ export interface MeterResponse {
   photos?: string[];
   createdAt: string;
   updatedAt: string;
-  MeasurementRes: [];
+  measurement?: MeasurementUnit;
 }
 
 export interface CreateMeterData {

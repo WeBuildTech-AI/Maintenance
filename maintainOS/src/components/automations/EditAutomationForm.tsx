@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
@@ -27,23 +27,29 @@ import { TriggerCard, type TriggerData } from "./triggers/TriggerCard";
 import type { SelectOption } from "../work-orders/NewWorkOrderForm/DynamicSelect";
 import { fetchFilterData } from "../utils/filterDataFetcher";
 import { useAppDispatch } from "../../store/hooks";
-import { createAutomation } from "../../store/automations/automations.thunks";
+import { fetchAutomationById, updateAutomation } from "../../store/automations/automations.thunks";
 import { toast } from "../ui/use-toast";
 
-export function NewAutomationForm({ onBack }: { onBack: () => void }) {
+interface EditAutomationFormProps {
+  automationId: string;
+  onBack: () => void;
+}
+
+export function EditAutomationForm({ automationId, onBack }: EditAutomationFormProps) {
   const dispatch = useAppDispatch();
   
   const [showDiscardModal, setShowDiscardModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedActionType, setSelectedActionType] = useState<"work_order" | "change_status" | null>(null);
   const [showCreateBlankForm, setShowCreateBlankForm] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Form fields
   const [automationName, setAutomationName] = useState("");
   const [description, setDescription] = useState("");
 
-  const [triggers, setTriggers] = useState<string[]>(["Meter Reading"]);
+  const [triggers, setTriggers] = useState<string[]>([]);
   const [triggerDataMap, setTriggerDataMap] = useState<Map<number, TriggerData>>(new Map());
   
   // Action data
@@ -56,6 +62,103 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
   const [meterOptions, setMeterOptions] = useState<SelectOption[]>([]);
   const [isAssetsLoading, setIsAssetsLoading] = useState(false);
   const [isMetersLoading, setIsMetersLoading] = useState(false);
+
+  // Fetch automation data on mount
+  useEffect(() => {
+    const loadAutomationData = async () => {
+      try {
+        setIsLoading(true);
+        const automation = await dispatch(fetchAutomationById(automationId)).unwrap();
+        
+        // Populate basic fields
+        setAutomationName(automation.name || "");
+        setDescription(automation.description || "");
+
+        // Populate triggers
+        if (automation.triggers?.when && Array.isArray(automation.triggers.when)) {
+          const triggersArray = automation.triggers.when;
+          setTriggers(triggersArray.map(() => "Meter Reading"));
+
+          // Map API trigger data to form data
+          const newTriggerDataMap = new Map<number, TriggerData>();
+          triggersArray.forEach((trigger: any, index: number) => {
+            // Map API operator format back to UI format
+            const operatorReverseMap: Record<string, string> = {
+              "eq": "equal",
+              "ne": "notEqual",
+              "gt": "above",
+              "lt": "below",
+              "gte": "aboveOrEqual",
+              "lte": "belowOrEqual",
+              "between": "isBetween",
+              "decreases_by_from_last_trigger": "DecreasedbyLastTrigger",
+              "increases_by_from_last_trigger": "IncreasedbyLastTrigger",
+              "increases_by_from_last_reading": "IncreasedbyLastReading",
+              "decreases_by_from_last_reading": "DecreasedbyLastReading"
+            };
+
+            // Map scope type back to UI format
+            const scopeReverseMap: Record<string, string> = {
+              "one_reading": "oneReading",
+              "multiple_readings": "multipleReadings",
+              "reading_longer_than": "readingLongerThan"
+            };
+
+            const conditions = (trigger.rules || []).map((rule: any, ruleIndex: number) => ({
+              id: `${index}-${ruleIndex}`,
+              operator: operatorReverseMap[rule.op] || rule.op,
+              value: String(rule.value || "")
+            }));
+
+            newTriggerDataMap.set(index, {
+              meterId: trigger.meterId || "",
+              assetId: trigger.assetId || "",
+              conditions,
+              forOption: scopeReverseMap[trigger.scope?.type] || "oneReading",
+              multipleReadingsCount: "",
+              lastReadingsCount: "",
+              durationValue: "",
+              timeUnit: "minutes",
+            });
+          });
+
+          setTriggerDataMap(newTriggerDataMap);
+        }
+
+        // Populate actions
+        if (automation.actions && Array.isArray(automation.actions) && automation.actions.length > 0) {
+          const firstAction = automation.actions[0];
+          
+          if (firstAction.type === "create_work_order") {
+            setSelectedActionType("work_order");
+            setShowCreateBlankForm(true);
+            setWorkOrderActionData({
+              title: firstAction.title || "",
+              description: firstAction.description || "",
+              assetId: firstAction.assetId || "{{asset.id}}",
+              assigneeUserIds: firstAction.assigneeUserIds || [],
+              assigneeTeamIds: firstAction.assigneeTeamIds || [],
+              onlyIfPreviousClosed: firstAction.onlyIfPreviousClosed || false,
+            });
+          } else if (firstAction.type === "change_asset_status") {
+            setSelectedActionType("change_status");
+            setChangeStatusActionData({
+              assetId: firstAction.assetId || "{{asset.id}}",
+              status: firstAction.status || "offline",
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load automation:", error);
+        toast.error("Failed to load automation data");
+        onBack();
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadAutomationData();
+  }, [automationId, dispatch, onBack]);
 
   // Fetch handlers
   const handleFetchAssets = async () => {
@@ -94,6 +197,20 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
     }
   };
 
+  // Automatically fetch assets and meters on mount so dropdowns can display selected values
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      // Fetch both assets and meters in parallel
+      await Promise.all([
+        handleFetchAssets(),
+        handleFetchMeters()
+      ]);
+    };
+
+    fetchInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
+
   // Handle trigger data changes
   const handleTriggerChange = useCallback((index: number, data: TriggerData) => {
     setTriggerDataMap(prev => {
@@ -113,8 +230,8 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
     setChangeStatusActionData(data);
   }, []);
 
-  // Handle automation creation
-  const handleCreate = async () => {
+  // Handle automation update
+  const handleSave = async () => {
     // Validation
     if (!automationName.trim()) {
       toast.error("Please enter an automation name");
@@ -132,11 +249,11 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
     }
 
     try {
-      setIsCreating(true);
+      setIsSaving(true);
 
       // Build triggers from collected data
       const triggersData = Array.from(triggerDataMap.values())
-        .filter(data => data.meterId && data.conditions.length > 0) // Only include triggers with meter AND conditions
+        .filter(data => data.meterId && data.conditions.length > 0)
         .map(data => {
           // Map operator strings to API format
           const operatorMap: Record<string, string> = {
@@ -165,7 +282,6 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
             value: parseFloat(condition.value) || 0
           }));
 
-
           return {
             type: "meter_reading",
             meterId: data.meterId,
@@ -181,7 +297,6 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
       const automationData = {
         name: automationName,
         description: description || undefined,
-        isEnabled: true,
         triggers: {
           when: triggersData
         },
@@ -217,26 +332,37 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
         })(),
       };
 
-      await dispatch(createAutomation(automationData)).unwrap();
+      await dispatch(updateAutomation({ id: automationId, automationData })).unwrap();
       
-      toast.success("Automation created successfully!");
+      toast.success("Automation updated successfully!");
       
-      // Navigate back or reset form
+      // Navigate back
       onBack();
     } catch (error: any) {
-      console.error("Failed to create automation:", error);
+      console.error("Failed to update automation:", error);
       
       // Extract detailed error message
       const errorMessage = error?.message 
         || error?.error 
         || error 
-        || "Failed to create automation";
+        || "Failed to update automation";
       
       toast.error(errorMessage);
     } finally {
-      setIsCreating(false);
+      setIsSaving(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading automation...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -244,14 +370,14 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
       <div className="flex justify-between items-center">
         <Button variant="ghost" onClick={() => setShowDiscardModal(true)}>
           <ChevronLeft className="h-4 w-4 mr-2" />
-          New Automation
+          Edit Automation
         </Button>
         <Button 
           className="gap-2 cursor-pointer bg-orange-600 hover:bg-orange-700"
-          onClick={handleCreate}
-          disabled={isCreating}
+          onClick={handleSave}
+          disabled={isSaving}
         >
-          {isCreating ? "Creating..." : "Create"}
+          {isSaving ? "Saving..." : "Save Changes"}
         </Button>
       </div>
 
@@ -314,6 +440,7 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
                 activeDropdown={activeDropdown}
                 setActiveDropdown={setActiveDropdown}
                 onChange={(data) => handleTriggerChange(index, data)}
+                initialData={triggerDataMap.get(index)}
               />
             ))}
 
@@ -366,6 +493,7 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
                   <CreateBlankWorkOrderForm
                     onBack={() => setShowCreateBlankForm(false)}
                     onChange={handleWorkOrderChange}
+                    initialData={workOrderActionData}
                   />
                 ) : (
                   <div className="border rounded-md shadow bg-white mb-6">
@@ -412,6 +540,7 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
                   setChangeStatusActionData(null);
                 }}
                 onChange={handleChangeStatusChange}
+                initialData={changeStatusActionData}
               />
             )}
 
