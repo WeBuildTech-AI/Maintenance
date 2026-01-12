@@ -1,30 +1,9 @@
 import { Tag, FileText, Repeat, Settings, MapPin, Factory, Wrench, Hash, Users, Layers, Calendar } from "lucide-react";
 import FilterBar from "../../utils/FilterBar";
 
-// ✅ Updated ALL_FILTERS with static options for Criticality and Status
 const ALL_FILTERS = [
-  { 
-    key: "criticality", 
-    label: "Criticality", 
-    icon: <Tag size={16} />,
-    // 👇 Added User's Requested Options
-    options: [
-      { label: "High", value: "high" },
-      { label: "Medium", value: "medium" }, // Assuming 'Important' maps to High, or use value: "Important" if backend expects that
-      { label: "Low", value: "low" }   // Assuming 'Normal' maps to Medium, or use value: "Normal"
-    ]
-  },
-  { 
-    key: "status", 
-    label: "Status", 
-    icon: <Tag size={16} />,
-    // 👇 Added User's Requested Options
-    options: [
-      { label: "Online", value: "online" },
-      { label: "Offline", value: "offline" },
-      { label: "Do Not Track", value: "doNotTrack" } // camelCase value is usually safer for APIs
-    ]
-  },
+  { key: "criticality", label: "Criticality", icon: <Tag size={16} /> },
+  { key: "status", label: "Status", icon: <Tag size={16} /> },
   { key: "downtimeReason", label: "Downtime Reason", icon: <FileText size={16} /> },
   { key: "downtimeType", label: "Downtime Type", icon: <FileText size={16} /> },
   { key: "description", label: "Description", icon: <FileText size={16} /> },

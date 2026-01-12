@@ -8,40 +8,11 @@ export interface AssetResponse {
   criticality?: string;
   pictures?: string[];
   files?: string[];
-  manufacturer?: string;
+  manufacturer?: string; // Response might still return object/string, kept flexible
   model?: string;
   serialNumber?: string;
   createdAt: string;
   updatedAt: string;
-}
-
-// ✅ NEW: Added interfaces for Logs based on your JSON
-export interface AssetLog {
-  id: string;
-  assetId: string;
-  userId: string;
-  previousStatus: string;
-  status: string;
-  notes: string | null;
-  since: string;
-  to: string | null;
-  downtimeType: string | null;
-  createdAt: string;
-  updatedAt: string;
-  createdBy: string;
-  updatedBy: string;
-  user?: {
-    id: string;
-    fullName: string;
-    email: string;
-  };
-}
-
-export interface AssetLogResponse {
-  assetId: string;
-  totalLogs: number;
-  filters: any;
-  logs: AssetLog[];
 }
 
 export interface CreateAssetData {
@@ -54,7 +25,7 @@ export interface CreateAssetData {
   criticality?: string;
   pictures?: string[];
   files?: string[];
-  manufacturerId?: string;
+  manufacturerId?: string; // ✅ Renamed from manufacturer
   model?: string;
   serialNumber?: string;
   [key: string]: any;
@@ -73,7 +44,7 @@ export interface UpdateAssetData {
   criticality?: string;
   pictures?: string[];
   files?: string[];
-  manufacturerId?: string;
+  manufacturerId?: string; // ✅ Renamed from manufacturer
   model?: string;
   serialNumber?: string;
   [key: string]: any;
@@ -87,11 +58,13 @@ export interface UpdateAssetStatus {
   userId: string;
 }
 
+// API FILTER PARAMETERS
 export interface FetchAssetsParams {
   page?: number;
   limit?: number;
   name?: string;
   
+  // UI Filter Keys
   status?: string | string[];
   criticality?: string | string[];
   location?: any;
@@ -108,6 +81,7 @@ export interface FetchAssetsParams {
   workOrderRecurrence?: string;
   asset?: any;
 
+  // Strict API Keys
   statusOneOf?: string;
   locationOneOf?: string;
   [key: string]: any;

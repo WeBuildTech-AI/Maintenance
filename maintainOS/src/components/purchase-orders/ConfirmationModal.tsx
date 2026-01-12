@@ -1,5 +1,5 @@
 import { Check, X } from "lucide-react";
-
+import React from "react";
 
 function SuccessModal({ onClose, selectedPO }: any) {
   // We pass 'onClose' to the 'X' button

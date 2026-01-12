@@ -4,9 +4,7 @@ import { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom'; 
 import { 
   ChevronLeft, ChevronRight, Lock, RefreshCcw, CheckCircle2, 
-  User, X, Clock, Calendar as CalendarIcon, ChevronRight as ChevronRightIcon,
-  // ✅ Added Icons
-  MapPin, Factory, AlertCircle
+  User, X, Clock, Calendar as CalendarIcon, ChevronRight as ChevronRightIcon
 } from 'lucide-react';
 import type { WorkOrder } from "../../store/workOrders/workOrders.types";
 
@@ -145,16 +143,6 @@ function DayListModal({
   );
 }
 
-// ✅ HELPER: Priority Colors
-const getPriorityColor = (priority?: string) => {
-  switch (priority?.toLowerCase()) {
-    case 'high': return 'text-red-700 bg-red-50 border-red-200';
-    case 'medium': return 'text-orange-700 bg-orange-50 border-orange-200';
-    case 'low': return 'text-green-700 bg-green-50 border-green-200';
-    default: return 'text-gray-700 bg-gray-50 border-gray-200';
-  }
-};
-
 // --- 2. Hover Popover (Smart UI: Locked vs Details) ---
 function EventDetailPopover({ 
   workOrder, 
@@ -183,8 +171,8 @@ function EventDetailPopover({
 
   const statusLabel = workOrder.status ? workOrder.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Open';
 
-  const POPOVER_HEIGHT = 380; // Increased slightly for content
-  const POPOVER_WIDTH = 320;
+  const POPOVER_HEIGHT = 320; 
+  const POPOVER_WIDTH = 300;
   const SCREEN_HEIGHT = typeof window !== 'undefined' ? window.innerHeight : 800;
   const SCREEN_WIDTH = typeof window !== 'undefined' ? window.innerWidth : 1200;
 
@@ -236,19 +224,6 @@ function EventDetailPopover({
                 {statusLabel}
               </span>
             </div>
-
-            {/* ✅ Priority Section */}
-            {workOrder.priority && (
-              <div className="flex justify-between items-center">
-                <span className="text-gray-500 flex items-center gap-2">
-                  <AlertCircle size={14} className="text-gray-400"/> Priority
-                </span>
-                <span className={`px-2 py-0.5 rounded text-xs font-medium border uppercase ${getPriorityColor(workOrder.priority)}`}>
-                  {workOrder.priority}
-                </span>
-              </div>
-            )}
-
             <div className="h-px bg-gray-100 my-2" />
           </>
         ) : (
@@ -262,45 +237,9 @@ function EventDetailPopover({
           <span className="text-gray-900 font-medium">{formatDate(eventDate?.toISOString() || workOrder.dueDate)}</span>
         </div>
 
-        {/* ✅ Location Section */}
-        <div className="flex justify-between items-start gap-4">
-           <span className="text-gray-500 shrink-0 flex items-center gap-2">
-             <MapPin size={14} className="text-gray-400" /> Location
-           </span>
-           <div className="flex items-center gap-1 text-right overflow-hidden">
-             {workOrder.location ? (
-                <span className="text-gray-900 truncate font-medium">{workOrder.location.name}</span>
-             ) : (
-                <span className="text-gray-400">-</span>
-             )}
-           </div>
-        </div>
-
-        {/* ✅ Assets Section */}
-        <div className="flex justify-between items-start gap-4">
-           <span className="text-gray-500 shrink-0 flex items-center gap-2">
-             <Factory size={14} className="text-gray-400" /> Assets
-           </span>
-           <div className="flex flex-wrap justify-end gap-1">
-             {workOrder.assets && workOrder.assets.length > 0 ? (
-                workOrder.assets.slice(0, 3).map((a: any) => (
-                  <span key={a.id} className="flex items-center gap-1 px-2 py-1 bg-gray-50 border border-gray-200 rounded text-xs text-gray-700 max-w-[120px] truncate">
-                    <span className="truncate">{a.name}</span>
-                  </span>
-                ))
-             ) : (
-                <span className="text-gray-400">-</span>
-             )}
-             {workOrder.assets && workOrder.assets.length > 3 && (
-                <span className="text-xs text-gray-400 mt-1">+{workOrder.assets.length - 3} more</span>
-             )}
-           </div>
-        </div>
-
         <div className="flex justify-between items-center">
           <span className="text-gray-500">Estimated Time</span>
-          {/* ✅ UPDATED: Format to 2 decimal places */}
-          <span className="text-gray-900">{workOrder.estimatedTimeHours ? `${Number(workOrder.estimatedTimeHours).toFixed(2)}h` : '-'}</span>
+          <span className="text-gray-900">{workOrder.estimatedTimeHours ? `${workOrder.estimatedTimeHours}h` : '-'}</span>
         </div>
         
         <div className="flex justify-between items-center">
@@ -487,12 +426,7 @@ export function CalendarView({ workOrders, onRefreshWorkOrders }: CalendarViewPr
         assignees: wo.assignees,
         workType: wo.workType,
         estimatedTimeHours: wo.estimatedTimeHours,
-        
-        // ✅ PASS DATA FOR POPOVER
         priority: wo.priority,
-        location: wo.location,
-        assets: wo.assets,
-
         // Ghost due date is the calendar day itself
         dueDate: day.toISOString() 
       }));
@@ -511,12 +445,7 @@ export function CalendarView({ workOrders, onRefreshWorkOrders }: CalendarViewPr
       assignees: wo.assignees,
       workType: wo.workType,
       estimatedTimeHours: wo.estimatedTimeHours,
-      
-      // ✅ PASS DATA FOR POPOVER
       priority: wo.priority,
-      location: wo.location,
-      assets: wo.assets,
-
       dueDate: wo.dueDate
     }));
 
@@ -624,7 +553,7 @@ export function CalendarView({ workOrders, onRefreshWorkOrders }: CalendarViewPr
                       style={{ height: '7rem' }}
                     >
                       <div className="flex justify-end p-1">
-                        <span 
+                        <span
                             onClick={(e) => {
                                 e.stopPropagation();
                                 handleDayClick(day.fullDate, day.events);
@@ -718,7 +647,6 @@ export function CalendarView({ workOrders, onRefreshWorkOrders }: CalendarViewPr
                                evt.icon === 'check' ? <CheckCircle2 className="h-3 w-3 text-green-500" /> : 
                                evt.icon === 'refresh' ? <RefreshCcw className="h-3 w-3 text-blue-500" /> : 
                                <Clock className="h-3 w-3 text-gray-500" />}
-                              
                               <span className={`text-xs truncate ${isLocked ? 'text-gray-400' : 'text-gray-800 group-hover:text-blue-600'}`}>
                                 {evt.title}
                               </span>

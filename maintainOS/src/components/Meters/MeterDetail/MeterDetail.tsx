@@ -2,15 +2,19 @@ import React, { useEffect, useState } from "react";
 import {
   Building2,
   Edit,
+  FastForward,
   LinkIcon,
   MapPin,
   MoreHorizontal,
   Plus,
-  Copy,
+  Copy, // Imported Copy Icon
 } from "lucide-react";
 import { Button } from "../../ui/button";
+import { MeterAutomations } from "./MeterAutomations";
 import { MeterDetailsSection } from "./MeterDetailsSection";
 import { MeterReadings } from "./MeterReadings";
+import { MeterWorkOrders } from "./MeterWorkOrders";
+import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,15 +23,13 @@ import {
 } from "../../ui/dropdown-menu";
 import { formatDate } from "../../utils/Date";
 import type { AppDispatch, RootState } from "../../../store";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux"; // Imported useDispatch
 import MeterDeleteModal from "../MeterDeleteModal";
 import RecordReadingModal from "./RecordReadingModal";
 import toast from "react-hot-toast";
 import { Tooltip } from "../../ui/tooltip";
-import { meterService, createMeter } from "../../../store/meters";
+import { meterService, createMeter } from "../../../store/meters"; // Imported createMeter
 import { workOrderService } from "../../../store/workOrders";
-import { NewMeterForm } from "../NewMeterForm/NewMeterForm";
-import { useNavigate } from "react-router-dom"; // ✅ Import
 
 export function MeterDetail({
   selectedMeter,
@@ -38,14 +40,11 @@ export function MeterDetail({
   restoreData,
   onClose,
 }: any) {
-  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>(); // Initialize dispatch
   const user = useSelector((state: RootState) => state.auth.user);
-  
-  const [createdUserName, setCreatedUserName] = useState("Unknown");
-  const [updatedUserName, setUpdatedUserName] = useState("Unknown");
+  const [createdUser, setCreatedUser] = useState("");
   const [openMeterDeleteModal, setOpenMeterDeleteModal] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
   const modalRef = React.useRef<HTMLDivElement>(null);
 
   const handleRestoreData = async () => {
@@ -58,70 +57,67 @@ export function MeterDetail({
     }
   };
 
-  const fetchMeterUsers = async () => {
+  const fetchCreatedUser = async () => {
+    let res: string[];
     try {
-      if (selectedMeter.createdBy) {
-        const res = await workOrderService.fetchUserById(selectedMeter.createdBy);
-        setCreatedUserName(res.fullName || "Unknown");
-      } else {
-        setCreatedUserName("Unknown");
-      }
-      if (selectedMeter.updatedBy) {
-          const res = await workOrderService.fetchUserById(selectedMeter.updatedBy);
-          setUpdatedUserName(res.fullName || "Unknown");
-      } else {
-        setUpdatedUserName("Unknown");
-      }
-
+      const res = await workOrderService.fetchUserById(selectedMeter.createdBy);
+      setCreatedUser(res.fullName);
     } catch (err) {
-      console.log("Error fetching user details:", err);
+      console.log(err);
     }
   };
 
   useEffect(() => {
-    fetchMeterUsers();
-  }, [selectedMeter.id, selectedMeter.createdBy, selectedMeter.updatedBy]);
+    fetchCreatedUser();
+  }, [selectedMeter.createdBy]);
 
+  // New Feature: Handle Copy Meter
   const handleCopyMeter = async () => {
     const loadingToast = toast.loading("Copying meter...");
     try {
       const formData = new FormData();
+
+      // 1. Prefix Name
       formData.append("name", `Copy-${selectedMeter.name}`);
+
+      // 2. Copy Type
       formData.append("meterType", selectedMeter.meterType || "manual");
 
-      const measId = selectedMeter.measurementId || selectedMeter.measurement?.id;
-      if (measId) formData.append("measurementId", measId);
-
-      if (selectedMeter.description) formData.append("description", selectedMeter.description);
-      if (selectedMeter.assetId) formData.append("assetId", selectedMeter.assetId);
-      if (selectedMeter.locationId) formData.append("locationId", selectedMeter.locationId);
-
-      if (selectedMeter.readingFrequency) {
-        formData.append("readingFrequency", JSON.stringify(selectedMeter.readingFrequency));
+      // 3. Copy Measurement Unit (Handle potential structure differences)
+      const measId =
+        selectedMeter.measurementId || selectedMeter.measurement?.id;
+      if (measId) {
+        formData.append("measurementId", measId);
       }
 
+      // 4. Copy Optional Fields
+      if (selectedMeter.description)
+        formData.append("description", selectedMeter.description);
+      if (selectedMeter.assetId)
+        formData.append("assetId", selectedMeter.assetId);
+      if (selectedMeter.locationId)
+        formData.append("locationId", selectedMeter.locationId);
+
+      // 5. Copy Frequency (Ensure it's stringified as per NewMeterForm logic)
+      if (selectedMeter.readingFrequency) {
+        formData.append(
+          "readingFrequency",
+          JSON.stringify(selectedMeter.readingFrequency)
+        );
+      }
+
+      // 6. Dispatch Create Action
       await dispatch(createMeter(formData)).unwrap();
+
       toast.success("Meter copied successfully!", { id: loadingToast });
-      if (fetchMeters) fetchMeters();
+
+      // 7. Refresh List
+      fetchMeters();
     } catch (err: any) {
+      console.error("Failed to copy meter:", err);
       toast.error(err.message || "Failed to copy meter", { id: loadingToast });
     }
   };
-
-  if (isEditing) {
-    return (
-      <div className="h-full overflow-y-auto p-2">
-        <NewMeterForm
-          editingMeter={selectedMeter}
-          onCancel={() => setIsEditing(false)}
-          onCreate={() => {
-            if (fetchMeters) fetchMeters();
-            setIsEditing(false);
-          }}
-        />
-      </div>
-    );
-  }
 
   return (
     <>
@@ -148,22 +144,22 @@ export function MeterDetail({
               </Tooltip>
               <Button
                 className="gap-2 bg-orange-600 hover:bg-orange-700"
-                onClick={() => setIsRecordModalOpen && setIsRecordModalOpen(true)}
+                onClick={() => setIsRecordModalOpen(true)}
               >
                 <Plus className="h-4 w-4" />
                 Record Reading
               </Button>
-              
               <Button
                 variant="ghost"
                 size="sm"
                 className="gap-2 text-orange-600"
-                onClick={() => setIsEditing(true)}
+                onClick={() => {
+                  navigate(`/meters/${selectedMeter.id}/edit`);
+                }}
               >
                 <Edit className="h-4 w-4" />
                 Edit
               </Button>
-              
               <div className="flex items-center gap-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -172,6 +168,7 @@ export function MeterDetail({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="mt-2">
+                    {/* ✅ New Copy Option */}
                     <DropdownMenuItem onClick={handleCopyMeter}>
                       <Copy className="mr-2 h-4 w-4" />
                       Copy Meter
@@ -186,8 +183,7 @@ export function MeterDetail({
                     {restoreData && (
                       <DropdownMenuItem
                         onClick={() => {
-                          handleRestoreData();
-                          if (onClose) onClose();
+                          handleRestoreData(), onClose();
                         }}
                       >
                         {restoreData}
@@ -201,31 +197,25 @@ export function MeterDetail({
 
           <div className="flex items-center gap-4 text-muted-foreground">
             {selectedMeter?.assetId && (
-              <div 
-                // ✅ UPDATED: Path-based Routing
-                onClick={() => {
-                  console.log("👉 Detail View Asset Click:", selectedMeter.assetId);
-                  navigate(`/assets/${selectedMeter.assetId}`);
-                }}
-                className="flex items-center cursor-pointer gap-2 hover:text-orange-600 hover:underline"
-              >
+              <div className="flex items-center cursor-pointer gap-2">
                 <Building2 className="h-4 w-4" />
-                <span>
+                <span
+                  onClick={() =>
+                    navigate(`/assets?assetId=${selectedMeter.asset.id}`)
+                  }
+                >
                   {selectedMeter.asset && selectedMeter.asset.name}
                 </span>
               </div>
             )}
             {selectedMeter?.locationId && (
-              <div 
-                // ✅ UPDATED: Path-based Routing
-                onClick={() => {
-                   console.log("👉 Detail View Location Click:", selectedMeter.locationId);
-                   navigate(`/locations/${selectedMeter.locationId}`);
-                }}
-                className="flex items-center gap-2 cursor-pointer hover:text-orange-600 hover:underline"
-              >
+              <div className="flex items-center gap-2 cursor-pointer">
                 <MapPin className="h-4 w-4" />
-                <span>
+                <span
+                  onClick={() =>
+                    navigate(`/locations/${selectedMeter.location.id}`)
+                  }
+                >
                   {selectedMeter.location && selectedMeter.location.name}
                 </span>
               </div>
@@ -240,25 +230,38 @@ export function MeterDetail({
             setShowReadingMeter={setShowReadingMeter}
           />
           <MeterDetailsSection selectedMeter={selectedMeter} />
-          
-          <div className="text-sm text-gray-500 mt-6">
-            Created By{" "}
-            <span className="font-medium text-gray-700 capitalize">
-              {createdUserName}
-            </span>{" "}
-            on {formatDate(selectedMeter.createdAt)}
-          </div>
-
-          {selectedMeter.createdAt !== selectedMeter.updatedAt && (
-             <div className="text-sm text-gray-500 mt-1">
+          {/* <MeterAutomations /> */}
+          {/* <MeterWorkOrders selectedMeter={selectedMeter} /> */}
+          {selectedMeter.createdAt === selectedMeter.updatedAt ? (
+            <>
+              <div className="text-sm text-gray-500 mt-6">
+                Created By{" "}
+                <span className="font-medium text-gray-700 capitalize">
+                  {createdUser}
+                </span>{" "}
+                on {formatDate(selectedMeter.createdAt)}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-sm text-gray-500 mt-6">
+                Created By{" "}
+                <span className="font-medium text-gray-700 capitalize">
+                  {createdUser}
+                </span>{" "}
+                on {formatDate(selectedMeter.createdAt)}
+              </div>
+              <div className="text-sm text-gray-500 mt-6">
                 Updated By{" "}
                 <span className="font-medium text-gray-700 capitalize">
-                  {updatedUserName}
+                  {user?.fullName}
                 </span>{" "}
-                on {formatDate(selectedMeter.updatedAt)}
-             </div>
+                on {formatDate(selectedMeter.createdAt)}
+              </div>
+            </>
           )}
 
+          {/* Delete Modal */}
           {openMeterDeleteModal && (
             <MeterDeleteModal
               modalRef={modalRef}

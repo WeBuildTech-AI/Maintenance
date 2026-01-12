@@ -40,7 +40,6 @@ interface AssetDetailContentProps {
   fetchAssetsData: () => void;
   setSeeMoreAssetStatus: boolean;
   createdUser: string;
-  updatedUser: string; // Added to match previous requirements
 }
 
 // Helper type for Date Range
@@ -51,11 +50,10 @@ export function AssetDetailContent({
   fetchAssetsData,
   setSeeMoreAssetStatus,
   createdUser,
-  updatedUser, // Added to match previous requirements
 }: AssetDetailContentProps) {
   const navigate = useNavigate();
 
-  // Manage multiple date ranges by ID
+  // [!code ++] Manage multiple date ranges by ID
   const [chartDateRanges, setChartDateRanges] = useState<
     Record<string, DateRange>
   >({
@@ -69,7 +67,7 @@ export function AssetDetailContent({
     assetIds: asset.id,
   };
 
-  // Handler to update only the specific chart ID
+  // [!code ++] Handler to update only the specific chart ID
   const handleDateRangeChange = (id: string, start: Date, end: Date) => {
     setChartDateRanges((prev) => ({
       ...prev,
@@ -101,23 +99,19 @@ export function AssetDetailContent({
         <AssetPart asset={asset} />
 
         <WorkOrderHistoryChart
-          id="work-order-history" 
+          id="work-order-history" // [!code ++] Pass a unique ID
           title="Work Order History"
           workOrderHistory={asset?.workOrders}
           filters={filters}
-          dateRange={chartDateRanges["work-order-history"]} 
-          onDateRangeChange={handleDateRangeChange} 
+          dateRange={chartDateRanges["work-order-history"]} // [!code ++] Use specific range
+          onDateRangeChange={handleDateRangeChange} // [!code ++] Pass handler
           groupByField="createdAt"
           lineName="Created"
           lineColor="#0091ff"
         />
 
         {/* <AssetAutomations /> */}
-        <AssetCreatedUpdated 
-            asset={asset} 
-            createdUser={createdUser} 
-            updatedUser={updatedUser} 
-        />
+        <AssetCreatedUpdated asset={asset} createdUser={createdUser} />
       </div>
 
       {/* Center bottom floating button */}
@@ -132,14 +126,7 @@ export function AssetDetailContent({
       >
         <Button
           variant="outline"
-          onClick={() => 
-            // Prefill logic: Pass the asset data through navigation state
-            navigate("/work-orders/create", { 
-              state: { 
-                prefilledAsset: { id: asset.id, name: asset.name } 
-              } 
-            })
-          }
+          onClick={() => navigate("/work-orders/create")}
           className="text-yellow-600 cursor-pointer border-2 border-yellow-400 hover:bg-yellow-50 px-8 py-3 rounded-full shadow-lg bg-white font-medium whitespace-nowrap"
         >
           <Building2 className="w-5 h-5 mr-2" />

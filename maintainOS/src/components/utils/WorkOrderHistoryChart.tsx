@@ -12,7 +12,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { Settings } from "lucide-react";
+import { Loader2, Settings } from "lucide-react";
 import {
   format,
   parseISO,
@@ -23,9 +23,9 @@ import {
   subDays,
 } from "date-fns";
 import { mapFilters } from "../Reporting/filterUtils";
-// ✅ Import Type
-import { CustomDateRangeModal, type DateFilterConfig } from "./CustomDateRangeModal";
+import { CustomDateRangeModal } from "./CustomDateRangeModal";
 
+// --- Type Definitions ---
 interface ChartItem {
   groupValues: string[];
   value: number;
@@ -59,20 +59,12 @@ export function WorkOrderHistoryChart({
   showLegend = true,
   workOrderHistory,
 }: WorkOrderHistoryChartProps) {
-  
-  // ✅ Config State: Yaad rakhne ke liye ki user ne kya select kiya tha (e.g. Last 5 Days)
-  const [filterConfig, setFilterConfig] = useState<DateFilterConfig>({
-    tab: "last",
-    value: 15, // Default
-    unit: "days",
-  });
-
+  // --- State Initialization ---
   const [selectedDateRange, setSelectedDateRange] = useState(() => {
     if (dateRange && dateRange.startDate && dateRange.endDate) {
       return dateRange;
     }
     const end = new Date();
-    // Default 6 days approx (last week)
     const start = subDays(end, 6);
     return {
       startDate: format(start, "MM/dd/yyyy"),
@@ -89,16 +81,15 @@ export function WorkOrderHistoryChart({
     }
   }, [dateRange]);
 
-  // ✅ Updated Handler: Ab ye config bhi receive karta hai
-  const handleApplyFilter = (start: Date, end: Date, config: DateFilterConfig) => {
+  const handleApplyFilter = (start: Date, end: Date) => {
     const newRange = {
       startDate: format(start, "MM/dd/yyyy"),
       endDate: format(end, "MM/dd/yyyy"),
     };
 
     setSelectedDateRange(newRange);
-    setFilterConfig(config); // 🔥 Save config here
 
+    // [!code ++] Notify parent with ID
     if (onDateRangeChange) {
       onDateRangeChange(id, start, end);
     }
@@ -122,17 +113,6 @@ export function WorkOrderHistoryChart({
       return differenceInDays(end, start);
     } catch (e) {
       return 0;
-    }
-  }, [selectedDateRange]);
-
-  const currentModalDateRange = useMemo(() => {
-    try {
-      return {
-        from: parse(selectedDateRange.startDate, "MM/dd/yyyy", new Date()),
-        to: parse(selectedDateRange.endDate, "MM/dd/yyyy", new Date()),
-      };
-    } catch (e) {
-      return undefined;
     }
   }, [selectedDateRange]);
 
@@ -246,16 +226,18 @@ export function WorkOrderHistoryChart({
                   onClose={() => setIsFilterOpen(false)}
                   onApply={handleApplyFilter}
                   position="auto"
-                  initialDateRange={currentModalDateRange}
-                  // ✅ Pass saved config back to Modal
-                  initialConfig={filterConfig}
                 />
               )}
             </div>
           </CardHeader>
 
           <CardContent className="relative min-h-[250px]">
-            {isLoading && null}
+            {isLoading && (
+              // <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60 backdrop-blur-[1px] rounded-md transition-all duration-300">
+              //   <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+              // </div>
+              null
+            )}
 
             <div className="text-xs text-muted-foreground mb-4 text-right">
               {isValid(

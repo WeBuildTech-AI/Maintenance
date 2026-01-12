@@ -277,7 +277,21 @@ export const CommentsSection = forwardRef<
                 key={`${item.type}-${item.id || index}`}
                 className="flex gap-3 items-start group"
               >
-                
+                {/* AVATAR */}
+                <div
+                  className="w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center 
+                  text-white font-semibold text-sm shadow-sm overflow-hidden bg-blue-600"
+                >
+                  {authorAvatar ? (
+                    <img
+                      src={authorAvatar}
+                      alt={authorName}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    initials
+                  )}
+                </div>
 
                 {/* CONTENT */}
                 <div className="flex-1">

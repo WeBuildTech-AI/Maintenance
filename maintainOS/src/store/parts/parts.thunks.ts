@@ -1,4 +1,3 @@
-// src/store/parts/parts.thunks.ts
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { partService } from "./parts.service";
 import type { CreatePartPayload, UpdatePartPayload, RestockThunkArgs } from "./parts.types";
@@ -31,6 +30,7 @@ export const fetchPartById = createAsyncThunk(
   }
 );
 
+// ✅ CREATE (Expects JSON Payload)
 export const createPart = createAsyncThunk(
   "parts/createPart",
   async (partData: CreatePartPayload, { rejectWithValue }) => {
@@ -45,6 +45,7 @@ export const createPart = createAsyncThunk(
   }
 );
 
+// ✅ UPDATE (Expects JSON Payload)
 export const updatePart = createAsyncThunk(
   "parts/updatePart",
   async (
@@ -77,7 +78,7 @@ export const deletePart = createAsyncThunk(
 );
 
 export const fetchPartsName = createAsyncThunk(
-  "parts/fetchPartsName", 
+  "parts/fetchPartsName", // Fixed action type name
   async (_, { rejectWithValue }) => {
     try {
       const parts = await partService.fetchPartsName();
@@ -90,6 +91,7 @@ export const fetchPartsName = createAsyncThunk(
   }
 );
 
+// ✅ RESTOCK (Expects JSON Payload)
 export const restockPart = createAsyncThunk(
   "parts/restockPart",
   async (payload: RestockThunkArgs, { rejectWithValue }) => {
@@ -169,21 +171,6 @@ export const restorePartData = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to restore Part Data"
-      );
-    }
-  }
-);
-
-// ✅ FETCH PART LOGS
-export const fetchPartLogs = createAsyncThunk(
-  "parts/fetchPartLogs",
-  async (partId: string, { rejectWithValue }) => {
-    try {
-      const logs = await partService.fetchPartLogs(partId);
-      return logs;
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch part logs"
       );
     }
   }

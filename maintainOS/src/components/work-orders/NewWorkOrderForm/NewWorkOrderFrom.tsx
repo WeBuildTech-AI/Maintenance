@@ -75,22 +75,15 @@ const getChangedFields = (original: any, current: any) => {
     ];
 
     simpleFields.forEach((key) => {
-      let origVal = original[key];
-
-      // 🛠️ FIX: Handle location edge case (Backend sends object, Form has ID)
-      if (key === "locationId" && origVal === undefined && original.location?.id) {
-        origVal = original.location.id;
-      }
-
-      if (current[key] !== undefined && origVal !== current[key]) {
+      if (current[key] !== undefined && original[key] !== current[key]) {
         changes[key] = current[key];
       }
     });
 
     // 2. Estimated Time (Number Comparison)
     const origTime = original.estimatedTimeHours === null || original.estimatedTimeHours === undefined 
-                      ? 0 
-                      : Number(original.estimatedTimeHours);
+                     ? 0 
+                     : Number(original.estimatedTimeHours);
     
     // current.estimatedTimeHours is already converted to Number by handleSubmit
     const currTime = Number(current.estimatedTimeHours || 0);
@@ -166,6 +159,7 @@ const getChangedFields = (original: any, current: any) => {
     return changes;
 };
 
+// 🔴 FIX: Renamed NewWorkOrderFrom -> NewWorkOrderForm
 export function NewWorkOrderForm({
   onCreate,
   existingWorkOrder,
@@ -184,9 +178,6 @@ export function NewWorkOrderForm({
   const location = useLocation();
   const [searchParams] = useSearchParams(); 
   const authUser = useSelector((state: any) => state.auth.user);
-
-  // ✅ LOCAL STATE TO HOLD BASELINE DATA (Fixes issue where 'existingWorkOrder' prop is stale)
-  const [originalData, setOriginalData] = useState<any>(existingWorkOrder || {});
 
   const procedureEditMatch = useMatch("/work-orders/:workOrderId/edit/library/:procedureId");
   const deepEditingProcedureId = procedureEditMatch?.params?.procedureId;
@@ -238,26 +229,6 @@ export function NewWorkOrderForm({
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isAddProcModalOpen, setIsAddProcModalOpen] = useState(false);
 
-  // ✅ ADDED: Capture asset from Asset Detail navigation state
-  useEffect(() => {
-    if (location.state?.prefilledAsset) {
-      const { id, name } = location.state.prefilledAsset;
-      const assetIdStr = String(id);
-      
-      // Select the asset
-      setAssetIds((prev) => (prev.includes(assetIdStr) ? prev : [...prev, assetIdStr]));
-      
-      // Ensure the name is in the dropdown options
-      setAssetOptions((prev) => {
-        if (prev.some((opt) => opt.id === assetIdStr)) return prev;
-        return [...prev, { id: assetIdStr, name: name }];
-      });
-
-      // Clear state so it doesn't stay prefilled if user refreshes or navigates back
-      window.history.replaceState({}, document.title);
-    }
-  }, [location.state]);
-
   useEffect(() => {
     const paramLocationId = searchParams.get("locationId");
     if (paramLocationId && !activeId) {
@@ -272,6 +243,19 @@ export function NewWorkOrderForm({
             .catch((err: any) => console.error("Error prefilling location:", err));
     }
   }, [searchParams, activeId]);
+
+  // ✅ ADDED: Detect preselected vendor from navigation state
+  useEffect(() => {
+    if (location.state?.preselectedVendor) {
+      const { id, name } = location.state.preselectedVendor;
+      setVendorIds([id]);
+      setVendorOptions((prev) => {
+        // Prevent duplicates if already fetched
+        if (prev.some((opt) => opt.id === id)) return prev;
+        return [...prev, { id, name }];
+      });
+    }
+  }, [location.state]);
 
   useEffect(() => {
     if (location.state?.prefilledPart) {
@@ -344,26 +328,19 @@ export function NewWorkOrderForm({
   }, [deepEditingProcedureId]);
 
   useEffect(() => {
-    // Sync prop changes to local state if available
-    if (existingWorkOrder) {
-        setOriginalData(existingWorkOrder);
-    }
-  }, [existingWorkOrder]);
-
-  useEffect(() => {
     if (isCreateRoute && !activeId && !location.state?.previousFormState) return; 
 
     const fillFields = (data: any) => {
       if (!data) return;
 
-      // ✅ UPDATE BASELINE FOR DIFFING
-      setOriginalData(data);
+      console.log("📝 Filling Fields with Data:", data);
 
       setWorkOrderName(data.title || "");
       setDescription(data.description || "");
       
       if (data.estimatedTimeHours !== undefined && data.estimatedTimeHours !== null) {
           const timeStr = parseDecimalToTime(Number(data.estimatedTimeHours));
+          console.log(`⏰ Time Converted: ${data.estimatedTimeHours} -> ${timeStr}`);
           setEstimatedTime(timeStr);
       } else {
           setEstimatedTime("");
@@ -496,13 +473,14 @@ export function NewWorkOrderForm({
       const formState: any = {
         title: workOrderName,
         description,
-        // ✅ FIX: Use 'open' only for CREATE. For EDIT, use existing status.
-        status: isEditing ? originalData.status : "open",
+        status: "open",
         workType: selectedWorkType,
         qrCode: qrCodeValue || undefined,
         priority: { None: "low", Low: "low", Medium: "medium", High: "high", Urgent: "urgent" }[selectedPriority] || "low",
         locationId: locationId || null,
+        
         estimatedTimeHours: parseTimeToDecimal(estimatedTime),
+        
         assetIds, vendorIds, partIds, assignedTeamIds: teamIds, categoryIds, assigneeIds: selectedUsers,
         procedureIds: linkedProcedure ? [linkedProcedure.id] : [],
         dueDate: parseDateInputToISO(dueDate),
@@ -517,17 +495,21 @@ export function NewWorkOrderForm({
       setLoading(true);
 
       if (activeId) {
-        // ✅ CALL THE DIFF FUNCTION with the CORRECT original data
-        const payload = getChangedFields(originalData || {}, formState);
-        
+        console.log("🔵 Updating existing Work Order:", activeId);
+        const payload = getChangedFields(existingWorkOrder || {}, formState);
+        console.log("📝 [DEBUG] Form State:", formState);
+        console.log("🚀 [DEBUG] Final API Payload (Diff):", payload);
+
         if (Object.keys(payload).length === 0) {
             toast("No changes detected.");
             if (onCreate) onCreate(); else navigate("/work-orders");
             return;
         }
+
         await dispatch(updateWorkOrder({ id: activeId, authorId, data: payload })).unwrap();
         toast.success("✅ Work order updated successfully");
       } else {
+        console.log("🟢 Creating NEW Work Order");
         await dispatch(createWorkOrder(formState)).unwrap();
         toast.success("✅ Work order created successfully");
       }

@@ -28,7 +28,6 @@ import {
   useMatch,
   useParams,
   useSearchParams,
-  useLocation, 
 } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import LocationDetails from "./LocationDetails";
@@ -37,11 +36,11 @@ import SubLocation from "./SubLocation";
 export function Locations() {
   const dispatch = useDispatch<AppDispatch>();
 
-  // ✅ 1. URL Search Params Setup
+  // ✅ 1. URL Search Params
   const [searchParams, setSearchParams] = useSearchParams();
-  const location = useLocation(); 
+  const queryLocationId = searchParams.get("locationId");
 
-  // ✅ 2. Initialize State
+  // State initialization
   const [searchQuery, setSearchQuery] = useState(
     () => searchParams.get("search") || ""
   );
@@ -54,9 +53,8 @@ export function Locations() {
     return (savedMode as ViewMode) || "panel";
   });
 
-  // ✅ SERVER-SIDE PAGINATION STATE
   const currentPage = Number(searchParams.get("page")) || 1;
-  const itemsPerPage = 50; 
+  const itemsPerPage = 50;
 
   const [filterParams, setFilterParams] = useState<FetchLocationsParams>({
     page: currentPage,
@@ -67,20 +65,19 @@ export function Locations() {
   const [loading, setLoading] = useState(true);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // ✅ Selected Location State
   const [selectedLocation, setSelectedLocation] =
     useState<LocationResponse | null>(null);
 
   const [activeSubLocation, setActiveSubLocation] = useState<any>(null);
-
-  // ✅ Get Location ID from URL Params
   const { locationId } = useParams();
 
   const [showSettings, setShowSettings] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-
   const user = useSelector((state: RootState) => state.auth.user);
 
-  // Sorting State
+  // Sorting
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [sortType, setSortType] = useState("Last Updated");
   const [sortOrder, setSortOrder] = useState("dsc");
@@ -102,7 +99,7 @@ export function Locations() {
   const isEditMode = !!isEditRoute;
   const parentIdFromUrl = isCreateSubLocationRoute?.params.parentId;
 
-  // ✅ HELPER: Recursive Search
+  // Helper: Recursive Search
   const findLocationDeep = (
     data: LocationResponse[],
     id: string
@@ -125,7 +122,7 @@ export function Locations() {
     }
   }, [viewMode]);
 
-  // ✅ Edit Logic
+  // Edit Logic
   const locationToEdit = useMemo(() => {
     if (!isEditMode || !isEditRoute?.params.locationId) return null;
     const targetId = isEditRoute.params.locationId;
@@ -135,30 +132,33 @@ export function Locations() {
     return null;
   }, [isEditMode, isEditRoute, locations, selectedLocation]);
 
-  // ✅ Sync State TO URL
+  // ✅ 2. SYNC Search/Page TO URL (NO SelectedLocation Dependency)
+  // This prevents the loop/lock issue.
   useEffect(() => {
-    const params: any = {};
-    if (debouncedSearch) params.search = debouncedSearch;
-    if (filterParams.page && filterParams.page > 1) {
-      params.page = filterParams.page.toString();
-    }
+    setSearchParams((prev) => {
+      const newParams = new URLSearchParams(prev);
+      
+      if (debouncedSearch) newParams.set("search", debouncedSearch);
+      else newParams.delete("search");
 
-    const currentSearch = searchParams.get("search") || "";
-    const currentPageStr = searchParams.get("page") || "";
-    
-    if (currentSearch !== (params.search || "") || currentPageStr !== (params.page || "")) {
-        setSearchParams(params, { replace: true });
-    }
-  }, [debouncedSearch, filterParams.page, setSearchParams, searchParams]);
+      if (filterParams.page && filterParams.page > 1) {
+        newParams.set("page", filterParams.page.toString());
+      } else {
+        newParams.delete("page");
+      }
+      
+      return newParams;
+    }, { replace: true });
+  }, [debouncedSearch, filterParams.page, setSearchParams]);
 
+  // ✅ 3. Update filterParams from URL (Back button support)
   useEffect(() => {
     const pageFromUrl = Number(searchParams.get("page")) || 1;
     if (pageFromUrl !== filterParams.page) {
-      setFilterParams(prev => ({ ...prev, page: pageFromUrl }));
+      setFilterParams((prev) => ({ ...prev, page: pageFromUrl }));
     }
   }, [searchParams]);
 
-  // Debounce Search
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
@@ -179,14 +179,14 @@ export function Locations() {
         });
       } catch (err) {
         console.error("Failed to fetch location by ID:", err);
+        toast.error("Could not load the selected location.");
       } finally {
         setDetailsLoading(false);
       }
     },
-    [] 
+    []
   );
 
-  // ✅ Main List Fetch
   const fetchLocations = useCallback(async () => {
     setLoading(true);
     try {
@@ -200,16 +200,18 @@ export function Locations() {
         };
         res = await locationService.fetchLocations(apiPayload);
       }
-      
-      const reversedLocations = [...res].reverse();
-      
-      setLocations((prevLocations) => {
-          if (selectedLocation && !reversedLocations.find(l => l.id === selectedLocation.id)) {
-              return [selectedLocation, ...reversedLocations];
-          }
-          return reversedLocations;
-      });
 
+      const reversedLocations = [...res].reverse();
+
+      setLocations((prevLocations) => {
+        if (
+          selectedLocation &&
+          !reversedLocations.find((l) => l.id === selectedLocation.id)
+        ) {
+          return [selectedLocation, ...reversedLocations];
+        }
+        return reversedLocations;
+      });
     } catch (err) {
       console.error(err);
       setError("Failed to fetch locations");
@@ -217,80 +219,76 @@ export function Locations() {
     } finally {
       setLoading(false);
     }
-  }, [showDeleted, filterParams, debouncedSearch]); 
+  }, [showDeleted, filterParams, debouncedSearch, selectedLocation]);
 
   useEffect(() => {
     fetchLocations();
   }, [fetchLocations]);
 
-  // 🔥🔥🔥 ULTRA-STRICT REDIRECT LOGIC v2.0 🔥🔥🔥
+  // ✅ 4. SINGLE SOURCE OF TRUTH: URL -> STATE
+  // Runs whenever URL's locationId changes.
   useEffect(() => {
-    // 1. Check if we are on the EXACT Root path
-    // If URL has any ID, this will be FALSE.
-    const isExactlyRoot = location.pathname === "/locations" || location.pathname === "/locations/";
+    if (isCreateRoute || isCreateSubLocationRoute) return;
 
-    // 2. Extract ID from URL manually (Safety net for slow useParams)
-    const pathParts = location.pathname.split('/').filter(Boolean);
-    let urlIdFromPath = null;
-    
-    // If path is like /locations/ID, part[0] is locations, part[1] is ID
-    if (pathParts.length >= 2 && pathParts[0] === 'locations') {
-        const segment = pathParts[1];
-        if (segment !== 'create' && segment !== 'edit') {
-            urlIdFromPath = segment;
-        }
+    if (queryLocationId) {
+      // Avoid re-setting if already same
+      if (selectedLocation?.id === queryLocationId) return;
+
+      const foundInList = findLocationDeep(locations, queryLocationId);
+      if (foundInList) {
+        setSelectedLocation(foundInList);
+      } else {
+        fetchLocationById(queryLocationId);
+      }
+    } else {
+      // If URL has no ID, clear selection (unless initial load logic below overrides)
+      if (selectedLocation && !locationId) {
+         setSelectedLocation(null);
+      }
     }
-
-    // 3. IGNORE Special Routes
-    if (isCreateRoute || isCreateSubLocationRoute || isEditRoute) return;
-
-    // 🛑 Case 1: URL HAS AN ID (e.g., from Asset click)
-    // DO NOT REDIRECT. Just load the data.
-    if (urlIdFromPath) {
-       if (selectedLocation?.id !== urlIdFromPath) {
-           const found = findLocationDeep(locations, urlIdFromPath);
-           if (found) {
-               setSelectedLocation(found);
-           } else {
-               if (!detailsLoading) fetchLocationById(urlIdFromPath);
-           }
-       }
-       return; // Stop here.
-    }
-
-    // 🛑 Case 2: URL IS EXACTLY ROOT (Default View)
-    // Only redirect if we are SURE we are on the root path and no ID exists.
-    if (isExactlyRoot && !loading && locations.length > 0 && !selectedLocation) {
-        const firstLocation = locations[0];
-        setSelectedLocation(firstLocation);
-        navigate(`/locations/${firstLocation.id}`, { replace: true });
-    }
-
   }, [
-    location.pathname, // ✅ Re-run immediately on URL change
-    locations,
-    isCreateRoute,
+    queryLocationId, // Primary Trigger
+    locations, 
+    isCreateRoute, 
     isCreateSubLocationRoute, 
-    isEditRoute,
     fetchLocationById,
-    navigate,
-    selectedLocation,
-    loading,
-    detailsLoading
+    // selectedLocation // Removing this from dependency to avoid loop, we check inside
   ]);
+
+  // Initial Auto-Select if nothing selected
+  useEffect(() => {
+     if (!loading && locations.length > 0 && !queryLocationId && !selectedLocation && !isCreateRoute && !locationId) {
+        const first = locations[0];
+        setSearchParams(prev => {
+            prev.set("locationId", first.id);
+            return prev;
+        }, { replace: true });
+     }
+  }, [loading, locations, queryLocationId, selectedLocation, isCreateRoute, locationId, setSearchParams]);
+
 
   const handleShowNewLocationForm = () => navigate("/locations/create");
 
   const handleCancelForm = () => {
-    if (selectedLocation) navigate(`/locations/${selectedLocation.id}`);
-    else navigate("/locations");
+    if (selectedLocation) {
+        setSearchParams(prev => {
+            prev.set("locationId", selectedLocation.id);
+            return prev;
+        });
+    } else {
+        navigate("/locations");
+    }
   };
 
   const handleRootLocationCreate = (newLocation: LocationResponse) => {
     const updatedLocations = [newLocation, ...locations];
     setLocations(updatedLocations);
-    setSelectedLocation(newLocation);
-    navigate(`/locations/${newLocation.id}`);
+    // URL update triggers the selection effect
+    setSearchParams(prev => {
+        prev.set("locationId", newLocation.id);
+        return prev;
+    });
+    navigate(`/locations`); 
   };
 
   const handleSubLocationCreated = (newSubLocation: LocationResponse) => {
@@ -303,16 +301,22 @@ export function Locations() {
       return loc;
     });
     setLocations(updatedLocations);
-    const updatedParent = updatedLocations.find((loc) => loc.id === parentId);
-    if (updatedParent) setSelectedLocation(updatedParent);
+    
+    setSearchParams(prev => {
+        prev.set("locationId", parentId);
+        return prev;
+    });
     toast.success("Sub-location added successfully!");
-    navigate(`/locations/${parentId}`);
+    navigate(`/locations`);
   };
 
   const handleFormSuccess = (locationData: LocationResponse) => {
     fetchLocations();
-    setSelectedLocation(locationData);
-    navigate(`/locations/${locationData.id}`);
+    setSearchParams(prev => {
+        prev.set("locationId", locationData.id);
+        return prev;
+    });
+    navigate(`/locations`);
   };
 
   const handleFilterChange = useCallback(
@@ -326,7 +330,7 @@ export function Locations() {
     []
   );
 
-  // ✅ Sorting Logic
+  // Sorting
   const sortedLocations = useMemo(() => {
     let items = [...locations];
     items.sort((a, b) => {
@@ -351,7 +355,6 @@ export function Locations() {
     return items;
   }, [locations, sortType, sortOrder]);
 
-  // ✅ Server-Side Pagination Handlers
   const handlePrevPage = () => {
     if (filterParams.page && filterParams.page > 1) {
       setFilterParams((prev) => ({ ...prev, page: Number(prev.page) - 1 }));
@@ -359,8 +362,11 @@ export function Locations() {
   };
 
   const handleNextPage = () => {
-    if (locations.length > 0) { 
-       setFilterParams((prev) => ({ ...prev, page: Number(prev.page || 1) + 1 }));
+    if (locations.length > 0) {
+      setFilterParams((prev) => ({
+        ...prev,
+        page: Number(prev.page || 1) + 1,
+      }));
     }
   };
 
@@ -395,12 +401,10 @@ export function Locations() {
         const newLocationsList = locations.filter((loc) => loc.id !== id);
         setLocations(newLocationsList);
         if (newLocationsList.length === 0) {
-          setSelectedLocation(null);
-          navigate("/locations");
+          setSearchParams(prev => { prev.delete("locationId"); return prev; });
         } else {
           const nextLoc = newLocationsList[0];
-          setSelectedLocation(nextLoc);
-          navigate(`/locations/${nextLoc.id}`);
+          setSearchParams(prev => { prev.set("locationId", nextLoc.id); return prev; });
         }
         toast.success("Location deleted successfully!");
       })
@@ -571,16 +575,20 @@ export function Locations() {
                     {sortedLocations.map((item) => {
                       const isSelected =
                         item.id === selectedLocation?.id ||
-                        item.id === locationId;
+                        item.id === queryLocationId; // ✅ CHECK URL ID TOO
+                        
                       const hasPhoto = item?.photoUrls?.length > 0;
                       const subLocationCount = item.children?.length || 0;
 
                       return (
                         <div
                           key={item.id}
+                          // ✅ ONLY UPDATE URL, DON'T SET STATE DIRECTLY
                           onClick={() => {
-                            setSelectedLocation(item);
-                            navigate(`/locations/${item.id}`);
+                            setSearchParams(prev => {
+                                prev.set("locationId", item.id);
+                                return prev;
+                            });
                           }}
                           className={`cursor-pointer border rounded-lg p-4 mb-3 transition-all duration-200 hover:shadow-md ${
                             isSelected
@@ -647,7 +655,7 @@ export function Locations() {
               <div className="flex items-center justify-end p-3 border-t border-gray-200 bg-white">
                 <div className="inline-flex items-center gap-3 border border-yellow-400 rounded-full px-3 py-1 shadow-sm bg-white">
                   <span className="text-xs font-medium text-gray-700">
-                     Page {filterParams.page}
+                    Page {filterParams.page}
                   </span>
                   <div className="flex items-center gap-1">
                     <button
@@ -680,7 +688,8 @@ export function Locations() {
                         ? handleSubLocationCreated
                         : handleRootLocationCreate
                     }
-                    setSelectedLocation={setSelectedLocation}
+                    // Remove setSelectedLocation prop if not used inside, or pass empty func if needed
+                    setSelectedLocation={() => {}} 
                     onSuccess={handleFormSuccess}
                     fetchLocations={fetchLocations}
                     isEdit={isEditMode}
@@ -708,7 +717,13 @@ export function Locations() {
                     user={user}
                     restoreData={""}
                     fetchLocation={fetchLocations}
-                    onClose={() => setSelectedLocation(null)}
+                    onClose={() => {
+                        // ✅ Remove param on close
+                        setSearchParams(prev => {
+                            prev.delete("locationId");
+                            return prev;
+                        });
+                    }}
                     setShowSubLocation={setShowSubLocation}
                     onSubLocationClick={(subLoc) => {
                       setActiveSubLocation(subLoc);

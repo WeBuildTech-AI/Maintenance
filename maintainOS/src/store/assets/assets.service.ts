@@ -6,21 +6,24 @@ import type {
   UpdateAssetData,
   UpdateAssetStatus,
   FetchAssetsParams,
-  AssetLogResponse,
 } from "./assets.types";
 
 export const assetService = {
   fetchAssets: async (
     params?: FetchAssetsParams & Record<string, any>
   ): Promise<AssetResponse[]> => {
+    // 1. Prepare API Params
     const apiParams: Record<string, any> = {};
 
     if (params) {
+      // Basic Fields
       if (params.page) apiParams.page = params.page;
       if (params.limit) apiParams.limit = params.limit;
       if (params.name) apiParams.name = params.name;
 
+      // --- MAPPING LOGIC (UI Key -> API Key) ---
       const mappings: Record<string, string> = {
+        // UI Key : API Key
         status: "statusOneOf",
         criticality: "criticalityOneOf",
         location: "locationOneOf",
@@ -35,15 +38,21 @@ export const assetService = {
         serialNumber: "serialContains",
         year: "yearContains",
         workOrderRecurrence: "workOrderRecurrence",
+        // IMP: UI me 'asset' filter hai, but API 'name' dhoondhta hai
         asset: "name", 
       };
 
       Object.keys(params).forEach((key) => {
-        const apiKey = mappings[key] || key;
+        // Check mapping
+        const apiKey = mappings[key] || key; // Agar mapping nahi hai to same key use karo
+        
+        // Skip basic keys jo manually upar set kiye
         if (['page', 'limit', 'name'].includes(apiKey) && mappings[key] === undefined) return;
 
         const value = params[key];
+        
         if (value !== undefined && value !== null && value !== "") {
+           // Array handling: Join with comma
            if (Array.isArray(value)) {
              apiParams[apiKey] = value.join(',');
            } else {
@@ -53,6 +62,7 @@ export const assetService = {
       });
     }
 
+    // Call API
     const res = await api.get(`/assets`, {
       params: apiParams,
       headers: { Accept: "application/json" },
@@ -127,19 +137,9 @@ export const assetService = {
     return res.data;
   },
 
-  // ✅ UPDATED with Debugging Logs
-  fetchAssetStatusLog: async (id: string): Promise<AssetLogResponse> => {
-    console.log(`🔥 [Service] API Call Started: /assets/${id}/logs`);
-    try {
-      const res = await api.get(`/assets/${id}/logs`, {
-        headers: { Accept: "application/json" },
-      });
-      console.log("✅ [Service] API Success. Raw Data:", res.data);
-      return res.data;
-    } catch (error) {
-      console.error("❌ [Service] API Failed:", error);
-      throw error;
-    }
+  fetchAssetStatusLog: async (id: string): Promise<AssetResponse> => {
+    const res = await api.get(`/assets/${id}/logs`);
+    return res.data;
   },
 
   deleteAssetStatus: async (id: string): Promise<void> => {
