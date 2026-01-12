@@ -1,5 +1,11 @@
+// src/store/parts/parts.reducers.ts
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { PartResponse, PartsState, PartRestockLog } from "./parts.types";
+import type { 
+  PartResponse, 
+  PartsState, 
+  PartRestockLog, 
+  PartActivityLog 
+} from "./parts.types";
 import {
   createPart,
   deletePart,
@@ -9,6 +15,7 @@ import {
   restockPart,
   getAllRestockLogs,
   getRestockLogById,
+  fetchPartLogs, // ✅ Import
 } from "./parts.thunks";
 
 const initialState: PartsState = {
@@ -18,6 +25,7 @@ const initialState: PartsState = {
   error: null,
   restockLogs: [],
   selectedRestockLog: null,
+  logs: [], // ✅ Init logs array
 };
 
 const partsSlice = createSlice({
@@ -169,6 +177,23 @@ const partsSlice = createSlice({
         }
       )
       .addCase(getRestockLogById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+
+      // ✅ FETCH PART ACTIVITY LOGS
+      .addCase(fetchPartLogs.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        fetchPartLogs.fulfilled,
+        (state, action: PayloadAction<PartActivityLog[]>) => {
+          state.loading = false;
+          state.logs = action.payload || []; // Ensure not undefined
+        }
+      )
+      .addCase(fetchPartLogs.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

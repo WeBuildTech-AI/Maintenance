@@ -14,34 +14,58 @@ import {
   UserCircle2,
   Maximize2,
   Minimize2,
-  X,
+  History as HistoryIcon,
+  ArrowRight,
+  Activity,
 } from "lucide-react";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../ui/button";
 import DeletePartModal from "./DeletePartModal";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../../store";
-import { createPart, deletePart } from "../../../store/parts/parts.thunks";
+import { createPart, deletePart, fetchPartLogs } from "../../../store/parts/parts.thunks";
 import toast from "react-hot-toast";
 import { PartImages } from "./PartImages";
 import { PartFiles } from "./PartFiles";
 import { partService } from "../../../store/parts";
 
-// ✅ Import Dropdown
 import PartOptionsDropdown from "./PartOptionsDropdown";
-
-// ✅ Import Forms for In-Place Rendering
 import RestockModal from "./RestockModal";
 import { NewPartForm } from "../NewPartForm/NewPartForm";
-
-// ✅ Import API to fetch users
 import api from "../../../store/auth/auth.service";
 import { Tooltip } from "../../ui/tooltip";
 import { format, subDays } from "date-fns";
 import { WorkOrderHistoryChart } from "../../utils/WorkOrderHistoryChart";
 
 type DateRange = { startDate: string; endDate: string };
+
+// ✅ Helper to parse and compare JSON strings from logs
+const getChanges = (oldVal: string, newVal: string) => {
+  try {
+    if (!oldVal || !newVal) return [];
+    const oldObj = JSON.parse(oldVal);
+    const newObj = JSON.parse(newVal);
+    const changes: { key: string; from: any; to: any }[] = [];
+
+    // Fields to ignore in diff
+    const ignoreFields = ["updatedAt", "createdAt", "updatedBy", "createdBy", "workOrderIds"];
+
+    Object.keys(newObj).forEach((key) => {
+      if (ignoreFields.includes(key)) return;
+      if (JSON.stringify(oldObj[key]) !== JSON.stringify(newObj[key])) {
+        changes.push({
+          key: key.replace(/([A-Z])/g, " $1").trim(), // CamelCase to Title Case
+          from: oldObj[key],
+          to: newObj[key],
+        });
+      }
+    });
+    return changes;
+  } catch (err) {
+    return [];
+  }
+};
 
 export function PartDetails({
   item,
@@ -62,29 +86,20 @@ export function PartDetails({
 }) {
   const [activeTab, setActiveTab] = useState<"details" | "history">("details");
 
-  // ✅ 1. Local State for Real-time Updates
   const [partData, setPartData] = useState<any>(item);
-
-  // ✅ View States
   const [isEditing, setIsEditing] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
-
-  // ✅ Resize State
   const [isExpanded, setIsExpanded] = useState(false);
-
-  // ✅ Dropdown & Modal States
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showRestockModal, setShowRestockModal] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [loading, setLoading] = useState(false);
+  
+  // User Names Cache
+  const [userNames, setUserNames] = useState<Record<string, string>>({});
 
-  // ✅ User Names State
-  const [createdByName, setCreatedByName] = useState<string>("");
-  const [updatedByName, setUpdatedByName] = useState<string>("");
-
-  // ✅ Chart State (Moved to top to fix Hook Error)
   const [chartDateRanges, setChartDateRanges] = useState<
     Record<string, DateRange>
   >({
@@ -97,18 +112,48 @@ export function PartDetails({
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
 
-  // ✅ Get organizationId from Auth State
+  // ✅ ROBUST SELECTOR: Handles undefined state safely
+  const logs = useSelector((state: RootState) => {
+    // Try standard location first, then fallback (in case reducer name is different)
+    return state.parts?.logs || (state as any).partsReducer?.logs || [];
+  });
+
   const organizationId = useSelector(
     (state: RootState) => state.auth?.user?.organizationId
   );
 
-  // Sync if parent item changes
   useEffect(() => {
     setPartData(item);
     setIsEditing(false);
   }, [item]);
 
-  // ✅ Refresh Logic
+  // ✅ Fetch Logs & Resolve Author Names
+  useEffect(() => {
+    if (activeTab === "history" && partData?.id) {
+      dispatch(fetchPartLogs(partData.id));
+    }
+  }, [activeTab, partData.id, dispatch]);
+
+  // ✅ Fetch User Names for Logs
+  useEffect(() => {
+    if (logs.length > 0) {
+      const uniqueAuthors = Array.from(new Set(logs.map((l: any) => l.authorId).filter(Boolean)));
+      
+      uniqueAuthors.forEach(async (id: any) => {
+        if (!userNames[id]) {
+          try {
+            const res = await api.get(`/users/${id}`);
+            if (res.data?.fullName) {
+              setUserNames((prev) => ({ ...prev, [id]: res.data.fullName }));
+            }
+          } catch (e) {
+            console.error("Failed to fetch user:", id);
+          }
+        }
+      });
+    }
+  }, [logs]);
+
   const refreshLocalData = async () => {
     if (!partData?.id) return;
     try {
@@ -120,50 +165,25 @@ export function PartDetails({
     }
   };
 
-  // ✅ Fetch User Names
+  // Helper to get Creator/Updater names for the Part itself
   useEffect(() => {
-    const fetchUserNames = async () => {
-      // 1. Fetch Creator Name
-      if (partData.createdBy) {
-        try {
-          if (partData.createdBy.length > 20) {
+    const fetchPartUsers = async () => {
+      if (partData.createdBy && !userNames[partData.createdBy]) {
+         try {
             const res = await api.get(`/users/${partData.createdBy}`);
-            if (res.data?.fullName) {
-              setCreatedByName(res.data.fullName);
-            }
-          } else {
-            setCreatedByName(partData.createdBy);
-          }
-        } catch (err) {
-          console.error("Failed to fetch creator name", err);
-        }
-      } else {
-        setCreatedByName("");
+            setUserNames(prev => ({...prev, [partData.createdBy]: res.data?.fullName || partData.createdBy}));
+         } catch {}
       }
-
-      // 2. Fetch Updater Name
-      if (partData.updatedBy) {
-        try {
-          if (partData.updatedBy.length > 20) {
+      if (partData.updatedBy && !userNames[partData.updatedBy]) {
+         try {
             const res = await api.get(`/users/${partData.updatedBy}`);
-            if (res.data?.fullName) {
-              setUpdatedByName(res.data.fullName);
-            }
-          } else {
-            setUpdatedByName(partData.updatedBy);
-          }
-        } catch (err) {
-          console.error("Failed to fetch updater name", err);
-        }
-      } else {
-        setUpdatedByName("");
+            setUserNames(prev => ({...prev, [partData.updatedBy]: res.data?.fullName || partData.updatedBy}));
+         } catch {}
       }
     };
-
-    fetchUserNames();
+    fetchPartUsers();
   }, [partData.createdBy, partData.updatedBy]);
 
-  // ✅ Edit Data Fetch
   useEffect(() => {
     if (isEditing && partData?.id) {
       setLoading(true);
@@ -191,42 +211,28 @@ export function PartDetails({
     }
   }, [isEditing, partData]);
 
-  /* -------------------------------------------------------------------------- */
-  /* ✅ DUPLICATE ACTION (UPDATED: Matches Create Part Logic Exactly)           */
-  /* -------------------------------------------------------------------------- */
   const handleDuplicatePart = async () => {
     const loadingToast = toast.loading("Duplicating part...");
     try {
-      // 1. Construct CLEAN JSON Payload (No FormData, No Stringified Arrays)
       const payload: any = {
         organizationId: organizationId || "",
         name: `Copy - ${partData.name}`,
         description: partData.description || "",
         unitCost: partData.unitCost ? Number(partData.unitCost) : 0,
-
-        // ❌ REMOVED: qrCode field so it doesn't send "" (backend should handle or ignore)
-        // qrCode: "", 
-
-        // ✅ Arrays: Extract IDs properly from objects
+        qrCode: "",
         partsType: Array.isArray(partData.partsType)
           ? partData.partsType.map((t: any) =>
               typeof t === "string" ? t : t.name || t
             )
           : [],
-        
         assetIds: partData.assets?.map((a: any) => a.id) || partData.assetIds || [],
         teamsInCharge: partData.teams?.map((t: any) => t.id) || partData.teamsInCharge || [],
         vendorIds: partData.vendors?.map((v: any) => v.id || v.vendorId) || partData.vendorIds || [],
-
-        // Metadata
         partImages: partData.partImages || [],
         partDocs: partData.partDocs || [],
-
         locations: [],
-        // vendors: [] <--- Removed, only sending vendorIds as requested
       };
 
-      // 2. Locations Logic
       if (partData.locations && partData.locations.length > 0) {
         payload.locations = partData.locations.map((loc: any) => ({
           locationId: loc.locationId || loc.id,
@@ -236,12 +242,9 @@ export function PartDetails({
         }));
       }
 
-      // 3. Direct API Call (JSON)
       const result = await dispatch(createPart(payload)).unwrap();
-
       toast.success("Part duplicated successfully!", { id: loadingToast });
       setIsDropdownOpen(false);
-
       if (fetchPartData) fetchPartData();
       navigate(`/inventory/${result.id}`);
     } catch (error: any) {
@@ -304,12 +307,10 @@ export function PartDetails({
     });
   };
 
-  // Chart Filters Helper
   const filters = {
     partIds: partData.id,
   };
 
-  // Chart Date Change Helper
   const handleDateRangeChange = (id: string, start: Date, end: Date) => {
     setChartDateRanges((prev) => ({
       ...prev,
@@ -320,7 +321,6 @@ export function PartDetails({
     }));
   };
 
-  // View Logic Variables
   const availableUnits =
     partData.unitsInStock ?? partData.locations?.[0]?.unitsInStock ?? 0;
   const minUnits =
@@ -329,9 +329,6 @@ export function PartDetails({
     ? partData.partsType[0]?.name || partData.partsType[0] || "N/A"
     : partData.partsType?.name || "N/A";
 
-  // --------------------------------------------------------------------------
-  // EDIT MODE RENDER
-  // --------------------------------------------------------------------------
   if (isEditing) {
     if (loading || !editItem) {
       return (
@@ -382,9 +379,6 @@ export function PartDetails({
     );
   }
 
-  // --------------------------------------------------------------------------
-  // VIEW MODE RENDER
-  // --------------------------------------------------------------------------
   return (
     <div
       className={`flex flex-col h-full bg-white shadow-sm border relative transition-all duration-200 
@@ -563,20 +557,17 @@ export function PartDetails({
 
             <hr className="border-t border-gray-200 my-4" />
 
+            {/* Location Table */}
             <div className="mt-4 mb-8">
               <h4 className="font-medium text-gray-800 mb-3">Location</h4>
               <div className="overflow-x-auto rounded-lg border border-gray-200">
                 <table className="w-full text-sm text-gray-700">
                   <thead className="bg-gray-50 text-gray-700">
                     <tr>
-                      <th className="py-3 px-4 text-left font-medium">
-                        Location
-                      </th>
+                      <th className="py-3 px-4 text-left font-medium">Location</th>
                       <th className="py-3 px-4 text-left font-medium">Area</th>
                       <th className="py-3 px-4 text-left font-medium">Units</th>
-                      <th className="py-3 px-4 text-left font-medium">
-                        Minimum
-                      </th>
+                      <th className="py-3 px-4 text-left font-medium">Minimum</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white">
@@ -598,17 +589,12 @@ export function PartDetails({
                           </td>
                           <td className="py-3 px-4">{loc.area || "-"}</td>
                           <td className="py-3 px-4">{loc.unitsInStock ?? 0}</td>
-                          <td className="py-3 px-4">
-                            {loc.minimumInStock ?? 0}
-                          </td>
+                          <td className="py-3 px-4">{loc.minimumInStock ?? 0}</td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td
-                          colSpan={4}
-                          className="text-center text-gray-500 py-3"
-                        >
+                        <td colSpan={4} className="text-center text-gray-500 py-3">
                           No location data available
                         </td>
                       </tr>
@@ -636,8 +622,7 @@ export function PartDetails({
               <div>
                 <h4 className="font-medium text-gray-900 mb-3">QR Code</h4>
                 <p className="text-sm text-gray-700 mb-3">
-                  {(partData.qrCode && partData.qrCode.split("/").pop()) ||
-                    "N/A"}
+                  {(partData.qrCode && partData.qrCode.split("/").pop()) || "N/A"}
                 </p>
                 <div className="bg-white rounded-md shadow-sm flex items-center border p-2 w-fit">
                   <img
@@ -737,98 +722,89 @@ export function PartDetails({
               lineName="Created"
               lineColor="#0091ff"
             />
-
-            <div className="space-y-3 mb-8 mt-4">
-              <div className="flex items-center gap-1 text-sm text-gray-600">
-                <UserCircle2 className="w-4 h-4 text-yellow-500" />
-                <span>
-                  Created{" "}
-                  {createdByName ? (
-                    <span
-                      className="text-blue-600 hover:underline cursor-pointer ml-1"
-                      onClick={() =>
-                        navigate(`/users/profile/${partData.createdBy}`)
-                      }
-                    >
-                      by {createdByName}
-                    </span>
-                  ) : (
-                    ""
-                  )}
-                </span>
-                <CalendarDays className="w-4 h-4 text-gray-500 ml-1" />
-                <span>
-                  {partData.createdAt
-                    ? new Date(partData.createdAt).toLocaleString()
-                    : "N/A"}
-                </span>
-              </div>
-              <div className="flex items-center gap-1 text-sm text-gray-600">
-                <UserCircle2 className="w-4 h-4 text-yellow-500" />
-                <span>
-                  Last Updated{" "}
-                  {updatedByName ? (
-                    <span
-                      className="text-blue-600 hover:underline cursor-pointer ml-1"
-                      onClick={() =>
-                        navigate(`/users/profile/${partData.updatedBy}`)
-                      }
-                    >
-                      by {updatedByName}
-                    </span>
-                  ) : (
-                    ""
-                  )}
-                </span>
-                <CalendarDays className="w-4 h-4 text-gray-500 ml-1" />
-                <span>
-                  {partData.updatedAt
-                    ? new Date(partData.updatedAt).toLocaleString()
-                    : "N/A"}
-                </span>
-              </div>
-            </div>
           </>
         ) : (
           <div className="space-y-6 mt-4">
-            <div className="space-y-3">
-              <h4 className="font-medium text-gray-900">Record History</h4>
+            {/* Record History / Logs */}
+            <div className="space-y-4">
+              <h4 className="font-medium text-gray-900 mb-2 flex items-center gap-2">
+                 <HistoryIcon className="w-5 h-5 text-gray-500" />
+                 Activity Log
+              </h4>
+
+              {logs && logs.length > 0 ? (
+                 logs.map((log: any) => {
+                    const changes = getChanges(log.oldValue, log.newValue);
+                    const authorName = userNames[log.authorId] || "Unknown User";
+
+                    return (
+                      <div key={log.id} className="p-4 border rounded-lg bg-gray-50 flex flex-col gap-2">
+                         <div className="flex items-center justify-between">
+                            <div className="flex flex-col">
+                               <span className="text-sm font-semibold text-gray-800">
+                                  {log.responseLog || log.activityType}
+                               </span>
+                               <span className="text-xs text-gray-500">
+                                  by {authorName} • {new Date(log.createdAt).toLocaleString()}
+                               </span>
+                            </div>
+                         </div>
+
+                         {/* Changes List */}
+                         {changes.length > 0 && (
+                           <div className="mt-1 bg-white rounded border p-2 text-xs text-gray-600 space-y-1">
+                             {changes.map((c, i) => (
+                               <div key={i} className="flex items-center gap-1">
+                                 <span className="font-medium text-gray-700">{c.key}:</span>
+                                 <span className="text-red-500 line-through">{String(c.from)}</span>
+                                 <ArrowRight className="w-3 h-3 text-gray-400" />
+                                 <span className="text-green-600 font-medium">{String(c.to)}</span>
+                               </div>
+                             ))}
+                           </div>
+                         )}
+                      </div>
+                    );
+                 })
+              ) : (
+                 <div className="text-center py-8 text-gray-500 text-sm">
+                   No history logs found.
+                 </div>
+              )}
+            </div>
+
+            <div className="space-y-3 pt-6 border-t mt-6">
+              <h4 className="font-medium text-gray-900">Record Stats</h4>
               <div className="flex items-center gap-1 text-sm text-gray-600">
                 <UserCircle2 className="w-4 h-4 text-yellow-500" />
                 <span>
                   Created{" "}
-                  {createdByName ? (
+                  {userNames[partData.createdBy] ? (
                     <span
                       className="text-blue-600 hover:underline cursor-pointer ml-1"
-                      onClick={() =>
-                        navigate(`/users/profile/${partData.createdBy}`)
-                      }
+                      onClick={() => navigate(`/users/profile/${partData.createdBy}`)}
                     >
-                      by {createdByName}
+                      by {userNames[partData.createdBy]}
                     </span>
                   ) : (
-                    ""
+                    "by Unknown"
                   )}
                 </span>
                 <CalendarDays className="w-4 h-4 text-gray-500 ml-1" />
                 <span>
-                  {partData.createdAt
-                    ? new Date(partData.createdAt).toLocaleString()
-                    : "N/A"}
+                  {partData.createdAt ? new Date(partData.createdAt).toLocaleString() : "N/A"}
                 </span>
               </div>
               <div className="flex items-center gap-1 text-sm text-gray-600">
                 <UserCircle2 className="w-4 h-4 text-yellow-500" />
                 <span>
                   Last Updated{" "}
-                  {updatedByName ? (
+                  {userNames[partData.updatedBy] ? (
                     <span
                       className="text-blue-600 hover:underline cursor-pointer ml-1"
-                      onClick={() =>
-                        navigate(`/users/profile/${partData.updatedBy}`)
-                      }
+                      onClick={() => navigate(`/users/profile/${partData.updatedBy}`)}
                     >
-                      by {updatedByName}
+                      by {userNames[partData.updatedBy]}
                     </span>
                   ) : (
                     ""
@@ -836,9 +812,7 @@ export function PartDetails({
                 </span>
                 <CalendarDays className="w-4 h-4 text-gray-500 ml-1" />
                 <span>
-                  {partData.updatedAt
-                    ? new Date(partData.updatedAt).toLocaleString()
-                    : "N/A"}
+                  {partData.updatedAt ? new Date(partData.updatedAt).toLocaleString() : "N/A"}
                 </span>
               </div>
             </div>

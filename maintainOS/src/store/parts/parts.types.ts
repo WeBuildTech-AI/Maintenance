@@ -1,3 +1,4 @@
+// src/store/parts/parts.types.ts
 import type { BUD } from "../../components/utils/BlobUpload";
 
 // Sub-types for nested objects
@@ -7,14 +8,14 @@ export interface PartLocation {
   area?: string;
   unitsInStock: number;
   minimumInStock: number;
-  name?: string; // Optional for display
-  locationName?: string; // Optional for display
+  name?: string; 
+  locationName?: string; 
 }
 
 export interface PartVendor {
   vendorId: string;
   orderingPartNumber?: string;
-  name?: string; // Optional for display
+  name?: string; 
 }
 
 // JSON Payload Structure for Creating a Part
@@ -49,7 +50,7 @@ export interface PartResponse {
   unitCost?: number;
   qrCode?: string;
   photos?: string[];
-  partsType?: string[] | { name: string }[]; // Handle mixed response types
+  partsType?: string[] | { name: string }[]; 
   locations?: PartLocation[];
   assetIds?: string[];
   teamsInCharge?: string[];
@@ -62,7 +63,6 @@ export interface PartResponse {
   createdAt: string;
   updatedAt: string;
   
-  // ✅ Added Creator/Updater Fields
   createdBy?: string;
   updatedBy?: string;
 
@@ -71,7 +71,24 @@ export interface PartResponse {
   
   totalStock?: number;
   minStock?: number;
+
+  workOrders?: any[];
 }
+
+// ✅ Part Activity Log Interface
+export interface PartActivityLog {
+  id: string;
+  authorId: string;
+  partId: string;
+  responseLog: string;
+  activityType: string;
+  oldValue: string; // JSON string
+  newValue: string; // JSON string
+  createdAt: string;
+}
+
+// Alias for backward compatibility
+export type PartLog = PartActivityLog;
 
 export interface FetchPartsParams {
   page?: number | string;
@@ -87,6 +104,9 @@ export interface PartsState {
   error: string | null;
   restockLogs: PartRestockLog[]; 
   selectedRestockLog: PartRestockLog | null;
+  
+  // ✅ Added logs to state
+  logs: PartActivityLog[]; 
 }
 
 export interface PartRestockLog {

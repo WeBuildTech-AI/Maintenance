@@ -1,16 +1,14 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
 import type {
-  AssetResponse,
   CreateAssetData,
   CreateAssetType,
   UpdateAssetData,
   UpdateAssetStatus,
-  FetchAssetsParams, // ✅ Imported
+  FetchAssetsParams,
 } from "./assets.types";
 import { assetService } from "./assets.service";
 
-// ✅ Updated to accept params
 export const fetchAssets = createAsyncThunk(
   "assets/fetchAssets",
   async (params: FetchAssetsParams | undefined, { rejectWithValue }) => {
@@ -107,7 +105,8 @@ export const fetchAssetsType = createAsyncThunk(
   "assets/get.asset-type",
   async (_, { rejectWithValue }) => {
     try {
-      const assetsType = await assetService.fetchAssetType;
+      // ✅ Fixed: Execute the function
+      const assetsType = await assetService.fetchAssetType();
       return assetsType;
     } catch (error: any) {
       return rejectWithValue(
@@ -135,7 +134,8 @@ export const fetchAssetsManufacturing = createAsyncThunk(
   "assets/get/manufacturer",
   async (_, { rejectWithValue }) => {
     try {
-      const assetsType = await assetService.fetchAssetManufacturer;
+      // ✅ Fixed: Execute the function
+      const assetsType = await assetService.fetchAssetManufacturer();
       return assetsType;
     } catch (error: any) {
       return rejectWithValue(
@@ -172,7 +172,7 @@ export const updateAssetStatus = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      const asset = await assetService.updateAsset(id, assetDataStatus);
+      const asset = await assetService.updateAssetStatus(id, assetDataStatus);
       return asset;
     } catch (error: any) {
       return rejectWithValue(
@@ -182,15 +182,16 @@ export const updateAssetStatus = createAsyncThunk(
   }
 );
 
+// ✅ FIXED: Now accepts ID and calls service correctly
 export const fetchAssetStatusLog = createAsyncThunk(
   "assets/statusLog",
-  async (_, { rejectWithValue }) => {
+  async (id: string, { rejectWithValue }) => {
     try {
-      const assetsType = await assetService.fetchAssetStatusLog;
-      return assetsType;
+      const assetsLog = await assetService.fetchAssetStatusLog(id);
+      return assetsLog;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch assets"
+        error.response?.data?.message || "Failed to fetch asset logs"
       );
     }
   }

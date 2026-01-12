@@ -63,6 +63,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
   fetchLocation,
   onClose,
   onSubLocationClick,
+  onEdit, // ✅ Extract onEdit prop
 }) => {
   const navigate = useNavigate();
   const [openDeleteModal, setOpenDeleteModal] = React.useState(false);
@@ -182,11 +183,19 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
                 <LinkIcon size={18} />
               </button>
             </Tooltip>
+            
+            {/* ✅ FIXED EDIT BUTTON LOGIC */}
             <button
               title="Edit"
               className="flex cursor-pointer items-center gap-1 rounded-md border border-orange-600 px-3 py-1.5 text-orange-600 hover:bg-orange-50"
               onClick={() => {
-                navigate(`/locations/${selectedLocation.id}/edit`);
+                if (onEdit) {
+                  // If onEdit is provided (like in Modal), use it!
+                  onEdit(selectedLocation);
+                } else {
+                  // Fallback to navigation (like in Panel View)
+                  navigate(`/locations/${selectedLocation.id}/edit`);
+                }
               }}
             >
               <Edit size={16} /> Edit

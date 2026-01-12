@@ -36,6 +36,9 @@ export function ToDoView({
   // ✅ WO-401 FIX: Ref specifically for CommentsSection
   const commentsRef = useRef<HTMLTextAreaElement>(null);
 
+  // ✅ REAL-TIME LOG UPDATE STATE
+  const [logRefreshTrigger, setLogRefreshTrigger] = useState(0);
+
   const [editingWorkOrder, setEditingWorkOrder] = useState<any | null>(null);
   const navigate = useNavigate();
 
@@ -336,6 +339,8 @@ export function ToDoView({
               activePanel={activePanel}
               setActivePanel={setActivePanel}
               onScrollToComments={handleScrollToComments} 
+              // ✅ Trigger the state update in parent
+              onStatusChangeSuccess={() => setLogRefreshTrigger((prev) => prev + 1)}
             />
 
             {/* ✅ Render sub-panels only when active */}
@@ -351,6 +356,8 @@ export function ToDoView({
                   setAttachment={setAttachment}
                   fileRef={fileRef}
                   selectedWorkOrder={selectedWorkOrder}
+                  // Pass the trigger to re-fetch logs
+                  refreshTrigger={logRefreshTrigger}
                 />
               </>
             )}

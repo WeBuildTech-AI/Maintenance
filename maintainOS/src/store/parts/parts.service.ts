@@ -1,11 +1,14 @@
+// src/store/parts/parts.service.ts
 import api from "../auth/auth.service";
 import type { 
   PartResponse, 
   FetchPartsParams, 
   CreatePartPayload, 
-  UpdatePartPayload 
+  UpdatePartPayload,
+  PartActivityLog,
+  RestockThunkArgs, 
+  PartRestockLog 
 } from "./parts.types";
-import type { RestockThunkArgs, PartRestockLog } from "./parts.types";
 
 export const partService = {
   fetchParts: async (params?: FetchPartsParams): Promise<PartResponse[]> => {
@@ -25,13 +28,11 @@ export const partService = {
     return res.data;
   },
 
-  // ✅ CREATE: Sends JSON Object
   createPart: async (data: CreatePartPayload): Promise<PartResponse> => {
     const res = await api.post(`/parts`, data);
     return res.data;
   },
 
-  // ✅ UPDATE: Sends JSON Object
   updatePart: async (id: string, data: UpdatePartPayload): Promise<PartResponse> => {
     const res = await api.patch(`/parts/${id}`, data);
     return res.data;
@@ -48,10 +49,7 @@ export const partService = {
     return res.data;
   },
 
-  // ✅ RESTOCK: JSON Object
   restockPart: async (partId: string, payload: RestockThunkArgs): Promise<PartResponse> => {
-    // We pass payload directly as JSON. 
-    // Ensure your backend Restock endpoint also accepts JSON body.
     const res = await api.post(`/parts/${partId}/restock`, payload);
     return res.data;
   },
@@ -72,7 +70,7 @@ export const partService = {
     });
   },
 
-  fetchDeletePart: async (): Promise<void> => {
+  fetchDeletePart: async (): Promise<PartResponse[]> => { 
     const res = await api.get(`parts/deleted/all`);
     return res.data;
   },
@@ -81,4 +79,13 @@ export const partService = {
     const res = await api.patch(`/parts/${id}/restore`);
     return res.data;
   },
+
+  // ✅ FETCH LOGS (Robust Handling)
+  fetchPartLogs: async (id: string): Promise<PartActivityLog[]> => {
+    const res = await api.get(`/parts/get/logs/${id}`);
+    // Handle array directly or nested in data
+    if (Array.isArray(res.data)) return res.data;
+    if (res.data && Array.isArray(res.data.data)) return res.data.data;
+    return [];
+  }
 };
