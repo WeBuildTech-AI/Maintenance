@@ -40,31 +40,74 @@ import { WorkOrderHistoryChart } from "../../utils/WorkOrderHistoryChart";
 
 type DateRange = { startDate: string; endDate: string };
 
-// ✅ Helper to parse and compare JSON strings from logs
-const getChanges = (oldVal: string, newVal: string) => {
+// ✅ HELPER: Convert Raw JSON to Readable Changes
+const getReadableChanges = (oldVal: string | null, newVal: string | null) => {
   try {
     if (!oldVal || !newVal) return [];
-    const oldObj = JSON.parse(oldVal);
-    const newObj = JSON.parse(newVal);
+
+    // 1. Parse JSON safely
+    const oldObj = typeof oldVal === "string" ? JSON.parse(oldVal) : oldVal;
+    const newObj = typeof newVal === "string" ? JSON.parse(newVal) : newVal;
+
     const changes: { key: string; from: any; to: any }[] = [];
 
-    // Fields to ignore in diff
-    const ignoreFields = ["updatedAt", "createdAt", "updatedBy", "createdBy", "workOrderIds"];
+    // 2. Fields to Ignore (Internal/System fields)
+    const ignoreFields = [
+      "id",
+      "organizationId",
+      "createdAt",
+      "updatedAt",
+      "createdBy",
+      "updatedBy",
+      "isDeleted",
+      "workOrderIds",
+      "partImages",
+      "partDocs", // usually handled separately
+    ];
 
-    Object.keys(newObj).forEach((key) => {
+    // 3. Compare Keys
+    const allKeys = Array.from(new Set([...Object.keys(oldObj), ...Object.keys(newObj)]));
+
+    allKeys.forEach((key) => {
       if (ignoreFields.includes(key)) return;
-      if (JSON.stringify(oldObj[key]) !== JSON.stringify(newObj[key])) {
+
+      const val1 = oldObj[key];
+      const val2 = newObj[key];
+
+      // Deep compare for arrays/objects simplified
+      if (JSON.stringify(val1) !== JSON.stringify(val2)) {
         changes.push({
-          key: key.replace(/([A-Z])/g, " $1").trim(), // CamelCase to Title Case
-          from: oldObj[key],
-          to: newObj[key],
+          key: formatKey(key),
+          from: formatValue(key, val1),
+          to: formatValue(key, val2),
         });
       }
     });
+
     return changes;
   } catch (err) {
+    console.error("❌ Error parsing log diff:", err);
     return [];
   }
+};
+
+// Format Key (camelCase -> Title Case)
+const formatKey = (key: string) => {
+  const result = key.replace(/([A-Z])/g, " $1").trim();
+  return result.charAt(0).toUpperCase() + result.slice(1);
+};
+
+// Format Value (Currency, Arrays, Nulls)
+const formatValue = (key: string, value: any) => {
+  if (value === null || value === undefined || value === "") return "Empty";
+  if (key.toLowerCase().includes("cost") && typeof value === "number") {
+    return `$${value.toFixed(2)}`;
+  }
+  if (Array.isArray(value)) {
+    return value.length === 0 ? "Empty List" : `${value.length} items`;
+  }
+  if (typeof value === "object") return "Object";
+  return String(value);
 };
 
 export function PartDetails({
@@ -96,7 +139,7 @@ export function PartDetails({
   const [showRestockModal, setShowRestockModal] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [loading, setLoading] = useState(false);
-  
+
   // User Names Cache
   const [userNames, setUserNames] = useState<Record<string, string>>({});
 
@@ -112,11 +155,13 @@ export function PartDetails({
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
 
-  // ✅ ROBUST SELECTOR: Handles undefined state safely
+  // ✅ DEBUGGING SELECTOR
   const logs = useSelector((state: RootState) => {
-    // Try standard location first, then fallback (in case reducer name is different)
-    return state.parts?.logs || (state as any).partsReducer?.logs || [];
+    // console.log("🔄 Redux State Check:", state.parts); 
+    return state.parts?.logs || [];
   });
+
+  // console.log("📊 Current Logs in Component:", logs);
 
   const organizationId = useSelector(
     (state: RootState) => state.auth?.user?.organizationId
@@ -130,6 +175,7 @@ export function PartDetails({
   // ✅ Fetch Logs & Resolve Author Names
   useEffect(() => {
     if (activeTab === "history" && partData?.id) {
+      console.log("🚀 Dispatching fetchPartLogs for:", partData.id);
       dispatch(fetchPartLogs(partData.id));
     }
   }, [activeTab, partData.id, dispatch]);
@@ -609,6 +655,7 @@ export function PartDetails({
 
             <hr className="border-t border-gray-200 my-4" />
 
+            {/* Description */}
             <div className="py-4">
               <h4 className="font-medium text-gray-900 mb-2">Description</h4>
               <p className="text-gray-700 text-base leading-relaxed">
@@ -618,6 +665,7 @@ export function PartDetails({
 
             <hr className="border-t border-gray-200 mt-4" />
 
+            {/* QR & Assets */}
             <div className="grid grid-cols-2 gap-6 mb-8 mt-4 pb-8">
               <div>
                 <h4 className="font-medium text-gray-900 mb-3">QR Code</h4>
@@ -661,6 +709,7 @@ export function PartDetails({
 
             <hr className="border-t border-gray-200 mt-2" />
 
+            {/* Vendors */}
             <div className="pb-6 mb-8 mt-4 border-b">
               <h4 className="font-medium text-gray-800 mb-3">Vendors</h4>
               {partData.vendors?.length > 0 ? (
@@ -687,6 +736,7 @@ export function PartDetails({
               )}
             </div>
 
+            {/* Teams */}
             <div className="pb-6 mb-8 mt-4 border-b">
               <h4 className="font-medium text-gray-800 mb-3">Teams</h4>
               {partData.teams?.length > 0 ? (
@@ -725,7 +775,7 @@ export function PartDetails({
           </>
         ) : (
           <div className="space-y-6 mt-4">
-            {/* Record History / Logs */}
+            {/* ✅ LOGS SECTION */}
             <div className="space-y-4">
               <h4 className="font-medium text-gray-900 mb-2 flex items-center gap-2">
                  <HistoryIcon className="w-5 h-5 text-gray-500" />
@@ -734,41 +784,47 @@ export function PartDetails({
 
               {logs && logs.length > 0 ? (
                  logs.map((log: any) => {
-                    const changes = getChanges(log.oldValue, log.newValue);
+                    const changes = getReadableChanges(log.oldValue, log.newValue);
                     const authorName = userNames[log.authorId] || "Unknown User";
 
                     return (
                       <div key={log.id} className="p-4 border rounded-lg bg-gray-50 flex flex-col gap-2">
                          <div className="flex items-center justify-between">
                             <div className="flex flex-col">
-                               <span className="text-sm font-semibold text-gray-800">
+                               <span className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                                  {log.activityType === "PART_CREATED" ? <Plus className="w-4 h-4 text-green-600"/> : <Activity className="w-4 h-4 text-blue-600"/>}
                                   {log.responseLog || log.activityType}
                                </span>
-                               <span className="text-xs text-gray-500">
-                                  by {authorName} • {new Date(log.createdAt).toLocaleString()}
+                               <span className="text-xs text-gray-500 mt-1">
+                                  by <span className="font-medium text-gray-700">{authorName}</span> • {new Date(log.createdAt).toLocaleString()}
                                </span>
                             </div>
                          </div>
 
-                         {/* Changes List */}
-                         {changes.length > 0 && (
-                           <div className="mt-1 bg-white rounded border p-2 text-xs text-gray-600 space-y-1">
+                         {/* ✅ Changes List */}
+                         {changes.length > 0 ? (
+                           <div className="mt-2 bg-gray-50 rounded border p-3 text-xs text-gray-700 space-y-1.5">
                              {changes.map((c, i) => (
-                               <div key={i} className="flex items-center gap-1">
-                                 <span className="font-medium text-gray-700">{c.key}:</span>
+                               <div key={i} className="flex items-center gap-2">
+                                 <span className="font-semibold text-gray-600 uppercase tracking-wide text-[10px] w-24">{c.key}:</span>
                                  <span className="text-red-500 line-through">{String(c.from)}</span>
                                  <ArrowRight className="w-3 h-3 text-gray-400" />
-                                 <span className="text-green-600 font-medium">{String(c.to)}</span>
+                                 <span className="text-green-600 font-bold">{String(c.to)}</span>
                                </div>
                              ))}
+                           </div>
+                         ) : (
+                           /* Fallback for updates with no visible field changes */
+                           <div className="mt-1 text-xs text-gray-400 italic px-1">
+                             No content changes recorded.
                            </div>
                          )}
                       </div>
                     );
                  })
               ) : (
-                 <div className="text-center py-8 text-gray-500 text-sm">
-                   No history logs found.
+                 <div className="text-center py-12 border-2 border-dashed border-gray-100 rounded-lg">
+                   <p className="text-gray-500 text-sm">No history logs found.</p>
                  </div>
               )}
             </div>
@@ -782,7 +838,9 @@ export function PartDetails({
                   {userNames[partData.createdBy] ? (
                     <span
                       className="text-blue-600 hover:underline cursor-pointer ml-1"
-                      onClick={() => navigate(`/users/profile/${partData.createdBy}`)}
+                      onClick={() =>
+                        navigate(`/users/profile/${partData.createdBy}`)
+                      }
                     >
                       by {userNames[partData.createdBy]}
                     </span>
@@ -792,7 +850,9 @@ export function PartDetails({
                 </span>
                 <CalendarDays className="w-4 h-4 text-gray-500 ml-1" />
                 <span>
-                  {partData.createdAt ? new Date(partData.createdAt).toLocaleString() : "N/A"}
+                  {partData.createdAt
+                    ? new Date(partData.createdAt).toLocaleString()
+                    : "N/A"}
                 </span>
               </div>
               <div className="flex items-center gap-1 text-sm text-gray-600">
@@ -802,7 +862,9 @@ export function PartDetails({
                   {userNames[partData.updatedBy] ? (
                     <span
                       className="text-blue-600 hover:underline cursor-pointer ml-1"
-                      onClick={() => navigate(`/users/profile/${partData.updatedBy}`)}
+                      onClick={() =>
+                        navigate(`/users/profile/${partData.updatedBy}`)
+                      }
                     >
                       by {userNames[partData.updatedBy]}
                     </span>
@@ -812,7 +874,9 @@ export function PartDetails({
                 </span>
                 <CalendarDays className="w-4 h-4 text-gray-500 ml-1" />
                 <span>
-                  {partData.updatedAt ? new Date(partData.updatedAt).toLocaleString() : "N/A"}
+                  {partData.updatedAt
+                    ? new Date(partData.updatedAt).toLocaleString()
+                    : "N/A"}
                 </span>
               </div>
             </div>

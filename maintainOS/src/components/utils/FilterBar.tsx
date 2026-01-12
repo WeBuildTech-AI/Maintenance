@@ -10,7 +10,7 @@ type FilterOption = {
   label: string;
   icon?: React.ReactNode;
   options?: (string | DropdownOption)[]; 
-  hideCondition?: boolean; // ✅ Added support for hiding condition
+  hideCondition?: boolean; 
 };
 
 const MAX_VISIBLE = 4;
@@ -137,7 +137,8 @@ export default function FilterBar({
             {isOpen && (
               <div
                 ref={modalRef} 
-                className="absolute top-full mt-1 left-1/2 -translate-x-1/2 w-80 z-50"
+                // ✅ Z-Index increased to 9999 to force it on top
+                className="absolute top-full mt-1 left-1/2 -translate-x-1/2 w-80 z-[9999]"
               >
                 <FilterDropdown
                   title={filter.label}
@@ -149,7 +150,7 @@ export default function FilterBar({
                   onSelect={(optId) => handleSelect(key, optId)}
                   onDelete={() => handleDelete(key)}
                   onConditionChange={(cond) => handleConditionChange(key, cond)}
-                  hideCondition={filter.hideCondition} // ✅ PASSING THE NEW PROP
+                  hideCondition={filter.hideCondition}
                 />
               </div>
             )}
@@ -159,7 +160,6 @@ export default function FilterBar({
 
       {shouldShowAdd && (
         <div className="relative" ref={addMenuRef}>
-          {/* ... Add Menu Button & Dropdown (Same as before) ... */}
            <button
             className="flex items-center gap-2 border rounded-md px-3 py-1 text-sm bg-white hover:bg-accent transition"
             onClick={() => {
@@ -172,7 +172,8 @@ export default function FilterBar({
 
           {showAddMenu && (
             <div
-              className="absolute top-full mt-1 left-1/2 -translate-x-1/2 bg-white border rounded-lg shadow-xl w-80 z-50 flex flex-col"
+              // ✅ Z-Index increased to 9999
+              className="absolute top-full mt-1 left-1/2 -translate-x-1/2 bg-white border rounded-lg shadow-xl w-80 z-[9999] flex flex-col"
               style={{ maxHeight: "340px" }}
             >
              <div className="p-3 border-b sticky top-0 bg-white z-10 shadow-sm">

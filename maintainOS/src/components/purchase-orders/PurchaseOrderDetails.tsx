@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Building2,
   Check,
@@ -13,6 +13,9 @@ import {
   X,
   User,
   CopyIcon,
+  Settings,
+  IndianRupee,
+  FileText, // ✅ Imported FileText for Receipt Icon
 } from "lucide-react";
 import { Button } from "../ui/button";
 import {
@@ -33,11 +36,12 @@ import Loader from "../Loader/Loader";
 import type { RootState } from "../../store";
 import { useSelector } from "react-redux";
 import { renderInitials } from "../utils/renderInitials";
-import { addressToLine, formatMoney } from "./helpers"; // Ensure helpers import
+import { addressToLine, formatMoney } from "./helpers";
 import { StatusBadge } from "./StatusBadge";
 import { useNavigate } from "react-router-dom";
+import ReceiptModal from "./ReceiptModal"; // ✅ Imported ReceiptModal
 
-// ... (Interfaces remain same as your code)
+// ... (Interfaces)
 interface OrderItem {
   id: string;
   itemName?: string;
@@ -140,7 +144,6 @@ interface PurchaseOrderDetailsProps {
 const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   selectedPO,
   updateState,
-  // handleConfirm prop is shadowed by local function, using local logic
   setModalAction,
   topRef,
   commentsRef,
@@ -149,7 +152,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   handleEditClick,
   handleCopyClick,
   setApproveModal,
-  fetchPurchaseOrder, // This refreshes the parent list
+  fetchPurchaseOrder,
   restoreData,
   onClose,
   showDeleted,
@@ -170,23 +173,30 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   );
   const [isLoadingContacts, setIsLoadingContacts] = React.useState(false);
 
-  // --- FETCH FUNCTIONS ---
+  // ✅ New State for Receipt Modal
+  const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
 
-  // 1. Fetch Logs (Activity History)
+  // --- LOCAL HELPER FOR RUPEE FORMATTING ---
+  const formatRupee = (amount: number) => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      minimumFractionDigits: 2,
+    }).format(amount);
+  };
+
+  // --- FETCH FUNCTIONS ---
   const fetchPurchaseOrderLog = async () => {
     try {
-      // Don't set global loading true here to avoid flickering entire UI on small updates
       const res = await purchaseOrderService.FetchPurchaseOrderLog(
         selectedPO.id
       );
       setLog(res || []);
     } catch (err) {
-      // toast.error("Failed to fetch the Log"); // Optional: Silent fail or toast
       console.error(err);
     }
   };
 
-  // 2. Fetch Comments
   const fetchPurchaseOrderComments = async () => {
     try {
       const res = await purchaseOrderService.FetchPurchaseOrderComment(
@@ -198,64 +208,53 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
     }
   };
 
-  // 3. Consolidated Refresh Function (Updates EVERYTHING)
   const refreshAllData = async () => {
     await Promise.all([
-      fetchPurchaseOrder(), // Parent List
-      fetchPurchaseOrderLog(), // History Logs
-      fetchPurchaseOrderComments(), // Comments
+      fetchPurchaseOrder(),
+      fetchPurchaseOrderLog(),
+      fetchPurchaseOrderComments(),
     ]);
   };
 
-  // --- USE EFFECT ---
   useEffect(() => {
-    // Initial fetch when PO ID changes
     fetchPurchaseOrderComments();
     fetchPurchaseOrderLog();
-    // fetchContactDetails... (if needed)
-  }, [selectedPO.id]);
+  }, [selectedPO.id, selectedPO.status]);
 
   // --- HANDLERS ---
-
-  // Approve
   const handleApprove = async (id: string) => {
     try {
       await purchaseOrderService.approvePurchaseOrder(id);
       setModalAction("approve");
       toast.success("Successfully Approved");
-      refreshAllData(); // ✅ Fix: Updates logs immediately
+      refreshAllData();
     } catch {
       toast.error("Failed to Approve");
     }
   };
 
-  // Continue / Complete
   const handleContinue = async () => {
     try {
       await purchaseOrderService.completePurchaseOrder(selectedPO.id);
       setContinueModal(false);
       toast.success("Successfully Completed");
-      refreshAllData(); // ✅ Fix: Updates logs immediately
+      refreshAllData();
     } catch {
       toast.error("Failed to Complete");
     }
   };
 
-  // Delete Comment
   const handleDeleteComment = async (id: string) => {
     await purchaseOrderService.deletePurchaseOrderComment(id);
     fetchPurchaseOrderComments();
-    // Comments deletion usually doesn't create a log, but if it does:
-    fetchPurchaseOrderLog(); 
+    fetchPurchaseOrderLog();
   };
 
-  // Add Comment
   const handleSend = async () => {
     if (!comment.trim()) {
       toast.error("Please write a comment first.");
       return;
     }
-
     const poId = selectedPO?.id;
     if (!poId) {
       toast.error("Purchase Order ID is missing.");
@@ -264,22 +263,19 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
     try {
       const payload = { message: comment };
       await purchaseOrderService.createPurchaseOrderComment(poId, payload);
-
       toast.success("Comment added successfully!");
       setComment("");
       setShowCommentBox(false);
-      
-      refreshAllData(); // ✅ Fix: Updates comments AND logs
+      refreshAllData();
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Failed to add comment.");
     }
   };
 
-  // Restore
   const handleRestorePurchaseOrderData = async (id: any) => {
     try {
       await purchaseOrderService.restorePurchaseOrderData(id);
-      fetchPurchaseOrder(); // Only parent update needed as we likely close modal/view
+      fetchPurchaseOrder();
       onClose();
       toast.success("Successfully Restored the Purchase Order");
     } catch (err) {
@@ -287,81 +283,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
     }
   };
 
-  // Action Confirm (Reject, Delete, Cancel)
-  const handleConfirmAction = async (id: string | undefined) => {
-    // Note: Renamed from handleConfirm to avoid conflict/confusion
-    if (!id) {
-      toast.error("No PO selected for action.");
-      return;
-    }
-    // We handle loading in parent if passed, but local state here:
-    // setIsLoading(true); // Can uncomment if blocking UI is needed
-
-    try {
-        // NOTE: setModalAction state logic is in parent, 
-        // but typically this logic sits in PurchaseOrders.tsx. 
-        // If this component is handling the confirmation logic:
-        
-        // However, based on props, `handleConfirm` is passed from parent.
-        // If we want real-time logs here, the parent needs to trigger a refresh OR
-        // we intercept the parent's call.
-        
-        // Since `handleConfirm` is a prop, we assume the PARENT does the API call.
-        // BUT, if the parent modifies data, we need to know when to refresh logs.
-        // A better approach is usually doing the API call here if possible, 
-        // OR relying on the parent to trigger a prop change that useEffect catches.
-        
-        // Assuming current structure performs action in Parent via prop:
-        // await handleConfirm(id); 
-        
-        // If you want to force update logs after parent action:
-        // setTimeout(() => fetchPurchaseOrderLog(), 1000); 
-        
-        // BETTER: Move logic here (as seen in your provided code snippet you had local handleConfirm logic):
-        
-        // --- LOCAL LOGIC START ---
-        // (This matches the block you provided in your code, keeping it local)
-        // Check `modalAction` prop (passed from parent or local state?)
-        // The prop is setModalAction, but where is `modalAction` read? 
-        // Ah, `PurchaseOrders.tsx` controls the modal. 
-        
-        // Let's assume the PARENT calls `handleConfirm` prop. 
-        // **Wait**, your previous code had `handleConfirm` defined inside this component too?
-        // No, it was passed as prop, BUT you also had a local definition in the snippet provided.
-        // I will use the LOCAL definition you provided to ensure logs update.
-        
-        /* If `modalAction` comes from Parent props, we can't read it easily unless passed.
-           But based on `setModalAction` usage, it seems this component controls the triggers.
-           
-           CRITICAL: The `ConfirmationModal` is in the PARENT (`PurchaseOrders.tsx`).
-           So the Parent executes the action.
-           
-           To fix the "Log not updating" issue when the action happens in the PARENT:
-           1. The Parent calls API.
-           2. The Parent calls `fetchPurchaseOrder()`.
-           3. This component receives new `selectedPO`.
-           4. `useEffect` on `selectedPO.id` runs. 
-           
-           **PROBLEM:** If `selectedPO.id` doesn't change (same PO, just status change),
-           the useEffect might not trigger if the object reference doesn't change deeply.
-           
-           **FIX:** Add `selectedPO.status` and `selectedPO.updatedAt` to the dependency array.
-        */
-       
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  // --- DEPENDENCY FIX ---
-  // Ensure logs refresh when status or any update happens to the PO
-  useEffect(() => {
-    fetchPurchaseOrderLog();
-    fetchPurchaseOrderComments();
-  }, [selectedPO.id, selectedPO.status, selectedPO.updatedAt]); 
-  // ✅ Added status/updatedAt dependencies so parent updates trigger log fetch
-
-  // Calculations
+  // --- CALCULATIONS ---
   const subtotal =
     selectedPO.orderItems?.reduce((acc, item) => {
       const cost = Number(item.unitCost) || 0;
@@ -382,8 +304,59 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
 
   const total = subtotal + extraCosts + taxTotal;
 
+  // ✅ DUMMY DATA FOR RECEIVED COST BREAKDOWN (Matching Screenshot)
+  const dummyReceivedItems = [
+    {
+      id: "dummy-1",
+      itemName: "Bearing Sets",
+      partNumber: "3454",
+      unitsReceived: 70,
+      unitCost: 250.0,
+    },
+  ];
+
+  const dummyReceivedTotal = dummyReceivedItems.reduce(
+    (acc, item) => acc + item.unitsReceived * item.unitCost,
+    0
+  );
+
+  // ✅ FORCED DUMMY DATA FOR RECEIPT SUMMARY (To ensure it shows)
+  const receiptHistory = [
+    {
+      id: "rec-001",
+      date: new Date().toISOString(),
+      notes: "Received partial shipment - 20 Units.",
+      items: [
+        {
+          itemName: "Bearing Sets",
+          partNumber: "3454",
+          unitsOrdered: 100,
+          receivedQty: 20, // Received NOW
+          unitsReceived: 20, // Total received
+          unitCost: 250.0,
+        },
+      ],
+    },
+    {
+      id: "rec-002",
+      date: new Date(Date.now() - 86400000).toISOString(), // Yesterday
+      notes: "Second shipment received - 50 Units.",
+      items: [
+        {
+          itemName: "Bearing Sets",
+          partNumber: "3454",
+          unitsOrdered: 100,
+          receivedQty: 50, // Received NOW
+          unitsReceived: 70, // Total received
+          unitCost: 250.0,
+        },
+      ],
+    },
+  ];
+
   return (
     <div className="h-full flex flex-col min-h-0">
+      {/* HEADER */}
       <div className="p-3 border-b border-border flex-shrink-0">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
@@ -402,7 +375,6 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
             </Tooltip>
           </div>
 
-          {/* HEADER ACTIONS */}
           <div className="flex items-center gap-2">
             <Button
               className="gap-2 bg-white cursor-pointer text-orange-600 border border-orange-600 hover:bg-orange-50"
@@ -411,7 +383,6 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
               <Edit className="h-4 w-4" />
               Edit
             </Button>
-
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm">
@@ -422,9 +393,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                 <DropdownMenuContent align="end">
                   {selectedPO.status === "pending" && (
                     <DropdownMenuItem
-                      onClick={() => {
-                        handleApprove(selectedPO.id);
-                      }}
+                      onClick={() => handleApprove(selectedPO.id)}
                     >
                       <Check className="h-4 w-4 mr-2" /> Mark as Approved
                     </DropdownMenuItem>
@@ -457,7 +426,6 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               )}
-
               {showDeleted && (
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
@@ -476,7 +444,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
       </div>
 
       {/* CONTENT */}
-      <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-8 z-50 ">
+      <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-8  ">
         <div ref={topRef}>
           {/* STATUS + VENDOR */}
           <div className="grid grid-cols-2 gap-6">
@@ -499,9 +467,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                           const dueDate = new Date(selectedPO?.dueDate);
                           const today = new Date();
                           today.setHours(0, 0, 0, 0);
-
                           const isOverdue = dueDate < today;
-
                           return (
                             <span
                               className={`capitalize text-sm font-medium ${
@@ -565,7 +531,6 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                               {selectedPO.vendor.contacts[0]?.email}
                             </span>
                           </div>
-
                           <div className="text-sm text-gray-600">
                             Phone :-
                             <span className="text-orange-600">
@@ -580,6 +545,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
             </Card>
           </div>
 
+          {/* CONTACTS LIST */}
           {(isLoadingContacts ||
             (contactDetails && contactDetails.length > 0)) && (
             <div>
@@ -595,13 +561,11 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                       key={contact.id || index}
                       className="flex items-start gap-4 p-2 border-b last:border-b-0"
                     >
-                      {/* Initial Avatar */}
                       <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-semibold text-sm shrink-0">
                         {renderInitials(
                           contact.fullName || contact.email || "?"
                         )}
                       </div>
-
                       <div className="flex-1">
                         <p className="font-medium text-sm">
                           {contact.fullName || "Contact"}
@@ -736,6 +700,124 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
             </div>
           )}
 
+          {/* ✅ RECEIVED COST BREAKDOWN (Table Version) */}
+          <div className="mt-8">
+            <h3 className="font-medium mb-3 mt-4">Received Cost Breakdown</h3>
+            <div className="overflow-x-auto border rounded-lg">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50">
+                  <tr className="text-left">
+                    <th className="p-3">Item Name</th>
+                    {/* Aligned Right per previous feedback */}
+                    <th className="p-3 text-right">Received</th>
+                    <th className="p-3 text-right">Unit Cost</th>
+                    <th className="p-3 text-right">Total Cost</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dummyReceivedItems.map((item) => {
+                    const totalCost = item.unitsReceived * item.unitCost;
+                    return (
+                      <tr key={item.id} className="border-t">
+                        <td className="p-3">
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 flex-shrink-0 flex items-center justify-center rounded border border-gray-200 bg-white">
+                              <Settings className="h-4 w-4 text-gray-400" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-gray-900">
+                                {item.itemName}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {item.partNumber}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-3 text-right">{item.unitsReceived}</td>
+                        <td className="p-3 text-right">
+                          {formatRupee(item.unitCost)}
+                        </td>
+                        <td className="p-3 text-right font-semibold">
+                          {formatRupee(totalCost)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+
+                  {/* Subtotal */}
+                  <tr className="border-t">
+                    <td colSpan={3} className="p-3 text-right font-medium">
+                      Subtotal
+                    </td>
+                    <td className="p-3 text-right font-medium">
+                      {formatRupee(dummyReceivedTotal)}
+                    </td>
+                  </tr>
+
+                  {/* Total */}
+                  <tr className="border-t bg-muted/30">
+                    <td colSpan={3} className="p-3 text-right font-semibold">
+                      Total received cost
+                    </td>
+                    <td className="p-3 font-semibold text-right">
+                      {formatRupee(dummyReceivedTotal)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* ✅ RECEIPT SUMMARY SECTION (Always Visible with Dummy Data) */}
+          <div className="mt-8">
+            <h3 className="font-medium mb-3 mt-4 text-gray-900">
+              Receipt Summary
+            </h3>
+            <div className="grid grid-cols-1 gap-4">
+              {receiptHistory.map((receipt, index) => {
+                const total =
+                  receipt.items?.reduce(
+                    (acc: number, item: any) =>
+                      acc + item.receivedQty * item.unitCost,
+                    0
+                  ) || 0;
+
+                return (
+                  <div
+                    key={receipt.id}
+                    onClick={() => setSelectedReceipt(receipt)}
+                    className="border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-orange-300 hover:shadow-sm transition-all bg-white group"
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-orange-50 flex items-center justify-center text-orange-600 group-hover:bg-orange-100 transition-colors">
+                          <FileText size={20} />
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            Receipt #{index + 1}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {new Date(receipt.date).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-semibold text-gray-900">
+                          {formatRupee(total)}
+                        </div>
+                        <div className="text-xs text-green-600 font-medium">
+                          View Receipt
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           {/* ADDRESSES */}
           <div className="grid grid-cols-2 gap-6 mt-4">
             <Card className="p-4 rounded-lg">
@@ -750,7 +832,6 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
               </div>
             </Card>
 
-            {/* OLD SINGLE CONTACT CARD - KEPT FOR LEGACY DISPLAY IF FIELDS EXIST */}
             {(selectedPO.contactName || selectedPO.phoneOrMail) && (
               <Card className="p-4 rounded-lg">
                 <div className="text-sm text-muted-foreground mb-2">
@@ -787,7 +868,6 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
         {/* COMMENTS */}
         <div ref={commentsRef}>
           <h3 className="font-medium mb-3">Comments</h3>
-
           <div className="border rounded-lg p-4 mb-4 max-h-64 overflow-y-auto">
             {isLoading ? (
               <Loader />
@@ -817,12 +897,10 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                           key={item.id}
                           className="flex items-start gap-3 border-b pb-3 last:border-b-0 group relative"
                         >
-                          {/* Avatar Circle */}
                           <div className="flex items-center justify-center w-10 h-10 rounded-full bg-orange-100 text-orange-700 font-semibold">
                             {initials}
                           </div>
 
-                          {/* Comment Content */}
                           <div className="flex-1">
                             <div className="flex justify-between text-xs  mb-1">
                               <div className="font-medium text-black capitalize ">
@@ -842,8 +920,6 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                               {item.message}
                             </p>
                           </div>
-
-                          {/* Delete Icon (hidden until hover) */}
                         </div>
                       );
                     })}
@@ -885,19 +961,14 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                         key={item.id}
                         className="flex items-start gap-3 pb-1 last:border-b-0"
                       >
-                        {/* Avatar Circle */}
                         <div className="flex items-center justify-center mt-1 capitalize font-medium w-8 h-8 rounded-full bg-orange-100 text-orange-700 font-semibold">
                           {renderInitials(user?.fullName)}
                         </div>
-
-                        {/* Log Content */}
                         <div className="flex-1">
                           <div className="flex gap-4 capitalize text-xs text-muted-foreground mb-1">
                             <span>{authorName}</span>
                             <span>{formattedDate}</span>
                           </div>
-
-                          {/* Activity Message */}
                           <p className="text-sm text-gray-800">{message}</p>
                         </div>
                       </div>
@@ -965,7 +1036,6 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
         <PurchaseStockUI
           setFullFillModal={setFullFillModal}
           selectedPO={selectedPO}
-          // ✅ FIX: Pass refresh function that updates both List and Logs
           fetchPurchaseOrder={refreshAllData}
         />
       )}
@@ -977,6 +1047,14 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
           modalRef={modalRef}
         />
       )}
+
+      {/* ✅ RECEIPT MODAL INTEGRATION */}
+      <ReceiptModal
+        isOpen={!!selectedReceipt}
+        onClose={() => setSelectedReceipt(null)}
+        receiptData={selectedReceipt}
+        poNumber={selectedPO.poNumber}
+      />
     </div>
   );
 };

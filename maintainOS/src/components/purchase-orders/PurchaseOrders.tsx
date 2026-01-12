@@ -21,6 +21,8 @@ import {
   Phone,
   FileText,
   AlertCircle,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 import {
@@ -46,13 +48,12 @@ import Loader from "../Loader/Loader";
 import { StatusBadge } from "./StatusBadge";
 import { FetchPurchaseOrdersParams } from "../../store/purchaseOrders/purchaseOrders.types";
 
-// --- Helper to deep compare arrays ---
+// ... (Helper function getChangedFields remains same)
 function getChangedFields(
   original: NewPOFormType,
   current: NewPOFormType
 ): Partial<NewPOFormType> {
   const changes: Partial<NewPOFormType> = {};
-
   const keysToCompare: (keyof NewPOFormType)[] = [
     "poNumber",
     "vendorId",
@@ -63,8 +64,8 @@ function getChangedFields(
     "billingAddressId",
     "sameShipBill",
     "vendorContactIds",
-    "contactName", // ✅ ADDED: Detects changes in manual contact name
-    "phoneOrMail", // ✅ ADDED: Detects changes in manual phone/email
+    "contactName",
+    "phoneOrMail",
   ];
 
   for (const key of keysToCompare) {
@@ -89,7 +90,6 @@ function getChangedFields(
     // @ts-ignore
     changes.taxLines = current.taxLines;
   }
-
   return changes;
 }
 
@@ -120,6 +120,16 @@ export function PurchaseOrders() {
   const [selectedPOId, setSelectedPOId] = useState<string | null>(null);
   const [approveModal, setApproveModal] = useState(false);
 
+  // ✅ Sorting State
+  const [sortType, setSortType] = useState("Last Updated");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  
+  // ✅ Sort Dropdown State
+  const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
+  const [openSortSection, setOpenSortSection] = useState<string | null>(null);
+  const sortDropdownRef = useRef<HTMLDivElement>(null);
+  const sortButtonRef = useRef<HTMLButtonElement>(null);
+
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const savedMode = localStorage.getItem("purchaseOrderViewMode");
     return (savedMode as ViewMode) || "panel";
@@ -148,6 +158,26 @@ export function PurchaseOrders() {
       localStorage.removeItem("purchaseOrderViewMode");
     }
   }, [viewMode]);
+
+  // Handle outside click for sort dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        sortDropdownRef.current &&
+        !sortDropdownRef.current.contains(event.target as Node) &&
+        sortButtonRef.current &&
+        !sortButtonRef.current.contains(event.target as Node)
+      ) {
+        setIsSortDropdownOpen(false);
+      }
+    };
+    if (isSortDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isSortDropdownOpen]);
 
   const scrollToTop = () => {
     if (topRef.current) {
@@ -218,7 +248,7 @@ export function PurchaseOrders() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // ✅ FETCH POs
+  // ✅ FETCH & SORT POs
   const fetchPurchaseOrder = React.useCallback(async () => {
     if (getPurchaseOrderData.length === 0) setIsLoading(true);
 
@@ -234,18 +264,46 @@ export function PurchaseOrders() {
         res = await purchaseOrderService.fetchPurchaseOrders(apiPayload);
       }
 
-      const data = Array.isArray(res) ? res : (res as any)?.data?.items || [];
-      const sortedData = [...data].sort(
-        (a: PurchaseOrder, b: PurchaseOrder) =>
-          new Date(b.updatedAt).valueOf() - new Date(a.updatedAt).valueOf()
-      );
-      setGetPurchaseOrderData(sortedData);
+      let data = Array.isArray(res) ? res : (res as any)?.data?.items || [];
+
+      // ✅ Apply Sorting Logic
+      data = [...data].sort((a: any, b: any) => {
+        let valA, valB;
+
+        if (sortType === "Creation Date") {
+          valA = new Date(a.createdAt).getTime();
+          valB = new Date(b.createdAt).getTime();
+        } else if (sortType === "Last Updated") {
+          valA = new Date(a.updatedAt).getTime();
+          valB = new Date(b.updatedAt).getTime();
+        } else if (sortType === "Name") {
+          valA = (a.vendor?.name || "").toLowerCase();
+          valB = (b.vendor?.name || "").toLowerCase();
+          if (valA < valB) return sortOrder === "asc" ? -1 : 1;
+          if (valA > valB) return sortOrder === "asc" ? 1 : -1;
+          return 0;
+        }
+
+        // For dates/numbers
+        if (typeof valA === "number" && typeof valB === "number") {
+          return sortOrder === "asc" ? valA - valB : valB - valA;
+        }
+        return 0;
+      });
+
+      setGetPurchaseOrderData(data);
     } catch (err) {
       console.error(err);
     } finally {
       setIsLoading(false);
     }
-  }, [showDeleted, filterParams, debouncedSearch, getPurchaseOrderData.length]);
+  }, [
+    showDeleted,
+    filterParams,
+    debouncedSearch,
+    sortType, // ✅ Added dependency
+    sortOrder, // ✅ Added dependency
+  ]);
 
   useEffect(() => {
     fetchPurchaseOrder();
@@ -443,8 +501,8 @@ export function PurchaseOrders() {
     const mappedTaxLines = poToEdit.taxesAndCosts
       ? poToEdit.taxesAndCosts.map((t: any) => ({
           id: t.id || cryptoId(),
-          label: t.taxLabel || t.label || "", //  'label' key ensure ki
-          value: t.taxValue || t.value || 0, //  'value' key ensure ki
+          label: t.taxLabel || t.label || "", //  'label' key ensure ki
+          value: t.taxValue || t.value || 0, //  'value' key ensure ki
           type: t.taxCategory === "PERCENTAGE" ? "percentage" : "fixed",
           isTaxable: t.isTaxable,
         }))
@@ -861,27 +919,31 @@ export function PurchaseOrders() {
   /* --------------------------------- UI ---------------------------------- */
   return (
     <div className="flex flex-col h-full min-h-0">
-      {POHeaderComponent(
-        viewMode,
-        setViewMode,
-        searchQuery,
-        setSearchQuery,
-        () => {
-          resetNewPO();
-          // 👇 Navigate to Create Route
-          navigate("/purchase-orders/create");
-        },
-        setShowSettings,
-        setIsSettingModalOpen,
-        setShowDeleted,
-        handleFilterChange
-      )}
+      {/* ✅ Wrapped in relative z-50 to fix dropdown overlap issue */}
+      <div className="relative z-50">
+        <POHeaderComponent
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          setIsCreatingForm={setIsCreating}
+          setShowSettings={setShowSettings}
+          setIsSettingModalOpen={setIsSettingModalOpen}
+          setShowDeleted={setShowDeleted}
+          onFilterChange={handleFilterChange}
+          // 👇 Sorting Props passed down
+          sortType={sortType}
+          setSortType={setSortType}
+          sortOrder={sortOrder}
+          setSortOrder={setSortOrder}
+        />
+      </div>
 
       {viewMode === "table" ? (
         <div className="flex-1 min-h-0 overflow-auto p-2">
           <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
             <PurchaseOrdersTable
-              orders={filteredPOs}
+              orders={filteredPOs} // This data is now sorted in fetchPurchaseOrder
               columns={selectedColumns}
               pageSize={pageSize}
               isSettingModalOpen={isSettingModalOpen}
@@ -896,11 +958,90 @@ export function PurchaseOrders() {
         <div className="flex flex-1 min-h-0">
           {/* Left List */}
           <div className="w-96 mr-2 ml-3 mb-2 border border-border flex flex-col min-h-0">
-            <div className="p-4 border-b border-border flex-shrink-0">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">
-                  All Purchase Orders: {filteredPOs.length}
-                </span>
+            {/* ✅ Updated List Header with Sort Dropdown */}
+            <div className="p-4 border-b border-border flex-shrink-0 flex justify-between items-center bg-white z-40 relative">
+              
+
+              {/* Sort Trigger */}
+              <div className="relative">
+                <button
+                  ref={sortButtonRef}
+                  onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
+                  className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                >
+                  Sort By: {sortType} : {sortOrder === "asc" ? "Asc" : "Desc"}
+                  <ChevronDown size={12} />
+                </button>
+
+                {/* Custom Sort Dropdown */}
+                {isSortDropdownOpen && (
+                  <div
+                    ref={sortDropdownRef}
+                    className="absolute right-0 top-full mt-1 z-[9999] w-56 rounded-md border border-gray-200 bg-white shadow-lg p-1"
+                  >
+                    {[
+                      {
+                        label: "Creation Date",
+                        options: ["Oldest First", "Newest First"],
+                      },
+                      {
+                        label: "Last Updated",
+                        options: ["Least Recent First", "Most Recent First"],
+                      },
+                      {
+                        label: "Name",
+                        options: ["Ascending Order", "Descending Order"],
+                      },
+                    ].map((section) => (
+                      <div key={section.label}>
+                        <button
+                          onClick={() =>
+                            setOpenSortSection(
+                              openSortSection === section.label
+                                ? null
+                                : section.label
+                            )
+                          }
+                          className={`flex items-center justify-between w-full px-3 py-2 text-left text-sm hover:bg-gray-50 rounded-md ${
+                            sortType === section.label
+                              ? "text-blue-600 font-medium"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          <span>{section.label}</span>
+                          {openSortSection === section.label ? (
+                            <ChevronUp size={14} />
+                          ) : (
+                            <ChevronDown size={14} />
+                          )}
+                        </button>
+                        {openSortSection === section.label && (
+                          <div className="pl-3 pr-1 py-1 space-y-1 bg-gray-50/50">
+                            {section.options.map((opt) => (
+                              <button
+                                key={opt}
+                                onClick={() => {
+                                  setSortType(section.label);
+                                  setSortOrder(
+                                    opt.includes("Asc") ||
+                                      opt.includes("Oldest") ||
+                                      opt.includes("Least")
+                                      ? "asc"
+                                      : "desc"
+                                  );
+                                  setIsSortDropdownOpen(false);
+                                }}
+                                className="w-full text-left text-xs px-2 py-1.5 hover:bg-white rounded text-gray-600 transition-colors"
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -949,13 +1090,14 @@ export function PurchaseOrders() {
                       <div
                         key={po.id}
                         onClick={() => navigate(`/purchase-orders/${po.id}`)}
-                        //  INLINE Yellow Theme Styling
+                        //  INLINE Yellow Theme Styling
                         className={`cursor-pointer border rounded-lg p-4 mb-3 transition-all duration-200 hover:shadow-md ${
                           isSelected
                             ? "border-yellow-400 bg-yellow-50 ring-1 ring-yellow-400"
                             : "border-gray-200 bg-white hover:border-yellow-200"
                         }`}
                       >
+                        {/* List Item Content */}
                         <div className="flex items-start gap-4">
                           {/* Icon/Avatar Wrapper */}
                           <div
@@ -1076,6 +1218,7 @@ export function PurchaseOrders() {
                 restoreData="Restore"
                 onClose={() => setModalAction(null)}
                 showDeleted={showDeleted}
+                showCommentSection={true}
               />
             ) : (
               <div className="flex items-center justify-center h-full">
@@ -1096,6 +1239,7 @@ export function PurchaseOrders() {
         </div>
       )}
 
+      {/* Modals */}
       <NewPOFormDialog
         // 👇 Controls open state via URL
         open={isFormOpen}

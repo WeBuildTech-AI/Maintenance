@@ -11,13 +11,14 @@ import type {
 } from "./parts.types";
 
 export const partService = {
+  // ... (keep other methods like fetchParts, etc.)
+
   fetchParts: async (params?: FetchPartsParams): Promise<PartResponse[]> => {
     const res = await api.get(`/parts`, {
       params,
       paramsSerializer: { indexes: null },
       headers: { Accept: "application/json" },
     });
-    
     if (res.data && Array.isArray(res.data.items)) return res.data.items;
     if (Array.isArray(res.data)) return res.data;
     return [];
@@ -80,12 +81,28 @@ export const partService = {
     return res.data;
   },
 
-  // ✅ FETCH LOGS (Robust Handling)
+  // ✅ DEBUGGING ADDED HERE
   fetchPartLogs: async (id: string): Promise<PartActivityLog[]> => {
+    console.log(`📡 Fetching logs for Part ID: ${id}`);
     const res = await api.get(`/parts/get/logs/${id}`);
-    // Handle array directly or nested in data
-    if (Array.isArray(res.data)) return res.data;
-    if (res.data && Array.isArray(res.data.data)) return res.data.data;
+    
+    console.log("🔥 RAW API RESPONSE:", res);
+    
+    // Robust checks to find the array
+    if (Array.isArray(res.data)) {
+        console.log("✅ Found array in res.data:", res.data);
+        return res.data;
+    }
+    if (res.data && Array.isArray(res.data.data)) {
+        console.log("✅ Found array in res.data.data:", res.data.data);
+        return res.data.data;
+    }
+    if (res.data && Array.isArray(res.data.items)) {
+        console.log("✅ Found array in res.data.items:", res.data.items);
+        return res.data.items;
+    }
+
+    console.warn("⚠️ No array found in response!", res.data);
     return [];
   }
 };
