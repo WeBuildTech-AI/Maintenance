@@ -41,8 +41,8 @@ export function Automations() {
     return automations.map((apiItem) => {
       // Extract latest run for asset/meter info
       const latestRun = apiItem.runs && apiItem.runs.length > 0 ? apiItem.runs[0] : null;
-      const firstTrigger = apiItem.triggers.when[0];
-      const firstAction = apiItem.actions[0];
+      const firstTrigger = apiItem.triggers?.when?.[0];
+      const firstAction = apiItem.actions?.[0];
 
       // Format Last Run Date
       const formatRelativeTime = (dateString: string) => {
@@ -66,7 +66,8 @@ export function Automations() {
         : "Never run";
 
       // Format operator for better readability
-      const formatOperator = (op: string) => {
+      const formatOperator = (op: string | undefined) => {
+        if (!op) return 'N/A';
         const opMap: Record<string, string> = {
           'lt': 'less than',
           'gt': 'greater than',
@@ -79,7 +80,8 @@ export function Automations() {
       };
 
       // Format action type for better readability
-      const formatActionType = (type: string) => {
+      const formatActionType = (type: string | undefined) => {
+        if (!type) return 'Unknown Action';
         return type
           .split('_')
           .map(word => word.charAt(0).toUpperCase() + word.slice(1))
@@ -87,7 +89,8 @@ export function Automations() {
       };
 
       // Format scope type
-      const formatScopeType = (type: string) => {
+      const formatScopeType = (type: string | undefined) => {
+        if (!type) return 'Continuous';
         return type
           .split('_')
           .map(word => word.charAt(0).toUpperCase() + word.slice(1))
@@ -124,7 +127,9 @@ export function Automations() {
         
         // Map nested Trigger object
         trigger: {
-          condition: `Meter Reading ${formatOperator(firstTrigger?.rules[0]?.op)} ${firstTrigger?.rules[0]?.value}`,
+          condition: firstTrigger?.rules?.[0] 
+            ? `Meter Reading ${formatOperator(firstTrigger.rules[0].op)} ${firstTrigger.rules[0].value}`
+            : 'No trigger configured',
           assets: assetName !== "Awaiting First Run" ? assetName : "N/A",
           meters: meterName !== "Not Yet Triggered" ? meterName : "N/A",
           frequency: formatScopeType(firstTrigger?.scope?.type || "continuous"),
