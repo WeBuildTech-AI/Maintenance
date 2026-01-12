@@ -89,7 +89,7 @@ export function AutomationsList({
           </div>
         ) : (
           <div className="space-y-2 p-4">
-            {filteredAutomations.map((automation) => {
+            {filteredAutomations &&  filteredAutomations?.map((automation) => {
               const isSelected = selectedAutomation?.id === automation.id;
               
               return (

@@ -20,22 +20,31 @@ import {
 
 import { ConfirmDiscardModal } from "./modals/ConfirmDiscardModal";
 import { ConfirmDeleteActionModal } from "./modals/ConfirmDeleteActionModal";
-import { CreateBlankWorkOrderForm, type WorkOrderActionData } from "./actions/CreateBlankWorkOrderForm";
-import { ChangeAssetStatusForm, type ChangeAssetStatusActionData } from "./actions/ChangeAssetStatusForm";
+import {
+  CreateBlankWorkOrderForm,
+  type WorkOrderActionData,
+} from "./actions/CreateBlankWorkOrderForm";
+import {
+  ChangeAssetStatusForm,
+  type ChangeAssetStatusActionData,
+} from "./actions/ChangeAssetStatusForm";
 import { ActionItem } from "./shared/ActionItem";
 import { TriggerCard, type TriggerData } from "./triggers/TriggerCard";
 import type { SelectOption } from "../work-orders/NewWorkOrderForm/DynamicSelect";
 import { fetchFilterData } from "../utils/filterDataFetcher";
 import { useAppDispatch } from "../../store/hooks";
 import { createAutomation } from "../../store/automations/automations.thunks";
-import { toast } from "../ui/use-toast";
+import toast from "react-hot-toast";
+// import { toast } from "../ui/use-toast";
 
 export function NewAutomationForm({ onBack }: { onBack: () => void }) {
   const dispatch = useAppDispatch();
-  
+
   const [showDiscardModal, setShowDiscardModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedActionType, setSelectedActionType] = useState<"work_order" | "change_status" | null>(null);
+  const [selectedActionType, setSelectedActionType] = useState<
+    "work_order" | "change_status" | null
+  >(null);
   const [showCreateBlankForm, setShowCreateBlankForm] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
@@ -44,12 +53,16 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
   const [description, setDescription] = useState("");
 
   const [triggers, setTriggers] = useState<string[]>(["Meter Reading"]);
-  const [triggerDataMap, setTriggerDataMap] = useState<Map<number, TriggerData>>(new Map());
-  
+  const [triggerDataMap, setTriggerDataMap] = useState<
+    Map<number, TriggerData>
+  >(new Map());
+
   // Action data
-  const [workOrderActionData, setWorkOrderActionData] = useState<WorkOrderActionData | null>(null);
-  const [changeStatusActionData, setChangeStatusActionData] = useState<ChangeAssetStatusActionData | null>(null);
-  
+  const [workOrderActionData, setWorkOrderActionData] =
+    useState<WorkOrderActionData | null>(null);
+  const [changeStatusActionData, setChangeStatusActionData] =
+    useState<ChangeAssetStatusActionData | null>(null);
+
   // Dynamic dropdown state
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [assetOptions, setAssetOptions] = useState<SelectOption[]>([]);
@@ -95,13 +108,16 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
   };
 
   // Handle trigger data changes
-  const handleTriggerChange = useCallback((index: number, data: TriggerData) => {
-    setTriggerDataMap(prev => {
-      const newMap = new Map(prev);
-      newMap.set(index, data);
-      return newMap;
-    });
-  }, []);
+  const handleTriggerChange = useCallback(
+    (index: number, data: TriggerData) => {
+      setTriggerDataMap((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(index, data);
+        return newMap;
+      });
+    },
+    []
+  );
 
   // Handle work order action data changes
   const handleWorkOrderChange = useCallback((data: WorkOrderActionData) => {
@@ -109,9 +125,12 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
   }, []);
 
   // Handle change asset status action data changes
-  const handleChangeStatusChange = useCallback((data: ChangeAssetStatusActionData) => {
-    setChangeStatusActionData(data);
-  }, []);
+  const handleChangeStatusChange = useCallback(
+    (data: ChangeAssetStatusActionData) => {
+      setChangeStatusActionData(data);
+    },
+    []
+  );
 
   // Handle automation creation
   const handleCreate = async () => {
@@ -123,11 +142,13 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
 
     // Check if at least one trigger is configured
     const hasValidTrigger = Array.from(triggerDataMap.values()).some(
-      data => data.meterId && data.conditions.length > 0
+      (data) => data.meterId && data.conditions.length > 0
     );
 
     if (!hasValidTrigger) {
-      toast.error("Please configure at least one trigger with a meter and condition");
+      toast.error(
+        "Please configure at least one trigger with a meter and condition"
+      );
       return;
     }
 
@@ -136,35 +157,34 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
 
       // Build triggers from collected data
       const triggersData = Array.from(triggerDataMap.values())
-        .filter(data => data.meterId && data.conditions.length > 0) // Only include triggers with meter AND conditions
-        .map(data => {
+        .filter((data) => data.meterId && data.conditions.length > 0) // Only include triggers with meter AND conditions
+        .map((data) => {
           // Map operator strings to API format
           const operatorMap: Record<string, string> = {
-            "equal": "eq",
-            "notEqual": "ne",
-            "above": "gt",
-            "below": "lt",
-            "aboveOrEqual": "gte",
-            "belowOrEqual": "lte",
-            "isBetween": "between",
-            "DecreasedbyLastTrigger": "decreases_by_from_last_trigger",
-            "IncreasedbyLastTrigger": "increases_by_from_last_trigger",
-            "IncreasedbyLastReading": "increases_by_from_last_reading",
-            "DecreasedbyLastReading": "decreases_by_from_last_reading"
+            equal: "eq",
+            notEqual: "ne",
+            above: "gt",
+            below: "lt",
+            aboveOrEqual: "gte",
+            belowOrEqual: "lte",
+            isBetween: "between",
+            DecreasedbyLastTrigger: "decreases_by_from_last_trigger",
+            IncreasedbyLastTrigger: "increases_by_from_last_trigger",
+            IncreasedbyLastReading: "increases_by_from_last_reading",
+            DecreasedbyLastReading: "decreases_by_from_last_reading",
           };
 
           // Map forOption to scope type
           const scopeTypeMap: Record<string, string> = {
-            "oneReading": "one_reading",
-            "multipleReadings": "multiple_readings",
-            "readingLongerThan": "reading_longer_than"
+            oneReading: "one_reading",
+            multipleReadings: "multiple_readings",
+            readingLongerThan: "reading_longer_than",
           };
 
-          const rules = data.conditions.map(condition => ({
+          const rules = data.conditions.map((condition) => ({
             op: operatorMap[condition.operator] || condition.operator,
-            value: parseFloat(condition.value) || 0
+            value: parseFloat(condition.value) || 0,
           }));
-
 
           return {
             type: "meter_reading",
@@ -172,8 +192,8 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
             assetId: data.assetId,
             rules,
             scope: {
-              type: scopeTypeMap[data.forOption] || "one_reading"
-            }
+              type: scopeTypeMap[data.forOption] || "one_reading",
+            },
           };
         });
 
@@ -183,14 +203,14 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
         description: description || undefined,
         isEnabled: true,
         triggers: {
-          when: triggersData
+          when: triggersData,
         },
         conditions: {
-          activeWindows: []
+          activeWindows: [],
         },
         actions: (() => {
           const actions = [];
-          
+
           // Add work order action if configured
           if (workOrderActionData && workOrderActionData.title) {
             actions.push({
@@ -203,35 +223,41 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
               onlyIfPreviousClosed: workOrderActionData.onlyIfPreviousClosed,
             });
           }
-          
+
           // Add change status action if configured
-          if (changeStatusActionData && changeStatusActionData.assetId && changeStatusActionData.status) {
+          if (
+            changeStatusActionData &&
+            changeStatusActionData.assetId &&
+            changeStatusActionData.status
+          ) {
             actions.push({
               type: "change_asset_status",
               assetId: changeStatusActionData.assetId,
               status: changeStatusActionData.status,
             });
           }
-          
+
           return actions;
         })(),
       };
 
       await dispatch(createAutomation(automationData)).unwrap();
-      
+
+      // toast.success("Automation created successfully!");
       toast.success("Automation created successfully!");
-      
+
       // Navigate back or reset form
       onBack();
     } catch (error: any) {
       console.error("Failed to create automation:", error);
-      
+
       // Extract detailed error message
-      const errorMessage = error?.message 
-        || error?.error 
-        || error 
-        || "Failed to create automation";
-      
+      const errorMessage =
+        error?.message ||
+        error?.error ||
+        error ||
+        "Failed to create automation";
+
       toast.error(errorMessage);
     } finally {
       setIsCreating(false);
@@ -246,7 +272,7 @@ export function NewAutomationForm({ onBack }: { onBack: () => void }) {
           <ChevronLeft className="h-4 w-4 mr-2" />
           New Automation
         </Button>
-        <Button 
+        <Button
           className="gap-2 cursor-pointer bg-orange-600 hover:bg-orange-700"
           onClick={handleCreate}
           disabled={isCreating}
