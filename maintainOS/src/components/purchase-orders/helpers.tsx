@@ -1,8 +1,9 @@
 import type { Address } from "./po.types";
 
 /* -------------------------------- Helpers -------------------------------- */
+// ✅ FIXED: Changed to Indian Rupee (INR)
 export const formatMoney = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
+  new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(
     isFinite(n) ? n : 0
   );
 

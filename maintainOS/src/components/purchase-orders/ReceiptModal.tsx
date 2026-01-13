@@ -169,7 +169,10 @@ export default function ReceiptModal({
 
           {receiptData?.items.map((item: any, index: number) => {
             const itemTotal = item.receivedQty * item.unitCost;
-            const orderCost = item.unitsOrdered * item.unitCost;
+            // ✅ FIX: Use item.unitsOrdered correctly, fallback to 0 to prevent NaN
+            const unitsOrdered = item.unitsOrdered || 0;
+            const totalReceivedSoFar = item.totalUnitsReceived || 0;
+            const orderCost = unitsOrdered * item.unitCost;
 
             return (
               <div
@@ -232,8 +235,9 @@ export default function ReceiptModal({
                           marginTop: "4px",
                         }}
                       >
-                        {item.unitsOrdered} Units Ordered &nbsp;|&nbsp;{" "}
-                        {item.unitsReceived} Units Received
+                        {/* ✅ UPDATED: Correct labels & data */}
+                        {unitsOrdered} Units Ordered &nbsp;|&nbsp;{" "}
+                        {totalReceivedSoFar} Total Received
                       </div>
                     </div>
                   </div>
@@ -249,6 +253,7 @@ export default function ReceiptModal({
                       <span style={{ fontWeight: 600, color: "#374151" }}>
                         Order Cost
                       </span>{" "}
+                      {/* ✅ FIX: Display calculated orderCost properly */}
                       {formatCurrency(orderCost)}
                     </div>
                   </div>
@@ -344,8 +349,6 @@ export default function ReceiptModal({
           })}
 
           {/* Total Receipt Cost Bar */}
-          {/* Note: In production code, calculate total from receiptData.items again here if needed, 
-              or pass it as prop. I'm inferring it from items loop or pre-calced. */}
           <div
             style={{
               backgroundColor: "#f9fafb",

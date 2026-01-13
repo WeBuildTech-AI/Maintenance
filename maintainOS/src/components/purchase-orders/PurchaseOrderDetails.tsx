@@ -14,8 +14,7 @@ import {
   User,
   CopyIcon,
   Settings,
-  IndianRupee,
-  FileText, // ✅ Imported FileText for Receipt Icon
+  FileText,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import {
@@ -36,18 +35,19 @@ import Loader from "../Loader/Loader";
 import type { RootState } from "../../store";
 import { useSelector } from "react-redux";
 import { renderInitials } from "../utils/renderInitials";
-import { addressToLine, formatMoney } from "./helpers";
+import { addressToLine, formatMoney } from "./helpers"; // ✅ Global INR helper
 import { StatusBadge } from "./StatusBadge";
 import { useNavigate } from "react-router-dom";
-import ReceiptModal from "./ReceiptModal"; // ✅ Imported ReceiptModal
+import ReceiptModal from "./ReceiptModal";
 
-// ... (Interfaces - Keep existing ones)
+// --- Interfaces ---
 interface OrderItem {
   id: string;
   itemName?: string;
   partNumber?: string;
   unitsOrdered: number;
   unitsReceived: number;
+  unitsRemaining?: number;
   unitCost: number;
   price: number;
   part?: {
@@ -114,10 +114,14 @@ interface PurchaseOrder {
   taxesAndCosts?: TaxItems[];
   vendorContactIds?: string[];
   contacts: VendorContact[];
+  amounts?: {
+    subtotal: number;
+    grandTotal: number;
+  };
 }
 
 interface PurchaseOrderDetailsProps {
-  selectedPO: PurchaseOrder;
+  selectedPO: any;
   updateState: (status: string) => void;
   handleConfirm: (id: string) => void;
   setModalAction: (
@@ -126,7 +130,7 @@ interface PurchaseOrderDetailsProps {
   topRef: React.RefObject<HTMLDivElement>;
   commentsRef: React.RefObject<HTMLDivElement>;
   formatMoney: (amount: number) => string;
-  addressToLine: (address: Address | null | undefined) => string;
+  addressToLine: (address: any) => string;
   comment?: string;
   showCommentBox: boolean;
   setApproveModal: () => void;
@@ -168,23 +172,12 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   const modalRef = React.useRef<HTMLDivElement>(null);
   const user = useSelector((state: RootState) => state.auth.user);
 
-  const [contactDetails, setContactDetails] = React.useState<VendorContact[]>(
-    []
-  );
+  const [contactDetails, setContactDetails] = React.useState<any[]>([]);
   const [isLoadingContacts, setIsLoadingContacts] = React.useState(false);
-
-  // ✅ New State for Receipts (Real Data)
+  
+  // ✅ Receipt State
   const [receiptHistory, setReceiptHistory] = useState<any[]>([]);
   const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
-
-  // --- LOCAL HELPER FOR RUPEE FORMATTING ---
-  const formatRupee = (amount: number) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      minimumFractionDigits: 2,
-    }).format(amount);
-  };
 
   // --- FETCH FUNCTIONS ---
   const fetchPurchaseOrderLog = async () => {
@@ -195,6 +188,8 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
         setLog(res);
       } else if ((res as any)?.data) {
         setLog((res as any).data);
+      } else if ((res as any)?.purchaseOrderLogs) {
+         setLog((res as any).purchaseOrderLogs);
       } else {
         setLog([]);
       }
@@ -214,13 +209,10 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
     }
   };
 
-  // 🔴 FETCH RECEIPTS (Updated Logic)
   const fetchReceipts = async () => {
     if (!selectedPO?.id) return;
     try {
       const data = await purchaseOrderService.fetchPurchaseOrderReceipts(selectedPO.id);
-      
-      // ✅ Handle the structure { purchaseOrderId: "...", receipts: [...] }
       if (data && Array.isArray(data.receipts)) {
         setReceiptHistory(data.receipts);
       } else if (Array.isArray(data)) {
@@ -245,7 +237,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   useEffect(() => {
     fetchPurchaseOrderComments();
     fetchPurchaseOrderLog();
-    fetchReceipts(); // ✅ Fetch on load
+    fetchReceipts();
   }, [selectedPO.id, selectedPO.status]);
 
   // --- HANDLERS ---
@@ -310,19 +302,26 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
     }
   };
 
-  // 🔴 Format Data for Receipt Modal
+  // ✅ UPDATED: Inject matching PO Item data into Receipt Data
   const handleViewReceipt = (receipt: any) => {
-    // Transform single item receipt into structure expected by modal (mocking items array)
+    // Find the original item in the main PO to get total Ordered/Received counts
+    const originalItem = selectedPO.orderItems?.find(
+        (oi: any) => oi.partId === receipt.partId || oi.itemName === receipt.itemName
+    );
+
     const formattedData = {
         date: receipt.receivedAt,
         notes: receipt.notes,
         items: [{
             itemName: receipt.itemName,
-            partNumber: "", // Part number not in receipt object directly, irrelevant for receipt view
-            receivedQty: receipt.unitsReceived,
+            partNumber: originalItem?.partNumber || "", // Get from PO Item
+            receivedQty: receipt.unitsReceived, // Qty in THIS receipt
             unitCost: receipt.unitCost,
-            // Calculate total for this line
-            lineTotal: receipt.lineTotal
+            lineTotal: receipt.lineTotal,
+            
+            // ✅ Inject Missing Data for Modal
+            unitsOrdered: originalItem?.unitsOrdered || 0,
+            totalUnitsReceived: originalItem?.unitsReceived || 0 // Cumulative
         }]
     };
     setSelectedReceipt(formattedData);
@@ -330,7 +329,8 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
 
   // --- CALCULATIONS ---
   const subtotal =
-    selectedPO.orderItems?.reduce((acc, item) => {
+    selectedPO.amounts?.subtotal || 
+    selectedPO.orderItems?.reduce((acc: number, item: any) => {
       const cost = Number(item.unitCost) || 0;
       const qty = Number(item.unitsOrdered) || 0;
       const itemTotal = item.price ? Number(item.price) : cost * qty;
@@ -340,19 +340,19 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   const taxesAndCosts = selectedPO.taxesAndCosts || [];
   const extraCosts = Number(selectedPO.extraCosts) || 0;
 
-  const taxTotal = taxesAndCosts.reduce((acc, tax) => {
+  const taxTotal = taxesAndCosts.reduce((acc: number, tax: any) => {
     if (tax.taxCategory === "PERCENTAGE") {
       return acc + (subtotal * Number(tax.taxValue || 0)) / 100;
     }
     return acc + Number(tax.taxValue || 0);
   }, 0);
 
-  const total = subtotal + extraCosts + taxTotal;
+  const total = selectedPO.amounts?.grandTotal || (subtotal + extraCosts + taxTotal);
 
   // Real Received Items (from PO)
-  const receivedItems = selectedPO.orderItems?.filter(item => item.unitsReceived > 0) || [];
+  const receivedItems = selectedPO.orderItems?.filter((item: any) => item.unitsReceived > 0) || [];
   const receivedTotal = receivedItems.reduce(
-    (acc, item) => acc + item.unitsReceived * item.unitCost,
+    (acc: number, item: any) => acc + item.unitsReceived * item.unitCost,
     0
   );
 
@@ -505,14 +505,14 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                   <span
                     className="font-medium cursor-pointer hover-text "
                     onClick={() =>
-                      navigate(`/vendors/${selectedPO.vendor.id}`)
+                      navigate(`/vendors/${selectedPO.vendor?.id}`)
                     }
                   >
                     {selectedPO.vendor?.name || "-"}
                   </span>
                 </div>
                 <div className="w-64">
-                  {selectedPO.vendor.contacts &&
+                  {selectedPO.vendor?.contacts &&
                     selectedPO.vendor.contacts.length > 0 && (
                       <>
                         <div className="p-3  rounded-lg bg-gray-50 mb-2">
@@ -547,60 +547,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
             </Card>
           </div>
 
-          {/* CONTACTS LIST */}
-          {(isLoadingContacts ||
-            (contactDetails && contactDetails.length > 0)) && (
-            <div>
-              <h3 className="font-medium mb-3 mt-4">
-                Contacts ({contactDetails.length})
-              </h3>
-              <div className="border rounded-lg p-4 space-y-3">
-                {isLoadingContacts ? (
-                  <Loader />
-                ) : (
-                  contactDetails.map((contact, index) => (
-                    <div
-                      key={contact.id || index}
-                      className="flex items-start gap-4 p-2 border-b last:border-b-0"
-                    >
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-semibold text-sm shrink-0">
-                        {renderInitials(
-                          contact.fullName || contact.email || "?"
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">
-                          {contact.fullName || "Contact"}
-                        </p>
-                        <div className="text-xs text-muted-foreground space-y-1 mt-0.5">
-                          {contact.role && (
-                            <div className="flex items-center gap-1">
-                              <User className="h-3 w-3" />
-                              <span>{contact.role}</span>
-                            </div>
-                          )}
-                          {contact.email && (
-                            <div className="flex items-center gap-1">
-                              <Mail className="h-3 w-3" />
-                              <span>{contact.email}</span>
-                            </div>
-                          )}
-                          {contact.phoneNumber && (
-                            <div className="flex items-center gap-1">
-                              <PhoneCallIcon className="h-3 w-3" />
-                              <span>{contact.phoneNumber}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* ORDER ITEMS */}
+          {/* ORDER ITEMS - ✅ ADDED REMAINING COLUMN */}
           {selectedPO.orderItems && (
             <div>
               <h3 className="font-medium mb-3 mt-4">Order Items</h3>
@@ -610,14 +557,16 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                     <tr className="text-left">
                       <th className="p-3">Item Name</th>
                       <th className="p-3">Part Number</th>
-                      <th className="p-3">Units Ordered</th>
-                      <th className="p-3">Units Received</th>
-                      <th className="p-3">Unit Cost</th>
-                      <th className="p-3">Cost of Units Ordered</th>
+                      <th className="p-3 text-center">Ordered</th>
+                      <th className="p-3 text-center">Received</th>
+                      {/* ✅ Remaining Column */}
+                      <th className="p-3 text-center">Remaining</th>
+                      <th className="p-3 text-right">Unit Cost</th>
+                      <th className="p-3 text-right">Total</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {selectedPO.orderItems?.map((it) => (
+                    {selectedPO.orderItems?.map((it: any) => (
                       <tr key={it.id} className="border-t">
                         <td className="p-3">
                           {it.itemName || it.part?.name || "-"}
@@ -626,8 +575,12 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                           {it.partNumber || it.part?.partNumber || "-"}
                         </td>
                         <td className="p-3 text-center">{it.unitsOrdered}</td>
-                        <td className="p-3 text-center">
+                        <td className="p-3 text-center text-green-600 font-medium">
                           {it.unitsReceived || 0}
+                        </td>
+                        {/* ✅ Calculation Logic for Remaining */}
+                        <td className="p-3 text-center text-orange-600 font-medium">
+                          {it.unitsRemaining ?? (it.unitsOrdered - (it.unitsReceived || 0))}
                         </td>
                         <td className="p-3 text-right">
                           {formatMoney(it.unitCost)}
@@ -644,7 +597,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
 
                     {/* Subtotal */}
                     <tr className="border-t">
-                      <td colSpan={5} className="p-3 text-right font-medium">
+                      <td colSpan={6} className="p-3 text-right font-medium">
                         Subtotal
                       </td>
                       <td className="p-3 text-right font-medium">
@@ -654,10 +607,10 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
 
                     {/* Taxes and Costs */}
                     {taxesAndCosts?.length > 0 &&
-                      taxesAndCosts.map((tax) => (
+                      taxesAndCosts.map((tax: any) => (
                         <tr key={tax.id} className="border-t">
                           <td
-                            colSpan={5}
+                            colSpan={6}
                             className="p-3 text-right font-medium capitalize"
                           >
                             {tax.taxLabel}{" "}
@@ -678,10 +631,10 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                     {/* Extra Costs */}
                     {extraCosts > 0 && (
                       <tr className="border-t">
-                        <td colSpan={5} className="p-3 text-right font-medium">
+                        <td colSpan={6} className="p-3 text-right font-medium">
                           Extra Costs
                         </td>
-                        <td className="p-3 font-medium">
+                        <td className="p-3 font-medium text-right">
                           {formatMoney(extraCosts)}
                         </td>
                       </tr>
@@ -689,7 +642,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
 
                     {/* Total */}
                     <tr className="border-t bg-muted/30">
-                      <td colSpan={5} className="p-3 text-right font-semibold">
+                      <td colSpan={6} className="p-3 text-right font-semibold">
                         Total
                       </td>
                       <td className="p-3 font-semibold text-right">
@@ -702,7 +655,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
             </div>
           )}
 
-          {/* ✅ RECEIVED COST BREAKDOWN (Real Data) */}
+          {/* RECEIVED COST BREAKDOWN */}
           {receivedItems.length > 0 && (
             <div className="mt-8">
               <h3 className="font-medium mb-3 mt-4">Received Cost Breakdown</h3>
@@ -717,7 +670,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {receivedItems.map((item) => {
+                    {receivedItems.map((item: any) => {
                       const totalCost = item.unitsReceived * item.unitCost;
                       return (
                         <tr key={item.id} className="border-t">
@@ -738,10 +691,10 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                           </td>
                           <td className="p-3 text-right">{item.unitsReceived}</td>
                           <td className="p-3 text-right">
-                            {formatRupee(item.unitCost)}
+                            {formatMoney(item.unitCost)}
                           </td>
                           <td className="p-3 text-right font-semibold">
-                            {formatRupee(totalCost)}
+                            {formatMoney(totalCost)}
                           </td>
                         </tr>
                       );
@@ -753,7 +706,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                         Subtotal
                       </td>
                       <td className="p-3 text-right font-medium">
-                        {formatRupee(receivedTotal)}
+                        {formatMoney(receivedTotal)}
                       </td>
                     </tr>
 
@@ -763,7 +716,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                         Total received cost
                       </td>
                       <td className="p-3 font-semibold text-right">
-                        {formatRupee(receivedTotal)}
+                        {formatMoney(receivedTotal)}
                       </td>
                     </tr>
                   </tbody>
@@ -772,7 +725,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
             </div>
           )}
 
-          {/* ✅ RECEIPT SUMMARY SECTION (Real Data Fixed) */}
+          {/* RECEIPT SUMMARY SECTION */}
           <div className="mt-8">
             <h3 className="font-medium mb-3 mt-4 text-gray-900">
               Receipt Summary
@@ -809,7 +762,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                         </div>
                         <div className="text-right">
                             <div className="text-sm font-semibold text-gray-900">
-                            {formatRupee(total)}
+                            {formatMoney(total)}
                             </div>
                             <div className="text-xs text-green-600 font-medium">
                             View Receipt
@@ -870,8 +823,9 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
           </div>
         </div>
 
-        {/* COMMENTS */}
+        {/* COMMENTS & HISTORY */}
         <div ref={commentsRef}>
+          {/* Comments Section */}
           <h3 className="font-medium mb-3">Comments</h3>
           <div className="border rounded-lg p-4 mb-4 max-h-64 overflow-y-auto">
             {isLoading ? (
@@ -886,44 +840,28 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                   <div className="space-y-4">
                     {[...commentData].reverse().map((item: any) => {
                       const initials = item?.author?.name
-                        ? item.author.name
-                            .split("@")[0]
-                            .split(".")
-                            .map((n: string) => n[0]?.toUpperCase())
-                            .join("")
+                        ? item.author.name.split(" ").map((n:string) => n[0]).join("").slice(0,2).toUpperCase()
                         : "?";
-
-                      const formattedDate = new Date(
-                        item.createdAt
-                      ).toLocaleString();
+                      const formattedDate = new Date(item.createdAt).toLocaleString();
 
                       return (
-                        <div
-                          key={item.id}
-                          className="flex items-start gap-3 border-b pb-3 last:border-b-0 group relative"
-                        >
+                        <div key={item.id} className="flex items-start gap-3 border-b pb-3 last:border-b-0 group relative">
                           <div className="flex items-center justify-center w-10 h-10 rounded-full bg-orange-100 text-orange-700 font-semibold">
                             {initials}
                           </div>
-
                           <div className="flex-1">
-                            <div className="flex justify-between text-xs  mb-1">
+                            <div className="flex justify-between text-xs mb-1">
                               <div className="font-medium text-black capitalize ">
                                 {item.author?.name || "Unknown User"}
                               </div>
                               <div className="flex justify-center itme-center">
                                 <span className="mr-2">{formattedDate}</span>
-                                <button
-                                  onClick={() => handleDeleteComment(item.id)}
-                                  className=" text-red-600"
-                                >
-                                  <Trash2 className="w-4 h-4 pt-3 " />
+                                <button onClick={() => handleDeleteComment(item.id)} className="text-red-600">
+                                  <Trash2 className="w-4 h-4 pt-3" />
                                 </button>
                               </div>
                             </div>
-                            <p className="text-sm text-gray-800">
-                              {item.message}
-                            </p>
+                            <p className="text-sm text-gray-800">{item.message}</p>
                           </div>
                         </div>
                       );
@@ -934,7 +872,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
             )}
           </div>
 
-          {showCommentSection === false ? null : (
+          {showCommentSection !== false && (
             <Comment
               selectedPO={selectedPO}
               showCommentBox={showCommentBox}
@@ -946,7 +884,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
             />
           )}
 
-          {/* HISTORY SECTION  */}
+          {/* History Section */}
           <div>
             <h3 className="font-medium mb-3">History</h3>
             <div className="space-y-4 border rounded p-4 mb-4 mr-1 max-h-64 overflow-y-auto">
@@ -954,21 +892,16 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
                 <Loader />
               ) : (
                 <>
-                  {[...log].reverse().map((item: any) => {
-                    const formattedDate = new Date(
-                      item.createdAt
-                    ).toLocaleString();
-
+                  {log.length === 0 ? <p className="text-sm text-gray-500">No history found</p> : 
+                  [...log].reverse().map((item: any) => {
+                    const formattedDate = new Date(item.createdAt).toLocaleString();
                     const message = item.responseLog || "No activity message";
                     const authorName = user?.fullName || "Unknown User";
 
                     return (
-                      <div
-                        key={item.id}
-                        className="flex items-start gap-3 pb-1 last:border-b-0"
-                      >
+                      <div key={item.id} className="flex items-start gap-3 pb-1 last:border-b-0">
                         <div className="flex items-center justify-center mt-1 capitalize font-medium w-8 h-8 rounded-full bg-orange-100 text-orange-700 font-semibold">
-                          {renderInitials(user?.fullName)}
+                          {renderInitials(user?.fullName || "")}
                         </div>
                         <div className="flex-1">
                           <div className="flex gap-4 capitalize text-xs text-muted-foreground mb-1">
