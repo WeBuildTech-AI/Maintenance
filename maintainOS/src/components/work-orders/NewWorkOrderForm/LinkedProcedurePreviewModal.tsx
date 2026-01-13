@@ -76,7 +76,7 @@ export function LinkedProcedurePreviewModal({
 
   return (
     <div
-    className="z-50"
+    className="z-9999"
       style={{
         position: "fixed",
         inset: 0,
