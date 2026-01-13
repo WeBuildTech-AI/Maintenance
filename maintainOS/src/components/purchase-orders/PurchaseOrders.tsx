@@ -48,7 +48,7 @@ import Loader from "../Loader/Loader";
 import { StatusBadge } from "./StatusBadge";
 import { FetchPurchaseOrdersParams } from "../../store/purchaseOrders/purchaseOrders.types";
 
-// ... (Helper function getChangedFields remains same)
+// --- Helper Function: Detect Changes ---
 function getChangedFields(
   original: NewPOFormType,
   current: NewPOFormType
@@ -339,6 +339,18 @@ export function PurchaseOrders() {
       }
     }
   }, [routeId, getPurchaseOrderData, editMatch, newPO.id]);
+
+  // ✅ CRITICAL FIX: FORCE RESET STATE ON /create ROUTE
+  useEffect(() => {
+    if (isCreateRoute) {
+        setNewPO(initialPOState);
+        setOriginalPOForEdit(null);
+        setIsEditingPO(false); // Force Create Mode
+        setApiError(null);
+        setAttachedFiles([]);
+    }
+  }, [isCreateRoute]);
+
 
   // ✅ HANDLER: Filter Change
   const handleFilterChange = useCallback(
@@ -670,7 +682,11 @@ export function PurchaseOrders() {
     }));
   };
 
+  // 🔴🔴🔴 FIXED: CREATE HANDLER (NO VALIDATION) 🔴🔴🔴
   const handleCreatePurchaseOrder = async () => {
+    // ⚠️ Validation Removed as Requested by User
+    
+    // 2. Start Loading
     setIsCreating(true);
     setApiError(null);
 
@@ -752,19 +768,23 @@ export function PurchaseOrders() {
     } catch (error: any) {
       console.error("Error creating PO:", error);
       setApiError(error.message || "Failed to create PO.");
+      toast.error("Failed to create Purchase Order.");
     } finally {
+      // 3. Stop Loading (Crucial to re-enable button)
       setIsCreating(false);
     }
   };
 
+  // 🔴🔴🔴 FIXED: UPDATE HANDLER 🔴🔴🔴
   const handleUpdatePurchaseOrder = async () => {
+    // ⚠️ Basic Validation Only for ID
     if (!newPO.id) {
-      setApiError("Error: Purchase Order ID not found.");
+      toast.error("Error: Purchase Order ID not found.");
       return;
     }
 
     if (!originalPOForEdit) {
-      setApiError("Error: Original data not found. Please try again.");
+      toast.error("Error: Original data not found. Please try again.");
       return;
     }
 
@@ -845,6 +865,7 @@ export function PurchaseOrders() {
     } catch (error: any) {
       console.error("Error updating PO:", error);
       setApiError(error.message || "Failed to update PO.");
+      toast.error("Failed to update Purchase Order.");
     } finally {
       setIsCreating(false);
     }
@@ -926,7 +947,12 @@ export function PurchaseOrders() {
           setViewMode={setViewMode}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
-          setIsCreatingForm={setIsCreating}
+          setIsCreatingForm={() => {
+             // Force Reset when button clicked from Header
+             resetNewPO();
+             setIsCreating(false);
+             navigate("/purchase-orders/create");
+          }}
           setShowSettings={setShowSettings}
           setIsSettingModalOpen={setIsSettingModalOpen}
           setShowDeleted={setShowDeleted}
@@ -1263,6 +1289,7 @@ export function PurchaseOrders() {
         addNewPOItemRow={addNewPOItemRow}
         removePOItemRow={removePOItemRow}
         updateItemField={updateItemField}
+        // 👇 CRITICAL: Explicitly pass isEditing state
         isEditing={isEditingPO}
         onCancel={() => {
           resetNewPO();

@@ -186,14 +186,24 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   };
 
   // --- FETCH FUNCTIONS ---
+  
+  // ✅ FIX: Renamed to match Service (fetchPurchaseOrderLog)
   const fetchPurchaseOrderLog = async () => {
+    if (!selectedPO?.id) return;
     try {
-      const res = await purchaseOrderService.FetchPurchaseOrderLog(
-        selectedPO.id
-      );
-      setLog(res || []);
+      // ✅ FIX: Use camelCase method call
+      const res = await purchaseOrderService.fetchPurchaseOrderLog(selectedPO.id);
+      
+      // ✅ FIX: Robust Response Handling
+      if (Array.isArray(res)) {
+        setLog(res);
+      } else if ((res as any)?.data) {
+        setLog((res as any).data);
+      } else {
+        setLog([]);
+      }
     } catch (err) {
-      console.error(err);
+      console.error("Failed to fetch logs:", err);
     }
   };
 
@@ -941,6 +951,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
             />
           )}
 
+          {/* HISTORY SECTION  */}
           <div>
             <h3 className="font-medium mb-3">History</h3>
             <div className="space-y-4 border rounded p-4 mb-4 mr-1 max-h-64 overflow-y-auto">
