@@ -1,3 +1,5 @@
+// FILE: src/store/purchaseOrders/purchaseOrders.service.ts
+
 import type {
   CreateAddressData,
   CreatePurchaseOrderComment,
@@ -69,9 +71,18 @@ export const purchaseOrderService = {
     await api.patch(`/purchase-orders/${id}/cancel`);
   },
 
-  // ✅ Fulfill PO
-  fulfillPurchaseOrder: async (id: string): Promise<void> => {
-    await api.patch(`/purchase-orders/${id}/fulfill`);
+  // 🔴 UPDATED: Fulfill PO with specific payload structure
+  fulfillPurchaseOrder: async (
+    id: string, 
+    payload: { items: { orderItemId: string; receivedUnits: number }[] }
+  ): Promise<void> => {
+    await api.patch(`/purchase-orders/${id}/fulfill`, payload);
+  },
+
+  // 🔴 NEW: Fetch Receipts (Based on your 2nd CURL)
+  fetchPurchaseOrderReceipts: async (id: string): Promise<any> => {
+    const res = await api.get(`/purchase-orders/${id}/receipt`);
+    return res.data;
   },
 
   // ✅ Fetch Addresses
@@ -132,10 +143,8 @@ export const purchaseOrderService = {
     return res.data;
   },
 
-  // 🔴 FIXED: URL updated to match your backend API documentation
+  // ✅ Logs URL matches your backend
   fetchPurchaseOrderLog: async (id: string): Promise<GetPurchaseOrderLog> => {
-    // Was: /purchase-orders/${id}/logs (Caused 404)
-    // Now: /purchase-orders/get/logs/${id} (Correct)
     const res = await api.get(`/purchase-orders/get/logs/${id}`);
     return res.data;
   },

@@ -13,6 +13,8 @@ interface NewMeterFormProps {
   onCreate: (data: any) => void;
   onCancel: (data: any) => void;
   editingMeter?: any;
+  // ✅ Added initialAssetId prop
+  initialAssetId?: string | null;
 }
 
 const readingFrequencyOptions = [
@@ -27,8 +29,8 @@ const readingFrequencyOptions = [
 export function NewMeterForm({
   onCreate,
   onCancel,
-
   editingMeter,
+  initialAssetId, // ✅ Destructured here
 }: NewMeterFormProps) {
   const [meterType, setMeterType] = useState<"manual" | "automated">("manual");
   const [meterName, setMeterName] = useState("");
@@ -52,11 +54,21 @@ export function NewMeterForm({
   const [measurementLoading, setMeasurementLoading] = useState(false);
 
   const isEdit = !!editingMeter;
+
   useEffect(() => {
     handleGetMesurementUnit();
     handleGetAssetData();
     handleGetLocationData();
   }, []);
+
+  // ✅ NEW EFFECT: Handle prefilling asset ID from props
+  useEffect(() => {
+    if (initialAssetId && !editingMeter) {
+      setAsset(initialAssetId);
+      // Ensure asset list is fetched so the dropdown shows the label correctly
+      handleGetAssetData();
+    }
+  }, [initialAssetId, editingMeter]);
 
   useEffect(() => {
     if (editingMeter) {
@@ -163,7 +175,10 @@ export function NewMeterForm({
   };
 
   const handleGetAssetData = async () => {
-    if (getAssetData.length > 0) return; // Guard: Pehle se hai toh fetch mat karo
+    // ✅ Modified: Allow fetching if initialAssetId is present, even if data exists
+    // ensuring we have fresh data or at least confirming the ID exists in the list
+    if (getAssetData.length > 0 && !initialAssetId) return; 
+    
     setAssetLoading(true);
     try {
       const assetsRes = await assetService.fetchAssetsName();
@@ -203,7 +218,8 @@ export function NewMeterForm({
   const handleReset = () => {
     setMeterName("");
     setDescription("");
-    setAsset("");
+    // If there is an initialAssetId, reset to that instead of empty
+    setAsset(initialAssetId || ""); 
     setLocation("");
     setMeasurementUnit("");
     setReadingFrequencyUnit("none");

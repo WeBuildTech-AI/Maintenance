@@ -23,6 +23,7 @@ import {
   AlertCircle,
   ChevronDown,
   ChevronUp,
+  Check, // ✅ Added Check import
 } from "lucide-react";
 
 import {
@@ -124,11 +125,12 @@ export function PurchaseOrders() {
   const [sortType, setSortType] = useState("Last Updated");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   
-  // ✅ Sort Dropdown State
-  const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
-  const [openSortSection, setOpenSortSection] = useState<string | null>(null);
-  const sortDropdownRef = useRef<HTMLDivElement>(null);
-  const sortButtonRef = useRef<HTMLButtonElement>(null);
+  // ✅ Sort Dropdown State (Updated Logic)
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [openSection, setOpenSection] = useState<string | null>(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
+  const headerRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const savedMode = localStorage.getItem("purchaseOrderViewMode");
@@ -163,21 +165,33 @@ export function PurchaseOrders() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
-        sortDropdownRef.current &&
-        !sortDropdownRef.current.contains(event.target as Node) &&
-        sortButtonRef.current &&
-        !sortButtonRef.current.contains(event.target as Node)
+        modalRef.current &&
+        !modalRef.current.contains(event.target as Node) &&
+        headerRef.current &&
+        !headerRef.current.contains(event.target as Node)
       ) {
-        setIsSortDropdownOpen(false);
+        setIsDropdownOpen(false);
       }
     };
-    if (isSortDropdownOpen) {
+    if (isDropdownOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isSortDropdownOpen]);
+  }, [isDropdownOpen]);
+
+  // Handler to toggle dropdown and calculate position
+  const toggleDropdown = () => {
+    if (!isDropdownOpen && headerRef.current) {
+      const rect = headerRef.current.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom, 
+        left: rect.left + rect.width / 2,
+      });
+    }
+    setIsDropdownOpen((prev) => !prev);
+  };
 
   const scrollToTop = () => {
     if (topRef.current) {
@@ -984,90 +998,26 @@ export function PurchaseOrders() {
         <div className="flex flex-1 min-h-0">
           {/* Left List */}
           <div className="w-96 mr-2 ml-3 mb-2 border border-border flex flex-col min-h-0">
-            {/* ✅ Updated List Header with Sort Dropdown */}
-            <div className="p-4 border-b border-border flex-shrink-0 flex justify-between items-center bg-white z-40 relative">
-              
-
-              {/* Sort Trigger */}
-              <div className="relative">
+            
+            {/* ✅ Updated List Header with Styled Sort Dropdown (FIXED) */}
+            <div 
+              ref={headerRef}
+              className="flex items-center justify-between px-5 py-3 border-b bg-white ml-3 relative z-40"
+            >
+              <div className="flex items-center gap-2 text-sm text-gray-700 font-medium">
+                <span>Sort By:</span>
                 <button
-                  ref={sortButtonRef}
-                  onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
-                  className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                  onClick={toggleDropdown}
+                  className="flex items-center gap-1 text-sm text-blue-600 font-semibold focus:outline-none"
                 >
-                  Sort By: {sortType} : {sortOrder === "asc" ? "Asc" : "Desc"}
-                  <ChevronDown size={12} />
+                  {sortType}:{" "}
+                  {sortOrder === "asc" ? "Ascending Order" : "Descending Order"}
+                  {isDropdownOpen ? (
+                    <ChevronUp className="w-4 h-4 text-blue-600" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-blue-600" />
+                  )}
                 </button>
-
-                {/* Custom Sort Dropdown */}
-                {isSortDropdownOpen && (
-                  <div
-                    ref={sortDropdownRef}
-                    className="absolute right-0 top-full mt-1 z-[9999] w-56 rounded-md border border-gray-200 bg-white shadow-lg p-1"
-                  >
-                    {[
-                      {
-                        label: "Creation Date",
-                        options: ["Oldest First", "Newest First"],
-                      },
-                      {
-                        label: "Last Updated",
-                        options: ["Least Recent First", "Most Recent First"],
-                      },
-                      {
-                        label: "Name",
-                        options: ["Ascending Order", "Descending Order"],
-                      },
-                    ].map((section) => (
-                      <div key={section.label}>
-                        <button
-                          onClick={() =>
-                            setOpenSortSection(
-                              openSortSection === section.label
-                                ? null
-                                : section.label
-                            )
-                          }
-                          className={`flex items-center justify-between w-full px-3 py-2 text-left text-sm hover:bg-gray-50 rounded-md ${
-                            sortType === section.label
-                              ? "text-blue-600 font-medium"
-                              : "text-gray-700"
-                          }`}
-                        >
-                          <span>{section.label}</span>
-                          {openSortSection === section.label ? (
-                            <ChevronUp size={14} />
-                          ) : (
-                            <ChevronDown size={14} />
-                          )}
-                        </button>
-                        {openSortSection === section.label && (
-                          <div className="pl-3 pr-1 py-1 space-y-1 bg-gray-50/50">
-                            {section.options.map((opt) => (
-                              <button
-                                key={opt}
-                                onClick={() => {
-                                  setSortType(section.label);
-                                  setSortOrder(
-                                    opt.includes("Asc") ||
-                                      opt.includes("Oldest") ||
-                                      opt.includes("Least")
-                                      ? "asc"
-                                      : "desc"
-                                  );
-                                  setIsSortDropdownOpen(false);
-                                }}
-                                className="w-full text-left text-xs px-2 py-1.5 hover:bg-white rounded text-gray-600 transition-colors"
-                              >
-                                {opt}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
 
@@ -1261,6 +1211,97 @@ export function PurchaseOrders() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* --- ✅ NEW SORT DROPDOWN (Fixed & Portal-like behavior) --- */}
+      {isDropdownOpen && (
+        <div
+          ref={modalRef}
+          className="fixed z-[99] text-sm rounded-md border border-gray-200 bg-white shadow-lg animate-fade-in p-2"
+          style={{
+            top: dropdownPos.top,
+            left: dropdownPos.left,
+            transform: "translateX(-50%)",
+            width: "300px",
+            maxWidth: "90vw",
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex flex-col divide-y divide-gray-100">
+            {[
+              {
+                label: "Creation Date",
+                options: ["Newest First", "Oldest First"],
+              },
+              {
+                label: "Last Updated",
+                options: ["Most Recent First", "Least Recent First"],
+              },
+              {
+                label: "Name",
+                options: ["Ascending Order", "Descending Order"],
+              },
+            ].map((section) => (
+              <div key={section.label} className="flex flex-col mt-1 mb-1">
+                <button
+                  onClick={() =>
+                    setOpenSection(
+                      openSection === section.label ? null : section.label
+                    )
+                  }
+                  className={`flex items-center justify-between w-full px-4 py-3 text-sm transition-all rounded-md ${
+                    sortType === section.label
+                      ? "text-orange-600 font-medium bg-gray-50"
+                      : "text-gray-800 hover:bg-gray-50"
+                  }`}
+                >
+                  <span>{section.label}</span>
+                  {openSection === section.label ? (
+                    <ChevronUp className="w-3.5 h-3.5 text-gray-400" />
+                  ) : (
+                    <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                  )}
+                </button>
+
+                {openSection === section.label && (
+                  <div className="flex flex-col bg-gray-50 border-t border-gray-100 py-1">
+                    {section.options.map((opt) => {
+                      const isAsc =
+                        opt.includes("Asc") ||
+                        opt.includes("Oldest") ||
+                        opt.includes("Least");
+                      const currentOrder = isAsc ? "asc" : "desc";
+                      const isSelected =
+                        sortType === section.label &&
+                        sortOrder === currentOrder;
+
+                      return (
+                        <button
+                          key={opt}
+                          onClick={() => {
+                            setSortType(section.label);
+                            setSortOrder(currentOrder);
+                            setIsDropdownOpen(false); // Close dropdown on selection
+                          }}
+                          className={`flex items-center justify-between px-6 py-2 text-left text-sm transition rounded-md ${
+                            isSelected
+                              ? "text-orange-600 bg-white"
+                              : "text-gray-700 hover:text-blue-300 hover:bg-white"
+                          }`}
+                        >
+                          {opt}
+                          {isSelected && (
+                            <Check className="w-3.5 h-3.5 text-blue-300" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}

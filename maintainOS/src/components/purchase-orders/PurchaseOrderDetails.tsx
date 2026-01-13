@@ -41,7 +41,7 @@ import { StatusBadge } from "./StatusBadge";
 import { useNavigate } from "react-router-dom";
 import ReceiptModal from "./ReceiptModal"; // ✅ Imported ReceiptModal
 
-// ... (Interfaces)
+// ... (Interfaces - Keep existing ones)
 interface OrderItem {
   id: string;
   itemName?: string;
@@ -173,7 +173,8 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   );
   const [isLoadingContacts, setIsLoadingContacts] = React.useState(false);
 
-  // ✅ New State for Receipt Modal
+  // ✅ New State for Receipts (Real Data)
+  const [receiptHistory, setReceiptHistory] = useState<any[]>([]);
   const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
 
   // --- LOCAL HELPER FOR RUPEE FORMATTING ---
@@ -186,15 +187,10 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
   };
 
   // --- FETCH FUNCTIONS ---
-  
-  // ✅ FIX: Renamed to match Service (fetchPurchaseOrderLog)
   const fetchPurchaseOrderLog = async () => {
     if (!selectedPO?.id) return;
     try {
-      // ✅ FIX: Use camelCase method call
       const res = await purchaseOrderService.fetchPurchaseOrderLog(selectedPO.id);
-      
-      // ✅ FIX: Robust Response Handling
       if (Array.isArray(res)) {
         setLog(res);
       } else if ((res as any)?.data) {
@@ -218,17 +214,38 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
     }
   };
 
+  // 🔴 FETCH RECEIPTS (Updated Logic)
+  const fetchReceipts = async () => {
+    if (!selectedPO?.id) return;
+    try {
+      const data = await purchaseOrderService.fetchPurchaseOrderReceipts(selectedPO.id);
+      
+      // ✅ Handle the structure { purchaseOrderId: "...", receipts: [...] }
+      if (data && Array.isArray(data.receipts)) {
+        setReceiptHistory(data.receipts);
+      } else if (Array.isArray(data)) {
+        setReceiptHistory(data);
+      } else {
+        setReceiptHistory([]);
+      }
+    } catch (err) {
+      console.error("Failed to fetch receipts", err);
+    }
+  };
+
   const refreshAllData = async () => {
     await Promise.all([
       fetchPurchaseOrder(),
       fetchPurchaseOrderLog(),
       fetchPurchaseOrderComments(),
+      fetchReceipts(),
     ]);
   };
 
   useEffect(() => {
     fetchPurchaseOrderComments();
     fetchPurchaseOrderLog();
+    fetchReceipts(); // ✅ Fetch on load
   }, [selectedPO.id, selectedPO.status]);
 
   // --- HANDLERS ---
@@ -293,6 +310,24 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
     }
   };
 
+  // 🔴 Format Data for Receipt Modal
+  const handleViewReceipt = (receipt: any) => {
+    // Transform single item receipt into structure expected by modal (mocking items array)
+    const formattedData = {
+        date: receipt.receivedAt,
+        notes: receipt.notes,
+        items: [{
+            itemName: receipt.itemName,
+            partNumber: "", // Part number not in receipt object directly, irrelevant for receipt view
+            receivedQty: receipt.unitsReceived,
+            unitCost: receipt.unitCost,
+            // Calculate total for this line
+            lineTotal: receipt.lineTotal
+        }]
+    };
+    setSelectedReceipt(formattedData);
+  };
+
   // --- CALCULATIONS ---
   const subtotal =
     selectedPO.orderItems?.reduce((acc, item) => {
@@ -314,55 +349,12 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
 
   const total = subtotal + extraCosts + taxTotal;
 
-  // ✅ DUMMY DATA FOR RECEIVED COST BREAKDOWN (Matching Screenshot)
-  const dummyReceivedItems = [
-    {
-      id: "dummy-1",
-      itemName: "Bearing Sets",
-      partNumber: "3454",
-      unitsReceived: 70,
-      unitCost: 250.0,
-    },
-  ];
-
-  const dummyReceivedTotal = dummyReceivedItems.reduce(
+  // Real Received Items (from PO)
+  const receivedItems = selectedPO.orderItems?.filter(item => item.unitsReceived > 0) || [];
+  const receivedTotal = receivedItems.reduce(
     (acc, item) => acc + item.unitsReceived * item.unitCost,
     0
   );
-
-  // ✅ FORCED DUMMY DATA FOR RECEIPT SUMMARY (To ensure it shows)
-  const receiptHistory = [
-    {
-      id: "rec-001",
-      date: new Date().toISOString(),
-      notes: "Received partial shipment - 20 Units.",
-      items: [
-        {
-          itemName: "Bearing Sets",
-          partNumber: "3454",
-          unitsOrdered: 100,
-          receivedQty: 20, // Received NOW
-          unitsReceived: 20, // Total received
-          unitCost: 250.0,
-        },
-      ],
-    },
-    {
-      id: "rec-002",
-      date: new Date(Date.now() - 86400000).toISOString(), // Yesterday
-      notes: "Second shipment received - 50 Units.",
-      items: [
-        {
-          itemName: "Bearing Sets",
-          partNumber: "3454",
-          unitsOrdered: 100,
-          receivedQty: 50, // Received NOW
-          unitsReceived: 70, // Total received
-          unitCost: 250.0,
-        },
-      ],
-    },
-  ];
 
   return (
     <div className="h-full flex flex-col min-h-0">
@@ -710,122 +702,125 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
             </div>
           )}
 
-          {/* ✅ RECEIVED COST BREAKDOWN (Table Version) */}
-          <div className="mt-8">
-            <h3 className="font-medium mb-3 mt-4">Received Cost Breakdown</h3>
-            <div className="overflow-x-auto border rounded-lg">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50">
-                  <tr className="text-left">
-                    <th className="p-3">Item Name</th>
-                    {/* Aligned Right per previous feedback */}
-                    <th className="p-3 text-right">Received</th>
-                    <th className="p-3 text-right">Unit Cost</th>
-                    <th className="p-3 text-right">Total Cost</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dummyReceivedItems.map((item) => {
-                    const totalCost = item.unitsReceived * item.unitCost;
-                    return (
-                      <tr key={item.id} className="border-t">
-                        <td className="p-3">
-                          <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 flex-shrink-0 flex items-center justify-center rounded border border-gray-200 bg-white">
-                              <Settings className="h-4 w-4 text-gray-400" />
+          {/* ✅ RECEIVED COST BREAKDOWN (Real Data) */}
+          {receivedItems.length > 0 && (
+            <div className="mt-8">
+              <h3 className="font-medium mb-3 mt-4">Received Cost Breakdown</h3>
+              <div className="overflow-x-auto border rounded-lg">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50">
+                    <tr className="text-left">
+                      <th className="p-3">Item Name</th>
+                      <th className="p-3 text-right">Received</th>
+                      <th className="p-3 text-right">Unit Cost</th>
+                      <th className="p-3 text-right">Total Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {receivedItems.map((item) => {
+                      const totalCost = item.unitsReceived * item.unitCost;
+                      return (
+                        <tr key={item.id} className="border-t">
+                          <td className="p-3">
+                            <div className="flex items-center gap-3">
+                              <div className="h-8 w-8 flex-shrink-0 flex items-center justify-center rounded border border-gray-200 bg-white">
+                                <Settings className="h-4 w-4 text-gray-400" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="font-semibold text-gray-900">
+                                  {item.itemName || item.part?.name}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  {item.partNumber || item.part?.partNumber}
+                                </span>
+                              </div>
                             </div>
-                            <div className="flex flex-col">
-                              <span className="font-semibold text-gray-900">
-                                {item.itemName}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                {item.partNumber}
-                              </span>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="p-3 text-right">{item.unitsReceived}</td>
-                        <td className="p-3 text-right">
-                          {formatRupee(item.unitCost)}
-                        </td>
-                        <td className="p-3 text-right font-semibold">
-                          {formatRupee(totalCost)}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                          </td>
+                          <td className="p-3 text-right">{item.unitsReceived}</td>
+                          <td className="p-3 text-right">
+                            {formatRupee(item.unitCost)}
+                          </td>
+                          <td className="p-3 text-right font-semibold">
+                            {formatRupee(totalCost)}
+                          </td>
+                        </tr>
+                      );
+                    })}
 
-                  {/* Subtotal */}
-                  <tr className="border-t">
-                    <td colSpan={3} className="p-3 text-right font-medium">
-                      Subtotal
-                    </td>
-                    <td className="p-3 text-right font-medium">
-                      {formatRupee(dummyReceivedTotal)}
-                    </td>
-                  </tr>
+                    {/* Subtotal */}
+                    <tr className="border-t">
+                      <td colSpan={3} className="p-3 text-right font-medium">
+                        Subtotal
+                      </td>
+                      <td className="p-3 text-right font-medium">
+                        {formatRupee(receivedTotal)}
+                      </td>
+                    </tr>
 
-                  {/* Total */}
-                  <tr className="border-t bg-muted/30">
-                    <td colSpan={3} className="p-3 text-right font-semibold">
-                      Total received cost
-                    </td>
-                    <td className="p-3 font-semibold text-right">
-                      {formatRupee(dummyReceivedTotal)}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                    {/* Total */}
+                    <tr className="border-t bg-muted/30">
+                      <td colSpan={3} className="p-3 text-right font-semibold">
+                        Total received cost
+                      </td>
+                      <td className="p-3 font-semibold text-right">
+                        {formatRupee(receivedTotal)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* ✅ RECEIPT SUMMARY SECTION (Always Visible with Dummy Data) */}
+          {/* ✅ RECEIPT SUMMARY SECTION (Real Data Fixed) */}
           <div className="mt-8">
             <h3 className="font-medium mb-3 mt-4 text-gray-900">
               Receipt Summary
             </h3>
-            <div className="grid grid-cols-1 gap-4">
-              {receiptHistory.map((receipt, index) => {
-                const total =
-                  receipt.items?.reduce(
-                    (acc: number, item: any) =>
-                      acc + item.receivedQty * item.unitCost,
-                    0
-                  ) || 0;
+            {receiptHistory.length === 0 ? (
+                <p className="text-sm text-gray-500 italic">No receipts found.</p>
+            ) : (
+                <div className="grid grid-cols-1 gap-4">
+                {receiptHistory.map((receipt, index) => {
+                    const total = receipt.lineTotal || 0;
 
-                return (
-                  <div
-                    key={receipt.id}
-                    onClick={() => setSelectedReceipt(receipt)}
-                    className="border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-orange-300 hover:shadow-sm transition-all bg-white group"
-                  >
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-orange-50 flex items-center justify-center text-orange-600 group-hover:bg-orange-100 transition-colors">
-                          <FileText size={20} />
+                    return (
+                    <div
+                        key={receipt.receiptId || index}
+                        onClick={() => handleViewReceipt(receipt)}
+                        className="border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-orange-300 hover:shadow-sm transition-all bg-white group"
+                    >
+                        <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-orange-50 flex items-center justify-center text-orange-600 group-hover:bg-orange-100 transition-colors">
+                            <FileText size={20} />
+                            </div>
+                            <div>
+                            <div className="font-medium text-gray-900">
+                                Receipt #{index + 1}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                                {receipt.receivedAt ? new Date(receipt.receivedAt).toLocaleDateString() : "-"}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-0.5">
+                                {receipt.itemName} ({receipt.unitsReceived} units)
+                            </div>
+                            </div>
                         </div>
-                        <div>
-                          <div className="font-medium text-gray-900">
-                            Receipt #{index + 1}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {new Date(receipt.date).toLocaleDateString()}
-                          </div>
+                        <div className="text-right">
+                            <div className="text-sm font-semibold text-gray-900">
+                            {formatRupee(total)}
+                            </div>
+                            <div className="text-xs text-green-600 font-medium">
+                            View Receipt
+                            </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-semibold text-gray-900">
-                          {formatRupee(total)}
                         </div>
-                        <div className="text-xs text-green-600 font-medium">
-                          View Receipt
-                        </div>
-                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                    );
+                })}
+                </div>
+            )}
           </div>
 
           {/* ADDRESSES */}
