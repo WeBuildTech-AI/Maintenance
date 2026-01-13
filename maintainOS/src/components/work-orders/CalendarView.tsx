@@ -196,7 +196,7 @@ function EventDetailPopover({
   const style: React.CSSProperties = {
     position: 'fixed',
     width: `${POPOVER_WIDTH}px`,
-    zIndex: 9999,
+    zIndex: 1000,
     pointerEvents: 'none', 
   };
 
