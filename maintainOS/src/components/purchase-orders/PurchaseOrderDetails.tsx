@@ -35,7 +35,7 @@ import Loader from "../Loader/Loader";
 import type { RootState } from "../../store";
 import { useSelector } from "react-redux";
 import { renderInitials } from "../utils/renderInitials";
-import { addressToLine, formatMoney } from "./helpers"; // ✅ Global INR helper
+import { addressToLine, formatMoney } from "./helpers";
 import { StatusBadge } from "./StatusBadge";
 import { useNavigate } from "react-router-dom";
 import ReceiptModal from "./ReceiptModal";
@@ -304,7 +304,7 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
 
   // ✅ UPDATED: Inject matching PO Item data into Receipt Data
   const handleViewReceipt = (receipt: any) => {
-    // Find the original item in the main PO to get total Ordered/Received counts
+    // Find the original item in the main PO to get total Ordered counts
     const originalItem = selectedPO.orderItems?.find(
         (oi: any) => oi.partId === receipt.partId || oi.itemName === receipt.itemName
     );
@@ -314,14 +314,15 @@ const PurchaseOrderDetails: React.FC<PurchaseOrderDetailsProps> = ({
         notes: receipt.notes,
         items: [{
             itemName: receipt.itemName,
-            partNumber: originalItem?.partNumber || "", // Get from PO Item
+            partNumber: originalItem?.partNumber || "", 
             receivedQty: receipt.unitsReceived, // Qty in THIS receipt
             unitCost: receipt.unitCost,
             lineTotal: receipt.lineTotal,
             
             // ✅ Inject Missing Data for Modal
             unitsOrdered: originalItem?.unitsOrdered || 0,
-            totalUnitsReceived: originalItem?.unitsReceived || 0 // Cumulative
+            // Use 'receivedAtThisPoint' from API if available, else fallback
+            totalUnitsReceived: receipt.receivedAtThisPoint ?? originalItem?.unitsReceived ?? 0 
         }]
     };
     setSelectedReceipt(formattedData);
