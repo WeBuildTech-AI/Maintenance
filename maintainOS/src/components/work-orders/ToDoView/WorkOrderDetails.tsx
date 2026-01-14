@@ -58,6 +58,7 @@ const formatDurationDetailed = (totalMinutes: number) => {
   return `${hours}h ${minutes}m ${seconds.toString().padStart(2, "0")}s`;
 };
 
+
 const formatText = (value?: string) => {
   if (!value) return "N/A";
   return value.charAt(0).toUpperCase() + value.slice(1);
