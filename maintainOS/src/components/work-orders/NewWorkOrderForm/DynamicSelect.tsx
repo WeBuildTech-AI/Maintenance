@@ -57,7 +57,7 @@ interface DynamicSelectProps {
   name: string;
   activeDropdown: string | null;
   setActiveDropdown: (name: string | null) => void;
-  onSearch?: (term: string) => void; // ✅ Added optional search prop
+  onSearch?: (term: string) => void; 
 }
 
 export function DynamicSelect({
@@ -75,31 +75,31 @@ export function DynamicSelect({
   onSearch,
 }: DynamicSelectProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null); // ✅ Ref for the search input
+  const inputRef = useRef<HTMLInputElement>(null); 
   const isMulti = Array.isArray(value);
   const open = activeDropdown === name;
-  const [searchTerm, setSearchTerm] = useState(""); // ✅ Local search state
+  const [searchTerm, setSearchTerm] = useState(""); 
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setActiveDropdown(null);
-        setSearchTerm(""); // Reset search on close
-        if (onSearch) onSearch(""); 
+        if (open) {
+            setActiveDropdown(null);
+            setSearchTerm(""); 
+            if (onSearch) onSearch(""); 
+        }
       }
     };
-    if (open) document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open, setActiveDropdown, onSearch]);
 
   const handleToggle = (e: React.MouseEvent) => {
-    // Prevent closing if clicking the input itself
     if ((e.target as HTMLElement).tagName === 'INPUT') return;
     
     const nextState = open ? null : name;
     if (nextState) {
       onFetch?.();
-      // Focus input when opening
       setTimeout(() => inputRef.current?.focus(), 0);
     }
     setActiveDropdown(nextState);
@@ -112,9 +112,8 @@ export function DynamicSelect({
     } else {
       onSelect(id === value ? "" : id);
     }
-    // ✅ ALWAYS Close dropdown after selection (Single or Multi)
     setActiveDropdown(null);
-    setSearchTerm("");
+    setSearchTerm(""); 
     if (onSearch) onSearch("");
   };
 
@@ -122,10 +121,14 @@ export function DynamicSelect({
     isMulti ? (value as string[]).includes(opt.id) : opt.id === value
   );
 
-  // ✅ Filter options locally if no external onSearch is provided
   const displayedOptions = onSearch 
     ? options 
     : options.filter(opt => opt.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  // ✅ NEW: Logic for "+N" display
+  const firstOption = selectedOptions[0];
+  const hiddenOptions = selectedOptions.slice(1);
+  const hasHidden = hiddenOptions.length > 0;
 
   return (
     <div className={`relative ${open ? "z-50" : ""}`} ref={dropdownRef}>
@@ -136,24 +139,64 @@ export function DynamicSelect({
         onClick={handleToggle}
       >
         <div className="flex flex-wrap items-center gap-1 flex-1">
-          {selectedOptions.map((option) => (
-            <Badge key={option.id} variant="secondary" className="flex items-center gap-1">
-              {option.name}
-              {isMulti && (
+          
+          {/* ✅ RENDER LOGIC: If Multi, show 1 + Count. If Single, show all (which is just 1) */}
+          {isMulti && selectedOptions.length > 0 ? (
+            <>
+              {/* 1. Show First Option */}
+              <Badge key={firstOption.id} variant="secondary" className="flex items-center gap-1">
+                {firstOption.name}
                 <button
                   className="ml-1 rounded-full outline-none"
                   onClick={(e) => {
                     e.stopPropagation();
-                    toggleOption(option.id);
+                    toggleOption(firstOption.id);
                   }}
                 >
                   <X className="h-3 w-3 text-gray-500 hover:text-gray-900" />
                 </button>
+              </Badge>
+
+              {/* 2. Show Counter Badge if more than 1 selected */}
+              {hasHidden && (
+                <div className="relative group flex items-center">
+                  <Badge variant="secondary" className="cursor-help bg-blue-50 text-blue-700 hover:bg-blue-100">
+                    +{hiddenOptions.length}
+                  </Badge>
+                  
+                  {/* ✅ TOOLTIP on Hover */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-max max-w-[250px] bg-gray-900 text-white text-xs rounded-md py-2 px-3 z-[9999] shadow-xl">
+                    <div className="flex flex-col gap-1">
+                      {hiddenOptions.map((opt) => (
+                        <span key={opt.id} className="truncate border-b border-gray-700 last:border-0 pb-1 last:pb-0">
+                          {opt.name}
+                        </span>
+                      ))}
+                    </div>
+                    {/* Tiny Arrow */}
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                  </div>
+                </div>
               )}
-            </Badge>
-          ))}
+            </>
+          ) : (
+            // Standard Rendering for Single Select (or fallback)
+            selectedOptions.map((option) => (
+              <Badge key={option.id} variant="secondary" className="flex items-center gap-1">
+                {option.name}
+                <button
+                  className="ml-1 rounded-full outline-none"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelect("");
+                  }}
+                >
+                  <X className="h-3 w-3 text-gray-500 hover:text-gray-900" />
+                </button>
+              </Badge>
+            ))
+          )}
           
-          {/* ✅ Search Input inside the Chip area */}
           <input
             ref={inputRef}
             type="text"
@@ -163,7 +206,7 @@ export function DynamicSelect({
             onChange={(e) => {
               setSearchTerm(e.target.value);
               if (onSearch) onSearch(e.target.value);
-              if (!open) setActiveDropdown(name); // Open dropdown when typing
+              if (!open) setActiveDropdown(name); 
             }}
             onFocus={() => {
                if(!open) {
@@ -181,7 +224,10 @@ export function DynamicSelect({
       </div>
 
       {open && (
-        <div className="absolute top-full mt-1 w-full rounded-md border bg-white z-20 max-h-60 overflow-y-auto shadow-lg">
+        <div 
+          onMouseDown={(e) => e.preventDefault()}
+          className="absolute top-full mt-1 w-full rounded-md border bg-white z-20 max-h-60 overflow-y-auto shadow-lg"
+        >
           {loading ? (
             <div className="flex justify-center items-center p-4">
               <Spinner />
@@ -223,7 +269,7 @@ export function DynamicSelect({
           {ctaText && onCtaClick && (
             <div
               onClick={(e) => {
-                 e.stopPropagation(); // Stop bubbling so input blur doesn't close strictly before click
+                 e.stopPropagation();
                  onCtaClick();
                  setActiveDropdown(null);
               }}

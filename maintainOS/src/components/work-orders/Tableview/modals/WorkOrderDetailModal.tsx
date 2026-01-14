@@ -1,43 +1,53 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   CalendarDays,
-  ChevronRight,
   Clock,
   Edit,
   Factory,
   MapPin,
   MessageSquare,
-  Repeat,
+  MoreHorizontal,
+  Users,
+  Wrench,
+  Briefcase,
+  Layers,
+  ClipboardList,
+  Gauge,
+  CheckCircle2,
+  PauseCircle,
+  UserCircle2,
+  X,
   Maximize2,
   Minimize2,
-  X,
-  MoreHorizontal,
-  View,
   ArrowLeft,
-  User,
-  CheckCircle2,
-  Wrench, // Imported icon
+  Copy,
+  View, // For Procedure Button
+  Repeat
 } from "lucide-react";
 
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+
 import type { AppDispatch } from "../../../../store";
 import {
   deleteWorkOrder,
   patchWorkOrderComplete,
-  markWorkOrderInProgress,
   updateWorkOrder,
   updateWorkOrderStatus,
 } from "../../../../store/workOrders/workOrders.thunks";
-import { NewWorkOrderForm } from "../../NewWorkOrderForm/NewWorkOrderFrom";
+
+import { workOrderService } from "../../../../store/workOrders";
+
+// Import Panels & Components
 import TimeOverviewPanel from "../../panels/TimeOverviewPanel";
 import OtherCostsPanel from "../../panels/OtherCostsPanel";
 import UpdatePartsPanel from "../../panels/UpdatePartsPanel";
 import { CommentsSection } from "../../ToDoView/CommentsSection";
-import WorkOrderOptionsDropdown from "../../ToDoView/WorkOrderOptionsDropdown";
-import toast from "react-hot-toast";
+import { NewWorkOrderForm } from "../../NewWorkOrderForm/NewWorkOrderFrom";
+import { LinkedProcedurePreview } from "../../ToDoView/LinkedProcedurePreview"; // Ensure this path is correct
 
-import { LinkedProcedurePreview } from "../../ToDoView/LinkedProcedurePreview";
-import { workOrderService } from "../../../../store/workOrders";
+// --- HELPER FUNCTIONS ---
 
 const safeRender = (value: any) => {
   if (!value) return null;
@@ -48,71 +58,148 @@ const safeRender = (value: any) => {
   return "—";
 };
 
-const safeRenderAssignee = (workOrder: any) => {
-  if (workOrder.assignedTo) return safeRender(workOrder.assignedTo);
-  if (Array.isArray(workOrder.assignees) && workOrder.assignees.length > 0) {
-    return safeRender(workOrder.assignees[0]);
-  }
-  return "Unassigned";
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    minimumFractionDigits: 2,
+  }).format(amount);
 };
 
-function formatModalDateTime(isoString: string) {
-  if (!isoString) return "N/A";
-  try {
-    const date = new Date(isoString);
-    return `${date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    })}, ${date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    })}`;
-  } catch (error) {
-    return isoString;
-  }
+const formatDurationDetailed = (totalMinutes: number) => {
+  if (!totalMinutes) return "0h 0m 00s";
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = Math.floor(totalMinutes % 60);
+  const seconds = 0;
+  return `${hours}h ${minutes}m ${seconds.toString().padStart(2, "0")}s`;
+};
+
+const formatDecimalHoursToDisplay = (hours: any) => {
+  if (hours === undefined || hours === null || hours === "") return "N/A";
+  const num = Number(hours);
+  if (isNaN(num)) return "N/A";
+  
+  const h = Math.floor(num);
+  const m = Math.round((num - h) * 60);
+  
+  if (h === 0 && m === 0) return "0h 0m";
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+};
+
+const formatDate = (dateString: string | undefined, includeTime = false) => {
+    if (!dateString) return "—";
+    const date = new Date(dateString);
+    if (includeTime) {
+        return date.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+    }
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+const renderClickableList = (items: any[]) => {
+  if (!items || !Array.isArray(items) || items.length === 0) return "—";
+  return items.map((item, i) => (
+    <span key={item.id || i}>
+      <span className="text-blue-600 hover:underline cursor-pointer">
+        {item.name || item.title || item.fullName || "Unknown"}
+      </span>
+      {i < items.length - 1 && ", "}
+    </span>
+  ));
+};
+
+function parseRecurrenceRule(raw: any, startDateIso?: string, dueDateIso?: string) {
+  if (!raw) return null;
+  let rule: any = raw;
+  try { if (typeof raw === "string") rule = JSON.parse(raw); } catch (e) { rule = raw; }
+  if (!rule || !rule.type) return null;
+  
+  const type = String(rule.type).toLowerCase();
+  if (type.includes("daily")) return { title: "Repeats daily.", short: "Daily" };
+  if (type.includes("weekly")) return { title: "Repeats weekly.", short: "Weekly" };
+  if (type.includes("monthly")) return { title: "Repeats monthly.", short: "Monthly" };
+  if (type.includes("yearly")) return { title: "Repeats yearly.", short: "Yearly" };
+  
+  return { title: "Repeats based on schedule.", short: "Custom" };
 }
+
+// --- MAIN COMPONENT ---
 
 export default function WorkOrderDetailModal({
   open,
   onClose,
   workOrder,
   onRefreshWorkOrders,
-  showDeleted,
-  setShowDeleted,
 }: any) {
+  // ✅ DEBUG LOG 1: Props
+  console.log("🚀 MODAL RENDERED. Props Received:", { 
+    isOpen: open, 
+    workOrderId: workOrder?.id,
+    workOrderTitle: workOrder?.title 
+  });
+
   if (!open || !workOrder) return null;
 
   const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
   const user = useSelector((state: any) => state.auth?.user);
 
-  const [panel, setPanel] = useState("details");
-  const [activeStatus, setActiveStatus] = useState(workOrder.status || "open");
+  // --- STATE ---
+  const [panel, setPanel] = useState("details"); 
+  const [activeStatus, setActiveStatus] = useState(workOrder?.status || "open");
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  
+  // User Names & Refs
+  const [createdByName, setCreatedByName] = useState<string>("System");
+  const [updatedByName, setUpdatedByName] = useState<string>("System");
 
-  // --- SCROLL & VISIBILITY STATE ---
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  
+  // --- SCROLL & PROCEDURE VISIBILITY REFS ---
   const [isProcedureVisible, setIsProcedureVisible] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const procedureRef = useRef<HTMLDivElement>(null);
   const commentTextAreaRef = useRef<HTMLTextAreaElement>(null);
-
-  const hasProcedure =
-    (workOrder.procedures && workOrder.procedures.length > 0) ||
-    (workOrder.procedureIds && workOrder.procedureIds.length > 0);
-
+  
+  // Comments State
   const [comment, setComment] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (workOrder) setActiveStatus(workOrder.status || "open");
+  // ✅ CHECK FOR PROCEDURES (More Robust)
+  const hasProcedure = useMemo(() => {
+      if (!workOrder) return false;
+      const hasProceduresArray = Array.isArray(workOrder.procedures) && workOrder.procedures.length > 0;
+      const hasProcedureIds = Array.isArray(workOrder.procedureIds) && workOrder.procedureIds.length > 0;
+      return hasProceduresArray || hasProcedureIds;
   }, [workOrder]);
 
+  // --- EFFECTS ---
+
+  // 1. Sync prop workOrder to local status & Log Data
+  useEffect(() => {
+    // ✅ DEBUG LOG 2: Data
+    console.log("📦 FULL WORK ORDER DATA:", workOrder);
+    console.log("📝 Has Procedure?", hasProcedure);
+
+    if (workOrder?.status) setActiveStatus(workOrder.status.toLowerCase());
+  }, [workOrder, hasProcedure]);
+
+  // 2. Click outside dropdown
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node) && buttonRef.current && !buttonRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // 3. Scroll Listener for Floating Procedure Button
   useEffect(() => {
     const container = scrollContainerRef.current;
     const target = procedureRef.current;
@@ -136,53 +223,88 @@ export default function WorkOrderDetailModal({
     container.addEventListener("scroll", handleScroll);
     handleScroll();
     return () => container.removeEventListener("scroll", handleScroll);
-  }, [panel, isEditing, hasProcedure, isProcedureVisible]);
+  }, [panel, hasProcedure, isProcedureVisible]);
 
-  const handleViewProcedure = () => {
-    if (procedureRef.current) {
-      procedureRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
+  // 4. Fetch User Names
+  useEffect(() => {
+    const fetchName = async (userId: string | undefined, setFn: (s: string) => void) => {
+      if (!userId) { setFn("System"); return; }
+      const assigneesList = workOrder?.assignees || [];
+      const inAssignees = assigneesList.find((a: any) => a.id === userId);
+      if (inAssignees) { setFn(inAssignees.fullName || inAssignees.name); return; }
+      try {
+        const userData = await workOrderService.fetchUserById(userId);
+        setFn(userData.fullName || "Unknown");
+      } catch (error) { setFn("Unknown"); }
+    };
+
+    if (workOrder) {
+        fetchName(workOrder.createdBy, setCreatedByName);
+        fetchName(workOrder.updatedBy, setUpdatedByName);
     }
-  };
+  }, [workOrder]);
+
+  // 5. Financials Calculation
+  const financials = useMemo(() => {
+    if (!workOrder) return { partsCost: 0, timeCost: 0, otherCost: 0, totalCost: 0, totalMinutes: 0 };
+
+    const parts = workOrder.partUsages || [];
+    const partsCost = parts.reduce((sum: number, p: any) => sum + (Number(p.totalCost) || Number(p.unitCost) * Number(p.quantity) || 0), 0);
+
+    const timeEntries = workOrder.timeEntries || [];
+    const totalMinutes = timeEntries.reduce((acc: number, t: any) => acc + (Number(t.minutes) || 0) + (Number(t.hours) || 0) * 60, 0);
+    const timeCost = timeEntries.reduce((sum: number, t: any) => {
+      const duration = (Number(t.hours) || 0) + (Number(t.minutes) || 0) / 60;
+      return sum + duration * (Number(t.hourlyRate) || 0);
+    }, 0);
+
+    const otherCosts = workOrder.otherCosts || [];
+    const otherCost = otherCosts.reduce((sum: number, c: any) => sum + (Number(c.amount || c.cost) || 0), 0);
+
+    return { partsCost, timeCost, otherCost, totalCost: partsCost + timeCost + otherCost, totalMinutes };
+  }, [workOrder]);
+
+
+  // --- HANDLERS ---
 
   const handleScrollToComments = () => {
     if (commentTextAreaRef.current) {
-      commentTextAreaRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
+      commentTextAreaRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
       setTimeout(() => commentTextAreaRef.current?.focus(), 300);
     }
   };
 
-  const otherCosts = workOrder.otherCosts || [];
-  const totalOtherCost = otherCosts.reduce(
-    (sum: number, c: any) => sum + Number(c.amount ?? 0),
-    0
-  );
-
-  // ✅ CALCULATE PARTS & TOTAL
-  const partUsages = workOrder.partUsages || [];
-  const partsTotalCost = partUsages.reduce((sum: number, p: any) => {
-    return (
-      sum +
-      (Number(p.totalCost) || Number(p.unitCost || 0) * Number(p.quantity || 0))
-    );
-  }, 0);
-
-  const handleClose = () => {
-    setPanel("details");
-    setIsEditing(false);
-    setActiveStatus(workOrder.status || "open");
-    setIsExpanded(false);
-    setIsProcedureVisible(false);
-    onRefreshWorkOrders?.();
-    onClose();
+  const handleViewProcedure = () => {
+    if (procedureRef.current) {
+      procedureRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   };
 
-  const handleCancelEdit = () => setIsEditing(false);
+  const handleStatusChange = async (newStatus: string) => {
+    if (activeStatus === newStatus) return;
+    const prevStatus = activeStatus;
+    setActiveStatus(newStatus);
+
+    if (!user?.id) { toast.error("User not authenticated"); setActiveStatus(prevStatus); return; }
+
+    try {
+      if (newStatus === "done" || newStatus === "completed") {
+        await dispatch(patchWorkOrderComplete(workOrder.id)).unwrap();
+        toast.success("Work order completed");
+      } else if (["in_progress", "on_hold", "open"].includes(newStatus)) {
+        await dispatch(updateWorkOrderStatus({ id: workOrder.id, authorId: user.id, status: newStatus })).unwrap();
+        toast.success(`Status updated to ${newStatus.replace("_", " ")}`);
+      } else {
+        await dispatch(updateWorkOrder({ id: workOrder.id, authorId: user.id, data: { status: newStatus as any } })).unwrap();
+        toast.success(`Status updated`);
+      }
+      if (onRefreshWorkOrders) onRefreshWorkOrders();
+    } catch (error: any) {
+      console.error("Status update failed", error);
+      toast.error("Failed to update status");
+      setActiveStatus(prevStatus);
+    }
+  };
 
   const handleDeleteClick = async () => {
     setIsDropdownOpen(false);
@@ -199,58 +321,18 @@ export default function WorkOrderDetailModal({
     }
   };
 
-  const restoreWorkOrder = async () => {
-    try {
-      await workOrderService.restoreWorkOrderData(workOrder?.id);
-      toast.success("Successfully Restore the Work Order");
-      onClose();
-      setShowDeleted(false);
-    } catch (error) {
-      console.error("Failed to delete work order:", error);
-      toast.error("Failed to restore the work Order");
-    }
+  const handleClose = () => {
+    setPanel("details");
+    onClose();
   };
 
-  const handleStatusChange = async (newStatus: string) => {
-    if (activeStatus === newStatus) return;
-
-    if (!user?.id) {
-      toast.error("User session invalid. Please login.");
-      return;
-    }
-
-    const prevStatus = activeStatus;
-    setActiveStatus(newStatus);
-
-    try {
-      if (newStatus === "done" || newStatus === "completed") {
-        await dispatch(patchWorkOrderComplete(workOrder.id)).unwrap();
-        toast.success("Work order completed");
-      } else {
-        await dispatch(
-          updateWorkOrderStatus({
-            id: workOrder.id,
-            authorId: user.id,
-            status: newStatus,
-          })
-        ).unwrap();
-        const label = newStatus.replace("_", " ");
-        toast.success(
-          `Status updated to ${label.charAt(0).toUpperCase() + label.slice(1)}`
-        );
-      }
-
-      if (onRefreshWorkOrders) {
-        onRefreshWorkOrders();
-      }
-    } catch (error: any) {
-      console.error("Status update failed:", error);
-      toast.error(
-        typeof error === "string" ? error : "Failed to update status"
-      );
-      setActiveStatus(prevStatus);
-    }
-  };
+  // Prepare data for rendering
+  const assigneesList = workOrder.assignees || [];
+  if (assigneesList.length === 0 && workOrder.assignedTo) {
+    assigneesList.push(workOrder.assignedTo);
+  }
+  const recurrenceParsed = parseRecurrenceRule(workOrder.recurrenceRule, workOrder.startDate, workOrder.dueDate);
+  const originTitle = workOrder?.title || null;
 
   return (
     <div
@@ -290,9 +372,9 @@ export default function WorkOrderDetailModal({
             >
               {isExpanded ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
             </button>
-            {isEditing && (
+            {panel === "edit" && (
               <button
-                onClick={handleCancelEdit}
+                onClick={() => setPanel("details")}
                 className="text-white p-1 rounded-lg hover:bg-white/20 transition flex items-center gap-1 text-sm"
               >
                 <ArrowLeft size={20} /> Back
@@ -300,7 +382,7 @@ export default function WorkOrderDetailModal({
             )}
           </div>
           <div className="text-sm font-medium text-center truncate">
-            {isEditing ? (
+            {panel === "edit" ? (
               <span className="font-bold text-base">Edit Work Order</span>
             ) : (
               <>
@@ -323,14 +405,15 @@ export default function WorkOrderDetailModal({
           </div>
         </div>
 
-        {panel === "details" && !isEditing && (
+        {/* Sub-Header (Title & Actions) - Only show if not editing */}
+        {panel === "details" && (
           <div className="p-6 border-b bg-white flex-shrink-0 z-10">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-semibold text-gray-900">
+              <h2 className="text-2xl font-semibold text-gray-900 truncate max-w-[400px]">
                 {workOrder.title}
               </h2>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 relative">
                 <button
                   onClick={handleScrollToComments}
                   className="bg-white rounded-md px-4 py-2 border border-blue-500 text-blue-600 flex items-center gap-2 cursor-pointer hover:bg-blue-50 font-medium"
@@ -346,22 +429,12 @@ export default function WorkOrderDetailModal({
                     <CheckCircle2 size={18} /> Mark as Done
                   </button>
                 ) : (
-                  <>
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className="bg-white rounded-md px-4 py-2 border border-blue-500 text-blue-600 flex items-center gap-2 cursor-pointer hover:bg-blue-50 font-medium"
-                    >
-                      <Edit size={18} /> Edit
-                    </button>
-                    {showDeleted === true ? (
-                      <button
-                        onClick={restoreWorkOrder}
-                        className="bg-white rounded-md px-4 py-2 border border-blue-500 text-blue-600 flex items-center gap-2 cursor-pointer hover:bg-blue-50 font-medium"
-                      >
-                        Restore
-                      </button>
-                    ) : null}
-                  </>
+                  <button
+                    onClick={() => setPanel("edit")}
+                    className="bg-white rounded-md px-4 py-2 border border-blue-500 text-blue-600 flex items-center gap-2 cursor-pointer hover:bg-blue-50 font-medium"
+                  >
+                    <Edit size={18} /> Edit
+                  </button>
                 )}
 
                 <div className="relative">
@@ -372,301 +445,265 @@ export default function WorkOrderDetailModal({
                   >
                     <MoreHorizontal className="h-4 w-4" />
                   </button>
-                  <WorkOrderOptionsDropdown
-                    isOpen={isDropdownOpen}
-                    onClose={() => setIsDropdownOpen(false)}
-                    triggerRef={buttonRef}
-                    onDelete={handleDeleteClick}
-                  />
+                  {isDropdownOpen && (
+                    <div ref={dropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-56 mt-2" style={{ right: 0, top: "40px" }}>
+                        <ul className="text-sm text-gray-700">
+                            <li onClick={handleDeleteClick} className="px-4 py-2 text-red-600 hover:bg-red-50 cursor-pointer border-t">Delete</li>
+                        </ul>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-            <div className="mt-2.5 flex gap-4 text-sm text-gray-500 px-6 pb-2">
+            <div className="mt-2.5 flex gap-4 text-sm text-gray-500 pb-2">
               <span className="flex items-center gap-1">
                 <Repeat size={14} /> {safeRender(workOrder.priority)}
               </span>
               <span className="flex items-center gap-1">
                 <CalendarDays size={14} /> Due by{" "}
-                {workOrder.dueDate
-                  ? formatModalDateTime(workOrder.dueDate)
-                  : "—"}
+                {workOrder.dueDate ? formatDate(workOrder.dueDate) : "—"}
               </span>
             </div>
           </div>
         )}
 
+        {/* SCROLLABLE BODY */}
         <div
           ref={scrollContainerRef}
-          className="overflow-y-auto relative bg-gray-50"
+          className="overflow-y-auto relative bg-gray-50 flex-1"
         >
-          {isEditing ? (
-            <div className="bg-white">
-              <NewWorkOrderForm
-                isEditMode={true}
-                existingWorkOrder={workOrder}
-                editId={workOrder.id}
-                onCancel={handleCancelEdit}
-                onCreate={() => {
-                  onRefreshWorkOrders?.();
-                  handleClose();
-                }}
-              />
-            </div>
-          ) : (
+            {/* 1. EDIT PANEL */}
+            {panel === "edit" ? (
+                <div className="bg-white min-h-full">
+                    <NewWorkOrderForm
+                        isEditMode={true}
+                        existingWorkOrder={workOrder}
+                        editId={workOrder.id}
+                        onCancel={() => setPanel("details")}
+                        onCreate={() => {
+                            onRefreshWorkOrders?.();
+                            setPanel("details");
+                        }}
+                    />
+                </div>
+            ) : (
             <>
-              {panel === "parts" && (
-                <UpdatePartsPanel
-                  onCancel={() => setPanel("details")}
-                  selectedWorkOrder={workOrder}
-                  workOrderId={workOrder.id}
-                />
-              )}
-              {panel === "time" && (
-                <TimeOverviewPanel
-                  onCancel={() => setPanel("details")}
-                  selectedWorkOrder={workOrder}
-                  workOrderId={workOrder.id}
-                />
-              )}
-              {panel === "cost" && (
-                <OtherCostsPanel
-                  onCancel={() => setPanel("details")}
-                  selectedWorkOrder={workOrder}
-                  workOrderId={workOrder.id}
-                />
-              )}
+                {/* 2. SUB-PANELS (Parts, Time, Cost) */}
+                {panel === "parts" && (
+                    <UpdatePartsPanel 
+                        onCancel={() => setPanel("details")} 
+                        workOrderId={workOrder?.id} 
+                        selectedWorkOrder={workOrder} 
+                        onSaveSuccess={() => { if (onRefreshWorkOrders) onRefreshWorkOrders(); setPanel("details"); }} 
+                    />
+                )}
+                {panel === "time" && (
+                    <TimeOverviewPanel 
+                        onCancel={() => setPanel("details")} 
+                        workOrderId={workOrder?.id} 
+                        selectedWorkOrder={workOrder} 
+                        onSaveSuccess={() => { if (onRefreshWorkOrders) onRefreshWorkOrders(); setPanel("details"); }} 
+                    />
+                )}
+                {panel === "cost" && (
+                    <OtherCostsPanel 
+                        onCancel={() => setPanel("details")} 
+                        workOrderId={workOrder?.id} 
+                        selectedWorkOrder={workOrder} 
+                        onSaveSuccess={() => { if (onRefreshWorkOrders) onRefreshWorkOrders(); setPanel("details"); }} 
+                    />
+                )}
 
-              {panel === "details" && (
-                <>
-                  {/* Status */}
-                  <div className="p-6 border-b">
-                    <h3 className="text-sm font-medium mb-2.5 text-gray-700">
-                      Status
-                    </h3>
-                    <div className="flex items-start justify-between gap-6 border rounded-lg p-4 bg-white sm:flex-row flex-col">
-                      <div className="flex gap-4">
-                        {[
-                          { key: "open", label: "Open", Icon: MessageSquare },
-                          { key: "on_hold", label: "On hold", Icon: Edit },
-                          {
-                            key: "in_progress",
-                            label: "In Progress",
-                            Icon: Clock,
-                          },
-                          { key: "done", label: "Done", Icon: CalendarDays },
-                        ].map(({ key, label, Icon }) => {
-                          const active = (activeStatus || "open") === key;
-                          return (
-                            <button
-                              key={key}
-                              type="button"
-                              onClick={() => handleStatusChange(key)}
-                              className={`h-16 w-20 rounded-lg border shadow-md inline-flex flex-col items-center justify-center gap-2 transition-all outline-none ${
-                                active
-                                  ? "bg-orange-600 text-white border-orange-600"
-                                  : "bg-orange-50 text-sidebar-foreground border-gray-200 hover:bg-orange-100"
-                              }`}
-                            >
-                              <Icon className="h-4 w-4" />
-                              <span className="text-xs font-medium leading-none text-center px-2 truncate">
-                                {label}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-6 grid grid-cols-2 gap-6 border-b bg-white">
-                    <div>
-                      <h4 className="text-sm font-medium mb-1.5 text-gray-700">
-                        Asset
-                      </h4>
-                      <span className="flex items-center gap-1.5 text-sm text-gray-800">
-                        <Factory size={16} className="text-gray-500" />
-                        {safeRender(workOrder.asset)}
-                      </span>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium mb-1.5 text-gray-700">
-                        Location
-                      </h4>
-                      <span className="flex items-center gap-1.5 text-sm text-gray-800">
-                        <MapPin size={16} className="text-gray-500" />
-                        {safeRender(workOrder.location)}
-                      </span>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium mb-1.5 text-gray-700">
-                        Estimated Time
-                      </h4>
-                      <span className="flex items-center gap-1.5 text-sm text-gray-800">
-                        <Clock size={16} className="text-gray-500" />
-                        {workOrder.estimated_time || "—"}
-                      </span>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium mb-1.5 text-gray-700">
-                        Work Type
-                      </h4>
-                      <span className="flex items-center gap-1.5 text-sm text-gray-800">
-                        <CalendarDays size={16} className="text-gray-500" />
-                        {safeRender(workOrder.work_type || workOrder.workType)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-6 border-b bg-white">
-                    <h2 className="text-xl font-semibold mb-3 text-gray-900">
-                      Time & Cost Tracking
-                    </h2>
-                    <div className="space-y-4">
-                      {/* ✅ CONDITIONALLY RENDER PARTS CARD */}
-                      {partUsages.length > 0 ? (
-                        <div
-                          onClick={() => setPanel("parts")}
-                          className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm cursor-pointer hover:border-blue-400 transition-all group"
-                        >
-                          <div className="flex justify-between items-center mb-3">
-                            <div className="flex items-center gap-2">
-                              <Wrench size={18} className="text-gray-500" />
-                              <h3 className="font-semibold text-gray-900">
-                                Parts Used
-                              </h3>
+                {/* 3. MAIN DETAILS VIEW */}
+                {panel === "details" && (
+                    <div className="p-6 space-y-6 bg-white min-h-full">
+                        {/* Status Buttons */}
+                        <div>
+                            <h3 className="text-sm font-medium mb-2 text-gray-700">Status</h3>
+                            <div className="flex items-start justify-between gap-6 border rounded-lg p-4 bg-white sm:flex-row flex-col">
+                                <div className="flex gap-4">
+                                {[
+                                    { key: "open", label: "Open", Icon: MessageSquare },
+                                    { key: "on_hold", label: "On hold", Icon: PauseCircle },
+                                    { key: "in_progress", label: "In Progress", Icon: Clock },
+                                    { key: "done", label: "Done", Icon: CheckCircle2 }
+                                ].map(({ key, label, Icon }) => {
+                                    const active = (activeStatus || "open") === key;
+                                    return (
+                                    <button
+                                        key={key}
+                                        type="button"
+                                        onClick={() => handleStatusChange(key)}
+                                        className={`h-16 w-20 rounded-lg border shadow-md inline-flex flex-col items-center justify-center gap-2 transition-all outline-none ${
+                                        active ? "bg-orange-600 text-white border-orange-600" : "bg-orange-50 text-sidebar-foreground border-gray-200 hover:bg-orange-100"
+                                        }`}
+                                    >
+                                        <Icon className="h-4 w-4" />
+                                        <span className="text-xs font-medium leading-none text-center px-2 truncate">{label}</span>
+                                    </button>
+                                    );
+                                })}
+                                </div>
                             </div>
-                            <span className="text-blue-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                              Edit
-                            </span>
-                          </div>
+                        </div>
 
-                          <div className="space-y-3 mb-3">
-                            {partUsages.map((p: any, i: number) => (
-                              <div
-                                key={i}
-                                className="flex justify-between items-start text-sm border-b border-gray-50 pb-2 last:border-0 last:pb-0"
-                              >
-                                <div>
-                                  <div className="font-medium text-gray-800">
-                                    {p.part?.name || "Unknown Part"}
-                                  </div>
-                                  <div className="text-xs text-gray-500 flex items-center gap-1">
-                                    <MapPin size={10} />{" "}
-                                    {p.location?.name || "Unknown Location"}
-                                  </div>
+                        {/* Info Grid */}
+                        <div className="flex p-6 justify-between gap-6 border-t pt-6">
+                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Due Date</h3><p className="text-sm text-gray-500">{formatDate(workOrder.dueDate)}</p></div>
+                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Priority</h3><p className="text-sm text-gray-500">{workOrder.priority || "N/A"}</p></div>
+                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Work Order ID</h3><p className="text-sm text-gray-500">{workOrder.id || "N/A"}</p></div>
+                        </div>
+
+                        {/* Assigned To */}
+                        <div className="border-t pt-6">
+                            <h3 className="text-sm font-medium mb-2 text-gray-700">Assigned To</h3>
+                            <div className="flex flex-wrap gap-3">
+                                {assigneesList.length > 0 ? assigneesList.map((assignee: any, index: number) => (
+                                <div key={index} className="flex items-center gap-2 bg-gray-50 px-2 py-1 rounded-full border border-gray-100">
+                                    <div className="h-6 w-6 rounded-full overflow-hidden bg-gray-200 border border-gray-300 flex items-center justify-center text-xs font-semibold text-gray-600">
+                                    {(assignee.fullName || assignee.name || "U").charAt(0).toUpperCase()}
+                                    </div>
+                                    <span className="text-sm text-gray-800">{assignee.fullName || assignee.name || "Unknown"}</span>
                                 </div>
-                                <div className="text-right">
-                                  <div className="text-gray-900 font-medium">
-                                    x{p.quantity || 0}
-                                  </div>
-                                  <div className="text-xs text-gray-500">
-                                    $
-                                    {Number(
-                                      p.totalCost ||
-                                        Number(p.unitCost) *
-                                          Number(p.quantity) ||
-                                        0
-                                    ).toFixed(2)}
-                                  </div>
+                                )) : <span className="text-sm text-gray-500">Unassigned</span>}
+                            </div>
+                        </div>
+
+                        {/* Description */}
+                        <div className="border-t pt-6">
+                            <h3 className="text-sm font-medium mb-2 text-gray-700">Description</h3>
+                            <p className="text-sm text-gray-500">{workOrder?.description || "No description provided."}</p>
+                        </div>
+
+                        {/* Details Grid (Clickable) */}
+                        <div className="border-t pt-6 grid grid-cols-2 gap-6">
+                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Assets</h3><div className="flex items-start gap-2"><Factory className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.assets)}</span></div></div>
+                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Location</h3><div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-gray-400" /><span className="text-sm text-blue-600 hover:underline cursor-pointer">{workOrder.location?.name || workOrder.location || "N/A"}</span></div></div>
+                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Estimated Time</h3><div className="flex items-center gap-2"><Clock className="h-4 w-4 text-gray-400" /><span className="text-sm text-gray-900">{formatDecimalHoursToDisplay(workOrder.estimatedTimeHours)}</span></div></div>
+                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Work Type</h3><div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-gray-400" /><span className="text-sm text-gray-900">{workOrder.workType || "N/A"}</span></div></div>
+                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Teams</h3><div className="flex items-start gap-2"><Users className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.teams)}</span></div></div>
+                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Vendors</h3><div className="flex items-start gap-2"><Briefcase className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.vendors)}</span></div></div>
+                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Parts</h3><div className="flex items-start gap-2"><Wrench className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.parts)}</span></div></div>
+                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Categories</h3><div className="flex items-start gap-2"><Layers className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.categories)}</span></div></div>
+                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Procedures</h3><div className="flex items-start gap-2"><ClipboardList className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.procedures)}</span></div></div>
+                            {workOrder.meters && workOrder.meters.length > 0 && (
+                                <div><h3 className="text-sm font-medium mb-2 text-gray-700">Meters</h3><div className="flex items-start gap-2"><Gauge className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{workOrder.meters.map((meter: any, i: number) => (<span key={meter.id || i}><span className="text-blue-600 hover:underline cursor-pointer">{meter.name || "Unknown Meter"}</span>{i < workOrder.meters.length - 1 && ", "}</span>))}</span></div></div>
+                            )}
+                        </div>
+
+                        {/* Schedule */}
+                        <div className="border-t pt-6">
+                            <h3 className="text-sm font-medium mb-2 text-gray-700">Schedule conditions</h3>
+                            <div className="flex items-start gap-3">
+                                <div style={{ minWidth: 24 }}><CalendarDays className="h-4 w-4 text-gray-400" /></div>
+                                <div className="flex-1">
+                                <div className="text-sm text-gray-800 mb-2">{recurrenceParsed ? recurrenceParsed.title : "Does not repeat"}</div>
+                                {originTitle && <div className="text-sm mt-1"><span className="text-gray-500">Created from </span><span className="text-blue-600 underline">{originTitle}</span></div>}
                                 </div>
-                              </div>
-                            ))}
-                          </div>
-
-                          <div className="border-t border-gray-100 pt-3 flex justify-between items-center bg-gray-50 -mx-4 -mb-4 px-4 py-2 mt-2 rounded-b-lg">
-                            <span className="text-sm font-medium text-gray-600">
-                              Total Parts Cost
-                            </span>
-                            <span className="text-base font-bold text-gray-900">
-                              ${partsTotalCost.toFixed(2)}
-                            </span>
-                          </div>
+                            </div>
                         </div>
-                      ) : (
-                        // Empty State Row
-                        <div
-                          onClick={() => setPanel("parts")}
-                          className="flex justify-between items-center py-3 border-b-2 border-yellow-400 cursor-pointer group"
-                        >
-                          <span className="text-sm font-medium text-gray-700">
-                            Parts
-                          </span>
-                          <div className="flex items-center text-sm text-gray-500 group-hover:text-blue-600">
-                            Add <ChevronRight className="w-4 h-4 ml-1" />
-                          </div>
+
+                        {/* Time & Cost Section */}
+                        <div className="border-t pt-6">
+                            <h3 className="text-lg font-bold text-gray-900 mb-6">Time & Cost Tracking</h3>
+                            
+                            {/* Parts Table */}
+                            <div className="mb-6">
+                                <div className="flex justify-between items-center mb-3">
+                                <h4 className="text-sm font-semibold text-gray-900">Parts <span className="text-gray-500 font-normal">({workOrder.partUsages?.length || 0})</span></h4>
+                                <button onClick={() => setPanel("parts")} className="text-sm text-blue-600 font-medium hover:underline">Add / Edit</button>
+                                </div>
+                                <div className="border border-gray-200 rounded-md overflow-hidden">
+                                    <table className="w-full text-left text-sm">
+                                        <thead className="bg-gray-50 border-b border-gray-200">
+                                            <tr><th className="px-4 py-2 font-medium text-gray-500 text-xs">Part</th><th className="px-4 py-2 font-medium text-gray-500 text-xs">Location</th><th className="px-4 py-2 font-medium text-gray-500 text-xs text-right">Qty</th><th className="px-4 py-2 font-medium text-gray-500 text-xs text-right">Cost</th></tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100">
+                                            {workOrder.partUsages?.length === 0 ? <tr><td colSpan={4} className="px-4 py-4 text-center text-gray-400 italic">No parts added</td></tr> : 
+                                            workOrder.partUsages?.map((p: any, i: number) => (
+                                                <tr key={i} className="bg-white">
+                                                    <td className="px-4 py-3 text-gray-900 font-medium">{p.part?.name || "Unknown"}</td>
+                                                    <td className="px-4 py-3 text-gray-600">{p.location?.name || "—"}</td>
+                                                    <td className="px-4 py-3 text-gray-900 text-right">{p.quantity}</td>
+                                                    <td className="px-4 py-3 text-gray-900 text-right">{formatCurrency(Number(p.unitCost) || 0)}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        <tfoot className="bg-white border-t border-gray-200">
+                                            <tr><td colSpan={3} className="px-4 py-3 font-medium text-gray-900">Parts Cost</td><td className="px-4 py-3 font-medium text-gray-900 text-right">{formatCurrency(financials.partsCost)}</td></tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* Time Section */}
+                            <div className="mb-6">
+                                <div className="flex justify-between items-center mb-2">
+                                <h4 className="text-sm font-semibold text-gray-900">Time</h4>
+                                <button onClick={() => setPanel("time")} className="text-sm text-blue-600 font-medium hover:underline">Add Time</button>
+                                </div>
+                                <div className="flex justify-between items-center py-2 ">
+                                    <span className="text-sm text-gray-900">Total Duration</span>
+                                    <button onClick={() => setPanel("time")} className="text-sm font-medium text-gray-900 hover:text-blue-600 hover:underline">
+                                    {formatDurationDetailed(financials.totalMinutes)}
+                                    </button>
+                                </div>
+                                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                                    <span className="text-sm text-gray-900">Time Cost</span>
+                                    <span className="text-sm font-medium text-gray-900">{formatCurrency(financials.timeCost)}</span>
+                                </div>
+                            </div>
+
+                            {/* Other Costs */}
+                            <div className="mb-6">
+                                <div className="flex justify-between items-center mb-2"><h4 className="text-sm font-semibold text-gray-900">Other Costs</h4><button onClick={() => setPanel("cost")} className="text-sm text-blue-600 font-medium hover:underline">Add Other Cost</button></div>
+                                <div className="flex justify-between items-center py-2 border-b border-gray-100"><span className="text-sm text-gray-900">Other Costs Total</span><span className="text-sm font-medium text-gray-900">{formatCurrency(financials.otherCost)}</span></div>
+                            </div>
+                            
+                            <div className="bg-gray-50 rounded-lg p-4 flex justify-between items-center mt-4 border border-gray-200">
+                                <span className="text-sm font-semibold text-gray-900">Total Work Order Cost</span><span className="text-lg font-bold text-gray-900">{formatCurrency(financials.totalCost)}</span>
+                            </div>
                         </div>
-                      )}
 
-                      <div
-                        onClick={() => setPanel("time")}
-                        className="flex justify-between items-center py-3 border-b-2 border-yellow-400 cursor-pointer group"
-                      >
-                        <span className="text-sm font-medium text-gray-700">
-                          Time
-                        </span>
-                        <div className="flex items-center text-sm text-gray-500 group-hover:text-blue-600">
-                          Add <ChevronRight className="w-4 h-4 ml-1" />
+                        {/* ✅ PROCEDURE PREVIEW (Now visible even if array is empty but ID exists) */}
+                        {hasProcedure && (
+                            <div className="border-t pt-6" ref={procedureRef}>
+                                <h3 className="text-lg font-bold text-gray-900 mb-4">Procedure</h3>
+                                <LinkedProcedurePreview selectedWorkOrder={workOrder} />
+                            </div>
+                        )}
+
+                        {/* LOGS (Created By / Updated By) */}
+                        <div className="border-t p-6">
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-1 text-sm text-gray-500"><UserCircle2 className="w-4 h-4 text-yellow-500" /><span>Created {createdByName ? `by ${createdByName}` : ""}</span><span>{formatDate(workOrder.createdAt, true)}</span></div>
+                                <div className="flex items-center gap-1 text-sm text-gray-500"><UserCircle2 className="w-4 h-4 text-yellow-500" /><span>Last Updated {updatedByName ? `by ${updatedByName}` : ""}</span><span>{formatDate(workOrder.updatedAt, true)}</span></div>
+                            </div>
                         </div>
-                      </div>
 
-                      <div
-                        onClick={() => setPanel("cost")}
-                        className="flex justify-between items-start py-3 border-b-2 border-yellow-400 cursor-pointer group"
-                      >
-                        <span className="text-sm font-medium text-gray-700">
-                          Other Costs
-                        </span>
-                        <div className="text-right">
-                          <div className="flex items-center text-sm text-gray-500 group-hover:text-blue-600 justify-end">
-                            {otherCosts.length} entries{" "}
-                            <ChevronRight className="w-4 h-4 ml-1" />
-                          </div>
-                          <div className="text-base font-semibold text-gray-900 mt-0.5">
-                            ${totalOtherCost.toFixed(2)}
-                          </div>
+                        {/* COMMENTS SECTION */}
+                        <div className="border-t pt-6">
+                            <CommentsSection
+                                ref={commentTextAreaRef}
+                                comment={comment}
+                                setComment={setComment}
+                                attachment={attachment}
+                                setAttachment={setAttachment}
+                                fileRef={fileRef}
+                                selectedWorkOrder={workOrder}
+                            />
                         </div>
-                      </div>
-                    </div>
-                  </div>
 
-                  {hasProcedure && (
-                    <div className="bg-white" ref={procedureRef}>
-                      <LinkedProcedurePreview selectedWorkOrder={workOrder} />
+                        {/* Extra padding for scroll */}
+                        <div className="h-24 flex-shrink-0 bg-white"></div>
                     </div>
-                  )}
-
-                  <div className="p-6 flex justify-between text-sm text-gray-600 bg-white border-b border-t">
-                    <div className="flex items-center gap-1.5">
-                      Created by <User className="w-4 h-4 text-blue-500" />
-                      <strong className="font-semibold text-gray-800">
-                        {workOrder.createdBy || "System"}
-                      </strong>{" "}
-                      on {formatModalDateTime(workOrder.createdAt)}
-                    </div>
-                    <div>
-                      Last updated on {formatModalDateTime(workOrder.updatedAt)}
-                    </div>
-                  </div>
-
-                  <CommentsSection
-                    ref={commentTextAreaRef}
-                    comment={comment}
-                    setComment={setComment}
-                    attachment={attachment}
-                    setAttachment={setAttachment}
-                    fileRef={fileRef}
-                    selectedWorkOrder={workOrder}
-                  />
-
-                  <div className="h-24 flex-shrink-0 bg-white"></div>
-                </>
-              )}
+                )}
             </>
-          )}
+            )}
         </div>
 
+        {/* FLOATING PROCEDURE BUTTON */}
         {panel === "details" &&
-          !isEditing &&
           hasProcedure &&
           !isProcedureVisible && (
             <div
