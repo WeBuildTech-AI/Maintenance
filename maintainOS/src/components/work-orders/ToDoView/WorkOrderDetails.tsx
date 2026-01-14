@@ -129,7 +129,7 @@ export function WorkOrderDetails({
   activePanel,
   setActivePanel,
   onScrollToComments,
-  onStatusChangeSuccess, // ✅ Added prop to trigger parent refresh
+  onStatusChangeSuccess, 
 }: any) {
   const navigate = useNavigate();
   const dispatch = useDispatch<any>();
@@ -246,7 +246,6 @@ export function WorkOrderDetails({
         toast.success(`Status updated`);
       }
 
-      // ✅ Call the parent trigger to refresh logs
       if (onStatusChangeSuccess) onStatusChangeSuccess();
 
       if (onRefreshWorkOrders) onRefreshWorkOrders();
@@ -431,8 +430,36 @@ export function WorkOrderDetails({
             </div>
           </div>
 
-          <div className="mb-6"><div className="flex justify-between items-center mb-2"><h4 className="text-sm font-semibold text-gray-900">Time</h4><button onClick={() => setActivePanel("time")} className="text-sm text-blue-600 font-medium hover:underline">{formatDurationDetailed(financials.totalMinutes)}</button></div><div className="flex justify-between items-center py-2 border-b border-gray-100"><span className="text-sm text-gray-900">Time Cost</span><span className="text-sm font-medium text-gray-900">{formatCurrency(financials.timeCost)}</span></div></div>
-          <div className="mb-6"><div className="flex justify-between items-center mb-2"><h4 className="text-sm font-semibold text-gray-900">Other Costs</h4><button onClick={() => setActivePanel("cost")} className="text-sm text-blue-600 font-medium hover:underline">Add</button></div><div className="flex justify-between items-center py-2 border-b border-gray-100"><span className="text-sm text-gray-900">Other Costs Total</span><span className="text-sm font-medium text-gray-900">{formatCurrency(financials.otherCost)}</span></div></div>
+          {/* Time - ✅ Added Button to Header Row */}
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-2">
+              <h4 className="text-sm font-semibold text-gray-900">Time</h4>
+              <button 
+                 onClick={() => setActivePanel("time")} 
+                 className="text-sm text-blue-600 font-medium hover:underline"
+              >
+                 Add Time
+              </button>
+            </div>
+            {/* Total Duration Row */}
+            <div className="flex justify-between items-center py-2 ">
+                <span className="text-sm text-gray-900">Total Duration</span>
+                <button 
+                  onClick={() => setActivePanel("time")}
+                  className="text-sm font-medium text-gray-900 hover:text-blue-600 hover:underline"
+                >
+                  {formatDurationDetailed(financials.totalMinutes)}
+                </button>
+            </div>
+            {/* Time Cost Row */}
+            <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-900">Time Cost</span>
+                <span className="text-sm font-medium text-gray-900">{formatCurrency(financials.timeCost)}</span>
+            </div>
+          </div>
+
+          {/* Other Costs */}
+          <div className="mb-6"><div className="flex justify-between items-center mb-2"><h4 className="text-sm font-semibold text-gray-900">Other Costs</h4><button onClick={() => setActivePanel("cost")} className="text-sm text-blue-600 font-medium hover:underline">Add Other Cost</button></div><div className="flex justify-between items-center py-2 border-b border-gray-100"><span className="text-sm text-gray-900">Other Costs Total</span><span className="text-sm font-medium text-gray-900">{formatCurrency(financials.otherCost)}</span></div></div>
           
           <div className="bg-gray-50 rounded-lg p-4 flex justify-between items-center mt-4 border border-gray-200">
             <span className="text-sm font-semibold text-gray-900">Total Work Order Cost</span><span className="text-lg font-bold text-gray-900">{formatCurrency(financials.totalCost)}</span>

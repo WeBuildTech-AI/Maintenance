@@ -8,7 +8,7 @@ import {
   // ✅ Added Icons
   MapPin, Factory, AlertCircle
 } from 'lucide-react';
-import type { WorkOrder } from "../../store/workOrders/workOrders.types";
+
 
 import toast from "react-hot-toast"; 
 
@@ -16,7 +16,7 @@ import toast from "react-hot-toast";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { 
   fetchWorkOrderById, 
-  fetchWorkOrders 
+   
 } from "../../store/workOrders/workOrders.thunks";
 import { clearSelectedWorkOrder } from "../../store/workOrders/workOrders.reducers";
 
