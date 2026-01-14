@@ -158,6 +158,12 @@ export function WorkOrderCard({
   const displayAssignees = assignees.slice(0, 3);
   const remainingAssignees = assignees.length - 3;
 
+  const formatPriority = (priority?: string) => {
+    if (!priority) return null;
+    return priority.charAt(0).toUpperCase() + priority.slice(1);
+  };
+
+
   return (
     <div
       onClick={() => onSelectWorkOrder(wo)}
@@ -230,7 +236,7 @@ export function WorkOrderCard({
                 <span
                   className={`inline-flex items-center rounded px-2 py-1 text-xs font-medium border ${priorityStyles[wo.priority] ?? "bg-gray-100 text-gray-600 border-gray-200"}`}
                 >
-                  {wo.priority}
+                {formatPriority(wo.priority)}
                 </span>
               )}
 
