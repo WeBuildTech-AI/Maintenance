@@ -2,6 +2,7 @@
 import { Package } from "lucide-react";
 import { type Item } from "./inventory.types";
 import { mockLocations } from "./inventory.types"; 
+import { formatINR } from "../utils/dollar_rupee_convert";
 
 export function PartCard({
   item,
@@ -69,8 +70,8 @@ export function PartCard({
           </p>
 
           {/* Row 3: Cost (Footer equivalent) */}
-          <p className="text-xs text-gray-400 mt-2">
-            ${(item.unitCost || 0).toFixed(2)} / unit
+         <p className="text-xs text-gray-400 mt-2">
+            {formatINR(item.unitCost || 0)} / unit
           </p>
         </div>
       </div>
