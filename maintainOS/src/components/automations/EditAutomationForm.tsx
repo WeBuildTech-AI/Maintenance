@@ -133,34 +133,46 @@ export function EditAutomationForm({ automationId, onBack }: EditAutomationFormP
 
         // Populate actions - load all actions into the array
         if (automation.actions && Array.isArray(automation.actions) && automation.actions.length > 0) {
-          const loadedActions: ActionCard[] = automation.actions.map((apiAction: any, index: number) => {
-            if (apiAction.type === "create_work_order") {
-              return {
-                id: `action-${index}`,
-                type: "work_order" as const,
-                showForm: true,
-                data: {
-                  title: apiAction.title || "",
-                  description: apiAction.description || "",
-                  assetId: apiAction.assetId || "{{asset.id}}",
-                  assigneeUserIds: apiAction.assigneeUserIds || [],
-                  assigneeTeamIds: apiAction.assigneeTeamIds || [],
-                  onlyIfPreviousClosed: apiAction.onlyIfPreviousClosed || false,
-                } as WorkOrderActionData,
-              };
-            } else if (apiAction.type === "change_asset_status") {
-              return {
-                id: `action-${index}`,
-                type: "change_status" as const,
-                showForm: true,
-                data: {
-                  assetId: apiAction.assetId || "{{asset.id}}",
-                  status: apiAction.status || "offline",
-                } as ChangeAssetStatusActionData,
-              };
-            }
-            return null;
-          }).filter(Boolean) as ActionCard[];
+          const loadedActions: ActionCard[] = automation.actions.map((action: any, index: number) => {
+          if (action.type === "create_work_order") {
+            return {
+              id: `action-${index}`,
+              type: "work_order" as const,
+              showForm: false,
+              data: {
+                title: action.title || "",
+                description: action.description || "",
+                assetId: action.assetId || "{{asset.id}}",
+                categoryId: action.categoryId || "",
+                locationId: action.locationId || "",
+                priority: action.priority || "",
+                estimatedTimeHours: action.estimatedTimeHours,
+                vendorIds: action.vendorIds || [],
+                procedureIds: action.procedureIds || [],
+                partIds: action.partIds || [],
+                assigneeUserIds: action.assigneeUserIds || [],
+                assigneeTeamIds: action.assigneeTeamIds || [],
+                onlyIfPreviousClosed: action.onlyIfPreviousClosed ?? true,
+              } as WorkOrderActionData,
+            };
+          } else if (action.type === "change_asset_status") {
+            return {
+              id: `action-${index}`,
+              type: "change_status" as const,
+              showForm: false,
+              data: {
+                assetId: action.assetId || "",
+                status: action.status || "",
+              } as ChangeAssetStatusActionData,
+            };
+          }
+          return {
+            id: `action-${index}`,
+            type: "work_order" as const,
+            showForm: false,
+            data: null,
+          };
+        });
           
           setActions(loadedActions);
         }
@@ -355,6 +367,13 @@ export function EditAutomationForm({ automationId, onBack }: EditAutomationFormP
                   title: woData.title,
                   description: woData.description,
                   assetId: woData.assetId,
+                  categoryId: woData.categoryId,
+                  locationId: woData.locationId,
+                  priority: woData.priority,
+                  estimatedTimeHours: woData.estimatedTimeHours,
+                  vendorIds: woData.vendorIds,
+                  procedureIds: woData.procedureIds,
+                  partIds: woData.partIds,
                   assigneeUserIds: woData.assigneeUserIds,
                   assigneeTeamIds: woData.assigneeTeamIds,
                   onlyIfPreviousClosed: woData.onlyIfPreviousClosed,
