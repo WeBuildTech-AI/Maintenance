@@ -342,6 +342,13 @@ export const Assets: FC = () => {
     setCurrentPage(1);
   }, [sortType, sortOrder, debouncedSearch, filterParams]);
 
+  // ✅ New Handler to switch asset and close edit mode
+  const handleSelectAsset = useCallback((asset: Asset) => {
+    setSelectedAsset(asset);
+    setShowNewAssetForm(false);
+    setEditingAsset(null);
+  }, []);
+
   const handleDeleteAsset = useCallback(
     (id: string | number) => {
       const currentIndex = assetData.findIndex((a) => a.id === id);
@@ -406,7 +413,7 @@ export const Assets: FC = () => {
                 <AssetsList
                   assets={paginatedAssets}
                   selectedAsset={selectedAsset}
-                  setSelectedAsset={setSelectedAsset}
+                  setSelectedAsset={handleSelectAsset} // ✅ Updated here
                   setShowNewAssetForm={setShowNewAssetForm}
                   loading={loading}
                   sortType={sortType}

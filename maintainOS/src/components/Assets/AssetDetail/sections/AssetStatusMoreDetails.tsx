@@ -11,7 +11,6 @@ import {
   Plus,
   ChevronRight,
   MoreVertical,
-  User,
 } from "lucide-react";
 import type { Asset } from "../../Assets";
 import {
@@ -26,7 +25,6 @@ import toast from "react-hot-toast";
 import Loader from "../../../Loader/Loader";
 import { MeterReadings } from "../../../Meters/MeterDetail/MeterReadings";
 import { Button } from "../../../ui/button";
-// 👇 Import the Custom Date Modal
 import { CustomDateRangeModal } from "../../../utils/CustomDateRangeModal";
 
 type Period = "1H" | "1D" | "1W" | "1M" | "3M" | "6M" | "1Y" | "Custom";
@@ -53,7 +51,7 @@ export default function AssetStatusMoreDetails({
     end: Date;
   } | null>(null);
 
-  // ✅ State for Modal visibility
+  // State for Modal visibility
   const [showCustomDateModal, setShowCustomDateModal] = useState(false);
   const customDateAnchorRef = useRef<HTMLButtonElement>(null);
 
@@ -325,8 +323,6 @@ export default function AssetStatusMoreDetails({
       toast.error("No data to export.");
       return;
     }
-    // ... (Export logic remains same)
-    // Shortened for brevity, use your existing export code here
     toast.success("Export started!");
   };
 
@@ -395,7 +391,6 @@ export default function AssetStatusMoreDetails({
                     {periods.map((period) => {
                       if (period === "Custom") {
                         return (
-                          // ✅ CHANGE: Added 'relative' and MOVED Modal inside here
                           <div key={period} className="relative">
                             <button
                               ref={customDateAnchorRef}
@@ -417,7 +412,6 @@ export default function AssetStatusMoreDetails({
                                 : "Custom"}
                             </button>
 
-                            {/* ✅ MOVED MODAL HERE: Now it will attach to this div */}
                             {showCustomDateModal && (
                               <CustomDateRangeModal
                                 anchorRef={customDateAnchorRef as any}
@@ -454,8 +448,6 @@ export default function AssetStatusMoreDetails({
 
                 {/* Timeline Chart */}
                 <div className="bg-white rounded border border-gray-200 p-4 mb-8">
-                  {/* ... (Timeline chart content same as before) ... */}
-                  {/* Use existing chart code here */}
                   <div className="space-y-3">
                     {/* Example Online Row */}
                     <div className="flex items-center gap-4">
@@ -527,7 +519,6 @@ export default function AssetStatusMoreDetails({
 
                 {/* Stats */}
                 <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded border border-gray-200">
-                  {/* Stats content same as before */}
                   <div>
                     <div className="text-2xl font-semibold text-gray-800">
                       {uptime}h
@@ -561,7 +552,7 @@ export default function AssetStatusMoreDetails({
 
                 {/* Table & Details Panel */}
                 <div className="flex gap-6">
-                  {/* Table Code (Same as before) */}
+                  {/* Table Code */}
                   <div className="flex-1">
                     <div className="border border-gray-200 rounded-lg overflow-hidden">
                       <div className="max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
@@ -582,22 +573,34 @@ export default function AssetStatusMoreDetails({
                           </thead>
                           <tbody>
                             {logData.map((entry, index) => {
-                              // ... table row logic
+                              // ✅ EXACT DURATION LOGIC (hh mm ss)
                               let durationStr = "-";
-                              // (Logic omitted for brevity - keep your existing logic)
                               if (entry.since && entry.to) {
                                 const since = new Date(entry.since).getTime();
                                 const to = new Date(entry.to).getTime();
                                 const diffMs = Math.abs(to - since);
-                                const totalMinutes = Math.floor(
-                                  diffMs / (1000 * 60)
+
+                                const days = Math.floor(
+                                  diffMs / (1000 * 60 * 60 * 24)
                                 );
-                                const hours = Math.floor(totalMinutes / 60);
-                                const minutes = totalMinutes % 60;
-                                durationStr =
-                                  hours > 0
-                                    ? `${hours}h ${minutes}m`
-                                    : `${minutes}m`;
+                                const hours = Math.floor(
+                                  (diffMs / (1000 * 60 * 60)) % 24
+                                );
+                                const minutes = Math.floor(
+                                  (diffMs / (1000 * 60)) % 60
+                                );
+                                const seconds = Math.floor(
+                                  (diffMs / 1000) % 60
+                                );
+
+                                // Format: 1d 2h 30m 45s (Ensure minutes are always shown if hours > 0 or seconds > 0)
+                                const parts = [];
+                                if (days > 0) parts.push(`${days}d`);
+                                if (hours > 0) parts.push(`${hours}h`);
+                                if (minutes > 0 || hours > 0 || days > 0) parts.push(`${minutes}m`);
+                                parts.push(`${seconds}s`);
+
+                                durationStr = parts.length > 0 ? parts.join(" ") : "0m 0s";
                               }
 
                               return (
@@ -646,11 +649,9 @@ export default function AssetStatusMoreDetails({
                     </div>
                   </div>
 
-                  {/* Details Panel (Same as before) */}
+                  {/* Details Panel */}
                   {logData[selectedEntry] && (
                     <div className="w-80 border border-gray-200 rounded-lg p-4 bg-white">
-                      {/* ... Details panel content ... */}
-                      {/* Use your existing panel code here */}
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                           <span
@@ -700,7 +701,50 @@ export default function AssetStatusMoreDetails({
                           )}
                         </div>
                       </div>
-                      {/* ... Rest of details ... */}
+                      <div className="space-y-3">
+                        <div>
+                          <div className="text-xs text-gray-500 mb-1">
+                            Start Date & Time
+                          </div>
+                          <div className="text-sm text-gray-800">
+                            {formatDate(logData[selectedEntry].since)}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-500 mb-1">
+                            End Date & Time
+                          </div>
+                          <div className="text-sm text-gray-800">
+                            {formatDate(logData[selectedEntry].to)}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-500 mb-1">
+                            User
+                          </div>
+                          <div className="text-sm text-gray-800 capitalize">
+                            {logData[selectedEntry].user?.fullName || "-"}
+                          </div>
+                        </div>
+                        {logData[selectedEntry].downtimeType && (
+                          <div>
+                            <div className="text-xs text-gray-500 mb-1">
+                              Downtime Type
+                            </div>
+                            <div className="text-sm text-gray-800 capitalize">
+                              {logData[selectedEntry].downtimeType}
+                            </div>
+                          </div>
+                        )}
+                        <div>
+                          <div className="text-xs text-gray-500 mb-1">
+                            Notes
+                          </div>
+                          <div className="text-sm text-gray-800">
+                            {logData[selectedEntry].notes || "No notes added"}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -743,8 +787,6 @@ export default function AssetStatusMoreDetails({
                 fetchAssetsData={fetchAssetsData}
               />
             )}
-
-            {/* ❌ REMOVED: CustomDateRangeModal from here */}
           </div>
         </div>
       )}
