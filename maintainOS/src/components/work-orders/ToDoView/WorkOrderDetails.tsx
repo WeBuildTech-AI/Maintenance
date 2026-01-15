@@ -58,6 +58,12 @@ const formatDurationDetailed = (totalMinutes: number) => {
   return `${hours}h ${minutes}m ${seconds.toString().padStart(2, "0")}s`;
 };
 
+
+const formatText = (value?: string) => {
+  if (!value) return "N/A";
+  return value.charAt(0).toUpperCase() + value.slice(1);
+};//upper case first letter of  priority
+
 const formatDecimalHoursToDisplay = (hours: any) => {
   if (hours === undefined || hours === null || hours === "") return "N/A";
   const num = Number(hours);
@@ -343,7 +349,7 @@ export function WorkOrderDetails({
         {/* Info Grid */}
         <div className="flex p-6 justify-between gap-6 border-t pt-6">
           <div><h3 className="text-sm font-medium mb-2">Due Date</h3><p className="text-sm text-muted-foreground">{formatDate(selectedWorkOrder.dueDate)}</p></div>
-          <div><h3 className="text-sm font-medium mb-2">Priority</h3><p className="text-sm text-muted-foreground">{selectedWorkOrder.priority || "N/A"}</p></div>
+          <div><h3 className="text-sm font-medium mb-2">Priority</h3><p className="text-sm text-muted-foreground">{formatText(selectedWorkOrder.priority)}</p></div>
           <div><h3 className="text-sm font-medium mb-2">Work Order ID</h3><p className="text-sm text-muted-foreground">{selectedWorkOrder.id || "N/A"}</p></div>
         </div>
 

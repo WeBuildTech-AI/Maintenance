@@ -49,7 +49,19 @@ import Loader from "../Loader/Loader";
 import { StatusBadge } from "./StatusBadge";
 import { FetchPurchaseOrdersParams } from "../../store/purchaseOrders/purchaseOrders.types";
 
+// --- Helper: Format PO status for UI ---
+const formatStatus = (status?: string) => {
+  if (!status) return "N/A";
+
+  return status
+    .toLowerCase()        // partially_fulfilled
+    .replace(/_/g, " ")   // partially fulfilled
+    .replace(/\b\w/g, (c) => c.toUpperCase()); // Partially Fulfilled
+};
+
+
 // --- Helper Function: Detect Changes ---
+
 function getChangedFields(
   original: NewPOFormType,
   current: NewPOFormType
@@ -68,6 +80,7 @@ function getChangedFields(
     "contactName",
     "phoneOrMail",
   ];
+  
 
   for (const key of keysToCompare) {
     if (key === "vendorContactIds") {
@@ -1096,12 +1109,12 @@ export function PurchaseOrders() {
                                 PO #{po.poNumber || "---"}
                               </h3>
 
-                              <span
-                                className={`flex-shrink-0 inline-flex items-center text-xs px-2 py-0.5 rounded text-[10px] font-medium border uppercase ${statusColor}`}
-                              >
-                                {po.status}
+                              <span className={`flex-shrink-0 inline-flex items-center text-xs px-2 py-0.5 rounded text-[10px] font-medium border ${statusColor}`}>
+                                {formatStatus(po.status)}
                               </span>
                             </div>
+                            {/* Format backend status for better UI readability */}
+
 
                             {/* Row 2: Vendor Name */}
                             <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-500">
