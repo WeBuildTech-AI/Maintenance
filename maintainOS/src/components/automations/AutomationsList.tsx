@@ -40,6 +40,7 @@ interface AutomationsListProps {
   automations: Automation[];
   selectedAutomation: Automation | null;
   onSelect: (automation: Automation) => void;
+  isLoading?: boolean;
 }
 
 export function AutomationsList({
@@ -48,6 +49,7 @@ export function AutomationsList({
   automations,
   selectedAutomation,
   onSelect,
+  isLoading = false,
 }: AutomationsListProps) {
   const filteredAutomations = automations.filter(
     (a) => (selectedTab === "enabled" ? a.enabled : !a.enabled)
@@ -83,7 +85,14 @@ export function AutomationsList({
 
       {/* Automation Items */}
       <div className="flex-1 overflow-y-auto bg-white">
-        {filteredAutomations.length === 0 ? (
+        {isLoading ? (
+          <div className="p-6 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading Automations...</p>
+            </div>
+          </div>
+        ) : filteredAutomations.length === 0 ? (
           <div className="p-6 text-center text-gray-500 text-sm">
             No {selectedTab} automations found
           </div>

@@ -18,7 +18,7 @@ export function Automations() {
   const navigate = useNavigate();
   const { id: automationIdFromUrl } = useParams<{ id: string }>();
 
-  const { automations, selectedAutomation } = useSelector(
+  const { automations, selectedAutomation, loading } = useSelector(
     (state: RootState) => state.automations
   );
 
@@ -294,6 +294,7 @@ export function Automations() {
             automations={filteredAutomations}
             selectedAutomation={selectedUiAutomation}
             onSelect={handleSelect}
+            isLoading={loading}
           />
         </div>
 
