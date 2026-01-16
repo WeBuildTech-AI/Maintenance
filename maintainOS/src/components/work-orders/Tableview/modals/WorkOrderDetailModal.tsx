@@ -46,6 +46,7 @@ import UpdatePartsPanel from "../../panels/UpdatePartsPanel";
 import { CommentsSection } from "../../ToDoView/CommentsSection";
 import { NewWorkOrderForm } from "../../NewWorkOrderForm/NewWorkOrderFrom";
 import { LinkedProcedurePreview } from "../../ToDoView/LinkedProcedurePreview"; // Ensure this path is correct
+import { procedureService } from "../../../../store/procedures/procedures.service"; // Import Service
 
 // --- HELPER FUNCTIONS ---
 
@@ -97,12 +98,27 @@ const formatDate = (dateString: string | undefined, includeTime = false) => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-const renderClickableList = (items: any[]) => {
+// ✅ UPDATED: Render List with Navigation Support
+const renderClickableList = (
+  items: any[], 
+  navigate?: any, 
+  linkGenerator?: (id: string) => string, 
+  key = "name"
+) => {
   if (!items || !Array.isArray(items) || items.length === 0) return "—";
   return items.map((item, i) => (
     <span key={item.id || i}>
-      <span className="text-blue-600 hover:underline cursor-pointer">
-        {item.name || item.title || item.fullName || "Unknown"}
+      <span 
+        onClick={(e) => {
+          if (navigate && linkGenerator && item.id) {
+             e.preventDefault();
+             e.stopPropagation();
+             navigate(linkGenerator(item.id));
+          }
+        }}
+        className={navigate && linkGenerator ? "text-blue-600 hover:underline cursor-pointer" : ""}
+      >
+        {item[key] || item.name || item.title || item.fullName || "View Item"}
       </span>
       {i < items.length - 1 && ", "}
     </span>
@@ -138,11 +154,74 @@ export default function WorkOrderDetailModal({
     workOrderId: workOrder?.id,
     workOrderTitle: workOrder?.title 
   });
+  
+  const navigate = useNavigate();
+  const [fetchedProcedures, setFetchedProcedures] = useState<any[]>([]); // Store fetched procedures
+
+  // ✅ EFFECT: Fetch Procedures if IDs exist but bodies don't
+  useEffect(() => {
+    if (!workOrder || !open) return;
+    
+    const fetchMissingProcedures = async () => {
+      // Check if we have IDs but no matching detailed objects
+      // OR if the detailed objects are just placeholders (didn't have titles)
+      const needsFetch = 
+        workOrder.procedureIds?.length > 0 && 
+        (!workOrder.procedures || workOrder.procedures.length === 0);
+
+      if (needsFetch) {
+        try {
+          // Avoid refetching if we already have them for this WO
+          if (fetchedProcedures.length > 0 && fetchedProcedures[0].id === workOrder.procedureIds[0]) return;
+          
+          const promises = workOrder.procedureIds.map((id: string) => procedureService.fetchProcedureById(id));
+          const results = await Promise.all(promises);
+          setFetchedProcedures(results);
+        } catch (err) {
+          console.error("Failed to fetch linked procedures", err);
+        }
+      } else {
+         setFetchedProcedures([]); // Reset if not needed
+      }
+    };
+
+    fetchMissingProcedures();
+  }, [workOrder, open]);
+
+
+  // ✅ POLYFILL: Ensure procedures are visible even if only IDs exist
+  const safeWorkOrder = useMemo(() => {
+    if (!workOrder) return null;
+    const wo = { ...workOrder };
+
+    // 1. Use existing procedures if valid
+    if (wo.procedures && wo.procedures.length > 0) {
+        return wo;
+    }
+    
+    // 2. Use Fetched Procedures if available
+    if (fetchedProcedures.length > 0) {
+        wo.procedures = fetchedProcedures;
+        return wo;
+    }
+
+    // 3. Fallback: Polyfill procedures if missing but IDs exist
+    if (wo.procedureIds && wo.procedureIds.length > 0) {
+      wo.procedures = wo.procedureIds.map((id: string) => ({
+        id,
+        title: "View Procedure", // Placeholder until fetch completes
+        name: "View Procedure" 
+      }));
+    }
+    return wo;
+  }, [workOrder, fetchedProcedures]);
+
+  if (!open || !safeWorkOrder) return null; // Use safeWorkOrder for early return check
 
   if (!open || !workOrder) return null;
 
   const dispatch = useDispatch<AppDispatch>();
-  const navigate = useNavigate();
+
   const user = useSelector((state: any) => state.auth?.user);
 
   // --- STATE ---
@@ -604,7 +683,7 @@ export default function WorkOrderDetailModal({
                             <div><h3 className="text-sm font-medium mb-2 text-gray-700">Vendors</h3><div className="flex items-start gap-2"><Briefcase className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.vendors)}</span></div></div>
                             <div><h3 className="text-sm font-medium mb-2 text-gray-700">Parts</h3><div className="flex items-start gap-2"><Wrench className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.parts)}</span></div></div>
                             <div><h3 className="text-sm font-medium mb-2 text-gray-700">Categories</h3><div className="flex items-start gap-2"><Layers className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.categories)}</span></div></div>
-                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Procedures</h3><div className="flex items-start gap-2"><ClipboardList className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.procedures)}</span></div></div>
+                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Procedures</h3><div className="flex items-start gap-2"><ClipboardList className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(safeWorkOrder.procedures, navigate, (id) => `/library/${id}`, "title")}</span></div></div>
                             {workOrder.meters && workOrder.meters.length > 0 && (
                                 <div><h3 className="text-sm font-medium mb-2 text-gray-700">Meters</h3><div className="flex items-start gap-2"><Gauge className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{workOrder.meters.map((meter: any, i: number) => (<span key={meter.id || i}><span className="text-blue-600 hover:underline cursor-pointer">{meter.name || "Unknown Meter"}</span>{i < workOrder.meters.length - 1 && ", "}</span>))}</span></div></div>
                             )}
@@ -691,10 +770,8 @@ export default function WorkOrderDetailModal({
                                 <LinkedProcedurePreview 
                                   selectedWorkOrder={{
                                     ...workOrder,
-                                    // Polyfill procedures if missing but IDs exist
-                                    procedures: (workOrder.procedures && workOrder.procedures.length > 0)
-                                      ? workOrder.procedures
-                                      : (workOrder.procedureIds || []).map((id: string) => ({ id }))
+                                    // Polyfill already handled by safeWorkOrder, but keeping check safe
+                                    procedures: safeWorkOrder.procedures
                                   }} 
                                 />
                             </div>
