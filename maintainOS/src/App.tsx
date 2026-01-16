@@ -18,6 +18,7 @@ import { client } from "./lib/apollo";
 import { ApolloProvider } from "@apollo/client/react";
 
 // ✅ Lazy imports
+const Register = lazyImport(() => import("./register/Register"));
 const Login = lazyImport(() => import("./components/Login"), "Login");
 const WorkOrders = lazyImport(
   () => import("./components/work-orders/WorkOrders"),
@@ -97,7 +98,7 @@ export default function App() {
       }
     } else {
       // If user is NOT logged in (logout), force URL to be /login
-      if (location.pathname !== "/login") {
+      if (location.pathname !== "/login" && location.pathname !== "/register") {
         navigate("/login");
       }
     }
@@ -128,6 +129,13 @@ export default function App() {
   };
 
   if (!user) {
+    if (location.pathname === "/register") {
+      return (
+        <Suspense fallback={<div className="p-4">Loading...</div>}>
+          <Register />
+        </Suspense>
+      );
+    }
     return (
       <>
         <Login onLogin={handleLogin} />

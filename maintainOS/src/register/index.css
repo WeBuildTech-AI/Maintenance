@@ -1,0 +1,278 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Poppins:wght@300;400;500;600&display=swap");
+
+.register-page-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background-color: #fff9ee;
+  font-family: "Poppins", sans-serif;
+  overflow: hidden;
+  padding: 25px;
+  gap: 50px;
+  box-sizing: border-box;
+}
+
+/* Left Section - Image Panel */
+.register-left-panel {
+  flex: 1;
+  height: 100%;
+  position: relative;
+  background-color: #000; /* Fallback */
+  border-radius: 17px;
+  overflow: hidden;
+}
+
+.register-bg-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.register-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.6) 100%
+  );
+  display: block; /* Removed flex */
+  box-sizing: border-box;
+}
+
+.register-heading-main {
+  position: absolute;
+  left: 48px;
+  top: 360px; /* Estimated visual center */
+  width: 592px;
+  height: 132px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 54px;
+  font-weight: 700;
+  line-height: 100%;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+  margin: 0;
+}
+
+.register-subtext-main {
+  position: absolute;
+  left: 48px;
+  top: 513px; /* 360px + 132px + 21px gap */
+  width: 529px;
+  height: 66px;
+  font-family: "Poppins", sans-serif;
+  font-size: 22px;
+  font-weight: 300;
+  line-height: 100%;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+  margin: 0;
+}
+
+/* Right Section - Form Panel */
+.register-right-panel {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 0;
+  box-sizing: border-box;
+}
+
+.register-form-container {
+  width: 533px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.register-form-header {
+  margin-bottom: 32px;
+}
+
+.register-form-title {
+  font-family: "Montserrat", sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: #000000;
+  margin-bottom: 12px;
+}
+
+.register-form-subtitle {
+  font-family: "Poppins", sans-serif;
+  font-size: 12px;
+  font-weight: 300;
+  color: #000000;
+}
+
+.highlight-text {
+  color: #ffb000;
+  font-weight: 300;
+}
+
+/* Inputs */
+.register-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.register-input-row {
+  display: flex;
+  gap: 16px;
+}
+
+.register-input-wrapper {
+  width: 100%;
+}
+
+.register-input-wrapper.half-width {
+  width: 50%;
+}
+
+.register-input {
+  width: 100%;
+  height: 48px; /* Approximate based on visual, or standard height */
+  background-color: #fff9ee; /* Matches bg or slight off-white if needed, JSON implies blending or specific style. Design shows filled inputs often light yellow/beige usually or white? Screenshot looks like light beige filled. */
+  background-color: #fefbf6; /* A slightly lighter shade than bg, or standard input fill */
+  background-color: #fff9ee; /* Assuming input bg is very subtle or transparent-ish with border? Screenshot shows filled inputs. Let's pick a color from screenshot: likely #FFFCF5 or similar. Let's stick to a clean fill. */
+  background: #fef9ef; /* Visual approx */
+  border: 1px solid transparent;
+  border-radius: 4px; /* Default radius, will adjust if specified. Design JSON didn't specify input radius, screenshot looks slightly rounded like 4-8px. */
+  padding: 0 16px;
+  font-family: "Poppins", sans-serif;
+  font-size: 14px; /* Standard */
+  color: #000;
+  box-sizing: border-box;
+  outline: none;
+}
+/* Re-evaluating Input Style based on Screenshot */
+/* Screenshot: Inputs have a light beige background, rounded corners (~8px?), no visible border (or very subtle). Selected input has yellow border. */
+.register-input {
+  background-color: #fffdf7; /* Very light yellow/beige */
+  border: 1px solid transparent;
+  border-radius: 8px;
+  height: 50px;
+  font-size: 14px;
+  color: #333;
+}
+.register-input:focus {
+  border-color: #ffb000;
+}
+.register-input::placeholder {
+  color: #b0b0b0;
+  font-weight: 300;
+}
+
+/* Select */
+.register-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFB000%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px top 50%;
+  background-size: 12px auto;
+}
+
+/* Checkbox */
+.register-checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+  font-size: 12px;
+  font-weight: 400;
+  color: #000;
+}
+
+.register-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: #000; /* Or custom style if needed, native for now */
+  cursor: pointer;
+}
+
+.register-link {
+  color: #ffb000;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+/* Button */
+.register-btn-primary {
+  width: 378px; /* Fixed width from JSON */
+  height: 46px;
+  background-color: #ffc649;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-family: "Poppins", sans-serif;
+  font-size: 16px;
+  font-weight: 600; /* Looks bold in screenshot */
+  cursor: pointer;
+  margin: 0 auto; /* Center button */
+  display: block;
+  transition: background-color 0.2s;
+}
+
+.register-btn-primary:hover {
+  background-color: #ffb000;
+}
+
+.register-footer {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.register-footer-action {
+  color: #ffb000;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 4px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .register-form-container {
+    width: 90%;
+  }
+}
+
+@media (max-width: 768px) {
+  .register-page-container {
+    flex-direction: column;
+    overflow-y: auto;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .register-left-panel {
+    width: 100%;
+    height: 40vh;
+    min-height: 300px;
+  }
+
+  .register-right-panel {
+    width: 100%;
+    height: auto;
+    padding: 40px 24px;
+  }
+
+  .register-heading-main {
+    font-size: 36px;
+  }
+
+  .register-btn-primary {
+    width: 100%;
+  }
+}
