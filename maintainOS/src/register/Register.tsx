@@ -1,12 +1,19 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import registerConfig from "./register.config.json";
 import "./index.css";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+
+type AuthStep = "REGISTER" | "OTP";
 
 export default function Register() {
   const { leftSection, otpForm, header, form, checkbox, primaryButton, footerText } = registerConfig;
-  const [isOtpStep, setIsOtpStep] = useState(false);
+  const [authStep, setAuthStep] = useState<AuthStep>("REGISTER");
   const [formData, setFormData] = useState<Record<string, string>>({});
+  const navigate = useNavigate();
+  
+  // OTP State and Refs
+  const [otp, setOtp] = useState<string[]>(new Array(6).fill(""));
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -14,7 +21,49 @@ export default function Register() {
 
   const handleCreateAccount = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsOtpStep(true);
+    setAuthStep("OTP");
+  };
+
+  const handleVerifyOtp = () => {
+    navigate('/workspace-setup');
+  };
+
+  // OTP Handlers
+  const handleOtpChange = (element: HTMLInputElement, index: number) => {
+    if (isNaN(Number(element.value))) return;
+
+    const newOtp = [...otp];
+    newOtp[index] = element.value;
+    setOtp(newOtp);
+
+    // Focus next input
+    if (element.value && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (e.key === "Backspace") {
+      if (!otp[index] && index > 0) {
+        inputRefs.current[index - 1]?.focus();
+      }
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasteData = e.clipboardData.getData("text").slice(0, 6).split("");
+    if (pasteData.some((char) => isNaN(Number(char)))) return;
+
+    const newOtp = [...otp];
+    pasteData.forEach((char, i) => {
+      newOtp[i] = char;
+    });
+    setOtp(newOtp);
+
+    // Focus either the last filled index or the end
+    const submitIndex = Math.min(pasteData.length, 5);
+    inputRefs.current[submitIndex]?.focus();
   };
 
   return (
@@ -36,7 +85,7 @@ export default function Register() {
 
       {/* Right Section - Conditional Rendering */}
       <div className="register-right-panel">
-        {!isOtpStep ? (
+        {authStep === "REGISTER" ? (
           // REGISTER FORM
           <div className="register-form-container">
             {/* Header */}
@@ -173,15 +222,21 @@ export default function Register() {
                 display: 'flex',
                 justifyContent: 'center',
                 maxWidth: '374px',
-                margin: '0 auto'
+                marginLeft: 'auto',
+                marginRight: 'auto'
               }}
             >
-              {Array.from({ length: otpForm.otpInputs.count }).map((_, index) => (
+              {otp.map((digit, index) => (
                 <input
                   key={index}
                   type="text"
                   maxLength={1}
                   className="otp-input-box"
+                  value={digit}
+                  ref={(el) => { inputRefs.current[index] = el; }}
+                  onChange={(e) => handleOtpChange(e.target, index)}
+                  onKeyDown={(e) => handleOtpKeyDown(e, index)}
+                  onPaste={handleOtpPaste}
                   style={{
                     width: otpForm.otpInputs.box.width,
                     height: otpForm.otpInputs.box.height,
@@ -204,7 +259,8 @@ export default function Register() {
                 textAlign: otpForm.resendText.alignment as any,
                 marginBottom: otpForm.resendText.marginBottom,
                 maxWidth: '374px',
-                margin: '0 auto'
+                marginLeft: 'auto',
+                marginRight: 'auto'
               }}
             >
               {otpForm.resendText.text.replace(otpForm.resendText.highlight.text, "")}
@@ -215,6 +271,7 @@ export default function Register() {
 
             <button 
               className="otp-verify-btn"
+              onClick={handleVerifyOtp}
               style={{
                 width: otpForm.verifyButton.width,
                 height: otpForm.verifyButton.height,

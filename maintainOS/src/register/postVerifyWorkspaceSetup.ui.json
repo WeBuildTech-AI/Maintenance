@@ -1,0 +1,221 @@
+{
+  "page": {
+    "width": "1280px",
+    "backgroundColor": "#FFFCF5",
+    "padding": { "top": "24px", "right": "64px", "bottom": "32px", "left": "64px" }
+  },
+
+  "steps": {
+    "step1": {
+      "progress": "15%",
+      "header": {
+        "title": {
+          "text": "Let's set up your workspace - Create your 1st factory",
+          "fontFamily": "Montserrat",
+          "fontSize": "32px",
+          "fontWeight": 700,
+          "letterSpacing": "4%",
+          "color": "#000000",
+          "textAlign": "center",
+          "marginBottom": "8px"
+        },
+        "subtitle": {
+          "text": "Start by telling us about your first factory — this takes only 2 minutes",
+          "fontFamily": "Poppins",
+          "fontSize": "16px",
+          "fontWeight": 400,
+          "letterSpacing": "4%",
+          "color": "#9A9A9A",
+          "textAlign": "center",
+          "marginBottom": "32px"
+        }
+      }
+    },
+    "step2": {
+      "progress": "35%",
+      "header": {
+        "title": {
+          "text": "Create a Production Line",
+          "fontFamily": "Montserrat",
+          "fontSize": "32px",
+          "fontWeight": 700,
+          "letterSpacing": "4%",
+          "color": "#000000",
+          "textAlign": "center",
+          "marginBottom": "8px"
+        },
+        "subtitle": {
+          "text": "Set up this line to enable monitoring, reporting, and insights.",
+          "fontFamily": "Poppins",
+          "fontSize": "16px",
+          "fontWeight": 400,
+          "letterSpacing": "4%",
+          "color": "#9A9A9A",
+          "textAlign": "center",
+          "marginBottom": "32px"
+        }
+      }
+    },
+    "step3": {
+      "progress": "55%",
+      "header": {
+        "title": {
+          "text": "Add Your Factory Assets",
+          "fontFamily": "Montserrat",
+          "fontSize": "32px",
+          "fontWeight": 700,
+          "letterSpacing": "4%",
+          "color": "#000000",
+          "textAlign": "center",
+          "marginBottom": "8px"
+        },
+        "subtitle": {
+          "text": "Add, monitor, and maintain assets to keep operations running smoothly.",
+          "fontFamily": "Poppins",
+          "fontSize": "16px",
+          "fontWeight": 400,
+          "letterSpacing": "4%",
+          "color": "#9A9A9A",
+          "textAlign": "center",
+          "marginBottom": "32px"
+        }
+      }
+    },
+    "step4": {
+      "progress": "80%",
+      "header": {
+        "title": {
+          "text": "Manage Your Meters",
+          "fontFamily": "Montserrat",
+          "fontSize": "32px",
+          "fontWeight": 700,
+          "letterSpacing": "4%",
+          "color": "#000000",
+          "textAlign": "center",
+          "marginBottom": "8px"
+        },
+        "subtitle": {
+          "text": "Add, configure, and monitor meters for accurate operational data.",
+          "fontFamily": "Poppins",
+          "fontSize": "16px",
+          "fontWeight": 400,
+          "letterSpacing": "4%",
+          "color": "#9A9A9A",
+          "textAlign": "center",
+          "marginBottom": "32px"
+        }
+      }
+    },
+    "step5": {
+      "progress": "100%",
+      "header": {
+        "title": {
+          "text": "Invite Your Team To MaintainOS",
+          "fontFamily": "Montserrat",
+          "fontSize": "32px",
+          "fontWeight": 700,
+          "letterSpacing": "4%",
+          "color": "#000000",
+          "textAlign": "center",
+          "marginBottom": "8px"
+        },
+        "subtitle": {
+          "text": "Start by telling us about your first factory — this takes only 2 minutes",
+          "fontFamily": "Poppins",
+          "fontSize": "16px",
+          "fontWeight": 400,
+          "letterSpacing": "4%",
+          "color": "#9A9A9A",
+          "textAlign": "center",
+          "marginBottom": "32px"
+        }
+      }
+    }
+  },
+
+  "progressBar": {
+    "logo": "/maintainOSLOGO.svg",
+    "height": "6px",
+    "backgroundColor": "#E5E5E5",
+    "fillColor": "#FFB000",
+    "marginBottom": "24px",
+    "showPercentage": true,
+    "percentageColor": "#000000",
+    "percentageFontSize": "14px",
+    "percentageFontFamily": "Poppins",
+    "percentageFontWeight": 500
+  },
+
+  "form": {
+    "container": {
+      "display": "flex",
+      "flexDirection": "column",
+      "gap": "28px"
+    },
+
+    "label": {
+      "fontFamily": "Poppins",
+      "fontSize": "12px",
+      "fontWeight": 500,
+      "color": "#000000"
+    },
+
+    "input": {
+      "width": "100%",
+      "height": "57px",
+      "borderRadius": "12px",
+      "border": "1px solid #FAAD00",
+      "padding": "18px",
+      "fontFamily": "Poppins",
+      "fontSize": "14px",
+      "placeholderColor": "#9A9A9A",
+      "backgroundColor": "#FFFFFF"
+    }
+  },
+
+  "sectionDivider": {
+    "text": "Production Line",
+    "lineColor": "#FAAD00",
+    "marginTop": "32px",
+    "marginBottom": "24px"
+  },
+
+  "twoColumnRow": {
+    "gap": "24px",
+    "leftColumnWidth": "620px",
+    "rightColumnWidth": "620px"
+  },
+
+  "textarea": {
+    "height": "57px",
+    "borderRadius": "12px",
+    "border": "1px solid #FAAD00",
+    "padding": "18px"
+  },
+
+  "uploadBox": {
+    "height": "96px",
+    "border": "1px dashed #FAAD00",
+    "borderRadius": "12px",
+    "text": "Add or drag File",
+    "fontFamily": "Poppins",
+    "fontSize": "12px",
+    "color": "#FAAD00"
+  },
+
+  "footerActions": {
+    "leftButton": {
+      "text": "New Location",
+      "height": "41px",
+      "borderRadius": "10px",
+      "border": "1px solid #FAAD00",
+      "backgroundColor": "transparent"
+    },
+    "rightButton": {
+      "text": "Next",
+      "height": "41px",
+      "borderRadius": "10px",
+      "backgroundColor": "#FFC649"
+    }
+  }
+}
