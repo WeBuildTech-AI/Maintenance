@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Settings, Trash2, ChevronDown, X } from "lucide-react";
+import { Settings, Trash2, ChevronDown, X, Plus } from "lucide-react";
 import { DynamicSelect, type SelectOption } from "../../work-orders/NewWorkOrderForm/DynamicSelect";
 import { fetchFilterData } from "../../utils/filterDataFetcher";
 
@@ -38,7 +38,7 @@ export function CreateBlankWorkOrderForm({ onBack, onChange, initialData }: Crea
   const [selectedAssetId, setSelectedAssetId] = useState(initialData?.assetId || "{{asset.id}}");
   const [selectedCategoryId, setSelectedCategoryId] = useState(initialData?.categoryId || "");
   const [selectedLocationId, setSelectedLocationId] = useState(initialData?.locationId || "");
-  const [selectedPriority, setSelectedPriority] = useState<"high" | "medium" | "low" | "">(initialData?.priority || "");
+  const [selectedPriority, setSelectedPriority] = useState<"high" | "medium" | "low" | "none">(initialData?.priority || "none");
   const [estimatedTime, setEstimatedTime] = useState(initialData?.estimatedTimeHours?.toString() || "");
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>(initialData?.assigneeUserIds || []);
   const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>(initialData?.assigneeTeamIds || []);
@@ -296,7 +296,7 @@ export function CreateBlankWorkOrderForm({ onBack, onChange, initialData }: Crea
         assetId: selectedAssetId,
         categoryId: selectedCategoryId || undefined,
         locationId: selectedLocationId || undefined,
-        priority: selectedPriority || undefined,
+        priority: selectedPriority !== "none" ? selectedPriority : undefined,
         estimatedTimeHours: estimatedTime ? parseFloat(estimatedTime) : undefined,
         vendorIds: selectedVendorIds.length > 0 ? selectedVendorIds : undefined,
         procedureIds: selectedProcedureIds.length > 0 ? selectedProcedureIds : undefined,
@@ -403,7 +403,6 @@ export function CreateBlankWorkOrderForm({ onBack, onChange, initialData }: Crea
   const MultiSelectDropdown = ({
     label,
     selectedIds,
-    options,
     isLoading,
     isOpen,
     setIsOpen,
@@ -526,8 +525,6 @@ export function CreateBlankWorkOrderForm({ onBack, onChange, initialData }: Crea
       <div className="p-6 space-y-6">
         {/* Basic Information */}
         <div className="space-y-4">
-          <h4 className="text-sm font-semibold text-gray-700 border-b pb-2">Basic Information</h4>
-          
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-2">
               Work Order Title <span className="text-red-500">(Required)</span>
@@ -552,43 +549,50 @@ export function CreateBlankWorkOrderForm({ onBack, onChange, initialData }: Crea
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-900 mb-2">Category</label>
-              <DynamicSelect
-                name="work-order-category"
-                placeholder="Select category"
-                options={categoryOptions}
-                loading={isCategoriesLoading}
-                value={selectedCategoryId}
-                onSelect={(val) => setSelectedCategoryId(typeof val === "string" ? val : val[0] || "")}
-                onFetch={handleFetchCategories}
-                activeDropdown={activeDropdown}
-                setActiveDropdown={setActiveDropdown}
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-900 mb-2">Category</label>
+            <DynamicSelect
+              name="work-order-category"
+              placeholder="Select category"
+              options={categoryOptions}
+              loading={isCategoriesLoading}
+              value={selectedCategoryId}
+              onSelect={(val) => setSelectedCategoryId(typeof val === "string" ? val : val[0] || "")}
+              onFetch={handleFetchCategories}
+              activeDropdown={activeDropdown}
+              setActiveDropdown={setActiveDropdown}
+            />
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-900 mb-2">Priority</label>
-              <DynamicSelect
-                name="work-order-priority"
-                placeholder="Select priority"
-                options={PRIORITY_OPTIONS}
-                loading={false}
-                value={selectedPriority}
-                onSelect={(val) => setSelectedPriority(typeof val === "string" ? val as any : val[0] as any || "")}
-                onFetch={() => {}}
-                activeDropdown={activeDropdown}
-                setActiveDropdown={setActiveDropdown}
-              />
+          {/* Priority */}
+          <div className="mt-6">
+            <h3 className="mb-4 text-base font-medium text-gray-900">Priority</h3>
+            <div className="flex w-full gap-2">
+              {[
+                { name: "none", label: "None", color: "bg-blue-500", textColor: "text-white" },
+                { name: "low", label: "Low", color: "bg-green-500", textColor: "text-white" },
+                { name: "medium", label: "Medium", color: "bg-orange-500", textColor: "text-white" },
+                { name: "high", label: "High", color: "bg-red-500", textColor: "text-white" },
+              ].map((priority) => (
+                <button
+                  key={priority.name}
+                  type="button"
+                  onClick={() => setSelectedPriority(priority.name as any)}
+                  className={`flex-1 px-4 py-2 text-sm font-medium transition-all duration-200 hover:opacity-90 rounded ${
+                    selectedPriority === priority.name
+                      ? `${priority.color} ${priority.textColor} shadow-sm`
+                      : "text-gray-700 bg-gray-100 hover:bg-gray-200"
+                  }`}
+                >
+                  {priority.label}
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
         {/* Location & Asset */}
         <div className="space-y-4">
-          <h4 className="text-sm font-semibold text-gray-700 border-b pb-2">Location & Asset</h4>
-          
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-900 mb-2">Location</label>
@@ -624,8 +628,6 @@ export function CreateBlankWorkOrderForm({ onBack, onChange, initialData }: Crea
 
         {/* Time Estimation */}
         <div className="space-y-4">
-          <h4 className="text-sm font-semibold text-gray-700 border-b pb-2">Time Estimation</h4>
-          
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-2">Estimated Time (Hours)</label>
             <input
@@ -640,10 +642,99 @@ export function CreateBlankWorkOrderForm({ onBack, onChange, initialData }: Crea
           </div>
         </div>
 
+        {/* Procedure */}
+        <div className="mt-8">
+          <h2 className="text-lg font-medium text-gray-900 mb-6">Procedure</h2>
+          <div className="flex justify-center items-center gap-3 mb-6">
+            <svg
+              className="w-5 h-5 text-blue-500 flex-shrink-0"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 01-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 010-2h4a1 1 0 011 1v4a1 1 0 01-2 0V6.414l-2.293 2.293a1 1 0 11-1.414-1.414L13.586 5H12zm-9 7a1 1 0 012 0v1.586l2.293-2.293a1 1 0 111.414 1.414L6.414 15H8a1 1 0 010 2H4a1 1 0 01-1-1v-4zm13-1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <span className="text-base text-gray-600">
+              Create or attach new Form, Procedure or Checklist
+            </span>
+          </div>
+          <div className="flex justify-center items-center">
+            <button
+              type="button"
+              onClick={() => setProcedureDropdownOpen(!procedureDropdownOpen)}
+              className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-orange-600 border border-orange-600 rounded-sm hover:bg-orange-50 transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              Add Procedure
+            </button>
+          </div>
+          
+          {/* Show selected procedures */}
+          {selectedProcedureIds.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {selectedProcedureIds.map((id) => (
+                <span
+                  key={id}
+                  className="flex items-center gap-2 bg-white border border-gray-300 text-gray-800 text-sm pl-3 pr-2 py-1.5 rounded-sm"
+                >
+                  <span className="text-sm font-medium">{getProcedureName(id)}</span>
+                  <X
+                    className="w-4 h-4 text-gray-500 cursor-pointer hover:text-gray-700"
+                    onClick={() => toggleProcedure(id)}
+                  />
+                </span>
+              ))}
+            </div>
+          )}
+          
+          {/* Procedure dropdown */}
+          {procedureDropdownOpen && (
+            <div className="mt-4 bg-white border border-gray-200 rounded-md shadow-lg">
+              <div className="px-4 py-2 text-xs font-semibold text-gray-500 tracking-wide bg-gray-50 border-b">
+                Select Procedures
+              </div>
+              <div className="p-3">
+                <input
+                  value={procedureSearchQuery}
+                  onChange={(e) => setProcedureSearchQuery(e.target.value)}
+                  placeholder="Search procedures..."
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm mb-2"
+                />
+              </div>
+              <div className="overflow-y-auto" style={{ maxHeight: "200px", scrollbarWidth: "thin" }}>
+                {isProceduresLoading ? (
+                  <div className="p-4 text-center text-gray-500 text-sm">Loading...</div>
+                ) : filteredProcedures.length === 0 ? (
+                  <div className="p-4 text-center text-gray-500 text-sm">No procedures found</div>
+                ) : (
+                  filteredProcedures.map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => toggleProcedure(item.id)}
+                      className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors border-b last:border-b-0 ${
+                        selectedProcedureIds.includes(item.id) ? "bg-blue-50" : "hover:bg-gray-50"
+                      }`}
+                    >
+                      <span className="flex-1 text-sm font-medium text-gray-900">{item.name}</span>
+                      <input
+                        type="checkbox"
+                        checked={selectedProcedureIds.includes(item.id)}
+                        readOnly
+                        className="w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Resources */}
         <div className="space-y-4">
-          <h4 className="text-sm font-semibold text-gray-700 border-b pb-2">Resources</h4>
-          
           <MultiSelectDropdown
             label="Vendors"
             selectedIds={selectedVendorIds}
@@ -657,21 +748,6 @@ export function CreateBlankWorkOrderForm({ onBack, onChange, initialData }: Crea
             toggleItem={toggleVendor}
             getItemName={getVendorName}
             placeholder="Select vendors"
-          />
-
-          <MultiSelectDropdown
-            label="Procedures"
-            selectedIds={selectedProcedureIds}
-            options={procedureOptions}
-            isLoading={isProceduresLoading}
-            isOpen={procedureDropdownOpen}
-            setIsOpen={setProcedureDropdownOpen}
-            searchQuery={procedureSearchQuery}
-            setSearchQuery={setProcedureSearchQuery}
-            filteredOptions={filteredProcedures}
-            toggleItem={toggleProcedure}
-            getItemName={getProcedureName}
-            placeholder="Select procedures"
           />
 
           <MultiSelectDropdown
@@ -692,7 +768,6 @@ export function CreateBlankWorkOrderForm({ onBack, onChange, initialData }: Crea
 
         {/* Assignment */}
         <div className="space-y-4">
-          <h4 className="text-sm font-semibold text-gray-700 border-b pb-2">Assignment</h4>
           
           <MultiSelectDropdown
             label="Assign to Users"
@@ -727,8 +802,6 @@ export function CreateBlankWorkOrderForm({ onBack, onChange, initialData }: Crea
 
         {/* Options */}
         <div className="space-y-4">
-          <h4 className="text-sm font-semibold text-gray-700 border-b pb-2">Options</h4>
-          
           <div className="flex items-center gap-2">
             <input
               type="checkbox"

@@ -13,7 +13,6 @@ import {
   GitBranch,
   Lock,
   Plus,
-  Bookmark,
   Trash2,
   Settings2,
 } from "lucide-react";
@@ -586,13 +585,6 @@ export function EditAutomationForm({ automationId, onBack }: EditAutomationFormP
                             <span className="text-blue-600 font-medium flex items-center gap-2">
                               <FilePlus2 className="h-5 w-5" />
                               Create from blank
-                            </span>
-                            <ChevronRight className="h-4 w-4 text-blue-600" />
-                          </div>
-                          <div className="p-4 hover:bg-gray-50 flex justify-between items-center cursor-pointer">
-                            <span className="text-blue-600 font-medium flex items-center gap-2">
-                              <Bookmark className="h-5 w-5" />
-                              Use a Template
                             </span>
                             <ChevronRight className="h-4 w-4 text-blue-600" />
                           </div>
