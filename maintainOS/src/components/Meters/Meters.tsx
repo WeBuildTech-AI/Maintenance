@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { MeterDetail } from "./MeterDetail/MeterDetail";
 import { MetersEmptyState } from "./MetersEmptyState";
 import { MetersHeaderComponent } from "./MetersHeader";
@@ -12,7 +12,7 @@ import {
 } from "../../store/meters";
 import { type FetchMetersParams } from "../../store/meters/meters.types";
 import type { ViewMode } from "../purchase-orders/po.types";
-import { useNavigate, useMatch, useSearchParams } from "react-router-dom"; // ✅ Imported useSearchParams
+import { useNavigate, useMatch, useSearchParams } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store";
@@ -21,10 +21,24 @@ import { ReadingHistory } from "./MeterDetail/ReadingHistory";
 import RecordReadingModal from "./MeterDetail/RecordReadingModal";
 
 export function Meters() {
-  // ✅ 1. URL Search Params Setup
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
-  // ✅ 2. Initialize State from URL (Refresh hone par yahan se value uthayega)
+  // ✅ Routes check
+  const isCreateRoute = useMatch("/meters/create");
+  const isEditRoute = useMatch("/meters/:meterId/edit");
+  const isFormOpen = !!isCreateRoute || !!isEditRoute;
+
+  // ✅ 1. Asset ID capture logic
+  const prefillAssetId = searchParams.get("assetId");
+
+  // ✅ FIX 1: Agar 'assetId' URL me hai, lekin hum '/create' route par nahi hain, toh redirect karo
+  useEffect(() => {
+    if (prefillAssetId && !isCreateRoute && !isEditRoute) {
+      navigate(`/meters/create?assetId=${prefillAssetId}`);
+    }
+  }, [prefillAssetId, isCreateRoute, isEditRoute, navigate]);
+
   const [searchQuery, setSearchQuery] = useState(
     () => searchParams.get("search") || ""
   );
@@ -32,18 +46,18 @@ export function Meters() {
     () => searchParams.get("search") || ""
   );
 
-  const [showSettings, setShowSettings] = useState(false);
-
   const [meterData, setMeterData] = useState<MeterResponse[]>([]);
   const [loading, setLoading] = useState(false);
 
   const [showReadingMeter, setShowReadingMeter] = useState(() => {
     return searchParams.get("reading") === "true";
   });
+
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const savedMode = localStorage.getItem("meterViewMode");
     return (savedMode as ViewMode) || "panel";
   });
+
   const modalRef = React.useRef<HTMLDivElement>(null);
   const [selectedMeter, setSelectedMeter] = useState<
     (typeof meterData)[0] | null
@@ -51,23 +65,20 @@ export function Meters() {
   const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
-  const headerRef = useRef(null);
+  const headerRef = useRef<HTMLDivElement>(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // FILTER PARAMETERS STATE (Page Number URL se read karega)
   const [filterParams, setFilterParams] = useState<FetchMetersParams>({
     page: Number(searchParams.get("page")) || 1,
     limit: 50,
   });
 
   const dispatch = useDispatch<AppDispatch>();
-  const navigate = useNavigate();
-  const isCreateRoute = useMatch("/meters/create");
-  const isEditRoute = useMatch("/meters/:meterId/edit");
 
   const isEditMode = !!isEditRoute;
   const meterToEdit = isEditMode
@@ -82,30 +93,38 @@ export function Meters() {
     }
   }, [viewMode]);
 
+  // ✅ FIX 2: URL params update logic fixed
   useEffect(() => {
     const params: any = {};
 
     if (debouncedSearch) params.search = debouncedSearch;
 
-    if (viewMode === "panel" && selectedMeter?.id) {
+    // Sirf tabhi meterId set karo jab hum CREATE ya EDIT mode me NA ho
+    if (viewMode === "panel" && selectedMeter?.id && !isCreateRoute && !isEditRoute) {
       params.meterId = selectedMeter.id;
     }
 
-    // Only add reading if true AND in panel mode
     if (viewMode === "panel" && showReadingMeter) {
       params.reading = "true";
+    }
+
+    // Asset ID persist rakhna hai agar available hai
+    if (prefillAssetId) {
+      params.assetId = prefillAssetId;
     }
 
     setSearchParams(params, { replace: true });
   }, [
     viewMode,
-    // filterParams.page, // Uncomment if you use page in URL
     debouncedSearch,
     showReadingMeter,
     selectedMeter?.id,
+    prefillAssetId,
+    isCreateRoute, // Check added
+    isEditRoute,   // Check added
+    setSearchParams,
   ]);
 
-  // ✅ DEBOUNCE EFFECT
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
@@ -118,6 +137,7 @@ export function Meters() {
   };
 
   const handleCancelForm = () => {
+    // Clear everything and go to list
     navigate("/meters");
   };
 
@@ -126,12 +146,11 @@ export function Meters() {
     navigate("/meters");
     await fetchMeters();
   };
+
   const fetchMeters = useCallback(async () => {
     setLoading(true);
-
     try {
       let res: any;
-
       if (showDeleted) {
         res = await meterService.fetchDeleteMeter();
       } else {
@@ -141,37 +160,30 @@ export function Meters() {
         };
         res = await meterService.fetchMeters(apiPayload);
       }
-
       const safeData = Array.isArray(res) ? res : [];
-
       const sortedData = [...safeData].sort(
         (a, b) =>
           new Date(b.updatedAt).valueOf() - new Date(a.updatedAt).valueOf()
       );
-
-      // ✅ ONLY update list
       setMeterData(sortedData);
     } catch (err) {
       console.error(err);
       setMeterData([]);
     } finally {
-      setLoading(false); 
+      setLoading(false);
     }
   }, [showDeleted, filterParams, debouncedSearch]);
 
   useEffect(() => {
-    // Do nothing while API is loading
     if (loading) return;
-
-    // No data
     if (!meterData || meterData.length === 0) {
       setSelectedMeter(null);
       return;
     }
 
     const urlMeterId = searchParams.get("meterId");
-
-    // 1️⃣ URL has priority
+    
+    // Agar URL me meterId hai, to usse select karo
     if (urlMeterId) {
       const found = meterData.find((m) => String(m.id) === String(urlMeterId));
       if (found) {
@@ -180,26 +192,28 @@ export function Meters() {
       }
     }
 
-    // 2️⃣ Keep previous selection if exists
+    // Default fallback
     setSelectedMeter((prev) => {
       if (!prev) return meterData[0];
-
       const updated = meterData.find((m) => m.id === prev.id);
       return updated || meterData[0];
     });
   }, [loading, meterData, searchParams]);
 
-  // Initial Fetch
   useEffect(() => {
     fetchMeters();
   }, [fetchMeters]);
 
-  // ✅ HANDLER: Filter Change
-
   const totalItems = meterData.length;
+  
+  const paginatedMeters = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+    return meterData.slice(startIndex, endIndex);
+  }, [currentPage, itemsPerPage, totalItems, meterData]);
+
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-  const paginatedMeters = meterData.slice(startIndex, endIndex);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -227,8 +241,8 @@ export function Meters() {
   }, [isDropdownOpen]);
 
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (modalRef.current && !modalRef.current.contains(event.target)) {
+    function handleClickOutside(event: MouseEvent) {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
       }
     }
@@ -238,7 +252,7 @@ export function Meters() {
     };
   }, [modalRef]);
 
-  const handleDeleteMeter = (id) => {
+  const handleDeleteMeter = (id: string) => {
     dispatch(deleteMeter(id))
       .unwrap()
       .then(() => {
@@ -278,7 +292,7 @@ export function Meters() {
           handleFilterChange
         )}
 
-        {viewMode === "table" ? (
+        {viewMode === "table" && !isFormOpen ? (
           <>
             <MeterTable
               meter={meterData}
@@ -315,6 +329,7 @@ export function Meters() {
                     onCancel={handleCancelForm}
                     onCreate={handleCreateForm}
                     editingMeter={meterToEdit}
+                    initialAssetId={prefillAssetId}
                   />
                 ) : selectedMeter ? (
                   loading ? (

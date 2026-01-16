@@ -8,7 +8,7 @@ import {
   // ✅ Added Icons
   MapPin, Factory, AlertCircle
 } from 'lucide-react';
-import type { WorkOrder } from "../../store/workOrders/workOrders.types";
+
 
 import toast from "react-hot-toast"; 
 
@@ -16,7 +16,7 @@ import toast from "react-hot-toast";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { 
   fetchWorkOrderById, 
-  fetchWorkOrders 
+   
 } from "../../store/workOrders/workOrders.thunks";
 import { clearSelectedWorkOrder } from "../../store/workOrders/workOrders.reducers";
 
@@ -196,7 +196,7 @@ function EventDetailPopover({
   const style: React.CSSProperties = {
     position: 'fixed',
     width: `${POPOVER_WIDTH}px`,
-    zIndex: 9999,
+    zIndex: 1000,
     pointerEvents: 'none', 
   };
 

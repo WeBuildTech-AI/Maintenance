@@ -76,6 +76,7 @@ export function LinkedProcedurePreviewModal({
 
   return (
     <div
+    className="z-9999"
       style={{
         position: "fixed",
         inset: 0,
@@ -83,7 +84,7 @@ export function LinkedProcedurePreviewModal({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        zIndex: 1000,
+       
       }}
       onClick={onClose}
     >

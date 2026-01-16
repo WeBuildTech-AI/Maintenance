@@ -1,11 +1,11 @@
-import { Edit, Link, MoreHorizontal, Copy } from "lucide-react"; // ✅ Added Copy icon
+import { Edit, Link, MoreHorizontal, Copy, Gauge } from "lucide-react"; // ✅ Added Gauge icon
 import { Button } from "../../ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator, // ✅ Added Separator for better look
+  DropdownMenuSeparator,
 } from "../../ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "../../ui/tabs";
 import { Tooltip } from "../../ui/tooltip"; 
@@ -29,8 +29,8 @@ interface AssetDetailHeaderProps {
   asset: Asset;
   setShowHistory: (show: boolean) => void;
   onEdit: (asset: Asset) => void;
-  onDelete: (id: string | number) => void; // Adjusted to match parent usage if needed, or keep as Asset
-  onCopy: (asset: Asset) => void; // ✅ Added onCopy prop
+  onDelete: (id: string | number) => void; 
+  onCopy: (asset: Asset) => void;
   onClose: () => void;
   restoreData: string;
   fetchAssetsData: () => void;
@@ -42,7 +42,7 @@ export function AssetDetailHeader({
   setShowHistory,
   onEdit,
   onDelete,
-  onCopy, // ✅ Destructure onCopy
+  onCopy,
   onClose,
   restoreData,
   fetchAssetsData,
@@ -61,6 +61,11 @@ export function AssetDetailHeader({
     } catch (err) {
       toast.error("Failed to restore");
     }
+  };
+
+  // ✅ ADDED: Navigate to Create Meter route with assetId in URL
+  const handleUseInMeter = () => {
+    navigate(`/meters/create?assetId=${asset.id}`);
   };
 
   return (
@@ -97,10 +102,15 @@ export function AssetDetailHeader({
             <DropdownMenuContent align="end">
               {!showDeleted && (
                 <>
-                  {/* ✅ Added Copy Option */}
                   <DropdownMenuItem onClick={() => onCopy(asset)}>
-                    <Copy className="mr-2 h-4 w-4" /> Copy Asset
+                     Copy Asset
                   </DropdownMenuItem>
+
+                  {/* ✅ ADDED: Use in Meter Option */}
+                  <DropdownMenuItem onClick={handleUseInMeter}>
+                     Use in Meter
+                  </DropdownMenuItem>
+
                   <DropdownMenuSeparator />
                   
                   <DropdownMenuItem onClick={() => setOpenAssetDeleteModal(true)} className="text-red-600 focus:text-red-600">

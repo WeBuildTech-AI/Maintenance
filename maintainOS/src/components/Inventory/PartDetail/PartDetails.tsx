@@ -1,3 +1,4 @@
+
 // PartDetails.tsx
 "use client";
 
@@ -37,6 +38,7 @@ import api from "../../../store/auth/auth.service";
 import { Tooltip } from "../../ui/tooltip";
 import { format, subDays } from "date-fns";
 import { WorkOrderHistoryChart } from "../../utils/WorkOrderHistoryChart";
+import { formatINR } from "../../utils/dollar_rupee_convert";
 
 type DateRange = { startDate: string; endDate: string };
 
@@ -585,7 +587,7 @@ export function PartDetails({
               <div>
                 <h4 className="text-sm text-gray-600 mb-2">Unit Cost</h4>
                 <p className="text-base font-normal">
-                  ${partData.unitCost?.toFixed(2) || "0.00"}
+                  {formatINR(partData.unitCost || 0)}
                 </p>
               </div>
               <div>

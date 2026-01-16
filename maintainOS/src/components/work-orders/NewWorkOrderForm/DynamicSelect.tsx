@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { ChevronDown, X, Loader2, Check } from "lucide-react";
 import { Badge } from "../../ui/badge";
 
@@ -57,10 +57,11 @@ interface DynamicSelectProps {
   name: string;
   activeDropdown: string | null;
   setActiveDropdown: (name: string | null) => void;
+  onSearch?: (term: string) => void; 
 }
 
 export function DynamicSelect({
-  options = [], // ✅ default value prevents undefined.filter crash
+  options = [],
   value,
   onSelect,
   onFetch,
@@ -71,24 +72,36 @@ export function DynamicSelect({
   name,
   activeDropdown,
   setActiveDropdown,
+  onSearch,
 }: DynamicSelectProps) {
-  const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null); 
   const isMulti = Array.isArray(value);
   const open = activeDropdown === name;
+  const [searchTerm, setSearchTerm] = useState(""); 
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setActiveDropdown(null);
+        if (open) {
+            setActiveDropdown(null);
+            setSearchTerm(""); 
+            if (onSearch) onSearch(""); 
+        }
       }
     };
-    if (open) document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [open, setActiveDropdown]);
+  }, [open, setActiveDropdown, onSearch]);
 
-  const handleToggle = () => {
+  const handleToggle = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).tagName === 'INPUT') return;
+    
     const nextState = open ? null : name;
-    if (nextState) onFetch?.();
+    if (nextState) {
+      onFetch?.();
+      setTimeout(() => inputRef.current?.focus(), 0);
+    }
     setActiveDropdown(nextState);
   };
 
@@ -98,43 +111,110 @@ export function DynamicSelect({
       onSelect(arr.includes(id) ? arr.filter((v) => v !== id) : [...arr, id]);
     } else {
       onSelect(id === value ? "" : id);
-      setActiveDropdown(null);
     }
+    setActiveDropdown(null);
+    setSearchTerm(""); 
+    if (onSearch) onSearch("");
   };
 
   const selectedOptions = (options || []).filter((opt) =>
     isMulti ? (value as string[]).includes(opt.id) : opt.id === value
   );
 
+  const displayedOptions = onSearch 
+    ? options 
+    : options.filter(opt => opt.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  // ✅ NEW: Logic for "+N" display
+  const firstOption = selectedOptions[0];
+  const hiddenOptions = selectedOptions.slice(1);
+  const hasHidden = hiddenOptions.length > 0;
+
   return (
     <div className={`relative ${open ? "z-50" : ""}`} ref={dropdownRef}>
       <style>{checkboxStyles}</style>
 
       <div
-        className="flex flex-wrap items-center gap-2 rounded-md border border-gray-300 bg-white p-2 min-h-[42px] cursor-pointer"
+        className="flex flex-wrap items-center gap-2 rounded-md border border-gray-300 bg-white p-2 min-h-[42px] cursor-pointer focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500"
         onClick={handleToggle}
       >
         <div className="flex flex-wrap items-center gap-1 flex-1">
-          {selectedOptions.length > 0 ? (
+          
+          {/* ✅ RENDER LOGIC: If Multi, show 1 + Count. If Single, show all (which is just 1) */}
+          {isMulti && selectedOptions.length > 0 ? (
+            <>
+              {/* 1. Show First Option */}
+              <Badge key={firstOption.id} variant="secondary" className="flex items-center gap-1">
+                {firstOption.name}
+                <button
+                  className="ml-1 rounded-full outline-none"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleOption(firstOption.id);
+                  }}
+                >
+                  <X className="h-3 w-3 text-gray-500 hover:text-gray-900" />
+                </button>
+              </Badge>
+
+              {/* 2. Show Counter Badge if more than 1 selected */}
+              {hasHidden && (
+                <div className="relative group flex items-center">
+                  <Badge variant="secondary" className="cursor-help bg-blue-50 text-blue-700 hover:bg-blue-100">
+                    +{hiddenOptions.length}
+                  </Badge>
+                  
+                  {/* ✅ TOOLTIP on Hover */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-max max-w-[250px] bg-gray-900 text-white text-xs rounded-md py-2 px-3 z-[9999] shadow-xl">
+                    <div className="flex flex-col gap-1">
+                      {hiddenOptions.map((opt) => (
+                        <span key={opt.id} className="truncate border-b border-gray-700 last:border-0 pb-1 last:pb-0">
+                          {opt.name}
+                        </span>
+                      ))}
+                    </div>
+                    {/* Tiny Arrow */}
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            // Standard Rendering for Single Select (or fallback)
             selectedOptions.map((option) => (
               <Badge key={option.id} variant="secondary" className="flex items-center gap-1">
                 {option.name}
-                {isMulti && (
-                  <button
-                    className="ml-1 rounded-full outline-none"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleOption(option.id);
-                    }}
-                  >
-                    <X className="h-3 w-3 text-gray-500 hover:text-gray-900" />
-                  </button>
-                )}
+                <button
+                  className="ml-1 rounded-full outline-none"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelect("");
+                  }}
+                >
+                  <X className="h-3 w-3 text-gray-500 hover:text-gray-900" />
+                </button>
               </Badge>
             ))
-          ) : (
-            <span className="text-gray-500">{placeholder}</span>
           )}
+          
+          <input
+            ref={inputRef}
+            type="text"
+            className="flex-1 bg-transparent outline-none text-sm min-w-[60px] h-6 placeholder:text-gray-500"
+            placeholder={selectedOptions.length === 0 ? placeholder : ""}
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              if (onSearch) onSearch(e.target.value);
+              if (!open) setActiveDropdown(name); 
+            }}
+            onFocus={() => {
+               if(!open) {
+                 setActiveDropdown(name);
+                 onFetch?.();
+               }
+            }}
+          />
         </div>
         <ChevronDown
           className={`h-4 w-4 shrink-0 opacity-50 transition-transform ${
@@ -144,21 +224,24 @@ export function DynamicSelect({
       </div>
 
       {open && (
-        <div className="absolute top-full mt-1 w-full rounded-md border bg-white z-20 max-h-60 overflow-y-auto shadow-lg">
+        <div 
+          onMouseDown={(e) => e.preventDefault()}
+          className="absolute top-full mt-1 w-full rounded-md border bg-white z-20 max-h-60 overflow-y-auto shadow-lg"
+        >
           {loading ? (
             <div className="flex justify-center items-center p-4">
               <Spinner />
             </div>
           ) : (
             <div>
-              {(options || []).map((option) => {
+              {displayedOptions.map((option) => {
                 const isSelected = isMulti
                   ? (value as string[]).includes(option.id)
                   : value === option.id;
                 return (
                   <div
                     key={option.id}
-                    className="flex items-center gap-3 p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50"
+                    className="flex items-center gap-3 p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 text-sm"
                     onClick={() => toggleOption(option.id)}
                   >
                     {isMulti ? (
@@ -170,22 +253,26 @@ export function DynamicSelect({
                         }`}
                       ></div>
                     )}
-                    <label className="flex-1 cursor-pointer">{option.name}</label>
+                    <label className="flex-1 cursor-pointer text-gray-700">{option.name}</label>
                     {!isMulti && isSelected && (
                       <Check className="h-4 w-4 text-blue-500" />
                     )}
                   </div>
                 );
               })}
-              {(options || []).length === 0 && (
-                <div className="p-3 text-gray-500">No options found.</div>
+              {displayedOptions.length === 0 && (
+                <div className="p-3 text-gray-500 text-sm">No options found.</div>
               )}
             </div>
           )}
 
           {ctaText && onCtaClick && (
             <div
-              onClick={onCtaClick}
+              onClick={(e) => {
+                 e.stopPropagation();
+                 onCtaClick();
+                 setActiveDropdown(null);
+              }}
               className="sticky bottom-0 flex items-center p-3 text-sm font-medium text-blue-600 bg-gray-50 border-t cursor-pointer hover:bg-blue-100"
             >
               <span>{ctaText}</span>

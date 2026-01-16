@@ -71,7 +71,7 @@ export function MainLayout({ user, onLogout, children }: MainLayoutProps) {
         <div
           className={`${
             showMobileSidebar ? "translate-x-0" : "-translate-x-full"
-          } fixed inset-y-0 left-0 z-50 
+          } fixed inset-y-0 left-0  
            ${expanded ? "w-64" : "w-16"}  // Yeh dynamic width aapne sahi lagayi thi
            transition-all duration-300
            lg:translate-x-0 lg:static lg:inset-0`}

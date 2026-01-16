@@ -29,7 +29,7 @@ export default function PurchaseStockUI({
   const [itemsState, setItemsState] = useState<ItemState[]>(
     selectedPO?.orderItems?.map(
       (item: any): ItemState => ({
-        id: item.id,
+        id: item.id, // This acts as orderItemId
         unitCost: parseFloat(item.unitCost) || 0,
         unitsOrdered: item.unitsOrdered || 0,
         previousReceived: item.unitsReceived || 0,
@@ -58,40 +58,40 @@ export default function PurchaseStockUI({
     }).format(amount);
   };
 
+  // ✅ FIXED: Construct Payload matching CURL & Single API Call
   const handleConfirm = async () => {
     setIsLoading(true);
     try {
-      const apiCalls = itemsState.map((itemState, index) => {
-        const originalItem = selectedPO.orderItems[index];
-        const receivingNow =
-          itemState.receivingNow === "" ? 0 : itemState.receivingNow;
-        const newTotalReceived = itemState.previousReceived + receivingNow;
+      // 1. Filter items that have a positive receiving quantity
+      const itemsToReceive = itemsState.filter(
+        (item) => typeof item.receivingNow === "number" && item.receivingNow > 0
+      );
 
-        const updatedItemData = {
-          partId: originalItem.part?.id || originalItem.partId,
-          partNumber: originalItem.partNumber,
-          unitCost: itemState.unitCost,
-          unitsOrdered: itemState.unitsOrdered,
-          unitsReceived: newTotalReceived,
-          price: itemState.unitCost * itemState.unitsOrdered,
-        } as any;
+      if (itemsToReceive.length === 0) {
+        toast.error("Please enter quantity to receive for at least one item.");
+        setIsLoading(false);
+        return;
+      }
 
-        return purchaseOrderService.updateItemOrder(
-          selectedPO.id,
-          itemState.id,
-          updatedItemData
-        );
-      });
+      // 2. Construct Payload: { items: [{ orderItemId, receivedUnits }] }
+      const payload = {
+        items: itemsToReceive.map((item) => ({
+          orderItemId: item.id,
+          receivedUnits: Number(item.receivingNow),
+        })),
+        // Add notes if API supports it in the future, currently not in CURL
+        // notes: notes 
+      };
 
-      await Promise.all(apiCalls);
-      await purchaseOrderService.fullfillPurchaseOrder(selectedPO.id);
+      // 3. Single API Call
+      await purchaseOrderService.fulfillPurchaseOrder(selectedPO.id, payload);
 
-      toast.success("Purchase Order updated successfully");
+      toast.success("Items received successfully");
       if (fetchPurchaseOrder) await fetchPurchaseOrder();
       setFullFillModal(false);
     } catch (error: any) {
       console.error(error);
-      toast.error("Failed to fulfill order.");
+      toast.error(error?.response?.data?.message || "Failed to fulfill order.");
     } finally {
       setIsLoading(false);
     }
@@ -352,13 +352,6 @@ export default function PurchaseStockUI({
                         style={{
                           display: "block",
                           width: "120px",
-                          // borderRadius: "6px",
-                          // border: "1px solid #d1d5db",
-                          // padding: "8px 12px",
-                          // textAlign: "right",
-                          // fontSize: "14px",
-                          // outline: "none",
-                          // color: "#111827",
                         }}
                       />
                     </div>
