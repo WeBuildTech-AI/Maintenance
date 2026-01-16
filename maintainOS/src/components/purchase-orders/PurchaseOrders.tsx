@@ -48,6 +48,7 @@ import PurchaseOrderDetails from "./PurchaseOrderDetails";
 import Loader from "../Loader/Loader";
 import { StatusBadge } from "./StatusBadge";
 import { FetchPurchaseOrdersParams } from "../../store/purchaseOrders/purchaseOrders.types";
+import { formatINR } from "../utils/dollar_rupee_convert";
 
 // --- Helper: Format PO status for UI ---
 const formatStatus = (status?: string) => {
@@ -1136,9 +1137,8 @@ export function PurchaseOrders() {
                               }`}
                             >
                               <div className="flex mt-1 items-center gap-1 font-medium text-gray-700">
-                                <span className="text-gray-400">$</span>
-                                {formatMoney(totalCost).replace("$", "")}{" "}
-                                {/* Assuming formatMoney returns string with $ */}
+                                <span className="text-gray-400">₹</span>
+                                  {formatINR(totalCost).replace("₹", "")}
                               </div>
 
                               {isOverdue && (

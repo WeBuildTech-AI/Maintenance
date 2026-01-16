@@ -167,7 +167,7 @@ export function TimeVsCostChart({
 
           <div className="text-center">
             <div className="text-5xl font-bold mb-3">
-              ${Math.round(totals.totalCost)}
+              ₹{Math.round(totals.totalCost)}
             </div>
             <Button
               variant="outline"
@@ -194,7 +194,8 @@ export function TimeVsCostChart({
             <Tooltip
               formatter={(value: any, name: string) => {
                 if (name === "Time (hours)") return [`${value}h`, "Time"];
-                if (name === "Cost ($)") return [`$${value}`, "Cost"];
+                if (name === "Cost (₹)") return [`₹${value}`, "Cost"];
+
                 return value;
               }}
             />
@@ -203,7 +204,8 @@ export function TimeVsCostChart({
               key="time-cost-bar"
               dataKey={viewMode === "time" ? "timeHours" : "cost"}
               fill="#3b82f6"
-              name={viewMode === "time" ? "Time (hours)" : "Cost ($)"}
+              name={viewMode === "time" ? "Time (hours)" : "Cost (₹)"}
+
               radius={[4, 4, 0, 0]}
               isAnimationActive={false}
             />
