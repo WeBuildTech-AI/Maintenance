@@ -1,5 +1,3 @@
-
-
 "use client";
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Card, CardContent } from "../../ui/card";
@@ -23,6 +21,7 @@ import { Table } from "antd";
 import type { TableProps, TableColumnType } from "antd";
 import type { AppDispatch } from "../../../store";
 import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom"; // ✅ Added for "Use in Meter" navigation
 import Loader from "../../Loader/Loader";
 import AssetTableModal from "../../utils/AssetTableModal";
 
@@ -156,6 +155,7 @@ export function AssetTable({
   isSettingsModalOpen,
   onEdit,
   onDelete,
+  onCopy, // ✅ Passed from parent (Assets.tsx)
   showDeleted,
   setShowDeleted,
   setSeeMoreAssetStatus,
@@ -168,11 +168,13 @@ export function AssetTable({
   isSettingsModalOpen: boolean;
   onEdit: (asset: any) => void;
   onDelete: (id: string | number) => void;
+  onCopy: (asset: any) => void; // ✅ Prop Definition
   showDeleted: boolean;
   setShowDeleted: (value: boolean) => void;
   setSeeMoreAssetStatus: (value: boolean) => void;
 }) {
   const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate(); // ✅ Hook for navigation
   const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
@@ -188,7 +190,7 @@ export function AssetTable({
   const [isUpdatingCriticality, setIsUpdatingCriticality] = useState(false);
 
   const [isOpenAssetDetailsModal, setIsOpenAssetDetailsModal] = useState(false);
-  const [isSelectedAssetTable, setIsSelectedAssetTable] = useState<any[]>([]);
+  const [isSelectedAssetTable, setIsSelectedAssetTable] = useState<any>(null); // ✅ Fixed: Should be single object, not array
   const popoverRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -481,7 +483,7 @@ export function AssetTable({
               className="truncate cursor-pointer hover:text-orange-600 hover:underline"
               onClick={(e) => {
                 e.stopPropagation();
-                setIsSelectedAssetTable(record);
+                setIsSelectedAssetTable(record); // ✅ Correctly sets the record for the modal
                 setIsOpenAssetDetailsModal(true);
               }}
             >
@@ -649,17 +651,29 @@ export function AssetTable({
         currentShowDeleted={showDeleted}
       />
 
-      {isOpenAssetDetailsModal && (
+      {isOpenAssetDetailsModal && isSelectedAssetTable && (
         <AssetTableModal
           data={isSelectedAssetTable.fullAsset}
           onClose={() => setIsOpenAssetDetailsModal(false)}
           onDelete={onDelete}
           onEdit={onEdit}
+          // ✅ FIX: Correctly connect the onCopy logic to trigger API/Functionality
+          onCopy={(assetToCopy: any) => {
+            onCopy(assetToCopy);
+            setIsOpenAssetDetailsModal(false);
+          }}
           showDetailsSection={showDetailsSection}
           restoreData={"Restore"}
           fetchData={fetchAssetsData}
           showDeleted={showDeleted}
           setSeeMoreAssetStatus={setSeeMoreAssetStatus}
+          // ✅ Added "Use in Meter" functionality
+          onUseInMeter={(assetData: any) => {
+            navigate("/meters/create", { 
+              state: { prefilledAsset: { id: assetData.id, name: assetData.name } } 
+            });
+            setIsOpenAssetDetailsModal(false);
+          }}
         />
       )}
     </div>

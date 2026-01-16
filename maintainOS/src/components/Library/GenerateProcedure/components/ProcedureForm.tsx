@@ -1665,16 +1665,9 @@ const PreviewField = memo(function PreviewField({
   };
 
   return (
-    <div
-      style={{
-        background: "#f9fafb",
-        border: "1px solid #e5e7eb",
-        borderRadius: "8px",
-        padding: "16px",
-      }}
-    >
+    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
       {fieldType === "Checkbox" || fieldType === "checkbox" ? (
-        <div style={{ padding: "0px" }}>{renderFieldInput()}</div>
+        <div className="p-0">{renderFieldInput()}</div>
       ) : (
         <>
           <label
@@ -1729,59 +1722,26 @@ const PreviewSection = memo(function PreviewSection({
   const sectionLabel = section.sectionName || section.label;
 
   return (
-    <div
-      style={{
-        paddingBottom: "16px",
-      }}
-    >
+    <div className="pb-4">
       <button
         onClick={() => setIsCollapsed(!isCollapsed)}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          width: "100%",
-          background: "none",
-          cursor: "pointer",
-          textAlign: "left",
-          border: "none",
-          padding: "0",
-          marginBottom: "16px",
-        }}
+        className="flex items-center gap-2 w-full bg-none cursor-pointer text-left border-none p-0 mb-4"
       >
         <ChevronDown
           size={20}
-          style={{
-            transition: "transform 0.2s",
-            transform: isCollapsed ? "rotate(-90deg)" : "rotate(0deg)",
-          }}
+          className={`transition-transform duration-200 ${isCollapsed ? "-rotate-90" : "rotate-0"}`}
         />
-        <span
-          style={{ fontSize: "1.1rem", fontWeight: 600, color: "#111827" }}
-        >
+        <span className="text-lg font-semibold text-gray-900">
           {sectionLabel}
         </span>
       </button>
 
       {isCollapsed ? (
-        <div
-          style={{
-            paddingLeft: "28px",
-            color: "#6b7280",
-            fontSize: "0.9rem",
-          }}
-        >
+        <div className="pl-7 text-gray-500 text-sm">
           {fieldCount} field{fieldCount !== 1 ? "s" : ""} collapsed
         </div>
       ) : (
-        <div
-          style={{
-            paddingLeft: "28px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "24px",
-          }}
-        >
+        <div className="pl-7 flex flex-col gap-6">
           {props.renderAllItems(combinedSectionItems, props.allFieldsInScope)}
         </div>
       )}
@@ -1943,7 +1903,7 @@ export function ProcedureForm({
   const allRootFieldsForLogic = rootFields || [];
 
   return (
-    <div className="flex flex-col gap-24">
+    <div className="flex flex-col gap-6">
       {renderAllItems(combinedRootItems, allRootFieldsForLogic)}
 
       {/* Render Sections */}

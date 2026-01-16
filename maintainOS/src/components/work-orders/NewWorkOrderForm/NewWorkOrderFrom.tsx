@@ -545,9 +545,10 @@ export function NewWorkOrderForm({
   if (loading || isProcedureLoading)
     return (<div className="flex flex-col items-center justify-center h-full gap-2 text-gray-500"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /><p className="text-sm font-medium">Loading...</p></div>);
 
-  if (currentPanel === 'time') return <TimeOverviewPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={existingWorkOrder} workOrderId={activeId} />;
-  if (currentPanel === 'cost') return <OtherCostsPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={existingWorkOrder} workOrderId={activeId} />;
-  if (currentPanel === 'parts') return <UpdatePartsPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={existingWorkOrder} workOrderId={activeId} />;
+  // ✅ FIX: Use 'originalData' (fetched state) instead of 'existingWorkOrder' (prop) to ensure Edit Mode has data
+  if (currentPanel === 'time') return <TimeOverviewPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={originalData} workOrderId={activeId} />;
+  if (currentPanel === 'cost') return <OtherCostsPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={originalData} workOrderId={activeId} />;
+  if (currentPanel === 'parts') return <UpdatePartsPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={originalData} workOrderId={activeId} />;
 
   return (
     <>
@@ -587,7 +588,10 @@ export function NewWorkOrderForm({
             partIds={partIds} onPartSelect={(val) => setPartIds(val as string[])} partOptions={partOptions} isPartsLoading={false} onFetchParts={() => handleFetch("parts", setPartOptions)} onCreatePart={() => toast("Open Create Part Modal")}
             vendorIds={vendorIds} onVendorSelect={(val) => setVendorIds(val as string[])} vendorOptions={vendorOptions} isVendorsLoading={false} onFetchVendors={() => handleFetch("vendors", setVendorOptions)} onCreateVendor={() => toast("Open Create Vendor Modal")}
             activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown}
-            onPanelClick={setCurrentPanel} isEditMode={isEditing} partUsages={existingWorkOrder?.partUsages}
+            onPanelClick={setCurrentPanel} isEditMode={isEditing} 
+            partUsages={originalData?.partUsages}
+            timeEntries={originalData?.timeEntries}
+            otherCosts={originalData?.otherCosts}
           />
         </div>
         <div className="sticky bottom-0 flex items-center justify-end gap-3 border-t bg-white px-6 py-4">

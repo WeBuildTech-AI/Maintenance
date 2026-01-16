@@ -91,7 +91,7 @@ export const assetService = {
   },
 
   fetchDeleteAsset: async (): Promise<AssetResponse[]> => {
-    const res = await api.get(`/assets/deleted`);
+    const res = await api.get(`/assets/deleted/all`);
     return res.data;
   },
 

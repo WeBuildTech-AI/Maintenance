@@ -7,12 +7,35 @@ import { AssetDetailContent } from "./AssetDetailContent";
 import { AssetDetailHeader } from "./AssetDetailHeader";
 import { MapPin, History, ArrowRight } from "lucide-react";
 import { formatDate } from "../../utils/Date";
-// import { workOrderService } from "../../../store/workOrders"; // Unused import removed
-
 // ✅ DIRECT IMPORT to avoid circular dependency
 import { assetService } from "../../../store/assets/assets.service";
-import type { AssetLog } from "../../../store/assets/assets.types";
 import Loader from "../../Loader/Loader";
+// ✅ Import API for fetching users
+import api from "../../../store/auth/auth.service";
+
+// ✅ Define Interface locally to match your JSON Response exactly
+interface AssetLogUser {
+  id: string;
+  fullName: string;
+  email: string;
+}
+
+interface AssetLog {
+  id: string;
+  assetId: string;
+  userId: string;
+  previousStatus: string;
+  status: string;
+  notes: string | null;
+  since: string;
+  to: string | null;
+  downtimeType: string | null;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+  updatedBy: string;
+  user?: AssetLogUser; // Nested user object
+}
 
 interface Asset {
   id: number | string;
@@ -49,17 +72,55 @@ export const AssetDetail: FC<AssetDetailProps> = ({
   showDeleted,
 }) => {
   const [showHistory, setShowHistory] = useState<boolean>(false);
+  
+  // ✅ State for User Names (Top Header)
   const [createdUserName, setCreatedUserName] = useState<string>("Loading...");
-  // const [updatedUserName, setUpdatedUserName] = useState<string>("Loading...");
+  const [updatedUserName, setUpdatedUserName] = useState<string>("Loading...");
 
   // ✅ New State for Logs
   const [historyLogs, setHistoryLogs] = useState<AssetLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
 
-  // Fetch user names (Existing Logic)
+  // ✅ Fetch User Names Effect (Real API Call)
   useEffect(() => {
-    if(asset.createdBy) setCreatedUserName("User"); 
-  }, [asset]);
+    const fetchUserNames = async () => {
+      // 1. Fetch Created By
+      if (asset?.createdBy) {
+        if (asset.createdBy.length > 20) {
+          try {
+            const res = await api.get(`/users/${asset.createdBy}`);
+            setCreatedUserName(res.data?.fullName || "Unknown");
+          } catch (error) {
+            console.error("Failed to fetch createdBy user", error);
+            setCreatedUserName("Unknown");
+          }
+        } else {
+           setCreatedUserName(asset.createdBy);
+        }
+      } else {
+        setCreatedUserName("System");
+      }
+
+      // 2. Fetch Updated By
+      if (asset?.updatedBy) {
+        if (asset.updatedBy.length > 20) {
+          try {
+            const res = await api.get(`/users/${asset.updatedBy}`);
+            setUpdatedUserName(res.data?.fullName || "Unknown");
+          } catch (error) {
+            console.error("Failed to fetch updatedBy user", error);
+            setUpdatedUserName("Unknown");
+          }
+        } else {
+            setUpdatedUserName(asset.updatedBy);
+        }
+      } else {
+        setUpdatedUserName("System");
+      }
+    };
+
+    fetchUserNames();
+  }, [asset?.createdBy, asset?.updatedBy]);
 
   // ✅ NEW: Fetch Logs when History Tab is opened
   useEffect(() => {
@@ -67,13 +128,19 @@ export const AssetDetail: FC<AssetDetailProps> = ({
       if (showHistory && asset?.id) {
         setLoadingLogs(true);
         try {
-          console.log("Fetching History Logs for:", asset.id);
           const res = await assetService.fetchAssetStatusLog(asset.id.toString());
-          if (res && res.logs) {
+          
+          // ✅ Debugging: Check console to see if logs are coming
+          // console.log("Logs Response:", res);
+
+          if (res && Array.isArray(res.logs)) {
             setHistoryLogs(res.logs);
+          } else {
+            setHistoryLogs([]);
           }
         } catch (error) {
           console.error("Failed to fetch history logs", error);
+          setHistoryLogs([]);
         } finally {
           setLoadingLogs(false);
         }
@@ -82,16 +149,6 @@ export const AssetDetail: FC<AssetDetailProps> = ({
 
     fetchHistory();
   }, [showHistory, asset?.id]);
-
-  const renderInitials = (text: string) =>
-    text && text !== "Loading..."
-      ? text
-          .split(" ")
-          .map((p) => p[0])
-          .slice(0, 2)
-          .join("")
-          .toUpperCase()
-      : "NA";
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -160,7 +217,9 @@ export const AssetDetail: FC<AssetDetailProps> = ({
                   </div>
                   
                   <p className="text-sm text-gray-600 mt-2">
-                    Status changed by <span className="font-medium text-gray-900">{log.user?.fullName || "System"}</span>
+                    Status changed by <span className="font-medium text-gray-900">
+                      {log.user?.fullName || "System"}
+                    </span>
                   </p>
                   
                   {log.downtimeType && (
@@ -183,7 +242,7 @@ export const AssetDetail: FC<AssetDetailProps> = ({
           asset={asset}
           setSeeMoreAssetStatus={setSeeMoreAssetStatus}
           createdUser={createdUserName}
-          updatedUser={"..."}
+          updatedUser={updatedUserName}
         />
       )}
     </div>

@@ -46,6 +46,7 @@ import UpdatePartsPanel from "../../panels/UpdatePartsPanel";
 import { CommentsSection } from "../../ToDoView/CommentsSection";
 import { NewWorkOrderForm } from "../../NewWorkOrderForm/NewWorkOrderFrom";
 import { LinkedProcedurePreview } from "../../ToDoView/LinkedProcedurePreview"; // Ensure this path is correct
+import { procedureService } from "../../../../store/procedures/procedures.service"; // Import Service
 
 // --- HELPER FUNCTIONS ---
 
@@ -97,12 +98,27 @@ const formatDate = (dateString: string | undefined, includeTime = false) => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-const renderClickableList = (items: any[]) => {
+// ✅ UPDATED: Render List with Navigation Support
+const renderClickableList = (
+  items: any[], 
+  navigate?: any, 
+  linkGenerator?: (id: string) => string, 
+  key = "name"
+) => {
   if (!items || !Array.isArray(items) || items.length === 0) return "—";
   return items.map((item, i) => (
     <span key={item.id || i}>
-      <span className="text-blue-600 hover:underline cursor-pointer">
-        {item.name || item.title || item.fullName || "Unknown"}
+      <span 
+        onClick={(e) => {
+          if (navigate && linkGenerator && item.id) {
+             e.preventDefault();
+             e.stopPropagation();
+             navigate(linkGenerator(item.id));
+          }
+        }}
+        className={navigate && linkGenerator ? "text-blue-600 hover:underline cursor-pointer" : ""}
+      >
+        {item[key] || item.name || item.title || item.fullName || "View Item"}
       </span>
       {i < items.length - 1 && ", "}
     </span>
@@ -138,11 +154,74 @@ export default function WorkOrderDetailModal({
     workOrderId: workOrder?.id,
     workOrderTitle: workOrder?.title 
   });
+  
+  const navigate = useNavigate();
+  const [fetchedProcedures, setFetchedProcedures] = useState<any[]>([]); // Store fetched procedures
+
+  // ✅ EFFECT: Fetch Procedures if IDs exist but bodies don't
+  useEffect(() => {
+    if (!workOrder || !open) return;
+    
+    const fetchMissingProcedures = async () => {
+      // Check if we have IDs but no matching detailed objects
+      // OR if the detailed objects are just placeholders (didn't have titles)
+      const needsFetch = 
+        workOrder.procedureIds?.length > 0 && 
+        (!workOrder.procedures || workOrder.procedures.length === 0);
+
+      if (needsFetch) {
+        try {
+          // Avoid refetching if we already have them for this WO
+          if (fetchedProcedures.length > 0 && fetchedProcedures[0].id === workOrder.procedureIds[0]) return;
+          
+          const promises = workOrder.procedureIds.map((id: string) => procedureService.fetchProcedureById(id));
+          const results = await Promise.all(promises);
+          setFetchedProcedures(results);
+        } catch (err) {
+          console.error("Failed to fetch linked procedures", err);
+        }
+      } else {
+         setFetchedProcedures([]); // Reset if not needed
+      }
+    };
+
+    fetchMissingProcedures();
+  }, [workOrder, open]);
+
+
+  // ✅ POLYFILL: Ensure procedures are visible even if only IDs exist
+  const safeWorkOrder = useMemo(() => {
+    if (!workOrder) return null;
+    const wo = { ...workOrder };
+
+    // 1. Use existing procedures if valid
+    if (wo.procedures && wo.procedures.length > 0) {
+        return wo;
+    }
+    
+    // 2. Use Fetched Procedures if available
+    if (fetchedProcedures.length > 0) {
+        wo.procedures = fetchedProcedures;
+        return wo;
+    }
+
+    // 3. Fallback: Polyfill procedures if missing but IDs exist
+    if (wo.procedureIds && wo.procedureIds.length > 0) {
+      wo.procedures = wo.procedureIds.map((id: string) => ({
+        id,
+        title: "View Procedure", // Placeholder until fetch completes
+        name: "View Procedure" 
+      }));
+    }
+    return wo;
+  }, [workOrder, fetchedProcedures]);
+
+  if (!open || !safeWorkOrder) return null; // Use safeWorkOrder for early return check
 
   if (!open || !workOrder) return null;
 
   const dispatch = useDispatch<AppDispatch>();
-  const navigate = useNavigate();
+
   const user = useSelector((state: any) => state.auth?.user);
 
   // --- STATE ---
@@ -202,27 +281,46 @@ export default function WorkOrderDetailModal({
   // 3. Scroll Listener for Floating Procedure Button
   useEffect(() => {
     const container = scrollContainerRef.current;
-    const target = procedureRef.current;
-
-    if (!container || !target || !hasProcedure) {
+    
+    // Safety check - if no procedure, ensure false
+    if (!hasProcedure) {
       if (isProcedureVisible) setIsProcedureVisible(false);
       return;
     }
 
     const handleScroll = () => {
-      if (!procedureRef.current || !scrollContainerRef.current) return;
-      const containerRect = scrollContainerRef.current.getBoundingClientRect();
-      const targetRect = procedureRef.current.getBoundingClientRect();
+      const containerEl = scrollContainerRef.current;
+      const targetEl = procedureRef.current;
+      
+      if (!containerEl || !targetEl) return;
 
-      const isReached = targetRect.top <= containerRect.bottom - 100;
-      if (isReached !== isProcedureVisible) {
-        setIsProcedureVisible(isReached);
+      const containerRect = containerEl.getBoundingClientRect();
+      const targetRect = targetEl.getBoundingClientRect();
+
+      // Check 1: Is the top of the procedure section visible?
+      // Use a smaller offset (40px) to make it trigger closer to actual visibility
+      const isVisibleByPosition = targetRect.top <= containerRect.bottom - 40;
+      
+      // Check 2: Are we scrolled to the very bottom?
+      // This handles cases where the content fits or is short, preventing position check from failing
+      const isScrolledToBottom = Math.ceil(containerEl.scrollTop + containerEl.clientHeight) >= containerEl.scrollHeight - 20;
+
+      const shouldBeVisible = isVisibleByPosition || isScrolledToBottom;
+
+      if (shouldBeVisible !== isProcedureVisible) {
+        setIsProcedureVisible(shouldBeVisible);
       }
     };
 
-    container.addEventListener("scroll", handleScroll);
-    handleScroll();
-    return () => container.removeEventListener("scroll", handleScroll);
+    if (container) {
+       container.addEventListener("scroll", handleScroll);
+       // Initial check
+       handleScroll();
+    }
+    
+    return () => {
+       if (container) container.removeEventListener("scroll", handleScroll);
+    };
   }, [panel, hasProcedure, isProcedureVisible]);
 
   // 4. Fetch User Names
@@ -424,7 +522,7 @@ export default function WorkOrderDetailModal({
                 {hasProcedure && isProcedureVisible ? (
                   <button
                     onClick={() => handleStatusChange("done")}
-                    className="bg-green-600 rounded-md px-4 py-2 border border-green-600 text-white flex items-center gap-2 cursor-pointer hover:bg-green-700 font-medium shadow-sm animate-in fade-in zoom-in duration-200"
+                    className="bg-green-600 rounded-md px-4 py-2 border border-green-600  flex items-center gap-2 cursor-pointer hover:bg-green-700 font-medium shadow-sm animate-in fade-in zoom-in duration-200"
                   >
                     <CheckCircle2 size={18} /> Mark as Done
                   </button>
@@ -577,17 +675,17 @@ export default function WorkOrderDetailModal({
 
                         {/* Details Grid (Clickable) */}
                         <div className="border-t pt-6 grid grid-cols-2 gap-6">
-                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Assets</h3><div className="flex items-start gap-2"><Factory className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.assets)}</span></div></div>
-                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Location</h3><div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-gray-400" /><span className="text-sm text-blue-600 hover:underline cursor-pointer">{workOrder.location?.name || workOrder.location || "N/A"}</span></div></div>
+                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Assets</h3><div className="flex items-start gap-2"><Factory className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.assets, navigate, (id) => `/assets?assetId=${id}`)}</span></div></div>
+                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Location</h3><div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-gray-400" /><span className="text-sm"><span onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (workOrder.location?.id) navigate(`/locations/${workOrder.location.id}`); }} className={workOrder.location?.id ? "text-blue-600 hover:underline cursor-pointer" : ""}>{workOrder.location?.name || workOrder.location || "N/A"}</span></span></div></div>
                             <div><h3 className="text-sm font-medium mb-2 text-gray-700">Estimated Time</h3><div className="flex items-center gap-2"><Clock className="h-4 w-4 text-gray-400" /><span className="text-sm text-gray-900">{formatDecimalHoursToDisplay(workOrder.estimatedTimeHours)}</span></div></div>
                             <div><h3 className="text-sm font-medium mb-2 text-gray-700">Work Type</h3><div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-gray-400" /><span className="text-sm text-gray-900">{workOrder.workType || "N/A"}</span></div></div>
-                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Teams</h3><div className="flex items-start gap-2"><Users className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.teams)}</span></div></div>
-                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Vendors</h3><div className="flex items-start gap-2"><Briefcase className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.vendors)}</span></div></div>
-                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Parts</h3><div className="flex items-start gap-2"><Wrench className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.parts)}</span></div></div>
-                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Categories</h3><div className="flex items-start gap-2"><Layers className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.categories)}</span></div></div>
-                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Procedures</h3><div className="flex items-start gap-2"><ClipboardList className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.procedures)}</span></div></div>
+                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Teams</h3><div className="flex items-start gap-2"><Users className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.teams, navigate, (id) => `/teams/${id}`)}</span></div></div>
+                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Vendors</h3><div className="flex items-start gap-2"><Briefcase className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.vendors, navigate, (id) => `/vendors/${id}`)}</span></div></div>
+                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Parts</h3><div className="flex items-start gap-2"><Wrench className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.parts, navigate, (id) => `/inventory/${id}`)}</span></div></div>
+                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Categories</h3><div className="flex items-start gap-2"><Layers className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.categories, navigate, (id) => `/categories/${id}`)}</span></div></div>
+                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Procedures</h3><div className="flex items-start gap-2"><ClipboardList className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(safeWorkOrder.procedures, navigate, (id) => `/library/${id}`, "title")}</span></div></div>
                             {workOrder.meters && workOrder.meters.length > 0 && (
-                                <div><h3 className="text-sm font-medium mb-2 text-gray-700">Meters</h3><div className="flex items-start gap-2"><Gauge className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{workOrder.meters.map((meter: any, i: number) => (<span key={meter.id || i}><span className="text-blue-600 hover:underline cursor-pointer">{meter.name || "Unknown Meter"}</span>{i < workOrder.meters.length - 1 && ", "}</span>))}</span></div></div>
+                                <div><h3 className="text-sm font-medium mb-2 text-gray-700">Meters</h3><div className="flex items-start gap-2"><Gauge className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{workOrder.meters.map((meter: any, i: number) => (<span key={meter.id || i}><span onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/meters?meterId=${meter.id}`); }} className="text-blue-600 hover:underline cursor-pointer">{meter.name || "Unknown Meter"}</span>{i < workOrder.meters.length - 1 && ", "}</span>))}</span></div></div>
                             )}
                         </div>
 
@@ -669,7 +767,13 @@ export default function WorkOrderDetailModal({
                         {hasProcedure && (
                             <div className="border-t pt-6" ref={procedureRef}>
                                 <h3 className="text-lg font-bold text-gray-900 mb-4">Procedure</h3>
-                                <LinkedProcedurePreview selectedWorkOrder={workOrder} />
+                                <LinkedProcedurePreview 
+                                  selectedWorkOrder={{
+                                    ...workOrder,
+                                    // Polyfill already handled by safeWorkOrder, but keeping check safe
+                                    procedures: safeWorkOrder.procedures
+                                  }} 
+                                />
                             </div>
                         )}
 
