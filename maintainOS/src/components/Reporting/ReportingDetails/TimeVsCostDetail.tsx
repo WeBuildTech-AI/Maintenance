@@ -15,6 +15,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { format, parseISO, isValid } from "date-fns";
+import { formatINR } from "../../utils/dollar_rupee_convert";
 
 interface Props {
   filters: Record<string, any>;
@@ -232,7 +233,7 @@ export function TimeVsCostDetail({ filters, dateRange }: Props) {
           <div className="bg-emerald-50 rounded-lg p-3 border-2 border-emerald-300 text-center">
             <div className="text-sm font-semibold text-emerald-700 mb-1">Total Reported Cost</div>
             <div className="flex items-baseline justify-center">
-              <span className="text-3xl font-bold text-gray-900">${Math.round(totals.totalCost).toLocaleString()}</span>
+              <span className="text-3xl font-bold text-gray-900">{formatINR(Math.round(totals.totalCost))}</span>
             </div>
           </div>
         </div>
@@ -253,7 +254,7 @@ export function TimeVsCostDetail({ filters, dateRange }: Props) {
                 }}
                 formatter={(value: any, name: string) => {
                   if (name === "Time (hours)") return [`${value}h`, "Time"];
-                  if (name === "Cost ($)") return [`$${value}`, "Cost"];
+                  if (name === "Cost (₹)") return [`${formatINR(value)}`, "Cost"];
                   return value;
                 }}
               />
@@ -261,7 +262,8 @@ export function TimeVsCostDetail({ filters, dateRange }: Props) {
               {viewMode === "time" ? (
                 <Bar dataKey="timeHours" fill="#3b82f6" name="Time (hours)" />
               ) : (
-                <Bar dataKey="cost" fill="#10b981" name="Cost ($)" />
+                <Bar dataKey="cost" fill="#10b981" name="Cost (₹)" />
+
               )}
             </BarChart>
           </ResponsiveContainer>
@@ -336,9 +338,10 @@ export function TimeVsCostDetail({ filters, dateRange }: Props) {
                 <span className="ml-1 text-gray-400">⇅</span>
               </th>
               <th className="text-left px-6 py-3 text-sm font-medium text-gray-600">
-                Cost ($)
+                Cost (₹)
                 <span className="ml-1 text-gray-400">⇅</span>
               </th>
+              
             </tr>
           </thead>
           <tbody>
@@ -363,7 +366,7 @@ export function TimeVsCostDetail({ filters, dateRange }: Props) {
                     {row.timeHours.toFixed(1)}h
                   </td>
                   <td className="px-6 py-4 text-blue-600 font-medium">
-                    ${Math.round(row.cost)}
+                    {formatINR(Math.round(row.cost))}
                   </td>
                 </tr>
               ))
