@@ -202,27 +202,46 @@ export default function WorkOrderDetailModal({
   // 3. Scroll Listener for Floating Procedure Button
   useEffect(() => {
     const container = scrollContainerRef.current;
-    const target = procedureRef.current;
-
-    if (!container || !target || !hasProcedure) {
+    
+    // Safety check - if no procedure, ensure false
+    if (!hasProcedure) {
       if (isProcedureVisible) setIsProcedureVisible(false);
       return;
     }
 
     const handleScroll = () => {
-      if (!procedureRef.current || !scrollContainerRef.current) return;
-      const containerRect = scrollContainerRef.current.getBoundingClientRect();
-      const targetRect = procedureRef.current.getBoundingClientRect();
+      const containerEl = scrollContainerRef.current;
+      const targetEl = procedureRef.current;
+      
+      if (!containerEl || !targetEl) return;
 
-      const isReached = targetRect.top <= containerRect.bottom - 100;
-      if (isReached !== isProcedureVisible) {
-        setIsProcedureVisible(isReached);
+      const containerRect = containerEl.getBoundingClientRect();
+      const targetRect = targetEl.getBoundingClientRect();
+
+      // Check 1: Is the top of the procedure section visible?
+      // Use a smaller offset (40px) to make it trigger closer to actual visibility
+      const isVisibleByPosition = targetRect.top <= containerRect.bottom - 40;
+      
+      // Check 2: Are we scrolled to the very bottom?
+      // This handles cases where the content fits or is short, preventing position check from failing
+      const isScrolledToBottom = Math.ceil(containerEl.scrollTop + containerEl.clientHeight) >= containerEl.scrollHeight - 20;
+
+      const shouldBeVisible = isVisibleByPosition || isScrolledToBottom;
+
+      if (shouldBeVisible !== isProcedureVisible) {
+        setIsProcedureVisible(shouldBeVisible);
       }
     };
 
-    container.addEventListener("scroll", handleScroll);
-    handleScroll();
-    return () => container.removeEventListener("scroll", handleScroll);
+    if (container) {
+       container.addEventListener("scroll", handleScroll);
+       // Initial check
+       handleScroll();
+    }
+    
+    return () => {
+       if (container) container.removeEventListener("scroll", handleScroll);
+    };
   }, [panel, hasProcedure, isProcedureVisible]);
 
   // 4. Fetch User Names
@@ -424,7 +443,7 @@ export default function WorkOrderDetailModal({
                 {hasProcedure && isProcedureVisible ? (
                   <button
                     onClick={() => handleStatusChange("done")}
-                    className="bg-green-600 rounded-md px-4 py-2 border border-green-600 text-white flex items-center gap-2 cursor-pointer hover:bg-green-700 font-medium shadow-sm animate-in fade-in zoom-in duration-200"
+                    className="bg-green-600 rounded-md px-4 py-2 border border-green-600  flex items-center gap-2 cursor-pointer hover:bg-green-700 font-medium shadow-sm animate-in fade-in zoom-in duration-200"
                   >
                     <CheckCircle2 size={18} /> Mark as Done
                   </button>
@@ -669,7 +688,15 @@ export default function WorkOrderDetailModal({
                         {hasProcedure && (
                             <div className="border-t pt-6" ref={procedureRef}>
                                 <h3 className="text-lg font-bold text-gray-900 mb-4">Procedure</h3>
-                                <LinkedProcedurePreview selectedWorkOrder={workOrder} />
+                                <LinkedProcedurePreview 
+                                  selectedWorkOrder={{
+                                    ...workOrder,
+                                    // Polyfill procedures if missing but IDs exist
+                                    procedures: (workOrder.procedures && workOrder.procedures.length > 0)
+                                      ? workOrder.procedures
+                                      : (workOrder.procedureIds || []).map((id: string) => ({ id }))
+                                  }} 
+                                />
                             </div>
                         )}
 
