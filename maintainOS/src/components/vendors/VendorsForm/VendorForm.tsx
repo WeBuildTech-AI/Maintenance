@@ -28,7 +28,20 @@ const hasArrayChanged = (current: string[], initial: string[] = []) => {
 
 // Helper to compare complex objects (Contacts)
 const hasContactsChanged = (current: any[], initial: any[] = []) => {
-    return JSON.stringify(current) !== JSON.stringify(initial);
+    const normalize = (c: any) => ({
+        fullName: c.fullName || c.name || "",
+        role: c.role || "",
+        email: c.email || "",
+        phoneNumber: c.phoneNumber || c.phone || "",
+        phoneExtension: c.phoneExtension || "",
+        contactColor: c.contactColor || c.color || "#EC4899",
+        id: (c.id || c._id || "").toString(),
+    });
+
+    const c1 = current.map(normalize);
+    const c2 = initial.map(normalize);
+
+    return JSON.stringify(c1) !== JSON.stringify(c2);
 };
 
 export function VendorForm({
@@ -225,17 +238,24 @@ export function VendorForm({
     if (!isEdit || hasContactsChanged(contacts, initialData?.contacts)) {
         hasChanges = true;
         if (Array.isArray(contacts)) {
-            contacts.forEach((contact, index) => {
-                formData.append(`contacts[${index}][fullName]`, contact.fullName || "");
-                formData.append(`contacts[${index}][role]`, contact.role || "");
-                formData.append(`contacts[${index}][email]`, contact.email || "");
-                formData.append(`contacts[${index}][phoneNumber]`, contact.phoneNumber || "");
-                formData.append(`contacts[${index}][phoneExtension]`, contact.phoneExtension || "");
-                formData.append(`contacts[${index}][contactColor]`, contact.contactColor || "#EC4899");
-                if ((contact as any).id) {
-                     formData.append(`contacts[${index}][id]`, (contact as any).id);
-                }
-            });
+            // Signal empty array if it's now empty
+            if (contacts.length === 0) {
+                 formData.append("contacts", "[]"); 
+            } else {
+                contacts.forEach((contact, index) => {
+                    formData.append(`contacts[${index}][fullName]`, contact.fullName || "");
+                    formData.append(`contacts[${index}][role]`, contact.role || "");
+                    formData.append(`contacts[${index}][email]`, contact.email || "");
+                    formData.append(`contacts[${index}][phoneNumber]`, contact.phoneNumber || "");
+                    formData.append(`contacts[${index}][phoneExtension]`, contact.phoneExtension || "");
+                    formData.append(`contacts[${index}][contactColor]`, contact.contactColor || "#EC4899");
+                    if ((contact as any).id) {
+                         formData.append(`contacts[${index}][id]`, (contact as any).id);
+                    } else if ((contact as any)._id) {
+                         formData.append(`contacts[${index}][id]`, (contact as any)._id);
+                    }
+                });
+            }
         }
     }
 
