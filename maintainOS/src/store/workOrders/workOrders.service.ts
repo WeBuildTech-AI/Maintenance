@@ -243,7 +243,7 @@ export const workOrderService = {
   },
 
   deleteWorkOrder: async (id: string): Promise<void> => {
-    await api.delete(`/work-orders/${id}`);
+    await api.delete(`/work-orders/batch-delete`, { data: { ids: [id] } });
   },
 
   fetchUserById: async (id: string): Promise<any> => {

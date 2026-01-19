@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Pencil, MoreVertical, Clock, Building2, Gauge, Timer, Play, FileText, ExternalLink, Loader2 } from "lucide-react";
@@ -27,6 +25,20 @@ export function AutomationDetails({ automation, onEdit }: AutomationDetailsProps
   const [meterUnit, setMeterUnit] = useState<string>("");
 
   const moreButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Helper function to get asset name from ID
+  const getAssetName = (assetId: string | undefined) => {
+    if (!assetId || assetId === "{{asset.id}}") return "Trigger Asset";
+    const asset = selectedAutomation?.previewContext?.assets?.find((a: any) => a.id === assetId);
+    return asset?.name || assetId;
+  };
+
+  // Helper function to get meter name from ID
+  const getMeterName = (meterId: string | undefined) => {
+    if (!meterId) return "N/A";
+    const meter = selectedAutomation?.previewContext?.meters?.find((m: any) => m.id === meterId);
+    return meter?.name || meterId;
+  };
 
   // Fetch meter unit when automation is loaded
   useEffect(() => {
@@ -170,45 +182,95 @@ export function AutomationDetails({ automation, onEdit }: AutomationDetailsProps
             <div className="w-6 h-6 rounded bg-gray-100 flex items-center justify-center">
               <FileText className="w-4 h-4 text-gray-600" />
             </div>
-            <h3 className="text-sm font-semibold text-gray-900">Trigger</h3>
+            <h3 className="text-sm font-semibold text-gray-900">Triggers ({selectedAutomation?.triggers?.when?.length || 0})</h3>
           </div>
 
-          {/* Trigger Condition */}
-          <div className="ml-3 relative">
-            <div className="absolute left-0 top-0 bottom-0 w-px bg-orange-200" style={{ left: '4px' }} />
-            
-            <div className="pl-6">
-              <div className="bg-orange-50 border border-orange-200 rounded-md p-3 mb-4">
-                <p className="text-sm text-gray-800">
-                  <span className="font-medium text-orange-700">When: </span>
-                  {automation.trigger.condition} {meterUnit}
-                </p>
-              </div>
+          {/* Render all triggers */}
+          <div className="space-y-4">
+            {selectedAutomation?.triggers?.when?.map((trigger: any, index: number) => {
+              const operatorMap: Record<string, string> = {
+                lt: "less than",
+                gt: "greater than",
+                eq: "equals",
+                lte: "less than or equal to",
+                gte: "greater than or equal to",
+                ne: "not equal to",
+              };
 
-              {/* Trigger Details */}
-              <div className="space-y-3 border border-gray-200 rounded-md p-4">
-                <div className="flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm text-gray-600">Assets:</span>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs font-medium">
-                    <Building2 className="w-3 h-3" />
-                    {automation.trigger.assets}
-                  </span>
-                </div>
+              const scopeMap: Record<string, string> = {
+                one_reading: "One reading",
+                multiple_readings: "Multiple readings",
+                reading_longer_than: "A reading longer than",
+              };
 
-                <div className="flex items-center gap-2">
-                  <Gauge className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm text-gray-600">Meters:</span>
-                  <span className="text-sm text-gray-800">{automation.trigger.meters}</span>
-                </div>
+              const firstRule = trigger.rules?.[0];
+              const operator = firstRule ? operatorMap[firstRule.op] || firstRule.op : "";
+              const value = firstRule?.value || "";
+              const scope = scopeMap[trigger.scope?.type] || trigger.scope?.type || "One reading";
 
-                <div className="flex items-center gap-2">
-                  <Timer className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm text-gray-600">For:</span>
-                  <span className="text-sm text-gray-800">{automation.trigger.frequency}</span>
+              return (
+                <div key={index} className="ml-3 relative">
+                  <div className="absolute left-0 top-0 bottom-0 w-px bg-orange-200" style={{ left: '4px' }} />
+                  
+                  <div className="pl-6">
+                    <div className="bg-orange-50 border border-orange-200 rounded-md p-3 mb-4">
+                      <p className="text-sm text-gray-800">
+                        <span className="font-medium text-orange-700">When #{index + 1}: </span>
+                        Meter Reading {operator} {value} {meterUnit}
+                        {trigger.rules?.length > 1 && (
+                          <span className="text-xs text-orange-600 ml-2">+{trigger.rules.length - 1} more condition(s)</span>
+                        )}
+                      </p>
+                    </div>
+
+                    {/* Trigger Details */}
+                    <div className="space-y-3 border border-gray-200 rounded-md p-4">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm text-gray-600">Asset:</span>
+                        {trigger.assetId && trigger.assetId !== "{{asset.id}}" ? (
+                          <button
+                            onClick={() => navigate(`/assets?assetId=${trigger.assetId}&page=1&limit=50`)}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs font-medium hover:bg-orange-200 transition-colors"
+                          >
+                            <Building2 className="w-3 h-3" />
+                            {getAssetName(trigger.assetId)}
+                            <ExternalLink className="w-3 h-3" />
+                          </button>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs font-medium">
+                            <Building2 className="w-3 h-3" />
+                            Trigger Asset
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Gauge className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm text-gray-600">Meter:</span>
+                        {trigger.meterId ? (
+                          <button
+                            onClick={() => navigate(`/meters?meterId=${trigger.meterId}`)}
+                            className="text-sm text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1"
+                          >
+                            {getMeterName(trigger.meterId)}
+                            <ExternalLink className="w-3 h-3" />
+                          </button>
+                        ) : (
+                          <span className="text-sm text-gray-800">N/A</span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Timer className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm text-gray-600">For:</span>
+                        <span className="text-sm text-gray-800">{scope}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              );
+            })}
           </div>
         </div>
 
@@ -218,33 +280,97 @@ export function AutomationDetails({ automation, onEdit }: AutomationDetailsProps
             <div className="w-6 h-6 rounded bg-orange-100 flex items-center justify-center">
               <Play className="w-4 h-4 text-orange-600" />
             </div>
-            <h3 className="text-sm font-semibold text-gray-900">Action</h3>
+            <h3 className="text-sm font-semibold text-gray-900">Actions ({selectedAutomation?.actions?.length || 0})</h3>
           </div>
 
-          <div className="ml-3 pl-6">
-            <div className="bg-orange-50 border border-orange-200 rounded-md p-3 mb-4">
-              <p className="text-sm font-medium text-gray-800">
-                {automation.action.type}
-              </p>
-              <p className="text-sm text-orange-600 mt-1">
-                {automation.action.frequency}
-              </p>
-            </div>
+          {/* Render all actions */}
+          <div className="space-y-4">
+            {selectedAutomation?.actions?.map((action: any, index: number) => {
+              const actionTypeMap: Record<string, string> = {
+                create_work_order: "Create Work Order",
+                change_asset_status: "Change Asset Status",
+              };
 
-            {/* Action Details */}
-            <div className="space-y-3 border border-gray-200 rounded-md p-4">
-              <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-gray-500" />
-                <span className="text-sm text-gray-600">Title:</span>
-                <span className="text-sm text-gray-800">{automation.action.title}</span>
-              </div>
+              const actionType = actionTypeMap[action.type] || action.type;
 
-              <div className="flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-gray-500" />
-                <span className="text-sm text-gray-600">Asset:</span>
-                <span className="text-sm text-gray-800">{automation.action.asset}</span>
-              </div>
-            </div>
+              return (
+                <div key={index} className="ml-3 pl-6">
+                  <div className="bg-orange-50 border border-orange-200 rounded-md p-3 mb-4">
+                    <p className="text-sm font-medium text-gray-800">
+                      Action #{index + 1}: {actionType}
+                    </p>
+                    <p className="text-sm text-orange-600 mt-1">
+                      Immediate
+                    </p>
+                  </div>
+
+                  {/* Action Details */}
+                  <div className="space-y-3 border border-gray-200 rounded-md p-4">
+                    {action.type === "create_work_order" && (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm text-gray-600">Title:</span>
+                          <span className="text-sm text-gray-800">{action.title || "N/A"}</span>
+                        </div>
+
+                        {action.description && (
+                          <div className="flex items-start gap-2">
+                            <FileText className="w-4 h-4 text-gray-500 mt-0.5" />
+                            <span className="text-sm text-gray-600">Description:</span>
+                            <span className="text-sm text-gray-800">{action.description}</span>
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-2">
+                          <Building2 className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm text-gray-600">Asset:</span>
+                          {action.assetId && action.assetId !== "{{asset.id}}" ? (
+                            <button
+                              onClick={() => navigate(`/assets?assetId=${action.assetId}&page=1&limit=50`)}
+                              className="text-sm text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1"
+                            >
+                              {getAssetName(action.assetId)}
+                              <ExternalLink className="w-3 h-3" />
+                            </button>
+                          ) : (
+                            <span className="text-sm text-gray-800">Trigger Asset</span>
+                          )}
+                        </div>
+                      </>
+                    )}
+
+                    {action.type === "change_asset_status" && (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <Building2 className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm text-gray-600">Asset:</span>
+                          {action.assetId && action.assetId !== "{{asset.id}}" ? (
+                            <button
+                              onClick={() => navigate(`/assets?assetId=${action.assetId}&page=1&limit=50`)}
+                              className="text-sm text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1"
+                            >
+                              {getAssetName(action.assetId)}
+                              <ExternalLink className="w-3 h-3" />
+                            </button>
+                          ) : (
+                            <span className="text-sm text-gray-800">Trigger Asset</span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Play className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm text-gray-600">Status:</span>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium capitalize">
+                            {action.status || "N/A"}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 

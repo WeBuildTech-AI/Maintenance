@@ -40,7 +40,9 @@ export const partService = {
   },
 
   deletePart: async (id: string): Promise<void> => {
-    await api.delete(`/parts/${id}`);
+    await api.delete(`parts/batch-delete`, {
+      data: { ids: [id] },
+    });
   },
 
   fetchPartsName: async (): Promise<PartResponse[]> => {

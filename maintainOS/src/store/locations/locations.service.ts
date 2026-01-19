@@ -49,7 +49,9 @@ export const locationService = {
   },
 
   deleteLocation: async (id: string): Promise<void> => {
-    await api.delete(`/locations/${id}`);
+    await api.delete(`locations/batch-delete`, {
+      data: { ids: [id] },
+    });
   },
 
   batchDeleteLocation: async (ids: string[]): Promise<void> => {
@@ -64,7 +66,7 @@ export const locationService = {
   },
 
   restoreLocationData: async (id: string): Promise<LocationResponse> => {
-    const res = await api.patch(`/locations/${id}/restore`);
+    const res = await api.patch(`locations/${id}/restore`);
     return res.data;
   },
 };

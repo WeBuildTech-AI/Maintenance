@@ -52,7 +52,9 @@ export const meterService = {
   },
 
   deleteMeter: async (id: string): Promise<void> => {
-    await api.delete(`/meters/${id}`);
+    await api.delete(`meters/batch-delete`, {
+      data: { ids: [id] },
+    });
   },
 
   updateMeterReading: async (

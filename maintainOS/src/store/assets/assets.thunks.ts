@@ -259,3 +259,17 @@ export const restoreAssetData = createAsyncThunk(
     }
   }
 );
+
+export const updateAssetLogDuration = createAsyncThunk(
+  "assets/updateAssetLogDuration",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      await assetService.updateAssetLogDuration(id);
+      return id;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update asset log duration"
+      );
+    }
+  }
+);

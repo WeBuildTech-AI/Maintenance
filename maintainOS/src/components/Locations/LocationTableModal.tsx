@@ -13,7 +13,6 @@ interface LocationTableModalProps {
   data: any; // Full location object
   onClose: () => void;
   fetchData: () => void;
-  restoreData: string;
   showDeleted: boolean;
 }
 
@@ -21,7 +20,6 @@ const LocationTableModal: React.FC<LocationTableModalProps> = ({
   onClose,
   data,
   fetchData,
-  restoreData,
   showDeleted,
 }) => {
   // ✅ Switch between View and Edit Mode internally
@@ -133,7 +131,7 @@ const LocationTableModal: React.FC<LocationTableModalProps> = ({
               handleDeleteLocation={handleDeleteLocation}
               handleShowNewSubLocationForm={() => {}} 
               user={user}
-              restoreData={restoreData}
+              showDeleted={showDeleted}
               fetchLocation={fetchData}
               onClose={onClose}
               setShowSubLocation={() => {}}

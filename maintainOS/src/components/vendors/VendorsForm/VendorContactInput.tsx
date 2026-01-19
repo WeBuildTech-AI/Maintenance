@@ -15,9 +15,9 @@ export function VendorContactInput({ initialContacts = [], onContactsChange }: V
   const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // ✅ Sync initial data when editing
+  // ✅ Sync initial data when editing (Allow empty array)
   useEffect(() => {
-    if (initialContacts && initialContacts.length > 0) {
+    if (initialContacts) {
       setContacts(initialContacts);
     }
   }, [initialContacts]);
@@ -28,17 +28,22 @@ export function VendorContactInput({ initialContacts = [], onContactsChange }: V
   };
 
   const handleSaveContact = (newContact: ContactFormData) => {
-    const normalized: ContactFormData = {
+    const normalized: any = {
       fullName: newContact.fullName || "",
       role: newContact.role || "",
       email: newContact.email || "",
-      phoneNumber: newContact.phoneNumber || newContact.phone || "",
+      phoneNumber: newContact.phoneNumber || (newContact as any).phone || "",
       phoneExtension: newContact.phoneExtension || "",
       contactColor:
-        newContact.contactColor || newContact.contactColour || "#EC4899",
+        newContact.contactColor || (newContact as any).contactColour || "#EC4899",
     };
 
+    // ✅ PRESERVE ID if it's an edit
     if (editingIndex !== null) {
+      const original = contacts[editingIndex];
+      if ((original as any).id) normalized.id = (original as any).id;
+      if ((original as any)._id) normalized._id = (original as any)._id;
+
       const next = contacts.map((c, i) => (i === editingIndex ? normalized : c));
       syncUp(next);
       setEditingIndex(null);
@@ -89,8 +94,7 @@ export function VendorContactInput({ initialContacts = [], onContactsChange }: V
         {contacts.length > 0 && (
           <div className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm mt-4 mb-6">
             <div
-              className="overflow-x-auto"
-              style={{ scrollbarWidth: "thin", WebkitScrollbarWidth: "thin" }}
+              className={`overflow-x-auto`}
             >
               <style>{`
                 div::-webkit-scrollbar { height: 6px; }

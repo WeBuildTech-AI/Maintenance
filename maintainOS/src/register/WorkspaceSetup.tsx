@@ -1,6 +1,6 @@
 import { useState } from "react";
 import workspaceConfig from "./postVerifyWorkspaceSetup.ui.json";
-import "./index.css";
+import "../styles/theme.css";
 
 type Step = "step1" | "step2" | "step3" | "step4" | "step5";
 

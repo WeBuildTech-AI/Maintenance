@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import registerConfig from "./register.config.json";
-import "./index.css";
+import "../styles/theme.css";
 import { Link, useNavigate } from "react-router-dom";
 
 type AuthStep = "REGISTER" | "OTP";

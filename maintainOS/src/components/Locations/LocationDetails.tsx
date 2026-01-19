@@ -45,7 +45,7 @@ interface LocationDetailsProps {
   } | null;
   onEdit?: (location: any) => void;
   handleShowNewSubLocationForm: (show: boolean) => void;
-  restoreData: string;
+  showDeleted: boolean;
   fetchLocation: () => void;
   onClose: () => void;
   setShowSubLocation: (show: boolean) => void;
@@ -59,7 +59,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
   handleDeleteLocation,
   user,
   handleShowNewSubLocationForm,
-  restoreData,
+  showDeleted,
   fetchLocation,
   onClose,
   onSubLocationClick,
@@ -185,43 +185,57 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
             </Tooltip>
             
             {/* ✅ FIXED EDIT BUTTON LOGIC */}
-            <button
-              title="Edit"
-              className="flex cursor-pointer items-center gap-1 rounded-md border border-orange-600 px-3 py-1.5 text-orange-600 hover:bg-orange-50"
-              onClick={() => {
-                if (onEdit) {
-                  // If onEdit is provided (like in Modal), use it!
-                  onEdit(selectedLocation);
-                } else {
-                  // Fallback to navigation (like in Panel View)
-                  navigate(`/locations/${selectedLocation.id}/edit`);
-                }
-              }}
-            >
-              <Edit size={16} /> Edit
-            </button>
+            {!showDeleted && (
+              <>
+                <button
+                  title="Edit"
+                  className="flex cursor-pointer items-center gap-1 rounded-md border border-orange-600 px-3 py-1.5 text-orange-600 hover:bg-orange-50"
+                  onClick={() => {
+                    if (onEdit) {
+                      // If onEdit is provided (like in Modal), use it!
+                      onEdit(selectedLocation);
+                    } else {
+                      // Fallback to navigation (like in Panel View)
+                      navigate(`/locations/${selectedLocation.id}/edit`);
+                    }
+                  }}
+                >
+                  <Edit size={16} /> Edit
+                </button>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="mt-2">
-                <DropdownMenuItem onClick={() => setOpenDeleteModal(true)}>
-                  Delete
-                </DropdownMenuItem>
-                {restoreData && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="mt-2 text-sm">
+                    <DropdownMenuItem onClick={() => setOpenDeleteModal(true)}>
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
+
+            {showDeleted && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="mt-2 text-sm">
                   <DropdownMenuItem
                     onClick={() =>
                       handleRestoreLocationData(selectedLocation?.id)
                     }
                   >
-                    {restoreData}
+                    Restore
                   </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </div>
