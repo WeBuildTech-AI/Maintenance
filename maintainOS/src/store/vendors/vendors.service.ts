@@ -64,8 +64,10 @@ export const vendorService = {
   },
 
   batchDeleteVendor: async (ids: string[]): Promise<void> => {
+    // Force ids to be an array to avoid backend validation errors
+    const idsArray = Array.isArray(ids) ? ids : [ids];
     await api.delete(`vendors/batch-delete`, {
-      data: { ids: ids },
+      data: { ids: idsArray },
     });
   },
 

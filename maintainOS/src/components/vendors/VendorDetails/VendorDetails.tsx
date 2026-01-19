@@ -144,7 +144,7 @@ export default function VendorDetails({
   };
 
   const handleDeleteVendor = (id: string) => {
-    dispatch(deleteVendor(id))
+    dispatch(deleteVendor([id]))
       .unwrap()
       .then(() => {
         toast.success("Vendor deleted successfully!");
