@@ -29,14 +29,7 @@ import OtherCostsPanel from "./../panels/OtherCostsPanel";
 import UpdatePartsPanel from "./../panels/UpdatePartsPanel";
 import { locationService } from "../../../store/locations";
 
-// ✅ Helper: Forces UTC Date
-function parseDateInputToISO(input?: string): string | null {
-  if (!input) return null;
-  const date = new Date(input);
-  if (isNaN(date.getTime())) return null;
-  const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  return utcDate.toISOString();
-}
+
 
 // 🛠️ HELPER: UI String ("4:30") -> Backend Number (4.5)
 const parseTimeToDecimal = (timeStr: string): number => {
@@ -71,7 +64,8 @@ const getChangedFields = (original: any, current: any) => {
     // 1. Simple Fields
     const simpleFields = [
       "title", "description", "priority", "status", "workType", 
-      "locationId"
+      "locationId", 
+      "assetStatus", "assetDowntimeType", "assetStatusNotes", "assetStatusSince", "assetStatusTo"
     ];
 
     simpleFields.forEach((key) => {
@@ -170,7 +164,6 @@ export function NewWorkOrderForm({
   onCreate,
   existingWorkOrder,
   editId,
-  isEditMode: propIsEditMode,
   onCancel,
 }: {
   onCreate: () => void;
@@ -223,8 +216,16 @@ export function NewWorkOrderForm({
   
   const [teamIds, setTeamIds] = useState<string[]>([]);
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
+
   const [partIds, setPartIds] = useState<string[]>([]);
   const [vendorIds, setVendorIds] = useState<string[]>([]);
+
+  // ✅ Asset Status Extra Fields
+  const [assetStatus, setAssetStatus] = useState("");
+  const [assetDowntimeType, setAssetDowntimeType] = useState("");
+  const [assetStatusNotes, setAssetStatusNotes] = useState("");
+  const [assetStatusSince, setAssetStatusSince] = useState("");
+  const [assetStatusTo, setAssetStatusTo] = useState("");
 
   const [locationOptions, setLocationOptions] = useState<SelectOption[]>([]);
   const [assetOptions, setAssetOptions] = useState<SelectOption[]>([]);
@@ -369,10 +370,41 @@ export function NewWorkOrderForm({
           setEstimatedTime("");
       }
 
-      setDueDate(data.dueDate ? new Date(data.dueDate).toLocaleDateString("en-US") : "");
-      setStartDate(data.startDate ? new Date(data.startDate).toLocaleDateString("en-US") : "");
+      setDueDate(data.dueDate || "");
+      setStartDate(data.startDate || "");
       
-      setSelectedWorkType(data.workType || "Reactive");
+      // ✅ Asset Status prefill logic - Check root first, fall back to first asset's status
+      let prefilledStatus = data.assetStatus;
+      if (!prefilledStatus && data.assets && data.assets.length > 0) {
+          prefilledStatus = data.assets[0].status; // "offline", "online", etc.
+      }
+      if (prefilledStatus) {
+          // Ensure Title Case for internal UI state comparison (if options are Title Case)
+          // But options in AssetsAndProcedures are: "Online", "Offline", "Do not track"
+          // Backend sends "offline", "in_progress" (for WO status)
+          // Map backend "offline" -> "Offline"
+          const mapStatus = (s: string) => {
+              if (s.toLowerCase() === 'offline') return 'Offline';
+              if (s.toLowerCase() === 'online') return 'Online';
+              if (s.toLowerCase() === 'do_not_track' || s.toLowerCase() === 'do not track') return 'Do not track';
+              return s;
+          };
+          setAssetStatus(mapStatus(prefilledStatus));
+      }
+
+      // Other Asset Fields
+      if (data.assetDowntimeType) setAssetDowntimeType(data.assetDowntimeType);
+      if (data.assetStatusNotes) setAssetStatusNotes(data.assetStatusNotes);
+      if (data.assetStatusSince) setAssetStatusSince(data.assetStatusSince);
+      if (data.assetStatusTo) setAssetStatusTo(data.assetStatusTo);
+      
+      // WorkType - Backend sends "reactive", UI expects "Reactive"
+      if (data.workType) {
+          setSelectedWorkType(data.workType.charAt(0).toUpperCase() + data.workType.slice(1));
+      } else {
+          setSelectedWorkType("Reactive");
+      }
+
       setSelectedPriority(data.priority ? data.priority.charAt(0).toUpperCase() + data.priority.slice(1) : "None");
       setQrCodeValue(data.qrCode || "");
       
@@ -470,7 +502,8 @@ export function NewWorkOrderForm({
   const handleEditLinkedProcedure = () => {
     if (linkedProcedure?.id) {
       const currentFormState = {
-        workOrderName, description, locationId, estimatedTime, assetIds, selectedUsers, dueDate, startDate, selectedWorkType, selectedPriority, qrCodeValue, recurrenceRule, teamIds, categoryIds, partIds, vendorIds, procedureId: linkedProcedure.id 
+        workOrderName, description, locationId, estimatedTime, assetIds, selectedUsers, dueDate, startDate, selectedWorkType, selectedPriority, qrCodeValue, recurrenceRule, teamIds, categoryIds, partIds, vendorIds, procedureId: linkedProcedure.id,
+        assetStatus, assetDowntimeType, assetStatusNotes, assetStatusSince, assetStatusTo
       };
       navigate(`/library/${linkedProcedure.id}/edit`, { state: { returnPath: location.pathname, previousFormState: currentFormState } });
     }
@@ -498,15 +531,24 @@ export function NewWorkOrderForm({
         description,
         // ✅ FIX: Use 'open' only for CREATE. For EDIT, use existing status.
         status: isEditing ? originalData.status : "open",
-        workType: selectedWorkType,
+        workType: selectedWorkType ? selectedWorkType.toLowerCase() : "reactive", // Fallback and ensure lowercase
         qrCode: qrCodeValue || undefined,
         priority: { None: "low", Low: "low", Medium: "medium", High: "high", Urgent: "urgent" }[selectedPriority] || "low",
         locationId: locationId || null,
-        estimatedTimeHours: parseTimeToDecimal(estimatedTime),
+        estimatedTimeHours: parseTimeToDecimal(estimatedTime), // Returns number
         assetIds, vendorIds, partIds, assignedTeamIds: teamIds, categoryIds, assigneeIds: selectedUsers,
         procedureIds: linkedProcedure ? [linkedProcedure.id] : [],
-        dueDate: parseDateInputToISO(dueDate),
-        startDate: parseDateInputToISO(startDate),
+        // ✅ Date Fix: Pass state directly (should be ISO string from AssignmentAndScheduling)
+        dueDate: dueDate || null, 
+        startDate: startDate || null,
+        
+        // ✅ Asset Status Fields - Allow Notes & Since for ALL statuses (Online, Do Not Track, Offline)
+        // STRICT: Backend expects lowercase status (e.g. "offline")
+        assetStatus: assetStatus ? assetStatus.toLowerCase() : null,
+        assetDowntimeType: assetStatus === 'Offline' ? assetDowntimeType : null,
+        assetStatusNotes: assetStatus ? assetStatusNotes : null,
+        assetStatusSince: assetStatus ? assetStatusSince : null,
+        assetStatusTo: assetStatus === 'Offline' ? assetStatusTo : null
       };
 
       if (recurrenceRule) {
@@ -525,6 +567,15 @@ export function NewWorkOrderForm({
             if (onCreate) onCreate(); else navigate("/work-orders");
             return;
         }
+
+        // ✅ CRITICAL FIX: If Asset Status (or related fields) changed, we MUST send 'assetIds'
+        // so the backend knows WHICH assets to update contextually.
+        const isStatusChanging = payload.assetStatus || payload.assetDowntimeType || payload.assetStatusNotes || payload.assetStatusSince || payload.assetStatusTo;
+        if (isStatusChanging && !payload.assetIds) {
+             console.log("⚠️ Asset Status changing, forcing assetIds inclusion.");
+             payload.assetIds = formState.assetIds;
+        }
+
         await dispatch(updateWorkOrder({ id: activeId, authorId, data: payload })).unwrap();
         toast.success("✅ Work order updated successfully");
       } else {
@@ -571,14 +622,21 @@ export function NewWorkOrderForm({
             assetOptions={assetOptions} isAssetsLoading={false} onFetchAssets={() => handleFetch("assets", setAssetOptions)} onCreateAsset={() => toast("Open Create Asset Modal")}
             activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown}
             linkedProcedure={linkedProcedure} onRemoveProcedure={() => setLinkedProcedure(null)} onPreviewProcedure={() => setIsPreviewOpen(true)} onEditProcedure={handleEditLinkedProcedure} onOpenProcedureModal={() => setIsAddProcModalOpen(true)} setLinkedProcedure={setLinkedProcedure} 
+            
+            // ✅ Asset Status Props
+            assetStatus={assetStatus} setAssetStatus={setAssetStatus}
+            assetDowntimeType={assetDowntimeType} setAssetDowntimeType={setAssetDowntimeType}
+            assetStatusNotes={assetStatusNotes} setAssetStatusNotes={setAssetStatusNotes}
+            assetStatusSince={assetStatusSince} setAssetStatusSince={setAssetStatusSince}
+            assetStatusTo={assetStatusTo} setAssetStatusTo={setAssetStatusTo}
           />
           <AssignmentAndScheduling
             selectedUsers={selectedUsers} setSelectedUsers={setSelectedUsers}
             dueDate={dueDate} setDueDate={setDueDate} startDate={startDate} setStartDate={setStartDate}
             selectedWorkType={selectedWorkType} setSelectedWorkType={setSelectedWorkType}
-            recurrenceRule={recurrenceRule} setRecurrenceRule={setRecurrenceRule} recurrence="Custom" setRecurrence={() => {}}
+            recurrenceRule={recurrenceRule} setRecurrenceRule={setRecurrenceRule}
             onOpenInviteModal={() => toast("Invite modal open")} initialAssignees={assigneeOptions}
-            estimatedTime={estimatedTime} setEstimatedTime={setEstimatedTime}
+
           />
           <WorkOrderClassificationAndLinks
             selectedPriority={selectedPriority} onPriorityChange={setSelectedPriority}

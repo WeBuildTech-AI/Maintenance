@@ -11,7 +11,11 @@ import { DynamicSelect } from "./DynamicSelect";
  * Safely parses a string into a Date object.
  * Returns a new Date object (Local time) if the string is empty or invalid.
  */
-const safeParseDate = (dateStr: string) => {
+/**
+ * Safely parses a string into a Date object.
+ * Returns a new Date object (Local time) if the string is empty or invalid.
+ */
+export const safeParseDate = (dateStr: string) => {
   if (!dateStr) return new Date();
   const d = new Date(dateStr);
   return isNaN(d.getTime()) ? new Date() : d;
@@ -20,7 +24,7 @@ const safeParseDate = (dateStr: string) => {
 /**
  * Extracts "HH:mm" (Local Time) from an ISO string for the Time Picker UI.
  */
-const getTimeString = (dateStr: string) => {
+export const getTimeString = (dateStr: string) => {
   if (!dateStr) return "00:00";
   const d = safeParseDate(dateStr);
   const hours = d.getHours().toString().padStart(2, "0");
@@ -31,7 +35,7 @@ const getTimeString = (dateStr: string) => {
 /**
  * Formats the date string to "MM/DD/YYYY" for the Input field.
  */
-const getDisplayDate = (dateStr: string) => {
+export const getDisplayDate = (dateStr: string) => {
   if (!dateStr) return "";
   const d = safeParseDate(dateStr);
   return d.toLocaleDateString("en-US"); // e.g., 1/2/2026
@@ -41,7 +45,7 @@ const getDisplayDate = (dateStr: string) => {
  * ✅ CRITICAL FIX: Constructs a secure ISO string.
  * This function guarantees that the Local Time you pick is preserved when converting to the ISO Payload.
  */
-const constructSecureISO = (currentIso: string, newDate?: Date, newTimeStr?: string) => {
+export const constructSecureISO = (currentIso: string, newDate?: Date, newTimeStr?: string) => {
   // 1. Create a Base Date object from the current value
   let d = safeParseDate(currentIso);
 
@@ -94,7 +98,7 @@ interface TimePickerProps {
   className?: string;
 }
 
-const TimePickerInput = ({ value, onChange, onClear, className }: TimePickerProps) => {
+export const TimePickerInput = ({ value, onChange, onClear, className }: TimePickerProps) => {
   const [isOpenH, setIsOpenH] = useState(false);
   const [isOpenM, setIsOpenM] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -148,14 +152,14 @@ const TimePickerInput = ({ value, onChange, onClear, className }: TimePickerProp
         <X className="h-4 w-4" />
       </div>
       {isOpenH && (
-        <div ref={hourListRef} className="absolute top-full left-0 mt-1 w-20 bg-white border border-gray-200 rounded-lg shadow-xl z-[9999]" style={{ maxHeight: "145px", overflowY: "auto" }}>
+        <div ref={hourListRef} className="absolute top-full left-0 mt-1 w-20 bg-white border border-gray-200 rounded-lg shadow-xl" style={{ maxHeight: "145px", overflowY: "auto", zIndex: 99999 }}>
           {Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, "0")).map((h) => (
             <div key={h} data-value={h} onClick={(e) => { e.stopPropagation(); onChange(`${h}:${minutes || "00"}`); setIsOpenH(false); }} className={`px-3 py-2 text-sm cursor-pointer text-center hover:bg-gray-50 ${hours === h ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}>{h}</div>
           ))}
         </div>
       )}
       {isOpenM && (
-        <div ref={minuteListRef} className="absolute top-full left-10 mt-1 w-20 bg-white border border-gray-200 rounded-lg shadow-xl z-[9999]" style={{ maxHeight: "145px", overflowY: "auto" }}>
+        <div ref={minuteListRef} className="absolute top-full left-10 mt-1 w-20 bg-white border border-gray-200 rounded-lg shadow-xl" style={{ maxHeight: "145px", overflowY: "auto", zIndex: 99999 }}>
           {Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, "0")).map((m) => (
             <div key={m} data-value={m} onClick={(e) => { e.stopPropagation(); onChange(`${hours || "00"}:${m}`); setIsOpenM(false); }} className={`px-3 py-2 text-sm cursor-pointer text-center hover:bg-gray-50 ${minutes === m ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}>{m}</div>
           ))}
@@ -323,6 +327,13 @@ export function AssignmentAndScheduling({
   const handleStartTimeChange = (time: string) => {
     const iso = constructSecureISO(startDate, undefined, time);
     setStartDate(iso);
+  };
+
+  const toggleDay = (dayIndex: number) => {
+    setSelectedWeekDays((prev) => {
+      if (prev.includes(dayIndex)) return prev.filter((d) => d !== dayIndex);
+      return [...prev, dayIndex].sort((a, b) => a - b);
+    });
   };
 
   return (

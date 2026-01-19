@@ -3,6 +3,13 @@ import { Plus, ClipboardList, Pencil, Trash2 } from "lucide-react";
 import { DynamicSelect, type SelectOption } from "./DynamicSelect";
 import AddAssetsModal from "../WorkloadView/Modal/AddAssetsModal";
 import AddProcedureModal from "../WorkloadView/Modal/AddProcedureModal";
+import { DayPicker } from "react-day-picker";
+import "react-day-picker/dist/style.css";
+import { Clock } from "lucide-react";
+import { 
+  safeParseDate, getTimeString, getDisplayDate, constructSecureISO, TimePickerInput 
+} from "./AssignmentAndScheduling";
+import { useRef } from "react";
 
 interface Props {
   assetIds: string[];
@@ -25,6 +32,15 @@ interface Props {
   onOpenProcedureModal: () => void;
   setLinkedProcedure: (p: any) => void;
   onEditProcedure?: () => void;
+
+  assetDowntimeType?: string;
+  setAssetDowntimeType?: (value: string) => void;
+  assetStatusNotes?: string;
+  setAssetStatusNotes?: (value: string) => void;
+  assetStatusSince?: string;
+  setAssetStatusSince?: (value: string) => void;
+  assetStatusTo?: string;
+  setAssetStatusTo?: (value: string) => void;
 }
 
 // ✅ Options defined outside to prevent re-renders
@@ -53,14 +69,49 @@ export function AssetsAndProcedures({
   onPreviewProcedure,
   onOpenProcedureModal,
   setLinkedProcedure,
-  onEditProcedure 
+  
+  onEditProcedure,
+  
+  assetDowntimeType, setAssetDowntimeType,
+  assetStatusNotes, setAssetStatusNotes,
+  assetStatusSince, setAssetStatusSince,
+  assetStatusTo, setAssetStatusTo
 }: Props) {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showProcedureModal, setShowProcedureModal] = useState(false);
+  
+  // Date Picker States
+  const [showSinceCalendar, setShowSinceCalendar] = useState(false);
+  const [showToCalendar, setShowToCalendar] = useState(false);
+  const sinceRef = useRef<HTMLDivElement>(null);
+  const toRef = useRef<HTMLDivElement>(null);
+
+  // Close calendars on click outside
+  useEffect(() => {
+      const handleClickOutside = (e: MouseEvent) => {
+          if (sinceRef.current && !sinceRef.current.contains(e.target as Node)) setShowSinceCalendar(false);
+          if (toRef.current && !toRef.current.contains(e.target as Node)) setShowToCalendar(false);
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Time Input toggles (auto-show if time exists or user clicks add)
+  const [showSinceTime, setShowSinceTime] = useState(!!assetStatusSince && assetStatusSince.includes("T"));
+  const [showToTime, setShowToTime] = useState(!!assetStatusTo && assetStatusTo.includes("T"));
+
+  useEffect(() => {
+     if (assetStatusSince && assetStatusSince.includes("T") && !showSinceTime) setShowSinceTime(true);
+  }, [assetStatusSince]);
+
+  useEffect(() => {
+     if (assetStatusTo && assetStatusTo.includes("T") && !showToTime) setShowToTime(true);
+  }, [assetStatusTo]);
 
   // ✅ Local state to ensure immediate UI updates for Asset Status
   const [internalAssetStatus, setInternalAssetStatus] = useState(assetStatus || "");
+  const [hasInteracted, setHasInteracted] = useState(false);
 
   // ✅ Sync local state if parent prop changes
   useEffect(() => {
@@ -102,6 +153,7 @@ export function AssetsAndProcedures({
                  // Reset status if all assets are removed
                  if (Array.isArray(val) && val.length === 0) {
                    setInternalAssetStatus(""); // Clear local
+                   setHasInteracted(true);
                    if (setAssetStatus) setAssetStatus(""); // Clear parent
                  }
               }}
@@ -128,6 +180,7 @@ export function AssetsAndProcedures({
                 onSelect={(val) => {
                   const newVal = val as string;
                   setInternalAssetStatus(newVal); // ✅ Update local immediately
+                  setHasInteracted(true); // ✅ Mark as interacted to show detailed view
                   if (setAssetStatus) setAssetStatus(newVal); // Update parent
                 }}
                 onFetch={() => {}} 
@@ -138,6 +191,136 @@ export function AssetsAndProcedures({
             </div>
           )}
         </div>
+
+        {/* 🔻 EXTENDED ASSET STATUS FIELDS (Detailed Breakdown) */}
+        {/* Only show if status is selected AND user has interacted (or it's a new selection) OR explicit request to view details (affordance could be added later) */}
+        {internalAssetStatus && internalAssetStatus !== "" && hasInteracted && (
+           <div className={`mt-6 p-6 rounded-xl shadow-sm border animate-in fade-in slide-in-from-top-2 ${
+               internalAssetStatus === 'Offline' ? 'bg-red-50/50 border-red-100' : 'bg-gray-50/50 border-gray-100'
+           }`}>
+             <div className="flex items-center gap-2 mb-6">
+                <div className={`h-2.5 w-2.5 rounded-full animate-pulse ${
+                    internalAssetStatus === 'Offline' ? 'bg-red-500' : 
+                    internalAssetStatus === 'Online' ? 'bg-green-500' : 'bg-gray-500'
+                }`} />
+                <h4 className={`text-sm font-semibold ${
+                    internalAssetStatus === 'Offline' ? 'text-red-900' : 'text-gray-900'
+                }`}>
+                    {internalAssetStatus === 'Offline' ? 'Downtime Details' : 'Status Details'}
+                </h4>
+             </div>
+
+             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {/* 1. Downtime Type - ONLY FOR OFFLINE */}
+                {internalAssetStatus === 'Offline' && (
+                    <div className={`relative ${activeDropdown === 'downtime-type' ? 'z-[100]' : 'z-[60]'}`}>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2.5">Downtime Type</label>
+                        <DynamicSelect
+                            name="downtime-type"
+                            placeholder="Select type"
+                            options={[{ id: "unplanned", name: "Unplanned Repairs" }, { id: "planned", name: "Planned Maintenance" }]}
+                            loading={false}
+                            value={assetDowntimeType || ""}
+                            onSelect={(val) => setAssetDowntimeType && setAssetDowntimeType(val as string)}
+                            onFetch={() => {}}
+                            activeDropdown={activeDropdown}
+                            setActiveDropdown={setActiveDropdown}
+                            className="w-full bg-white border-gray-300 shadow-sm rounded-lg"
+                        />
+                    </div>
+                )}
+
+                {/* 2. Status Since - ALWAYS VISIBLE - High Z-Index for Time dropdown */}
+                <div className="relative z-[50]" ref={sinceRef}>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2.5">Since</label>
+                    <div className="flex items-center gap-2">
+                        <div className="relative flex-1 group">
+                            <input 
+                                type="text" readOnly 
+                                value={getDisplayDate(assetStatusSince || "")} 
+                                onClick={() => setShowSinceCalendar(!showSinceCalendar)}
+                                placeholder="Select Date"
+                                className="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none cursor-pointer shadow-sm transition-all text-gray-700 font-medium"
+                            />
+                            {showSinceCalendar && (
+                                <div className="absolute z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl p-3 animate-in fade-in zoom-in-95 left-0">
+                                    <DayPicker mode="single" selected={safeParseDate(assetStatusSince || "")} onSelect={(d) => { if(d && setAssetStatusSince) { setAssetStatusSince(constructSecureISO(assetStatusSince || "", d, undefined)); setShowSinceCalendar(false); } }} />
+                                </div>
+                            )}
+                        </div>
+                        {showSinceTime ? (
+                            <div className="w-28 relative">
+                                <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                                <TimePickerInput 
+                                    value={getTimeString(assetStatusSince || "")} 
+                                    onChange={(t) => setAssetStatusSince && setAssetStatusSince(constructSecureISO(assetStatusSince || "", undefined, t))}
+                                    onClear={() => { setShowSinceTime(false); setAssetStatusSince && setAssetStatusSince(constructSecureISO(assetStatusSince || "", undefined, "00:00")); }}
+                                    className="h-10 border-gray-300 focus-within:border-blue-500 focus-within:ring-blue-500 rounded-lg shadow-sm pl-8"
+                                />
+                            </div>
+                        ) : (
+                            <button type="button" onClick={() => setShowSinceTime(true)} className="h-10 px-3 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors whitespace-nowrap">
+                                + Time
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* 3. Estimated Up - ONLY FOR OFFLINE - Lower Z-Index */}
+                {internalAssetStatus === 'Offline' && (
+                    <div className="relative z-[40]" ref={toRef}>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2.5">Estimated Up</label>
+                        <div className="flex items-center gap-2">
+                            <div className="relative flex-1 group">
+                                <input 
+                                    type="text" readOnly 
+                                    value={getDisplayDate(assetStatusTo || "")} 
+                                    onClick={() => setShowToCalendar(!showToCalendar)}
+                                    placeholder="Select Date"
+                                    className="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none cursor-pointer shadow-sm transition-all text-gray-700 font-medium"
+                                />
+                                {showToCalendar && (
+                                    <div className="absolute z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl p-3 animate-in fade-in zoom-in-95 left-0">
+                                        <DayPicker mode="single" selected={safeParseDate(assetStatusTo || "")} onSelect={(d) => { if(d && setAssetStatusTo) { setAssetStatusTo(constructSecureISO(assetStatusTo || "", d, undefined)); setShowToCalendar(false); } }} />
+                                    </div>
+                                )}
+                            </div>
+                            {showToTime ? (
+                                <div className="w-28 relative">
+                                    <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                                    <TimePickerInput 
+                                        value={getTimeString(assetStatusTo || "")} 
+                                        onChange={(t) => setAssetStatusTo && setAssetStatusTo(constructSecureISO(assetStatusTo || "", undefined, t))}
+                                        onClear={() => { setShowToTime(false); setAssetStatusTo && setAssetStatusTo(constructSecureISO(assetStatusTo || "", undefined, "00:00")); }}
+                                        className="h-10 border-gray-300 focus-within:border-blue-500 focus-within:ring-blue-500 rounded-lg shadow-sm pl-8"
+                                    />
+                                </div>
+                            ) : (
+                                <button type="button" onClick={() => setShowToTime(true)} className="h-10 px-3 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors whitespace-nowrap">
+                                    + Time
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+             </div>
+
+             {/* Notes - ALWAYS VISIBLE */}
+             <div className="mt-6">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2.5">Status Notes</label>
+                <div className="relative">
+                    <textarea 
+                        value={assetStatusNotes || ""} 
+                        onChange={(e) => setAssetStatusNotes && setAssetStatusNotes(e.target.value)}
+                        placeholder={internalAssetStatus === 'Offline' ? "Describe the issue causing downtime..." : "Add any notes regarding the asset status..."}
+                        className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none resize-none h-24 shadow-sm transition-all"
+                    />
+                </div>
+             </div>
+           </div>
+        )}
 
         {/* Add Assets Button */}
         <button
