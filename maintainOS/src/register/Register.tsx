@@ -67,9 +67,9 @@ export default function Register() {
   };
 
   return (
-    <div className="register-page-container">
+    <div className="register-page-container" id="register-page-container">
       {/* Left Section - Image Panel */}
-      <div className="register-left-panel">
+      <div className="register-left-panel" id="register-left-panel">
         <img 
           src={leftSection.image.src} 
           alt="Maintenance Worker" 
@@ -84,10 +84,12 @@ export default function Register() {
       </div>
 
       {/* Right Section - Conditional Rendering */}
-      <div className="register-right-panel">
+      {/* Right Section - Conditional Rendering */}
+      <div className="register-right-panel" id="register-right-panel">
         {authStep === "REGISTER" ? (
           // REGISTER FORM
-          <div className="register-form-container">
+          // REGISTER FORM
+          <div className="register-form-container" id="register-form-container">
             {/* Header */}
             <div className="register-form-header">
               <h2 className="register-form-title">{header.title.text}</h2>
@@ -98,7 +100,8 @@ export default function Register() {
             </div>
 
             {/* Form Fields */}
-            <form onSubmit={handleCreateAccount}>
+            {/* Form Fields */}
+            <form onSubmit={handleCreateAccount} id="register-form">
               <div className="register-input-group">
                 {form.fields.map((field: any, index: number) => {
                   if (field.row) {
@@ -106,14 +109,15 @@ export default function Register() {
                       <div key={index} className="register-input-row">
                         {field.row.map((subField: any, subIndex: number) => (
                           <div key={subIndex} className="register-input-wrapper half-width">
-                            <input
-                              type={subField.type}
-                              name={subField.name}
-                              placeholder={subField.placeholder}
-                              className="register-input"
-                              value={formData[subField.name] || ""}
-                              onChange={handleChange}
-                            />
+                              <input
+                                id={`register-input-${subField.name}`}
+                                type={subField.type}
+                                name={subField.name}
+                                placeholder={subField.placeholder}
+                                className="register-input"
+                                value={formData[subField.name] || ""}
+                                onChange={handleChange}
+                              />
                           </div>
                         ))}
                       </div>
@@ -123,6 +127,7 @@ export default function Register() {
                     return (
                       <div key={index} className="register-input-wrapper">
                         <select
+                          id={`register-select-${field.name}`}
                           name={field.name}
                           className="register-input register-select"
                           value={formData[field.name] || ""}
@@ -139,6 +144,7 @@ export default function Register() {
                   return (
                     <div key={index} className="register-input-wrapper">
                       <input
+                        id={`register-input-${field.name}`}
                         type={field.type}
                         name={field.name}
                         placeholder={field.placeholder}
@@ -153,15 +159,15 @@ export default function Register() {
 
               {/* Checkbox */}
               <div className="register-checkbox-container">
-                <input type="checkbox" className="register-checkbox" id="terms" />
-                <label htmlFor="terms">
+                <input type="checkbox" className="register-checkbox" id="register-terms" />
+                <label htmlFor="register-terms">
                   {checkbox.label.replace(checkbox.linkText, "")}
                   <a href="#" className="register-link">{checkbox.linkText}</a>
                 </label>
               </div>
 
               {/* Submit Button */}
-              <button type="submit" className="register-btn-primary">
+              <button type="submit" className="register-btn-primary" id="register-submit-btn">
                 {primaryButton.text}
               </button>
 
@@ -176,7 +182,9 @@ export default function Register() {
           </div>
         ) : (
           // OTP FORM
+          // OTP FORM
           <div 
+            id="otp-form-container"
             className="otp-form-container"
             style={{ 
               width: otpForm.container.width, 
@@ -229,6 +237,7 @@ export default function Register() {
               {otp.map((digit, index) => (
                 <input
                   key={index}
+                  id={`otp-input-${index}`}
                   type="text"
                   maxLength={1}
                   className="otp-input-box"
@@ -270,6 +279,7 @@ export default function Register() {
             </div>
 
             <button 
+              id="otp-verify-btn"
               className="otp-verify-btn"
               onClick={handleVerifyOtp}
               style={{

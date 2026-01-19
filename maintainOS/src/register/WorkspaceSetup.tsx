@@ -49,11 +49,13 @@ export default function WorkspaceSetup() {
   
   return (
     <div 
+      id="workspace-setup-page"
       className="workspace-setup-container"
       style={{ backgroundColor: page.backgroundColor }}
     >
       {/* FIXED HEADER */}
       <div 
+        id="workspace-header"
         className="workspace-setup-header"
         style={{
           paddingTop: page.padding.top,
@@ -62,7 +64,7 @@ export default function WorkspaceSetup() {
         }}
       >
         {/* Progress Bar */}
-        <div style={{ 
+        <div id="workspace-progress-bar" style={{ 
           display: 'flex', 
           alignItems: 'center', 
           gap: '16px',
@@ -134,6 +136,7 @@ export default function WorkspaceSetup() {
 
       {/* SCROLLABLE CONTENT */}
       <div 
+        id="workspace-content"
         className="workspace-setup-content"
         style={{
           paddingLeft: page.padding.left,
@@ -156,6 +159,7 @@ export default function WorkspaceSetup() {
               <div>
                 <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Company name<span style={{color:'red'}}>*</span></label>
                 <input 
+                  id="workspace-company-name"
                   type="text" 
                   placeholder="Enter Company name" 
                   style={form.input} 
@@ -166,6 +170,7 @@ export default function WorkspaceSetup() {
               <div>
                 <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Industry<span style={{color:'red'}}>*</span></label>
                 <input 
+                  id="workspace-industry"
                   type="text" 
                   placeholder="Enter Location Name" 
                   style={form.input} 
@@ -176,6 +181,7 @@ export default function WorkspaceSetup() {
                <div>
                 <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Head Quarter<span style={{color:'red'}}>*</span></label>
                 <input 
+                  id="workspace-head-quarter"
                   type="text" 
                   placeholder="Enter City" 
                   style={form.input} 
@@ -186,6 +192,7 @@ export default function WorkspaceSetup() {
               <div>
                 <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Address<span style={{color:'red'}}>*</span></label>
                 <input 
+                  id="workspace-address"
                   type="text" 
                   placeholder="Enter Address" 
                   style={form.input} 
@@ -215,11 +222,11 @@ export default function WorkspaceSetup() {
               <div style={{ display: 'flex', gap: twoColumnRow.gap }}>
                 <div style={{ flex: 1 }}>
                    <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Factory<span style={{color:'red'}}>*</span></label>
-                   <input type="text" placeholder="Enter Factory Name" style={{ ...form.input, width: '100%' }} />
+                   <input id="workspace-factory-name" type="text" placeholder="Enter Factory Name" style={{ ...form.input, width: '100%' }} />
                 </div>
                 <div style={{ flex: 1 }}>
                    <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Address<span style={{color:'red'}}>*</span></label>
-                   <input type="text" placeholder="Enter Address" style={{ ...form.input, width: '100%' }} />
+                   <input id="workspace-factory-address" type="text" placeholder="Enter Address" style={{ ...form.input, width: '100%' }} />
                 </div>
               </div>
 
@@ -227,6 +234,7 @@ export default function WorkspaceSetup() {
                <div>
                 <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Description</label>
                 <input 
+                  id="workspace-description"
                   type="text" 
                   placeholder="Add Description" 
                   style={{ ...form.input, ...textarea }} 
@@ -236,7 +244,9 @@ export default function WorkspaceSetup() {
               {/* Add Image - Upload Box */}
                <div>
                 <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Add Image</label>
-                <div style={{ 
+                <div 
+                  id="workspace-image-upload"
+                  style={{ 
                   height: uploadBox.height, 
                   border: uploadBox.border, 
                   borderRadius: uploadBox.borderRadius, 
@@ -282,6 +292,7 @@ export default function WorkspaceSetup() {
               <div>
                 <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Production Line Name<span style={{color:'red'}}>*</span></label>
                 <input 
+                  id="workspace-production-line-name"
                   type="text" 
                   placeholder="Enter Asset Name" 
                   style={form.input} 
@@ -292,11 +303,11 @@ export default function WorkspaceSetup() {
               <div style={{ display: 'flex', gap: twoColumnRow.gap }}>
                 <div style={{ flex: 1 }}>
                    <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Line Code / ID<span style={{color:'red'}}>*</span></label>
-                   <input type="text" placeholder="Enter Line Code / ID" style={{ ...form.input, width: '100%' }} />
+                   <input id="workspace-line-code" type="text" placeholder="Enter Line Code / ID" style={{ ...form.input, width: '100%' }} />
                 </div>
                 <div style={{ flex: 1 }}>
                    <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Line Type</label>
-                   <input type="text" placeholder="Select Line Type" style={{ ...form.input, width: '100%' }} />
+                   <input id="workspace-line-type" type="text" placeholder="Select Line Type" style={{ ...form.input, width: '100%' }} />
                 </div>
               </div>
 
@@ -304,11 +315,11 @@ export default function WorkspaceSetup() {
               <div style={{ display: 'flex', gap: twoColumnRow.gap }}>
                 <div style={{ flex: 1 }}>
                    <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Factory / Sites<span style={{color:'red'}}>*</span></label>
-                   <input type="text" placeholder="Select Factory" style={{ ...form.input, width: '100%' }} />
+                   <input id="workspace-factory-site" type="text" placeholder="Select Factory" style={{ ...form.input, width: '100%' }} />
                 </div>
                 <div style={{ flex: 1 }}>
                    <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Area / Zone<span style={{color:'red'}}>*</span></label>
-                   <input type="text" placeholder="Select Area / Zone" style={{ ...form.input, width: '100%' }} />
+                   <input id="workspace-area-zone" type="text" placeholder="Select Area / Zone" style={{ ...form.input, width: '100%' }} />
                 </div>
               </div>
 
@@ -316,11 +327,11 @@ export default function WorkspaceSetup() {
               <div style={{ display: 'flex', gap: twoColumnRow.gap }}>
                 <div style={{ flex: 1 }}>
                    <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Operation Status</label>
-                   <input type="text" placeholder="Select Status" style={{ ...form.input, width: '100%' }} />
+                   <input id="workspace-operation-status" type="text" placeholder="Select Status" style={{ ...form.input, width: '100%' }} />
                 </div>
                 <div style={{ flex: 1 }}>
                    <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Primary Output</label>
-                   <input type="text" placeholder="Enter Primary Output" style={{ ...form.input, width: '100%' }} />
+                   <input id="workspace-primary-output" type="text" placeholder="Enter Primary Output" style={{ ...form.input, width: '100%' }} />
                 </div>
               </div>
 
@@ -328,11 +339,11 @@ export default function WorkspaceSetup() {
               <div style={{ display: 'flex', gap: twoColumnRow.gap }}>
                 <div style={{ flex: 1 }}>
                    <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Designed Capacity</label>
-                   <input type="text" placeholder="Units / Hour" style={{ ...form.input, width: '100%' }} />
+                   <input id="workspace-designed-capacity" type="text" placeholder="Units / Hour" style={{ ...form.input, width: '100%' }} />
                 </div>
                 <div style={{ flex: 1 }}>
                    <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Line Criticality<span style={{color:'red'}}>*</span></label>
-                   <input type="text" placeholder="Select Criticality" style={{ ...form.input, width: '100%' }} />
+                   <input id="workspace-line-criticality" type="text" placeholder="Select Criticality" style={{ ...form.input, width: '100%' }} />
                 </div>
               </div>
 
@@ -340,39 +351,39 @@ export default function WorkspaceSetup() {
               <div style={{ display: 'flex', gap: twoColumnRow.gap }}>
                 <div style={{ flex: 1 }}>
                    <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Regulatory Standards</label>
-                   <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                   <div id="workspace-regulatory-standards" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                       <input type="checkbox" /> ISO
+                       <input id="workspace-regulatory-iso" type="checkbox" /> ISO
                      </label>
                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                       <input type="checkbox" /> GMP
+                       <input id="workspace-regulatory-gmp" type="checkbox" /> GMP
                      </label>
                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                       <input type="checkbox" /> FDA
+                       <input id="workspace-regulatory-fda" type="checkbox" /> FDA
                      </label>
                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                       <input type="checkbox" /> CE
+                       <input id="workspace-regulatory-ce" type="checkbox" /> CE
                      </label>
                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                       <input type="checkbox" /> Custom
+                       <input id="workspace-regulatory-custom" type="checkbox" /> Custom
                      </label>
                    </div>
                 </div>
                 <div style={{ flex: 1 }}>
                    <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Responsible Department<span style={{color:'red'}}>*</span></label>
-                   <input type="text" placeholder="Select Department" style={{ ...form.input, width: '100%' }} />
+                   <input id="workspace-responsible-department" type="text" placeholder="Select Department" style={{ ...form.input, width: '100%' }} />
                 </div>
               </div>
 
               {/* Lockout/Tagout Required */}
               <div>
                 <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Lockout/Tagout Required?</label>
-                <div style={{ display: 'flex', gap: '16px' }}>
+                <div id="workspace-lockout-required" style={{ display: 'flex', gap: '16px' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <input type="radio" name="lockout" /> Yes
+                    <input id="workspace-lockout-yes" type="radio" name="lockout" /> Yes
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <input type="radio" name="lockout" /> No
+                    <input id="workspace-lockout-no" type="radio" name="lockout" /> No
                   </label>
                 </div>
               </div>
@@ -380,7 +391,9 @@ export default function WorkspaceSetup() {
               {/* Add File - Upload Box */}
                <div>
                 <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Add File</label>
-                <div style={{ 
+                <div 
+                  id="workspace-production-line-file-upload"
+                  style={{ 
                   height: uploadBox.height, 
                   border: uploadBox.border, 
                   borderRadius: uploadBox.borderRadius, 
@@ -426,11 +439,11 @@ export default function WorkspaceSetup() {
               <div style={{ display: 'flex', gap: twoColumnRow.gap }}>
                 <div style={{ flex: 1 }}>
                    <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Asset Name<span style={{color:'red'}}>*</span></label>
-                   <input type="text" placeholder="Enter Asset Name" style={{ ...form.input, width: '100%' }} />
+                   <input id="workspace-asset-name" type="text" placeholder="Enter Asset Name" style={{ ...form.input, width: '100%' }} />
                 </div>
                 <div style={{ flex: 1 }}>
                    <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Factory<span style={{color:'red'}}>*</span></label>
-                   <input type="text" placeholder="Select Factory" style={{ ...form.input, width: '100%' }} />
+                   <input id="workspace-asset-factory" type="text" placeholder="Select Factory" style={{ ...form.input, width: '100%' }} />
                 </div>
               </div>
 
@@ -438,6 +451,7 @@ export default function WorkspaceSetup() {
               <div>
                 <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Description</label>
                 <input 
+                  id="workspace-asset-description"
                   type="text" 
                   placeholder="Add Description" 
                   style={{ ...form.input, ...textarea }} 
@@ -448,11 +462,11 @@ export default function WorkspaceSetup() {
               <div style={{ display: 'flex', gap: twoColumnRow.gap }}>
                 <div style={{ flex: 1 }}>
                    <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Criticality<span style={{color:'red'}}>*</span></label>
-                   <input type="text" placeholder="Select Criticality" style={{ ...form.input, width: '100%' }} />
+                   <input id="workspace-asset-criticality" type="text" placeholder="Select Criticality" style={{ ...form.input, width: '100%' }} />
                 </div>
                 <div style={{ flex: 1 }}>
                    <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Year<span style={{color:'red'}}>*</span></label>
-                   <input type="text" placeholder="Enter Year of" style={{ ...form.input, width: '100%' }} />
+                   <input id="workspace-asset-year" type="text" placeholder="Enter Year of" style={{ ...form.input, width: '100%' }} />
                 </div>
               </div>
 
@@ -460,11 +474,11 @@ export default function WorkspaceSetup() {
               <div style={{ display: 'flex', gap: twoColumnRow.gap }}>
                 <div style={{ flex: 1 }}>
                    <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Manufacturer<span style={{color:'red'}}>*</span></label>
-                   <input type="text" placeholder="Enter Manufacturer" style={{ ...form.input, width: '100%' }} />
+                   <input id="workspace-asset-manufacturer" type="text" placeholder="Enter Manufacturer" style={{ ...form.input, width: '100%' }} />
                 </div>
                 <div style={{ flex: 1 }}>
                    <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Serial Number<span style={{color:'red'}}>*</span></label>
-                   <input type="text" placeholder="Enter Serial Number" style={{ ...form.input, width: '100%' }} />
+                   <input id="workspace-asset-serial-number" type="text" placeholder="Enter Serial Number" style={{ ...form.input, width: '100%' }} />
                 </div>
               </div>
 
@@ -472,18 +486,20 @@ export default function WorkspaceSetup() {
               <div style={{ display: 'flex', gap: twoColumnRow.gap }}>
                 <div style={{ flex: 1 }}>
                    <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Asset Types ( Production Line )<span style={{color:'red'}}>*</span></label>
-                   <input type="text" placeholder="Select Asset Types" style={{ ...form.input, width: '100%' }} />
+                   <input id="workspace-asset-type-production" type="text" placeholder="Select Asset Types" style={{ ...form.input, width: '100%' }} />
                 </div>
                 <div style={{ flex: 1 }}>
                    <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Asset Types ( Utility )<span style={{color:'red'}}>*</span></label>
-                   <input type="text" placeholder="Select Asset Types" style={{ ...form.input, width: '100%' }} />
+                   <input id="workspace-asset-type-utility" type="text" placeholder="Select Asset Types" style={{ ...form.input, width: '100%' }} />
                 </div>
               </div>
 
               {/* Add File - Upload Box */}
                <div>
                 <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Add File</label>
-                <div style={{ 
+                <div 
+                  id="workspace-asset-file-upload"
+                  style={{ 
                   height: uploadBox.height, 
                   border: uploadBox.border, 
                   borderRadius: uploadBox.borderRadius, 
@@ -529,11 +545,11 @@ export default function WorkspaceSetup() {
               <div style={{ display: 'flex', gap: twoColumnRow.gap }}>
                 <div style={{ flex: 1 }}>
                    <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Meter Name<span style={{color:'red'}}>*</span></label>
-                   <input type="text" placeholder="Enter Meter Name" style={{ ...form.input, width: '100%' }} />
+                   <input id="workspace-meter-name" type="text" placeholder="Enter Meter Name" style={{ ...form.input, width: '100%' }} />
                 </div>
                 <div style={{ flex: 1 }}>
                    <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Assets</label>
-                   <input type="text" placeholder="Select Asset" style={{ ...form.input, width: '100%' }} />
+                   <input id="workspace-meter-asset" type="text" placeholder="Select Asset" style={{ ...form.input, width: '100%' }} />
                 </div>
               </div>
 
@@ -541,6 +557,7 @@ export default function WorkspaceSetup() {
               <div>
                 <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Description<span style={{color:'red'}}>*</span></label>
                 <input 
+                  id="workspace-meter-description"
                   type="text" 
                   placeholder="Add Description" 
                   style={{ ...form.input, ...textarea }} 
@@ -550,7 +567,9 @@ export default function WorkspaceSetup() {
               {/* Additional Info - Upload Box */}
                <div>
                 <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Additional Info</label>
-                <div style={{ 
+                <div 
+                  id="workspace-meter-file-upload"
+                  style={{ 
                   height: uploadBox.height, 
                   border: uploadBox.border, 
                   borderRadius: uploadBox.borderRadius, 
@@ -596,15 +615,15 @@ export default function WorkspaceSetup() {
               <div style={{ display: 'flex', gap: twoColumnRow.gap }}>
                 <div style={{ flex: 1 }}>
                    <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>User</label>
-                   <input type="text" placeholder="Enter User Name" style={{ ...form.input, width: '100%' }} />
+                   <input id="workspace-user-name" type="text" placeholder="Enter User Name" style={{ ...form.input, width: '100%' }} />
                 </div>
                 <div style={{ flex: 1 }}>
                    <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Mobile No</label>
-                   <input type="text" placeholder="Enter Mobile No." style={{ ...form.input, width: '100%' }} />
+                   <input id="workspace-user-mobile" type="text" placeholder="Enter Mobile No." style={{ ...form.input, width: '100%' }} />
                 </div>
                 <div style={{ flex: 1 }}>
                    <label style={{ ...form.label, display: 'block', marginBottom: '8px' }}>Role</label>
-                   <input type="text" placeholder="Select Role" style={{ ...form.input, width: '100%' }} />
+                   <input id="workspace-user-role" type="text" placeholder="Select Role" style={{ ...form.input, width: '100%' }} />
                 </div>
               </div>
             </>
@@ -628,7 +647,9 @@ export default function WorkspaceSetup() {
           maxWidth: page.width,
           margin: '0 auto'
         }}>
-           <button style={{ 
+           <button 
+             id="workspace-footer-left-btn"
+             style={{ 
              height: footerActions.leftButton.height,
              borderRadius: footerActions.leftButton.borderRadius,
              border: footerActions.leftButton.border,
@@ -645,6 +666,7 @@ export default function WorkspaceSetup() {
            <div style={{ display: 'flex', gap: '16px' }}>
              {currentStep !== "step1" && (
                <button 
+                 id="workspace-footer-prev-btn"
                  onClick={handlePrevious}
                  style={{ 
                    height: footerActions.rightButton.height,
@@ -663,6 +685,7 @@ export default function WorkspaceSetup() {
              )}
 
              <button 
+               id="workspace-footer-next-btn"
                onClick={handleNext}
                style={{ 
                  height: footerActions.rightButton.height,
