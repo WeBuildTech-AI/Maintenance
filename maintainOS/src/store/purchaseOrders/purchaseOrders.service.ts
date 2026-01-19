@@ -53,7 +53,9 @@ export const purchaseOrderService = {
 
   // ✅ Delete a purchase order
   deletePurchaseOrder: async (id: string): Promise<void> => {
-    await api.delete(`/purchase-orders/${id}`);
+    await api.delete(`purchase-orders/batch-delete`, {
+      data: { ids: [id] },
+    });
   },
 
   // ✅ Approve PO

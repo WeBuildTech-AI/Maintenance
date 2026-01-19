@@ -706,7 +706,7 @@ export function Locations() {
                       );
                     }}
                     user={user}
-                    restoreData={""}
+                    showDeleted={showDeleted}
                     fetchLocation={fetchLocations}
                     onClose={() => setSelectedLocation(null)}
                     setShowSubLocation={setShowSubLocation}

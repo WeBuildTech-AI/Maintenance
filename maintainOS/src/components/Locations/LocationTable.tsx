@@ -481,7 +481,6 @@ export function LocationTable({
           onClose={() => setIsLocationTableModalOpen(false)}
           data={selectedLocationTableData.fullLocation}
           fetchData={fetchLocations}
-          restoreData="" 
           showDeleted={showDeleted}
         />
       )}
