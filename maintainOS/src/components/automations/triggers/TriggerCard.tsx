@@ -21,6 +21,7 @@ export interface TriggerData {
 }
 
 interface TriggerCardProps {
+  index: number;
   title: string;
   onDelete: () => void;
   assetOptions: SelectOption[];
@@ -36,6 +37,7 @@ interface TriggerCardProps {
 }
 
 export function TriggerCard({
+  index,
   title,
   onDelete,
   assetOptions,
@@ -171,7 +173,7 @@ export function TriggerCard({
       <div className="space-y-2">
         <label className="text-sm font-medium text-gray-700">Asset</label>
         <DynamicSelect
-          name="trigger-asset"
+          name={`trigger-asset-${index}`}
           placeholder="Start typing..."
           options={assetOptions}
           loading={isAssetsLoading}
@@ -191,7 +193,7 @@ export function TriggerCard({
         <div className="relative">
           <div className={selectedMeterId ? "pr-8" : ""}>
             <DynamicSelect
-              name="trigger-meter"
+              name={`trigger-meter-${index}`}
               placeholder="Start typing..."
               options={meterOptions}
               loading={isMetersLoading}
