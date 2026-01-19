@@ -7,7 +7,8 @@ import type { AppDispatch } from "../../../store";
 import { fetchAssetsName } from "../../../store/assets/assets.thunks";
 import { fetchTeamsName } from "../../../store/teams/teams.thunks";
 import { fetchVendorName } from "../../../store/vendors/vendors.thunks";
-import { PartDynamicSelect, type PartSelectOption } from "./PartDynamicSelect";
+// ✅ Replace with Shared DynamicSelect
+import { DynamicSelect, type SelectOption } from "../../common/DynamicSelect";
 
 function PartVendorsSection({
   newItem,
@@ -20,9 +21,9 @@ function PartVendorsSection({
   const navigate = useNavigate();
 
   // ---------- States ----------
-  const [assetOptions, setAssetOptions] = useState<PartSelectOption[]>([]);
-  const [teamOptions, setTeamOptions] = useState<PartSelectOption[]>([]);
-  const [vendorOptions, setVendorOptions] = useState<PartSelectOption[]>([]);
+  const [assetOptions, setAssetOptions] = useState<SelectOption[]>([]);
+  const [teamOptions, setTeamOptions] = useState<SelectOption[]>([]);
+  const [vendorOptions, setVendorOptions] = useState<SelectOption[]>([]);
   const [loadingAssets, setLoadingAssets] = useState(false);
   const [loadingTeams, setLoadingTeams] = useState(false);
   const [loadingVendors, setLoadingVendors] = useState(false);
@@ -65,7 +66,7 @@ function PartVendorsSection({
 
       if (newItem.assetIds?.length) {
         const matched = newItem.assetIds
-          .map((id: string) => options.find((opt) => opt.id === id)?.name)
+          .map((id: string) => options.find((opt: SelectOption) => opt.id === id)?.name)
           .filter(Boolean);
         setSelectedAssetNames(matched as string[]);
       }
@@ -91,7 +92,7 @@ function PartVendorsSection({
 
       if (newItem.teamsInCharge?.length) {
         const matched = newItem.teamsInCharge
-          .map((id: string) => options.find((opt) => opt.id === id)?.name)
+          .map((id: string) => options.find((opt: SelectOption) => opt.id === id)?.name)
           .filter(Boolean);
         setSelectedTeamNames(matched as string[]);
       }
@@ -117,7 +118,7 @@ function PartVendorsSection({
 
       if (newItem.vendorIds?.length) {
         const matched = newItem.vendorIds
-          .map((id: string) => options.find((opt) => opt.id === id)?.name)
+          .map((id: string) => options.find((opt: SelectOption) => opt.id === id)?.name)
           .filter(Boolean);
         setSelectedVendorNames(matched as string[]);
       }
@@ -150,7 +151,7 @@ function PartVendorsSection({
   // ---------------- Selection handlers ----------------
   const handleAssetSelect = (vals: string[] | string) => {
     const ids = Array.isArray(vals) ? vals : [vals];
-    setNewItem((s) => ({ ...s, assetIds: ids }));
+    setNewItem((s: any) => ({ ...s, assetIds: ids }));
     const names = ids
       .map((id) => assetOptions.find((o) => o.id === id)?.name)
       .filter(Boolean);
@@ -159,7 +160,7 @@ function PartVendorsSection({
 
   const handleTeamSelect = (vals: string[] | string) => {
     const ids = Array.isArray(vals) ? vals : [vals];
-    setNewItem((s) => ({ ...s, teamsInCharge: ids }));
+    setNewItem((s: any) => ({ ...s, teamsInCharge: ids }));
     const names = ids
       .map((id) => teamOptions.find((o) => o.id === id)?.name)
       .filter(Boolean);
@@ -168,7 +169,7 @@ function PartVendorsSection({
 
   const handleVendorSelect = (vals: string[] | string) => {
     const ids = Array.isArray(vals) ? vals : [vals];
-    setNewItem((s) => ({ ...s, vendorIds: ids }));
+    setNewItem((s: any) => ({ ...s, vendorIds: ids }));
     const names = ids
       .map((id) => vendorOptions.find((o) => o.id === id)?.name)
       .filter(Boolean);
@@ -186,7 +187,7 @@ function PartVendorsSection({
         "Selected (Pending)",
     }));
     return [
-      ...selected.filter((s) => !assetOptions.some((o) => o.id === s.id)),
+      ...selected.filter((s: SelectOption) => !assetOptions.some((o) => o.id === s.id)),
       ...assetOptions,
     ];
   }, [assetOptions, newItem.assetIds, selectedAssetNames]);
@@ -201,7 +202,7 @@ function PartVendorsSection({
         "Selected (Pending)",
     }));
     return [
-      ...selected.filter((s) => !teamOptions.some((o) => o.id === s.id)),
+      ...selected.filter((s: SelectOption) => !teamOptions.some((o) => o.id === s.id)),
       ...teamOptions,
     ];
   }, [teamOptions, newItem.teamsInCharge, selectedTeamNames]);
@@ -216,7 +217,7 @@ function PartVendorsSection({
         "Selected (Pending)",
     }));
     return [
-      ...selected.filter((s) => !vendorOptions.some((o) => o.id === s.id)),
+      ...selected.filter((s: SelectOption) => !vendorOptions.some((o) => o.id === s.id)),
       ...vendorOptions,
     ];
   }, [vendorOptions, newItem.vendorIds, selectedVendorNames]);
@@ -241,7 +242,7 @@ function PartVendorsSection({
         <label style={{ fontSize: "14px", color: "#111827", fontWeight: 600 }}>
           Assets
         </label>
-        <PartDynamicSelect
+        <DynamicSelect
           options={mergedAssets}
           value={newItem.assetIds ?? []}
           onSelect={handleAssetSelect}
@@ -257,7 +258,6 @@ function PartVendorsSection({
           setActiveDropdown={setActiveDropdown}
           ctaText="+ Add New Asset"
           onCtaClick={handleAddNewAsset}
-          isMulti={true}
         />
       </div>
 
@@ -266,7 +266,7 @@ function PartVendorsSection({
         <label style={{ fontSize: "14px", color: "#111827", fontWeight: 600 }}>
           Teams in Charge
         </label>
-        <PartDynamicSelect
+        <DynamicSelect
           options={mergedTeams}
           value={newItem.teamsInCharge ?? []}
           onSelect={handleTeamSelect}
@@ -282,7 +282,6 @@ function PartVendorsSection({
           setActiveDropdown={setActiveDropdown}
           ctaText="+ Add New Team"
           onCtaClick={handleAddNewTeam}
-          isMulti={true}
         />
       </div>
 
@@ -291,7 +290,7 @@ function PartVendorsSection({
         <label style={{ fontSize: "14px", color: "#111827", fontWeight: 600 }}>
           Vendors
         </label>
-        <PartDynamicSelect
+        <DynamicSelect
           options={mergedVendors}
           value={newItem.vendorIds ?? []}
           onSelect={handleVendorSelect}
@@ -307,7 +306,6 @@ function PartVendorsSection({
           setActiveDropdown={setActiveDropdown}
           ctaText="+ Add New Vendor"
           onCtaClick={handleAddNewVendor}
-          isMulti={true}
         />
       </div>
     </section>

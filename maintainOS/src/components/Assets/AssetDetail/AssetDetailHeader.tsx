@@ -103,12 +103,12 @@ export function AssetDetailHeader({
               {!showDeleted && (
                 <>
                   <DropdownMenuItem onClick={() => onCopy(asset)}>
-                     Copy Asset
+                     Copy To New Asset
                   </DropdownMenuItem>
 
                   {/* ✅ ADDED: Use in Meter Option */}
                   <DropdownMenuItem onClick={handleUseInMeter}>
-                     Use in Meter
+                     Use in New Meter
                   </DropdownMenuItem>
 
                   <DropdownMenuSeparator />

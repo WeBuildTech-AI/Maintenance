@@ -8,6 +8,8 @@ import { assetService } from "../../../store/assets";
 import { locationService } from "../../../store/locations";
 import toast from "react-hot-toast";
 import { CustomDropdown } from "./CustomDropdown";
+// ✅ Import Shared DynamicSelect
+import { DynamicSelect } from "../../common/DynamicSelect";
 
 interface NewMeterFormProps {
   onCreate: (data: any) => void;
@@ -46,12 +48,14 @@ export function NewMeterForm({
   const user = useSelector((state: RootState) => state.auth.user);
   const dispatch = useDispatch<AppDispatch>();
   const [postMeterDataloading, setPostMeterDataLoading] = useState(false);
-  const [getAssetData, setGetAssestData] = useState([]);
-  const [getLocationData, setGetLocationData] = useState([]);
+  const [getAssetData, setGetAssestData] = useState<any[]>([]);
+  const [getLocationData, setGetLocationData] = useState<any[]>([]);
   const [measurementUnitOption, setMeasurementUnitOption] = useState<any[]>([]);
   const [assetLoading, setAssetLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
   const [measurementLoading, setMeasurementLoading] = useState(false);
+
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   const isEdit = !!editingMeter;
 
@@ -323,32 +327,38 @@ export function NewMeterForm({
         <div className="flex gap-6 px-6 pb-6 pt-6">
           {/* Asset */}
           <div className="flex-1">
-            <CustomDropdown
-              id="asset"
-              label="Asset"
-              value={asset}
-              onChange={setAsset}
-              options={getAssetData}
-              onOpen={handleGetAssetData}
-              loading={assetLoading}
-              placeholder="Select an Asset"
-              navigateTo="/assets"
-            />
+             <h3 className="mb-2 text-sm font-medium text-gray-700">Asset</h3>
+             <DynamicSelect
+                name="asset"
+                value={asset}
+                onSelect={(val) => setAsset(val as string)}
+                options={getAssetData}
+                onFetch={handleGetAssetData}
+                loading={assetLoading}
+                activeDropdown={activeDropdown}
+                setActiveDropdown={setActiveDropdown}
+                placeholder="Select an Asset"
+                ctaText={undefined} // Or add create if needed
+                onCtaClick={undefined}
+             />
           </div>
 
           {/* Location */}
           <div className="flex-1">
-            <CustomDropdown
-              id="location"
-              label="Location"
-              value={location}
-              onChange={setLocation}
-              options={getLocationData}
-              onOpen={handleGetLocationData}
-              loading={locationLoading}
-              placeholder="Select a Location"
-              navigateTo="/locations"
-            />
+             <h3 className="mb-2 text-sm font-medium text-gray-700">Location</h3>
+             <DynamicSelect
+                name="location"
+                value={location}
+                onSelect={(val) => setLocation(val as string)}
+                options={getLocationData}
+                onFetch={handleGetLocationData}
+                loading={locationLoading}
+                activeDropdown={activeDropdown}
+                setActiveDropdown={setActiveDropdown}
+                placeholder="Select a Location"
+                ctaText={undefined} 
+                onCtaClick={undefined}
+             />
           </div>
         </div>
 

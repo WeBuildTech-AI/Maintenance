@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import toast from "react-hot-toast";
 import { AddressAndDescription } from "./AddressAndDescription";
 import { QrCodeSection } from "./QrCodeSection";
-import { Dropdowns } from "./Dropdowns";
 import { FooterActions } from "./FooterActions";
 import { BlobUpload, type BUD } from "../../utils/BlobUpload";
 
@@ -14,8 +13,11 @@ import type { RootState, AppDispatch } from "../../../store";
 import { createLocation, updateLocation } from "../../../store/locations";
 import type { LocationResponse } from "../../../store/locations";
 
-// Helper type for options
-type Option = { id: string; name: string };
+// ✅ Import Shared DynamicSelect
+import { DynamicSelect, type SelectOption } from "../../common/DynamicSelect";
+import { vendorService } from "../../../store/vendors";
+import { locationService } from "../../../store/locations";
+import { teamService } from "../../../store/teams";
 
 type NewLocationFormProps = {
   onCancel: () => void;
@@ -51,18 +53,14 @@ export function NewLocationForm({
   const [vendorId, setVendorId] = useState<string[]>([]);
   const [parentLocationId, setParentLocationId] = useState("");
 
-  // ✅ NEW: Store hydrated options for prefilling UI
-  const [preloadedTeams, setPreloadedTeams] = useState<Option[]>([]);
-  const [preloadedVendors, setPreloadedVendors] = useState<Option[]>([]);
-  const [preloadedParent, setPreloadedParent] = useState<Option[]>([]);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
-  const [teamOpen, setTeamOpen] = useState(false);
-  const [vendorOpen, setVendorOpen] = useState(false);
-  const [parentOpen, setParentOpen] = useState(false);
-
-  const teamRef = useRef<HTMLDivElement>(null!);
-  const vendorRef = useRef<HTMLDivElement>(null!);
-  const parentRef = useRef<HTMLDivElement>(null!);
+  // Options State
+  const [teamOptions, setTeamOptions] = useState<SelectOption[]>([]);
+  const [vendorOptions, setVendorOptions] = useState<SelectOption[]>([]);
+  const [parentOptions, setParentOptions] = useState<SelectOption[]>([]);
+  
+  const [loadingType, setLoadingType] = useState<string | null>(null);
 
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
@@ -92,7 +90,7 @@ export function NewLocationForm({
 
       // ✅ Hydrate Vendor Options
       if ((editData as any).vendors && Array.isArray((editData as any).vendors)) {
-        setPreloadedVendors((editData as any).vendors);
+        setVendorOptions((editData as any).vendors);
       }
 
       // 3. Handle Teams (IDs + Hydration)
@@ -102,12 +100,12 @@ export function NewLocationForm({
 
       // ✅ Hydrate Team Options
       if ((editData as any).teams && Array.isArray((editData as any).teams)) {
-        setPreloadedTeams((editData as any).teams);
+        setTeamOptions((editData as any).teams);
       }
 
       // 4. Handle Parent (Hydration)
       if ((editData as any).parentLocation) {
-        setPreloadedParent([(editData as any).parentLocation]);
+        setParentOptions([(editData as any).parentLocation]);
       }
 
       // Images & Files
@@ -131,25 +129,6 @@ export function NewLocationForm({
     }
   }, [initialParentId, isEdit]);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (teamRef.current && !teamRef.current.contains(event.target as Node))
-        setTeamOpen(false);
-      if (
-        vendorRef.current &&
-        !vendorRef.current.contains(event.target as Node)
-      )
-        setVendorOpen(false);
-      if (
-        parentRef.current &&
-        !parentRef.current.contains(event.target as Node)
-      )
-        setParentOpen(false);
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   const handleBlobChange = (data: { formId: string; buds: BUD[] }) => {
     if (data.formId === "location_images") {
       setLocationImages(data.buds);
@@ -157,6 +136,32 @@ export function NewLocationForm({
       setLocationDocs(data.buds);
     }
   };
+
+  // ✅ FETCHING LOGIC LIFTED HERE
+  const handleFetchTeams = async () => {
+    setLoadingType("teams");
+    try {
+      const res: SelectOption[] = await teamService.fetchTeamsName();
+      setTeamOptions(res);
+    } catch (e) { console.error(e); } finally { setLoadingType(null); }
+  };
+
+  const handleFetchVendors = async () => {
+    setLoadingType("vendors");
+    try {
+      const res: SelectOption[] = await vendorService.fetchVendorName();
+      setVendorOptions(res);
+    } catch (e) { console.error(e); } finally { setLoadingType(null); }
+  };
+
+  const handleFetchParents = async () => {
+    setLoadingType("parents");
+    try {
+      const res: SelectOption[] = await locationService.fetchParentLocations();
+      setParentOptions(res);
+    } catch (e) { console.error(e); } finally { setLoadingType(null); }
+  };
+
 
   const handleSubmitLocation = async () => {
     if (!user?.id || !user?.organizationId) {
@@ -342,18 +347,23 @@ export function NewLocationForm({
             setDescription={setDescription}
           />
 
-          <Dropdowns
-            stage="teams"
-            open={teamOpen}
-            setOpen={setTeamOpen}
-            containerRef={teamRef}
-            navigate={navigate}
-            value={teamInCharge}
-            onSelect={(val) =>
-              setTeamInCharge(Array.isArray(val) ? val : [val])
-            }
-            preloadedOptions={preloadedTeams}
-          />
+          {/* TEAMS */}
+          <div>
+              <h3 className="mb-2 text-base font-medium text-gray-900">Teams in Charge</h3>
+              <DynamicSelect
+                name="teams"
+                value={teamInCharge}
+                onSelect={(val) => setTeamInCharge(val as string[])}
+                options={teamOptions}
+                onFetch={handleFetchTeams}
+                loading={loadingType === "teams"}
+                activeDropdown={activeDropdown}
+                setActiveDropdown={setActiveDropdown}
+                ctaText="+ Create New Team"
+                onCtaClick={() => navigate("/teams/create")}
+                placeholder="Select Teams..."
+              />
+          </div>
 
           <QrCodeSection qrCode={qrCode} setQrCode={setQrCode} />
 
@@ -364,28 +374,72 @@ export function NewLocationForm({
             onChange={handleBlobChange}
           />
 
-          <Dropdowns
-            stage="vendors"
-            open={vendorOpen}
-            setOpen={setVendorOpen}
-            containerRef={vendorRef}
-            navigate={navigate}
-            value={vendorId}
-            onSelect={(val) => setVendorId(Array.isArray(val) ? val : [val])}
-            preloadedOptions={preloadedVendors}
-          />
+          {/* VENDORS */}
+          <div>
+            <h3 className="mb-2 text-base font-medium text-gray-900">Vendors</h3>
+            <DynamicSelect
+                name="vendors"
+                value={vendorId}
+                onSelect={(val) => setVendorId(val as string[])}
+                options={vendorOptions}
+                onFetch={handleFetchVendors}
+                loading={loadingType === "vendors"}
+                activeDropdown={activeDropdown}
+                setActiveDropdown={setActiveDropdown}
+                ctaText="+ Create New Vendor"
+                onCtaClick={() => navigate("/vendors/create")}
+                placeholder="Select Vendors..."
+              />
+          </div>
 
-          <Dropdowns
-            stage="parent"
-            open={parentOpen}
-            setOpen={setParentOpen}
-            containerRef={parentRef}
-            navigate={navigate}
-            value={parentLocationId}
-            onSelect={(val) => setParentLocationId(val as string)}
-            disabled={isEdit || isSubLocation}
-            preloadedOptions={preloadedParent}
-          />
+          {/* PARENT LOCATION */}
+          {!isEdit && !isSubLocation && (
+             <div>
+                <h3 className="mb-2 text-base font-medium text-gray-900">Parent Location</h3>
+                <DynamicSelect
+                    name="parent"
+                    value={parentLocationId}
+                    onSelect={(val) => setParentLocationId(val as string)}
+                    options={parentOptions}
+                    onFetch={handleFetchParents}
+                    loading={loadingType === "parents"}
+                    activeDropdown={activeDropdown}
+                    setActiveDropdown={setActiveDropdown}
+                    ctaText="+ Create New Parent Location"
+                    onCtaClick={() => navigate("/locations")}
+                    placeholder="Select Parent Location..."
+                />
+             </div>
+          )}
+          {/* Sublocation or Edit mode - we might want to show it but disabled, or just hide it? 
+              The original code disabled it: disabled={isEdit || isSubLocation}
+              DynamicSelect doesn't have a 'disabled' prop yet in my copy. 
+              Let's add a disabled check or just render a read-only view if needed.
+              Original code:
+                <Dropdowns disabled={isEdit || isSubLocation} ... />
+              If disabled, maybe we just show the name if selected? 
+              Actually, for now, if it's edit or sublocation, existing code PASSED disabled=true.
+              Let's respect that by NOT rendering the dropdown or rendering a disabled-like state if needed.
+              However, DynamicSelect doesn't have 'disabled' prop in my implementation.
+              I'll just wrap it in a div with pointer-events-none opacity-50 if disabled.
+          */}
+           {(isEdit || isSubLocation) && (
+              <div className="opacity-60 pointer-events-none">
+                 <h3 className="mb-2 text-base font-medium text-gray-900">Parent Location</h3>
+                 <DynamicSelect
+                    name="parent-disabled"
+                    value={parentLocationId}
+                    onSelect={() => {}}
+                    options={parentOptions}
+                    onFetch={() => {}}
+                    loading={false}
+                    activeDropdown={null}
+                    setActiveDropdown={() => {}}
+                    placeholder={parentLocationId ? "Parent Selected" : "No Parent"}
+                />
+              </div>
+           )}
+
         </div>
 
         <FooterActions
