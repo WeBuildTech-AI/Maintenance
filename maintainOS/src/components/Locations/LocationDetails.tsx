@@ -1,4 +1,5 @@
 import {
+  MoreVertical,
   Edit,
   MoreHorizontal,
   Link as LinkIcon,
@@ -23,7 +24,7 @@ import {
 } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
 import QRCode from "react-qr-code";
-import { formatDate } from "../utils/Date";
+
 import DeleteModal from "./DeleteModal";
 import { LocationImages } from "./LocationImages";
 import { LocationFiles } from "./LocationFiles";
@@ -38,11 +39,7 @@ import api from "../../store/auth/auth.service";
 interface LocationDetailsProps {
   selectedLocation: any;
   handleDeleteLocation: (id: string) => void;
-  user: {
-    id: string;
-    fullName: string;
-    email: string;
-  } | null;
+  user?: any;
   onEdit?: (location: any) => void;
   handleShowNewSubLocationForm: (show: boolean) => void;
   showDeleted: boolean;
@@ -57,7 +54,6 @@ type DateRange = { startDate: string; endDate: string };
 const LocationDetails: React.FC<LocationDetailsProps> = ({
   selectedLocation,
   handleDeleteLocation,
-  user,
   handleShowNewSubLocationForm,
   showDeleted,
   fetchLocation,
@@ -72,6 +68,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
   // ✅ STATES FOR CREATOR AND UPDATER NAMES
   const [createdByName, setCreatedByName] = useState<string>("");
   const [updatedByName, setUpdatedByName] = useState<string>("");
+  const [subLocToDelete, setSubLocToDelete] = useState<any>(null);
 
   const handleRestoreLocationData = async (id: string) => {
     try {
@@ -137,6 +134,18 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
         {status?.replace("_", " ")}
       </span>
     );
+  };
+ 
+  const handleDeleteSubLocation = async (id: string) => {
+    try {
+      await api.delete("/locations/batch-delete", { data: { ids: [id] } });
+      toast.success("Sub-location deleted successfully!");
+      fetchLocation();
+    } catch (err) {
+      toast.error("Failed to delete the sub-location.");
+    } finally {
+      setSubLocToDelete(null);
+    }
   };
 
   const [chartDateRanges, setChartDateRanges] = useState<
@@ -432,19 +441,41 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
           <div className="divide-y divide-gray-200 mb-4 bg-gray-50 rounded-lg border">
             {Array.isArray(selectedLocation?.children) &&
               selectedLocation.children.map((location: any) => (
-                <button
+                <div
                   key={location?.id || Math.random()}
                   className="w-full flex items-center justify-between py-3 px-3 hover:bg-gray-100 transition-colors group"
-                  onClick={() => onSubLocationClick(location)}
                 >
-                  <div className="flex items-center gap-2">
+                  <div 
+                    className="flex items-center gap-2 flex-1 cursor-pointer"
+                    onClick={() => onSubLocationClick(location)}
+                  >
                     <MapPin className="w-4 h-4 text-orange-600" />
                     <span className="text-gray-900 text-sm font-medium">
                       {location?.name || "Unnamed Location"}
                     </span>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
-                </button>
+                  <div className="flex items-center gap-2">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          className="text-red-600 focus:text-red-600 cursor-pointer"
+                          onClick={() => setSubLocToDelete(location)}
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <ChevronRight 
+                      className="w-4 h-4 text-gray-400 group-hover:text-gray-600 cursor-pointer" 
+                      onClick={() => onSubLocationClick(location)}
+                    />
+                  </div>
+                </div>
               ))}
             {(!selectedLocation?.children ||
               selectedLocation.children.length === 0) && (
@@ -458,13 +489,10 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
         <WorkOrderHistoryChart
           id="work-order-history"
           title="Work Order History"
-          workOrderHistory={selectedLocation?.workOrders}
+          workOrderHistory={{ id: selectedLocation.id, name: selectedLocation.name }}
           filters={filters}
           dateRange={chartDateRanges["work-order-history"]}
           onDateRangeChange={handleDateRangeChange}
-          groupByField="createdAt"
-          lineName="Created"
-          lineColor="#0091ff"
         />
 
         {/* ✅ UPDATED FOOTER INFO */}
@@ -520,6 +548,14 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
             handleDeleteLocation(selectedLocation.id);
             setOpenDeleteModal(false);
           }}
+        />
+      )}
+
+      {subLocToDelete && (
+        <DeleteModal
+          modalRef={modalRef}
+          onClose={() => setSubLocToDelete(null)}
+          onConfirm={() => handleDeleteSubLocation(subLocToDelete.id)}
         />
       )}
     </div>

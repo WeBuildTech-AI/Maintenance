@@ -694,6 +694,10 @@ export function Locations() {
                     selectedLocation={activeSubLocation}
                     onClose={() => setShowSubLocation(false)}
                     parentName={selectedLocation?.name}
+                    onDelete={() => {
+                      fetchLocations();
+                      setShowSubLocation(false);
+                    }}
                   />
                 ) : selectedLocation ? (
                   <LocationDetails

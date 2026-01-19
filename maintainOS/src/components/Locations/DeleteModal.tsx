@@ -2,7 +2,7 @@ import { X } from "lucide-react";
 import React from "react";
 
 interface DeleteModalProps {
-  modalRef: React.RefObject<HTMLDivElement>;
+  modalRef: React.RefObject<HTMLDivElement | null>;
   onClose: () => void;
   onConfirm: () => void;
 }

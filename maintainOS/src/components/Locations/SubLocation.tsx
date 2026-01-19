@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useRef } from "react";
 import { formatDate } from "../utils/Date";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -10,21 +10,36 @@ import {
   Box,
   ClipboardList,
   Building2,
+  MoreHorizontal,
+  Trash2,
 } from "lucide-react";
 import { Button } from "../ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import api from "../../store/auth/auth.service";
+import toast from "react-hot-toast";
+import DeleteModal from "./DeleteModal";
 
 interface LocationDetailsProps {
   onClose: () => void;
   selectedLocation: any;
   parentName?: string;
+  onDelete?: () => void;
 }
 
 const SubLocation: React.FC<LocationDetailsProps> = ({
   onClose,
   selectedLocation,
   parentName = "General",
+  onDelete,
 }) => {
   const navigate = useNavigate();
+  const [openDeleteModal, setOpenDeleteModal] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   if (!selectedLocation) return null;
   const user = useSelector((state: RootState) => state.auth.user);
@@ -35,6 +50,24 @@ const SubLocation: React.FC<LocationDetailsProps> = ({
         preselectedLocation: selectedLocation 
       },
     });
+  };
+
+  const handleDeleteSubLocation = async () => {
+    try {
+      await api.delete("/locations/batch-delete", {
+        data: { ids: [selectedLocation.id] },
+      });
+      toast.success("Sub-location deleted successfully!");
+      setOpenDeleteModal(false);
+      if (onDelete) {
+        onDelete();
+      } else {
+        onClose();
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete the sub-location.");
+    }
   };
 
   const StatusBadge = ({ status }: { status: string }) => {
@@ -80,6 +113,23 @@ const SubLocation: React.FC<LocationDetailsProps> = ({
           >
             Edit
           </button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
+                <MoreHorizontal className="h-5 w-5 text-gray-500" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                className="text-red-600 focus:text-red-600 cursor-pointer"
+                onClick={() => setOpenDeleteModal(true)}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -227,6 +277,14 @@ const SubLocation: React.FC<LocationDetailsProps> = ({
           Use in New Work Order
         </Button>
       </div>
+
+      {openDeleteModal && (
+        <DeleteModal
+          modalRef={modalRef}
+          onClose={() => setOpenDeleteModal(false)}
+          onConfirm={handleDeleteSubLocation}
+        />
+      )}
     </div>
   );
 };
