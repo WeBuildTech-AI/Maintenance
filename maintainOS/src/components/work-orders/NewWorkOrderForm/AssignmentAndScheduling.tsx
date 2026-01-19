@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Calendar, Clock, X } from "lucide-react"; 
+import { Calendar, X } from "lucide-react"; 
 import { fetchFilterData } from "../../utils/filterDataFetcher";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
@@ -207,7 +207,7 @@ export function AssignmentAndScheduling({
   dueTime,
 }: Props) {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [selectedFreq, setSelectedFreq] = useState("Does not repeat");
+  const [selectedFreq, setSelectedFreq] = useState("");
   const [users, setUsers] = useState<{ id: string; name: string }[]>(initialAssignees);
   const [isLoading, setIsLoading] = useState(false);
   

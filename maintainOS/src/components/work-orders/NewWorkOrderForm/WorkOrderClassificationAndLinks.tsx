@@ -164,21 +164,23 @@ export function WorkOrderClassificationAndLinks({
         />
       </div>
 
-      <div className="mt-4">
-        <h3 className="mb-4 text-base font-medium text-gray-900">Status</h3>
-        <DynamicSelect
-          name="status"
-          placeholder="Select status..."
-          options={statuses.map(s => ({ id: s.name, name: s.name }))}
-          loading={false}
-          value={status || ""}
-          onSelect={(val) => onStatusChange && onStatusChange(val as string)}
-          onFetch={() => {}}
-          activeDropdown={activeDropdown}
-          setActiveDropdown={setActiveDropdown}
-          className="w-full"
-        />
-      </div>
+      {isEditMode && (
+        <div className="mt-4">
+          <h3 className="mb-4 text-base font-medium text-gray-900">Status</h3>
+          <DynamicSelect
+            name="status"
+            placeholder="Select status..."
+            options={statuses.map(s => ({ id: s.name, name: s.name }))}
+            loading={false}
+            value={status || ""}
+            onSelect={(val) => onStatusChange && onStatusChange(val as string)}
+            onFetch={() => {}}
+            activeDropdown={activeDropdown}
+            setActiveDropdown={setActiveDropdown}
+            className="w-full"
+          />
+        </div>
+      )}
 
       <div className="mt-4">
         <h3 className="mb-4 text-base font-medium text-gray-900">Teams</h3>

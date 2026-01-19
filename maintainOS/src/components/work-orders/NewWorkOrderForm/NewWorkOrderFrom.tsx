@@ -208,8 +208,8 @@ export function NewWorkOrderForm({
   const [dueDate, setDueDate] = useState("");
   const [startDate, setStartDate] = useState("");
   
-  const [selectedWorkType, setSelectedWorkType] = useState("Reactive");
-  const [selectedPriority, setSelectedPriority] = useState("None");
+  const [selectedWorkType, setSelectedWorkType] = useState("");
+  const [selectedPriority, setSelectedPriority] = useState("");
   const [qrCodeValue, setQrCodeValue] = useState("");
   
   const [recurrenceRule, setRecurrenceRule] = useState<any>(null);
