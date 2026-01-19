@@ -146,6 +146,7 @@ api.interceptors.response.use(
 export interface User {
   id: string;
   email: string;
+  fullName: string;
   organizationId: string;
 }
 

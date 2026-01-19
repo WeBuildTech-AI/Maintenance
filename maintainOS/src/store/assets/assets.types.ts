@@ -81,9 +81,9 @@ export interface UpdateAssetData {
 
 export interface UpdateAssetStatus {
   status: string;
-  notes: string;
-  since: string;
-  downtimeType: string;
+  notes?: string;
+  since?: string;
+  downtimeType?: string;
   userId: string;
 }
 

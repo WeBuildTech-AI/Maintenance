@@ -47,7 +47,6 @@ interface Props {
 const ASSET_STATUS_OPTIONS = [
   { id: "Online", name: "Online" },
   { id: "Offline", name: "Offline" },
-  { id: "Do not track", name: "Do not track" },
 ];
 
 export function AssetsAndProcedures({
@@ -241,7 +240,7 @@ export function AssetsAndProcedures({
                                 value={getDisplayDate(assetStatusSince || "")} 
                                 onClick={() => setShowSinceCalendar(!showSinceCalendar)}
                                 placeholder="Select Date"
-                                className="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none cursor-pointer shadow-sm transition-all text-gray-700 font-medium"
+                                className="w-full h-9 px-3 border border-gray-300 rounded-lg text-[13px] bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none cursor-pointer shadow-sm transition-all text-gray-700 font-medium"
                             />
                             {showSinceCalendar && (
                                 <div className="absolute z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl p-3 animate-in fade-in zoom-in-95 left-0">
@@ -256,11 +255,11 @@ export function AssetsAndProcedures({
                                     value={getTimeString(assetStatusSince || "")} 
                                     onChange={(t) => setAssetStatusSince && setAssetStatusSince(constructSecureISO(assetStatusSince || "", undefined, t))}
                                     onClear={() => { setShowSinceTime(false); setAssetStatusSince && setAssetStatusSince(constructSecureISO(assetStatusSince || "", undefined, "00:00")); }}
-                                    className="h-10 border-gray-300 focus-within:border-blue-500 focus-within:ring-blue-500 rounded-lg shadow-sm pl-8"
+                                    className="h-9 border-gray-300 focus-within:border-blue-500 focus-within:ring-blue-500 rounded-lg shadow-sm pl-8"
                                 />
                             </div>
                         ) : (
-                            <button type="button" onClick={() => setShowSinceTime(true)} className="h-10 px-3 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors whitespace-nowrap">
+                            <button type="button" onClick={() => setShowSinceTime(true)} className="h-9 px-3 text-[11px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors whitespace-nowrap">
                                 + Time
                             </button>
                         )}
@@ -278,7 +277,7 @@ export function AssetsAndProcedures({
                                     value={getDisplayDate(assetStatusTo || "")} 
                                     onClick={() => setShowToCalendar(!showToCalendar)}
                                     placeholder="Select Date"
-                                    className="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none cursor-pointer shadow-sm transition-all text-gray-700 font-medium"
+                                    className="w-full h-9 px-3 border border-gray-300 rounded-lg text-[13px] bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none cursor-pointer shadow-sm transition-all text-gray-700 font-medium"
                                 />
                                 {showToCalendar && (
                                     <div className="absolute z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl p-3 animate-in fade-in zoom-in-95 left-0">
@@ -293,11 +292,11 @@ export function AssetsAndProcedures({
                                         value={getTimeString(assetStatusTo || "")} 
                                         onChange={(t) => setAssetStatusTo && setAssetStatusTo(constructSecureISO(assetStatusTo || "", undefined, t))}
                                         onClear={() => { setShowToTime(false); setAssetStatusTo && setAssetStatusTo(constructSecureISO(assetStatusTo || "", undefined, "00:00")); }}
-                                        className="h-10 border-gray-300 focus-within:border-blue-500 focus-within:ring-blue-500 rounded-lg shadow-sm pl-8"
+                                        className="h-9 border-gray-300 focus-within:border-blue-500 focus-within:ring-blue-500 rounded-lg shadow-sm pl-8"
                                     />
                                 </div>
                             ) : (
-                                <button type="button" onClick={() => setShowToTime(true)} className="h-10 px-3 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors whitespace-nowrap">
+                                <button type="button" onClick={() => setShowToTime(true)} className="h-9 px-3 text-[11px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors whitespace-nowrap">
                                     + Time
                                 </button>
                             )}
@@ -315,7 +314,7 @@ export function AssetsAndProcedures({
                         value={assetStatusNotes || ""} 
                         onChange={(e) => setAssetStatusNotes && setAssetStatusNotes(e.target.value)}
                         placeholder={internalAssetStatus === 'Offline' ? "Describe the issue causing downtime..." : "Add any notes regarding the asset status..."}
-                        className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none resize-none h-24 shadow-sm transition-all"
+                        className="w-full p-2.5 border border-gray-300 rounded-lg text-[13px] focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none resize-none h-20 shadow-sm transition-all"
                     />
                 </div>
              </div>

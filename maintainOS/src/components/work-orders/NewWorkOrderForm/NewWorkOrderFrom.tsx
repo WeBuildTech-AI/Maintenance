@@ -213,6 +213,7 @@ export function NewWorkOrderForm({
   const [qrCodeValue, setQrCodeValue] = useState("");
   
   const [recurrenceRule, setRecurrenceRule] = useState<any>(null);
+  const [status, setStatus] = useState("Open");
   
   const [teamIds, setTeamIds] = useState<string[]>([]);
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
@@ -406,6 +407,16 @@ export function NewWorkOrderForm({
       }
 
       setSelectedPriority(data.priority ? data.priority.charAt(0).toUpperCase() + data.priority.slice(1) : "None");
+      
+      // Status - Backend sends "open", "in_progress", etc. Map to UI
+      const mapWOStatus = (s: string) => {
+          if (!s) return "Open";
+          if (s === "in_progress") return "In Progress";
+          if (s === "on_hold") return "On Hold";
+          return s.charAt(0).toUpperCase() + s.slice(1);
+      };
+      setStatus(mapWOStatus(data.status || "open"));
+
       setQrCodeValue(data.qrCode || "");
       
       if (data.recurrenceRule) {
@@ -503,7 +514,7 @@ export function NewWorkOrderForm({
     if (linkedProcedure?.id) {
       const currentFormState = {
         workOrderName, description, locationId, estimatedTime, assetIds, selectedUsers, dueDate, startDate, selectedWorkType, selectedPriority, qrCodeValue, recurrenceRule, teamIds, categoryIds, partIds, vendorIds, procedureId: linkedProcedure.id,
-        assetStatus, assetDowntimeType, assetStatusNotes, assetStatusSince, assetStatusTo
+        assetStatus, assetDowntimeType, assetStatusNotes, assetStatusSince, assetStatusTo, status
       };
       navigate(`/library/${linkedProcedure.id}/edit`, { state: { returnPath: location.pathname, previousFormState: currentFormState } });
     }
@@ -529,8 +540,8 @@ export function NewWorkOrderForm({
       const formState: any = {
         title: workOrderName,
         description,
-        // ✅ FIX: Use 'open' only for CREATE. For EDIT, use existing status.
-        status: isEditing ? originalData.status : "open",
+        // ✅ UI Mapping back to Backend strings
+        status: { "Open": "open", "In Progress": "in_progress", "On Hold": "on_hold", "Completed": "completed" }[status] || "open",
         workType: selectedWorkType ? selectedWorkType.toLowerCase() : "reactive", // Fallback and ensure lowercase
         qrCode: qrCodeValue || undefined,
         priority: { None: "low", Low: "low", Medium: "medium", High: "high", Urgent: "urgent" }[selectedPriority] || "low",
@@ -640,6 +651,7 @@ export function NewWorkOrderForm({
           />
           <WorkOrderClassificationAndLinks
             selectedPriority={selectedPriority} onPriorityChange={setSelectedPriority}
+            status={status} onStatusChange={setStatus}
             qrCodeValue={qrCodeValue} onQrCodeChange={setQrCodeValue}
             teamIds={teamIds} onTeamSelect={(val) => setTeamIds(val as string[])} teamOptions={teamOptions} isTeamsLoading={false} onFetchTeams={() => handleFetch("team-members", setTeamOptions)} onCreateTeam={() => toast("Open Create Team Modal")}
             categoryIds={categoryIds} onCategorySelect={(val) => setCategoryIds(val as string[])} categoryOptions={categoryOptions} isCategoriesLoading={false} onFetchCategories={() => handleFetch("categories", setCategoryOptions)} onCreateCategory={() => toast("Open Create Category Modal")}

@@ -676,6 +676,34 @@ export default function WorkOrderDetailModal({
                         {/* Details Grid (Clickable) */}
                         <div className="border-t pt-6 grid grid-cols-2 gap-6">
                             <div><h3 className="text-sm font-medium mb-2 text-gray-700">Assets</h3><div className="flex items-start gap-2"><Factory className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.assets, navigate, (id) => `/assets?assetId=${id}`)}</span></div></div>
+                            
+                            {/* ✅ Asset Status Fields */}
+                            {(workOrder.assetStatus || (workOrder.assets && workOrder.assets.length > 0 && workOrder.assets[0].status)) && (
+                                <div>
+                                    <h3 className="text-sm font-medium mb-2 text-gray-700">Asset Status</h3>
+                                    <div className="flex items-center gap-2">
+                                        <div className={`h-2.5 w-2.5 rounded-full ${
+                                            (workOrder.assetStatus || workOrder.assets[0].status).toLowerCase() === 'offline' ? 'bg-red-500' :
+                                            (workOrder.assetStatus || workOrder.assets[0].status).toLowerCase() === 'online' ? 'bg-green-500' : 'bg-gray-400'
+                                        }`} />
+                                        <span className="text-sm text-gray-900 capitalize">{safeRender(workOrder.assetStatus || workOrder.assets[0].status)}</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {workOrder.assetDowntimeType && (
+                                <div><h3 className="text-sm font-medium mb-2 text-gray-700">Downtime Type</h3><p className="text-sm text-gray-500 capitalize">{workOrder.assetDowntimeType}</p></div>
+                            )}
+                             {workOrder.assetStatusSince && (
+                                <div><h3 className="text-sm font-medium mb-2 text-gray-700">Since</h3><p className="text-sm text-gray-500">{formatDate(workOrder.assetStatusSince, true)}</p></div>
+                            )}
+                            {workOrder.assetStatusTo && (
+                                <div><h3 className="text-sm font-medium mb-2 text-gray-700">Estimated Up</h3><p className="text-sm text-gray-500">{formatDate(workOrder.assetStatusTo, true)}</p></div>
+                            )}
+                            {workOrder.assetStatusNotes && (
+                                <div className="col-span-2"><h3 className="text-sm font-medium mb-2 text-gray-700">Status Notes</h3><p className="text-sm text-gray-500">{workOrder.assetStatusNotes}</p></div>
+                            )}
+
                             <div><h3 className="text-sm font-medium mb-2 text-gray-700">Location</h3><div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-gray-400" /><span className="text-sm"><span onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (workOrder.location?.id) navigate(`/locations/${workOrder.location.id}`); }} className={workOrder.location?.id ? "text-blue-600 hover:underline cursor-pointer" : ""}>{workOrder.location?.name || workOrder.location || "N/A"}</span></span></div></div>
                             <div><h3 className="text-sm font-medium mb-2 text-gray-700">Estimated Time</h3><div className="flex items-center gap-2"><Clock className="h-4 w-4 text-gray-400" /><span className="text-sm text-gray-900">{formatDecimalHoursToDisplay(workOrder.estimatedTimeHours)}</span></div></div>
                             <div><h3 className="text-sm font-medium mb-2 text-gray-700">Work Type</h3><div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-gray-400" /><span className="text-sm text-gray-900">{workOrder.workType || "N/A"}</span></div></div>

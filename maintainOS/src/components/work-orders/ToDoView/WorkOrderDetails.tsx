@@ -77,7 +77,6 @@ const formatDecimalHoursToDisplay = (hours: any) => {
   if (m === 0) return `${h}h`;
   return `${h}h ${m}m`;
 };
-
 const renderClickableList = (
   items: any[],
   navigate: any,
@@ -100,6 +99,41 @@ const renderClickableList = (
       {i < items.length - 1 && ", "}
     </span>
   ));
+};
+
+const renderAssetList = (assets: any[], navigate: any) => {
+  if (!assets || !Array.isArray(assets) || assets.length === 0) return "—";
+  return (
+    <div className="flex flex-col gap-2">
+      {assets.map((asset, i) => (
+        <div key={asset.id || i} className="flex flex-col">
+          <span
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              navigate(`/assets?assetId=${asset.id}`);
+            }}
+            className="text-blue-600 hover:underline cursor-pointer font-medium"
+          >
+            {asset.name || "Unknown Asset"}
+          </span>
+          {asset.status && (
+            <div className="mt-1 flex items-center">
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
+                asset.status.toLowerCase() === 'online' 
+                  ? 'bg-green-100 text-green-700' 
+                  : asset.status.toLowerCase() === 'offline' 
+                    ? 'bg-red-100 text-red-700' 
+                    : 'bg-gray-100 text-gray-600'
+              }`}>
+                {asset.status === 'doNotTrack' ? 'Not Tracked' : asset.status.charAt(0).toUpperCase() + asset.status.slice(1).replace("_", " ")}
+              </span>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
 };
 
 const renderList = (items: any[], key = "name") => {
@@ -376,7 +410,7 @@ export function WorkOrderDetails({
 
         {/* Details Grid (Clickable) */}
         <div className="border-t p-6 grid grid-cols-2 gap-6">
-          <div><h3 className="text-sm font-medium mb-2">Assets</h3><div className="flex items-start gap-2"><Factory className="h-4 w-4 text-muted-foreground mt-0.5" /><span className="text-sm">{renderClickableList(selectedWorkOrder.assets, navigate, (id) => `/assets?assetId=${id}`)}</span></div></div>
+          <div><h3 className="text-sm font-medium mb-2">Assets</h3><div className="flex items-start gap-2"><Factory className="h-4 w-4 text-muted-foreground mt-0.5" /><span className="text-sm">{renderAssetList(selectedWorkOrder.assets, navigate)}</span></div></div>
           <div><h3 className="text-sm font-medium mb-2">Location</h3><div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-muted-foreground" /><span className="text-sm"><span onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (selectedWorkOrder.location?.id) navigate(`/locations/${selectedWorkOrder.location.id}`); }} className={selectedWorkOrder.location?.id ? "text-blue-600 hover:underline cursor-pointer" : ""}>{selectedWorkOrder.location?.name || selectedWorkOrder.location || "N/A"}</span></span></div></div>
           <div><h3 className="text-sm font-medium mb-2">Estimated Time</h3><div className="flex items-center gap-2"><Clock className="h-4 w-4 text-muted-foreground" /><span className="text-sm">{formatDecimalHoursToDisplay(selectedWorkOrder.estimatedTimeHours)}</span></div></div>
           <div><h3 className="text-sm font-medium mb-2">Work Type</h3><div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-muted-foreground" /><span className="text-sm">{selectedWorkOrder.workType || "N/A"}</span></div></div>

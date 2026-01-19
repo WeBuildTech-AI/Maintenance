@@ -368,10 +368,10 @@ export function AssignmentAndScheduling({
               value={getDisplayDate(dueDate)} 
               onClick={() => setShowDueCalendar(!showDueCalendar)} 
               placeholder="Select date" 
-              className="w-full h-12 px-4 pr-12 border border-gray-300 rounded-md text-gray-900 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white cursor-pointer transition-all shadow-sm placeholder-gray-400" 
+              className="w-full h-9 px-3 pr-10 border border-gray-300 rounded-md text-gray-900 text-[13px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white cursor-pointer transition-all shadow-sm placeholder-gray-400" 
             />
-            <div style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
-               <Calendar className="h-5 w-5 text-gray-400" />
+            <div style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
+               <Calendar className="h-4 w-4 text-gray-400" />
             </div>
             {showDueCalendar && (
               <div className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl p-4 animate-in fade-in zoom-in-95 duration-100">
@@ -392,14 +392,14 @@ export function AssignmentAndScheduling({
                     handleDueTimeChange("00:00"); 
                     setShowDueTimeInput(false); 
                 }}
-                className="w-full h-12 px-4 border border-gray-300 rounded-md text-gray-900 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all"
+                className="w-full h-9 px-3 border border-gray-300 rounded-md text-gray-900 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all"
               />
             </div>
           ) : (
             <button
               type="button"
               onClick={() => setShowDueTimeInput(true)}
-              className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-2 rounded-md transition-colors whitespace-nowrap h-12 flex items-center"
+              className="text-[13px] font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-md transition-colors whitespace-nowrap h-9 flex items-center"
             >
               + Add time
             </button>
@@ -418,10 +418,10 @@ export function AssignmentAndScheduling({
               value={getDisplayDate(startDate)} 
               onClick={() => setShowStartCalendar(!showStartCalendar)} 
               placeholder="Select date" 
-              className="w-full h-12 px-4 pr-12 border border-gray-300 rounded-md text-gray-900 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white cursor-pointer transition-all shadow-sm placeholder-gray-400" 
+              className="w-full h-9 px-3 pr-10 border border-gray-300 rounded-md text-gray-900 text-[13px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white cursor-pointer transition-all shadow-sm placeholder-gray-400" 
             />
-            <div style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
-               <Calendar className="h-5 w-5 text-gray-400" />
+            <div style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
+               <Calendar className="h-4 w-4 text-gray-400" />
             </div>
             {showStartCalendar && (
               <div className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl p-4 animate-in fade-in zoom-in-95 duration-100">
@@ -442,14 +442,14 @@ export function AssignmentAndScheduling({
                     handleStartTimeChange("00:00"); 
                     setShowStartTimeInput(false); 
                 }}
-                className="w-full h-12 px-4 border border-gray-300 rounded-md text-gray-900 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all"
+                className="w-full h-9 px-3 border border-gray-300 rounded-md text-gray-900 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all"
               />
             </div>
           ) : (
             <button
               type="button"
               onClick={() => setShowStartTimeInput(true)}
-              className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-2 rounded-md transition-colors whitespace-nowrap h-12 flex items-center"
+              className="text-[13px] font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-md transition-colors whitespace-nowrap h-9 flex items-center"
             >
               + Add time
             </button>
