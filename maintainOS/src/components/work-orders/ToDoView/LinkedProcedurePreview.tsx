@@ -123,7 +123,7 @@ export function LinkedProcedurePreview({ selectedWorkOrder }: LinkedProcedurePre
   const sections = fullProcedure.sections || [];
 
   return (
-    <div className="border-t border-gray-200 mt-4">
+    <div id="linked-procedure-section" className="border-t border-gray-200 mt-4">
       <div className="p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2 uppercase">
           <span className="bg-yellow-300 text-blue-600 p-1 px-2 rounded-md text-xs font-bold">PROCEDURE</span>

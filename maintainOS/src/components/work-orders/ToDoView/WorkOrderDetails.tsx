@@ -40,7 +40,7 @@ import UpdatePartsPanel from "../panels/UpdatePartsPanel";
 import TimeOverviewPanel from "../panels/TimeOverviewPanel";
 import OtherCostsPanel from "../panels/OtherCostsPanel";
 import { Tooltip } from "../../ui/tooltip";
-import RequiredFieldsModal from "./RequiredFieldsModal";
+
 
 // --- Helper Functions ---
 const formatCurrency = (amount: number) => {
@@ -170,7 +170,8 @@ export function WorkOrderDetails({
   activePanel,
   setActivePanel,
   onScrollToComments,
-  onStatusChangeSuccess, 
+  onStatusChangeSuccess,
+  onScrollToProcedure,
 }: any) {
   const navigate = useNavigate();
   const dispatch = useDispatch<any>();
@@ -178,7 +179,6 @@ export function WorkOrderDetails({
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showRequiredFieldsModal, setShowRequiredFieldsModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -265,6 +265,8 @@ export function WorkOrderDetails({
     }
   };
 
+  const [isShaking, setIsShaking] = useState(false);
+
   const handleStatusChange = async (newStatus: string) => {
     if (activeStatus === newStatus) return;
     const prevStatus = activeStatus;
@@ -295,7 +297,6 @@ export function WorkOrderDetails({
     } catch (error: any) {
       console.error("Status update failed", error);
       
-      // Extract error message and status from various possible structures
       const errorMessage = 
         (typeof error === 'string' && error) ||
         error?.message || 
@@ -308,7 +309,23 @@ export function WorkOrderDetails({
         errorMessage === "Required procedure fields are missing" || 
         errorMessage.includes("Required procedure fields are missing")
       ) {
-         setShowRequiredFieldsModal(true);
+         // 1. Toast
+         toast.error("Complete Required Procedure Fields");
+         
+         // 2. Vibrate
+         if (navigator.vibrate) {
+            navigator.vibrate(200);
+         }
+
+         // 3. Shake Button
+         setIsShaking(true);
+         setTimeout(() => setIsShaking(false), 500);
+
+         // 4. Scroll to Procedure
+         if (onScrollToProcedure) {
+          onScrollToProcedure();
+         }
+
       } else {
          toast.error(errorMessage || "Failed to update status");
       }
@@ -370,7 +387,7 @@ export function WorkOrderDetails({
       </div>
 
       <DeleteWorkOrderModal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} onConfirm={handleConfirmDelete} />
-      <RequiredFieldsModal isOpen={showRequiredFieldsModal} onClose={() => setShowRequiredFieldsModal(false)} />
+
 
       {selectedWorkOrder.wasDeleted && (
         <div className="mx-6 mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-2">
@@ -391,7 +408,15 @@ export function WorkOrderDetails({
               {[{ key: "open", label: "Open", Icon: MessageSquare }, { key: "on_hold", label: "On hold", Icon: PauseCircle }, { key: "in_progress", label: "In Progress", Icon: Clock }, { key: "done", label: "Done", Icon: CheckCircle2 }].map(({ key, label, Icon }) => {
                 const isActive = (activeStatus || "open").toLowerCase() === key;
                 return (
-                  <button key={key} type="button" onClick={() => handleStatusChange(key)} disabled={isDeleting} className={`h-16 w-20 rounded-lg border shadow-md inline-flex flex-col items-center justify-center gap-2 transition-all outline-none ${isActive ? "bg-orange-600 text-white border-orange-600" : "bg-orange-50 text-sidebar-foreground border-gray-200 hover:bg-orange-100"}`}>
+                  <button 
+                    key={key} 
+                    type="button" 
+                    onClick={() => handleStatusChange(key)} 
+                    disabled={isDeleting} 
+                    className={`h-16 w-20 rounded-lg border shadow-md inline-flex flex-col items-center justify-center gap-2 transition-all outline-none ${
+                      isActive ? "bg-orange-600 text-white border-orange-600" : "bg-orange-50 text-sidebar-foreground border-gray-200 hover:bg-orange-100"
+                    } ${activeStatus === key && isShaking ? "shake-animation" : ""}`}
+                  >
                     <Icon className="h-4 w-4" />
                     <span className="text-xs font-medium leading-none text-center px-2 truncate">{label}</span>
                   </button>

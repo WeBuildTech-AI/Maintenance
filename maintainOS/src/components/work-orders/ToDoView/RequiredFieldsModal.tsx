@@ -4,11 +4,13 @@ import { X } from "lucide-react";
 interface RequiredFieldsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onScrollToProcedure?: () => void;
 }
 
 const RequiredFieldsModal: React.FC<RequiredFieldsModalProps> = ({
   isOpen,
   onClose,
+  onScrollToProcedure,
 }) => {
   if (!isOpen) return null;
 
@@ -74,8 +76,7 @@ const RequiredFieldsModal: React.FC<RequiredFieldsModalProps> = ({
             lineHeight: "1.5",
           }}
         >
-          Some required fields have not been completed. You need to fill them
-          before completing the Work Order
+          Some required fields in procedure are not filled. You need to fill them before completing the Work Order.
         </p>
 
         <div
@@ -86,12 +87,36 @@ const RequiredFieldsModal: React.FC<RequiredFieldsModalProps> = ({
             alignItems: "center",
           }}
         >
+          {onScrollToProcedure && (
+            <button
+              onClick={() => {
+                onScrollToProcedure();
+                onClose();
+              }}
+              style={{
+                backgroundColor: "#2563EB",
+                color: "#fff",
+                border: "none",
+                borderRadius: "4px",
+                padding: "10px 24px",
+                fontSize: "14px",
+                fontWeight: "500",
+                cursor: "pointer",
+                width: "100%",
+                maxWidth: "280px",
+                transition: "background-color 0.2s",
+              }}
+            >
+             Complete Procedure Fields
+            </button>
+          )}
+
           <button
             onClick={onClose}
             style={{
-              backgroundColor: "#60A5FA", 
-              color: "#fff",
-              border: "none",
+              backgroundColor: "transparent",
+              color: "#374151",
+              border: "1px solid #D1D5DB",
               borderRadius: "4px",
               padding: "10px 24px",
               fontSize: "14px",
@@ -101,12 +126,9 @@ const RequiredFieldsModal: React.FC<RequiredFieldsModalProps> = ({
               maxWidth: "280px",
               transition: "background-color 0.2s",
             }}
-           
           >
             Cancel
           </button>
-
-          
         </div>
       </div>
     </div>

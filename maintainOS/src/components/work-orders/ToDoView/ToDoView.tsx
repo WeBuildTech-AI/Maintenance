@@ -221,6 +221,13 @@ export function ToDoView({
     }
   };
 
+  const handleScrollToProcedure = () => {
+    const procedureSection = document.getElementById("linked-procedure-section");
+    if (procedureSection) {
+      procedureSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   // --------------------------------------------------
   // 🧱 UI
   return (
@@ -339,6 +346,7 @@ export function ToDoView({
               activePanel={activePanel}
               setActivePanel={setActivePanel}
               onScrollToComments={handleScrollToComments} 
+              onScrollToProcedure={handleScrollToProcedure}
               // ✅ Trigger the state update in parent
               onStatusChangeSuccess={() => setLogRefreshTrigger((prev) => prev + 1)}
             />
