@@ -139,6 +139,8 @@ export function LinkedProcedurePreview({ selectedWorkOrder }: LinkedProcedurePre
             variant="runner" 
             onFieldSave={handleFieldSave}
             initialAnswers={existingAnswers} 
+            alwaysShowConditionalFields={false} // ✅ Restore logic (hide/show)
+            showConditionLabel={true} // ✅ But show the blue banner when shown!
           />
         </div>
       </div>

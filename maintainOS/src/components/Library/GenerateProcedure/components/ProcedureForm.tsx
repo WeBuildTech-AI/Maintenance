@@ -1794,10 +1794,11 @@ interface ProcedureFormProps {
   sections: any[];
   resetKey?: string;
   onAnswersChange?: (answers: Record<string, any>) => void;
-  variant?: "preview" | "runner"; // ✅ [ADDED] Default is Preview
-  onFieldSave?: (fieldId: string, value: any) => void; // ✅ [ADDED] Save Callback
-  initialAnswers?: Record<string, any>; // ✅ [ADDED] Accept fetched data
-  alwaysShowConditionalFields?: boolean; // ✅ [ADDED] For definition view
+  variant?: "preview" | "runner";
+  onFieldSave?: (fieldId: string, value: any) => void;
+  initialAnswers?: Record<string, any>;
+  alwaysShowConditionalFields?: boolean;
+  showConditionLabel?: boolean; // ✅ [ADDED]
 }
 
 export function ProcedureForm({
@@ -1806,10 +1807,11 @@ export function ProcedureForm({
   sections,
   resetKey,
   onAnswersChange,
-  variant = "preview", // ✅ [ADDED] Pass variant down
-  onFieldSave, // ✅ [ADDED] Pass callback down
-  initialAnswers = {}, // ✅ [ADDED] Default empty
-  alwaysShowConditionalFields = false, // ✅ [ADDED] Default false
+  variant = "preview",
+  onFieldSave,
+  initialAnswers = {},
+  alwaysShowConditionalFields = false,
+  showConditionLabel = false, // ✅ [ADDED]
 }: ProcedureFormProps) {
   const [answers, setAnswers] = useState<Record<string, any>>(initialAnswers);
 
@@ -1887,8 +1889,8 @@ export function ProcedureForm({
                     key={child.id}
                     className="pl-6 border-l-2 border-blue-100 ml-2 animate-in fade-in slide-in-from-left-2 mt-2"
                   >
-                    {/* Optional: Show Condition Label in 'Structure View' mode */}
-                    {alwaysShowConditionalFields && (
+                    {/* Optional: Show Condition Label in 'Structure View' mode OR if explicitly requested */}
+                    {(alwaysShowConditionalFields || showConditionLabel) && (
                       <div className="text-xs text-blue-500 mb-1 font-medium bg-blue-50 inline-block px-2 py-0.5 rounded">
                         Condition: {(child.condition?.conditionOperator || (child.condition as any)?.type)?.replace(/_/g, " ")} {child.condition?.conditionValue || (child.condition as any)?.value}
                       </div>
@@ -1910,7 +1912,7 @@ export function ProcedureForm({
       
       return roots.map(renderRecursive);
     },
-    [answers, updateAnswer, variant, onFieldSave, alwaysShowConditionalFields]
+    [answers, updateAnswer, variant, onFieldSave, alwaysShowConditionalFields, showConditionLabel]
   );
 
   const combinedRootItems = [...(rootFields || []), ...(rootHeadings || [])].sort(
