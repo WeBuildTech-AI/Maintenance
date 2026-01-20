@@ -205,7 +205,7 @@ export function MeterDetail({
                 // ✅ UPDATED: Path-based Routing
                 onClick={() => {
                   console.log("👉 Detail View Asset Click:", selectedMeter.assetId);
-                  navigate(`/assets/${selectedMeter.assetId}`);
+                  navigate(`/assets?assetId=${selectedMeter.assetId}&page=1&limit=50`);
                 }}
                 className="flex items-center cursor-pointer gap-2 hover:text-orange-600 hover:underline"
               >

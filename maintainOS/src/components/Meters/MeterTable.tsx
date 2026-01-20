@@ -420,9 +420,9 @@ export function MeterTable({
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
-                  console.log("Navigating to Asset:", `/assets/${record.assetId}`);
+                  console.log("Navigating to Asset:", `/assets?assetId=${record.assetId}&page=1&limit=50`);
                   if (record.assetId) {
-                    navigate(`/assets/${record.assetId}`); // URL path based
+                    navigate(`/assets?assetId=${record.assetId}&page=1&limit=50`); 
                   }
                 }}
               >

@@ -66,7 +66,7 @@ function transformField(field: FieldData, order: number): any {
     fieldName: field.label,
     fieldType: mapFieldType(field.selectedType),
     // --- 🔴 FIX: Backend rejects 'required'. Commenting out until backend DTO is updated. ---
-    // required: !!field.isRequired, 
+    required: !!field.isRequired, 
     order: order,
   };
 
