@@ -44,6 +44,12 @@ interface ProcedureBuilderContextType {
   setOverContainerId: React.Dispatch<React.SetStateAction<string | number | null>>;
   dropdownOpen: number | null;
   setDropdownOpen: React.Dispatch<React.SetStateAction<number | null>>;
+
+  // --- [NEW] Editable Name/Description in Context ---
+  procedureName: string;
+  setProcedureName: React.Dispatch<React.SetStateAction<string>>;
+  procedureDescription: string;
+  setProcedureDescription: React.Dispatch<React.SetStateAction<string>>;
   
   // --- [NEW] Yeh state LibDynamicSelect ke liye zaroori hai ---
   activeDropdown: string | null;
@@ -314,6 +320,10 @@ export function ProcedureBuilderProvider({
   const [settings, setSettings] = useState<ProcedureSettingsState>(() => 
     initialState?.settings || defaultSettingsState
   );
+
+  // --- [NEW] Name/Description State ---
+  const [procedureName, setProcedureName] = useState(name);
+  const [procedureDescription, setProcedureDescription] = useState(description);
 
   // --- Baaki saari state (No Change) ---
   const [activeContainerId, setActiveContainerId] = useState<number | "root">(
@@ -1388,6 +1398,11 @@ export function ProcedureBuilderProvider({
     handleFieldDragStart,
     handleFieldDragOver,
     handleFieldDragEnd,
+    // --- [NEW] Include new state in context value ---
+    procedureName,
+    setProcedureName,
+    procedureDescription,
+    setProcedureDescription,
   };
 
   return (
