@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { Button } from "../ui/button";
-import { Calendar, ChevronDown, Lock } from "lucide-react";
+import { Calendar, ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,6 +10,7 @@ import {
 import { Dialog, DialogContent } from "../ui/dialog";
 import { cn } from "../ui/utils";
 import { WorkOrdersTab } from "./WorkOrders";
+import { AssetHealthTab } from "./AssetHealth";
 import ReportingFilterBar from "./ReportingFilterBar";
 import { ReportingDetails } from "./ReportingDetails";
 import { RecentActivity } from "./RecentActivity";
@@ -146,7 +147,6 @@ export function Reporting() {
     {
       id: "asset-health",
       label: "Asset Health",
-      icon: <Lock className="h-3 w-3 ml-1" />,
     },
     { id: "reporting-details", label: "Reporting Details" },
     { id: "recent-activity", label: "Recent Activity" },
@@ -381,7 +381,7 @@ export function Reporting() {
         className="border-b border-border bg-white px-6 py-3"
         style={{ position: "relative", overflow: "visible" }}
       >
-        <ReportingFilterBar onParamsChange={handleFilterChange} />
+        <ReportingFilterBar onParamsChange={handleFilterChange} activeTab={activeTab} />
       </div>
 
       {/* Main Content */}
@@ -394,9 +394,10 @@ export function Reporting() {
           />
         )}
         {activeTab === "asset-health" && (
-          <div className="text-center py-12 text-gray-500">
-            Asset Health tab is locked. Upgrade to access this feature.
-          </div>
+          <AssetHealthTab
+            filters={filterParams}
+            dateRange={{ startDate, endDate }}
+          />
         )}
         {activeTab === "reporting-details" && (
           <ReportingDetails

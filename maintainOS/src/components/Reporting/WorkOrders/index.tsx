@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import { CreatedVsCompletedChart } from "./CreatedVsCompletedChart";
 import { WorkOrdersPriorityChart } from "./PriorityChart";
 import { WorkOrdersStatusChart } from "./StatusChart";
@@ -18,8 +20,25 @@ export function WorkOrdersTab({
   dateRange,
   onNavigateToDetails,
 }: WorkOrdersTabProps) {
-  console.log(" WorkOrdersTab received filters:", filters);
-  console.log(" WorkOrdersTab received dateRange:", dateRange);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Brief loading state when tab mounts or date range changes
+    setIsLoading(true);
+    const timer = setTimeout(() => setIsLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, [dateRange.startDate, dateRange.endDate]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
+          <span className="text-sm text-gray-500">Loading Work Orders...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-6">
