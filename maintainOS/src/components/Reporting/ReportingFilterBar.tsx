@@ -56,9 +56,9 @@ const ALL_FILTERS = [
     label: "Criticality",
     icon: <AlertCircle size={16} />,
     options: [
-      { label: "Critical", value: "high" },
-      { label: "Important", value: "medium" },
-      { label: "Normal", value: "low" },
+      { label: "High", value: "high" },
+      { label: "Medium", value: "medium" },
+      { label: "Low", value: "low" },
     ],
   },
   {

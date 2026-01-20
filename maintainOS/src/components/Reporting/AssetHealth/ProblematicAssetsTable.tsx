@@ -93,9 +93,9 @@ export function ProblematicAssetsTable({
       low: "bg-green-100 text-green-700 border-green-200",
     };
     const labels: Record<string, string> = {
-      high: "Critical",
-      medium: "Important",
-      low: "Normal",
+      high: "High",
+      medium: "Medium",
+      low: "Low",
     };
     return (
       <span
@@ -164,10 +164,10 @@ export function ProblematicAssetsTable({
             See More
             <ExternalLink className="h-3 w-3" />
           </a>
-          <button className="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 flex items-center gap-2">
+          {/* <button className="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 flex items-center gap-2">
             <span className="text-gray-600">Group by Asset</span>
             <span className="text-amber-600">+</span>
-          </button>
+          </button> */}
         </div>
       </div>
 
@@ -252,20 +252,20 @@ export function ProblematicAssetsTable({
                     </span>
                   </div>
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 text-center">
                   {getCriticalityBadge(asset.criticality)}
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-600">
                   {asset.location || "N/A"}
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-600">—</td>
-                <td className="px-4 py-3 text-sm text-gray-900 font-medium">
+                <td className="px-4 py-3 text-sm text-gray-600">{asset.type}</td>
+                <td className="px-4 py-3 text-sm text-gray-900 text-center font-medium">
                   {asset.formattedDowntime}
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-900">
+                <td className="px-4 py-3 text-sm text-gray-900 text-center">
                   {asset.failures}
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-900">
+                <td className="px-4 py-3 text-sm text-gray-900 text-center">
                   ${asset.maintenanceCost.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                 </td>
                 <td className="px-4 py-3 text-sm text-amber-600 hover:text-amber-700">

@@ -3,6 +3,7 @@ export interface ProblematicAsset {
   name: string;
   criticality: "high" | "medium" | "low";
   location: string;
+  type: string;
   downtimeMs: number;
   downtimeHours: number;
   formattedDowntime: string;
