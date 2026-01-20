@@ -886,6 +886,7 @@ function YesNoRunner({
 
 // --- Helper: checkCondition (Full logic - NO CHANGE) ---
 function checkCondition(condition: ConditionData, parentAnswer: any): boolean {
+  if (!condition) return true; // [CHECK] If no condition exists, allow rendering (default to visible)
   const op = condition.conditionOperator || condition.type;
 
   // --- [FIX FOR RUNNER]: Handle Object answers (Inspection Check) ---
@@ -970,6 +971,7 @@ const PreviewField = memo(function PreviewField({
   variant, // ✅ [ADDED]
   onFieldSave, // ✅ [ADDED]
 }: Omit<RenderItemProps, "renderAllItems" | "allFieldsInScope">) {
+  if (!field || !field.id) return null;
   // --- Normalize Builder vs API props ---
   const fieldId = field.id.toString();
   const currentValue = answers[fieldId];
@@ -1878,7 +1880,7 @@ export function ProcedureForm({
             {children.map((child) => {
               const isMet = checkCondition(
                 child.condition,
-                answers[currentItem.id.toString()]
+                currentItem.id ? answers[currentItem.id.toString()] : undefined
               );
               
               const shouldRender = isMet || alwaysShowConditionalFields;

@@ -65,7 +65,7 @@ function mapCondition(condition: ConditionData, parentType: string): any {
 // --- Helper: Transforms a single UI field to the target JSON field ---
 function transformField(field: FieldData, order: number): any {
   const targetField: any = {
-    // id: field.id, // REMOVED: Backend does not want internal numeric IDs
+    id: field.id, // [FIX] Restore ID for Preview/Form usage
     fieldName: field.label,
     fieldType: mapFieldType(field.selectedType),
     required: !!field.isRequired, 
