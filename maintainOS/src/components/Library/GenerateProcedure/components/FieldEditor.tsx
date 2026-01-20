@@ -50,7 +50,8 @@ export function FieldEditor({
     handleDuplicateField,
     handleFieldPropChange,
     setIsLinkModalOpen,
-    handleToggleLogicEditor, 
+    handleToggleLogicEditor,
+    setIsAddConditionModalOpen, // [NEW] 
   } = useProcedureBuilder();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -111,7 +112,7 @@ export function FieldEditor({
       {/* --- Expanded Field Body --- */}
       <div className="flex-1 mb-6 ml-[-28px]">
         <div
-          ref={(el) => (fieldBlockRefs.current[field.id] = el)}
+          ref={(el) => { if (fieldBlockRefs.current) fieldBlockRefs.current[field.id] = el; }}
           className="flex-1 border border-blue-400 bg-white rounded-lg p-4 relative cursor-pointer"
         >
           <div className="flex-1">
@@ -128,10 +129,10 @@ export function FieldEditor({
               />
               <div
                 className="relative"
-                ref={(el) => (dropdownRefs.current[field.id] = el)}
+                ref={(el) => { if (dropdownRefs.current) dropdownRefs.current[field.id] = el; }}
               >
                 <div
-                  ref={(el) => (buttonRefs.current[field.id] = el)}
+                  ref={(el) => { if (buttonRefs.current) buttonRefs.current[field.id] = el; }}
                   onClick={(e) => {
                     e.stopPropagation();
                     setDropdownOpen(
@@ -414,12 +415,16 @@ export function FieldEditor({
                 {/* --- Logic Button --- */}
                 {logicEnabledFieldTypes.includes(field.selectedType) && (
                   <button
-                    ref={(el) =>
-                      (logicEditorButtonRefs.current[field.id] = el)
-                    }
+                    ref={(el) => { if (logicEditorButtonRefs.current) logicEditorButtonRefs.current[field.id] = el; }}
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleToggleLogicEditor(field.id);
+                      // If logic is already open/has conditions, toggle the view. 
+                      // If it's empty/new, open the modal to ADD the first condition.
+                      if (field.conditions && field.conditions.length > 0) {
+                          handleToggleLogicEditor(field.id);
+                      } else {
+                          setIsAddConditionModalOpen({ fieldId: field.id });
+                      }
                     }}
                     title="Add/Edit Conditions" // ✅ Added Tooltip
                     className={`hover:text-blue-600 ${
@@ -513,7 +518,7 @@ export function FieldEditor({
 
                 <div style={{ position: "relative" }}>
                   <button
-                    ref={(el) => (fieldMenuButtonRefs.current[field.id] = el)}
+                    ref={(el) => { if (fieldMenuButtonRefs.current) fieldMenuButtonRefs.current[field.id] = el; }}
                     onClick={(e) => {
                       e.stopPropagation();
                       setFieldMenuOpen(
@@ -527,7 +532,7 @@ export function FieldEditor({
                   </button>
                   {fieldMenuOpen === field.id && (
                     <div
-                      ref={(el) => (fieldMenuPanelRefs.current[field.id] = el)}
+                      ref={(el) => { if (fieldMenuPanelRefs.current) fieldMenuPanelRefs.current[field.id] = el; }}
                       style={{
                         position: "absolute",
                         right: 0,

@@ -13,7 +13,7 @@ import {
 // --- 👇 [FIX] 'useEffect' ko React se import karne ki zaroorat nahi hai ---
 
 export function ConditionLogicEditor({ field }: { field: FieldData }) {
-  const { logicEditorPanelRefs, handleAddCondition } = useProcedureBuilder();
+  const { logicEditorPanelRefs, setIsAddConditionModalOpen } = useProcedureBuilder();
 
   // --- 👇 [FIX] 'useEffect' logic yahaan se poori tarah HATA di gayi hai ---
   // (Yeh pichhle response mein galti se add ho gayi thi)
@@ -37,7 +37,7 @@ export function ConditionLogicEditor({ field }: { field: FieldData }) {
         />
       ))}
       <button
-        onClick={() => handleAddCondition(field.id)}
+        onClick={() => setIsAddConditionModalOpen({ fieldId: field.id })}
         className="text-blue-600 text-sm font-medium mt-2 flex items-center gap-1.5 hover:text-blue-800"
       >
         <Share2 size={14} />

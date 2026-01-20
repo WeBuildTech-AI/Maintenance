@@ -16,6 +16,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { AddLinkModal } from "./components/AddLinkModal";
+import { AddConditionModal } from "./components/AddConditionModal";
 import { Link2, Trash2 } from "lucide-react";
 
 export default function ProcedureBody({ name, description }: ProcedureBodyProps) {
@@ -33,6 +34,8 @@ export default function ProcedureBody({ name, description }: ProcedureBodyProps)
     linkModalRef,
     // --- 🐞 YEH ADD KIYA HAI ---
     findFieldRecursive,
+    isAddConditionModalOpen, // [NEW]
+    setIsAddConditionModalOpen // [NEW]
     // --- END ---
   } = useProcedureBuilder();
 
@@ -124,6 +127,12 @@ export default function ProcedureBody({ name, description }: ProcedureBodyProps)
           isOpen={!!isLinkModalOpen.fieldId}
           onClose={() => setIsLinkModalOpen({ fieldId: null })}
           onSave={handleSaveLink}
+        />
+
+        <AddConditionModal
+           isOpen={!!isAddConditionModalOpen.fieldId}
+           onClose={() => setIsAddConditionModalOpen({ fieldId: null })}
+           fieldId={isAddConditionModalOpen.fieldId}
         />
 
         <DragOverlay>
