@@ -5,6 +5,7 @@ import { ProblematicAssetsTable } from "./ProblematicAssetsTable";
 import { UnplannedVsPlannedChart } from "./UnplannedVsPlannedChart";
 import { DowntimeReasonsChart } from "./DowntimeReasonsChart";
 import { AvailabilityOverTimeChart } from "./AvailabilityOverTimeChart";
+import { TotalDowntimeChart } from "./TotalDowntimeChart";
 
 interface AssetHealthTabProps {
   filters: Record<string, any>;
@@ -40,14 +41,16 @@ export function AssetHealthTab({ filters: _filters, dateRange }: AssetHealthTabP
       {/* Problematic Assets Table */}
       <ProblematicAssetsTable dateRange={dateRange} limit={10} />
 
-      {/* Downtime Charts */}
+      {/* Downtime Charts - Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <UnplannedVsPlannedChart filters={_filters} dateRange={dateRange} />
         <DowntimeReasonsChart />
       </div>
       
+      {/* Time Series Charts - Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <AvailabilityOverTimeChart filters={_filters} dateRange={dateRange} />
+        <AvailabilityOverTimeChart filters={_filters} dateRange={dateRange} />
+        <TotalDowntimeChart filters={_filters} dateRange={dateRange} />
       </div>
     </div>
   );
