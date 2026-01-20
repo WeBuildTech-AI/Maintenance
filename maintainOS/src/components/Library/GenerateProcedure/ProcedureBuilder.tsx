@@ -9,7 +9,7 @@ import { ProcedurePreviewModal } from "./components/ProcedurePreviewModal";
 import { useDispatch } from "react-redux";
 import { type RootState, type AppDispatch } from "../../../store"; 
 import { createProcedure, updateProcedure } from "../../../store/procedures/procedures.thunks"; 
-import { FieldData, ProcedureSettingsState } from "./types";
+import type { FieldData, ProcedureSettingsState } from "./types";
 
 interface BuilderProps {
   name: string;
@@ -46,10 +46,11 @@ export default function ProcedureBuilder({
   const FOOTER_HEIGHT = 60;
 
   // --- Helper to remove IDs from payload (for clean JSON) ---
+  // --- Helper to remove IDs from payload (for clean JSON) ---
   const removeId = (obj: any) => {
     const { 
       id, 
-      condition,
+      // condition, // FIXED: Do NOT remove condition!
       parentId,
       sectionId, 
       ...rest 

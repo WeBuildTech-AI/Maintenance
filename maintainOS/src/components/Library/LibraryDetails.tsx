@@ -338,6 +338,7 @@ export function LibraryDetails({
               rootHeadings={rootHeadings}
               sections={sections}
               resetKey={selectedProcedure.id}
+              alwaysShowConditionalFields={true} // ✅ [ADDED] Show all nested fields in library view
             />
           </div>
         )}
