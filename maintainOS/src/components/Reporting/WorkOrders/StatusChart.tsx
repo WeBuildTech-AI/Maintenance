@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useQuery } from "@apollo/client/react";
 import { GET_CHART_DATA } from "../../../graphql/reporting.queries";
 import { Card, CardHeader, CardContent, CardTitle } from "../../ui/card";
@@ -18,12 +18,14 @@ interface WorkOrdersStatusChartProps {
   filters: Record<string, any>;
   dateRange: { startDate: string; endDate: string };
   onNavigateToDetails?: () => void;
+  onLoadingChange?: (isLoading: boolean) => void;
 }
 
 export function WorkOrdersStatusChart({
   filters,
   dateRange,
   onNavigateToDetails,
+  onLoadingChange,
 }: WorkOrdersStatusChartProps) {
   const apiFilters = useMemo(
     () => mapFilters(filters, dateRange),
@@ -43,6 +45,11 @@ export function WorkOrdersStatusChart({
     },
     fetchPolicy: "cache-and-network",
   });
+
+  // Notify parent of loading state changes
+  useEffect(() => {
+    onLoadingChange?.(loading);
+  }, [loading, onLoadingChange]);
 
   if (loading) {
     return (
