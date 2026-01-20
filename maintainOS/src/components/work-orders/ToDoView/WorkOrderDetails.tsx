@@ -40,6 +40,7 @@ import UpdatePartsPanel from "../panels/UpdatePartsPanel";
 import TimeOverviewPanel from "../panels/TimeOverviewPanel";
 import OtherCostsPanel from "../panels/OtherCostsPanel";
 import { Tooltip } from "../../ui/tooltip";
+import RequiredFieldsModal from "./RequiredFieldsModal";
 
 // --- Helper Functions ---
 const formatCurrency = (amount: number) => {
@@ -177,6 +178,7 @@ export function WorkOrderDetails({
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showRequiredFieldsModal, setShowRequiredFieldsModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -292,7 +294,25 @@ export function WorkOrderDetails({
 
     } catch (error: any) {
       console.error("Status update failed", error);
-      toast.error("Failed to update status");
+      
+      // Extract error message and status from various possible structures
+      const errorMessage = 
+        (typeof error === 'string' && error) ||
+        error?.message || 
+        error?.data?.message || 
+        error?.response?.data?.message || 
+        "";
+
+      // Matches: "Required procedure fields are missing"
+      if (
+        errorMessage === "Required procedure fields are missing" || 
+        errorMessage.includes("Required procedure fields are missing")
+      ) {
+         setShowRequiredFieldsModal(true);
+      } else {
+         toast.error(errorMessage || "Failed to update status");
+      }
+      
       setActiveStatus(prevStatus);
     }
   };
@@ -350,6 +370,7 @@ export function WorkOrderDetails({
       </div>
 
       <DeleteWorkOrderModal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} onConfirm={handleConfirmDelete} />
+      <RequiredFieldsModal isOpen={showRequiredFieldsModal} onClose={() => setShowRequiredFieldsModal(false)} />
 
       {selectedWorkOrder.wasDeleted && (
         <div className="mx-6 mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-2">
