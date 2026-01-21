@@ -10,23 +10,24 @@ export function ToDoTabs({
   setActiveTab,
   todoCount,
   doneCount,
+  currentSortType,
+  currentSortOrder,
   onSortChange,
 }: {
   activeTab: "todo" | "done";
   setActiveTab: (tab: "todo" | "done") => void;
   todoCount: number;
   doneCount: number;
+  currentSortType: string;
+  currentSortOrder: "asc" | "desc";
   onSortChange: (sortType: string, sortOrder: "asc" | "desc", unreadFlag?: boolean) => void;
 }) {
-  const [sortType, setSortType] = useState("Last Updated");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  // ✅ Removed internal state to relying on Props
   const [unreadFirst, setUnreadFirst] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const buttonRef = useRef<HTMLDivElement>(null);
 
   const handleSortChange = (type: string, order: "asc" | "desc") => {
-    setSortType(type);
-    setSortOrder(order);
     setIsModalOpen(false);
     onSortChange(type, order, unreadFirst);
   };
@@ -34,7 +35,7 @@ export function ToDoTabs({
   const handleToggleUnread = () => {
     const newVal = !unreadFirst;
     setUnreadFirst(newVal);
-    onSortChange(sortType, sortOrder, newVal);
+    onSortChange(currentSortType, currentSortOrder, newVal);
   };
 
   return (
@@ -72,7 +73,7 @@ export function ToDoTabs({
               onClick={() => setIsModalOpen((p) => !p)}
               className="flex items-center gap-1 text-blue-600 font-medium"
             >
-              {sortType} : {sortOrder === "asc" ? "Ascending" : "Descending"}
+              {currentSortType} : {currentSortOrder === "asc" ? "Ascending" : "Descending"}
               {isModalOpen ? (
                 <ChevronUp className="w-4 h-4 text-blue-600" />
               ) : (
@@ -89,11 +90,11 @@ export function ToDoTabs({
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSortChange={handleSortChange}
-        currentSort={sortType}
-        currentOrder={sortOrder}
+        currentSort={currentSortType}
+        currentOrder={currentSortOrder}
         unreadFirst={unreadFirst}
         onToggleUnread={handleToggleUnread}
-        anchorRef={buttonRef}
+        anchorRef={buttonRef as any}
       />
     </div>
   );
