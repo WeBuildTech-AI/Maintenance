@@ -165,12 +165,14 @@ export function NewWorkOrderForm({
   existingWorkOrder,
   editId,
   onCancel,
+  prefillData,
 }: {
   onCreate: () => void;
   existingWorkOrder?: any;
   editId?: string;
   isEditMode?: boolean;
   onCancel?: () => void;
+  prefillData?: any;
 }) {
   const dispatch = useDispatch<any>();
   const navigate = useNavigate();
@@ -507,6 +509,30 @@ export function NewWorkOrderForm({
 
     loadWorkOrder();
   }, [dispatch, activeId, existingWorkOrder, isCreateRoute, location.state]);
+
+  // ✅ Handle prefillData from Assets offline prompt or other sources
+  useEffect(() => {
+    if (prefillData && !activeId) {
+      // Only apply prefill if not editing an existing work order
+      if (prefillData.assetIds && prefillData.assetIds.length > 0) {
+          setAssetIds(prefillData.assetIds);
+          if (prefillData.assetName) {
+            setAssetOptions([{ id: prefillData.assetIds[0], name: prefillData.assetName }]);
+          }
+      }
+      if (prefillData.locationId) {
+          setLocationId(prefillData.locationId);
+          if (prefillData.locationName) {
+            setLocationOptions([{ id: prefillData.locationId, name: prefillData.locationName }]);
+          }
+      }
+      if (prefillData.assetStatus) setAssetStatus(prefillData.assetStatus);
+      if (prefillData.assetStatusSince) setAssetStatusSince(prefillData.assetStatusSince);
+      if (prefillData.assetStatusTo) setAssetStatusTo(prefillData.assetStatusTo);
+      if (prefillData.assetDowntimeType) setAssetDowntimeType(prefillData.assetDowntimeType);
+      if (prefillData.assetStatusNotes) setAssetStatusNotes(prefillData.assetStatusNotes);
+    }
+  }, [prefillData, activeId]);
 
   const handleEditLinkedProcedure = () => {
     if (linkedProcedure?.id) {

@@ -6,9 +6,11 @@ import { NewWorkOrderForm } from "./NewWorkOrderForm/NewWorkOrderFrom";
 export default function NewWorkOrderModal({
   isOpen,
   onClose,
+  prefillData,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  prefillData?: any;
 }) {
   if (!isOpen) return null;
 
@@ -53,6 +55,7 @@ export default function NewWorkOrderModal({
             onCreate={() => {
               onClose();
             }}
+            prefillData={prefillData}
           />
         </div>
       </div>

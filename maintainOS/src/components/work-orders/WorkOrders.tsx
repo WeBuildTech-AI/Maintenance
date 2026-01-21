@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { useNavigate, useMatch } from "react-router-dom";
+import { useNavigate, useMatch, useLocation } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { FetchWorkOrdersParams } from "../../store/workOrders/workOrders.types";
 import { fetchWorkOrders } from "../../store/workOrders/workOrders.thunks";
@@ -49,6 +49,10 @@ export function WorkOrders() {
 
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
+  const location = useLocation();
+  
+  // Get prefill data from navigation state (from Assets offline prompt)
+  const prefillData = (location.state as any)?.prefillData;
 
   const isCreateRoute = useMatch("/work-orders/create");
   const editMatch = useMatch("/work-orders/:id/edit");
@@ -282,6 +286,7 @@ export function WorkOrders() {
           setIsModalOpen(false);
           navigate("/work-orders");
         }}
+        prefillData={prefillData}
       />
 
       {/* ✅ Work Order Detail Modal (for List/Calendar View) */}
