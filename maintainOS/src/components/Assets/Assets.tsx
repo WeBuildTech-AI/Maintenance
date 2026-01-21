@@ -74,6 +74,7 @@ export const Assets: FC = () => {
   const [assetData, setAssetData] = useState<Asset[]>([]);
   const [sortType, setSortType] = useState("Creation Date");
   const [sortOrder, setSortOrder] = useState("desc");
+  const [shouldSelectFirst, setShouldSelectFirst] = useState(false);
   const [allLocationData, setAllLocationData] = useState<Location[]>([]);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -177,26 +178,14 @@ export const Assets: FC = () => {
           if (found) {
             setSelectedAsset(found);
           } else {
-            // ID invalid hai toh default recent asset lo
-            const mostRecent = [...assets].sort(
-              (a, b) =>
-                new Date(b.updatedAt).getTime() -
-                new Date(a.updatedAt).getTime()
-            );
-            setSelectedAsset(mostRecent[0]);
+            // ID invalid hai or not found, trigger auto select first
+            setShouldSelectFirst(true);
           }
         }
         // Case B: URL mein ID nahi hai
         else {
-          // ✅ CRITICAL FIX: Agar pehle se koi asset selected hai (memory mein), toh usse mat chhedo.
-          // Ye tab kaam aayega jab aap Table se wapis Panel mein aaoge.
           if (!selectedAsset) {
-            const mostRecent = [...assets].sort(
-              (a, b) =>
-                new Date(b.updatedAt).getTime() -
-                new Date(a.updatedAt).getTime()
-            );
-            setSelectedAsset(mostRecent[0]);
+             setShouldSelectFirst(true);
           }
         }
       } else {
@@ -221,14 +210,6 @@ export const Assets: FC = () => {
         (a: any) => String(a.id) === String(paramAssetId)
       );
       if (found && found.id !== selectedAsset?.id) setSelectedAsset(found);
-    } else {
-      if (!selectedAsset) {
-        const mostRecent = [...assetData].sort(
-          (a: any, b: any) =>
-            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-        );
-        setSelectedAsset(mostRecent[0]);
-      }
     }
   }, [assetData, paramAssetId]);
 
@@ -364,9 +345,14 @@ export const Assets: FC = () => {
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
   const paginatedAssets = sortedAndFilteredAssets.slice(startIndex, endIndex);
 
+  // Auto-Select First Item on Sort Change (Restored)
   useEffect(() => {
-    setCurrentPage(1);
-  }, [sortType, sortOrder, debouncedSearch, filterParams]);
+    if (shouldSelectFirst && sortedAndFilteredAssets.length > 0) {
+      const firstAsset = sortedAndFilteredAssets[0];
+      setSelectedAsset(firstAsset);
+      setShouldSelectFirst(false);
+    }
+  }, [shouldSelectFirst, sortedAndFilteredAssets]);
 
   // ✅ New Handler to switch asset and close edit mode
   const handleSelectAsset = useCallback((asset: Asset) => {
@@ -443,9 +429,15 @@ export const Assets: FC = () => {
                   setShowNewAssetForm={setShowNewAssetForm}
                   loading={loading}
                   sortType={sortType}
-                  setSortType={setSortType}
+                  setSortType={(t) => {
+                     setSortType(t);
+                     setShouldSelectFirst(true);
+                  }}
                   sortOrder={sortOrder}
-                  setSortOrder={setSortOrder}
+                  setSortOrder={(o) => {
+                     setSortOrder(o);
+                     setShouldSelectFirst(true);
+                  }}
                   allLocationData={allLocationData}
                   currentPage={currentPage}
                   setCurrentPage={setCurrentPage}
