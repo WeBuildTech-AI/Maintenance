@@ -74,9 +74,10 @@ export function Library() {
   const [showDeleted, setShowDeleted] = useState(false);
 
   const [isSortModalOpen, setIsSortModalOpen] = useState(false);
-  const [sortType, setSortType] = useState("Title");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [sortType, setSortType] = useState("Creation Date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const sortButtonRef = useRef<HTMLDivElement>(null); 
+  const [shouldSelectFirst, setShouldSelectFirst] = useState(false);
 
   const [visibleColumns, setVisibleColumns] = useState<string[]>(allToggleableColumns);
 
@@ -151,32 +152,6 @@ export function Library() {
     });
   }, []);
 
-  // --- SYNC SELECTION ---
-  useEffect(() => {
-    if (procedures.length === 0) return;
-
-    if (routeId) {
-      const found = procedures.find((p) => p.id === routeId);
-      if (found) {
-        setSelectedProcedure(found);
-        if(viewMode === "table" && !isFormOpen) {
-            setModalProcedure(found);
-        }
-      }
-    } else {
-      if (viewMode === "panel") {
-        if (!selectedProcedure && sortedProcedures.length > 0) {
-           setSelectedProcedure(sortedProcedures[0]);
-        }
-      } else {
-        setSelectedProcedure(null);
-        setModalProcedure(null);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routeId, procedures, viewMode, isFormOpen]); 
-  // Note: sortedProcedures is derived from procedures, so we can exclude it safely to avoid cycles
-
   // --- SORTING ---
   const sortedProcedures = useMemo(() => {
     const compareStrings = (a: string, b: string) => {
@@ -196,7 +171,7 @@ export function Library() {
           valA = a.categories?.[0] || ""; 
           valB = b.categories?.[0] || "";
           return sortOrder === "asc" ? compareStrings(valA, valB) : compareStrings(valB, valA);
-        case "Created At":
+        case "Creation Date":
           valA = new Date(a.createdAt || 0).getTime();
           valB = new Date(b.createdAt || 0).getTime();
           break;
@@ -216,6 +191,35 @@ export function Library() {
       return sortOrder === "asc" ? valA - valB : valB - valA;
     });
   }, [procedures, sortType, sortOrder]);
+
+  // --- SYNC SELECTION ---
+  useEffect(() => {
+    if (procedures.length === 0) return;
+
+    // 1. Handle explicit route ID
+    if (routeId) {
+      const found = procedures.find((p) => p.id === routeId);
+      if (found) {
+        setSelectedProcedure(found);
+        if(viewMode === "table" && !isFormOpen) {
+            setModalProcedure(found);
+        }
+      }
+    } else {
+      // 2. Handle Panel View Auto-Selection
+      if (viewMode === "panel") {
+        if (shouldSelectFirst && sortedProcedures.length > 0) {
+           setSelectedProcedure(sortedProcedures[0]);
+           setShouldSelectFirst(false);
+        } else if (!selectedProcedure && sortedProcedures.length > 0) {
+           setSelectedProcedure(sortedProcedures[0]);
+        }
+      } else {
+        setSelectedProcedure(null);
+        setModalProcedure(null);
+      }
+    }
+  }, [routeId, procedures, viewMode, isFormOpen, sortedProcedures, shouldSelectFirst]); 
 
   // --- HANDLERS ---
 
@@ -257,6 +261,7 @@ export function Library() {
   const handleSortChange = (type: string, order: "asc" | "desc") => {
     setSortType(type);
     setSortOrder(order);
+    setShouldSelectFirst(true);
     setIsSortModalOpen(false); 
   };
 
