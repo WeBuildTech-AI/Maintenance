@@ -511,13 +511,20 @@ export const Assets: FC = () => {
               </div>
             )}
           </>
-        ) : (
+        ) : selectedAsset ? (
           <AssetStatusMoreDetails
             setSeeMoreAssetStatus={setSeeMoreAssetStatus}
-            asset={selectedAsset!}
+            asset={selectedAsset}
             fetchAssetsData={fetchAssetsData}
             setShowNewAssetForm={setShowNewAssetForm}
           />
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <div className="flex flex-col items-center">
+               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mb-4"></div>
+               <p className="text-gray-500">Loading asset details...</p>
+            </div>
+          </div>
         )}
       </div>
     </>

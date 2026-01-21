@@ -85,15 +85,30 @@ export default function AssetStatusMoreDetails({
   ];
 
   const getAssetStatusLog = async () => {
+    if (!asset?.id) {
+      console.warn("AssetStatusMoreDetails: Missing asset ID, skipping API call.");
+      return;
+    }
+
     try {
       setIsLoading(true);
       const [res, durationRes] = await Promise.all([
-        assetService.fetchAssetStatusLog(asset.id),
-        assetService.updateAssetLogDuration(asset.id),
+        assetService.fetchAssetStatusLog(String(asset.id)),
+        assetService.updateAssetLogDuration(String(asset.id)),
       ]);
       setLogData(res.logs || []);
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.error("Error fetching asset logs:", err);
+      if (err.response) {
+        console.error("API Error Details:", {
+          status: err.response.status,
+          data: err.response.data,
+          url: err.config?.url
+        });
+        toast.error(`Failed to load logs: ${err.response.statusText || "Server Error"}`);
+      } else {
+        toast.error("Network error or API unreachable");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -310,7 +325,7 @@ export default function AssetStatusMoreDetails({
     if (!asset?.id) return;
     setIsSubmitting(true);
     try {
-      await assetService.updateAssetStatus(asset.id, statusData);
+      await assetService.updateAssetStatus(String(asset.id), statusData);
       getAssetStatusLog();
       setUpdateAssetModal(false);
       toast.success("Asset Status Successfully updated");
