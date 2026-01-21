@@ -115,17 +115,11 @@ export function TotalDowntimeChart({
         </Button>
       </CardHeader>
 
-      <CardContent>
-        <div className="mb-4">
-          <div className="text-xs text-gray-500 uppercase tracking-wider">
-            HOURS
-          </div>
-        </div>
-
-        <ResponsiveContainer width="100%" height={350}>
+      <CardContent className="pb-0 pt-0 ">
+        <ResponsiveContainer width="100%" height={330}>
           <AreaChart
             data={chartData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+            margin={{ top: 10, right: 30, left: 20, bottom: 5 }}
           >
             <defs>
               <linearGradient id="colorPlanned" x1="0" y1="0" x2="0" y2="1">
@@ -143,7 +137,7 @@ export function TotalDowntimeChart({
               tick={{ fontSize: 12 }}
               angle={0}
               textAnchor="middle"
-              height={60}
+              height={40}
             />
             <YAxis
               tick={{ fontSize: 12 }}
@@ -151,7 +145,7 @@ export function TotalDowntimeChart({
                 value: "Hours",
                 angle: -90,
                 position: "insideLeft",
-                style: { fontSize: 10, fill: "#666" },
+                style: { fontSize: 12, fill: "#666" },
               }}
             />
             <Tooltip
@@ -179,24 +173,19 @@ export function TotalDowntimeChart({
               dot={{ r: 4, fill: "#f87171" }}
             />
           </AreaChart>
-
-          
         </ResponsiveContainer>
-
-        <div className="mt-4">
-          <div className="flex items-center gap-4 text-xs">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-gray-600 rounded"></div>
-              <span>Total</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-blue-400 rounded"></div>
-              <span>Planned</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-red-400 rounded"></div>
-              <span>Unplanned</span>
-            </div>
+        <div className="flex items-center gap-6 text-xs justify-center">
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 bg-gray-600"></div>
+            <span>Total</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 bg-blue-400"></div>
+            <span>Planned</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 bg-red-400"></div>
+            <span>Unplanned</span>
           </div>
         </div>
       </CardContent>

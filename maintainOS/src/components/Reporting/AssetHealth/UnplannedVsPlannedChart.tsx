@@ -94,38 +94,18 @@ export function UnplannedVsPlannedChart({
             Unplanned vs Planned Downtime
           </CardTitle>
           <Info className="h-4 w-4 text-gray-400" />
-          <button className="px-3 py-1 text-xs border border-blue-500 text-blue-600 rounded hover:bg-blue-50 flex items-center gap-1">
-            <span className="text-blue-500">⚙</span>
-            Group by Asset
-          </button>
         </div>
         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
           <Plus className="h-4 w-4" />
         </Button>
       </CardHeader>
 
-      <CardContent>
-        <div className="mb-4">
-          <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">
-            ASSET
-          </div>
-          <div className="flex items-center gap-4 text-xs">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-red-400 rounded"></div>
-              <span>Unplanned</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-blue-200 rounded"></div>
-              <span>Planned</span>
-            </div>
-          </div>
-        </div>
-
-        <ResponsiveContainer width="100%" height={350}>
+      <CardContent className="pb-0 pt-0">
+        <ResponsiveContainer width="100%" height={330}>
           <BarChart
             data={chartData}
             layout="vertical"
-            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            margin={{ top: 10, right: 30, left: 20, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" horizontal={false} />
             <XAxis type="number" tick={{ fontSize: 12 }} />
@@ -147,6 +127,16 @@ export function UnplannedVsPlannedChart({
             <Bar dataKey="planned" stackId="a" fill="#bfdbfe" radius={[0, 4, 4, 0]} />
           </BarChart>
         </ResponsiveContainer>
+        <div className="flex items-center gap-6 text-xs justify-center">
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 bg-red-400"></div>
+            <span>Unplanned</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 bg-blue-200"></div>
+            <span>Planned</span>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

@@ -211,7 +211,7 @@ export function ProblematicAssetsTable({
                   onClick={() => handleSort("formattedDowntime")}
                   className="flex items-center text-xs font-medium text-gray-500 uppercase tracking-wider hover:text-gray-700"
                 >
-                  Unplanned Downtime
+                  Downtime
                   <Info className="h-3 w-3 ml-1 text-gray-400" />
                   <SortIcon field="formattedDowntime" />
                 </button>

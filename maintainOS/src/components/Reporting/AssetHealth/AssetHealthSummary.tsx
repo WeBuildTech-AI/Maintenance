@@ -88,7 +88,7 @@ export function AssetHealthSummary({ dateRange }: AssetHealthSummaryProps) {
           <div className="flex items-center gap-2">
             <span className="text-amber-500">→</span>
             <span className="text-xl font-semibold text-gray-900">
-              {summary?.assetAvailability ?? 0}%
+              {summary?.assetAvailability ?? 0}
             </span>
           </div>
         </div>
