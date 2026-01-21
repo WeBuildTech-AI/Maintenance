@@ -147,7 +147,8 @@ export const assetService = {
     });
   },
 
-  updateAssetLogDuration: async (id: string): Promise<void> => {
-    await api.patch(`/assets/${id}/logs/duration`);
+  updateAssetLogDuration: async (id: string): Promise<any> => {
+    const res = await api.patch(`/assets/${id}/logs/duration`);
+    return res.data;
   },
 };

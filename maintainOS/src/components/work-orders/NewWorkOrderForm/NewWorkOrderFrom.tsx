@@ -65,7 +65,7 @@ const getChangedFields = (original: any, current: any) => {
     const simpleFields = [
       "title", "description", "priority", "status", "workType", 
       "locationId", 
-      "assetStatus", "assetDowntimeType", "assetStatusNotes", "assetStatusSince", "assetStatusTo"
+      "locationId"
     ];
 
     simpleFields.forEach((key) => {
@@ -223,12 +223,7 @@ export function NewWorkOrderForm({
   const [partIds, setPartIds] = useState<string[]>([]);
   const [vendorIds, setVendorIds] = useState<string[]>([]);
 
-  // ✅ Asset Status Extra Fields
-  const [assetStatus, setAssetStatus] = useState("");
-  const [assetDowntimeType, setAssetDowntimeType] = useState("");
-  const [assetStatusNotes, setAssetStatusNotes] = useState("");
-  const [assetStatusSince, setAssetStatusSince] = useState("");
-  const [assetStatusTo, setAssetStatusTo] = useState("");
+
 
   const [locationOptions, setLocationOptions] = useState<SelectOption[]>([]);
   const [assetOptions, setAssetOptions] = useState<SelectOption[]>([]);
@@ -376,28 +371,7 @@ export function NewWorkOrderForm({
       setDueDate(data.dueDate || "");
       setStartDate(data.startDate || "");
       
-      // ✅ Asset Status prefill logic - Check root first, fall back to first asset's status
-      let prefilledStatus = data.assetStatus;
-      if (!prefilledStatus && data.assets && data.assets.length > 0) {
-          prefilledStatus = data.assets[0].status; // "offline", "online", etc.
-      }
-      if (prefilledStatus) {
-          // Map backend status to DynamicSelect option IDs (lowercase)
-          const mapStatus = (s: string) => {
-              const lower = s.toLowerCase();
-              if (lower === 'offline') return 'offline';
-              if (lower === 'online') return 'online';
-              if (lower === 'do_not_track' || lower === 'do not track' || lower === 'donottrack') return 'doNotTrack';
-              return lower;
-          };
-          setAssetStatus(mapStatus(prefilledStatus));
-      }
 
-      // Other Asset Fields
-      if (data.assetDowntimeType) setAssetDowntimeType(data.assetDowntimeType);
-      if (data.assetStatusNotes) setAssetStatusNotes(data.assetStatusNotes);
-      if (data.assetStatusSince) setAssetStatusSince(data.assetStatusSince);
-      if (data.assetStatusTo) setAssetStatusTo(data.assetStatusTo);
       
       // WorkType - Backend sends "reactive", UI expects "Reactive"
       if (data.workType) {
@@ -526,11 +500,7 @@ export function NewWorkOrderForm({
             setLocationOptions([{ id: prefillData.locationId, name: prefillData.locationName }]);
           }
       }
-      if (prefillData.assetStatus) setAssetStatus(prefillData.assetStatus);
-      if (prefillData.assetStatusSince) setAssetStatusSince(prefillData.assetStatusSince);
-      if (prefillData.assetStatusTo) setAssetStatusTo(prefillData.assetStatusTo);
-      if (prefillData.assetDowntimeType) setAssetDowntimeType(prefillData.assetDowntimeType);
-      if (prefillData.assetStatusNotes) setAssetStatusNotes(prefillData.assetStatusNotes);
+
     }
   }, [prefillData, activeId]);
 
@@ -538,7 +508,7 @@ export function NewWorkOrderForm({
     if (linkedProcedure?.id) {
       const currentFormState = {
         workOrderName, description, locationId, estimatedTime, assetIds, selectedUsers, dueDate, startDate, selectedWorkType, selectedPriority, qrCodeValue, recurrenceRule, teamIds, categoryIds, partIds, vendorIds, procedureId: linkedProcedure.id,
-        assetStatus, assetDowntimeType, assetStatusNotes, assetStatusSince, assetStatusTo, status
+        status
       };
       navigate(`/library/${linkedProcedure.id}/edit`, { state: { returnPath: location.pathname, previousFormState: currentFormState } });
     }
@@ -575,15 +545,7 @@ export function NewWorkOrderForm({
         procedureIds: linkedProcedure ? [linkedProcedure.id] : [],
         // ✅ Date Fix: Pass state directly (should be ISO string from AssignmentAndScheduling)
         dueDate: dueDate || null, 
-        startDate: startDate || null,
-        
-        // ✅ Asset Status Fields - Allow Notes & Since for ALL statuses (Online, Do Not Track, Offline)
-        // STRICT: Backend expects lowercase status (e.g. "offline") or specific camelCase ("doNotTrack")
-        assetStatus: assetStatus || null,
-        assetDowntimeType: (assetStatus === 'Offline' || assetStatus === 'offline') ? assetDowntimeType : null,
-        assetStatusNotes: assetStatus ? assetStatusNotes : null,
-        assetStatusSince: assetStatus ? assetStatusSince : null,
-        assetStatusTo: (assetStatus === 'Offline' || assetStatus === 'offline') ? assetStatusTo : null
+        startDate: startDate || null
       };
 
       if (recurrenceRule) {
@@ -603,13 +565,7 @@ export function NewWorkOrderForm({
             return;
         }
 
-        // ✅ CRITICAL FIX: If Asset Status (or related fields) changed, we MUST send 'assetIds'
-        // so the backend knows WHICH assets to update contextually.
-        const isStatusChanging = payload.assetStatus || payload.assetDowntimeType || payload.assetStatusNotes || payload.assetStatusSince || payload.assetStatusTo;
-        if (isStatusChanging && !payload.assetIds) {
-             console.log("⚠️ Asset Status changing, forcing assetIds inclusion.");
-             payload.assetIds = formState.assetIds;
-        }
+
 
         await dispatch(updateWorkOrder({ id: activeId, authorId, data: payload })).unwrap();
         toast.success("✅ Work order updated successfully");
@@ -657,13 +613,6 @@ export function NewWorkOrderForm({
             assetOptions={assetOptions} isAssetsLoading={false} onFetchAssets={() => handleFetch("assets", setAssetOptions)} onCreateAsset={() => toast("Open Create Asset Modal")}
             activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown}
             linkedProcedure={linkedProcedure} onRemoveProcedure={() => setLinkedProcedure(null)} onPreviewProcedure={() => setIsPreviewOpen(true)} onEditProcedure={handleEditLinkedProcedure} setLinkedProcedure={setLinkedProcedure} 
-            
-            // ✅ Asset Status Props
-            assetStatus={assetStatus} setAssetStatus={setAssetStatus}
-            assetDowntimeType={assetDowntimeType} setAssetDowntimeType={setAssetDowntimeType}
-            assetStatusNotes={assetStatusNotes} setAssetStatusNotes={setAssetStatusNotes}
-            assetStatusSince={assetStatusSince} setAssetStatusSince={setAssetStatusSince}
-            assetStatusTo={assetStatusTo} setAssetStatusTo={setAssetStatusTo}
           />
           <AssignmentAndScheduling
             selectedUsers={selectedUsers} setSelectedUsers={setSelectedUsers}

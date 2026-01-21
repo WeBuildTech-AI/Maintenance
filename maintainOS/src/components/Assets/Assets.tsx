@@ -1,5 +1,4 @@
-"use client";
-import { useEffect, useState, FC, useMemo, useCallback } from "react";
+import { useEffect, useState, type FC, useMemo, useCallback, useRef } from "react";
 import { AssetDetail } from "./AssetDetail/AssetDetail";
 import { AssetsList } from "./AssetsList/AssetsList";
 import { NewAssetForm } from "./NewAssetForm/NewAssetForm";
@@ -7,7 +6,7 @@ import { AssetTable } from "./AssetsTable/AssetTable";
 import { AssetHeaderComponent } from "./AssetsHeader/AssetsHeader";
 import type { ViewMode } from "../purchase-orders/po.types";
 import { assetService, createAsset, deleteAsset } from "../../store/assets";
-import {
+import type {
   FetchAssetsParams,
   CreateAssetData,
 } from "../../store/assets/assets.types";
@@ -29,7 +28,7 @@ export interface Asset {
   updatedAt: string;
   createdAt: string;
   location: Location;
-  meters: any[];
+  meters?: any[]; // Made optional
   [key: string]: any;
 }
 
@@ -73,8 +72,8 @@ export const Assets: FC = () => {
 
   const [loading, setLoading] = useState(false);
   const [assetData, setAssetData] = useState<Asset[]>([]);
-  const [sortType, setSortType] = useState("Name");
-  const [sortOrder, setSortOrder] = useState("asc");
+  const [sortType, setSortType] = useState("Creation Date");
+  const [sortOrder, setSortOrder] = useState("desc");
   const [allLocationData, setAllLocationData] = useState<Location[]>([]);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -85,7 +84,24 @@ export const Assets: FC = () => {
   const itemsPerPage = 10;
   const paramAssetId = searchParams.get("assetId");
 
-  // --- 2. Sync State -> URL ---
+  // --- 2. Sync URL -> State (for Back button support) ---
+  useEffect(() => {
+    const moreDetailsInUrl = searchParams.get("moreDetails") === "true";
+    if (moreDetailsInUrl !== seeMoreAssetStatus) {
+      setSeeMoreAssetStatus(moreDetailsInUrl);
+    }
+    
+    const assetIdInUrl = searchParams.get("assetId");
+    if (assetIdInUrl && selectedAsset && String(selectedAsset.id) !== String(assetIdInUrl)) {
+       const found = assetData.find((a: any) => String(a.id) === String(assetIdInUrl));
+       if (found) setSelectedAsset(found);
+    }
+  }, [searchParams, assetData]);
+
+  // --- 3. Sync State -> URL ---
+  const prevSeeMoreRef = useRef(seeMoreAssetStatus);
+  const prevSelectedAssetIdRef = useRef(selectedAsset?.id);
+
   useEffect(() => {
     const params: any = {};
     if (debouncedSearch) params.search = debouncedSearch;
@@ -105,7 +121,17 @@ export const Assets: FC = () => {
       }
     });
 
-    setSearchParams(params, { replace: true });
+    // ✅ CRITICAL FIX: Push to history ONLY if state changed AND doesn't match URL (user action)
+    // If state changed but ALREADY matches URL, it's a back/forward sync -> use replace
+    const isNavigationalChange = 
+      (prevSeeMoreRef.current !== seeMoreAssetStatus || prevSelectedAssetIdRef.current !== selectedAsset?.id) &&
+      (String(params.moreDetails || "false") !== String(searchParams.get("moreDetails") || "false") || 
+       String(params.assetId || "") !== String(searchParams.get("assetId") || ""));
+
+    setSearchParams(params, { replace: !isNavigationalChange });
+    
+    prevSeeMoreRef.current = seeMoreAssetStatus;
+    prevSelectedAssetIdRef.current = selectedAsset?.id;
   }, [
     debouncedSearch,
     seeMoreAssetStatus,
@@ -147,7 +173,7 @@ export const Assets: FC = () => {
 
         // Case A: URL mein ID hai (Direct link ya refresh)
         if (urlAssetId) {
-          const found = assets.find((a) => String(a.id) === String(urlAssetId));
+          const found = assets.find((a: any) => String(a.id) === String(urlAssetId));
           if (found) {
             setSelectedAsset(found);
           } else {
@@ -352,7 +378,7 @@ export const Assets: FC = () => {
   const handleDeleteAsset = useCallback(
     (id: string | number) => {
       const currentIndex = assetData.findIndex((a) => a.id === id);
-      dispatch(deleteAsset(id))
+      dispatch(deleteAsset(String(id)))
         .unwrap()
         .then(() => {
           const newAssetList = assetData.filter((asset) => asset.id !== id);

@@ -26,6 +26,7 @@ export interface AssetLog {
   since: string;
   to: string | null;
   downtimeType: string | null;
+  duration?: string;
   createdAt: string;
   updatedAt: string;
   createdBy: string;

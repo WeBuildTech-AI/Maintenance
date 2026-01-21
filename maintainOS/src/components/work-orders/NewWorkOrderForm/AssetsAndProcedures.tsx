@@ -4,7 +4,7 @@ import { DynamicSelect, type SelectOption } from "./DynamicSelect";
 
 import AddProcedureModal from "../WorkloadView/Modal/AddProcedureModal";
 
-import { WorkOrderAssetStatusModal } from "./WorkOrderAssetStatusModal";
+
 
 interface Props {
   assetIds: string[];
@@ -17,24 +17,12 @@ interface Props {
   setActiveDropdown: (name: string | null) => void;
   
   onAssetSearch?: (query: string) => void;
-
-  assetStatus?: string;
-  setAssetStatus?: (value: string) => void;
-
+  
   linkedProcedure: any | null;
   onRemoveProcedure: () => void;
   onPreviewProcedure: () => void;
   setLinkedProcedure: (p: any) => void;
   onEditProcedure?: () => void;
-
-  assetDowntimeType?: string;
-  setAssetDowntimeType?: (value: string) => void;
-  assetStatusNotes?: string;
-  setAssetStatusNotes?: (value: string) => void;
-  assetStatusSince?: string;
-  setAssetStatusSince?: (value: string) => void;
-  assetStatusTo?: string;
-  setAssetStatusTo?: (value: string) => void;
 }
 
 export function AssetsAndProcedures({
@@ -48,37 +36,17 @@ export function AssetsAndProcedures({
   setActiveDropdown,
   onAssetSearch,
 
-  assetStatus,
-  setAssetStatus,
-
   linkedProcedure,
   onRemoveProcedure,
   onPreviewProcedure,
   setLinkedProcedure,
   
   onEditProcedure,
-  
-  assetDowntimeType, setAssetDowntimeType,
-  assetStatusNotes, setAssetStatusNotes,
-  assetStatusSince, setAssetStatusSince,
-  assetStatusTo, setAssetStatusTo
 }: Props) {
 
 
 
   const [showProcedureModal, setShowProcedureModal] = useState(false);
-  
-  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
-
-  const handleStatusUpdate = (data: any) => {
-    if (setAssetStatus) setAssetStatus(data.status);
-    if (setAssetStatusNotes) setAssetStatusNotes(data.notes || "");
-    if (setAssetDowntimeType) setAssetDowntimeType(data.downtimeType || "");
-    if (setAssetStatusSince) setAssetStatusSince(data.since || "");
-    if (setAssetStatusTo) setAssetStatusTo(data.to || "");
-    
-    setIsStatusModalOpen(false);
-  };
 
 
 
@@ -104,8 +72,7 @@ export function AssetsAndProcedures({
                  const singleId = val as string;
                  onAssetSelect(singleId ? [singleId] : []);
                  
-                 // Reset status if asset is removed
-                 if (!singleId && setAssetStatus) setAssetStatus(""); 
+ 
               }}
               onFetch={onFetchAssets}
               onSearch={onAssetSearch}
@@ -117,45 +84,11 @@ export function AssetsAndProcedures({
             />
           </div>
 
-          {/* Right: Asset Status (Conditional) */}
-          {assetIds.length > 0 && (
-            <div className={`w-[200px] flex-shrink-0 relative ${activeDropdown === 'asset-status' ? 'z-50' : 'z-20'}`}>
-              <h3 className="mb-4 text-base font-medium text-gray-900">Asset Status</h3>
-              <DynamicSelect
-                name="asset-status"
-                placeholder="Select status..."
-                options={[
-                  { id: "online", name: "Online", color: "#22c55e" },
-                  { id: "offline", name: "Offline", color: "#ef4444" },
-                  { id: "doNotTrack", name: "Do Not Track", color: "#EAB308" }
-                ]}
-                loading={false}
-                value={assetStatus || ""}
-                onSelect={(val) => {
-                  if (setAssetStatus) setAssetStatus(val as string);
-                  setIsStatusModalOpen(true);
-                }}
-                onFetch={() => {}} 
-                activeDropdown={activeDropdown}
-                setActiveDropdown={setActiveDropdown}
-                className="w-full"
-              />
-            </div>
-          )}
+
         </div>
 
         {/* ✅ Render Status Modal */}
-        {isStatusModalOpen && (
-            <WorkOrderAssetStatusModal 
-                initialStatus={assetStatus || 'online'}
-                initialNotes={assetStatusNotes}
-                initialDowntimeType={assetDowntimeType}
-                initialSince={assetStatusSince}
-                initialTo={assetStatusTo}
-                onClose={() => setIsStatusModalOpen(false)}
-                onSubmit={handleStatusUpdate}
-            />
-        )}
+
       </div>
 
       {/* ---------------- PROCEDURE SECTION ---------------- */}

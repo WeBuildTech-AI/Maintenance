@@ -87,7 +87,10 @@ export default function AssetStatusMoreDetails({
   const getAssetStatusLog = async () => {
     try {
       setIsLoading(true);
-      const res = await assetService.fetchAssetStatusLog(asset.id);
+      const [res, durationRes] = await Promise.all([
+        assetService.fetchAssetStatusLog(asset.id),
+        assetService.updateAssetLogDuration(asset.id),
+      ]);
       setLogData(res.logs || []);
     } catch (err) {
       console.error(err);
@@ -574,12 +577,13 @@ export default function AssetStatusMoreDetails({
                           <tbody>
                             {logData.map((entry, index) => {
                               // ✅ EXACT DURATION LOGIC (hh mm ss)
-                              let durationStr = "-";
-                              if (entry.since && entry.to) {
+                              let durationStr = entry.duration || "-";
+                                                            
+                              if (!entry.duration && entry.since && entry.to) {
                                 const since = new Date(entry.since).getTime();
                                 const to = new Date(entry.to).getTime();
                                 const diffMs = Math.abs(to - since);
-
+  
                                 const days = Math.floor(
                                   diffMs / (1000 * 60 * 60 * 24)
                                 );
@@ -592,14 +596,14 @@ export default function AssetStatusMoreDetails({
                                 const seconds = Math.floor(
                                   (diffMs / 1000) % 60
                                 );
-
+  
                                 // Format: 1d 2h 30m 45s (Ensure minutes are always shown if hours > 0 or seconds > 0)
                                 const parts = [];
                                 if (days > 0) parts.push(`${days}d`);
                                 if (hours > 0) parts.push(`${hours}h`);
                                 if (minutes > 0 || hours > 0 || days > 0) parts.push(`${minutes}m`);
                                 parts.push(`${seconds}s`);
-
+  
                                 durationStr = parts.length > 0 ? parts.join(" ") : "0m 0s";
                               }
 
