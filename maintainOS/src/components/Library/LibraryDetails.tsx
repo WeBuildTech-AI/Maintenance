@@ -169,6 +169,14 @@ export function LibraryDetails({
     "fields"
   );
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [chartDateRanges, setChartDateRanges] = useState<
+    Record<string, DateRange>
+  >({
+    "work-order-history": {
+      startDate: format(subDays(new Date(), 7), "MM/dd/yyyy"),
+      endDate: format(new Date(), "MM/dd/yyyy"),
+    },
+  });
 
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
@@ -227,31 +235,21 @@ export function LibraryDetails({
     );
   }
 
-  // work order graph
+  // work order graph - filters and handler
+  const filters = {
+    procedureIds: selectedProcedure.id,
+  };
 
-  // const [chartDateRanges, setChartDateRanges] = useState<
-  //   Record<string, DateRange>
-  // >({
-  //   "work-order-history": {
-  //     startDate: format(subDays(new Date(), 7), "MM/dd/yyyy"), // Ensure format matches what Chart expects (MM/dd/yyyy)
-  //     endDate: format(new Date(), "MM/dd/yyyy"),
-  //   },
-  // });
-
-  // const filters = {
-  //   procedureIds: selectedProcedure.id,
-  // };
-
-  // // [!code ++] Handler to update only the specific chart ID
-  // const handleDateRangeChange = (id: string, start: Date, end: Date) => {
-  //   setChartDateRanges((prev) => ({
-  //     ...prev,
-  //     [id]: {
-  //       startDate: format(start, "MM/dd/yyyy"),
-  //       endDate: format(end, "MM/dd/yyyy"),
-  //     },
-  //   }));
-  // };
+  // Handler to update only the specific chart ID
+  const handleDateRangeChange = (id: string, start: Date, end: Date) => {
+    setChartDateRanges((prev) => ({
+      ...prev,
+      [id]: {
+        startDate: format(start, "MM/dd/yyyy"),
+        endDate: format(end, "MM/dd/yyyy"),
+      },
+    }));
+  };
 
   const rootFields = selectedProcedure.fields || [];
   const rootHeadings = selectedProcedure.headings || [];
@@ -348,21 +346,18 @@ export function LibraryDetails({
         )}
 
         {activeTab === "history" && (
-          // <WorkOrderHistoryChart
-          //   id="work-order-history"
-          //   title="Work Order History"
-          //   workOrderHistory={selectedProcedure?.workOrders}
-          //   filters={filters}
-          //   dateRange={chartDateRanges["work-order-history"]}
-          //   onDateRangeChange={handleDateRangeChange}
-          //   groupByField="createdAt"
-          //   lineName="Created"
-          //   lineColor="#0091ff"
-          // />
-          <div>Location</div>
+          <WorkOrderHistoryChart
+            id="work-order-history"
+            title="Work Order History"
+            workOrderHistory={selectedProcedure?.workOrders}
+            filters={filters}
+            dateRange={chartDateRanges["work-order-history"]}
+            onDateRangeChange={handleDateRangeChange}
+            groupByField="createdAt"
+            lineName="Created"
+            lineColor="#0091ff"
+          />
         )}
-
-        <div style={{ height: 96 }} />
       </div>
 
       {/* --- FLOATING BUTTON --- */}
