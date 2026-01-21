@@ -83,8 +83,9 @@ export interface UpdateAssetStatus {
   status: string;
   notes?: string;
   since?: string;
+  to?: string;
   downtimeType?: string;
-  userId: string;
+  userId?: string; // Made optional to avoid breaking other calls if they rely on backend auth token for user
 }
 
 export interface FetchAssetsParams {

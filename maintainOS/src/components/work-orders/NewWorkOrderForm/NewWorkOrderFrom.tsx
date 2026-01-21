@@ -554,12 +554,12 @@ export function NewWorkOrderForm({
         startDate: startDate || null,
         
         // ✅ Asset Status Fields - Allow Notes & Since for ALL statuses (Online, Do Not Track, Offline)
-        // STRICT: Backend expects lowercase status (e.g. "offline")
-        assetStatus: assetStatus ? assetStatus.toLowerCase() : null,
-        assetDowntimeType: assetStatus === 'Offline' ? assetDowntimeType : null,
+        // STRICT: Backend expects lowercase status (e.g. "offline") or specific camelCase ("doNotTrack")
+        assetStatus: assetStatus || null,
+        assetDowntimeType: (assetStatus === 'Offline' || assetStatus === 'offline') ? assetDowntimeType : null,
         assetStatusNotes: assetStatus ? assetStatusNotes : null,
         assetStatusSince: assetStatus ? assetStatusSince : null,
-        assetStatusTo: assetStatus === 'Offline' ? assetStatusTo : null
+        assetStatusTo: (assetStatus === 'Offline' || assetStatus === 'offline') ? assetStatusTo : null
       };
 
       if (recurrenceRule) {
@@ -632,7 +632,7 @@ export function NewWorkOrderForm({
             assetIds={assetIds} onAssetSelect={(val) => setAssetIds(val as string[])}
             assetOptions={assetOptions} isAssetsLoading={false} onFetchAssets={() => handleFetch("assets", setAssetOptions)} onCreateAsset={() => toast("Open Create Asset Modal")}
             activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown}
-            linkedProcedure={linkedProcedure} onRemoveProcedure={() => setLinkedProcedure(null)} onPreviewProcedure={() => setIsPreviewOpen(true)} onEditProcedure={handleEditLinkedProcedure} onOpenProcedureModal={() => setIsAddProcModalOpen(true)} setLinkedProcedure={setLinkedProcedure} 
+            linkedProcedure={linkedProcedure} onRemoveProcedure={() => setLinkedProcedure(null)} onPreviewProcedure={() => setIsPreviewOpen(true)} onEditProcedure={handleEditLinkedProcedure} setLinkedProcedure={setLinkedProcedure} 
             
             // ✅ Asset Status Props
             assetStatus={assetStatus} setAssetStatus={setAssetStatus}

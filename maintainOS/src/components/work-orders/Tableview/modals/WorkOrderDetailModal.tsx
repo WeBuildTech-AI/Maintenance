@@ -47,6 +47,9 @@ import { CommentsSection } from "../../ToDoView/CommentsSection";
 import { NewWorkOrderForm } from "../../NewWorkOrderForm/NewWorkOrderFrom";
 import { LinkedProcedurePreview } from "../../ToDoView/LinkedProcedurePreview"; // Ensure this path is correct
 import { procedureService } from "../../../../store/procedures/procedures.service"; // Import Service
+import { DynamicSelect } from "../../NewWorkOrderForm/DynamicSelect";
+import { WorkOrderAssetStatusModal } from "../../NewWorkOrderForm/WorkOrderAssetStatusModal";
+import { assetService } from "../../../../store/assets/assets.service";
 
 // --- HELPER FUNCTIONS ---
 
@@ -229,6 +232,11 @@ export default function WorkOrderDetailModal({
   const [activeStatus, setActiveStatus] = useState(workOrder?.status || "open");
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  
+  // ✅ Asset Status Live Update State
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [isAssetStatusModalOpen, setIsAssetStatusModalOpen] = useState(false);
+  const [pendingAssetStatus, setPendingAssetStatus] = useState<string>("");
   
   // User Names & Refs
   const [createdByName, setCreatedByName] = useState<string>("System");
@@ -422,6 +430,33 @@ export default function WorkOrderDetailModal({
   const handleClose = () => {
     setPanel("details");
     onClose();
+  };
+
+  const handleAssetStatusSelect = (val: string | string[]) => {
+      const status = val as string;
+      setPendingAssetStatus(status);
+      setIsAssetStatusModalOpen(true);
+  };
+
+  const handleConfirmAssetStatus = async (data: any) => {
+      if (!workOrder.assets || workOrder.assets.length === 0) return;
+      const assetId = workOrder.assets[0].id;
+
+      try {
+          await assetService.updateAssetStatus(assetId, {
+              status: data.status,
+              notes: data.notes,
+              since: data.since,
+              to: data.to,
+              downtimeType: data.downtimeType
+          });
+          toast.success("Asset status updated successfully");
+          if (onRefreshWorkOrders) onRefreshWorkOrders();
+          setIsAssetStatusModalOpen(false);
+      } catch (err) {
+          console.error("Failed to update asset status", err);
+          toast.error("Failed to update asset status");
+      }
   };
 
   // Prepare data for rendering
@@ -677,17 +712,40 @@ export default function WorkOrderDetailModal({
                         <div className="border-t pt-6 grid grid-cols-2 gap-6">
                             <div><h3 className="text-sm font-medium mb-2 text-gray-700">Assets</h3><div className="flex items-start gap-2"><Factory className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.assets, navigate, (id) => `/assets?assetId=${id}`)}</span></div></div>
                             
-                            {/* ✅ Asset Status Fields */}
-                            {(workOrder.assetStatus || (workOrder.assets && workOrder.assets.length > 0 && workOrder.assets[0].status)) && (
+                            {/* ✅ Asset Status Fields (Live Update) */}
+                            {(workOrder.assetStatus || (workOrder.assets && workOrder.assets.length > 0)) && (
                                 <div>
                                     <h3 className="text-sm font-medium mb-2 text-gray-700">Asset Status</h3>
-                                    <div className="flex items-center gap-2">
-                                        <div className={`h-2.5 w-2.5 rounded-full ${
-                                            (workOrder.assetStatus || workOrder.assets[0].status).toLowerCase() === 'offline' ? 'bg-red-500' :
-                                            (workOrder.assetStatus || workOrder.assets[0].status).toLowerCase() === 'online' ? 'bg-green-500' : 'bg-gray-400'
-                                        }`} />
-                                        <span className="text-sm text-gray-900 capitalize">{safeRender(workOrder.assetStatus || workOrder.assets[0].status)}</span>
-                                    </div>
+                                    {workOrder.assets && workOrder.assets.length > 0 ? (
+                                        <div className="w-[200px]">
+                                            <DynamicSelect
+                                                name="asset-status-details"
+                                                placeholder="Select status..."
+                                                options={[
+                                                    { id: "online", name: "Online", color: "#22c55e" },
+                                                    { id: "offline", name: "Offline", color: "#ef4444" },
+                                                    { id: "doNotTrack", name: "Do Not Track", color: "#EAB308" }
+                                                ]}
+                                                loading={false}
+                                                // Prioritize asset's actual status, fallback to workOrder snapshot
+                                                value={((workOrder.assets[0].status || workOrder.assetStatus) || "online").toLowerCase() === "do not track" ? "doNotTrack" : ((workOrder.assets[0].status || workOrder.assetStatus) || "online").toLowerCase()}
+                                                onSelect={handleAssetStatusSelect}
+                                                onFetch={() => {}} 
+                                                activeDropdown={activeDropdown}
+                                                setActiveDropdown={setActiveDropdown}
+                                                className="w-full"
+                                                dropdownStyle={{ zIndex: 9999 }} // Ensure it pops out correctly in modal
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2">
+                                            <div className={`h-2.5 w-2.5 rounded-full ${
+                                                (workOrder.assetStatus || "online").toLowerCase() === 'offline' ? 'bg-red-500' :
+                                                (workOrder.assetStatus || "online").toLowerCase() === 'online' ? 'bg-green-500' : 'bg-gray-400'
+                                            }`} />
+                                            <span className="text-sm text-gray-900 capitalize">{safeRender(workOrder.assetStatus || "—")}</span>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
@@ -798,11 +856,23 @@ export default function WorkOrderDetailModal({
                                 <LinkedProcedurePreview 
                                   selectedWorkOrder={{
                                     ...workOrder,
-                                    // Polyfill already handled by safeWorkOrder, but keeping check safe
-                                    procedures: safeWorkOrder.procedures
-                                  }} 
+                                    procedures: safeWorkOrder.procedures 
+                                  }}
                                 />
                             </div>
+                        )}
+
+                        {/* ✅ Asset Status Update Modal */}
+                        {isAssetStatusModalOpen && (
+                            <WorkOrderAssetStatusModal 
+                                initialStatus={pendingAssetStatus || 'online'}
+                                initialNotes={workOrder.assetStatusNotes}
+                                initialDowntimeType={workOrder.assetDowntimeType}
+                                initialSince={workOrder.assetStatusSince}
+                                initialTo={workOrder.assetStatusTo}
+                                onClose={() => setIsAssetStatusModalOpen(false)}
+                                onSubmit={handleConfirmAssetStatus}
+                            />
                         )}
 
                         {/* LOGS (Created By / Updated By) */}
@@ -821,7 +891,7 @@ export default function WorkOrderDetailModal({
                                 setComment={setComment}
                                 attachment={attachment}
                                 setAttachment={setAttachment}
-                                fileRef={fileRef}
+                                fileRef={fileRef as React.RefObject<HTMLInputElement>}
                                 selectedWorkOrder={workOrder}
                             />
                         </div>

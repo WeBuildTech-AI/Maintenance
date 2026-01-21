@@ -56,9 +56,18 @@ export default function NewWorkOrderModal({
 
         {/* Panel content */}
         <div className="flex-1 overflow-y-auto px-6 pt-6">
-          {panel === "form" && <WorkOrderForm setPanel={setPanel} />}
+          {panel === "form" && <WorkOrderForm setPanel={setPanel} onOpenProcedure={() => setPanel("procedure")} />}
           {panel === "procedure" && <ProcedurePanel setPanel={setPanel} />}
-          {panel === "assets" && <AssetsPanel setPanel={setPanel} />}
+          {panel === "assets" && (
+            <AssetsPanel 
+              onBack={() => setPanel("form")} 
+              onAdd={(assets) => {
+                console.log("Assets added:", assets);
+                // TODO: Update form state with selected assets
+                setPanel("form");
+              }} 
+            />
+          )}
           {panel === "invite" && <InvitePanel setPanel={setPanel} />}
         </div>
 
