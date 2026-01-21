@@ -24,6 +24,7 @@ import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom"; // ✅ Added for "Use in Meter" navigation
 import Loader from "../../Loader/Loader";
 import AssetTableModal from "../../utils/AssetTableModal";
+import { formatLabel } from "../../utils/asset_formater";
 
 // --- Constants ---
 const STORAGE_KEY_ASSET_COLUMNS = "asset_table_visible_columns";
@@ -532,6 +533,15 @@ export function AssetTable({
               {status ?? "—"}
             </span>
           );
+        }else if (colName === "Criticality") {
+          renderFunc = (value: string) => (
+            <span className="capitalize text-gray-700">
+              {formatLabel(value)}
+            </span>
+          );
+
+
+          
         } else if (colName === "Created At" || colName === "Updated At") {
           renderFunc = (text: string) => formatDateOnly(text) || "—";
         }

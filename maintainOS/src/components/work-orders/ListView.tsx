@@ -26,6 +26,7 @@ import { deleteWorkOrder, updateWorkOrderStatus } from "../../store/workOrders/w
 import DeleteWorkOrderModal from "./ToDoView/DeleteWorkOrderModal";
 import { type ListViewProps } from "./types";
 import { Tooltip } from "./../ui/tooltip";
+import { formatLabel } from "../utils/asset_formater";
 
 // DETAILS/EDIT MODAL
 import WorkOrderDetailsModal from "./Tableview/modals/WorkOrderDetailModal";
@@ -709,7 +710,7 @@ export function ListView({
         title: item.title || "—",
         status: getSafeString(item.status),
         priority: getSafeString(item.priority),
-        workType: getSafeString(item.work_type || item.workType),
+        workType: formatLabel(getSafeString(item.work_type || item.workType)),
         assignedTo: assignedToStr === "—" ? "Unassigned" : assignedToStr,
         categories: catStr,
         asset: assetStr,

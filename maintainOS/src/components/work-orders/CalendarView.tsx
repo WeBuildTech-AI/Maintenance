@@ -41,6 +41,7 @@ import {
   getDate
 } from 'date-fns';
 import WorkOrderDetailModal from './Tableview/modals/WorkOrderDetailModal';
+import { formatLabel } from "../utils/asset_formater";
 
 // --- 1. Day List Modal (For Mobile/Overflow) ---
 function DayListModal({
@@ -243,8 +244,8 @@ function EventDetailPopover({
                 <span className="text-gray-500 flex items-center gap-2">
                   <AlertCircle size={14} className="text-gray-400"/> Priority
                 </span>
-                <span className={`px-2 py-0.5 rounded text-xs font-medium border uppercase ${getPriorityColor(workOrder.priority)}`}>
-                  {workOrder.priority}
+                <span className={`px-2 py-0.5 rounded text-xs font-medium border ${getPriorityColor(workOrder.priority)}`}>
+                  {formatLabel(workOrder.priority)  }
                 </span>
               </div>
             )}
@@ -305,7 +306,9 @@ function EventDetailPopover({
         
         <div className="flex justify-between items-center">
           <span className="text-gray-500">Work Type</span>
-          <span className="text-gray-900">{workOrder.workType || 'Reactive'}</span>
+          <span className="text-gray-900">
+            {formatLabel(workOrder.workType) || 'Reactive'}
+          </span>
         </div>
 
         <div className="flex justify-between items-center">
