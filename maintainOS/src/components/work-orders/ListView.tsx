@@ -31,6 +31,7 @@ import { Tooltip } from "./../ui/tooltip";
 import WorkOrderDetailsModal from "./Tableview/modals/WorkOrderDetailModal";
 import toast from "react-hot-toast";
 import { workOrderService } from "../../store/workOrders";
+import { useNavigate } from "react-router-dom";
 
 // SETTINGS MODAL
 import SettingsModal from "../utils/SettingsModal";
@@ -357,6 +358,8 @@ export function ListView({
   // VIEW MODAL (Details/Edit)
   const [viewModal, setViewModal] = useState(false);
   const [selectedWO, setSelectedWO] = useState(null);
+  
+  const navigate = useNavigate();
 
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
 
@@ -562,8 +565,7 @@ export function ListView({
               className="truncate cursor-pointer text-gray-700 hover:text-blue-600 hover:underline"
               onClick={(e) => {
                 e.stopPropagation();
-                setSelectedWO(record.full);
-                setViewModal(true);
+                navigate(`/work-orders/${record.id}`);
               }}
             >
               {title}

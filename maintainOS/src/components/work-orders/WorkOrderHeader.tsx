@@ -20,6 +20,7 @@ import {
 import { Input } from "../ui/input";
 import WorkOrderFilterBar from "./WorkOrderFilterBar";
 import { FetchWorkOrdersParams } from "../../store/workOrders/workOrders.types";
+import { useNavigate } from "react-router-dom";
 
 interface WorkOrderHeaderProps {
   viewMode: ViewMode;
@@ -46,6 +47,8 @@ export function WorkOrderHeaderComponent({
   onFilterChange,
   setShowDeleted,
 }: WorkOrderHeaderProps) {
+  const navigate = useNavigate();
+  
   return (
     <header className=" border-border bg-card px-6 py-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -133,12 +136,7 @@ export function WorkOrderHeaderComponent({
           <Button
             className="gap-2 cursor-pointer bg-orange-600 hover:outline-none"
             onClick={() => {
-              if (viewMode !== "todo") {
-                setIsModalOpen?.(true);
-              } else {
-                setIsCreatingForm(true);
-                setViewMode("todo");
-              }
+              navigate('/work-orders/create');
             }}
           >
             <Plus className="mr-2 h-4 w-4" />

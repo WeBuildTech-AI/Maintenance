@@ -380,15 +380,13 @@ export function NewWorkOrderForm({
           prefilledStatus = data.assets[0].status; // "offline", "online", etc.
       }
       if (prefilledStatus) {
-          // Ensure Title Case for internal UI state comparison (if options are Title Case)
-          // But options in AssetsAndProcedures are: "Online", "Offline", "Do not track"
-          // Backend sends "offline", "in_progress" (for WO status)
-          // Map backend "offline" -> "Offline"
+          // Map backend status to DynamicSelect option IDs (lowercase)
           const mapStatus = (s: string) => {
-              if (s.toLowerCase() === 'offline') return 'Offline';
-              if (s.toLowerCase() === 'online') return 'Online';
-              if (s.toLowerCase() === 'do_not_track' || s.toLowerCase() === 'do not track') return 'Do not track';
-              return s;
+              const lower = s.toLowerCase();
+              if (lower === 'offline') return 'offline';
+              if (lower === 'online') return 'online';
+              if (lower === 'do_not_track' || lower === 'do not track' || lower === 'donottrack') return 'doNotTrack';
+              return lower;
           };
           setAssetStatus(mapStatus(prefilledStatus));
       }

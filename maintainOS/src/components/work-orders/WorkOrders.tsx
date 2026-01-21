@@ -14,6 +14,7 @@ import { WorkOrderHeaderComponent } from "./WorkOrderHeader";
 import { ToDoView } from "./ToDoView/ToDoView";
 import type { AppDispatch } from "../../store";
 import { workOrderService } from "../../store/workOrders";
+import WorkOrderDetailModal from "./Tableview/modals/WorkOrderDetailModal";
 
 export function WorkOrders() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -44,6 +45,7 @@ export function WorkOrders() {
 
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(false);
+  const [viewingWorkOrder, setViewingWorkOrder] = useState<WorkOrder | null>(null);
 
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
@@ -145,6 +147,39 @@ export function WorkOrders() {
     setRefreshKey((prev) => prev + 1); // Trigger re-fetch
   }, []);
 
+  // ✅ Fetch Work Order for Detail View when URL changes
+  useEffect(() => {
+    const fetchViewingWorkOrder = async () => {
+      if (viewingId && viewingId !== selectedWorkOrder?.id) {
+        try {
+          const wo = await workOrderService.fetchWorkOrderById(viewingId);
+          setViewingWorkOrder(wo);
+        } catch (err) {
+          console.error("Failed to fetch work order", err);
+          navigate("/work-orders");
+        }
+      } else if (!viewingId) {
+        setViewingWorkOrder(null);
+      }
+    };
+    fetchViewingWorkOrder();
+  }, [viewingId]);
+
+  // ✅ Handle create route - open modal for list/calendar, set flag for TODO
+  useEffect(() => {
+    if (isCreateRoute) {
+      if (viewMode !== "todo") {
+        setIsModalOpen(true);
+      } else {
+        setCreatingWorkOrder(true);
+      }
+    } else {
+      if (viewMode !== "todo") {
+        setIsModalOpen(false);
+      }
+    }
+  }, [isCreateRoute, viewMode]);
+
   // ... (Assign/Edit/Create Handlers) ...
   const handleCreateClick = () => {
     navigate("/work-orders/create");
@@ -243,8 +278,24 @@ export function WorkOrders() {
 
       <NewWorkOrderModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          navigate("/work-orders");
+        }}
       />
+
+      {/* ✅ Work Order Detail Modal (for List/Calendar View) */}
+      {viewingWorkOrder && (
+        <WorkOrderDetailModal
+          open={!!viewingWorkOrder}
+          onClose={() => {
+            setViewingWorkOrder(null);
+            navigate("/work-orders");
+          }}
+          workOrder={viewingWorkOrder}
+          onRefreshWorkOrders={handleRefreshWorkOrders}
+        />
+      )}
     </div>
   );
 }

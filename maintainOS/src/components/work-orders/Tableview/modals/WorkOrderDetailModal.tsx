@@ -712,40 +712,20 @@ export default function WorkOrderDetailModal({
                         <div className="border-t pt-6 grid grid-cols-2 gap-6">
                             <div><h3 className="text-sm font-medium mb-2 text-gray-700">Assets</h3><div className="flex items-start gap-2"><Factory className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.assets, navigate, (id) => `/assets?assetId=${id}`)}</span></div></div>
                             
-                            {/* ✅ Asset Status Fields (Live Update) */}
+                            {/* ✅ Asset Status Fields (Static Display) */}
                             {(workOrder.assetStatus || (workOrder.assets && workOrder.assets.length > 0)) && (
                                 <div>
                                     <h3 className="text-sm font-medium mb-2 text-gray-700">Asset Status</h3>
-                                    {workOrder.assets && workOrder.assets.length > 0 ? (
-                                        <div className="w-[200px]">
-                                            <DynamicSelect
-                                                name="asset-status-details"
-                                                placeholder="Select status..."
-                                                options={[
-                                                    { id: "online", name: "Online", color: "#22c55e" },
-                                                    { id: "offline", name: "Offline", color: "#ef4444" },
-                                                    { id: "doNotTrack", name: "Do Not Track", color: "#EAB308" }
-                                                ]}
-                                                loading={false}
-                                                // Prioritize asset's actual status, fallback to workOrder snapshot
-                                                value={((workOrder.assets[0].status || workOrder.assetStatus) || "online").toLowerCase() === "do not track" ? "doNotTrack" : ((workOrder.assets[0].status || workOrder.assetStatus) || "online").toLowerCase()}
-                                                onSelect={handleAssetStatusSelect}
-                                                onFetch={() => {}} 
-                                                activeDropdown={activeDropdown}
-                                                setActiveDropdown={setActiveDropdown}
-                                                className="w-full"
-                                                dropdownStyle={{ zIndex: 9999 }} // Ensure it pops out correctly in modal
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center gap-2">
-                                            <div className={`h-2.5 w-2.5 rounded-full ${
-                                                (workOrder.assetStatus || "online").toLowerCase() === 'offline' ? 'bg-red-500' :
-                                                (workOrder.assetStatus || "online").toLowerCase() === 'online' ? 'bg-green-500' : 'bg-gray-400'
-                                            }`} />
-                                            <span className="text-sm text-gray-900 capitalize">{safeRender(workOrder.assetStatus || "—")}</span>
-                                        </div>
-                                    )}
+                                    <div className="flex items-center gap-2">
+                                        <div className={`h-2.5 w-2.5 rounded-full ${
+                                            ((workOrder.assets?.[0]?.status || workOrder.assetStatus) || "online").toLowerCase() === 'offline' ? 'bg-red-500' :
+                                            ((workOrder.assets?.[0]?.status || workOrder.assetStatus) || "online").toLowerCase() === 'online' ? 'bg-green-500' : 
+                                            ((workOrder.assets?.[0]?.status || workOrder.assetStatus) || "online").toLowerCase() === 'do not track' || ((workOrder.assets?.[0]?.status || workOrder.assetStatus) || "online").toLowerCase() === 'donottrack' ? 'bg-yellow-500' : 'bg-gray-400'
+                                        }`} />
+                                        <span className="text-sm text-gray-900 capitalize">
+                                            {((workOrder.assets?.[0]?.status || workOrder.assetStatus) || "—").toLowerCase() === 'donottrack' ? 'Do Not Track' : (workOrder.assets?.[0]?.status || workOrder.assetStatus) || "—"}
+                                        </span>
+                                    </div>
                                 </div>
                             )}
 
