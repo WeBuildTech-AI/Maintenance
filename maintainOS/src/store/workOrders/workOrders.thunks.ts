@@ -9,8 +9,20 @@ import type {
   CreateFieldResponseData,
   CreatePartUsageData,
   FetchWorkOrdersParams,
-  CreateTimeEntryData
+  CreateTimeEntryData,
+  FilterData
 } from "./workOrders.types";
+
+import { locationService } from "../locations/locations.service";
+import { partService } from "../parts/parts.service";
+import { assetService } from "../assets/assets.service";
+import { vendorService } from "../vendors/vendors.service";
+import { procedureService } from "../procedures/procedures.service";
+import { userService } from "../users/users.service";
+import { categoryService } from "../categories/categories.service";
+import { teamService } from "../teams/teams.service";
+import { meterService } from "../meters/meters.service";
+import type { RootState } from "../index";
 
 // --- Work Orders ---
 
@@ -345,6 +357,76 @@ export const restoreWorkOrderData = createAsyncThunk(
       return rejectWithValue(
         error.response?.data?.message || "Failed to restore work order Data"
       );
+    }
+  }
+);
+
+// --- Filter Data ---
+
+export const fetchFilterData = createAsyncThunk(
+  "workOrders/fetchFilterData",
+  async (_, { getState, rejectWithValue }) => {
+    const state = getState() as RootState;
+    
+    // ✅ Check if data already exists in Redux
+    if (state.workOrders.filterData) {
+      console.log("🟡 Filter data already exists in Redux. Skipping API calls.");
+      return state.workOrders.filterData;
+    }
+
+    try {
+      console.log("🔵 Fetching all filter data in parallel...");
+      
+      const [
+        locationsRes,
+        partsRes,
+        assetsRes,
+        vendorsRes,
+        categoriesRes,
+        usersRes,
+        proceduresRes,
+        teamsRes,
+        metersRes
+      ] = await Promise.all([
+        locationService.fetchLocationsName(),
+        partService.fetchPartsName(),
+        assetService.fetchAssetsName(),
+        vendorService.fetchVendorName(),
+        categoryService.fetchCategories(),
+        userService.fetchUserSummary(),
+        procedureService.fetchProcedures(),
+        teamService.fetchTeamsName(),
+        meterService.fetchMeters({ limit: 1000, page: 1 })
+      ]);
+
+      // Helper to format data uniformly
+      const format = (res: any, type: string) => {
+        const list = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+        return list.map((item: any) => ({
+          id: item.id,
+          name: item.name || item.fullName || item.procedureName || item.title || `Unnamed ${type}`,
+          image: item.image || item.avatarUrl || null
+        }));
+      };
+
+      const data: FilterData = {
+        locations: format(locationsRes, "Location"),
+        parts: format(partsRes, "Part"),
+        assets: format(assetsRes, "Asset"),
+        vendors: format(vendorsRes, "Vendor"),
+        categories: format(categoriesRes, "Category"),
+        users: format(usersRes, "User"),
+        procedures: format(proceduresRes, "Procedure"),
+        teams: format(teamsRes, "Team"),
+        meters: format(metersRes, "Meter")
+      };
+
+      console.log("🟢 All filter data fetched successfully");
+      return data;
+
+    } catch (error: any) {
+      console.error("❌ Error fetching filter data:", error);
+      return rejectWithValue(error.response?.data?.message || "Failed to fetch filter data");
     }
   }
 );

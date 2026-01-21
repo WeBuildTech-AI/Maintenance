@@ -179,10 +179,23 @@ export interface CreatePartUsageData {
   quantity: number;
 }
 
+export interface FilterData {
+  locations: any[];
+  parts: any[];
+  assets: any[];
+  vendors: any[];
+  categories: any[];
+  users: any[];
+  procedures: any[];
+  teams: any[];
+  meters: any[];
+}
+
 export interface WorkOrdersState {
   workOrders: WorkOrderResponse[];
   selectedWorkOrder: WorkOrderResponse | null;
   logs: WorkOrderLog[];
   loading: boolean;
   error: string | null;
+  filterData?: FilterData;
 }

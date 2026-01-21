@@ -27,6 +27,7 @@ import {
   submitFieldResponse,
   addPartUsage,
   deletePartUsage,
+  fetchFilterData,
 } from "./workOrders.thunks";
 
 const initialState: WorkOrdersState = {
@@ -518,6 +519,17 @@ const workOrdersSlice = createSlice({
       })
       .addCase(submitFieldResponse.rejected, (state, action) => {
          state.error = action.payload as string;
+      })
+      
+      // --- Fetch Filter Data ---
+      .addCase(fetchFilterData.fulfilled, (state, action) => {
+        state.loading = false;
+        state.filterData = action.payload; 
+      })
+      .addCase(fetchFilterData.rejected, (state, action) => {
+        // We generally don't want to block the UI if filter fetch fails, 
+        // just log it or handle silently.
+        console.error("Filter fetch failed:", action.payload);
       });
   },
 });

@@ -35,6 +35,7 @@ interface FilterDropdownProps {
   currentCondition?: string;
   onConditionChange: (condition: string) => void;
   hideCondition?: boolean;
+  disableAutoFetch?: boolean;
 }
 
 export function FilterDropdown({
@@ -49,6 +50,7 @@ export function FilterDropdown({
   currentCondition = "One of",
   onConditionChange,
   hideCondition = false,
+  disableAutoFetch = false, // Default to false for backward compat
 }: FilterDropdownProps) {
   const [condition, setCondition] = useState(currentCondition);
   const [showConditionMenu, setShowConditionMenu] = useState(false);
@@ -68,15 +70,18 @@ export function FilterDropdown({
     "assigned to", "assignedto",
     "completed by", "completedby",
     "requested by", "requestedby",
-    "team", "teams", "teams in charge", // <-- ADDED THIS
+    "team", "teams", "teams in charge", 
     "user", "users"
   ];
 
-  const shouldFetchFromApi = API_KEYS.includes(title.toLowerCase());
+  const shouldFetchFromApi = !disableAutoFetch && API_KEYS.includes(title.toLowerCase());
 
-  // ✅ Auto-fetch data ONLY for API keys
+  // ✅ Auto-fetch data ONLY for API keys (if not disabled)
   useEffect(() => {
     const fetchData = async () => {
+      // Logic: Only fetch if we are allowed AND we don't have explicit options 
+      // (although typically if disableAutoFetch is true, we rely on options passed)
+      
       if (shouldFetchFromApi) {
         setLoading(true);
         let fetchType = title.toLowerCase();
@@ -108,7 +113,7 @@ export function FilterDropdown({
     setShowConditionMenu(false);
   };
 
-  const sourceData = shouldFetchFromApi 
+  const sourceData = (shouldFetchFromApi && options.length === 0)
     ? dynamicOptions 
     : options.map(o => {
         if (typeof o === 'string') return { name: o, id: o, image: null };
