@@ -22,7 +22,7 @@ export function SortModal({
   anchorRef: React.RefObject<HTMLDivElement>;
 }) {
   const modalRef = useRef<HTMLDivElement>(null);
-  const [openSection, setOpenSection] = useState<string | null>(null);
+  const [openSection, setOpenSection] = useState<string | null>(currentSort);
   const [pos, setPos] = useState({ top: 0, left: 0 });
 
   const sections = [

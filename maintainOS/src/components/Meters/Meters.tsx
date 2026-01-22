@@ -75,7 +75,7 @@ export function Meters() {
   });
 
   // ✅ Sorting State (Initialized from URL)
-  const [sortType, setSortType] = useState(() => searchParams.get("sort") || "Last Updated");
+  const [sortType, setSortType] = useState(() => searchParams.get("sort") || "Creation Date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">(() => (searchParams.get("order") as "asc" | "desc") || "desc");
 
   const dispatch = useDispatch<AppDispatch>();
@@ -177,9 +177,31 @@ export function Meters() {
     }
   }, [showDeleted, filterParams, debouncedSearch]);
 
+  // ✅ Client-Side Sorting
+  const sortedMeters = useMemo(() => {
+    const meters = [...meterData];
+    meters.sort((a, b) => {
+      let comparison = 0;
+      switch (sortType) {
+        case "Creation Date":
+          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+        case "Last Updated":
+          comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+          break;
+        case "Name":
+        default:
+          comparison = a.name.localeCompare(b.name);
+          break;
+      }
+      return sortOrder === "asc" ? comparison : -comparison;
+    });
+    return meters;
+  }, [meterData, sortType, sortOrder]);
+
   useEffect(() => {
     if (loading) return;
-    if (!meterData || meterData.length === 0) {
+    if (!sortedMeters || sortedMeters.length === 0) {
       setSelectedMeter(null);
       return;
     }
@@ -188,20 +210,20 @@ export function Meters() {
     
     // Agar URL me meterId hai, to usse select karo
     if (urlMeterId) {
-      const found = meterData.find((m) => String(m.id) === String(urlMeterId));
+      const found = sortedMeters.find((m) => String(m.id) === String(urlMeterId));
       if (found) {
         setSelectedMeter(found);
         return;
       }
     }
 
-    // Default fallback
+    // Default fallback - Select FIRST SORTED item
     setSelectedMeter((prev) => {
-      if (!prev) return meterData[0];
-      const updated = meterData.find((m) => m.id === prev.id);
-      return updated || meterData[0];
+      if (!prev) return sortedMeters[0];
+      const updated = sortedMeters.find((m) => m.id === prev.id);
+      return updated || sortedMeters[0];
     });
-  }, [loading, meterData, searchParams]);
+  }, [loading, sortedMeters, searchParams]);
 
   useEffect(() => {
     fetchMeters();
@@ -212,8 +234,8 @@ export function Meters() {
   const paginatedMeters = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-    return meterData.slice(startIndex, endIndex);
-  }, [currentPage, itemsPerPage, totalItems, meterData]);
+    return sortedMeters.slice(startIndex, endIndex);
+  }, [currentPage, itemsPerPage, totalItems, sortedMeters]);
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);

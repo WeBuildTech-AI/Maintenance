@@ -1,5 +1,6 @@
 import { Building2 } from "lucide-react";
 import { type Vendor } from "../../store/vendors/vendors.types";
+import { useRef, useEffect } from "react";
 
 export function VendorCard({
   vendor,
@@ -10,8 +11,17 @@ export function VendorCard({
   selected: boolean;
   onSelect: () => void;
 }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (selected && cardRef.current) {
+      cardRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" }); // changed to nearest for better UX in standard lists
+    }
+  }, [selected]);
+
   return (
     <div
+      ref={cardRef}
       onClick={onSelect}
       className={`cursor-pointer border rounded-lg p-4 mb-3 transition-all duration-200 hover:shadow-md ${
         selected

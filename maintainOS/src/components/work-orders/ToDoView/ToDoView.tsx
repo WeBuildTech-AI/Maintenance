@@ -4,6 +4,7 @@ import { useMemo, useRef, useState, useEffect } from "react";
 import { type ToDoViewProps } from "../types";
 import CopyPageU from "../../ui/copy-page-url-icon";
 import { ToDoTabs } from "./ToDoTabs";
+import { DiscardChangesModal } from "./DiscardChangesModal";
 import { WorkOrderCard } from "./WorkOrderCard";
 import { EmptyState } from "./EmptyState";
 import { WorkOrderDetails } from "./WorkOrderDetails";
@@ -31,7 +32,7 @@ export function ToDoView({
   const [activeStatus, setActiveStatus] = useState<StatusKey>("open");
   const [comment, setComment] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null!);
   
   // ✅ WO-401 FIX: Ref specifically for CommentsSection
   const commentsRef = useRef<HTMLTextAreaElement>(null);
@@ -40,10 +41,15 @@ export function ToDoView({
   const [logRefreshTrigger, setLogRefreshTrigger] = useState(0);
 
   const [editingWorkOrder, setEditingWorkOrder] = useState<any | null>(null);
+  
+  // ✅ Discard Modal State
+  const [showDiscardModal, setShowDiscardModal] = useState(false);
+  const [pendingWorkOrder, setPendingWorkOrder] = useState<any | null>(null);
+
   const navigate = useNavigate();
 
   // ✅ Sort state
-  const [sortType, setSortType] = useState("Last Updated");
+  const [sortType, setSortType] = useState("Creation Date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [unreadFirst, setUnreadFirst] = useState(false);
 
@@ -206,12 +212,41 @@ export function ToDoView({
   };
 
   const handleSelectWorkOrder = (item: any) => {
+    // 🛑 If currently editing/creating AND switching to a different ID, intercept!
+    if (editingWorkOrder || creatingWorkOrder) {
+      // If clicking the SAME work order that is currently being edited, do nothing (or let it stay)
+      // But if creating, any click is a switch.
+      // If editing, check IDs.
+      if (creatingWorkOrder || (editingWorkOrder && item?.id !== editingWorkOrder.id)) {
+         setPendingWorkOrder(item);
+         setShowDiscardModal(true);
+         return;
+      }
+    }
+
+    proceedWithSelection(item);
+  };
+
+  const proceedWithSelection = (item: any) => {
     onSelectWorkOrder(item);
     setEditingWorkOrder(null);
     onCancelCreate?.();
-    // ✅ Reset panel to details
-    setActivePanel("details"); 
+    setActivePanel("details");
     if (item?.id) setTimeout(() => navigate(`/work-orders/${item.id}`), 0);
+  };
+
+  const handleConfirmDiscard = () => {
+    setShowDiscardModal(false);
+    if (pendingWorkOrder) {
+      proceedWithSelection(pendingWorkOrder);
+      setPendingWorkOrder(null);
+    }
+  };
+
+  const handleCancelDiscard = () => {
+    setShowDiscardModal(false);
+    setPendingWorkOrder(null);
+    // Stay on current edit screen
   };
 
   const handleScrollToComments = () => {
@@ -228,6 +263,13 @@ export function ToDoView({
     }
   };
 
+  // ✅ AUTO-SELECT FIRST ITEM (Newest/Top of list)
+  useEffect(() => {
+    if (activeList.length > 0 && !selectedWorkOrder && !creatingWorkOrder && !editingWorkOrder && !detailId) {
+       handleSelectWorkOrder(activeList[0]);
+    }
+  }, [activeList, selectedWorkOrder, creatingWorkOrder, editingWorkOrder, detailId]);
+
   // --------------------------------------------------
   // 🧱 UI
   return (
@@ -239,6 +281,8 @@ export function ToDoView({
           setActiveTab={setActiveTab}
           todoCount={todoWorkOrders.length}
           doneCount={doneWorkOrders.length}
+          currentSortType={sortType}
+          currentSortOrder={sortOrder}
           onSortChange={(type, order) =>
             handleSortChange(type, order, unreadFirst)
           }
@@ -372,6 +416,13 @@ export function ToDoView({
           </div>
         )}
       </div>
+
+
+      <DiscardChangesModal 
+        isOpen={showDiscardModal}
+        onDiscard={handleConfirmDiscard}
+        onKeepEditing={handleCancelDiscard}
+      />
     </div>
   );
 }

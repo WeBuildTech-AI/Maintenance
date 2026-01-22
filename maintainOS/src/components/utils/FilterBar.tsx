@@ -2,15 +2,15 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Plus, Search, CheckCircle } from "lucide-react";
-import { FilterDropdown, DropdownOption } from "./FilterDropdown";
-import { buildQueryParams, FilterStateItem } from "./../utils/queryBuilder";
+import { FilterDropdown, type DropdownOption } from "./FilterDropdown";
+import { buildQueryParams, type FilterStateItem } from "./../utils/queryBuilder";
 
 type FilterOption = {
   key: string;
   label: string;
   icon?: React.ReactNode;
   options?: (string | DropdownOption)[]; 
-  hideCondition?: boolean; // ✅ Added support for hiding condition
+  disableAutoFetch?: boolean; // ✅ Added to prevent double fetching
 };
 
 const MAX_VISIBLE = 4;
@@ -24,6 +24,7 @@ export default function FilterBar({
   defaultKeys?: string[];
   onParamsChange?: (params: Record<string, any>) => void;
 }) {
+  // ... (state hooks same as before)
   const [activeFilters, setActiveFilters] = useState<string[]>(defaultKeys);
   const [openFilterKey, setOpenFilterKey] = useState<string | null>(null);
   const [showAddMenu, setShowAddMenu] = useState(false);
@@ -35,7 +36,7 @@ export default function FilterBar({
   const addMenuRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
-  // ... (useEffect for outside click - No Change)
+  // ... (useEffects same as before)
   useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
         const target = event.target as Node;
@@ -52,7 +53,6 @@ export default function FilterBar({
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-  // ... (useEffect for onParamsChange - No Change)
   useEffect(() => {
       const apiParams = buildQueryParams(filterState);
       if (onParamsChange) {
@@ -60,7 +60,7 @@ export default function FilterBar({
       }
     }, [filterState, onParamsChange]);
 
-  // ... (Handlers - No Change)
+  // ... (handlers same as before)
   const toggleDropdown = (key: string) => {
       setShowAddMenu(false);
       setOpenFilterKey((prev) => (prev === key ? null : key));
@@ -149,7 +149,8 @@ export default function FilterBar({
                   onSelect={(optId) => handleSelect(key, optId)}
                   onDelete={() => handleDelete(key)}
                   onConditionChange={(cond) => handleConditionChange(key, cond)}
-                  hideCondition={filter.hideCondition} // ✅ PASSING THE NEW PROP
+                  hideCondition={filter.hideCondition} 
+                  disableAutoFetch={filter.disableAutoFetch} // ✅ Pass new prop
                 />
               </div>
             )}

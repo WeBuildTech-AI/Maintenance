@@ -1,21 +1,17 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useState } from "react";
-import WorkOrderForm from "./panels/WorkOrderForm";
-import ProcedurePanel from "./panels/ProcedurePanel";
-import AssetsPanel from "./panels/AssetsPanel";
-import InvitePanel from "./panels/InvitePanel";
+import { NewWorkOrderForm } from "./NewWorkOrderForm/NewWorkOrderFrom";
 
 export default function NewWorkOrderModal({
   isOpen,
   onClose,
+  prefillData,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  prefillData?: any;
 }) {
-  const [panel, setPanel] = useState<"form" | "procedure" | "assets" | "invite">("form");
-
   if (!isOpen) return null;
 
   return (
@@ -29,6 +25,7 @@ export default function NewWorkOrderModal({
         justifyContent: "center",
         backgroundColor: "rgba(0,0,0,0.1)",
       }}
+      onClick={onClose}
     >
       <div
         style={{
@@ -40,40 +37,29 @@ export default function NewWorkOrderModal({
           display: "flex",
           flexDirection: "column",
         }}
+        onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b px-6 py-4">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {panel === "form" && "New Work Order"}
-            {panel === "procedure" && "Add Procedure"}
-            {panel === "assets" && "Add Assets"}
-            {panel === "invite" && "Invite and Assign this work order"}
-          </h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            <X className="h-6 w-6" />
-          </button>
-        </div>
+        {/* Close button - top right */}
+        <button 
+          onClick={onClose} 
+          className="absolute top-4 right-4 z-10 text-gray-500 hover:text-gray-700 bg-white rounded-full p-1 shadow-sm"
+        >
+          <X className="h-6 w-6" />
+        </button>
 
-        {/* Panel content */}
-        <div className="flex-1 overflow-y-auto px-6 pt-6">
-          {panel === "form" && <WorkOrderForm setPanel={setPanel} />}
-          {panel === "procedure" && <ProcedurePanel setPanel={setPanel} />}
-          {panel === "assets" && <AssetsPanel setPanel={setPanel} />}
-          {panel === "invite" && <InvitePanel setPanel={setPanel} />}
+        {/* Form content */}
+        <div className="flex-1 overflow-y-auto">
+          <NewWorkOrderForm
+            isEditMode={false}
+            onCancel={onClose}
+            onCreate={() => {
+              onClose();
+            }}
+            prefillData={prefillData}
+          />
         </div>
-
-        {/* Footer */}
-        {panel === "form" && (
-          <div className="sticky bottom-0 mt-6 flex items-center border-t bg-white px-6 py-4">
-            <button
-              onClick={onClose}
-              className="ml-auto h-10 rounded-md bg-orange-600 px-10 text-sm font-medium text-white shadow hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              Create
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
 }
+

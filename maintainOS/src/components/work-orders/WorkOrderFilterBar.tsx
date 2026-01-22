@@ -4,15 +4,15 @@ import FilterBar from "../utils/FilterBar";
 // ✅ EXACT OPTIONS FROM SCREENSHOTS
 const ALL_FILTERS = [
   // --- API FILTERS (Fetch data dynamically) ---
-  { key: "asset", label: "Asset", icon: <Settings size={16} /> }, 
-  { key: "location", label: "Location", icon: <MapPin size={16} /> },
-  { key: "part", label: "Part", icon: <Settings size={16} /> },
-  { key: "vendor", label: "Vendor", icon: <Network size={16} /> },
-  { key: "category", label: "Category", icon: <Layers size={16} /> },
-  { key: "assignedTo", label: "Assigned To", icon: <User size={16} /> },
-  { key: "completedBy", label: "Completed By", icon: <User size={16} /> },
-  { key: "requestedBy", label: "Requested By", icon: <User size={16} /> },
-  { key: "procedure", label: "Procedure", icon: <Wrench size={16} /> },
+  { key: "asset", label: "Asset", icon: <Settings size={16} />, disableAutoFetch: true }, 
+  { key: "location", label: "Location", icon: <MapPin size={16} />, disableAutoFetch: true },
+  { key: "part", label: "Part", icon: <Settings size={16} />, disableAutoFetch: true },
+  { key: "vendor", label: "Vendor", icon: <Network size={16} />, disableAutoFetch: true },
+  { key: "category", label: "Category", icon: <Layers size={16} />, disableAutoFetch: true },
+  { key: "assignedTo", label: "Assigned To", icon: <User size={16} />, disableAutoFetch: true },
+  { key: "completedBy", label: "Completed By", icon: <User size={16} />, disableAutoFetch: true },
+  { key: "requestedBy", label: "Requested By", icon: <User size={16} />, disableAutoFetch: true },
+  { key: "procedure", label: "Procedure", icon: <Wrench size={16} />, disableAutoFetch: true },
 
   // --- HARDCODED FILTERS (Based on Screenshots) ---
   { 
@@ -114,14 +114,85 @@ const ALL_FILTERS = [
   { key: "assetTypes", label: "Asset Types", icon: <Layers size={16} /> },
 ];
 
+import { useDispatch, useSelector } from "react-redux";
+import { useEffect, useMemo } from "react";
+import type { AppDispatch, RootState } from "../../store";
+import { fetchFilterData } from "../../store/workOrders/workOrders.thunks";
+
 interface WorkOrderFilterBarProps {
   onParamsChange?: (params: any) => void;
 }
 
 export default function WorkOrderFilterBar({ onParamsChange }: WorkOrderFilterBarProps) {
+  const dispatch = useDispatch<AppDispatch>();
+  const { filterData } = useSelector((state: RootState) => state.workOrders);
+
+  useEffect(() => {
+    // Dispatch new thunk to fetch all filter data in parallel (cached by Redux)
+    dispatch(fetchFilterData());
+  }, [dispatch]);
+
+  const filters = useMemo(() => {
+    if (!filterData) return ALL_FILTERS;
+
+    return ALL_FILTERS.map((filter) => {
+      let options: any[] = [];
+      
+      switch (filter.key) {
+        case "location":
+          options = filterData.locations || [];
+          break;
+        case "part":
+          options = filterData.parts || [];
+          break;
+        case "asset":
+          options = filterData.assets || [];
+          break;
+        case "vendor":
+          options = filterData.vendors || [];
+          break;
+        case "category":
+          options = filterData.categories || [];
+          break;
+        case "procedure":
+          options = filterData.procedures || [];
+          break;
+        case "assignedTo":
+           // "Assigned To" usually maps to Team or User. 
+           // Based on filterDataFetcher, "assigned to" maps to users.
+           // But wait, filterDataFetcher handles "assigned to" -> "users".
+           // Let's use users.
+           options = filterData.users || []; 
+           break;
+        case "completedBy":
+           options = filterData.users || [];
+           break;
+        case "requestedBy":
+           options = filterData.users || [];
+           break;
+        // If there are other dynamic filters in ALL_FILTERS like "assetTypes", handle them or leave as is.
+        // assetTypes was not in my fetchFilterData thunk explicitly? 
+        // fetchFilterData fetched: locations, parts, assets, vendors, categories, users, procedures, teams, meters.
+        default:
+          return filter;
+      }
+
+      // Map to DropdownOption format
+      const mappedOptions = options.map((item: any) => ({
+        label: item.name,
+        value: item.id
+      }));
+
+      return {
+        ...filter,
+        options: mappedOptions.length > 0 ? mappedOptions : filter.options
+      };
+    });
+  }, [filterData]);
+
   return (
     <FilterBar
-      allFilters={ALL_FILTERS}
+      allFilters={filters}
       defaultKeys={[
         "asset",
         "status",

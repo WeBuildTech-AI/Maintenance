@@ -233,19 +233,32 @@ export function WorkOrderDetails({
     assigneesList.push(selectedWorkOrder.assignedTo);
   }
 
-  // User Name Fetching
+  // User Name Fetching - Optimized with Promise.all
   useEffect(() => {
-    const fetchName = async (userId: string | undefined, setFn: (s: string) => void) => {
-      if (!userId) { setFn("System"); return; }
-      const inAssignees = assigneesList.find((a: any) => a.id === userId);
-      if (inAssignees) { setFn(inAssignees.fullName || inAssignees.name); return; }
-      try {
-        const userData = await workOrderService.fetchUserById(userId);
-        setFn(userData.fullName || "Unknown");
-      } catch (error) { setFn("Unknown"); }
+    const fetchNames = async () => {
+      const createdById = selectedWorkOrder.createdBy;
+      const updatedById = selectedWorkOrder.updatedBy;
+
+      const fetchName = async (userId: string | undefined): Promise<string> => {
+        if (!userId) return "System";
+        const inAssignees = assigneesList.find((a: any) => a.id === userId);
+        if (inAssignees) return inAssignees.fullName || inAssignees.name;
+        try {
+          const userData = await workOrderService.fetchUserById(userId);
+          return userData.fullName || "Unknown";
+        } catch { return "Unknown"; }
+      };
+
+      const [cName, uName] = await Promise.all([
+        fetchName(createdById),
+        fetchName(updatedById)
+      ]);
+
+      setCreatedByName(cName);
+      setUpdatedByName(uName);
     };
-    fetchName(selectedWorkOrder.createdBy, setCreatedByName);
-    fetchName(selectedWorkOrder.updatedBy, setUpdatedByName);
+
+    fetchNames();
   }, [selectedWorkOrder.createdBy, selectedWorkOrder.updatedBy, assigneesList]);
 
   const handleDeleteClick = () => { setShowDeleteModal(true); setIsDropdownOpen(false); };

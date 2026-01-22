@@ -42,7 +42,7 @@ const ManualCheckbox = ({ checked }: { checked: boolean }) => (
   </div>
 );
 
-export type SelectOption = { id: string; name: string };
+export type SelectOption = { id: string; name: string; color?: string };
 
 interface DynamicSelectProps {
   options?: SelectOption[];
@@ -58,6 +58,7 @@ interface DynamicSelectProps {
   activeDropdown: string | null;
   setActiveDropdown: (name: string | null) => void;
   onSearch?: (term: string) => void; 
+  dropdownStyle?: React.CSSProperties;
 }
 
 export function DynamicSelect({
@@ -73,6 +74,7 @@ export function DynamicSelect({
   activeDropdown,
   setActiveDropdown,
   onSearch,
+  dropdownStyle,
 }: DynamicSelectProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null); 
@@ -146,6 +148,17 @@ export function DynamicSelect({
               {/* 1. Show First Option */}
               <div className="relative group/tag flex items-center">
                 <Badge key={firstOption.id} variant="secondary" className="flex items-center gap-1 max-w-[120px] min-w-0">
+                  {firstOption.color && (
+                    <div
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
+                        backgroundColor: firstOption.color,
+                        flexShrink: 0,
+                      }}
+                    />
+                  )}
                   <span className="truncate">
                     {firstOption.name.length > 9 ? firstOption.name.substring(0, 9) + "..." : firstOption.name}
                   </span>
@@ -196,6 +209,17 @@ export function DynamicSelect({
             selectedOptions.map((option) => (
               <div key={option.id} className="relative group/tag flex items-center">
                 <Badge variant="secondary" className="flex items-center gap-1 max-w-[120px] min-w-0">
+                  {option.color && (
+                    <div
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
+                        backgroundColor: option.color,
+                        flexShrink: 0,
+                      }}
+                    />
+                  )}
                   <span className="truncate">
                     {option.name.length > 9 ? option.name.substring(0, 9) + "..." : option.name}
                   </span>
@@ -251,6 +275,7 @@ export function DynamicSelect({
         <div 
           onMouseDown={(e) => e.preventDefault()}
           className="absolute top-full mt-1 w-full rounded-md border bg-white z-20 max-h-60 overflow-y-auto shadow-lg"
+          style={dropdownStyle}
         >
           {loading ? (
             <div className="flex justify-center items-center p-4">
@@ -271,11 +296,27 @@ export function DynamicSelect({
                     {isMulti ? (
                       <ManualCheckbox checked={isSelected} />
                     ) : (
-                      <div
-                        className={`w-2 h-2 rounded-full mr-1 ${
-                          isSelected ? "bg-blue-500" : "bg-transparent"
-                        }`}
-                      ></div>
+                      <>
+                        {option.color ? (
+                           <div
+                             style={{
+                               width: "8px",
+                               height: "8px",
+                               borderRadius: "50%",
+                               backgroundColor: option.color,
+                               marginRight: "8px",
+                               flexShrink: 0,
+                             }}
+                           />
+                        ) : (
+                          // Fallback to old behavior if no color
+                          <div
+                            className={`w-2 h-2 rounded-full mr-1 ${
+                              isSelected ? "bg-blue-500" : "bg-transparent"
+                            }`}
+                          ></div>
+                        )}
+                      </>
                     )}
                     <label className="flex-1 cursor-pointer text-gray-700">{option.name}</label>
                     {!isMulti && isSelected && (
