@@ -197,11 +197,31 @@ export function ToDoView({
     if (wo?.id) navigate(`/work-orders/${wo.id}/edit`);
   };
 
+  // ✅ Track if we've already auto-selected from URL to prevent loops
+  const hasAutoSelectedRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (detailId && !selectedWorkOrder) {
+    console.log("🔍 [ToDoView] detailId:", detailId, "hasAutoSelected:", hasAutoSelectedRef.current, "selectedWorkOrder:", selectedWorkOrder?.id);
+
+    // Only auto-select if:
+    // 1. There's a detailId in the URL
+    // 2. We haven't already auto-selected this ID
+    // 3. The work order isn't already selected
+    if (detailId && detailId !== "create" && detailId !== "edit" && hasAutoSelectedRef.current !== detailId && !selectedWorkOrder) {
       const allOrders = [...todoWorkOrders, ...doneWorkOrders];
       const found = allOrders.find((wo) => String(wo.id) === String(detailId));
-      if (found) onSelectWorkOrder(found);
+      if (found) {
+        console.log("🔵 [ToDoView] Auto-selecting work order from URL:", detailId);
+        onSelectWorkOrder(found);
+        hasAutoSelectedRef.current = detailId; // Mark as selected
+      } else {
+        console.log("⚠️ [ToDoView] Work order not found for detailId:", detailId);
+      }
+    }
+    // Reset the ref if detailId is cleared
+    if (!detailId || detailId === "create" || detailId === "edit") {
+      console.log("🟡 [ToDoView] Resetting hasAutoSelectedRef");
+      hasAutoSelectedRef.current = null;
     }
   }, [detailId, selectedWorkOrder, todoWorkOrders, doneWorkOrders]);
 

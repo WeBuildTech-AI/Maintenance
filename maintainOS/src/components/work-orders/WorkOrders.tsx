@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate, useMatch, useLocation } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { FetchWorkOrdersParams } from "../../store/workOrders/workOrders.types";
+import { type FetchWorkOrdersParams } from "../../store/workOrders/workOrders.types";
 import { fetchWorkOrders } from "../../store/workOrders/workOrders.thunks";
 import { CalendarView } from "./CalendarView";
 import { ListView } from "./ListView";
@@ -154,15 +154,21 @@ export function WorkOrders() {
   // ✅ Fetch Work Order for Detail View when URL changes
   useEffect(() => {
     const fetchViewingWorkOrder = async () => {
-      if (viewingId && viewingId !== selectedWorkOrder?.id) {
+      console.log("🔍 [WorkOrders] viewingId:", viewingId, "selectedWorkOrder:", selectedWorkOrder?.id);
+
+      // ✅ FIX: Prevent "create" or "edit" from being treated as work order IDs
+      if (viewingId && viewingId !== "create" && viewingId !== "edit" && viewingId !== selectedWorkOrder?.id) {
+        console.log("🔵 [WorkOrders] Fetching work order:", viewingId);
         try {
           const wo = await workOrderService.fetchWorkOrderById(viewingId);
+          console.log("✅ [WorkOrders] Fetched work order:", wo?.id);
           setViewingWorkOrder(wo);
         } catch (err) {
-          console.error("Failed to fetch work order", err);
+          console.error("❌ [WorkOrders] Failed to fetch work order", err);
           navigate("/work-orders");
         }
-      } else if (!viewingId) {
+      } else if (!viewingId || viewingId === "create" || viewingId === "edit") {
+        console.log("🟡 [WorkOrders] Clearing viewingWorkOrder (viewingId:", viewingId, ")");
         setViewingWorkOrder(null);
       }
     };
@@ -310,8 +316,8 @@ export function WorkOrders() {
         prefillData={prefillData}
       />
 
-      {/* ✅ Work Order Detail Modal (for List/Calendar View) */}
-      {viewingWorkOrder && (
+      {/* ✅ Work Order Detail Modal (for List/Calendar View ONLY - not ToDo) */}
+      {viewingWorkOrder && viewMode !== "todo" && (
         <WorkOrderDetailModal
           open={!!viewingWorkOrder}
           onClose={() => {
