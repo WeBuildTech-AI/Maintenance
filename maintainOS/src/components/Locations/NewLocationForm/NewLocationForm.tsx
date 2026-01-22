@@ -59,7 +59,7 @@ export function NewLocationForm({
   const [teamOptions, setTeamOptions] = useState<SelectOption[]>([]);
   const [vendorOptions, setVendorOptions] = useState<SelectOption[]>([]);
   const [parentOptions, setParentOptions] = useState<SelectOption[]>([]);
-  
+
   const [loadingType, setLoadingType] = useState<string | null>(null);
 
   const navigate = useNavigate();
@@ -195,7 +195,7 @@ export function NewLocationForm({
 
     if (isEdit && editData) {
       // 🚀 EDIT MODE: Only append changed fields
-      
+
       if (isDifferent(name, editData.name)) {
         formData.append("name", String(name.trim()));
       }
@@ -219,7 +219,7 @@ export function NewLocationForm({
       if (isDifferent(parentLocationId, editData.parentLocationId)) {
         // Send empty string if cleared, or new ID
         if (parentLocationId) {
-            formData.append("parentLocationId", String(parentLocationId));
+          formData.append("parentLocationId", String(parentLocationId));
         }
       }
 
@@ -296,7 +296,7 @@ export function NewLocationForm({
         isSubLocation ? fetchLocationById() : onCreate(res);
       }
 
-      setTimeout(() => fetchLocations(), 500);
+      // setTimeout(() => fetchLocations(), 500);
       onCancel();
     } catch (err: any) {
       console.error("Failed to submit location:", err);
@@ -311,8 +311,8 @@ export function NewLocationForm({
   const buttonText = isEdit
     ? "Save Changes"
     : isSubLocation
-    ? "Add Sub-Location"
-    : "Create Location";
+      ? "Add Sub-Location"
+      : "Create Location";
 
   return (
     <>
@@ -349,20 +349,20 @@ export function NewLocationForm({
 
           {/* TEAMS */}
           <div>
-              <h3 className="mb-2 text-base font-medium text-gray-900">Teams in Charge</h3>
-              <DynamicSelect
-                name="teams"
-                value={teamInCharge}
-                onSelect={(val) => setTeamInCharge(val as string[])}
-                options={teamOptions}
-                onFetch={handleFetchTeams}
-                loading={loadingType === "teams"}
-                activeDropdown={activeDropdown}
-                setActiveDropdown={setActiveDropdown}
-                ctaText="+ Create New Team"
-                onCtaClick={() => navigate("/teams/create")}
-                placeholder="Select Teams..."
-              />
+            <h3 className="mb-2 text-base font-medium text-gray-900">Teams in Charge</h3>
+            <DynamicSelect
+              name="teams"
+              value={teamInCharge}
+              onSelect={(val) => setTeamInCharge(val as string[])}
+              options={teamOptions}
+              onFetch={handleFetchTeams}
+              loading={loadingType === "teams"}
+              activeDropdown={activeDropdown}
+              setActiveDropdown={setActiveDropdown}
+              ctaText="+ Create New Team"
+              onCtaClick={() => navigate("/teams/create")}
+              placeholder="Select Teams..."
+            />
           </div>
 
           <QrCodeSection qrCode={qrCode} setQrCode={setQrCode} />
@@ -378,38 +378,38 @@ export function NewLocationForm({
           <div>
             <h3 className="mb-2 text-base font-medium text-gray-900">Vendors</h3>
             <DynamicSelect
-                name="vendors"
-                value={vendorId}
-                onSelect={(val) => setVendorId(val as string[])}
-                options={vendorOptions}
-                onFetch={handleFetchVendors}
-                loading={loadingType === "vendors"}
-                activeDropdown={activeDropdown}
-                setActiveDropdown={setActiveDropdown}
-                ctaText="+ Create New Vendor"
-                onCtaClick={() => navigate("/vendors/create")}
-                placeholder="Select Vendors..."
-              />
+              name="vendors"
+              value={vendorId}
+              onSelect={(val) => setVendorId(val as string[])}
+              options={vendorOptions}
+              onFetch={handleFetchVendors}
+              loading={loadingType === "vendors"}
+              activeDropdown={activeDropdown}
+              setActiveDropdown={setActiveDropdown}
+              ctaText="+ Create New Vendor"
+              onCtaClick={() => navigate("/vendors/create")}
+              placeholder="Select Vendors..."
+            />
           </div>
 
           {/* PARENT LOCATION */}
           {!isEdit && !isSubLocation && (
-             <div>
-                <h3 className="mb-2 text-base font-medium text-gray-900">Parent Location</h3>
-                <DynamicSelect
-                    name="parent"
-                    value={parentLocationId}
-                    onSelect={(val) => setParentLocationId(val as string)}
-                    options={parentOptions}
-                    onFetch={handleFetchParents}
-                    loading={loadingType === "parents"}
-                    activeDropdown={activeDropdown}
-                    setActiveDropdown={setActiveDropdown}
-                    ctaText="+ Create New Parent Location"
-                    onCtaClick={() => navigate("/locations")}
-                    placeholder="Select Parent Location..."
-                />
-             </div>
+            <div>
+              <h3 className="mb-2 text-base font-medium text-gray-900">Parent Location</h3>
+              <DynamicSelect
+                name="parent"
+                value={parentLocationId}
+                onSelect={(val) => setParentLocationId(val as string)}
+                options={parentOptions}
+                onFetch={handleFetchParents}
+                loading={loadingType === "parents"}
+                activeDropdown={activeDropdown}
+                setActiveDropdown={setActiveDropdown}
+                ctaText="+ Create New Parent Location"
+                onCtaClick={() => navigate("/locations")}
+                placeholder="Select Parent Location..."
+              />
+            </div>
           )}
           {/* Sublocation or Edit mode - we might want to show it but disabled, or just hide it? 
               The original code disabled it: disabled={isEdit || isSubLocation}
@@ -423,22 +423,22 @@ export function NewLocationForm({
               However, DynamicSelect doesn't have 'disabled' prop in my implementation.
               I'll just wrap it in a div with pointer-events-none opacity-50 if disabled.
           */}
-           {(isEdit || isSubLocation) && (
-              <div className="opacity-60 pointer-events-none">
-                 <h3 className="mb-2 text-base font-medium text-gray-900">Parent Location</h3>
-                 <DynamicSelect
-                    name="parent-disabled"
-                    value={parentLocationId}
-                    onSelect={() => {}}
-                    options={parentOptions}
-                    onFetch={() => {}}
-                    loading={false}
-                    activeDropdown={null}
-                    setActiveDropdown={() => {}}
-                    placeholder={parentLocationId ? "Parent Selected" : "No Parent"}
-                />
-              </div>
-           )}
+          {(isEdit || isSubLocation) && (
+            <div className="opacity-60 pointer-events-none">
+              <h3 className="mb-2 text-base font-medium text-gray-900">Parent Location</h3>
+              <DynamicSelect
+                name="parent-disabled"
+                value={parentLocationId}
+                onSelect={() => { }}
+                options={parentOptions}
+                onFetch={() => { }}
+                loading={false}
+                activeDropdown={null}
+                setActiveDropdown={() => { }}
+                placeholder={parentLocationId ? "Parent Selected" : "No Parent"}
+              />
+            </div>
+          )}
 
         </div>
 

@@ -23,17 +23,24 @@ export function ToDoView({
   creatingWorkOrder,
   onCancelCreate,
   onRefreshWorkOrders,
+  onWorkOrderCreate,
+  onWorkOrderUpdate,
+  onOptimisticUpdate,
 }: ToDoViewProps & {
   creatingWorkOrder?: boolean;
   onCancelCreate?: () => void;
   onRefreshWorkOrders?: () => void;
+  // ✅ OPTIMISTIC PROPS
+  onWorkOrderCreate?: (wo: any) => void;
+  onWorkOrderUpdate?: (wo: any) => void;
+  onOptimisticUpdate?: (id: string, patch: any) => void;
 }) {
   const [activeTab, setActiveTab] = useState<"todo" | "done">("todo");
   const [activeStatus, setActiveStatus] = useState<StatusKey>("open");
   const [comment, setComment] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null!);
-  
+
   // ✅ WO-401 FIX: Ref specifically for CommentsSection
   const commentsRef = useRef<HTMLTextAreaElement>(null);
 
@@ -41,7 +48,7 @@ export function ToDoView({
   const [logRefreshTrigger, setLogRefreshTrigger] = useState(0);
 
   const [editingWorkOrder, setEditingWorkOrder] = useState<any | null>(null);
-  
+
   // ✅ Discard Modal State
   const [showDiscardModal, setShowDiscardModal] = useState(false);
   const [pendingWorkOrder, setPendingWorkOrder] = useState<any | null>(null);
@@ -63,7 +70,7 @@ export function ToDoView({
 
   // ✅ PAGINATION STATE ADDED HERE
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10; 
+  const itemsPerPage = 10;
 
   const isEditRoute = useMatch("/work-orders/:workOrderId/edit");
   const isCreateRoute = useMatch("/work-orders/create");
@@ -141,7 +148,7 @@ export function ToDoView({
 
   // ✅ PAGINATION LOGIC
   useEffect(() => {
-    setCurrentPage(1); 
+    setCurrentPage(1);
   }, [activeTab, sortType, sortOrder, unreadFirst]);
 
   const totalItems = activeList.length;
@@ -218,9 +225,9 @@ export function ToDoView({
       // But if creating, any click is a switch.
       // If editing, check IDs.
       if (creatingWorkOrder || (editingWorkOrder && item?.id !== editingWorkOrder.id)) {
-         setPendingWorkOrder(item);
-         setShowDiscardModal(true);
-         return;
+        setPendingWorkOrder(item);
+        setShowDiscardModal(true);
+        return;
       }
     }
 
@@ -266,7 +273,7 @@ export function ToDoView({
   // ✅ AUTO-SELECT FIRST ITEM (Newest/Top of list)
   useEffect(() => {
     if (activeList.length > 0 && !selectedWorkOrder && !creatingWorkOrder && !editingWorkOrder && !detailId) {
-       handleSelectWorkOrder(activeList[0]);
+      handleSelectWorkOrder(activeList[0]);
     }
   }, [activeList, selectedWorkOrder, creatingWorkOrder, editingWorkOrder, detailId]);
 
@@ -320,10 +327,10 @@ export function ToDoView({
               <span>{startIndex + 1} – {endIndex} of {totalItems}</span>
               <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                 <button onClick={handlePrevPage} disabled={currentPage === 1} style={{ background: "none", border: "none", cursor: currentPage === 1 ? "not-allowed" : "pointer", opacity: currentPage === 1 ? 0.3 : 1, display: "flex", alignItems: "center", padding: "2px" }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
                 </button>
                 <button onClick={handleNextPage} disabled={endIndex >= totalItems} style={{ background: "none", border: "none", cursor: endIndex >= totalItems ? "not-allowed" : "pointer", opacity: endIndex >= totalItems ? 0.3 : 1, display: "flex", alignItems: "center", padding: "2px" }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
                 </button>
               </div>
             </div>
@@ -333,92 +340,98 @@ export function ToDoView({
 
       {/* Right Panel */}
       <div className="flex-1 bg-card mr-3 ml-2 mb-2 border border-border min-h-0 flex flex-col">
-        
+
         {/* ✅ CASE 1: CREATE NEW WORK ORDER */}
         {isCreateRoute || creatingWorkOrder ? (
           <NewWorkOrderForm
             // ✅ KEY PROP ADDED: Forces React to re-mount component freshly
-            key="create-work-order-form" 
-            onCreate={() => {
+            key="create-work-order-form"
+            onCreate={(newWo) => {
+              // ✅ OPTIMISTIC
+              if (newWo && onWorkOrderCreate) onWorkOrderCreate(newWo);
+
               onCancelCreate?.();
               setEditingWorkOrder(null);
-              onRefreshWorkOrders?.();
+              // onRefreshWorkOrders?.();
             }}
             // ✅ Explicitly NULL to clear any previous data
-            existingWorkOrder={null} 
+            existingWorkOrder={null}
             editId={editingId}
             isEditMode={false}
             onCancel={onCancelCreate}
           />
-        ) 
-        
-        // ✅ CASE 2: EDIT WORK ORDER
-        : editingWorkOrder || isEditMode ? (
-          <NewWorkOrderForm
-            // ✅ KEY PROP ADDED: Ensures edit form refreshes on ID change
-            key={editingWorkOrder?.id || editingId || 'edit-form'}
-            existingWorkOrder={editingWorkOrder}
-            editId={editingId}
-            isEditMode={isEditMode}
-            onCreate={() => {
-              setEditingWorkOrder(null);
-              onCancelCreate?.();
-              onRefreshWorkOrders?.();
-            }}
-            onCancel={handleEditCancel}
-          />
-        ) 
-        
-        // ✅ CASE 3: VIEW DETAILS OR EMPTY
-        : !selectedWorkOrder ? (
-          <EmptyState
-            message="No work order selected"
-            subtext="Select a work order from the list to view its details."
-          />
-        ) : (
-          <div className="overflow-y-auto">
-            <WorkOrderDetails
-              selectedWorkOrder={selectedWorkOrder}
-              selectedAvatarUrl={selectedAvatarUrl}
-              selectedAssignee={selectedAssignee}
-              getInitials={getInitials}
-              activeStatus={activeStatus}
-              setActiveStatus={setActiveStatus}
-              CopyPageU={CopyPageU}
-              onEdit={handleEditWorkOrder}
-              onRefreshWorkOrders={onRefreshWorkOrders}
-              activePanel={activePanel}
-              setActivePanel={setActivePanel}
-              onScrollToComments={handleScrollToComments} 
-              onScrollToProcedure={handleScrollToProcedure}
-              // ✅ Trigger the state update in parent
-              onStatusChangeSuccess={() => setLogRefreshTrigger((prev) => prev + 1)}
+        )
+
+          // ✅ CASE 2: EDIT WORK ORDER
+          : editingWorkOrder || isEditMode ? (
+            <NewWorkOrderForm
+              // ✅ KEY PROP ADDED: Ensures edit form refreshes on ID change
+              key={editingWorkOrder?.id || editingId || 'edit-form'}
+              existingWorkOrder={editingWorkOrder}
+              editId={editingId}
+              isEditMode={isEditMode}
+              onCreate={() => {
+                setEditingWorkOrder(null);
+                onCancelCreate?.();
+                onRefreshWorkOrders?.();
+              }}
+              onCancel={handleEditCancel}
             />
+          )
 
-            {/* ✅ Render sub-panels only when active */}
-            {activePanel === "details" && (
-              <>
-                <LinkedProcedurePreview selectedWorkOrder={selectedWorkOrder} />
-
-                <CommentsSection
-                  ref={commentsRef}
-                  comment={comment}
-                  setComment={setComment}
-                  attachment={attachment}
-                  setAttachment={setAttachment}
-                  fileRef={fileRef}
+            // ✅ CASE 3: VIEW DETAILS OR EMPTY
+            : !selectedWorkOrder ? (
+              <EmptyState
+                message="No work order selected"
+                subtext="Select a work order from the list to view its details."
+              />
+            ) : (
+              <div className="overflow-y-auto">
+                <WorkOrderDetails
                   selectedWorkOrder={selectedWorkOrder}
-                  // Pass the trigger to re-fetch logs
-                  refreshTrigger={logRefreshTrigger}
+                  selectedAvatarUrl={selectedAvatarUrl}
+                  selectedAssignee={selectedAssignee}
+                  getInitials={getInitials}
+                  activeStatus={activeStatus}
+                  setActiveStatus={setActiveStatus}
+                  CopyPageU={CopyPageU}
+                  onEdit={handleEditWorkOrder}
+                  onRefreshWorkOrders={onRefreshWorkOrders}
+                  activePanel={activePanel}
+                  setActivePanel={setActivePanel}
+                  onScrollToComments={handleScrollToComments}
+                  onScrollToProcedure={handleScrollToProcedure}
+                  // ✅ Trigger the state update in parent
+                  onStatusChangeSuccess={() => setLogRefreshTrigger((prev) => prev + 1)}
+                  // ✅ OPTIMISTIC UPDATE
+                  onWorkOrderUpdate={onWorkOrderUpdate}
+                  onOptimisticUpdate={onOptimisticUpdate}
                 />
-              </>
+
+                {/* ✅ Render sub-panels only when active */}
+                {activePanel === "details" && (
+                  <>
+                    <LinkedProcedurePreview selectedWorkOrder={selectedWorkOrder} />
+
+                    <CommentsSection
+                      ref={commentsRef}
+                      comment={comment}
+                      setComment={setComment}
+                      attachment={attachment}
+                      setAttachment={setAttachment}
+                      fileRef={fileRef}
+                      selectedWorkOrder={selectedWorkOrder}
+                      // Pass the trigger to re-fetch logs
+                      refreshTrigger={logRefreshTrigger}
+                    />
+                  </>
+                )}
+              </div>
             )}
-          </div>
-        )}
       </div>
 
 
-      <DiscardChangesModal 
+      <DiscardChangesModal
         isOpen={showDiscardModal}
         onDiscard={handleConfirmDiscard}
         onKeepEditing={handleCancelDiscard}

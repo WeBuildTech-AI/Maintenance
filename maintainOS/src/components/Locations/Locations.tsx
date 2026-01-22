@@ -28,7 +28,7 @@ import {
   useMatch,
   useParams,
   useSearchParams,
-  useLocation, 
+  useLocation,
 } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import LocationDetails from "./LocationDetails";
@@ -39,7 +39,7 @@ export function Locations() {
 
   // ✅ 1. URL Search Params Setup
   const [searchParams, setSearchParams] = useSearchParams();
-  const location = useLocation(); 
+  const location = useLocation();
 
   // ✅ 2. Initialize State
   const [searchQuery, setSearchQuery] = useState(
@@ -56,7 +56,7 @@ export function Locations() {
 
   // ✅ SERVER-SIDE PAGINATION STATE
   const currentPage = Number(searchParams.get("page")) || 1;
-  const itemsPerPage = 50; 
+  const itemsPerPage = 50;
 
   const [filterParams, setFilterParams] = useState<FetchLocationsParams>({
     page: currentPage,
@@ -145,9 +145,9 @@ export function Locations() {
 
     const currentSearch = searchParams.get("search") || "";
     const currentPageStr = searchParams.get("page") || "";
-    
+
     if (currentSearch !== (params.search || "") || currentPageStr !== (params.page || "")) {
-        setSearchParams(params, { replace: true });
+      setSearchParams(params, { replace: true });
     }
   }, [debouncedSearch, filterParams.page, setSearchParams, searchParams]);
 
@@ -183,7 +183,7 @@ export function Locations() {
         setDetailsLoading(false);
       }
     },
-    [] 
+    []
   );
 
   // ✅ Main List Fetch
@@ -200,14 +200,14 @@ export function Locations() {
         };
         res = await locationService.fetchLocations(apiPayload);
       }
-      
+
       const reversedLocations = [...res].reverse();
-      
+
       setLocations((prevLocations) => {
-          if (selectedLocation && !reversedLocations.find(l => l.id === selectedLocation.id)) {
-              return [selectedLocation, ...reversedLocations];
-          }
-          return reversedLocations;
+        if (selectedLocation && !reversedLocations.find(l => l.id === selectedLocation.id)) {
+          return [selectedLocation, ...reversedLocations];
+        }
+        return reversedLocations;
       });
 
     } catch (err) {
@@ -217,7 +217,7 @@ export function Locations() {
     } finally {
       setLoading(false);
     }
-  }, [showDeleted, filterParams, debouncedSearch]); 
+  }, [showDeleted, filterParams, debouncedSearch]);
 
   // ✅ Sorting Logic MOVED UP for useEffect dependency
   const sortedLocations = useMemo(() => {
@@ -257,13 +257,13 @@ export function Locations() {
     // 2. Extract ID from URL manually (Safety net for slow useParams)
     const pathParts = location.pathname.split('/').filter(Boolean);
     let urlIdFromPath = null;
-    
+
     // If path is like /locations/ID, part[0] is locations, part[1] is ID
     if (pathParts.length >= 2 && pathParts[0] === 'locations') {
-        const segment = pathParts[1];
-        if (segment !== 'create' && segment !== 'edit') {
-            urlIdFromPath = segment;
-        }
+      const segment = pathParts[1];
+      if (segment !== 'create' && segment !== 'edit') {
+        urlIdFromPath = segment;
+      }
     }
 
     // 3. IGNORE Special Routes
@@ -272,23 +272,23 @@ export function Locations() {
     // 🛑 Case 1: URL HAS AN ID (e.g., from Asset click)
     // DO NOT REDIRECT. Just load the data.
     if (urlIdFromPath) {
-       if (selectedLocation?.id !== urlIdFromPath) {
-           const found = findLocationDeep(locations, urlIdFromPath);
-           if (found) {
-               setSelectedLocation(found);
-           } else {
-               if (!detailsLoading) fetchLocationById(urlIdFromPath);
-           }
-       }
-       return; // Stop here.
+      if (selectedLocation?.id !== urlIdFromPath) {
+        const found = findLocationDeep(locations, urlIdFromPath);
+        if (found) {
+          setSelectedLocation(found);
+        } else {
+          if (!detailsLoading) fetchLocationById(urlIdFromPath);
+        }
+      }
+      return; // Stop here.
     }
 
     // 🛑 Case 2: URL IS EXACTLY ROOT (Default View)
     // Only redirect if we are SURE we are on the root path and no ID exists.
     if (isExactlyRoot && !loading && sortedLocations.length > 0 && !selectedLocation) {
-        const firstLocation = sortedLocations[0];
-        setSelectedLocation(firstLocation);
-        navigate(`/locations/${firstLocation.id}`, { replace: true });
+      const firstLocation = sortedLocations[0];
+      setSelectedLocation(firstLocation);
+      navigate(`/locations/${firstLocation.id}`, { replace: true });
     }
 
   }, [
@@ -296,7 +296,7 @@ export function Locations() {
     locations,
     sortedLocations, // ✅ Added sortedLocations
     isCreateRoute,
-    isCreateSubLocationRoute, 
+    isCreateSubLocationRoute,
     isEditRoute,
     fetchLocationById,
     navigate,
@@ -335,8 +335,20 @@ export function Locations() {
     navigate(`/locations/${parentId}`);
   };
 
+  // ✅ HELPER: Recursive Update
+  const updateLocationDeep = (list: LocationResponse[], updated: LocationResponse): LocationResponse[] => {
+    return list.map((item) => {
+      if (item.id === updated.id) return updated;
+      if (item.children && item.children.length > 0) {
+        return { ...item, children: updateLocationDeep(item.children, updated) };
+      }
+      return item;
+    });
+  };
+
   const handleFormSuccess = (locationData: LocationResponse) => {
-    fetchLocations();
+    // ✅ Optimistic Update
+    setLocations((prev) => updateLocationDeep(prev, locationData));
     setSelectedLocation(locationData);
     navigate(`/locations/${locationData.id}`);
   };
@@ -360,8 +372,8 @@ export function Locations() {
   };
 
   const handleNextPage = () => {
-    if (locations.length >= itemsPerPage) { 
-       setFilterParams((prev) => ({ ...prev, page: Number(prev.page || 1) + 1 }));
+    if (locations.length >= itemsPerPage) {
+      setFilterParams((prev) => ({ ...prev, page: Number(prev.page || 1) + 1 }));
     }
   };
 
@@ -521,36 +533,35 @@ export function Locations() {
                         </button>
                         {openSection === section.label && (
                           <div className="pl-4 pr-2 bg-gray-50 py-1 space-y-1">
-                          {section.options.map((opt) => {
-                            const isAsc =
-                              opt.includes("Asc") ||
-                              opt.includes("Oldest") ||
-                              opt.includes("Least");
-                            const isSelected =
-                              sortType === section.label &&
-                              sortOrder === (isAsc ? "asc" : "desc");
+                            {section.options.map((opt) => {
+                              const isAsc =
+                                opt.includes("Asc") ||
+                                opt.includes("Oldest") ||
+                                opt.includes("Least");
+                              const isSelected =
+                                sortType === section.label &&
+                                sortOrder === (isAsc ? "asc" : "desc");
 
-                            return (
-                              <button
-                                key={opt}
-                                onClick={() => {
-                                  setSortType(section.label);
-                                  setSortOrder(isAsc ? "asc" : "desc");
-                                  setIsDropdownOpen(false);
-                                }}
-                                className={`w-full flex items-center justify-between text-left text-xs px-2 py-1.5 rounded transition-colors ${
-                                  isSelected
+                              return (
+                                <button
+                                  key={opt}
+                                  onClick={() => {
+                                    setSortType(section.label);
+                                    setSortOrder(isAsc ? "asc" : "desc");
+                                    setIsDropdownOpen(false);
+                                  }}
+                                  className={`w-full flex items-center justify-between text-left text-xs px-2 py-1.5 rounded transition-colors ${isSelected
                                     ? "text-blue-600 bg-blue-50 font-medium"
                                     : "text-gray-600 hover:bg-gray-100"
-                                }`}
-                              >
-                                <span>{opt}</span>
-                                {isSelected && (
-                                  <Check className="w-3.5 h-3.5 text-blue-600" />
-                                )}
-                              </button>
-                            );
-                          })}
+                                    }`}
+                                >
+                                  <span>{opt}</span>
+                                  {isSelected && (
+                                    <Check className="w-3.5 h-3.5 text-blue-600" />
+                                  )}
+                                </button>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
@@ -594,20 +605,18 @@ export function Locations() {
                             setSelectedLocation(item);
                             navigate(`/locations/${item.id}`);
                           }}
-                          className={`cursor-pointer border rounded-lg p-4 mb-3 transition-all duration-200 hover:shadow-md ${
-                            isSelected
-                              ? "border-yellow-400 bg-yellow-50 ring-1 ring-yellow-400"
-                              : "border-gray-200 bg-white hover:border-yellow-200"
-                          }`}
+                          className={`cursor-pointer border rounded-lg p-4 mb-3 transition-all duration-200 hover:shadow-md ${isSelected
+                            ? "border-yellow-400 bg-yellow-50 ring-1 ring-yellow-400"
+                            : "border-gray-200 bg-white hover:border-yellow-200"
+                            }`}
                         >
                           <div className="flex items-start gap-4">
                             {/* Icon/Image Wrapper */}
                             <div
-                              className={`h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-full border overflow-hidden ${
-                                isSelected
-                                  ? "bg-white border-yellow-200 text-yellow-600"
-                                  : "bg-gray-50 border-gray-100 text-gray-500"
-                              }`}
+                              className={`h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-full border overflow-hidden ${isSelected
+                                ? "bg-white border-yellow-200 text-yellow-600"
+                                : "bg-gray-50 border-gray-100 text-gray-500"
+                                }`}
                             >
                               {hasPhoto ? (
                                 <img
@@ -659,7 +668,7 @@ export function Locations() {
               <div className="flex items-center justify-end p-3 border-t border-gray-200 bg-white">
                 <div className="inline-flex items-center gap-3 border border-yellow-400 rounded-full px-3 py-1 shadow-sm bg-white">
                   <span className="text-xs font-medium text-gray-700">
-                     Page {filterParams.page}
+                    Page {filterParams.page}
                   </span>
                   <div className="flex items-center gap-1">
                     <button
@@ -699,7 +708,7 @@ export function Locations() {
                     editData={locationToEdit}
                     initialParentId={parentIdFromUrl}
                     isSubLocation={!!isCreateSubLocationRoute}
-                    fetchLocationById={() => {}}
+                    fetchLocationById={() => { }}
                   />
                 ) : showSubLocation ? (
                   <SubLocation

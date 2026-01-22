@@ -35,6 +35,7 @@ interface VendorDetailsProps {
   restoreData: string;
   onClose: () => void;
   fetchVendors: () => void;
+  onOptimisticUpdate?: (v: any) => void;
 }
 
 type DateRange = { startDate: string; endDate: string };
@@ -46,12 +47,13 @@ export default function VendorDetails({
   restoreData,
   onClose,
   fetchVendors,
+  onOptimisticUpdate,
 }: VendorDetailsProps) {
-  
+
   // =========================================================================
   // ✅ 1. ALL HOOKS MUST BE DECLARED AT THE TOP (Before any return)
   // =========================================================================
-  
+
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
@@ -79,7 +81,7 @@ export default function VendorDetails({
   const [editingContact, setEditingContact] = useState<ContactFormData | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteContactEmail, setDeleteContactEmail] = useState<string | null>(null);
-  
+
   const modalRef = useRef<HTMLDivElement | null>(null);
 
   // State: Chart Date Ranges
@@ -213,17 +215,18 @@ export default function VendorDetails({
     return (
       <div className="flex h-full flex-col bg-white rounded-lg border overflow-hidden">
         <div className="flex-1 overflow-hidden relative bg-gray-50 flex flex-col">
-            <VendorForm
+          <VendorForm
             initialData={vendor}
             onCancel={() => setIsEditing(false)} // Go back to details
             onSubmit={(data: FormData) => {
-                return dispatch(updateVendor({ id: vendor.id, data })).unwrap();
+              return dispatch(updateVendor({ id: vendor.id, data })).unwrap();
             }}
-            onSuccess={() => {
-                fetchVendors();
-                setIsEditing(false); // Switch back to details view
+            onSuccess={(updatedVendor: any) => {
+              if (onOptimisticUpdate) onOptimisticUpdate(updatedVendor);
+              else fetchVendors();
+              setIsEditing(false); // Switch back to details view
             }}
-            />
+          />
         </div>
       </div>
     );
@@ -236,7 +239,7 @@ export default function VendorDetails({
       <div className="flex-none z-20 border-b bg-white shadow-sm">
         <VendorHeader
           vendor={vendor}
-          onEdit={() => setIsEditing(true)} 
+          onEdit={() => setIsEditing(true)}
           handleDeleteVendor={handleDeleteVendor}
           restoreData={restoreData}
           onClose={onClose}
@@ -302,8 +305,8 @@ export default function VendorDetails({
           title="Work Order History"
           workOrderHistory={vendor?.workOrderIds}
           filters={filters}
-          dateRange={chartDateRanges["work-order-history"]} 
-          onDateRangeChange={handleDateRangeChange} 
+          dateRange={chartDateRanges["work-order-history"]}
+          onDateRangeChange={handleDateRangeChange}
           groupByField="createdAt"
           lineName="Created"
           lineColor="#0091ff"

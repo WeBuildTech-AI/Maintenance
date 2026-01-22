@@ -50,7 +50,7 @@ export function WorkOrders() {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const location = useLocation();
-  
+
   // Get prefill data from navigation state (from Assets offline prompt)
   const prefillData = (location.state as any)?.prefillData;
 
@@ -253,6 +253,27 @@ export function WorkOrders() {
               currentPage={filterParams.page || 1}
               itemsPerPage={filterParams.limit || 20}
               onParamsChange={handleFilterChange}
+
+              // ✅ OPTIMISTIC UPDATES
+              onWorkOrderCreate={(newWo) => {
+                setWorkOrders((prev) => [newWo, ...prev]);
+                setSelectedWorkOrder(newWo);
+                setCreatingWorkOrder(false);
+                navigate(`/work-orders/${newWo.id}`);
+              }}
+              onWorkOrderUpdate={(updatedWo) => {
+                setWorkOrders((prev) => prev.map((wo) => wo.id === updatedWo.id ? updatedWo : wo));
+                if (selectedWorkOrder?.id === updatedWo.id) {
+                  setSelectedWorkOrder(updatedWo);
+                }
+              }}
+              onOptimisticUpdate={(id: string, patch: any) => {
+                setWorkOrders((prev) => prev.map((wo) => wo.id === id ? { ...wo, ...patch } : wo));
+                if (selectedWorkOrder?.id === id) {
+                  // @ts-ignore
+                  setSelectedWorkOrder((prev) => (prev ? { ...prev, ...patch } : null));
+                }
+              }}
             />
           )}
 

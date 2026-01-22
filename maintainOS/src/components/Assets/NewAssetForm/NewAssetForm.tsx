@@ -116,7 +116,7 @@ export function NewAssetForm({
       setSerialNumber(assetData.serialNumber || "");
       setQrCode(assetData.qrCode || "");
       setCriticality(assetData.criticality ? assetData.criticality.toLowerCase() : "");
-      
+
       if (assetData.status) setStatus(assetData.status);
 
       if (assetData.location) {
@@ -146,10 +146,10 @@ export function NewAssetForm({
         setPartOptions(assetData.parts.map((p: any) => ({ id: toId(p.id), name: p.name })));
       }
       if (Array.isArray(assetData.assetTypes)) {
-         setAssetTypeIds(assetData.assetTypes.map((t: any) => toId(t.id)));
-         setAssetTypeOptions(assetData.assetTypes.map((t: any) => ({ id: toId(t.id), name: t.name })));
+        setAssetTypeIds(assetData.assetTypes.map((t: any) => toId(t.id)));
+        setAssetTypeOptions(assetData.assetTypes.map((t: any) => ({ id: toId(t.id), name: t.name })));
       } else if (assetData.assetTypeIds) {
-         setAssetTypeIds(assetData.assetTypeIds.map(toId));
+        setAssetTypeIds(assetData.assetTypeIds.map(toId));
       }
     }
   }, [isEdit, assetData]);
@@ -233,14 +233,14 @@ export function NewAssetForm({
       // ------------------------------------------------
       // ✅ EDIT MODE: Compare and Send NULL if cleared
       // ------------------------------------------------
-      
+
       if (assetName !== assetData.name) payload.name = assetName;
       if (description !== (assetData.description || "")) payload.description = description;
       if (Number(year) !== (assetData.year || 0)) payload.year = Number(year);
       if (model !== (assetData.model || "")) payload.model = model;
       if (serialNumber !== (assetData.serialNumber || "")) payload.serialNumber = serialNumber;
       if (qrCode !== (assetData.qrCode || "")) payload.qrCode = qrCode;
-      
+
       const currentCrit = criticality ? criticality.toLowerCase() : "";
       const oldCrit = assetData.criticality ? assetData.criticality.toLowerCase() : "";
       if (currentCrit !== oldCrit) payload.criticality = criticality;
@@ -263,17 +263,17 @@ export function NewAssetForm({
       // Arrays: Always send current list (filtered for empty strings)
       const oldTeamIds = (assetData.teamsInCharge || []).map((t: any) => String(t.id));
       if (!arraysEqual(teamIds, oldTeamIds)) {
-         payload.teamsInCharge = teamIds.filter((id) => id && id.trim() !== "");
+        payload.teamsInCharge = teamIds.filter((id) => id && id.trim() !== "");
       }
 
       const oldPartIds = (assetData.parts || []).map((p: any) => String(p.id));
       if (!arraysEqual(partIds, oldPartIds)) {
-         payload.partIds = partIds.filter((id) => id && id.trim() !== "");
+        payload.partIds = partIds.filter((id) => id && id.trim() !== "");
       }
 
       const oldTypeIds = (assetData.assetTypes || []).map((t: any) => String(t.id));
       if (!arraysEqual(assetTypeIds, oldTypeIds)) {
-         payload.assetTypeIds = assetTypeIds.filter((id) => id && id.trim() !== "");
+        payload.assetTypeIds = assetTypeIds.filter((id) => id && id.trim() !== "");
       }
 
       if (Object.keys(payload).length === 0) {
@@ -286,7 +286,7 @@ export function NewAssetForm({
       // ✅ CREATE MODE: Only send fields that have values (No Nulls)
       // ------------------------------------------------
       payload.name = assetName;
-      payload.status = status; 
+      payload.status = status;
 
       if (description) payload.description = description;
       if (year) payload.year = Number(year);
@@ -322,7 +322,7 @@ export function NewAssetForm({
         toast.success("Asset created successfully");
         onCreate(created);
       }
-      fetchAssetsData();
+      // fetchAssetsData();
     } catch (error: any) {
       console.error(error);
       toast.error(error.message || "Failed to save asset");
@@ -378,7 +378,7 @@ export function NewAssetForm({
             options={criticalityOptions}
             activeDropdown={activeDropdown}
             setActiveDropdown={setActiveDropdown}
-            onFetch={() => {}} 
+            onFetch={() => { }}
             loading={false}
           />
         </div>

@@ -147,10 +147,36 @@ export function Meters() {
     navigate("/meters");
   };
 
-  const handleCreateForm = async () => {
-    console.log("Meter operation complete!");
+  // ✅ Optimistic Update Handlers
+  const handleMeterCreate = (newMeter: any) => {
+    setMeterData((prev) => [newMeter, ...prev]);
+    setSelectedMeter(newMeter);
+  };
+
+  const handleMeterUpdate = (updatedMeter: any) => {
+    setMeterData((prev) =>
+      prev.map((m) => (m.id === updatedMeter.id ? updatedMeter : m))
+    );
+    setSelectedMeter(updatedMeter);
+  };
+
+  const handleCreateForm = async (meter: any) => {
+    console.log("Meter operation complete!", meter);
+
+    // Determine if it was create or update based on checking if ID exists in current list
+    // Or better, checking isEditRoute but that might be stale if we navigated? 
+    // Actually NewMeterForm determines Create vs Update.
+    // The safest way is to check if we have an ID match.
+
+    const exists = meterData.some((m) => m.id === meter.id);
+    if (exists) {
+      handleMeterUpdate(meter);
+    } else {
+      handleMeterCreate(meter);
+    }
+
     navigate("/meters");
-    await fetchMeters();
+    // await fetchMeters(); // ❌ Removed to prevent re-fetch latency
   };
 
   const fetchMeters = useCallback(async () => {
@@ -207,7 +233,7 @@ export function Meters() {
     }
 
     const urlMeterId = searchParams.get("meterId");
-    
+
     // Agar URL me meterId hai, to usse select karo
     if (urlMeterId) {
       const found = sortedMeters.find((m) => String(m.id) === String(urlMeterId));
@@ -230,7 +256,7 @@ export function Meters() {
   }, [fetchMeters]);
 
   const totalItems = meterData.length;
-  
+
   const paginatedMeters = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
@@ -290,7 +316,7 @@ export function Meters() {
           searchQuery,
           setSearchQuery,
           handleShowNewMeterForm,
-          () => {}, // setShowSettings - changed to dummy to avoid error
+          () => { }, // setShowSettings - changed to dummy to avoid error
           setIsSettingsModalOpen,
           setShowDeleted,
           handleFilterChange
@@ -311,25 +337,25 @@ export function Meters() {
         ) : (
           <>
             <div className="flex flex-1 overflow-hidden">
-                <MetersList
-                  filteredMeters={paginatedMeters}
-                  selectedMeter={selectedMeter}
-                  setSelectedMeter={setSelectedMeter}
-                  loading={loading}
-                  handleShowNewMeterForm={handleShowNewMeterForm}
-                  handleCreateForm={handleCreateForm}
-                  handleCancelForm={handleCancelForm}
-                  setShowReadingMeter={setShowReadingMeter}
-                  currentPage={currentPage}
-                  setCurrentPage={setCurrentPage}
-                  startIndex={startIndex}
-                  endIndex={endIndex}
-                  totalItems={totalItems}
-                  sortType={sortType}
-                  setSortType={setSortType}
-                  sortOrder={sortOrder}
-                  setSortOrder={setSortOrder}
-                />
+              <MetersList
+                filteredMeters={paginatedMeters}
+                selectedMeter={selectedMeter}
+                setSelectedMeter={setSelectedMeter}
+                loading={loading}
+                handleShowNewMeterForm={handleShowNewMeterForm}
+                handleCreateForm={handleCreateForm}
+                handleCancelForm={handleCancelForm}
+                setShowReadingMeter={setShowReadingMeter}
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
+                startIndex={startIndex}
+                endIndex={endIndex}
+                totalItems={totalItems}
+                sortType={sortType}
+                setSortType={setSortType}
+                sortOrder={sortOrder}
+                setSortOrder={setSortOrder}
+              />
 
               <div className="flex-1 bg-card mb-2">
                 {isCreateRoute || isEditRoute ? (
@@ -358,6 +384,8 @@ export function Meters() {
                         handleDeleteMeter={handleDeleteMeter}
                         setShowReadingMeter={setShowReadingMeter}
                         setIsRecordModalOpen={setIsRecordModalOpen}
+                        onOptimisticCreate={handleMeterCreate}
+                        onOptimisticUpdate={handleMeterUpdate}
                       />
                     )
                   ) : null

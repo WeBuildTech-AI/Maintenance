@@ -37,11 +37,13 @@ export function MeterDetail({
   setIsRecordModalOpen,
   restoreData,
   onClose,
+  onOptimisticCreate, // ✅ Destructure
+  onOptimisticUpdate, // ✅ Destructure
 }: any) {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
-  
+
   const [createdUserName, setCreatedUserName] = useState("Unknown");
   const [updatedUserName, setUpdatedUserName] = useState("Unknown");
   const [openMeterDeleteModal, setOpenMeterDeleteModal] = useState(false);
@@ -67,8 +69,8 @@ export function MeterDetail({
         setCreatedUserName("Unknown");
       }
       if (selectedMeter.updatedBy) {
-          const res = await workOrderService.fetchUserById(selectedMeter.updatedBy);
-          setUpdatedUserName(res.fullName || "Unknown");
+        const res = await workOrderService.fetchUserById(selectedMeter.updatedBy);
+        setUpdatedUserName(res.fullName || "Unknown");
       } else {
         setUpdatedUserName("Unknown");
       }
@@ -100,9 +102,15 @@ export function MeterDetail({
         formData.append("readingFrequency", JSON.stringify(selectedMeter.readingFrequency));
       }
 
-      await dispatch(createMeter(formData)).unwrap();
+      const newMeter = await dispatch(createMeter(formData)).unwrap();
       toast.success("Meter copied successfully!", { id: loadingToast });
-      if (fetchMeters) fetchMeters();
+
+      // ✅ Optimistic Update
+      if (onOptimisticCreate) {
+        onOptimisticCreate(newMeter);
+      } else if (fetchMeters) {
+        fetchMeters();
+      }
     } catch (err: any) {
       toast.error(err.message || "Failed to copy meter", { id: loadingToast });
     }
@@ -114,8 +122,13 @@ export function MeterDetail({
         <NewMeterForm
           editingMeter={selectedMeter}
           onCancel={() => setIsEditing(false)}
-          onCreate={() => {
-            if (fetchMeters) fetchMeters();
+          onCreate={(updatedMeter: any) => {
+            // ✅ Optimistic Update
+            if (onOptimisticUpdate) {
+              onOptimisticUpdate(updatedMeter);
+            } else if (fetchMeters) {
+              fetchMeters();
+            }
             setIsEditing(false);
           }}
         />
@@ -153,7 +166,7 @@ export function MeterDetail({
                 <Plus className="h-4 w-4" />
                 Record Reading
               </Button>
-              
+
               <Button
                 variant="ghost"
                 size="sm"
@@ -163,7 +176,7 @@ export function MeterDetail({
                 <Edit className="h-4 w-4" />
                 Edit
               </Button>
-              
+
               <div className="flex items-center gap-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -201,7 +214,7 @@ export function MeterDetail({
 
           <div className="flex items-center gap-4 text-muted-foreground">
             {selectedMeter?.assetId && (
-              <div 
+              <div
                 // ✅ UPDATED: Path-based Routing
                 onClick={() => {
                   console.log("👉 Detail View Asset Click:", selectedMeter.assetId);
@@ -216,11 +229,11 @@ export function MeterDetail({
               </div>
             )}
             {selectedMeter?.locationId && (
-              <div 
+              <div
                 // ✅ UPDATED: Path-based Routing
                 onClick={() => {
-                   console.log("👉 Detail View Location Click:", selectedMeter.locationId);
-                   navigate(`/locations/${selectedMeter.locationId}`);
+                  console.log("👉 Detail View Location Click:", selectedMeter.locationId);
+                  navigate(`/locations/${selectedMeter.locationId}`);
                 }}
                 className="flex items-center gap-2 cursor-pointer hover:text-orange-600 hover:underline"
               >
@@ -240,7 +253,7 @@ export function MeterDetail({
             setShowReadingMeter={setShowReadingMeter}
           />
           <MeterDetailsSection selectedMeter={selectedMeter} />
-          
+
           <div className="text-sm text-gray-500 mt-6">
             Created By{" "}
             <span className="font-medium text-gray-700 capitalize">
@@ -250,13 +263,13 @@ export function MeterDetail({
           </div>
 
           {selectedMeter.createdAt !== selectedMeter.updatedAt && (
-             <div className="text-sm text-gray-500 mt-1">
-                Updated By{" "}
-                <span className="font-medium text-gray-700 capitalize">
-                  {updatedUserName}
-                </span>{" "}
-                on {formatDate(selectedMeter.updatedAt)}
-             </div>
+            <div className="text-sm text-gray-500 mt-1">
+              Updated By{" "}
+              <span className="font-medium text-gray-700 capitalize">
+                {updatedUserName}
+              </span>{" "}
+              on {formatDate(selectedMeter.updatedAt)}
+            </div>
           )}
 
           {openMeterDeleteModal && (

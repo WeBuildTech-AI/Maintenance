@@ -91,11 +91,11 @@ export const Assets: FC = () => {
     if (moreDetailsInUrl !== seeMoreAssetStatus) {
       setSeeMoreAssetStatus(moreDetailsInUrl);
     }
-    
+
     const assetIdInUrl = searchParams.get("assetId");
     if (assetIdInUrl && selectedAsset && String(selectedAsset.id) !== String(assetIdInUrl)) {
-       const found = assetData.find((a: any) => String(a.id) === String(assetIdInUrl));
-       if (found) setSelectedAsset(found);
+      const found = assetData.find((a: any) => String(a.id) === String(assetIdInUrl));
+      if (found) setSelectedAsset(found);
     }
   }, [searchParams, assetData]);
 
@@ -124,13 +124,13 @@ export const Assets: FC = () => {
 
     // ✅ CRITICAL FIX: Push to history ONLY if state changed AND doesn't match URL (user action)
     // If state changed but ALREADY matches URL, it's a back/forward sync -> use replace
-    const isNavigationalChange = 
+    const isNavigationalChange =
       (prevSeeMoreRef.current !== seeMoreAssetStatus || prevSelectedAssetIdRef.current !== selectedAsset?.id) &&
-      (String(params.moreDetails || "false") !== String(searchParams.get("moreDetails") || "false") || 
-       String(params.assetId || "") !== String(searchParams.get("assetId") || ""));
+      (String(params.moreDetails || "false") !== String(searchParams.get("moreDetails") || "false") ||
+        String(params.assetId || "") !== String(searchParams.get("assetId") || ""));
 
     setSearchParams(params, { replace: !isNavigationalChange });
-    
+
     prevSeeMoreRef.current = seeMoreAssetStatus;
     prevSelectedAssetIdRef.current = selectedAsset?.id;
   }, [
@@ -185,7 +185,7 @@ export const Assets: FC = () => {
         // Case B: URL mein ID nahi hai
         else {
           if (!selectedAsset) {
-             setShouldSelectFirst(true);
+            setShouldSelectFirst(true);
           }
         }
       } else {
@@ -296,15 +296,22 @@ export const Assets: FC = () => {
           serialNumber: asset.serialNumber,
         };
 
-        await dispatch(createAsset(payload)).unwrap();
+        const newAsset = await dispatch(createAsset(payload)).unwrap();
         toast.success("Asset copied successfully", { id: loadingToast });
-        fetchAssetsData();
+
+        // Manual Patching for UI
+        const locationObj = allLocationData.find((l: any) => String(l.id) === String(newAsset.locationId)) || { id: newAsset.locationId || "", name: "Unknown" };
+        const assetWithDetails = { ...newAsset, location: locationObj };
+
+        // ✅ Optimistic Update
+        setAssetData((prev) => [assetWithDetails as Asset, ...prev]);
+        setSelectedAsset(assetWithDetails as Asset);
       } catch (error) {
         console.error(error);
         toast.error("Failed to copy asset", { id: loadingToast });
       }
     },
-    [dispatch, fetchAssetsData]
+    [dispatch, allLocationData]
   );
 
   const handleEditAsset = useCallback((assetToEdit: Asset) => {
@@ -334,8 +341,8 @@ export const Assets: FC = () => {
           ? comparison
           : -comparison
         : sortOrder === "desc"
-        ? comparison
-        : -comparison;
+          ? comparison
+          : -comparison;
     });
     return processedAssets;
   }, [assetData, sortType, sortOrder]);
@@ -430,13 +437,13 @@ export const Assets: FC = () => {
                   loading={loading}
                   sortType={sortType}
                   setSortType={(t) => {
-                     setSortType(t);
-                     setShouldSelectFirst(true);
+                    setSortType(t);
+                    setShouldSelectFirst(true);
                   }}
                   sortOrder={sortOrder}
                   setSortOrder={(o) => {
-                     setSortOrder(o);
-                     setShouldSelectFirst(true);
+                    setSortOrder(o);
+                    setShouldSelectFirst(true);
                   }}
                   allLocationData={allLocationData}
                   currentPage={currentPage}
@@ -513,8 +520,8 @@ export const Assets: FC = () => {
         ) : (
           <div className="flex items-center justify-center h-full">
             <div className="flex flex-col items-center">
-               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mb-4"></div>
-               <p className="text-gray-500">Loading asset details...</p>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mb-4"></div>
+              <p className="text-gray-500">Loading asset details...</p>
             </div>
           </div>
         )}
