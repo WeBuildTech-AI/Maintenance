@@ -41,7 +41,7 @@ export function AvailabilityOverTimeChart({
         groupByFields: ["date"],
         metric: "PERCENTAGE",
         filters: apiFilters,
-        timeGranularity: "WEEKLY",
+        timeGranularity: "DAILY",
       },
     },
     fetchPolicy: "cache-and-network",

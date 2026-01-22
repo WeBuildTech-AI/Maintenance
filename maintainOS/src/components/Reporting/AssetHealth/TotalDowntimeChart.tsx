@@ -183,10 +183,6 @@ export function TotalDowntimeChart({
         </ResponsiveContainer>
         <div className="flex items-center gap-6 text-xs justify-center">
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 bg-gray-600"></div>
-            <span>Total</span>
-          </div>
-          <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 bg-blue-400"></div>
             <span>Planned</span>
           </div>
