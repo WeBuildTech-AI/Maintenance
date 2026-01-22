@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useQuery } from "@apollo/client/react";
 import { GET_CHART_DATA } from "../../../graphql/reporting.queries";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
@@ -19,11 +19,13 @@ import { mapFilters } from "../filterUtils";
 interface TotalDowntimeChartProps {
   filters: Record<string, any>;
   dateRange: { startDate: string; endDate: string };
+  onLoadingChange?: (isLoading: boolean) => void;
 }
 
 export function TotalDowntimeChart({
   filters,
   dateRange,
+  onLoadingChange,
 }: TotalDowntimeChartProps) {
   const apiFilters = useMemo(
     () => mapFilters(filters, dateRange),
@@ -44,6 +46,11 @@ export function TotalDowntimeChart({
     },
     fetchPolicy: "cache-and-network",
   });
+
+  // Notify parent of loading state changes
+  useEffect(() => {
+    onLoadingChange?.(loading);
+  }, [loading, onLoadingChange]);
 
   // Process data for chart
   const chartData = useMemo(() => {

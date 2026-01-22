@@ -6,9 +6,10 @@ import type { AssetHealthSummary as SummaryData } from "./assetHealth.types";
 
 interface AssetHealthSummaryProps {
   dateRange: { startDate: string; endDate: string };
+  onLoadingChange?: (isLoading: boolean) => void;
 }
 
-export function AssetHealthSummary({ dateRange }: AssetHealthSummaryProps) {
+export function AssetHealthSummary({ dateRange, onLoadingChange }: AssetHealthSummaryProps) {
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +31,11 @@ export function AssetHealthSummary({ dateRange }: AssetHealthSummaryProps) {
   useEffect(() => {
     fetchData();
   }, [dateRange]);
+
+  // Notify parent of loading state changes
+  useEffect(() => {
+    onLoadingChange?.(loading);
+  }, [loading, onLoadingChange]);
 
   if (loading) {
     return (

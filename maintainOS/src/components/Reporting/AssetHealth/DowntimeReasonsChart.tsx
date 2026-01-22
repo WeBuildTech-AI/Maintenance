@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 import { Button } from "../../ui/button";
 import {
@@ -20,7 +21,15 @@ const STATIC_DATA = [
   { reason: "Unspecified", failures: 1, cumulativePercent: 100 },
 ];
 
-export function DowntimeReasonsChart() {
+interface DowntimeReasonsChartProps {
+  onLoadingChange?: (isLoading: boolean) => void;
+}
+
+export function DowntimeReasonsChart({ onLoadingChange }: DowntimeReasonsChartProps) {
+  // Notify parent that static data is loaded
+  useEffect(() => {
+    onLoadingChange?.(false);
+  }, [onLoadingChange]);
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-4">

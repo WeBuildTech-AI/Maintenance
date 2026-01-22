@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useQuery } from "@apollo/client/react";
 import { GET_CHART_DATA } from "../../../graphql/reporting.queries";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
@@ -18,11 +18,13 @@ import { mapFilters } from "../filterUtils";
 interface UnplannedVsPlannedChartProps {
   filters: Record<string, any>;
   dateRange: { startDate: string; endDate: string };
+  onLoadingChange?: (isLoading: boolean) => void;
 }
 
 export function UnplannedVsPlannedChart({
   filters,
   dateRange,
+  onLoadingChange,
 }: UnplannedVsPlannedChartProps) {
   const apiFilters = useMemo(
     () => mapFilters(filters, dateRange),
@@ -42,6 +44,11 @@ export function UnplannedVsPlannedChart({
     },
     fetchPolicy: "cache-and-network",
   });
+
+  // Notify parent of loading state changes
+  useEffect(() => {
+    onLoadingChange?.(loading);
+  }, [loading, onLoadingChange]);
 
   // Process data to group by asset
   const chartData = useMemo(() => {

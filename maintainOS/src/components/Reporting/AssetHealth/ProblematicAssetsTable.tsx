@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { Loader2, ChevronUp, ChevronDown, Info, ExternalLink } from "lucide-react";
 import { assetHealthService } from "./assetHealth.service";
 import type { ProblematicAsset } from "./assetHealth.types";
@@ -6,6 +7,7 @@ import type { ProblematicAsset } from "./assetHealth.types";
 interface ProblematicAssetsTableProps {
   dateRange: { startDate: string; endDate: string };
   limit?: number;
+  onLoadingChange?: (isLoading: boolean) => void;
 }
 
 type SortField = "name" | "criticality" | "location" | "formattedDowntime" | "failures" | "maintenanceCost";
@@ -16,6 +18,7 @@ const criticalityOrder = { high: 3, medium: 2, low: 1 };
 export function ProblematicAssetsTable({
   dateRange,
   limit = 10,
+  onLoadingChange,
 }: ProblematicAssetsTableProps) {
   const [assets, setAssets] = useState<ProblematicAsset[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,6 +46,11 @@ export function ProblematicAssetsTable({
   useEffect(() => {
     fetchData();
   }, [dateRange, limit]);
+
+  // Notify parent of loading state changes
+  useEffect(() => {
+    onLoadingChange?.(loading);
+  }, [loading, onLoadingChange]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -247,9 +255,12 @@ export function ProblematicAssetsTable({
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     {getStatusDot(asset.criticality)}
-                    <span className="text-sm font-medium text-gray-900 truncate max-w-[200px]">
+                    <Link
+                      to={`/assets?assetId=${asset.id}&page=1&limit=50`}
+                      className="text-sm font-medium text-amber-600 hover:text-amber-700 hover:underline truncate max-w-[200px] cursor-pointer"
+                    >
                       {asset.name}
-                    </span>
+                    </Link>
                   </div>
                 </td>
                 <td className="px-4 py-3 text-center">
@@ -269,9 +280,9 @@ export function ProblematicAssetsTable({
                   ${asset.maintenanceCost.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                 </td>
                 <td className="px-4 py-3 text-sm text-amber-600 hover:text-amber-700">
-                  <a href={`/assets/${asset.id}`} className="hover:underline">
+                  <Link to={`/assets?assetId=${asset.id}&page=1&limit=50`} className="hover:underline">
                     View
-                  </a>
+                  </Link>
                 </td>
               </tr>
             ))}
