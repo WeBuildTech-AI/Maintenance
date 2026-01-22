@@ -47,9 +47,13 @@ import { CommentsSection } from "../../ToDoView/CommentsSection";
 import { NewWorkOrderForm } from "../../NewWorkOrderForm/NewWorkOrderFrom";
 import { LinkedProcedurePreview } from "../../ToDoView/LinkedProcedurePreview"; // Ensure this path is correct
 import { procedureService } from "../../../../store/procedures/procedures.service"; // Import Service
+
+import { formatLabel } from "../../../utils/asset_formater";
+
 import { DynamicSelect } from "../../NewWorkOrderForm/DynamicSelect";
 import { WorkOrderAssetStatusModal } from "../../NewWorkOrderForm/WorkOrderAssetStatusModal";
 import { assetService } from "../../../../store/assets/assets.service";
+
 
 // --- HELPER FUNCTIONS ---
 
@@ -590,7 +594,8 @@ export default function WorkOrderDetailModal({
             </div>
             <div className="mt-2.5 flex gap-4 text-sm text-gray-500 pb-2">
               <span className="flex items-center gap-1">
-                <Repeat size={14} /> {safeRender(workOrder.priority)}
+                <Repeat size={14} /> {formatLabel(workOrder.priority)}
+
               </span>
               <span className="flex items-center gap-1">
                 <CalendarDays size={14} /> Due by{" "}
@@ -683,7 +688,7 @@ export default function WorkOrderDetailModal({
                         {/* Info Grid */}
                         <div className="flex p-6 justify-between gap-6 border-t pt-6">
                             <div><h3 className="text-sm font-medium mb-2 text-gray-700">Due Date</h3><p className="text-sm text-gray-500">{formatDate(workOrder.dueDate)}</p></div>
-                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Priority</h3><p className="text-sm text-gray-500">{workOrder.priority || "N/A"}</p></div>
+                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Priority</h3><p className="text-sm text-gray-500">{formatLabel(workOrder.priority)}</p></div>
                             <div><h3 className="text-sm font-medium mb-2 text-gray-700">Work Order ID</h3><p className="text-sm text-gray-500">{workOrder.id || "N/A"}</p></div>
                         </div>
 
@@ -744,7 +749,7 @@ export default function WorkOrderDetailModal({
 
                             <div><h3 className="text-sm font-medium mb-2 text-gray-700">Location</h3><div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-gray-400" /><span className="text-sm"><span onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (workOrder.location?.id) navigate(`/locations/${workOrder.location.id}`); }} className={workOrder.location?.id ? "text-blue-600 hover:underline cursor-pointer" : ""}>{workOrder.location?.name || workOrder.location || "N/A"}</span></span></div></div>
                             <div><h3 className="text-sm font-medium mb-2 text-gray-700">Estimated Time</h3><div className="flex items-center gap-2"><Clock className="h-4 w-4 text-gray-400" /><span className="text-sm text-gray-900">{formatDecimalHoursToDisplay(workOrder.estimatedTimeHours)}</span></div></div>
-                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Work Type</h3><div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-gray-400" /><span className="text-sm text-gray-900">{workOrder.workType || "N/A"}</span></div></div>
+                            <div><h3 className="text-sm font-medium mb-2 text-gray-700">Work Type</h3><div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-gray-400" /><span className="text-sm text-gray-900">{formatLabel(workOrder.workType)}</span></div></div>
                             <div><h3 className="text-sm font-medium mb-2 text-gray-700">Teams</h3><div className="flex items-start gap-2"><Users className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.teams, navigate, (id) => `/teams/${id}`)}</span></div></div>
                             <div><h3 className="text-sm font-medium mb-2 text-gray-700">Vendors</h3><div className="flex items-start gap-2"><Briefcase className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.vendors, navigate, (id) => `/vendors/${id}`)}</span></div></div>
                             <div><h3 className="text-sm font-medium mb-2 text-gray-700">Parts</h3><div className="flex items-start gap-2"><Wrench className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.parts, navigate, (id) => `/inventory/${id}`)}</span></div></div>

@@ -40,6 +40,7 @@ import UpdatePartsPanel from "../panels/UpdatePartsPanel";
 import TimeOverviewPanel from "../panels/TimeOverviewPanel";
 import OtherCostsPanel from "../panels/OtherCostsPanel";
 import { Tooltip } from "../../ui/tooltip";
+import { formatLabel } from "../../utils/asset_formater";
 
 
 // --- Helper Functions ---
@@ -472,7 +473,7 @@ export function WorkOrderDetails({
           <div><h3 className="text-sm font-medium mb-2">Assets</h3><div className="flex items-start gap-2"><Factory className="h-4 w-4 text-muted-foreground mt-0.5" /><span className="text-sm">{renderAssetList(selectedWorkOrder.assets, navigate)}</span></div></div>
           <div><h3 className="text-sm font-medium mb-2">Location</h3><div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-muted-foreground" /><span className="text-sm"><span onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (selectedWorkOrder.location?.id) navigate(`/locations/${selectedWorkOrder.location.id}`); }} className={selectedWorkOrder.location?.id ? "text-blue-600 hover:underline cursor-pointer" : ""}>{selectedWorkOrder.location?.name || selectedWorkOrder.location || "N/A"}</span></span></div></div>
           <div><h3 className="text-sm font-medium mb-2">Estimated Time</h3><div className="flex items-center gap-2"><Clock className="h-4 w-4 text-muted-foreground" /><span className="text-sm">{formatDecimalHoursToDisplay(selectedWorkOrder.estimatedTimeHours)}</span></div></div>
-          <div><h3 className="text-sm font-medium mb-2">Work Type</h3><div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-muted-foreground" /><span className="text-sm">{selectedWorkOrder.workType || "N/A"}</span></div></div>
+          <div><h3 className="text-sm font-medium mb-2">Work Type</h3><div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-muted-foreground" /><span className="text-sm">{formatLabel(selectedWorkOrder.workType) || "N/A"}</span></div></div>
           <div><h3 className="text-sm font-medium mb-2">Teams</h3><div className="flex items-start gap-2"><Users className="h-4 w-4 text-muted-foreground mt-0.5" /><span className="text-sm">{renderClickableList(selectedWorkOrder.teams, navigate, (id) => `/teams/${id}`)}</span></div></div>
           <div><h3 className="text-sm font-medium mb-2">Vendors</h3><div className="flex items-start gap-2"><Briefcase className="h-4 w-4 text-muted-foreground mt-0.5" /><span className="text-sm">{renderClickableList(selectedWorkOrder.vendors, navigate, (id) => `/vendors/${id}`)}</span></div></div>
           <div><h3 className="text-sm font-medium mb-2">Parts</h3><div className="flex items-start gap-2"><Wrench className="h-4 w-4 text-muted-foreground mt-0.5" /><span className="text-sm">{renderClickableList(selectedWorkOrder.parts, navigate, (id) => `/inventory/${id}`)}</span></div></div>

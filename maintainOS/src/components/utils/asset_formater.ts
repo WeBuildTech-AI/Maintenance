@@ -1,4 +1,4 @@
-// utils/formatters.ts
+// utils/formatters.ts, NOT explicitly used only in assets
 export const formatLabel = (value?: string): string => {
   if (!value) return "-";
 
