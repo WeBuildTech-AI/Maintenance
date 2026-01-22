@@ -6,8 +6,16 @@ import type {
   UpdateAssetData,
   UpdateAssetStatus,
   FetchAssetsParams,
+  FilterData,
 } from "./assets.types";
 import { assetService } from "./assets.service";
+import { locationService } from "../locations/locations.service";
+import { partService } from "../parts/parts.service";
+import { vendorService } from "../vendors/vendors.service";
+import { categoryService } from "../categories/categories.service";
+import { teamService } from "../teams/teams.service";
+import { procedureService } from "../procedures/procedures.service";
+import type { RootState } from "../index";
 
 export const fetchAssets = createAsyncThunk(
   "assets/fetchAssets",
@@ -270,6 +278,75 @@ export const updateAssetLogDuration = createAsyncThunk(
       return rejectWithValue(
         error.response?.data?.message || "Failed to update asset log duration"
       );
+    }
+  }
+);
+
+// --- Filter Data ---
+
+export const fetchFilterData = createAsyncThunk(
+  "assets/fetchFilterData",
+  async (_, { getState, rejectWithValue }) => {
+    const state = getState() as RootState;
+    console.log("🟡 DEBUG: Fetching Asset Filter Data");
+    console.log("Current State:", state.assets);
+
+    // ✅ Check if data already exists in Redux
+    if (state.assets?.filterData) {
+      console.log("🟡 Asset filter data already exists in Redux. Skipping API calls.");
+      return state.assets.filterData;
+    }
+
+    try {
+      console.log("🔵 Fetching all asset filter data in parallel...");
+
+      const [
+        locationsRes,
+        partsRes,
+        vendorsRes,
+        categoriesRes,
+        teamsRes,
+        assetTypesRes,
+        manufacturersRes,
+        proceduresRes
+      ] = await Promise.all([
+        locationService.fetchLocationsName(),
+        partService.fetchPartsName(),
+        vendorService.fetchVendorName(),
+        categoryService.fetchCategories(),
+        teamService.fetchTeamsName(),
+        assetService.fetchAssetType(),
+        assetService.fetchAssetManufacturer(),
+        procedureService.fetchProcedures()
+      ]);
+
+      // Helper to format data uniformly
+      const format = (res: any, type: string) => {
+        const list = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+        return list.map((item: any) => ({
+          id: item.id,
+          name: item.name || item.fullName || item.title || `Unnamed ${type}`,
+          image: item.image || item.avatarUrl || null
+        }));
+      };
+
+      const data: FilterData = {
+        locations: format(locationsRes, "Location"),
+        parts: format(partsRes, "Part"),
+        vendors: format(vendorsRes, "Vendor"),
+        categories: format(categoriesRes, "Category"),
+        teams: format(teamsRes, "Team"),
+        assetTypes: format(assetTypesRes, "Asset Type"),
+        manufacturers: format(manufacturersRes, "Manufacturer"),
+        procedures: format(proceduresRes, "Procedure")
+      };
+
+      console.log("🟢 All asset filter data fetched successfully");
+      return data;
+
+    } catch (error: any) {
+      console.error("❌ Error fetching asset filter data:", error);
+      return rejectWithValue(error.response?.data?.message || "Failed to fetch filter data");
     }
   }
 );

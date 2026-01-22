@@ -4,7 +4,7 @@ import socketMiddleware from './messages/socketMiddleware';
 import userReducer from "./userSlice";
 // import { usersReducer } from "./users";
 // import { organizationsReducer } from "./organization";
-// import { assetsReducer } from "./assets";
+import { assetsReducer } from "./assets";
 import { automationsReducer } from "./automations";
 // import { categoriesReducer } from "./categories";
 // import { metersReducer } from "./meters";
@@ -26,12 +26,12 @@ export const store = configureStore({
   reducer: {
     user: userReducer,
     auth: authReducer,
-    messaging : messageReducer,
+    messaging: messageReducer,
     workOrders: workOrdersReducer,
     automations: automationsReducer,
     // users: usersReducer,
     // organizations: organizationsReducer,
-    // assets: assetsReducer,
+    assets: assetsReducer,
     // categories: categoriesReducer,
     // meters: metersReducer,
     parts: partsReducer,
