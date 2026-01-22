@@ -8,6 +8,7 @@ interface ProblematicAssetsTableProps {
   dateRange: { startDate: string; endDate: string };
   limit?: number;
   onLoadingChange?: (isLoading: boolean) => void;
+  filters?: Record<string, any>;
 }
 
 type SortField = "name" | "criticality" | "location" | "formattedDowntime" | "failures" | "maintenanceCost";
@@ -19,6 +20,7 @@ export function ProblematicAssetsTable({
   dateRange,
   limit = 10,
   onLoadingChange,
+  filters = {},
 }: ProblematicAssetsTableProps) {
   const [assets, setAssets] = useState<ProblematicAsset[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,10 +32,9 @@ export function ProblematicAssetsTable({
     setLoading(true);
     setError(null);
     try {
-      // Convert MM/DD/YYYY to YYYY-MM-DD for API
       const [month, day, year] = dateRange.startDate.split("/");
       const apiStartDate = `${year}-${month}-${day}`;
-      const data = await assetHealthService.fetchProblematicAssets(limit, apiStartDate);
+      const data = await assetHealthService.fetchProblematicAssets(limit, apiStartDate, filters);
       setAssets(data);
     } catch (err) {
       console.error("Failed to fetch problematic assets:", err);
@@ -45,7 +46,7 @@ export function ProblematicAssetsTable({
 
   useEffect(() => {
     fetchData();
-  }, [dateRange, limit]);
+  }, [dateRange, limit, filters]);
 
   // Notify parent of loading state changes
   useEffect(() => {

@@ -60,10 +60,10 @@ export function AssetHealthSummary({ dateRange, onLoadingChange }: AssetHealthSu
     );
   }
 
-  const lastUpdatedFormatted = summary?.lastUpdated
-    ? new Date(summary.lastUpdated).toLocaleString("en-US", {
-        month: "numeric",
+  const lastUpdatedFormatted = summary?.currentTime
+    ? new Date(summary.currentTime).toLocaleString("en-US", {
         day: "numeric",
+        month: "numeric",
         year: "numeric",
         hour: "numeric",
         minute: "2-digit",

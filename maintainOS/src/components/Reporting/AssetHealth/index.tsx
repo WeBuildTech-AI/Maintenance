@@ -66,6 +66,7 @@ export function AssetHealthTab({ filters: _filters, dateRange }: AssetHealthTabP
         <ProblematicAssetsTable
           dateRange={dateRange}
           limit={10}
+          filters={_filters}
           onLoadingChange={handleProblematicAssetsLoading}
         />
 

@@ -21,4 +21,5 @@ export interface AssetHealthSummary {
   planned_offline: number;
   unplanned_offline: number;
   lastUpdated: string;
+  currentTime: string;
 }

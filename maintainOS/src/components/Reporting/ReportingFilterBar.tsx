@@ -135,6 +135,11 @@ const ALL_FILTERS = [
     key: "status",
     label: "Status",
     icon: <AlertCircle size={16} />,
+    options: [
+      { label: "Online", value: "online" },
+      { label: "Offline", value: "offline" },
+      { label: "Do Not Track", value: "do_not_track" },
+    ],
   },
   {
     key: "category",
