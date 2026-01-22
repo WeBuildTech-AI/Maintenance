@@ -54,35 +54,49 @@ export function UnplannedVsPlannedChart({
   const chartData = useMemo(() => {
     if (!data?.getChartData) return [];
 
+    console.log("Raw GraphQL data:", data.getChartData);
+
     const assetMap = new Map<
       string,
-      { asset: string; unplanned: number; planned: number }
+      { asset: string; unplanned: number; planned: number; order: number }
     >();
+
+    // Track the order in which assets appear (to preserve backend sorting)
+    let orderIndex = 0;
 
     data.getChartData.forEach((item) => {
       const [assetName, downtimeType] = item.groupValues;
+      console.log("Processing:", assetName, downtimeType, item.value);
+      
       if (!assetName || assetName === "Unassigned") return;
 
       if (!assetMap.has(assetName)) {
-        assetMap.set(assetName, { asset: assetName, unplanned: 0, planned: 0 });
+        assetMap.set(assetName, { 
+          asset: assetName, 
+          unplanned: 0, 
+          planned: 0,
+          order: orderIndex++
+        });
       }
 
       const entry = assetMap.get(assetName)!;
+      // Sum values instead of overwriting (in case of duplicate entries from backend)
       if (downtimeType === "unplanned") {
-        entry.unplanned = item.value;
+        entry.unplanned += item.value;
+        console.log("Added unplanned for", assetName, "value:", item.value, "new total:", entry.unplanned);
       } else if (downtimeType === "planned") {
-        entry.planned = item.value;
+        entry.planned += item.value;
+        console.log("Added planned for", assetName, "value:", item.value, "new total:", entry.planned);
       }
     });
 
-    // Convert to array and sort by total downtime (descending)
-    return Array.from(assetMap.values())
-      .map((item) => ({
-        ...item,
-        total: item.unplanned + item.planned,
-      }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 8); // Top 8 assets
+    // Return in the order received from backend (already sorted by unplanned downtime)
+    const result = Array.from(assetMap.values())
+      .sort((a, b) => a.order - b.order)
+      .map(({ asset, unplanned, planned }) => ({ asset, unplanned, planned }));
+    
+    console.log("Final chartData:", result);
+    return result;
   }, [data]);
 
   if (loading) {
@@ -130,8 +144,8 @@ export function UnplannedVsPlannedChart({
                 boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
               }}
             />
-            <Bar dataKey="unplanned" stackId="a" fill="#f87171" radius={[0, 4, 4, 0]} />
-            <Bar dataKey="planned" stackId="a" fill="#bfdbfe" radius={[0, 4, 4, 0]} />
+            <Bar dataKey="unplanned" fill="#f87171" radius={[0, 4, 4, 0]} />
+            <Bar dataKey="planned" fill="#bfdbfe" radius={[0, 4, 4, 0]} />
           </BarChart>
         </ResponsiveContainer>
         <div className="flex items-center gap-6 text-xs justify-center">

@@ -31,6 +31,14 @@ export function AssetHealthTab({ filters: _filters, dateRange }: AssetHealthTabP
     }));
   }, []);
 
+  // Create stable callback references for each component
+  const handleSummaryLoading = useCallback((loading: boolean) => handleComponentLoadingChange("summary", loading), [handleComponentLoadingChange]);
+  const handleProblematicAssetsLoading = useCallback((loading: boolean) => handleComponentLoadingChange("problematicAssets", loading), [handleComponentLoadingChange]);
+  const handleUnplannedVsPlannedLoading = useCallback((loading: boolean) => handleComponentLoadingChange("unplannedVsPlanned", loading), [handleComponentLoadingChange]);
+  const handleDowntimeReasonsLoading = useCallback((loading: boolean) => handleComponentLoadingChange("downtimeReasons", loading), [handleComponentLoadingChange]);
+  const handleAvailabilityLoading = useCallback((loading: boolean) => handleComponentLoadingChange("availabilityOverTime", loading), [handleComponentLoadingChange]);
+  const handleTotalDowntimeLoading = useCallback((loading: boolean) => handleComponentLoadingChange("totalDowntime", loading), [handleComponentLoadingChange]);
+
   // Check if any component is still loading
   const isAnyComponentLoading = Object.values(componentLoadingStates).some((loading) => loading);
 
@@ -51,14 +59,14 @@ export function AssetHealthTab({ filters: _filters, dateRange }: AssetHealthTabP
         {/* Summary Cards */}
         <AssetHealthSummary
           dateRange={dateRange}
-          onLoadingChange={(loading: boolean) => handleComponentLoadingChange("summary", loading)}
+          onLoadingChange={handleSummaryLoading}
         />
 
         {/* Problematic Assets Table */}
         <ProblematicAssetsTable
           dateRange={dateRange}
           limit={10}
-          onLoadingChange={(loading: boolean) => handleComponentLoadingChange("problematicAssets", loading)}
+          onLoadingChange={handleProblematicAssetsLoading}
         />
 
         {/* Downtime Charts - Row 1 */}
@@ -66,10 +74,10 @@ export function AssetHealthTab({ filters: _filters, dateRange }: AssetHealthTabP
           <UnplannedVsPlannedChart
             filters={_filters}
             dateRange={dateRange}
-            onLoadingChange={(loading: boolean) => handleComponentLoadingChange("unplannedVsPlanned", loading)}
+            onLoadingChange={handleUnplannedVsPlannedLoading}
           />
           <DowntimeReasonsChart
-            onLoadingChange={(loading: boolean) => handleComponentLoadingChange("downtimeReasons", loading)}
+            onLoadingChange={handleDowntimeReasonsLoading}
           />
         </div>
         
@@ -78,12 +86,12 @@ export function AssetHealthTab({ filters: _filters, dateRange }: AssetHealthTabP
           <AvailabilityOverTimeChart
             filters={_filters}
             dateRange={dateRange}
-            onLoadingChange={(loading: boolean) => handleComponentLoadingChange("availabilityOverTime", loading)}
+            onLoadingChange={handleAvailabilityLoading}
           />
           <TotalDowntimeChart
             filters={_filters}
             dateRange={dateRange}
-            onLoadingChange={(loading: boolean) => handleComponentLoadingChange("totalDowntime", loading)}
+            onLoadingChange={handleTotalDowntimeLoading}
           />
         </div>
       </div>
