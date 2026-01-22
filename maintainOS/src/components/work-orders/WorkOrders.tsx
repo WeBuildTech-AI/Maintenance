@@ -10,7 +10,7 @@ import { ListView } from "./ListView";
 import NewWorkOrderModal from "./NewWorkOrderModal";
 import type { ViewMode, WorkOrder } from "./types";
 import { WorkloadView } from "./WorkloadView/WorkloadView";
-import { WorkOrderHeaderComponent } from "./WorkOrderHeader";
+import { UnifiedHeader } from "./UnifiedHeader"; // Updated Import
 import { ToDoView } from "./ToDoView/ToDoView";
 import type { AppDispatch } from "../../store";
 import { workOrderService } from "../../store/workOrders";
@@ -27,8 +27,8 @@ export function WorkOrders() {
   /* Refactored to use URL Search Params */
   const [searchParams, setSearchParams] = useSearchParams();
   const queryViewMode = searchParams.get("view") as ViewMode | null;
-  const viewMode: ViewMode = queryViewMode && ["todo", "list", "calendar", "workload"].includes(queryViewMode) 
-    ? queryViewMode 
+  const viewMode: ViewMode = queryViewMode && ["todo", "list", "calendar", "workload"].includes(queryViewMode)
+    ? queryViewMode
     : "todo";
 
   // Sync 'todo' to URL if missing, or just handle default silently. 
@@ -55,7 +55,7 @@ export function WorkOrders() {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const location = useLocation();
-  
+
   // Get prefill data from navigation state (from Assets offline prompt)
   const prefillData = (location.state as any)?.prefillData;
 
@@ -218,10 +218,9 @@ export function WorkOrders() {
 
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* ✅ Use as Component, not function call */}
-      <WorkOrderHeaderComponent
+      {/* ✅ Use Unified Component */}
+      <UnifiedHeader
         viewMode={viewMode}
-        // setViewMode removed as it's now URL driven
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         setIsCreatingForm={setCreatingWorkOrder}

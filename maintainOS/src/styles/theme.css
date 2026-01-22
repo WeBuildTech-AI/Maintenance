@@ -4,8 +4,8 @@
   display: flex;
   height: 100vh;
   width: 100vw;
-  background-color: #fff9ee;
-  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  background-color: var(--register-bg);
+  font-family: var(--font-sans);
   overflow: hidden;
   padding: 25px;
   gap: 50px;
@@ -17,7 +17,8 @@
   flex: 1;
   height: 100%;
   position: relative;
-  background-color: #000; /* Fallback */
+  background-color: var(--color-black);
+  /* Fallback */
   border-radius: 17px;
   overflow: hidden;
 }
@@ -35,27 +36,27 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0) 0%,
-    rgba(0, 0, 0, 0.6) 100%
-  );
-  display: block; /* Removed flex */
+  background: linear-gradient(180deg,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(0, 0, 0, 0.6) 100%);
+  display: block;
+  /* Removed flex */
   box-sizing: border-box;
 }
 
 .register-heading-main {
   position: absolute;
   left: 48px;
-  top: 360px; /* Estimated visual center */
+  top: 360px;
+  /* Estimated visual center */
   width: 592px;
   height: 132px;
-  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   font-weight: 700;
   font-size: 54px;
   line-height: 100%;
   letter-spacing: 0.04em;
-  color: #ffffff;
+  color: var(--color-white);
   margin: 0;
   padding: 0;
 }
@@ -63,15 +64,16 @@
 .register-subtext-main {
   position: absolute;
   left: 48px;
-  top: 513px; /* 360 + 132 + 21 */
+  top: 513px;
+  /* 360 + 132 + 21 */
   width: 529px;
   height: 66px;
-  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   font-weight: 300;
   font-size: 22px;
   line-height: 100%;
   letter-spacing: 0.04em;
-  color: #ffffff;
+  color: var(--color-white);
   margin: 0;
   padding: 0;
 }
@@ -101,24 +103,24 @@
 }
 
 .register-form-title {
-  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   font-weight: 700;
   font-size: 32px;
   line-height: 1.2;
-  color: #000000;
+  color: var(--color-black);
   margin: 0 0 8px 0;
 }
 
 .register-form-subtitle {
-  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   font-weight: 400;
   font-size: 14px;
-  color: #9a9a9a;
+  color: var(--register-text-muted);
   margin: 0;
 }
 
 .highlight-text {
-  color: #faad00;
+  color: var(--register-accent);
   font-weight: 600;
 }
 
@@ -147,23 +149,23 @@
   width: 100%;
   height: 48px;
   padding: 0 16px;
-  border: 1px solid #faad00;
+  border: 1px solid var(--register-accent);
   border-radius: 12px;
-  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   font-size: 14px;
-  color: #000000;
-  background-color: #ffffff;
+  color: var(--color-black);
+  background-color: var(--color-white);
   box-sizing: border-box;
   outline: none;
   transition: border-color 0.2s;
 }
 
 .register-input:focus {
-  border-color: #ff9500;
+  border-color: var(--register-accent-hover);
 }
 
 .register-input::placeholder {
-  color: #9a9a9a;
+  color: var(--register-text-muted);
 }
 
 .register-select {
@@ -178,21 +180,21 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   font-size: 12px;
-  color: #000000;
+  color: var(--color-black);
 }
 
 .register-checkbox {
   width: 16px;
   height: 16px;
-  border: 1px solid #faad00;
+  border: 1px solid var(--register-accent);
   border-radius: 4px;
   cursor: pointer;
 }
 
 .register-link {
-  color: #faad00;
+  color: var(--register-accent);
   text-decoration: none;
   font-weight: 500;
 }
@@ -204,30 +206,30 @@
 .register-btn-primary {
   width: 100%;
   height: 48px;
-  background-color: #ffc649;
+  background-color: var(--register-btn-bg);
   border: none;
   border-radius: 12px;
-  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   font-weight: 700;
   font-size: 16px;
-  color: #ffffff;
+  color: var(--color-white);
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .register-btn-primary:hover {
-  background-color: #ff9500;
+  background-color: var(--register-accent-hover);
 }
 
 .register-footer {
   text-align: center;
-  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   font-size: 14px;
-  color: #9a9a9a;
+  color: var(--register-text-muted);
 }
 
 .register-footer-action {
-  color: #faad00;
+  color: var(--register-accent);
   text-decoration: none;
   font-weight: 600;
   margin-left: 4px;
@@ -266,7 +268,7 @@
 }
 
 .otp-input-box:focus {
-  border-color: #ff9500;
+  border-color: var(--register-accent-hover);
 }
 
 .otp-resend-text {
@@ -312,11 +314,11 @@ input[type="checkbox"] {
   appearance: none;
   width: 18px;
   height: 18px;
-  border: 1px solid #faad00;
+  border: 1px solid var(--register-accent);
   border-radius: 4px;
   cursor: pointer;
   position: relative;
-  background-color: #ffffff;
+  background-color: var(--color-white);
   transition: all 0.2s ease;
 }
 
@@ -332,13 +334,13 @@ input[type="checkbox"]:checked::after {
   top: 2px;
   width: 5px;
   height: 9px;
-  border: solid white;
+  border: solid var(--color-white);
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
 }
 
 input[type="checkbox"]:hover {
-  border-color: #ff9500;
+  border-color: var(--register-accent-hover);
 }
 
 /* Custom Radio Button Styling */
@@ -346,11 +348,11 @@ input[type="radio"] {
   appearance: none;
   width: 18px;
   height: 18px;
-  border: 1px solid #faad00;
+  border: 1px solid var(--register-accent);
   border-radius: 50%;
   cursor: pointer;
   position: relative;
-  background-color: #ffffff;
+  background-color: var(--color-white);
   transition: all 0.2s ease;
 }
 
@@ -370,21 +372,22 @@ input[type="radio"]:checked::after {
 }
 
 input[type="radio"]:hover {
-  border-color: #ff9500;
+  border-color: var(--register-accent-hover);
 }
 
 .register-subtext-main {
   position: absolute;
   left: 48px;
-  top: 513px; /* 360px + 132px + 21px gap */
+  top: 513px;
+  /* 360px + 132px + 21px gap */
   width: 529px;
   height: 66px;
-  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   font-size: 22px;
   font-weight: 300;
   line-height: 100%;
   letter-spacing: 0.04em;
-  color: #ffffff;
+  color: var(--color-white);
   margin: 0;
 }
 
@@ -412,22 +415,22 @@ input[type="radio"]:hover {
 }
 
 .register-form-title {
-  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   font-size: 32px;
   font-weight: 700;
-  color: #000000;
+  color: var(--color-black);
   margin-bottom: 12px;
 }
 
 .register-form-subtitle {
-  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   font-size: 12px;
   font-weight: 300;
-  color: #000000;
+  color: var(--color-black);
 }
 
 .highlight-text {
-  color: #ffb000;
+  color: var(--register-highlight);
   font-weight: 300;
 }
 
@@ -454,33 +457,44 @@ input[type="radio"]:hover {
 
 .register-input {
   width: 100%;
-  height: 48px; /* Approximate based on visual, or standard height */
-  background-color: #fff9ee; /* Matches bg or slight off-white if needed, JSON implies blending or specific style. Design shows filled inputs often light yellow/beige usually or white? Screenshot looks like light beige filled. */
-  background-color: #fefbf6; /* A slightly lighter shade than bg, or standard input fill */
-  background-color: #fff9ee; /* Assuming input bg is very subtle or transparent-ish with border? Screenshot shows filled inputs. Let's pick a color from screenshot: likely #FFFCF5 or similar. Let's stick to a clean fill. */
-  background: #fef9ef; /* Visual approx */
+  height: 48px;
+  /* Approximate based on visual, or standard height */
+  background-color: var(--register-bg);
+  /* Matches bg or slight off-white if needed, JSON implies blending or specific style. Design shows filled inputs often light yellow/beige usually or white? Screenshot looks like light beige filled. */
+  background-color: #fefbf6;
+  /* A slightly lighter shade than bg, or standard input fill */
+  background-color: var(--register-bg);
+  /* Assuming input bg is very subtle or transparent-ish with border? Screenshot shows filled inputs. Let's pick a color from screenshot: likely #FFFCF5 or similar. Let's stick to a clean fill. */
+  background: #fef9ef;
+  /* Visual approx */
   border: 1px solid transparent;
-  border-radius: 4px; /* Default radius, will adjust if specified. Design JSON didn't specify input radius, screenshot looks slightly rounded like 4-8px. */
+  border-radius: 4px;
+  /* Default radius, will adjust if specified. Design JSON didn't specify input radius, screenshot looks slightly rounded like 4-8px. */
   padding: 0 16px;
-  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: 14px; /* Standard */
-  color: #000;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  /* Standard */
+  color: var(--color-black);
   box-sizing: border-box;
   outline: none;
 }
+
 /* Re-evaluating Input Style based on Screenshot */
 /* Screenshot: Inputs have a light beige background, rounded corners (~8px?), no visible border (or very subtle). Selected input has yellow border. */
 .register-input {
-  background-color: #fffdf7; /* Very light yellow/beige */
+  background-color: var(--register-input-bg);
+  /* Very light yellow/beige */
   border: 1px solid transparent;
   border-radius: 8px;
   height: 50px;
   font-size: 14px;
-  color: #333;
+  color: var(--color-gray-900);
 }
+
 .register-input:focus {
   border-color: #ffb000;
 }
+
 .register-input::placeholder {
   color: #b0b0b0;
   font-weight: 300;
@@ -504,35 +518,39 @@ input[type="radio"]:hover {
   margin-bottom: 32px;
   font-size: 12px;
   font-weight: 400;
-  color: #000;
+  color: var(--color-black);
 }
 
 .register-checkbox {
   width: 18px;
   height: 18px;
-  accent-color: #000; /* Or custom style if needed, native for now */
+  accent-color: #000;
+  /* Or custom style if needed, native for now */
   cursor: pointer;
 }
 
 .register-link {
-  color: #ffb000;
+  color: var(--register-highlight);
   text-decoration: none;
   font-weight: 600;
 }
 
 /* Button */
 .register-btn-primary {
-  width: 378px; /* Fixed width from JSON */
+  width: 378px;
+  /* Fixed width from JSON */
   height: 46px;
-  background-color: #ffc649;
-  color: #ffffff;
+  background-color: var(--register-btn-bg);
+  color: var(--color-white);
   border: none;
   border-radius: 12px;
-  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   font-size: 16px;
-  font-weight: 600; /* Looks bold in screenshot */
+  font-weight: 600;
+  /* Looks bold in screenshot */
   cursor: pointer;
-  margin: 0 auto; /* Center button */
+  margin: 0 auto;
+  /* Center button */
   display: block;
   transition: background-color 0.2s;
 }
@@ -549,7 +567,7 @@ input[type="radio"]:hover {
 }
 
 .register-footer-action {
-  color: #ffb000;
+  color: var(--register-highlight);
   font-weight: 600;
   cursor: pointer;
   margin-left: 4px;
@@ -597,8 +615,8 @@ input[type="radio"]:hover {
 
 .top-header-container {
   height: 64px;
-  border-bottom: 1px solid #e5e7eb;
-  background-color: #ffffff;
+  border-bottom: 1px solid var(--border-light);
+  background-color: var(--color-white);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -622,12 +640,12 @@ input[type="radio"]:hover {
 }
 
 .header-logo-text {
-  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   font-weight: 600;
   font-size: 20px;
   line-height: 100%;
   letter-spacing: 0.04em;
-  color: #000000;
+  color: var(--color-black);
 }
 
 .header-nav {
@@ -637,10 +655,10 @@ input[type="radio"]:hover {
 }
 
 .nav-link {
-  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   font-size: 14px;
   font-weight: 400;
-  color: #6b7280;
+  color: var(--color-gray-500);
   text-decoration: none;
   border-bottom: 2px solid transparent;
   padding-bottom: 2px;
@@ -653,12 +671,12 @@ input[type="radio"]:hover {
 }
 
 .nav-link:hover {
-  color: #faad00;
+  color: var(--register-accent);
 }
 
 .nav-link.active {
-  color: #000000;
-  border-bottom-color: #faad00;
+  color: var(--color-black);
+  border-bottom-color: var(--register-accent);
   font-weight: 600;
 }
 
@@ -666,10 +684,10 @@ input[type="radio"]:hover {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   font-size: 14px;
   font-weight: 400;
-  color: #6b7280;
+  color: var(--color-gray-500);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -679,7 +697,7 @@ input[type="radio"]:hover {
 }
 
 .more-dropdown-btn:hover {
-  color: #faad00;
+  color: var(--register-accent);
 }
 
 .header-right-section {
@@ -711,8 +729,8 @@ input[type="radio"]:hover {
 .more-dropdown-content {
   width: 220px;
   border-radius: 10px;
-  border: 1px solid #e1e3e6;
-  background-color: white;
+  border: 1px solid var(--border-subtle);
+  background-color: var(--color-white);
   padding: 10px;
   box-shadow: 0px 10px 15px -3px rgba(0, 0, 0, 0.1), 0px 4px 6px -2px rgba(0, 0, 0, 0.05);
   display: flex !important;
@@ -727,12 +745,12 @@ input[type="radio"]:hover {
   width: 100%;
   cursor: pointer;
   text-decoration: none;
-  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 400;
   padding: 10px;
   gap: 12px;
-  color: #344254;
+  color: var(--color-gray-700);
   letter-spacing: 0.02em;
   border-radius: 7px;
   white-space: nowrap;
@@ -741,7 +759,483 @@ input[type="radio"]:hover {
 
 .dropdown-nav-link:hover,
 .dropdown-nav-link.active {
-  background-color: #fff1d3;
-  color: #344254;
+  background-color: var(--register-dropdown-hover-bg);
+  color: var(--color-gray-700);
   font-weight: 400;
+}
+
+/* --- Premium Header Components --- */
+/* --- Premium Header Components (Pure CSS Fix) --- */
+.header-section {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px;
+  border-bottom: 1px solid var(--border-light);
+  /* gray-100 */
+  background-color: var(--color-white);
+  padding: 16px 24px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.header-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100%;
+}
+
+.header-title-group {
+  display: flex !important;
+  align-items: center !important;
+  gap: 16px;
+}
+
+.header-title {
+  font-size: 1.5rem;
+  /* 24px / text-2xl */
+  font-weight: 700;
+  color: var(--color-gray-900);
+  /* gray-900 */
+  letter-spacing: -0.025em;
+  margin: 0;
+}
+
+.header-filter-btn {
+  height: 36px;
+  /* Reverted to original compact size */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 8px;
+  /* Reverted radius */
+  border: 1px solid var(--border-light);
+  background-color: var(--color-white);
+  padding: 0 12px;
+  /* Reverted padding */
+  font-weight: 500;
+  color: var(--color-gray-700);
+  /* gray-700 */
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.header-filter-btn:hover {
+  background-color: var(--color-gray-50);
+  /* gray-50 */
+  color: var(--color-gray-900);
+}
+
+.header-actions-group {
+  display: flex !important;
+  align-items: center !important;
+  gap: 24px;
+}
+
+/* Calendar View Search */
+.header-search-container {
+  position: relative;
+  width: 480px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  /* Matched to input radius */
+}
+
+.header-search-icon {
+  position: absolute;
+  left: 12px;
+  /* Adjusted for smaller height */
+  top: 50%;
+  transform: translateY(-50%);
+  height: 18px;
+  width: 18px;
+  color: #9ca3af;
+  /* gray-400 */
+}
+
+.header-search-input {
+  height: 36px;
+  /* Reduced from 50px to match filter button */
+  width: 100%;
+  border-radius: 8px;
+  border: none;
+  background-color: #F3F4F6;
+  padding-left: 40px;
+  /* Adjusted padding */
+  font-size: 14px;
+  /* Slightly smaller text for 36px height */
+  color: var(--color-gray-900);
+}
+
+.header-search-input:focus {
+  background-color: var(--color-white);
+  outline: 2px solid rgba(250, 173, 0, 0.5);
+}
+
+.header-search-input::placeholder {
+  color: #9ca3af;
+}
+
+/* Date Navigation (Unified Style) */
+.header-date-nav {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background-color: var(--color-white);
+  padding: 4px;
+  /* Small padding inside the container */
+  gap: 0;
+  /* No gap between elements, they are packed */
+}
+
+.header-nav-arrow {
+  height: 28px;
+  width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--color-gray-700);
+  /* gray-700 */
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.header-nav-arrow:hover {
+  background-color: #f3f4f6;
+  /* gray-100 */
+}
+
+.header-nav-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-gray-900);
+  /* gray-900 */
+  padding: 0 12px;
+  line-height: 28px;
+  /* Match height of arrows */
+}
+
+/* Legacy Nav Button Styles (Kept if needed elsewhere, otherwise overridden by above) */
+.header-nav-btn {
+  height: 36px;
+  width: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  color: var(--color-gray-700);
+  /* gray-600 */
+  background: white;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.header-nav-btn:hover {
+  background-color: var(--color-gray-50);
+  color: var(--color-gray-900);
+}
+
+.header-nav-btn-text {
+  height: 36px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-gray-700);
+  /* gray-700 */
+  background: white;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.header-nav-btn-text:hover {
+  background-color: var(--color-gray-50);
+  color: var(--color-gray-900);
+}
+
+.header-primary-btn {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #FFC107;
+  color: white;
+  font-weight: 500;
+  padding: 0 16px;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.header-primary-btn:hover {
+  background-color: #FFB300;
+}
+
+/* List View Specific Overrides */
+.header-search-container.list-variant {
+  width: 300px !important;
+  box-shadow: none !important;
+}
+
+.header-search-input.list-variant {
+  height: 40px !important;
+  background-color: white !important;
+  border: 1px solid #d1d5db !important;
+  /* gray-300 */
+  padding-left: 40px !important;
+  /* Adjust for smaller icon padding */
+  border-radius: 6px !important;
+}
+
+.header-search-input.list-variant:focus {
+  border-color: #FFC107 !important;
+  outline: 2px solid #FFC107 !important;
+  /* Ring effect */
+}
+
+/* --- Global Filter Dropdown --- */
+.filter-dropdown-container {
+  position: absolute;
+  top: 110%;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  width: 620px;
+  height: 340px;
+  flex-direction: column;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background-color: var(--color-white);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  /* shadow-xl */
+  animation: fadeIn 0.1s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.filter-dropdown-layout {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.filter-sidebar {
+  width: 160px;
+  flex: none;
+  border-right: 1px solid var(--color-gray-50);
+  /* gray-100 */
+  background-color: var(--color-white);
+  padding: 16px 0;
+}
+
+.filter-sidebar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 12px;
+}
+
+.filter-sidebar-btn {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-gray-500);
+  /* gray-500 */
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-sidebar-btn:hover {
+  background-color: var(--color-gray-50);
+  /* gray-50 */
+  color: var(--color-gray-900);
+  /* gray-900 */
+}
+
+.filter-sidebar-btn.active {
+  background-color: #FFF9E6;
+  /* Light yellow */
+  color: #B5850B;
+  /* Dark yellow text */
+}
+
+.filter-indicator-dot {
+  height: 6px;
+  width: 6px;
+  border-radius: 50%;
+  background-color: #B5850B;
+}
+
+.filter-content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  background-color: var(--color-white);
+}
+
+.filter-search-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.filter-search-wrapper {
+  position: relative;
+  flex: 1;
+}
+
+.filter-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 16px;
+  width: 16px;
+  color: #9ca3af;
+  /* gray-400 */
+}
+
+.filter-search-input {
+  height: 36px;
+  width: 100%;
+  border-radius: 6px;
+  border: 1px solid var(--border-light);
+  background-color: var(--color-white);
+  padding-left: 36px;
+  font-size: 14px;
+  outline: none;
+  color: var(--color-gray-900);
+}
+
+.filter-search-input:focus {
+  border-color: #FFC107;
+  box-shadow: 0 0 0 1px #FFC107;
+}
+
+.filter-search-input::placeholder {
+  color: #d1d5db;
+  /* gray-300 */
+}
+
+.filter-operator-btn {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 6px;
+  border: 1px solid var(--color-orange-200);
+  /* orange-200 */
+  background-color: var(--color-white);
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #f97316;
+  /* orange-500 */
+  cursor: pointer;
+}
+
+.filter-operator-btn:hover {
+  background-color: #fff7ed;
+  /* orange-50 */
+}
+
+.filter-options-scroll {
+  flex: 1;
+  margin-right: -12px;
+  padding-right: 12px;
+}
+
+.filter-options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  row-gap: 12px;
+  column-gap: 16px;
+}
+
+.filter-option-item {
+  display: flex;
+  cursor: pointer;
+  align-items: start;
+  gap: 10px;
+}
+
+.filter-checkbox {
+  margin-top: 2px;
+  display: flex;
+  height: 16px;
+  width: 16px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  border: 1px solid var(--color-orange-200);
+  /* orange-200 */
+  background-color: var(--color-white);
+  transition: all 0.2s;
+}
+
+.filter-option-item:hover .filter-checkbox {
+  border-color: #fdba74;
+  /* orange-300 */
+}
+
+.filter-checkbox.checked {
+  border-color: #FFC107;
+  background-color: #FFC107;
+  color: white;
+}
+
+.filter-option-label {
+  font-size: 13px;
+  line-height: 1.25;
+  color: var(--color-gray-700);
+  /* gray-600 */
+}
+
+.filter-option-label.checked {
+  color: var(--color-gray-900);
+  /* gray-900 */
+  font-weight: 500;
+}
+
+.filter-no-results {
+  grid-column: span 2;
+  padding: 32px 0;
+  text-align: center;
+  font-size: 14px;
+  color: #9ca3af;
 }
