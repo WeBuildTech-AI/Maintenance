@@ -9,6 +9,9 @@ export interface ProblematicAsset {
   formattedDowntime: string;
   failures: number;
   maintenanceCost: number;
+  mtbf: number;
+  mttr: number;
+  availability: number;
 }
 
 export interface AssetHealthSummary {

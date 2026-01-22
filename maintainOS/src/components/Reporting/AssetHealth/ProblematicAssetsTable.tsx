@@ -245,7 +245,13 @@ export function ProblematicAssetsTable({
                 </button>
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
+                MTBF
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                MTTR
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Availability(%)
               </th>
             </tr>
           </thead>
@@ -279,10 +285,14 @@ export function ProblematicAssetsTable({
                 <td className="px-4 py-3 text-sm text-gray-900 text-center">
                   ${asset.maintenanceCost.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                 </td>
-                <td className="px-4 py-3 text-sm text-amber-600 hover:text-amber-700">
-                  <Link to={`/assets?assetId=${asset.id}&page=1&limit=50`} className="hover:underline">
-                    View
-                  </Link>
+                <td className="px-4 py-3 text-sm text-gray-900 text-center">
+                  {asset.mtbf}
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-900 text-center">
+                  {asset.mttr}
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-900 text-center">
+                  {asset.availability}
                 </td>
               </tr>
             ))}
