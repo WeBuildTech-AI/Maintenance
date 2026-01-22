@@ -1,5 +1,3 @@
-// Shared filter utilities for Reporting module
-
 export interface FilterParam {
   field: string;
   operator: string;
@@ -79,6 +77,12 @@ export const mapFilters = (
     } else if (key === "partIds") {
       mapped.push({
         field: "partIds",
+        operator: "eq",
+        value: String(value),
+      });
+    } else if (key === "procedureIds") {
+      mapped.push({
+        field: "procedureIds",
         operator: "eq",
         value: String(value),
       });

@@ -886,6 +886,7 @@ function YesNoRunner({
 
 // --- Helper: checkCondition (Full logic - NO CHANGE) ---
 function checkCondition(condition: ConditionData, parentAnswer: any): boolean {
+  if (!condition) return true; // [CHECK] If no condition exists, allow rendering (default to visible)
   const op = condition.conditionOperator || condition.type;
 
   // --- [FIX FOR RUNNER]: Handle Object answers (Inspection Check) ---
@@ -970,6 +971,7 @@ const PreviewField = memo(function PreviewField({
   variant, // ✅ [ADDED]
   onFieldSave, // ✅ [ADDED]
 }: Omit<RenderItemProps, "renderAllItems" | "allFieldsInScope">) {
+  if (!field || !field.id) return null;
   // --- Normalize Builder vs API props ---
   const fieldId = field.id.toString();
   const currentValue = answers[fieldId];
@@ -1794,9 +1796,11 @@ interface ProcedureFormProps {
   sections: any[];
   resetKey?: string;
   onAnswersChange?: (answers: Record<string, any>) => void;
-  variant?: "preview" | "runner"; // ✅ [ADDED] Default is Preview
-  onFieldSave?: (fieldId: string, value: any) => void; // ✅ [ADDED] Save Callback
-  initialAnswers?: Record<string, any>; // ✅ [ADDED] Accept fetched data
+  variant?: "preview" | "runner";
+  onFieldSave?: (fieldId: string, value: any) => void;
+  initialAnswers?: Record<string, any>;
+  alwaysShowConditionalFields?: boolean;
+  showConditionLabel?: boolean; // ✅ [ADDED]
 }
 
 export function ProcedureForm({
@@ -1805,9 +1809,11 @@ export function ProcedureForm({
   sections,
   resetKey,
   onAnswersChange,
-  variant = "preview", // ✅ [ADDED] Pass variant down
-  onFieldSave, // ✅ [ADDED] Pass callback down
-  initialAnswers = {}, // ✅ [ADDED] Default empty
+  variant = "preview",
+  onFieldSave,
+  initialAnswers = {},
+  alwaysShowConditionalFields = false,
+  showConditionLabel = false, // ✅ [ADDED]
 }: ProcedureFormProps) {
   const [answers, setAnswers] = useState<Record<string, any>>(initialAnswers);
 
@@ -1840,60 +1846,75 @@ export function ProcedureForm({
     [onAnswersChange]
   );
 
-  // --- This function renders a list of fields (from root or section) ---
+  // --- RECURSIVE RENDER FUNCTION ---
   const renderAllItems = useCallback(
     (items: any[], allFieldsInScope: any[]): React.ReactNode[] => {
-      const visibleItems: React.ReactNode[] = [];
-      const parentFields = items.filter((f) => !f.parentId); // Top-level fields
-      const childFields = items.filter((f) => f.parentId); // Conditional fields
-
-      parentFields.forEach((item) => {
-        // Render the parent item (field or heading)
-        visibleItems.push(
+      
+      const renderRecursive = (currentItem: any): React.ReactNode => {
+        // 1. Render the current item
+        const node = (
           <RenderPreviewItem
-            key={item.id}
-            item={item}
+            key={currentItem.id}
+            item={currentItem}
             answers={answers}
             updateAnswer={updateAnswer}
             renderAllItems={renderAllItems}
             allFieldsInScope={allFieldsInScope}
-            variant={variant} // ✅ [ADDED] Pass variant down
-            onFieldSave={onFieldSave} // ✅ [ADDED] Pass callback down
+            variant={variant}
+            onFieldSave={onFieldSave}
           />
         );
 
-        // Check for children and if their conditions are met
-        const children = childFields.filter((c) => c.parentId === item.id);
-        children.forEach((child) => {
-          // --- Use API condition format ---
-          const isMet = checkCondition(
-            child.condition,
-            answers[item.id.toString()]
-          );
-          if (isMet) {
-            visibleItems.push(
-              <div
-                key={child.id}
-                className="pl-6 border-l-2 border-blue-100 ml-2 animate-in fade-in slide-in-from-left-2"
-              >
-                <RenderPreviewItem
-                  item={child}
-                  answers={answers}
-                  updateAnswer={updateAnswer}
-                  renderAllItems={renderAllItems}
-                  allFieldsInScope={allFieldsInScope}
-                  variant={variant} // ✅ [ADDED] Pass variant down
-                  onFieldSave={onFieldSave} // ✅ [ADDED] Pass callback down
-                />
-              </div>
-            );
-          }
-        });
-      });
+        // 2. Find DIRECT children of this item
+        const children = allFieldsInScope.filter((c) => c.parentId === currentItem.id);
 
-      return visibleItems;
+        // 3. If no children, return just the node
+        if (children.length === 0) {
+           return node;
+        }
+
+        // 4. If children exist, render them recursively (wrapped in logic)
+        return (
+          <div key={currentItem.id} className="flex flex-col gap-2">
+            {node}
+            {children.map((child) => {
+              const isMet = checkCondition(
+                child.condition,
+                currentItem.id ? answers[currentItem.id.toString()] : undefined
+              );
+              
+              const shouldRender = isMet || alwaysShowConditionalFields;
+
+              if (shouldRender) {
+                 return (
+                  <div
+                    key={child.id}
+                    className="pl-6 border-l-2 border-blue-100 ml-2 animate-in fade-in slide-in-from-left-2 mt-2"
+                  >
+                    {/* Optional: Show Condition Label in 'Structure View' mode OR if explicitly requested */}
+                    {(alwaysShowConditionalFields || showConditionLabel) && (
+                      <div className="text-xs text-blue-500 mb-1 font-medium bg-blue-50 inline-block px-2 py-0.5 rounded">
+                        Condition: {(child.condition?.conditionOperator || (child.condition as any)?.type)?.replace(/_/g, " ")} {child.condition?.conditionValue || (child.condition as any)?.value}
+                      </div>
+                    )}
+                    
+                    {renderRecursive(child)}
+                  </div>
+                );
+              }
+              return null;
+            })}
+          </div>
+        );
+      };
+
+      // Only process items that are ROOTS in the current context (no parent OR parent is not in this list)
+      // Note: In a section, 'items' might be just the section fields. We treat those as roots relative to the section if they have no parent.
+      const roots = items.filter((f) => !f.parentId); // Simple check: If it has a parent, it's a child.
+      
+      return roots.map(renderRecursive);
     },
-    [answers, updateAnswer, variant, onFieldSave] // ✅ [ADDED] Depend on variant
+    [answers, updateAnswer, variant, onFieldSave, alwaysShowConditionalFields, showConditionLabel]
   );
 
   const combinedRootItems = [...(rootFields || []), ...(rootHeadings || [])].sort(

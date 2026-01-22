@@ -41,6 +41,7 @@ import TimeOverviewPanel from "../panels/TimeOverviewPanel";
 import OtherCostsPanel from "../panels/OtherCostsPanel";
 import { Tooltip } from "../../ui/tooltip";
 
+
 // --- Helper Functions ---
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("en-IN", {
@@ -77,7 +78,6 @@ const formatDecimalHoursToDisplay = (hours: any) => {
   if (m === 0) return `${h}h`;
   return `${h}h ${m}m`;
 };
-
 const renderClickableList = (
   items: any[],
   navigate: any,
@@ -100,6 +100,41 @@ const renderClickableList = (
       {i < items.length - 1 && ", "}
     </span>
   ));
+};
+
+const renderAssetList = (assets: any[], navigate: any) => {
+  if (!assets || !Array.isArray(assets) || assets.length === 0) return "—";
+  return (
+    <div className="flex flex-col gap-2">
+      {assets.map((asset, i) => (
+        <div key={asset.id || i} className="flex flex-col">
+          <span
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              navigate(`/assets?assetId=${asset.id}`);
+            }}
+            className="text-blue-600 hover:underline cursor-pointer font-medium"
+          >
+            {asset.name || "Unknown Asset"}
+          </span>
+          {asset.status && (
+            <div className="mt-1 flex items-center">
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
+                asset.status.toLowerCase() === 'online' 
+                  ? 'bg-green-100 text-green-700' 
+                  : asset.status.toLowerCase() === 'offline' 
+                    ? 'bg-red-100 text-red-700' 
+                    : 'bg-gray-100 text-gray-600'
+              }`}>
+                {asset.status === 'doNotTrack' ? 'Not Tracked' : asset.status.charAt(0).toUpperCase() + asset.status.slice(1).replace("_", " ")}
+              </span>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
 };
 
 const renderList = (items: any[], key = "name") => {
@@ -135,7 +170,8 @@ export function WorkOrderDetails({
   activePanel,
   setActivePanel,
   onScrollToComments,
-  onStatusChangeSuccess, 
+  onStatusChangeSuccess,
+  onScrollToProcedure,
 }: any) {
   const navigate = useNavigate();
   const dispatch = useDispatch<any>();
@@ -197,19 +233,32 @@ export function WorkOrderDetails({
     assigneesList.push(selectedWorkOrder.assignedTo);
   }
 
-  // User Name Fetching
+  // User Name Fetching - Optimized with Promise.all
   useEffect(() => {
-    const fetchName = async (userId: string | undefined, setFn: (s: string) => void) => {
-      if (!userId) { setFn("System"); return; }
-      const inAssignees = assigneesList.find((a: any) => a.id === userId);
-      if (inAssignees) { setFn(inAssignees.fullName || inAssignees.name); return; }
-      try {
-        const userData = await workOrderService.fetchUserById(userId);
-        setFn(userData.fullName || "Unknown");
-      } catch (error) { setFn("Unknown"); }
+    const fetchNames = async () => {
+      const createdById = selectedWorkOrder.createdBy;
+      const updatedById = selectedWorkOrder.updatedBy;
+
+      const fetchName = async (userId: string | undefined): Promise<string> => {
+        if (!userId) return "System";
+        const inAssignees = assigneesList.find((a: any) => a.id === userId);
+        if (inAssignees) return inAssignees.fullName || inAssignees.name;
+        try {
+          const userData = await workOrderService.fetchUserById(userId);
+          return userData.fullName || "Unknown";
+        } catch { return "Unknown"; }
+      };
+
+      const [cName, uName] = await Promise.all([
+        fetchName(createdById),
+        fetchName(updatedById)
+      ]);
+
+      setCreatedByName(cName);
+      setUpdatedByName(uName);
     };
-    fetchName(selectedWorkOrder.createdBy, setCreatedByName);
-    fetchName(selectedWorkOrder.updatedBy, setUpdatedByName);
+
+    fetchNames();
   }, [selectedWorkOrder.createdBy, selectedWorkOrder.updatedBy, assigneesList]);
 
   const handleDeleteClick = () => { setShowDeleteModal(true); setIsDropdownOpen(false); };
@@ -228,6 +277,8 @@ export function WorkOrderDetails({
       setIsDeleting(false);
     }
   };
+
+  const [isShaking, setIsShaking] = useState(false);
 
   const handleStatusChange = async (newStatus: string) => {
     if (activeStatus === newStatus) return;
@@ -258,7 +309,40 @@ export function WorkOrderDetails({
 
     } catch (error: any) {
       console.error("Status update failed", error);
-      toast.error("Failed to update status");
+      
+      const errorMessage = 
+        (typeof error === 'string' && error) ||
+        error?.message || 
+        error?.data?.message || 
+        error?.response?.data?.message || 
+        "";
+
+      // Matches: "Required procedure fields are missing"
+      if (
+        errorMessage === "Required procedure fields are missing" || 
+        errorMessage.includes("Required procedure fields are missing")
+      ) {
+         // 1. Toast
+         toast.error("Complete Required Procedure Fields");
+         
+         // 2. Vibrate
+         if (navigator.vibrate) {
+            navigator.vibrate(200);
+         }
+
+         // 3. Shake Button
+         setIsShaking(true);
+         setTimeout(() => setIsShaking(false), 500);
+
+         // 4. Scroll to Procedure
+         if (onScrollToProcedure) {
+          onScrollToProcedure();
+         }
+
+      } else {
+         toast.error(errorMessage || "Failed to update status");
+      }
+      
       setActiveStatus(prevStatus);
     }
   };
@@ -317,6 +401,7 @@ export function WorkOrderDetails({
 
       <DeleteWorkOrderModal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} onConfirm={handleConfirmDelete} />
 
+
       {selectedWorkOrder.wasDeleted && (
         <div className="mx-6 mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-2">
           <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
@@ -336,7 +421,15 @@ export function WorkOrderDetails({
               {[{ key: "open", label: "Open", Icon: MessageSquare }, { key: "on_hold", label: "On hold", Icon: PauseCircle }, { key: "in_progress", label: "In Progress", Icon: Clock }, { key: "done", label: "Done", Icon: CheckCircle2 }].map(({ key, label, Icon }) => {
                 const isActive = (activeStatus || "open").toLowerCase() === key;
                 return (
-                  <button key={key} type="button" onClick={() => handleStatusChange(key)} disabled={isDeleting} className={`h-16 w-20 rounded-lg border shadow-md inline-flex flex-col items-center justify-center gap-2 transition-all outline-none ${isActive ? "bg-orange-600 text-white border-orange-600" : "bg-orange-50 text-sidebar-foreground border-gray-200 hover:bg-orange-100"}`}>
+                  <button 
+                    key={key} 
+                    type="button" 
+                    onClick={() => handleStatusChange(key)} 
+                    disabled={isDeleting} 
+                    className={`h-16 w-20 rounded-lg border shadow-md inline-flex flex-col items-center justify-center gap-2 transition-all outline-none ${
+                      isActive ? "bg-orange-600 text-white border-orange-600" : "bg-orange-50 text-sidebar-foreground border-gray-200 hover:bg-orange-100"
+                    } ${activeStatus === key && isShaking ? "shake-animation" : ""}`}
+                  >
                     <Icon className="h-4 w-4" />
                     <span className="text-xs font-medium leading-none text-center px-2 truncate">{label}</span>
                   </button>
@@ -376,7 +469,7 @@ export function WorkOrderDetails({
 
         {/* Details Grid (Clickable) */}
         <div className="border-t p-6 grid grid-cols-2 gap-6">
-          <div><h3 className="text-sm font-medium mb-2">Assets</h3><div className="flex items-start gap-2"><Factory className="h-4 w-4 text-muted-foreground mt-0.5" /><span className="text-sm">{renderClickableList(selectedWorkOrder.assets, navigate, (id) => `/assets?assetId=${id}`)}</span></div></div>
+          <div><h3 className="text-sm font-medium mb-2">Assets</h3><div className="flex items-start gap-2"><Factory className="h-4 w-4 text-muted-foreground mt-0.5" /><span className="text-sm">{renderAssetList(selectedWorkOrder.assets, navigate)}</span></div></div>
           <div><h3 className="text-sm font-medium mb-2">Location</h3><div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-muted-foreground" /><span className="text-sm"><span onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (selectedWorkOrder.location?.id) navigate(`/locations/${selectedWorkOrder.location.id}`); }} className={selectedWorkOrder.location?.id ? "text-blue-600 hover:underline cursor-pointer" : ""}>{selectedWorkOrder.location?.name || selectedWorkOrder.location || "N/A"}</span></span></div></div>
           <div><h3 className="text-sm font-medium mb-2">Estimated Time</h3><div className="flex items-center gap-2"><Clock className="h-4 w-4 text-muted-foreground" /><span className="text-sm">{formatDecimalHoursToDisplay(selectedWorkOrder.estimatedTimeHours)}</span></div></div>
           <div><h3 className="text-sm font-medium mb-2">Work Type</h3><div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-muted-foreground" /><span className="text-sm">{selectedWorkOrder.workType || "N/A"}</span></div></div>

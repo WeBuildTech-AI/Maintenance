@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState, useMemo } from "react";
+import React, { useCallback, useEffect, useState, useMemo } from "react";
 import { MeterDetail } from "./MeterDetail/MeterDetail";
 import { MetersEmptyState } from "./MetersEmptyState";
 import { MetersHeaderComponent } from "./MetersHeader";
@@ -63,12 +63,8 @@ export function Meters() {
     (typeof meterData)[0] | null
   >(null);
   const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
-  const headerRef = useRef<HTMLDivElement>(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -77,6 +73,10 @@ export function Meters() {
     page: Number(searchParams.get("page")) || 1,
     limit: 50,
   });
+
+  // ✅ Sorting State (Initialized from URL)
+  const [sortType, setSortType] = useState(() => searchParams.get("sort") || "Creation Date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(() => (searchParams.get("order") as "asc" | "desc") || "desc");
 
   const dispatch = useDispatch<AppDispatch>();
 
@@ -108,6 +108,10 @@ export function Meters() {
       params.reading = "true";
     }
 
+    // Sorting
+    params.sort = sortType;
+    params.order = sortOrder;
+
     // Asset ID persist rakhna hai agar available hai
     if (prefillAssetId) {
       params.assetId = prefillAssetId;
@@ -120,6 +124,8 @@ export function Meters() {
     showReadingMeter,
     selectedMeter?.id,
     prefillAssetId,
+    sortType,
+    sortOrder,
     isCreateRoute, // Check added
     isEditRoute,   // Check added
     setSearchParams,
@@ -161,11 +167,8 @@ export function Meters() {
         res = await meterService.fetchMeters(apiPayload);
       }
       const safeData = Array.isArray(res) ? res : [];
-      const sortedData = [...safeData].sort(
-        (a, b) =>
-          new Date(b.updatedAt).valueOf() - new Date(a.updatedAt).valueOf()
-      );
-      setMeterData(sortedData);
+      // No default sort here, because MetersList handles it based on local/URL state
+      setMeterData(safeData);
     } catch (err) {
       console.error(err);
       setMeterData([]);
@@ -174,9 +177,31 @@ export function Meters() {
     }
   }, [showDeleted, filterParams, debouncedSearch]);
 
+  // ✅ Client-Side Sorting
+  const sortedMeters = useMemo(() => {
+    const meters = [...meterData];
+    meters.sort((a, b) => {
+      let comparison = 0;
+      switch (sortType) {
+        case "Creation Date":
+          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+        case "Last Updated":
+          comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+          break;
+        case "Name":
+        default:
+          comparison = a.name.localeCompare(b.name);
+          break;
+      }
+      return sortOrder === "asc" ? comparison : -comparison;
+    });
+    return meters;
+  }, [meterData, sortType, sortOrder]);
+
   useEffect(() => {
     if (loading) return;
-    if (!meterData || meterData.length === 0) {
+    if (!sortedMeters || sortedMeters.length === 0) {
       setSelectedMeter(null);
       return;
     }
@@ -185,20 +210,20 @@ export function Meters() {
     
     // Agar URL me meterId hai, to usse select karo
     if (urlMeterId) {
-      const found = meterData.find((m) => String(m.id) === String(urlMeterId));
+      const found = sortedMeters.find((m) => String(m.id) === String(urlMeterId));
       if (found) {
         setSelectedMeter(found);
         return;
       }
     }
 
-    // Default fallback
+    // Default fallback - Select FIRST SORTED item
     setSelectedMeter((prev) => {
-      if (!prev) return meterData[0];
-      const updated = meterData.find((m) => m.id === prev.id);
-      return updated || meterData[0];
+      if (!prev) return sortedMeters[0];
+      const updated = sortedMeters.find((m) => m.id === prev.id);
+      return updated || sortedMeters[0];
     });
-  }, [loading, meterData, searchParams]);
+  }, [loading, sortedMeters, searchParams]);
 
   useEffect(() => {
     fetchMeters();
@@ -209,8 +234,8 @@ export function Meters() {
   const paginatedMeters = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-    return meterData.slice(startIndex, endIndex);
-  }, [currentPage, itemsPerPage, totalItems, meterData]);
+    return sortedMeters.slice(startIndex, endIndex);
+  }, [currentPage, itemsPerPage, totalItems, sortedMeters]);
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
@@ -230,27 +255,6 @@ export function Meters() {
     []
   );
 
-  useEffect(() => {
-    if (isDropdownOpen && headerRef.current) {
-      const rect = headerRef.current.getBoundingClientRect();
-      setDropdownPos({
-        top: rect.bottom + window.scrollY + 5,
-        left: rect.left + rect.width / 2,
-      });
-    }
-  }, [isDropdownOpen]);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [modalRef]);
 
   const handleDeleteMeter = (id: string) => {
     dispatch(deleteMeter(id))
@@ -286,7 +290,7 @@ export function Meters() {
           searchQuery,
           setSearchQuery,
           handleShowNewMeterForm,
-          setShowSettings,
+          () => {}, // setShowSettings - changed to dummy to avoid error
           setIsSettingsModalOpen,
           setShowDeleted,
           handleFilterChange
@@ -307,21 +311,25 @@ export function Meters() {
         ) : (
           <>
             <div className="flex flex-1 overflow-hidden">
-              <MetersList
-                filteredMeters={paginatedMeters}
-                selectedMeter={selectedMeter}
-                setSelectedMeter={setSelectedMeter}
-                loading={loading}
-                handleShowNewMeterForm={handleShowNewMeterForm}
-                handleCreateForm={handleCreateForm}
-                handleCancelForm={handleCancelForm}
-                setShowReadingMeter={setShowReadingMeter}
-                currentPage={currentPage}
-                setCurrentPage={setCurrentPage}
-                startIndex={startIndex}
-                endIndex={endIndex}
-                totalItems={totalItems}
-              />
+                <MetersList
+                  filteredMeters={paginatedMeters}
+                  selectedMeter={selectedMeter}
+                  setSelectedMeter={setSelectedMeter}
+                  loading={loading}
+                  handleShowNewMeterForm={handleShowNewMeterForm}
+                  handleCreateForm={handleCreateForm}
+                  handleCancelForm={handleCancelForm}
+                  setShowReadingMeter={setShowReadingMeter}
+                  currentPage={currentPage}
+                  setCurrentPage={setCurrentPage}
+                  startIndex={startIndex}
+                  endIndex={endIndex}
+                  totalItems={totalItems}
+                  sortType={sortType}
+                  setSortType={setSortType}
+                  sortOrder={sortOrder}
+                  setSortOrder={setSortOrder}
+                />
 
               <div className="flex-1 bg-card mb-2">
                 {isCreateRoute || isEditRoute ? (
@@ -360,8 +368,8 @@ export function Meters() {
             </div>
             {isRecordModalOpen && (
               <RecordReadingModal
-                modalRef={modalRef}
-                selectedMeter={selectedMeter}
+                modalRef={modalRef as React.RefObject<HTMLDivElement>}
+                selectedMeter={selectedMeter as any}
                 onClose={() => setIsRecordModalOpen(false)}
                 fetchMeters={fetchMeters}
               />

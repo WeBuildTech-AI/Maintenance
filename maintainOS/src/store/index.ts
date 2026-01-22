@@ -8,7 +8,7 @@ import userReducer from "./userSlice";
 import { automationsReducer } from "./automations";
 // import { categoriesReducer } from "./categories";
 // import { metersReducer } from "./meters";
-// import { partsReducer } from "./parts";
+import { partsReducer } from "./parts";
 // import { locationsReducer } from "./locations";
 // import { proceduresReducer } from "./procedures";
 // import { purchaseOrdersReducer } from "./purchaseOrders";
@@ -34,7 +34,7 @@ export const store = configureStore({
     // assets: assetsReducer,
     // categories: categoriesReducer,
     // meters: metersReducer,
-    // parts: partsReducer,
+    parts: partsReducer,
     // locations: locationsReducer,
     // procedures: proceduresReducer,
     // purchaseOrders: purchaseOrdersReducer,

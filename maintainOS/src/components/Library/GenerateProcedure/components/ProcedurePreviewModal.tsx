@@ -94,11 +94,15 @@ export function ProcedurePreviewModal({ isOpen, onClose }: PreviewModalProps) {
           }}
         >
           {/* --- 💡 FIX: Pass rootHeadings prop --- */}
+          {/* --- 💡 FIX: Pass rootHeadings prop and ENABLE RUNNER MODE for interactivity --- */}
           <ProcedureForm
             rootFields={rootFields}
             rootHeadings={rootHeadings}
             sections={sections}
-            resetKey={name} // Use name or a timestamp as a key
+            resetKey={JSON.stringify(fields)} // Force reset when structure changes
+            variant="runner" // [FIX] Enables interactivity (inputs not disabled)
+            showConditionLabel={true} // [FIX] Show condition labels in preview
+            // onFieldSave is intentionally OMITTED to prevent API calls
           />
           {/* --- END FIX --- */}
         </div>

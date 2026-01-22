@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Plus, ClipboardList, Pencil, Trash2 } from "lucide-react";
 import { DynamicSelect, type SelectOption } from "./DynamicSelect";
-import AddAssetsModal from "../WorkloadView/Modal/AddAssetsModal";
+
 import AddProcedureModal from "../WorkloadView/Modal/AddProcedureModal";
+
+
 
 interface Props {
   assetIds: string[];
@@ -15,24 +17,13 @@ interface Props {
   setActiveDropdown: (name: string | null) => void;
   
   onAssetSearch?: (query: string) => void;
-
-  assetStatus?: string;
-  setAssetStatus?: (value: string) => void;
-
+  
   linkedProcedure: any | null;
   onRemoveProcedure: () => void;
   onPreviewProcedure: () => void;
-  onOpenProcedureModal: () => void;
   setLinkedProcedure: (p: any) => void;
   onEditProcedure?: () => void;
 }
-
-// ✅ Options defined outside to prevent re-renders
-const ASSET_STATUS_OPTIONS = [
-  { id: "Online", name: "Online" },
-  { id: "Offline", name: "Offline" },
-  { id: "Do not track", name: "Do not track" },
-];
 
 export function AssetsAndProcedures({
   assetIds,
@@ -45,41 +36,19 @@ export function AssetsAndProcedures({
   setActiveDropdown,
   onAssetSearch,
 
-  assetStatus,
-  setAssetStatus,
-
   linkedProcedure,
   onRemoveProcedure,
   onPreviewProcedure,
-  onOpenProcedureModal,
   setLinkedProcedure,
-  onEditProcedure 
+  
+  onEditProcedure,
 }: Props) {
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
+
+
   const [showProcedureModal, setShowProcedureModal] = useState(false);
 
-  // ✅ Local state to ensure immediate UI updates for Asset Status
-  const [internalAssetStatus, setInternalAssetStatus] = useState(assetStatus || "");
 
-  // ✅ Sync local state if parent prop changes
-  useEffect(() => {
-    if (assetStatus !== undefined) {
-      setInternalAssetStatus(assetStatus);
-    }
-  }, [assetStatus]);
-
-  const handleAddAssets = (selected: { id: string; name: string }[]) => {
-    const newIds = selected.map((a) => a.id);
-    const uniqueIds = Array.from(new Set([...assetIds, ...newIds]));
-    onAssetSelect(uniqueIds);
-  };
-
-  const handleOpenAssetModal = () => {
-    setIsModalOpen(true);
-    // ✅ Fetch latest assets from API when opening the modal
-    onFetchAssets(); 
-  };
 
   return (
     <>
@@ -96,14 +65,14 @@ export function AssetsAndProcedures({
               placeholder="Start typing..."
               options={assetOptions}
               loading={isAssetsLoading}
-              value={assetIds}
+              // ✅ FORCE SINGLE SELECT: Pass only the first ID as a string
+              value={assetIds[0] || ""}
               onSelect={(val) => {
-                 onAssetSelect(val);
-                 // Reset status if all assets are removed
-                 if (Array.isArray(val) && val.length === 0) {
-                   setInternalAssetStatus(""); // Clear local
-                   if (setAssetStatus) setAssetStatus(""); // Clear parent
-                 }
+                 // ✅ FORCE ARRAY: Wrap single value back into array for parent state
+                 const singleId = val as string;
+                 onAssetSelect(singleId ? [singleId] : []);
+                 
+ 
               }}
               onFetch={onFetchAssets}
               onSearch={onAssetSearch}
@@ -115,39 +84,11 @@ export function AssetsAndProcedures({
             />
           </div>
 
-          {/* Right: Asset Status (Conditional) */}
-          {assetIds.length > 0 && (
-            <div className={`w-[200px] flex-shrink-0 relative ${activeDropdown === 'asset-status' ? 'z-50' : 'z-20'}`}>
-              <h3 className="mb-4 text-base font-medium text-gray-900">Asset Status</h3>
-              <DynamicSelect
-                name="asset-status"
-                placeholder="Select status..."
-                options={ASSET_STATUS_OPTIONS}
-                loading={false}
-                value={internalAssetStatus} // ✅ Use local state
-                onSelect={(val) => {
-                  const newVal = val as string;
-                  setInternalAssetStatus(newVal); // ✅ Update local immediately
-                  if (setAssetStatus) setAssetStatus(newVal); // Update parent
-                }}
-                onFetch={() => {}} 
-                activeDropdown={activeDropdown}
-                setActiveDropdown={setActiveDropdown}
-                className="w-full"
-              />
-            </div>
-          )}
+
         </div>
 
-        {/* Add Assets Button */}
-        <button
-          type="button"
-          onClick={handleOpenAssetModal} // ✅ Updated to fetch data on click
-          className="flex items-center gap-1.5 text-sm text-blue-500 font-medium mt-2 hover:text-blue-600 focus:outline-none relative z-0"
-        >
-          <Plus className="h-4 w-4" />
-          Add Assets
-        </button>
+        {/* ✅ Render Status Modal */}
+
       </div>
 
       {/* ---------------- PROCEDURE SECTION ---------------- */}
@@ -236,15 +177,6 @@ export function AssetsAndProcedures({
           </>
         )}
       </div>
-
-      {/* ---------------- ASSETS MODAL ---------------- */}
-      <AddAssetsModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onAdd={handleAddAssets}
-        // ✅ PASS REAL API DATA HERE (Replaced hardcoded list)
-        assets={assetOptions} 
-      />
 
       {/* ---------------- PROCEDURE MODAL ---------------- */}
       <AddProcedureModal

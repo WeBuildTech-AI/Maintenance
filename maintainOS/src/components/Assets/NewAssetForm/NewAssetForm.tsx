@@ -13,14 +13,13 @@ import { YearInput } from "./fields/YearInput";
 import { SerialNumberInput } from "./fields/SerialNumberInput";
 import { QrCodeInput } from "./fields/QrCodeInput";
 import { FooterActions } from "./FooterActions";
-import { DynamicSelect, type SelectOption } from "./DynamicSelect";
+import { DynamicSelect, type SelectOption } from "../../common/DynamicSelect";
 import { useNavigate } from "react-router-dom";
 
 // Import services
 import {
   assetService,
   createAsset,
-  type CreateAssetData,
 } from "../../../store/assets";
 import { locationService } from "../../../store/locations";
 import { teamService } from "../../../store/teams";
@@ -379,6 +378,8 @@ export function NewAssetForm({
             options={criticalityOptions}
             activeDropdown={activeDropdown}
             setActiveDropdown={setActiveDropdown}
+            onFetch={() => {}} 
+            loading={false}
           />
         </div>
 

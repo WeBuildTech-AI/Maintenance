@@ -44,6 +44,12 @@ interface ProcedureBuilderContextType {
   setOverContainerId: React.Dispatch<React.SetStateAction<string | number | null>>;
   dropdownOpen: number | null;
   setDropdownOpen: React.Dispatch<React.SetStateAction<number | null>>;
+
+  // --- [NEW] Editable Name/Description in Context ---
+  procedureName: string;
+  setProcedureName: React.Dispatch<React.SetStateAction<string>>;
+  procedureDescription: string;
+  setProcedureDescription: React.Dispatch<React.SetStateAction<string>>;
   
   // --- [NEW] Yeh state LibDynamicSelect ke liye zaroori hai ---
   activeDropdown: string | null;
@@ -65,6 +71,8 @@ interface ProcedureBuilderContextType {
   setIsReorderModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isLinkModalOpen: { fieldId: number | null };
   setIsLinkModalOpen: React.Dispatch<React.SetStateAction<{ fieldId: number | null }>>;
+  isAddConditionModalOpen: { fieldId: number | null }; // [NEW]
+  setIsAddConditionModalOpen: React.Dispatch<React.SetStateAction<{ fieldId: number | null }>>; // [NEW]
   dropdownWidths: Record<number, number>;
   setDropdownWidths: React.Dispatch<React.SetStateAction<Record<number, number>>>;
   collapsed: Record<number, boolean>;
@@ -101,6 +109,7 @@ interface ProcedureBuilderContextType {
   handleRemoveOption: (id: number, index: number) => void;
   handleTypeChange: (id: number, newType: string) => void;
   handleAddCondition: (fieldId: number) => void;
+  handleAddConditionWithData: (fieldId: number, data: { operator: string; value: any; value2?: any; initialFields?: FieldData[] }) => void; // [NEW]
   handleToggleLogicEditor: (fieldId: number) => void;
   handleDeleteCondition: (fieldId: number, conditionId: number) => void;
   handleConditionChange: (fieldId: number, conditionId: number, prop: keyof ConditionData, value: any) => void;
@@ -312,6 +321,10 @@ export function ProcedureBuilderProvider({
     initialState?.settings || defaultSettingsState
   );
 
+  // --- [NEW] Name/Description State ---
+  const [procedureName, setProcedureName] = useState(name);
+  const [procedureDescription, setProcedureDescription] = useState(description);
+
   // --- Baaki saari state (No Change) ---
   const [activeContainerId, setActiveContainerId] = useState<number | "root">(
     "root"
@@ -340,6 +353,11 @@ export function ProcedureBuilderProvider({
     {}
   );
   const [isLinkModalOpen, setIsLinkModalOpen] = useState<{
+    fieldId: number | null;
+  }>({ fieldId: null });
+
+  // --- [NEW] Add Condition Modal State ---
+  const [isAddConditionModalOpen, setIsAddConditionModalOpen] = useState<{
     fieldId: number | null;
   }>({ fieldId: null });
   const [collapsed, setCollapsed] = useState<Record<number, boolean>>({});
@@ -891,6 +909,47 @@ export function ProcedureBuilderProvider({
       })
     );
   };
+
+  // --- [NEW] Add Condition WITH DATA (Called by Modal) ---
+  const handleAddConditionWithData = (
+    fieldId: number, 
+    data: { operator: string; value: any; value2?: any; initialFields?: FieldData[] }
+  ) => {
+    // If no initial fields provided, default to one text field
+    const defaultFields: FieldData[] = [
+        {
+          id: Date.now() + 1,
+          selectedType: "Text Field",
+          blockType: "field",
+          label: "New Field",
+          isRequired: false,
+          hasDescription: false,
+        },
+    ];
+
+    const newCondition: ConditionData = {
+      id: Date.now(),
+      conditionOperator: data.operator,
+      conditionValue: data.value,
+      conditionValue2: data.value2 || null, // Ensure explicit null
+      fields: data.initialFields && data.initialFields.length > 0 ? data.initialFields : defaultFields,
+      isCollapsed: false,
+    };
+
+    setFields((prev) =>
+      updateFieldsRecursive(prev, (field) => {
+        if (field.id === fieldId) {
+          return {
+            ...field,
+            conditions: [...(field.conditions || []), newCondition],
+          };
+        }
+        return field;
+      })
+    );
+    // Explicitly open the logic editor panel so the new condition is visible
+    setLogicEditorOpen(fieldId);
+  };
   
   // --- 👇 [CHANGE] YEH NAYA FUNCTION HAI JO BUG FIX KAREGA ---
   const handleToggleLogicEditor = (fieldId: number) => {
@@ -1286,6 +1345,8 @@ export function ProcedureBuilderProvider({
     setIsReorderModalOpen,
     isLinkModalOpen,
     setIsLinkModalOpen,
+    isAddConditionModalOpen, // [NEW]
+    setIsAddConditionModalOpen, // [NEW]
     dropdownWidths,
     setDropdownWidths,
     collapsed,
@@ -1322,6 +1383,7 @@ export function ProcedureBuilderProvider({
     handleRemoveOption,
     handleTypeChange,
     handleAddCondition,
+    handleAddConditionWithData, // [NEW]
     // --- 👇 [CHANGE] Naya function pass karein ---
     handleToggleLogicEditor,
     handleDeleteCondition,
@@ -1336,6 +1398,11 @@ export function ProcedureBuilderProvider({
     handleFieldDragStart,
     handleFieldDragOver,
     handleFieldDragEnd,
+    // --- [NEW] Include new state in context value ---
+    procedureName,
+    setProcedureName,
+    procedureDescription,
+    setProcedureDescription,
   };
 
   return (

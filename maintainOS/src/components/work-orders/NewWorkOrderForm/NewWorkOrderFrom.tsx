@@ -29,14 +29,7 @@ import OtherCostsPanel from "./../panels/OtherCostsPanel";
 import UpdatePartsPanel from "./../panels/UpdatePartsPanel";
 import { locationService } from "../../../store/locations";
 
-// ✅ Helper: Forces UTC Date
-function parseDateInputToISO(input?: string): string | null {
-  if (!input) return null;
-  const date = new Date(input);
-  if (isNaN(date.getTime())) return null;
-  const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  return utcDate.toISOString();
-}
+
 
 // 🛠️ HELPER: UI String ("4:30") -> Backend Number (4.5)
 const parseTimeToDecimal = (timeStr: string): number => {
@@ -71,6 +64,7 @@ const getChangedFields = (original: any, current: any) => {
     // 1. Simple Fields
     const simpleFields = [
       "title", "description", "priority", "status", "workType", 
+      "locationId", 
       "locationId"
     ];
 
@@ -170,14 +164,15 @@ export function NewWorkOrderForm({
   onCreate,
   existingWorkOrder,
   editId,
-  isEditMode: propIsEditMode,
   onCancel,
+  prefillData,
 }: {
   onCreate: () => void;
   existingWorkOrder?: any;
   editId?: string;
   isEditMode?: boolean;
   onCancel?: () => void;
+  prefillData?: any;
 }) {
   const dispatch = useDispatch<any>();
   const navigate = useNavigate();
@@ -215,16 +210,20 @@ export function NewWorkOrderForm({
   const [dueDate, setDueDate] = useState("");
   const [startDate, setStartDate] = useState("");
   
-  const [selectedWorkType, setSelectedWorkType] = useState("Reactive");
-  const [selectedPriority, setSelectedPriority] = useState("None");
+  const [selectedWorkType, setSelectedWorkType] = useState("");
+  const [selectedPriority, setSelectedPriority] = useState("");
   const [qrCodeValue, setQrCodeValue] = useState("");
   
   const [recurrenceRule, setRecurrenceRule] = useState<any>(null);
+  const [status, setStatus] = useState("Open");
   
   const [teamIds, setTeamIds] = useState<string[]>([]);
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
+
   const [partIds, setPartIds] = useState<string[]>([]);
   const [vendorIds, setVendorIds] = useState<string[]>([]);
+
+
 
   const [locationOptions, setLocationOptions] = useState<SelectOption[]>([]);
   const [assetOptions, setAssetOptions] = useState<SelectOption[]>([]);
@@ -369,11 +368,29 @@ export function NewWorkOrderForm({
           setEstimatedTime("");
       }
 
-      setDueDate(data.dueDate ? new Date(data.dueDate).toLocaleDateString("en-US") : "");
-      setStartDate(data.startDate ? new Date(data.startDate).toLocaleDateString("en-US") : "");
+      setDueDate(data.dueDate || "");
+      setStartDate(data.startDate || "");
       
-      setSelectedWorkType(data.workType || "Reactive");
+
+      
+      // WorkType - Backend sends "reactive", UI expects "Reactive"
+      if (data.workType) {
+          setSelectedWorkType(data.workType.charAt(0).toUpperCase() + data.workType.slice(1));
+      } else {
+          setSelectedWorkType("Reactive");
+      }
+
       setSelectedPriority(data.priority ? data.priority.charAt(0).toUpperCase() + data.priority.slice(1) : "None");
+      
+      // Status - Backend sends "open", "in_progress", etc. Map to UI
+      const mapWOStatus = (s: string) => {
+          if (!s) return "Open";
+          if (s === "in_progress") return "In Progress";
+          if (s === "on_hold") return "On Hold";
+          return s.charAt(0).toUpperCase() + s.slice(1);
+      };
+      setStatus(mapWOStatus(data.status || "open"));
+
       setQrCodeValue(data.qrCode || "");
       
       if (data.recurrenceRule) {
@@ -467,10 +484,31 @@ export function NewWorkOrderForm({
     loadWorkOrder();
   }, [dispatch, activeId, existingWorkOrder, isCreateRoute, location.state]);
 
+  // ✅ Handle prefillData from Assets offline prompt or other sources
+  useEffect(() => {
+    if (prefillData && !activeId) {
+      // Only apply prefill if not editing an existing work order
+      if (prefillData.assetIds && prefillData.assetIds.length > 0) {
+          setAssetIds(prefillData.assetIds);
+          if (prefillData.assetName) {
+            setAssetOptions([{ id: prefillData.assetIds[0], name: prefillData.assetName }]);
+          }
+      }
+      if (prefillData.locationId) {
+          setLocationId(prefillData.locationId);
+          if (prefillData.locationName) {
+            setLocationOptions([{ id: prefillData.locationId, name: prefillData.locationName }]);
+          }
+      }
+
+    }
+  }, [prefillData, activeId]);
+
   const handleEditLinkedProcedure = () => {
     if (linkedProcedure?.id) {
       const currentFormState = {
-        workOrderName, description, locationId, estimatedTime, assetIds, selectedUsers, dueDate, startDate, selectedWorkType, selectedPriority, qrCodeValue, recurrenceRule, teamIds, categoryIds, partIds, vendorIds, procedureId: linkedProcedure.id 
+        workOrderName, description, locationId, estimatedTime, assetIds, selectedUsers, dueDate, startDate, selectedWorkType, selectedPriority, qrCodeValue, recurrenceRule, teamIds, categoryIds, partIds, vendorIds, procedureId: linkedProcedure.id,
+        status
       };
       navigate(`/library/${linkedProcedure.id}/edit`, { state: { returnPath: location.pathname, previousFormState: currentFormState } });
     }
@@ -496,17 +534,18 @@ export function NewWorkOrderForm({
       const formState: any = {
         title: workOrderName,
         description,
-        // ✅ FIX: Use 'open' only for CREATE. For EDIT, use existing status.
-        status: isEditing ? originalData.status : "open",
-        workType: selectedWorkType,
+        // ✅ UI Mapping back to Backend strings
+        status: { "Open": "open", "In Progress": "in_progress", "On Hold": "on_hold", "Completed": "completed" }[status] || "open",
+        workType: selectedWorkType ? selectedWorkType.toLowerCase() : "reactive", // Fallback and ensure lowercase
         qrCode: qrCodeValue || undefined,
         priority: { None: "low", Low: "low", Medium: "medium", High: "high", Urgent: "urgent" }[selectedPriority] || "low",
         locationId: locationId || null,
-        estimatedTimeHours: parseTimeToDecimal(estimatedTime),
+        estimatedTimeHours: parseTimeToDecimal(estimatedTime), // Returns number
         assetIds, vendorIds, partIds, assignedTeamIds: teamIds, categoryIds, assigneeIds: selectedUsers,
         procedureIds: linkedProcedure ? [linkedProcedure.id] : [],
-        dueDate: parseDateInputToISO(dueDate),
-        startDate: parseDateInputToISO(startDate),
+        // ✅ Date Fix: Pass state directly (should be ISO string from AssignmentAndScheduling)
+        dueDate: dueDate || null, 
+        startDate: startDate || null
       };
 
       if (recurrenceRule) {
@@ -525,6 +564,9 @@ export function NewWorkOrderForm({
             if (onCreate) onCreate(); else navigate("/work-orders");
             return;
         }
+
+
+
         await dispatch(updateWorkOrder({ id: activeId, authorId, data: payload })).unwrap();
         toast.success("✅ Work order updated successfully");
       } else {
@@ -570,18 +612,19 @@ export function NewWorkOrderForm({
             assetIds={assetIds} onAssetSelect={(val) => setAssetIds(val as string[])}
             assetOptions={assetOptions} isAssetsLoading={false} onFetchAssets={() => handleFetch("assets", setAssetOptions)} onCreateAsset={() => toast("Open Create Asset Modal")}
             activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown}
-            linkedProcedure={linkedProcedure} onRemoveProcedure={() => setLinkedProcedure(null)} onPreviewProcedure={() => setIsPreviewOpen(true)} onEditProcedure={handleEditLinkedProcedure} onOpenProcedureModal={() => setIsAddProcModalOpen(true)} setLinkedProcedure={setLinkedProcedure} 
+            linkedProcedure={linkedProcedure} onRemoveProcedure={() => setLinkedProcedure(null)} onPreviewProcedure={() => setIsPreviewOpen(true)} onEditProcedure={handleEditLinkedProcedure} setLinkedProcedure={setLinkedProcedure} 
           />
           <AssignmentAndScheduling
             selectedUsers={selectedUsers} setSelectedUsers={setSelectedUsers}
             dueDate={dueDate} setDueDate={setDueDate} startDate={startDate} setStartDate={setStartDate}
             selectedWorkType={selectedWorkType} setSelectedWorkType={setSelectedWorkType}
-            recurrenceRule={recurrenceRule} setRecurrenceRule={setRecurrenceRule} recurrence="Custom" setRecurrence={() => {}}
+            recurrenceRule={recurrenceRule} setRecurrenceRule={setRecurrenceRule}
             onOpenInviteModal={() => toast("Invite modal open")} initialAssignees={assigneeOptions}
-            estimatedTime={estimatedTime} setEstimatedTime={setEstimatedTime}
+
           />
           <WorkOrderClassificationAndLinks
             selectedPriority={selectedPriority} onPriorityChange={setSelectedPriority}
+            status={status} onStatusChange={setStatus}
             qrCodeValue={qrCodeValue} onQrCodeChange={setQrCodeValue}
             teamIds={teamIds} onTeamSelect={(val) => setTeamIds(val as string[])} teamOptions={teamOptions} isTeamsLoading={false} onFetchTeams={() => handleFetch("team-members", setTeamOptions)} onCreateTeam={() => toast("Open Create Team Modal")}
             categoryIds={categoryIds} onCategorySelect={(val) => setCategoryIds(val as string[])} categoryOptions={categoryOptions} isCategoriesLoading={false} onFetchCategories={() => handleFetch("categories", setCategoryOptions)} onCreateCategory={() => toast("Open Create Category Modal")}

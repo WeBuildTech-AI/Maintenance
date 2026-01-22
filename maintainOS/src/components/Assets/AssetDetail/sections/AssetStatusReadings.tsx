@@ -7,7 +7,9 @@ import { useState, useEffect } from "react";
 import { Button } from "../../../ui/button";
 // Make sure this path to your thunk is correct
 import { assetService, updateAssetStatus } from "../../../../store/assets";
+import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import NewWorkOrderModal from "../../../work-orders/NewWorkOrderModal";
 
 // --- Main Component ---
 export function AssetStatusReadings({
@@ -34,6 +36,12 @@ export function AssetStatusReadings({
   useEffect(() => {
     setAssetStatus(asset?.status || "online");
   }, [asset]);
+  
+  // Offline work order prompt
+  const [isOfflinePromptOpen, setIsOfflinePromptOpen] = useState(false);
+  const [isNewWorkOrderModalOpen, setIsNewWorkOrderModalOpen] = useState(false);
+  const [woPrefillData, setWoPrefillData] = useState<any>(null);
+  const navigate = useNavigate();
 
   const statuses = [
     { name: "Online", value: "online", color: "bg-green-500" },
@@ -94,6 +102,11 @@ export function AssetStatusReadings({
 
       setIsModalOpen(false);
       toast.success("Asset Status Successfully updated");
+      
+      // ✅ Check if status changed to offline - show work order prompt
+      if (finalStatusData.status?.toLowerCase() === 'offline') {
+        setIsOfflinePromptOpen(true);
+      }
     } catch (error: any) {
       console.error("Failed to update asset status:", error);
       toast.error(error?.message || "Failed to update Asset Status");
@@ -114,6 +127,31 @@ export function AssetStatusReadings({
           isLoading={isLoading}
         />
       )}
+      
+      {/* \u2705 Offline Work Order Prompt */}
+      <OfflinePromptModal
+        isOpen={isOfflinePromptOpen}
+        onClose={() => setIsOfflinePromptOpen(false)}
+        onCreateWorkOrder={() => {
+          setIsOfflinePromptOpen(false);
+          setWoPrefillData({
+            assetIds: [asset.id],
+            assetName: asset.name,
+            locationId: asset.locationId,
+            locationName: asset.location?.name,
+            assetStatus: "offline",
+            assetStatusSince: new Date().toISOString(),
+          });
+          setIsNewWorkOrderModalOpen(true);
+        }}
+      />
+
+      {/* ✅ Inline New Work Order Modal */}
+      <NewWorkOrderModal
+        isOpen={isNewWorkOrderModalOpen}
+        onClose={() => setIsNewWorkOrderModalOpen(false)}
+        prefillData={woPrefillData}
+      />
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-medium">Status</h2>
         {seeMoreFlag === false ? null : (
@@ -635,6 +673,64 @@ export function UpdateAssetStatusModal({
             </Button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+// \u2705 Offline Asset Work Order Prompt Modal
+interface OfflinePromptModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onCreateWorkOrder: () => void;
+}
+
+function OfflinePromptModal({ isOpen, onClose, onCreateWorkOrder }: OfflinePromptModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 300,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "rgba(0,0,0,0.3)",
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          width: "400px",
+          backgroundColor: "white",
+          borderRadius: "10px",
+          boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+          padding: "24px",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          Your asset is offline
+        </h2>
+        <p className="text-gray-600 mb-6">
+          Would you like to create a work order for this offline asset?
+        </p>
+        <div className="flex gap-3 justify-end">
+          <Button
+            onClick={onClose}
+            className="bg-gray-100 text-gray-700 hover:bg-gray-200"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={onCreateWorkOrder}
+            className="bg-orange-600 text-white hover:bg-orange-700"
+          >
+            Create Work Order
+          </Button>
+        </div>
       </div>
     </div>
   );

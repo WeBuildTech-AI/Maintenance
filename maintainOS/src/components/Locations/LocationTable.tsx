@@ -421,8 +421,13 @@ export function LocationTable({
       icon: loc.icon,
       description: loc.description || "—",
       address: loc.address || "—",
-      teams: loc.teamsInCharge || "—",
-      vendor: loc.vendorId?.name || "—", // Safe navigation
+      teams: Array.isArray(loc.teamsInCharge)
+        ? loc.teamsInCharge.map((t: any) => t.name).join(", ")
+        : "—",
+      vendor:
+        Array.isArray(loc.vendors) && loc.vendors.length > 0
+          ? loc.vendors.map((v: any) => v.name).join(", ")
+          : loc.vendorId?.name || "—",
       createdAt: loc.createdAt || "—",
       updatedAt: loc.updatedAt || "—",
       fullLocation: loc, // Original object
@@ -481,7 +486,6 @@ export function LocationTable({
           onClose={() => setIsLocationTableModalOpen(false)}
           data={selectedLocationTableData.fullLocation}
           fetchData={fetchLocations}
-          restoreData="" 
           showDeleted={showDeleted}
         />
       )}

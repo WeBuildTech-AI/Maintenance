@@ -1,5 +1,4 @@
-"use client";
-import { useEffect, useState, FC, useMemo, useCallback } from "react";
+import { useEffect, useState, type FC, useMemo, useCallback, useRef } from "react";
 import { AssetDetail } from "./AssetDetail/AssetDetail";
 import { AssetsList } from "./AssetsList/AssetsList";
 import { NewAssetForm } from "./NewAssetForm/NewAssetForm";
@@ -7,7 +6,7 @@ import { AssetTable } from "./AssetsTable/AssetTable";
 import { AssetHeaderComponent } from "./AssetsHeader/AssetsHeader";
 import type { ViewMode } from "../purchase-orders/po.types";
 import { assetService, createAsset, deleteAsset } from "../../store/assets";
-import {
+import type {
   FetchAssetsParams,
   CreateAssetData,
 } from "../../store/assets/assets.types";
@@ -29,7 +28,7 @@ export interface Asset {
   updatedAt: string;
   createdAt: string;
   location: Location;
-  meters: any[];
+  meters?: any[]; // Made optional
   [key: string]: any;
 }
 
@@ -73,8 +72,9 @@ export const Assets: FC = () => {
 
   const [loading, setLoading] = useState(false);
   const [assetData, setAssetData] = useState<Asset[]>([]);
-  const [sortType, setSortType] = useState("Name");
-  const [sortOrder, setSortOrder] = useState("asc");
+  const [sortType, setSortType] = useState("Creation Date");
+  const [sortOrder, setSortOrder] = useState("desc");
+  const [shouldSelectFirst, setShouldSelectFirst] = useState(false);
   const [allLocationData, setAllLocationData] = useState<Location[]>([]);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -85,7 +85,24 @@ export const Assets: FC = () => {
   const itemsPerPage = 10;
   const paramAssetId = searchParams.get("assetId");
 
-  // --- 2. Sync State -> URL ---
+  // --- 2. Sync URL -> State (for Back button support) ---
+  useEffect(() => {
+    const moreDetailsInUrl = searchParams.get("moreDetails") === "true";
+    if (moreDetailsInUrl !== seeMoreAssetStatus) {
+      setSeeMoreAssetStatus(moreDetailsInUrl);
+    }
+    
+    const assetIdInUrl = searchParams.get("assetId");
+    if (assetIdInUrl && selectedAsset && String(selectedAsset.id) !== String(assetIdInUrl)) {
+       const found = assetData.find((a: any) => String(a.id) === String(assetIdInUrl));
+       if (found) setSelectedAsset(found);
+    }
+  }, [searchParams, assetData]);
+
+  // --- 3. Sync State -> URL ---
+  const prevSeeMoreRef = useRef(seeMoreAssetStatus);
+  const prevSelectedAssetIdRef = useRef(selectedAsset?.id);
+
   useEffect(() => {
     const params: any = {};
     if (debouncedSearch) params.search = debouncedSearch;
@@ -105,7 +122,17 @@ export const Assets: FC = () => {
       }
     });
 
-    setSearchParams(params, { replace: true });
+    // ✅ CRITICAL FIX: Push to history ONLY if state changed AND doesn't match URL (user action)
+    // If state changed but ALREADY matches URL, it's a back/forward sync -> use replace
+    const isNavigationalChange = 
+      (prevSeeMoreRef.current !== seeMoreAssetStatus || prevSelectedAssetIdRef.current !== selectedAsset?.id) &&
+      (String(params.moreDetails || "false") !== String(searchParams.get("moreDetails") || "false") || 
+       String(params.assetId || "") !== String(searchParams.get("assetId") || ""));
+
+    setSearchParams(params, { replace: !isNavigationalChange });
+    
+    prevSeeMoreRef.current = seeMoreAssetStatus;
+    prevSelectedAssetIdRef.current = selectedAsset?.id;
   }, [
     debouncedSearch,
     seeMoreAssetStatus,
@@ -147,30 +174,18 @@ export const Assets: FC = () => {
 
         // Case A: URL mein ID hai (Direct link ya refresh)
         if (urlAssetId) {
-          const found = assets.find((a) => String(a.id) === String(urlAssetId));
+          const found = assets.find((a: any) => String(a.id) === String(urlAssetId));
           if (found) {
             setSelectedAsset(found);
           } else {
-            // ID invalid hai toh default recent asset lo
-            const mostRecent = [...assets].sort(
-              (a, b) =>
-                new Date(b.updatedAt).getTime() -
-                new Date(a.updatedAt).getTime()
-            );
-            setSelectedAsset(mostRecent[0]);
+            // ID invalid hai or not found, trigger auto select first
+            setShouldSelectFirst(true);
           }
         }
         // Case B: URL mein ID nahi hai
         else {
-          // ✅ CRITICAL FIX: Agar pehle se koi asset selected hai (memory mein), toh usse mat chhedo.
-          // Ye tab kaam aayega jab aap Table se wapis Panel mein aaoge.
           if (!selectedAsset) {
-            const mostRecent = [...assets].sort(
-              (a, b) =>
-                new Date(b.updatedAt).getTime() -
-                new Date(a.updatedAt).getTime()
-            );
-            setSelectedAsset(mostRecent[0]);
+             setShouldSelectFirst(true);
           }
         }
       } else {
@@ -195,14 +210,6 @@ export const Assets: FC = () => {
         (a: any) => String(a.id) === String(paramAssetId)
       );
       if (found && found.id !== selectedAsset?.id) setSelectedAsset(found);
-    } else {
-      if (!selectedAsset) {
-        const mostRecent = [...assetData].sort(
-          (a: any, b: any) =>
-            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-        );
-        setSelectedAsset(mostRecent[0]);
-      }
     }
   }, [assetData, paramAssetId]);
 
@@ -338,9 +345,14 @@ export const Assets: FC = () => {
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
   const paginatedAssets = sortedAndFilteredAssets.slice(startIndex, endIndex);
 
+  // Auto-Select First Item on Sort Change (Restored)
   useEffect(() => {
-    setCurrentPage(1);
-  }, [sortType, sortOrder, debouncedSearch, filterParams]);
+    if (shouldSelectFirst && sortedAndFilteredAssets.length > 0) {
+      const firstAsset = sortedAndFilteredAssets[0];
+      setSelectedAsset(firstAsset);
+      setShouldSelectFirst(false);
+    }
+  }, [shouldSelectFirst, sortedAndFilteredAssets]);
 
   // ✅ New Handler to switch asset and close edit mode
   const handleSelectAsset = useCallback((asset: Asset) => {
@@ -352,7 +364,7 @@ export const Assets: FC = () => {
   const handleDeleteAsset = useCallback(
     (id: string | number) => {
       const currentIndex = assetData.findIndex((a) => a.id === id);
-      dispatch(deleteAsset(id))
+      dispatch(deleteAsset(String(id)))
         .unwrap()
         .then(() => {
           const newAssetList = assetData.filter((asset) => asset.id !== id);
@@ -417,9 +429,15 @@ export const Assets: FC = () => {
                   setShowNewAssetForm={setShowNewAssetForm}
                   loading={loading}
                   sortType={sortType}
-                  setSortType={setSortType}
+                  setSortType={(t) => {
+                     setSortType(t);
+                     setShouldSelectFirst(true);
+                  }}
                   sortOrder={sortOrder}
-                  setSortOrder={setSortOrder}
+                  setSortOrder={(o) => {
+                     setSortOrder(o);
+                     setShouldSelectFirst(true);
+                  }}
                   allLocationData={allLocationData}
                   currentPage={currentPage}
                   setCurrentPage={setCurrentPage}
@@ -485,13 +503,20 @@ export const Assets: FC = () => {
               </div>
             )}
           </>
-        ) : (
+        ) : selectedAsset ? (
           <AssetStatusMoreDetails
             setSeeMoreAssetStatus={setSeeMoreAssetStatus}
-            asset={selectedAsset!}
+            asset={selectedAsset}
             fetchAssetsData={fetchAssetsData}
             setShowNewAssetForm={setShowNewAssetForm}
           />
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <div className="flex flex-col items-center">
+               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mb-4"></div>
+               <p className="text-gray-500">Loading asset details...</p>
+            </div>
+          </div>
         )}
       </div>
     </>

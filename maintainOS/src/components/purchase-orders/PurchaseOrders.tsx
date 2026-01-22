@@ -136,8 +136,9 @@ export function PurchaseOrders() {
   const [approveModal, setApproveModal] = useState(false);
 
   // ✅ Sorting State
-  const [sortType, setSortType] = useState("Last Updated");
+  const [sortType, setSortType] = useState("Creation Date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [shouldSelectFirst, setShouldSelectFirst] = useState(false); // Added for auto-selection logic
   
   // ✅ Sort Dropdown State (Updated Logic)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -340,6 +341,20 @@ export function PurchaseOrders() {
   // 👇 3. SYNC SELECTION & EDIT STATE WITH URL
   useEffect(() => {
     if (getPurchaseOrderData.length === 0) return;
+    
+    // Auto-select logic
+    if (viewMode === "panel") {
+        if (shouldSelectFirst) {
+            navigate(`/purchase-orders/${getPurchaseOrderData[0].id}`, { replace: true });
+            setShouldSelectFirst(false);
+            return;
+        } else if (!routeId && !isCreateRoute) {
+            navigate(`/purchase-orders/${getPurchaseOrderData[0].id}`, {
+              replace: true,
+            });
+            return; 
+        }
+    }
 
     if (routeId) {
       // Avoid matching "create" keyword as an ID
@@ -356,17 +371,15 @@ export function PurchaseOrders() {
         }
       }
     } else {
-      if (viewMode === "panel") {
-        if (!selectedPOId && getPurchaseOrderData.length > 0) {
-          navigate(`/purchase-orders/${getPurchaseOrderData[0].id}`, {
-            replace: true,
-          });
-        }
-      } else {
-        setSelectedPOId(null);
-      }
+        // If not create route and no routeId, and not auto-selecting, verify selection state
+       if (viewMode === "panel" && !selectedPOId && !isCreateRoute) {
+           // handled above
+       } else if (viewMode !== 'panel') {
+          setSelectedPOId(null);
+       }
     }
-  }, [routeId, getPurchaseOrderData, editMatch, newPO.id]);
+  }, [routeId, getPurchaseOrderData, editMatch, newPO.id, shouldSelectFirst, viewMode, isCreateRoute]);
+
 
   // ✅ CRITICAL FIX: FORCE RESET STATE ON /create ROUTE
   useEffect(() => {
@@ -1296,17 +1309,18 @@ export function PurchaseOrders() {
                           onClick={() => {
                             setSortType(section.label);
                             setSortOrder(currentOrder);
-                            setIsDropdownOpen(false); // Close dropdown on selection
+                            setShouldSelectFirst(true); // ✅ Trigger auto-select
+                            setIsDropdownOpen(false);
                           }}
                           className={`flex items-center justify-between px-6 py-2 text-left text-sm transition rounded-md ${
                             isSelected
-                              ? "text-orange-600 bg-white"
-                              : "text-gray-700 hover:text-blue-300 hover:bg-white"
+                              ? "text-blue-600 bg-blue-50 font-medium"
+                              : "text-gray-700 hover:text-blue-500 hover:bg-white"
                           }`}
                         >
                           {opt}
                           {isSelected && (
-                            <Check className="w-3.5 h-3.5 text-blue-300" />
+                            <Check className="w-3.5 h-3.5 text-blue-500" />
                           )}
                         </button>
                       );

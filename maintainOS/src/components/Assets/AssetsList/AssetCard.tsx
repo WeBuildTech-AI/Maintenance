@@ -1,11 +1,14 @@
 import { Factory, MapPin, Activity } from "lucide-react";
 import { renderInitials } from "../../utils/renderInitials";
+import { formatLabel } from "../../utils/asset_formater";
 
 export function AssetCard({
+  
   asset,
   selected,
   onSelect,
 }: {
+  
   asset: any;
   selected: boolean;
   onSelect: () => void;
@@ -13,6 +16,8 @@ export function AssetCard({
   setShowNewAssetForm?: any;
   allLocationData?: any;
 }) {
+  
+
   return (
     <div
       onClick={onSelect}
@@ -62,7 +67,8 @@ export function AssetCard({
                     : "bg-yellow-500"
                 }`}
               />
-              {asset.status || "Unknown"}
+              {formatLabel(asset.status) || "Unknown"}
+
             </span>
           </div>
 

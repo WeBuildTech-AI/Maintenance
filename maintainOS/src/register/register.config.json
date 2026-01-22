@@ -1,0 +1,205 @@
+{
+  "page": {
+    "route": "/register",
+    "type": "static",
+    "responsive": true
+  },
+
+  "layout": {
+    "type": "two-column",
+    "gap": 0,
+    "height": "100vh",
+    "backgroundColor": "#FFF9EE"
+  },
+
+  "leftSection": {
+    "type": "image-panel",
+    "width": "50%",
+    "image": {
+      "src": "/LGPic.svg",
+      "fit": "cover",
+      "overlay": true
+    },
+    "content": {
+      "heading": {
+        "text": "Run maintenance without chaos.",
+        "fontFamily": "Montserrat",
+        "fontSize": "54px",
+        "fontWeight": 700,
+        "lineHeight": "100%",
+        "color": "#FFFFFF"
+      },
+      "subText": {
+        "text": "Track assets, manage work orders, and reduce downtime — all in one place.",
+        "fontFamily": "Poppins",
+        "fontSize": "22px",
+        "fontWeight": 300,
+        "lineHeight": "100%",
+        "color": "#FFFFFF"
+      }
+    },
+    "padding": {
+      "horizontal": "48px",
+      "vertical": "48px"
+    }
+  },
+
+  "rightSection": {
+    "type": "form-panel",
+    "width": "50%",
+    "alignment": "center",
+    "contentWidth": "533px",
+    "padding": {
+      "top": "80px",
+      "bottom": "80px"
+    }
+  },
+
+  "header": {
+    "title": {
+      "text": "Create an account"
+    },
+    "subtitle": {
+      "text": "No credit card required. Setup takes under ",
+      "highlight": {
+        "text": "5 minutes."
+      },
+      "suffix": ""
+    }
+  },
+
+  "form": {
+    "fields": [
+      {
+        "row": [
+          {
+            "name": "firstName",
+            "placeholder": "Anubha",
+            "type": "input"
+          },
+          {
+            "name": "lastName",
+            "placeholder": "Last name",
+            "type": "input"
+          }
+        ]
+      },
+      {
+        "name": "phone",
+        "placeholder": "Phone No.",
+        "type": "input"
+      },
+      {
+        "name": "email",
+        "placeholder": "Enter Email",
+        "type": "email"
+      },
+      {
+        "name": "password",
+        "placeholder": "Enter Password",
+        "type": "password"
+      },
+      {
+        "name": "confirmPassword",
+        "placeholder": "Re enter Password",
+        "type": "password"
+      },
+      {
+        "name": "role",
+        "placeholder": "Select Role",
+        "type": "select",
+        "options": [
+          "Admin",
+          "Manager",
+          "Technician"
+        ]
+      }
+    ]
+  },
+
+  "checkbox": {
+    "label": "I agree to the Terms and Conditions",
+    "linkText": "Terms and Conditions"
+  },
+
+  "primaryButton": {
+    "text": "Create account"
+  },
+
+  "footerText": {
+    "text": "Already have an account? ",
+    "actionText": "Log In"
+  },
+
+  "otpForm": {
+    "container": {
+      "width": "501px",
+      "height": "358px",
+      "padding": "32px",
+      "alignment": "center"
+    },
+
+    "title": {
+      "text": "Verify Mobile No.",
+      "font": "Montserrat",
+      "weight": 700,
+      "size": "32px",
+      "lineHeight": "100%",
+      "letterSpacing": "4%",
+      "color": "#000000",
+      "marginBottom": "6px"
+    },
+
+    "subtitle": {
+      "text": "Enter the OTP sent to the registered Phone no.",
+      "font": "Poppins",
+      "weight": 300,
+      "size": "12px",
+      "lineHeight": "100%",
+      "letterSpacing": "4%",
+      "color": "#000000",
+      "marginBottom": "48px"
+    },
+
+    "otpInputs": {
+      "count": 6,
+      "gap": "10px",
+      "marginBottom": "12px",
+      "box": {
+        "width": "54px",
+        "height": "57px",
+        "radius": "9.7px",
+        "border": "0.81px solid #FFB000",
+        "fontSize": "20px",
+        "textAlign": "center"
+      }
+    },
+
+    "resendText": {
+      "text": "Resending in 1:30s",
+      "font": "Poppins",
+      "weight": 300,
+      "size": "10px",
+      "letterSpacing": "4%",
+      "alignment": "right",
+      "highlight": {
+        "text": "1:30s",
+        "weight": 700
+      },
+      "marginBottom": "48px"
+    },
+
+    "verifyButton": {
+      "text": "Verify",
+      "width": "374px",
+      "height": "47px",
+      "radius": "12px",
+      "background": "#FFC649",
+      "opacity": "52%",
+      "font": "Montserrat",
+      "weight": 700,
+      "size": "20px",
+      "color": "#FFFFFF"
+    }
+  }
+}

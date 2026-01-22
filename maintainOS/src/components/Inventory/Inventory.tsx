@@ -41,8 +41,8 @@ export function Inventory() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
   //  Sorting states
-  const [sortType, setSortType] = useState("Name");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [sortType, setSortType] = useState("Creation Date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
@@ -50,6 +50,7 @@ export function Inventory() {
   const modalRef = useRef<HTMLDivElement>(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
+  const [shouldSelectFirst, setShouldSelectFirst] = useState(false);
 
   // ✅ PAGINATION STATE
   const [currentPage, setCurrentPage] = useState(1);
@@ -162,6 +163,25 @@ export function Inventory() {
     return sorted;
   }, [parts, sortType, sortOrder]);
 
+  // ✅ Auto-Selection Logic
+  useEffect(() => {
+    if (viewMode === 'panel' && sortedParts.length > 0) {
+      // Basic check to see if we possess an ID in the URL.
+      // Current path: /inventory or /inventory/:id or /inventory/create ...
+      // We want to avoid overriding /create or /edit
+      const isCreateOrEdit = location.pathname.includes('/create') || location.pathname.includes('/edit');
+      const hasId = location.pathname !== '/inventory' && location.pathname !== '/inventory/';
+      
+      if (shouldSelectFirst) {
+          navigate(`/inventory/${sortedParts[0].id}`);
+          setShouldSelectFirst(false);
+      } else if (!hasId && !isCreateOrEdit) {
+          // Initial load default selection
+           navigate(`/inventory/${sortedParts[0].id}`, { replace: true });
+      }
+    }
+  }, [sortedParts, shouldSelectFirst, viewMode, location.pathname, navigate]);
+
   // ✅ CLIENT-SIDE PAGINATION LOGIC
   const totalItems = sortedParts.length;
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -234,7 +254,7 @@ export function Inventory() {
                   onClick={() => setIsDropdownOpen((p) => !p)}
                   className="flex items-center gap-1 text-blue-600 font-medium focus:outline-none hover:text-blue-700"
                 >
-                  {sortType} : {sortOrder === "asc" ? "Ascending" : "Descending"}
+                  {sortType} : {sortOrder === "asc" ? "Asc" : "Desc"}
                   {isDropdownOpen ? (
                     <ChevronUp className="w-4 h-4" />
                   ) : (
@@ -274,19 +294,30 @@ export function Inventory() {
                        </button>
                        {openSection === section.label && (
                          <div className="pl-4 pr-2 bg-gray-50 py-1 space-y-1">
-                            {section.options.map(opt => (
+                            {section.options.map(opt => {
+                              const isAsc = opt.includes("Asc") || opt.includes("Oldest") || opt.includes("Least") || opt.includes("Lowest");
+                              const isSelected = sortType === section.label && sortOrder === (isAsc ? "asc" : "desc");
+
+                              return (
                                <button 
                                   key={opt}
                                   onClick={() => {
                                       setSortType(section.label);
-                                      setSortOrder(opt.includes("Asc") || opt.includes("Oldest") || opt.includes("Least") || opt.includes("Lowest") ? "asc" : "desc");
+                                      setSortOrder(isAsc ? "asc" : "desc");
+                                      setShouldSelectFirst(true);
                                       setIsDropdownOpen(false);
                                   }}
-                                  className="w-full text-left text-xs px-2 py-1.5 hover:bg-white rounded text-gray-600"
+                                  className={`w-full flex items-center justify-between text-left text-xs px-2 py-1.5 rounded transition-colors ${
+                                      isSelected
+                                        ? "text-blue-600 bg-blue-50 font-medium"
+                                        : "text-gray-600 hover:bg-gray-100"
+                                    }`}
                                >
-                                  {opt}
+                                  <span>{opt}</span>
+                                  {isSelected && <Check className="w-3.5 h-3.5 text-blue-600" />}
                                </button>
-                            ))}
+                              );
+                            })}
                          </div>
                        )}
                     </div>

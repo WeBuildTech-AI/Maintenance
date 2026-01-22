@@ -47,10 +47,11 @@ export const procedureService = {
     return res.data;
   },
 
-  // ✅ DELETE: Delete a procedure template
   deleteProcedure: async (id: string): Promise<void> => {
-    // API: DELETE /procedures/{id}
-    await api.delete(`procedures/${id}`);
+    // API: DELETE /procedures/batch-delete
+    await api.delete(`procedures/batch-delete`, {
+      data: { ids: [id] },
+    });
   },
 
   // ✅ POST: Duplicate an existing procedure template

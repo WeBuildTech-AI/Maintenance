@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Check } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Route,
@@ -35,11 +35,12 @@ export function Vendors() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
   // Sorting States
-  const [sortType, setSortType] = useState("Name");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [sortType, setSortType] = useState("Creation Date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
+  const [shouldSelectFirst, setShouldSelectFirst] = useState(false);
 
   const headerRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -162,6 +163,22 @@ export function Vendors() {
     return sorted;
   }, [vendors, sortType, sortOrder]);
 
+  // ✅ Auto-Selection Logic
+  useEffect(() => {
+    if (viewMode === 'panel' && sortedVendors.length > 0) {
+      const isCreateOrEdit = location.pathname.includes('/create') || location.pathname.includes('/edit');
+      const hasId = location.pathname !== '/vendors' && location.pathname !== '/vendors/';
+      
+      if (shouldSelectFirst) {
+          navigate(`/vendors/${sortedVendors[0].id}`);
+          setShouldSelectFirst(false);
+      } else if (!hasId && !isCreateOrEdit) {
+          // Initial load default selection
+           navigate(`/vendors/${sortedVendors[0].id}`, { replace: true });
+      }
+    }
+  }, [sortedVendors, shouldSelectFirst, viewMode, location.pathname, navigate]);
+
   // Pagination Logic
   const totalItems = sortedVendors.length;
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -222,7 +239,7 @@ export function Vendors() {
                   className="flex items-center gap-1 text-blue-600 font-medium focus:outline-none hover:text-blue-700"
                 >
                   {sortType} :{" "}
-                  {sortOrder === "asc" ? "Ascending" : "Descending"}
+                  {sortOrder === "asc" ? "Asc" : "Desc"}
                   {isDropdownOpen ? (
                     <ChevronUp className="w-4 h-4" />
                   ) : (
@@ -278,25 +295,37 @@ export function Vendors() {
                       </button>
                       {openSection === section.label && (
                         <div className="pl-4 pr-2 bg-gray-50 py-1 space-y-1">
-                          {section.options.map((opt) => (
-                            <button
-                              key={opt}
-                              onClick={() => {
-                                setSortType(section.label);
-                                setSortOrder(
-                                  opt.includes("Asc") ||
-                                    opt.includes("Oldest") ||
-                                    opt.includes("Least")
-                                    ? "asc"
-                                    : "desc"
-                                );
-                                setIsDropdownOpen(false);
-                              }}
-                              className="w-full text-left text-xs px-2 py-1.5 hover:bg-white rounded text-gray-600"
-                            >
-                              {opt}
-                            </button>
-                          ))}
+                          {section.options.map((opt) => {
+                            const isAsc =
+                              opt.includes("Asc") ||
+                              opt.includes("Oldest") ||
+                              opt.includes("Least");
+                            const isSelected =
+                              sortType === section.label &&
+                              sortOrder === (isAsc ? "asc" : "desc");
+
+                            return (
+                              <button
+                                key={opt}
+                                onClick={() => {
+                                  setSortType(section.label);
+                                  setSortOrder(isAsc ? "asc" : "desc");
+                                  setShouldSelectFirst(true);
+                                  setIsDropdownOpen(false);
+                                }}
+                                className={`w-full flex items-center justify-between text-left text-xs px-2 py-1.5 rounded transition-colors ${
+                                  isSelected
+                                    ? "text-blue-600 bg-blue-50 font-medium"
+                                    : "text-gray-600 hover:bg-gray-100"
+                                }`}
+                              >
+                                <span>{opt}</span>
+                                {isSelected && (
+                                  <Check className="w-3.5 h-3.5 text-blue-600" />
+                                )}
+                              </button>
+                            );
+                          })}
                         </div>
                       )}
                     </div>

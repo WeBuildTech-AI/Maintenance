@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Calendar, Clock, X } from "lucide-react"; 
+import { Calendar, X } from "lucide-react"; 
 import { fetchFilterData } from "../../utils/filterDataFetcher";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
@@ -11,7 +11,11 @@ import { DynamicSelect } from "./DynamicSelect";
  * Safely parses a string into a Date object.
  * Returns a new Date object (Local time) if the string is empty or invalid.
  */
-const safeParseDate = (dateStr: string) => {
+/**
+ * Safely parses a string into a Date object.
+ * Returns a new Date object (Local time) if the string is empty or invalid.
+ */
+export const safeParseDate = (dateStr: string) => {
   if (!dateStr) return new Date();
   const d = new Date(dateStr);
   return isNaN(d.getTime()) ? new Date() : d;
@@ -20,7 +24,7 @@ const safeParseDate = (dateStr: string) => {
 /**
  * Extracts "HH:mm" (Local Time) from an ISO string for the Time Picker UI.
  */
-const getTimeString = (dateStr: string) => {
+export const getTimeString = (dateStr: string) => {
   if (!dateStr) return "00:00";
   const d = safeParseDate(dateStr);
   const hours = d.getHours().toString().padStart(2, "0");
@@ -31,7 +35,7 @@ const getTimeString = (dateStr: string) => {
 /**
  * Formats the date string to "MM/DD/YYYY" for the Input field.
  */
-const getDisplayDate = (dateStr: string) => {
+export const getDisplayDate = (dateStr: string) => {
   if (!dateStr) return "";
   const d = safeParseDate(dateStr);
   return d.toLocaleDateString("en-US"); // e.g., 1/2/2026
@@ -41,7 +45,7 @@ const getDisplayDate = (dateStr: string) => {
  * ✅ CRITICAL FIX: Constructs a secure ISO string.
  * This function guarantees that the Local Time you pick is preserved when converting to the ISO Payload.
  */
-const constructSecureISO = (currentIso: string, newDate?: Date, newTimeStr?: string) => {
+export const constructSecureISO = (currentIso: string, newDate?: Date, newTimeStr?: string) => {
   // 1. Create a Base Date object from the current value
   let d = safeParseDate(currentIso);
 
@@ -94,7 +98,7 @@ interface TimePickerProps {
   className?: string;
 }
 
-const TimePickerInput = ({ value, onChange, onClear, className }: TimePickerProps) => {
+export const TimePickerInput = ({ value, onChange, onClear, className }: TimePickerProps) => {
   const [isOpenH, setIsOpenH] = useState(false);
   const [isOpenM, setIsOpenM] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -148,14 +152,14 @@ const TimePickerInput = ({ value, onChange, onClear, className }: TimePickerProp
         <X className="h-4 w-4" />
       </div>
       {isOpenH && (
-        <div ref={hourListRef} className="absolute top-full left-0 mt-1 w-20 bg-white border border-gray-200 rounded-lg shadow-xl z-[9999]" style={{ maxHeight: "145px", overflowY: "auto" }}>
+        <div ref={hourListRef} className="absolute top-full left-0 mt-1 w-20 bg-white border border-gray-200 rounded-lg shadow-xl" style={{ maxHeight: "145px", overflowY: "auto", zIndex: 99999 }}>
           {Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, "0")).map((h) => (
             <div key={h} data-value={h} onClick={(e) => { e.stopPropagation(); onChange(`${h}:${minutes || "00"}`); setIsOpenH(false); }} className={`px-3 py-2 text-sm cursor-pointer text-center hover:bg-gray-50 ${hours === h ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}>{h}</div>
           ))}
         </div>
       )}
       {isOpenM && (
-        <div ref={minuteListRef} className="absolute top-full left-10 mt-1 w-20 bg-white border border-gray-200 rounded-lg shadow-xl z-[9999]" style={{ maxHeight: "145px", overflowY: "auto" }}>
+        <div ref={minuteListRef} className="absolute top-full left-10 mt-1 w-20 bg-white border border-gray-200 rounded-lg shadow-xl" style={{ maxHeight: "145px", overflowY: "auto", zIndex: 99999 }}>
           {Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, "0")).map((m) => (
             <div key={m} data-value={m} onClick={(e) => { e.stopPropagation(); onChange(`${hours || "00"}:${m}`); setIsOpenM(false); }} className={`px-3 py-2 text-sm cursor-pointer text-center hover:bg-gray-50 ${minutes === m ? 'bg-blue-50 text-blue-600' : 'text-gray-700'}`}>{m}</div>
           ))}
@@ -203,7 +207,7 @@ export function AssignmentAndScheduling({
   dueTime,
 }: Props) {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [selectedFreq, setSelectedFreq] = useState("Does not repeat");
+  const [selectedFreq, setSelectedFreq] = useState("");
   const [users, setUsers] = useState<{ id: string; name: string }[]>(initialAssignees);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -325,6 +329,13 @@ export function AssignmentAndScheduling({
     setStartDate(iso);
   };
 
+  const toggleDay = (dayIndex: number) => {
+    setSelectedWeekDays((prev) => {
+      if (prev.includes(dayIndex)) return prev.filter((d) => d !== dayIndex);
+      return [...prev, dayIndex].sort((a, b) => a - b);
+    });
+  };
+
   return (
     <>
       {/* Assigned To */}
@@ -357,10 +368,10 @@ export function AssignmentAndScheduling({
               value={getDisplayDate(dueDate)} 
               onClick={() => setShowDueCalendar(!showDueCalendar)} 
               placeholder="Select date" 
-              className="w-full h-12 px-4 pr-12 border border-gray-300 rounded-md text-gray-900 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white cursor-pointer transition-all shadow-sm placeholder-gray-400" 
+              className="w-full h-9 px-3 pr-10 border border-gray-300 rounded-md text-gray-900 text-[13px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white cursor-pointer transition-all shadow-sm placeholder-gray-400" 
             />
-            <div style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
-               <Calendar className="h-5 w-5 text-gray-400" />
+            <div style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
+               <Calendar className="h-4 w-4 text-gray-400" />
             </div>
             {showDueCalendar && (
               <div className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl p-4 animate-in fade-in zoom-in-95 duration-100">
@@ -381,14 +392,14 @@ export function AssignmentAndScheduling({
                     handleDueTimeChange("00:00"); 
                     setShowDueTimeInput(false); 
                 }}
-                className="w-full h-12 px-4 border border-gray-300 rounded-md text-gray-900 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all"
+                className="w-full h-9 px-3 border border-gray-300 rounded-md text-gray-900 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all"
               />
             </div>
           ) : (
             <button
               type="button"
               onClick={() => setShowDueTimeInput(true)}
-              className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-2 rounded-md transition-colors whitespace-nowrap h-12 flex items-center"
+              className="text-[13px] font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-md transition-colors whitespace-nowrap h-9 flex items-center"
             >
               + Add time
             </button>
@@ -407,10 +418,10 @@ export function AssignmentAndScheduling({
               value={getDisplayDate(startDate)} 
               onClick={() => setShowStartCalendar(!showStartCalendar)} 
               placeholder="Select date" 
-              className="w-full h-12 px-4 pr-12 border border-gray-300 rounded-md text-gray-900 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white cursor-pointer transition-all shadow-sm placeholder-gray-400" 
+              className="w-full h-9 px-3 pr-10 border border-gray-300 rounded-md text-gray-900 text-[13px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white cursor-pointer transition-all shadow-sm placeholder-gray-400" 
             />
-            <div style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
-               <Calendar className="h-5 w-5 text-gray-400" />
+            <div style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
+               <Calendar className="h-4 w-4 text-gray-400" />
             </div>
             {showStartCalendar && (
               <div className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl p-4 animate-in fade-in zoom-in-95 duration-100">
@@ -431,14 +442,14 @@ export function AssignmentAndScheduling({
                     handleStartTimeChange("00:00"); 
                     setShowStartTimeInput(false); 
                 }}
-                className="w-full h-12 px-4 border border-gray-300 rounded-md text-gray-900 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all"
+                className="w-full h-9 px-3 border border-gray-300 rounded-md text-gray-900 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all"
               />
             </div>
           ) : (
             <button
               type="button"
               onClick={() => setShowStartTimeInput(true)}
-              className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-2 rounded-md transition-colors whitespace-nowrap h-12 flex items-center"
+              className="text-[13px] font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-md transition-colors whitespace-nowrap h-9 flex items-center"
             >
               + Add time
             </button>

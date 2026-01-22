@@ -19,6 +19,7 @@ import {
    
 } from "../../store/workOrders/workOrders.thunks";
 import { clearSelectedWorkOrder } from "../../store/workOrders/workOrders.reducers";
+import { useNavigate } from "react-router-dom";
 
 import {
   startOfMonth,
@@ -377,6 +378,7 @@ export function CalendarView({ workOrders, onRefreshWorkOrders }: CalendarViewPr
   const dispatch = useAppDispatch();
   // Fetch active WO from Global State
   const selectedWorkOrder = useAppSelector((state) => state.workOrders.selectedWorkOrder);
+  const navigate = useNavigate();
 
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -405,9 +407,8 @@ export function CalendarView({ workOrders, onRefreshWorkOrders }: CalendarViewPr
       return;
     }
 
-    // ✅ DISPATCH GLOBAL ACTION
-    // This saves the state in Redux so it persists across panel switches
-    dispatch(fetchWorkOrderById(id));
+    // ✅ Navigate to URL instead of dispatching
+    navigate(`/work-orders/${id}`);
     
     // Clear other UI states
     setDayListModalData(null); 

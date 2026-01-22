@@ -26,6 +26,7 @@ export interface AssetLog {
   since: string;
   to: string | null;
   downtimeType: string | null;
+  duration?: string;
   createdAt: string;
   updatedAt: string;
   createdBy: string;
@@ -81,10 +82,11 @@ export interface UpdateAssetData {
 
 export interface UpdateAssetStatus {
   status: string;
-  notes: string;
-  since: string;
-  downtimeType: string;
-  userId: string;
+  notes?: string;
+  since?: string;
+  to?: string;
+  downtimeType?: string;
+  userId?: string; // Made optional to avoid breaking other calls if they rely on backend auth token for user
 }
 
 export interface FetchAssetsParams {

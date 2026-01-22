@@ -144,6 +144,7 @@ export function LinkedProcedurePreviewModal({
             rootFields={rootFields}
             sections={sections}
             resetKey={finalProcedure.id}
+            alwaysShowConditionalFields={true}
           />
         </div>
       </div>

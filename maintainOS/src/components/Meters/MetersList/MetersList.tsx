@@ -1,9 +1,8 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { ChevronDown, ChevronUp, Check } from "lucide-react"; // 👈 Import new icons
 import { Button } from "../../ui/button";
 import { MeterCard } from "./MeterCard";
 import Loader from "../../Loader/Loader";
-import RecordReadingModal from "../MeterDetail/RecordReadingModal";
 
 // Main component definition
 export function MetersList({
@@ -20,10 +19,12 @@ export function MetersList({
   startIndex,
   endIndex,
   totalItems,
+  sortType,
+  setSortType,
+  sortOrder,
+  setSortOrder,
 }: any) {
-  // --- STATE MANAGEMENT FOR SORTING & DROPDOWN ---
-  const [sortType, setSortType] = useState("Last Updated");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  // --- STATE MANAGEMENT FOR DROPDOWN ---
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>("Name");
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });

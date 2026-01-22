@@ -9,7 +9,7 @@ import { ProcedurePreviewModal } from "./components/ProcedurePreviewModal";
 import { useDispatch } from "react-redux";
 import { type RootState, type AppDispatch } from "../../../store"; 
 import { createProcedure, updateProcedure } from "../../../store/procedures/procedures.thunks"; 
-import { FieldData, ProcedureSettingsState } from "./types";
+import type { FieldData, ProcedureSettingsState } from "./types";
 
 interface BuilderProps {
   name: string;
@@ -31,14 +31,13 @@ export default function ProcedureBuilder({
   editingProcedureId,
   initialState, 
 }: BuilderProps) {
-  const [scoring, setScoring] = useState(false);
   const [activeTab, setActiveTab] = useState<"fields" | "settings">("fields");
   const [showPreview, setShowPreview] = useState(false);
 
   const [isSaving, setIsSaving] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
   
-  const { totalFieldCount, fields, settings } = useProcedureBuilder();
+  const { totalFieldCount, fields, settings, procedureName, procedureDescription } = useProcedureBuilder();
 
   const { sidebarWidth } = useLayout();
 
@@ -46,10 +45,11 @@ export default function ProcedureBuilder({
   const FOOTER_HEIGHT = 60;
 
   // --- Helper to remove IDs from payload (for clean JSON) ---
+  // --- Helper to remove IDs from payload (for clean JSON) ---
   const removeId = (obj: any) => {
     const { 
       id, 
-      condition,
+      // condition, // FIXED: Do NOT remove condition!
       parentId,
       sectionId, 
       ...rest 
@@ -86,7 +86,7 @@ export default function ProcedureBuilder({
     setIsSaving(true);
     
     // 1. Generate Current Payload
-    const currentPayload = preparePayload(fields, settings, name, description);
+    const currentPayload = preparePayload(fields, settings, procedureName, procedureDescription);
 
     try {
       if (editingProcedureId) {
@@ -184,7 +184,7 @@ export default function ProcedureBuilder({
           >
             <ChevronLeft size={20} />
           </button>
-          <span style={{ fontWeight: 500, color: "#111827" }}>{name}</span>
+          <span style={{ fontWeight: 500, color: "#111827" }}>{procedureName}</span>
         </div>
         <div
           style={{
@@ -223,47 +223,6 @@ export default function ProcedureBuilder({
           >
             Settings
           </span>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ cursor: "pointer" }}>Scoring</span>
-            <label
-              style={{
-                position: "relative",
-                display: "inline-flex",
-                alignItems: "center",
-                width: "36px",
-                height: "20px",
-                cursor: "pointer",
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={scoring}
-                onChange={() => setScoring(!scoring)}
-                style={{ display: "none" }}
-              />
-              <div
-                style={{
-                  backgroundColor: scoring ? "#2563eb" : "#374151",
-                  borderRadius: "9999px",
-                  width: "36px",
-                  height: "20px",
-                  transition: "background-color 0.2s",
-                }}
-              ></div>
-              <div
-                style={{
-                  position: "absolute",
-                  top: "2px",
-                  left: scoring ? "18px" : "2px",
-                  backgroundColor: "#fff",
-                  width: "16px",
-                  height: "16px",
-                  borderRadius: "50%",
-                  transition: "all 0.2s ease-in-out",
-                }}
-              ></div>
-            </label>
-          </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
           <div
@@ -348,7 +307,7 @@ export default function ProcedureBuilder({
         }}
       >
         {activeTab === "fields" ? (
-          <ProcedureBody name={name} description={description} />
+          <ProcedureBody name={procedureName} description={procedureDescription} />
         ) : (
           <ProcedureSettings />
         )}

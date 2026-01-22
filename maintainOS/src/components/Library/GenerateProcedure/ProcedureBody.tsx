@@ -1,6 +1,7 @@
 import { useProcedureBuilder } from "./ProcedureBuilderContext";
 import { type ProcedureBodyProps } from "./types";
 import { ProcedureSidebar } from "./ProcedureSidebar";
+import { useState } from "react";
 import { ProcedureBlock } from "./components/ProcedureBlock";
 import { ReorderSectionsModal } from "./components/ReorderSectionsModal";
 import {
@@ -16,7 +17,8 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { AddLinkModal } from "./components/AddLinkModal";
-import { Link2, Trash2 } from "lucide-react";
+import { AddConditionModal } from "./components/AddConditionModal";
+import { Link2, Trash2, Edit2 } from "lucide-react";
 
 export default function ProcedureBody({ name, description }: ProcedureBodyProps) {
   const {
@@ -33,8 +35,31 @@ export default function ProcedureBody({ name, description }: ProcedureBodyProps)
     linkModalRef,
     // --- 🐞 YEH ADD KIYA HAI ---
     findFieldRecursive,
+    isAddConditionModalOpen, // [NEW]
+    setIsAddConditionModalOpen, // [NEW]
+    setProcedureName // [NEW]
     // --- END ---
   } = useProcedureBuilder();
+
+  // --- Title Edit State ---
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [tempTitle, setTempTitle] = useState(name);
+
+  // Sync tempTitle if name prop changes from outside (optional but safer)
+  // useEffect(() => { setTempTitle(name); }, [name]);
+
+  const handleTitleSave = () => {
+    if (tempTitle.trim()) {
+       setProcedureName(tempTitle);
+    } else {
+       setTempTitle(name); // Revert if empty
+    }
+    setIsEditingTitle(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleTitleSave();
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -84,7 +109,32 @@ export default function ProcedureBody({ name, description }: ProcedureBodyProps)
             }`}
             onClick={() => setActiveContainerId("root")}
           >
-            <h2 className="text-2xl font-semibold mb-1">{name}</h2>
+            {isEditingTitle ? (
+              <div className="flex items-center gap-2 mb-1">
+                <input 
+                  autoFocus
+                  value={tempTitle}
+                  onChange={(e) => setTempTitle(e.target.value)}
+                  onBlur={handleTitleSave}
+                  onKeyDown={handleKeyDown}
+                  className="text-2xl font-semibold border border-blue-500 rounded px-2 py-1 outline-none w-full"
+                />
+              </div>
+            ) : (
+                <div className="flex items-center gap-2 mb-1 group">
+                    <h2 className="text-2xl font-semibold">{name}</h2>
+                    <button 
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         setTempTitle(name);
+                         setIsEditingTitle(true);
+                       }}
+                       className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded-full"
+                    >
+                        <Edit2 size={16} className="text-gray-500" />
+                    </button>
+                </div>
+            )}
             <p className="text-gray-500 mb-6">{description}</p>
 
             {fields.length === 0 ? (
@@ -124,6 +174,12 @@ export default function ProcedureBody({ name, description }: ProcedureBodyProps)
           isOpen={!!isLinkModalOpen.fieldId}
           onClose={() => setIsLinkModalOpen({ fieldId: null })}
           onSave={handleSaveLink}
+        />
+
+        <AddConditionModal
+           isOpen={!!isAddConditionModalOpen.fieldId}
+           onClose={() => setIsAddConditionModalOpen({ fieldId: null })}
+           fieldId={isAddConditionModalOpen.fieldId}
         />
 
         <DragOverlay>

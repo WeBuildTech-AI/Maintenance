@@ -1,0 +1,593 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Poppins:wght@300;400;500;600&display=swap");
+
+.register-page-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background-color: #fff9ee;
+  font-family: "Poppins", sans-serif;
+  overflow: hidden;
+  padding: 25px;
+  gap: 50px;
+  box-sizing: border-box;
+}
+
+/* Left Section - Image Panel */
+.register-left-panel {
+  flex: 1;
+  height: 100%;
+  position: relative;
+  background-color: #000; /* Fallback */
+  border-radius: 17px;
+  overflow: hidden;
+}
+
+.register-bg-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.register-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.6) 100%
+  );
+  display: block; /* Removed flex */
+  box-sizing: border-box;
+}
+
+.register-heading-main {
+  position: absolute;
+  left: 48px;
+  top: 360px; /* Estimated visual center */
+  width: 592px;
+  height: 132px;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 700;
+  font-size: 54px;
+  line-height: 100%;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+  margin: 0;
+  padding: 0;
+}
+
+.register-subtext-main {
+  position: absolute;
+  left: 48px;
+  top: 513px; /* 360 + 132 + 21 */
+  width: 529px;
+  height: 66px;
+  font-family: "Poppins", sans-serif;
+  font-weight: 300;
+  font-size: 22px;
+  line-height: 100%;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+  margin: 0;
+  padding: 0;
+}
+
+/* Right Section - Form Panel */
+.register-right-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.register-form-container {
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.register-form-header {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.register-form-title {
+  font-family: "Montserrat", sans-serif;
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 1.2;
+  color: #000000;
+  margin: 0 0 8px 0;
+}
+
+.register-form-subtitle {
+  font-family: "Poppins", sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  color: #9a9a9a;
+  margin: 0;
+}
+
+.highlight-text {
+  color: #faad00;
+  font-weight: 600;
+}
+
+.register-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.register-input-row {
+  display: flex;
+  gap: 12px;
+}
+
+.register-input-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.register-input-wrapper.half-width {
+  flex: 1;
+}
+
+.register-input {
+  width: 100%;
+  height: 48px;
+  padding: 0 16px;
+  border: 1px solid #faad00;
+  border-radius: 12px;
+  font-family: "Poppins", sans-serif;
+  font-size: 14px;
+  color: #000000;
+  background-color: #ffffff;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.register-input:focus {
+  border-color: #ff9500;
+}
+
+.register-input::placeholder {
+  color: #9a9a9a;
+}
+
+.register-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23FAAD00' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  padding-right: 40px;
+}
+
+.register-checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "Poppins", sans-serif;
+  font-size: 12px;
+  color: #000000;
+}
+
+.register-checkbox {
+  width: 16px;
+  height: 16px;
+  border: 1px solid #faad00;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.register-link {
+  color: #faad00;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.register-link:hover {
+  text-decoration: underline;
+}
+
+.register-btn-primary {
+  width: 100%;
+  height: 48px;
+  background-color: #ffc649;
+  border: none;
+  border-radius: 12px;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.register-btn-primary:hover {
+  background-color: #ff9500;
+}
+
+.register-footer {
+  text-align: center;
+  font-family: "Poppins", sans-serif;
+  font-size: 14px;
+  color: #9a9a9a;
+}
+
+.register-footer-action {
+  color: #faad00;
+  text-decoration: none;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.register-footer-action:hover {
+  text-decoration: underline;
+}
+
+/* OTP Form Styles */
+.otp-form-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 500px;
+}
+
+.otp-page-title {
+  margin: 0;
+  padding: 0;
+}
+
+.otp-page-subtitle {
+  margin: 0;
+  padding: 0;
+}
+
+.otp-inputs-row {
+  display: flex;
+}
+
+.otp-input-box {
+  outline: none;
+  text-align: center;
+}
+
+.otp-input-box:focus {
+  border-color: #ff9500;
+}
+
+.otp-resend-text {
+  width: 100%;
+}
+
+.otp-verify-btn {
+  display: block;
+  margin: 0 auto;
+}
+
+.otp-verify-btn:hover {
+  opacity: 0.8;
+}
+
+/* Workspace Setup Fixed Layout */
+.workspace-setup-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.workspace-setup-header {
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.workspace-setup-content {
+  flex: 1;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.workspace-setup-footer {
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+/* Custom Checkbox Styling */
+input[type="checkbox"] {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #FAAD00;
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  background-color: #FFFFFF;
+  transition: all 0.2s ease;
+}
+
+input[type="checkbox"]:checked {
+  background-color: #FAAD00;
+  border-color: #FAAD00;
+}
+
+input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 5px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+input[type="checkbox"]:hover {
+  border-color: #FF9500;
+}
+
+/* Custom Radio Button Styling */
+input[type="radio"] {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #FAAD00;
+  border-radius: 50%;
+  cursor: pointer;
+  position: relative;
+  background-color: #FFFFFF;
+  transition: all 0.2s ease;
+}
+
+input[type="radio"]:checked {
+  border-color: #FAAD00;
+}
+
+input[type="radio"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #FAAD00;
+}
+
+input[type="radio"]:hover {
+  border-color: #FF9500;
+}
+
+
+.register-subtext-main {
+  position: absolute;
+  left: 48px;
+  top: 513px; /* 360px + 132px + 21px gap */
+  width: 529px;
+  height: 66px;
+  font-family: "Poppins", sans-serif;
+  font-size: 22px;
+  font-weight: 300;
+  line-height: 100%;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+  margin: 0;
+}
+
+/* Right Section - Form Panel */
+.register-right-panel {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 0;
+  box-sizing: border-box;
+}
+
+.register-form-container {
+  width: 533px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.register-form-header {
+  margin-bottom: 32px;
+}
+
+.register-form-title {
+  font-family: "Montserrat", sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: #000000;
+  margin-bottom: 12px;
+}
+
+.register-form-subtitle {
+  font-family: "Poppins", sans-serif;
+  font-size: 12px;
+  font-weight: 300;
+  color: #000000;
+}
+
+.highlight-text {
+  color: #ffb000;
+  font-weight: 300;
+}
+
+/* Inputs */
+.register-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.register-input-row {
+  display: flex;
+  gap: 16px;
+}
+
+.register-input-wrapper {
+  width: 100%;
+}
+
+.register-input-wrapper.half-width {
+  width: 50%;
+}
+
+.register-input {
+  width: 100%;
+  height: 48px; /* Approximate based on visual, or standard height */
+  background-color: #fff9ee; /* Matches bg or slight off-white if needed, JSON implies blending or specific style. Design shows filled inputs often light yellow/beige usually or white? Screenshot looks like light beige filled. */
+  background-color: #fefbf6; /* A slightly lighter shade than bg, or standard input fill */
+  background-color: #fff9ee; /* Assuming input bg is very subtle or transparent-ish with border? Screenshot shows filled inputs. Let's pick a color from screenshot: likely #FFFCF5 or similar. Let's stick to a clean fill. */
+  background: #fef9ef; /* Visual approx */
+  border: 1px solid transparent;
+  border-radius: 4px; /* Default radius, will adjust if specified. Design JSON didn't specify input radius, screenshot looks slightly rounded like 4-8px. */
+  padding: 0 16px;
+  font-family: "Poppins", sans-serif;
+  font-size: 14px; /* Standard */
+  color: #000;
+  box-sizing: border-box;
+  outline: none;
+}
+/* Re-evaluating Input Style based on Screenshot */
+/* Screenshot: Inputs have a light beige background, rounded corners (~8px?), no visible border (or very subtle). Selected input has yellow border. */
+.register-input {
+  background-color: #fffdf7; /* Very light yellow/beige */
+  border: 1px solid transparent;
+  border-radius: 8px;
+  height: 50px;
+  font-size: 14px;
+  color: #333;
+}
+.register-input:focus {
+  border-color: #ffb000;
+}
+.register-input::placeholder {
+  color: #b0b0b0;
+  font-weight: 300;
+}
+
+/* Select */
+.register-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFB000%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px top 50%;
+  background-size: 12px auto;
+}
+
+/* Checkbox */
+.register-checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+  font-size: 12px;
+  font-weight: 400;
+  color: #000;
+}
+
+.register-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: #000; /* Or custom style if needed, native for now */
+  cursor: pointer;
+}
+
+.register-link {
+  color: #ffb000;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+/* Button */
+.register-btn-primary {
+  width: 378px; /* Fixed width from JSON */
+  height: 46px;
+  background-color: #ffc649;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-family: "Poppins", sans-serif;
+  font-size: 16px;
+  font-weight: 600; /* Looks bold in screenshot */
+  cursor: pointer;
+  margin: 0 auto; /* Center button */
+  display: block;
+  transition: background-color 0.2s;
+}
+
+.register-btn-primary:hover {
+  background-color: #ffb000;
+}
+
+.register-footer {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.register-footer-action {
+  color: #ffb000;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 4px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .register-form-container {
+    width: 90%;
+  }
+}
+
+@media (max-width: 768px) {
+  .register-page-container {
+    flex-direction: column;
+    overflow-y: auto;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .register-left-panel {
+    width: 100%;
+    height: 40vh;
+    min-height: 300px;
+  }
+
+  .register-right-panel {
+    width: 100%;
+    height: auto;
+    padding: 40px 24px;
+  }
+
+  .register-heading-main {
+    font-size: 36px;
+  }
+
+  .register-btn-primary {
+    width: 100%;
+  }
+}

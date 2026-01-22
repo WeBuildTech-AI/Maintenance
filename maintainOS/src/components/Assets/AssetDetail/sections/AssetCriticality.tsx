@@ -1,7 +1,10 @@
 import { Badge } from "../../../ui/badge";
+import { formatLabel } from "../../../utils/asset_formater";
 
 export function AssetCriticality({ asset }: { asset: any }) {
-  const c = asset.criticality;
+  const raw = asset?.criticality;
+  const c = formatLabel(raw);
+
   const classes =
     c === "Critical"
       ? "bg-red-50 text-red-700 border-red-200"

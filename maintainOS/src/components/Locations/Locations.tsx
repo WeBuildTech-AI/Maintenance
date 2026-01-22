@@ -82,9 +82,9 @@ export function Locations() {
 
   // Sorting State
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [sortType, setSortType] = useState("Last Updated");
-  const [sortOrder, setSortOrder] = useState("dsc");
-  const [openSection, setOpenSection] = useState<string | null>("Name");
+  const [sortType, setSortType] = useState("Creation Date");
+  const [sortOrder, setSortOrder] = useState("desc");
+  const [openSection, setOpenSection] = useState<string | null>(null);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const headerRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -219,6 +219,31 @@ export function Locations() {
     }
   }, [showDeleted, filterParams, debouncedSearch]); 
 
+  // ✅ Sorting Logic MOVED UP for useEffect dependency
+  const sortedLocations = useMemo(() => {
+    let items = [...locations];
+    items.sort((a, b) => {
+      let comparison = 0;
+      switch (sortType) {
+        case "Name":
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case "Creation Date":
+          comparison =
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+        case "Last Updated":
+          comparison =
+            new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+          break;
+        default:
+          return 0;
+      }
+      return sortOrder === "asc" ? comparison : -comparison;
+    });
+    return items;
+  }, [locations, sortType, sortOrder]);
+
   useEffect(() => {
     fetchLocations();
   }, [fetchLocations]);
@@ -260,8 +285,8 @@ export function Locations() {
 
     // 🛑 Case 2: URL IS EXACTLY ROOT (Default View)
     // Only redirect if we are SURE we are on the root path and no ID exists.
-    if (isExactlyRoot && !loading && locations.length > 0 && !selectedLocation) {
-        const firstLocation = locations[0];
+    if (isExactlyRoot && !loading && sortedLocations.length > 0 && !selectedLocation) {
+        const firstLocation = sortedLocations[0];
         setSelectedLocation(firstLocation);
         navigate(`/locations/${firstLocation.id}`, { replace: true });
     }
@@ -269,6 +294,7 @@ export function Locations() {
   }, [
     location.pathname, // ✅ Re-run immediately on URL change
     locations,
+    sortedLocations, // ✅ Added sortedLocations
     isCreateRoute,
     isCreateSubLocationRoute, 
     isEditRoute,
@@ -326,40 +352,15 @@ export function Locations() {
     []
   );
 
-  // ✅ Sorting Logic
-  const sortedLocations = useMemo(() => {
-    let items = [...locations];
-    items.sort((a, b) => {
-      let comparison = 0;
-      switch (sortType) {
-        case "Name":
-          comparison = a.name.localeCompare(b.name);
-          break;
-        case "Creation Date":
-          comparison =
-            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-          break;
-        case "Last Updated":
-          comparison =
-            new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
-          break;
-        default:
-          return 0;
-      }
-      return sortOrder === "asc" ? comparison : -comparison;
-    });
-    return items;
-  }, [locations, sortType, sortOrder]);
-
   // ✅ Server-Side Pagination Handlers
   const handlePrevPage = () => {
-    if (filterParams.page && filterParams.page > 1) {
+    if (filterParams.page && Number(filterParams.page) > 1) {
       setFilterParams((prev) => ({ ...prev, page: Number(prev.page) - 1 }));
     }
   };
 
   const handleNextPage = () => {
-    if (locations.length > 0) { 
+    if (locations.length >= itemsPerPage) { 
        setFilterParams((prev) => ({ ...prev, page: Number(prev.page || 1) + 1 }));
     }
   };
@@ -520,25 +521,36 @@ export function Locations() {
                         </button>
                         {openSection === section.label && (
                           <div className="pl-4 pr-2 bg-gray-50 py-1 space-y-1">
-                            {section.options.map((opt) => (
+                          {section.options.map((opt) => {
+                            const isAsc =
+                              opt.includes("Asc") ||
+                              opt.includes("Oldest") ||
+                              opt.includes("Least");
+                            const isSelected =
+                              sortType === section.label &&
+                              sortOrder === (isAsc ? "asc" : "desc");
+
+                            return (
                               <button
                                 key={opt}
                                 onClick={() => {
                                   setSortType(section.label);
-                                  setSortOrder(
-                                    opt.includes("Asc") ||
-                                      opt.includes("Oldest") ||
-                                      opt.includes("Least")
-                                      ? "asc"
-                                      : "desc"
-                                  );
+                                  setSortOrder(isAsc ? "asc" : "desc");
                                   setIsDropdownOpen(false);
                                 }}
-                                className="w-full text-left text-xs px-2 py-1.5 hover:bg-white rounded text-gray-600"
+                                className={`w-full flex items-center justify-between text-left text-xs px-2 py-1.5 rounded transition-colors ${
+                                  isSelected
+                                    ? "text-blue-600 bg-blue-50 font-medium"
+                                    : "text-gray-600 hover:bg-gray-100"
+                                }`}
                               >
-                                {opt}
+                                <span>{opt}</span>
+                                {isSelected && (
+                                  <Check className="w-3.5 h-3.5 text-blue-600" />
+                                )}
                               </button>
-                            ))}
+                            );
+                          })}
                           </div>
                         )}
                       </div>
@@ -694,6 +706,10 @@ export function Locations() {
                     selectedLocation={activeSubLocation}
                     onClose={() => setShowSubLocation(false)}
                     parentName={selectedLocation?.name}
+                    onDelete={() => {
+                      fetchLocations();
+                      setShowSubLocation(false);
+                    }}
                   />
                 ) : selectedLocation ? (
                   <LocationDetails
@@ -706,7 +722,7 @@ export function Locations() {
                       );
                     }}
                     user={user}
-                    restoreData={""}
+                    showDeleted={showDeleted}
                     fetchLocation={fetchLocations}
                     onClose={() => setSelectedLocation(null)}
                     setShowSubLocation={setShowSubLocation}

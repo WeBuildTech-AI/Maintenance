@@ -4,6 +4,8 @@ import { Clock, DollarSign, Wrench, MapPin } from "lucide-react";
 interface Props {
   selectedPriority: string;
   onPriorityChange: (value: string) => void;
+  status?: string;
+  onStatusChange?: (value: string) => void;
   qrCodeValue: string;
   onQrCodeChange: (value: string) => void;
   teamIds: string[];
@@ -73,6 +75,8 @@ const TrackingButton = ({ icon: Icon, label, onClick }: any) => (
 export function WorkOrderClassificationAndLinks({
   selectedPriority,
   onPriorityChange,
+  status,
+  onStatusChange,
   qrCodeValue,
   onQrCodeChange,
   teamIds,
@@ -114,6 +118,13 @@ export function WorkOrderClassificationAndLinks({
     { name: "High", color: "bg-red-500", textColor: "text-white" },
   ];
 
+  const statuses = [
+    { name: "Open", color: "bg-blue-500" },
+    { name: "In Progress", color: "bg-orange-500" },
+    { name: "On Hold", color: "bg-yellow-500" },
+    { name: "Completed", color: "bg-green-500" },
+  ];
+
   // Calculate total cost from the partUsages array
   const partsTotalCost = partUsages.reduce((sum, p) => {
     const cost =
@@ -139,23 +150,37 @@ export function WorkOrderClassificationAndLinks({
     <>
       <div className="mt-4">
         <h3 className="mb-4 text-base font-medium text-gray-900">Priority</h3>
-        <div className="flex w-full">
-          {priorities.map((p) => (
-            <button
-              key={p.name}
-              type="button"
-              onClick={() => onPriorityChange(p.name)}
-              className={`flex-1 px-2 py-1 text-xs font-medium rounded transition-all ${
-                selectedPriority === p.name
-                  ? `${p.color} ${p.textColor} shadow-sm`
-                  : "text-gray-700 bg-gray-100 hover:bg-gray-200"
-              }`}
-            >
-              {p.name}
-            </button>
-          ))}
-        </div>
+        <DynamicSelect
+          name="priority"
+          placeholder="Select priority..."
+          options={priorities.map(p => ({ id: p.name, name: p.name }))}
+          loading={false}
+          value={selectedPriority}
+          onSelect={(val) => onPriorityChange(val as string)}
+          onFetch={() => {}}
+          activeDropdown={activeDropdown}
+          setActiveDropdown={setActiveDropdown}
+          className="w-full"
+        />
       </div>
+
+      {isEditMode && (
+        <div className="mt-4">
+          <h3 className="mb-4 text-base font-medium text-gray-900">Status</h3>
+          <DynamicSelect
+            name="status"
+            placeholder="Select status..."
+            options={statuses.map(s => ({ id: s.name, name: s.name }))}
+            loading={false}
+            value={status || ""}
+            onSelect={(val) => onStatusChange && onStatusChange(val as string)}
+            onFetch={() => {}}
+            activeDropdown={activeDropdown}
+            setActiveDropdown={setActiveDropdown}
+            className="w-full"
+          />
+        </div>
+      )}
 
       <div className="mt-4">
         <h3 className="mb-4 text-base font-medium text-gray-900">Teams</h3>

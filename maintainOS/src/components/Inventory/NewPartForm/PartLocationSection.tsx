@@ -1,7 +1,8 @@
 "use client";
 import React from "react";
 import type { NewItem } from "../inventory.types";
-import { PartDynamicSelect, type PartSelectOption } from "./PartDynamicSelect";
+// ✅ Replace with Shared DynamicSelect
+import { DynamicSelect, type SelectOption } from "../../common/DynamicSelect";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../../store";
 import { fetchLocationsName } from "../../../store/locations/locations.thunks";
@@ -15,7 +16,7 @@ export function PartLocationSection({
   setNewItem: React.Dispatch<React.SetStateAction<NewItem>>;
 }) {
   const dispatch = useDispatch<AppDispatch>();
-  const [locationOptions, setLocationOptions] = React.useState<PartSelectOption[]>([]);
+  const [locationOptions, setLocationOptions] = React.useState<SelectOption[]>([]);
   const [loadingLocations, setLoadingLocations] = React.useState(false);
   const [activeDropdown, setActiveDropdown] = React.useState<string | null>(null);
 
@@ -30,7 +31,7 @@ export function PartLocationSection({
     console.log("📡 Fetching Locations...");
     setLoadingLocations(true);
     try {
-      const res = await dispatch(fetchLocationsName()).unwrap();
+      const res = await dispatch(fetchLocationsName()).unwrap() as any;
       console.log("🧾 Raw API Response (fetchLocationsName):", res);
 
       let data = [];
@@ -41,7 +42,7 @@ export function PartLocationSection({
       else if (Array.isArray(res?.rows)) data = res.rows;
       else console.warn("⚠️ Unknown response structure. Full response:", res);
 
-      const options = data.map((loc: any, i) => ({
+      const options = data.map((loc: any, i: any) => ({
         id: String(loc.id ?? loc.location_id ?? i),
         name: loc.name ?? loc.location_name ?? `Unnamed (${i + 1})`,
       }));
@@ -51,7 +52,7 @@ export function PartLocationSection({
 
       // ✅ After loading, sync label if we already had a selection
       if (newItem.locationId) {
-        const matched = options.find((opt) => String(opt.id) === String(newItem.locationId));
+        const matched = options.find((opt: SelectOption) => String(opt.id) === String(newItem.locationId));
         if (matched) setSelectedLocationName(matched.name);
       }
     } catch (error) {
@@ -63,11 +64,11 @@ export function PartLocationSection({
 
   // ✅ Pre-fill from edit mode data
   React.useEffect(() => {
-    if (newItem?.locations?.length > 0 && !selectedLocationName) {
-      const loc = newItem.locations[0];
+    if ((newItem as any).locations?.length > 0 && !selectedLocationName) {
+      const loc = (newItem as any).locations[0];
       setSelectedLocationName(loc.locationName || loc.name || "");
     }
-  }, [newItem?.locations, selectedLocationName]);
+  }, [(newItem as any).locations, selectedLocationName]);
 
   const handleSelectLocation = (vals: string[] | string) => {
     const ids = Array.isArray(vals) ? vals : [vals];
@@ -119,7 +120,7 @@ export function PartLocationSection({
           </label>
           <div style={{ height: "40px", display: "flex" }}>
             <div style={{ flex: 1 }}>
-              <PartDynamicSelect
+              <DynamicSelect
                 options={mergedOptions} // 🟢 merged ensures label visible before API
                 value={newItem.locationId ?? ""}
                 onSelect={handleSelectLocation}
@@ -131,7 +132,6 @@ export function PartLocationSection({
                 name="part_location"
                 activeDropdown={activeDropdown}
                 setActiveDropdown={setActiveDropdown}
-                isMulti={false} // SINGLE
               />
             </div>
           </div>
@@ -180,8 +180,8 @@ export function PartLocationSection({
           </label>
           <input
             type="number"
-            value={newItem.unitInStock || ""}
-            onChange={(e) => setNewItem((s) => ({ ...s, unitInStock: Number(e.target.value) }))}
+            value={newItem.unitsInStock || ""}
+            onChange={(e) => setNewItem((s) => ({ ...s, unitsInStock: Number(e.target.value) }))}
             style={{
               height: "40px",
               border: "1px solid #e5e7eb",

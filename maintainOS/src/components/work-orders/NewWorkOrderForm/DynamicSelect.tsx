@@ -42,7 +42,7 @@ const ManualCheckbox = ({ checked }: { checked: boolean }) => (
   </div>
 );
 
-export type SelectOption = { id: string; name: string };
+export type SelectOption = { id: string; name: string; color?: string };
 
 interface DynamicSelectProps {
   options?: SelectOption[];
@@ -58,6 +58,7 @@ interface DynamicSelectProps {
   activeDropdown: string | null;
   setActiveDropdown: (name: string | null) => void;
   onSearch?: (term: string) => void; 
+  dropdownStyle?: React.CSSProperties;
 }
 
 export function DynamicSelect({
@@ -73,6 +74,7 @@ export function DynamicSelect({
   activeDropdown,
   setActiveDropdown,
   onSearch,
+  dropdownStyle,
 }: DynamicSelectProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null); 
@@ -135,27 +137,50 @@ export function DynamicSelect({
       <style>{checkboxStyles}</style>
 
       <div
-        className="flex flex-wrap items-center gap-2 rounded-md border border-gray-300 bg-white p-2 min-h-[42px] cursor-pointer focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500"
+        className="flex items-center gap-1 rounded-md border border-gray-300 bg-white py-1 px-2 min-h-[36px] cursor-pointer focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 overflow-hidden"
         onClick={handleToggle}
       >
-        <div className="flex flex-wrap items-center gap-1 flex-1">
+        <div className="flex flex-wrap items-center gap-1 flex-1 min-w-0">
           
           {/* ✅ RENDER LOGIC: If Multi, show 1 + Count. If Single, show all (which is just 1) */}
           {isMulti && selectedOptions.length > 0 ? (
             <>
               {/* 1. Show First Option */}
-              <Badge key={firstOption.id} variant="secondary" className="flex items-center gap-1">
-                {firstOption.name}
-                <button
-                  className="ml-1 rounded-full outline-none"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleOption(firstOption.id);
-                  }}
-                >
-                  <X className="h-3 w-3 text-gray-500 hover:text-gray-900" />
-                </button>
-              </Badge>
+              <div className="relative group/tag flex items-center">
+                <Badge key={firstOption.id} variant="secondary" className="flex items-center gap-1 max-w-[120px] min-w-0">
+                  {firstOption.color && (
+                    <div
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
+                        backgroundColor: firstOption.color,
+                        flexShrink: 0,
+                      }}
+                    />
+                  )}
+                  <span className="truncate">
+                    {firstOption.name.length > 9 ? firstOption.name.substring(0, 9) + "..." : firstOption.name}
+                  </span>
+                  <button
+                    className="ml-auto rounded-full outline-none shrink-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleOption(firstOption.id);
+                    }}
+                  >
+                    <X className="h-3 w-3 text-gray-500 hover:text-gray-900" />
+                  </button>
+                </Badge>
+                
+                {/* Custom Tooltip on Hover */}
+                {firstOption.name.length > 9 && (
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover/tag:block w-max max-w-[200px] bg-gray-900 text-white text-[10px] rounded py-1 px-2 z-[9999] shadow-lg pointer-events-none">
+                        {firstOption.name}
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-2 border-transparent border-t-gray-900"></div>
+                    </div>
+                )}
+              </div>
 
               {/* 2. Show Counter Badge if more than 1 selected */}
               {hasHidden && (
@@ -182,25 +207,48 @@ export function DynamicSelect({
           ) : (
             // Standard Rendering for Single Select (or fallback)
             selectedOptions.map((option) => (
-              <Badge key={option.id} variant="secondary" className="flex items-center gap-1">
-                {option.name}
-                <button
-                  className="ml-1 rounded-full outline-none"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSelect("");
-                  }}
-                >
-                  <X className="h-3 w-3 text-gray-500 hover:text-gray-900" />
-                </button>
-              </Badge>
+              <div key={option.id} className="relative group/tag flex items-center">
+                <Badge variant="secondary" className="flex items-center gap-1 max-w-[120px] min-w-0">
+                  {option.color && (
+                    <div
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
+                        backgroundColor: option.color,
+                        flexShrink: 0,
+                      }}
+                    />
+                  )}
+                  <span className="truncate">
+                    {option.name.length > 9 ? option.name.substring(0, 9) + "..." : option.name}
+                  </span>
+                  <button
+                    className="ml-auto rounded-full outline-none shrink-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelect("");
+                    }}
+                  >
+                    <X className="h-3 w-3 text-gray-500 hover:text-gray-900" />
+                  </button>
+                </Badge>
+
+                {/* Custom Tooltip on Hover */}
+                {option.name.length > 9 && (
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover/tag:block w-max max-w-[200px] bg-gray-900 text-white text-[10px] rounded py-1 px-2 z-[9999] shadow-lg pointer-events-none">
+                        {option.name}
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-2 border-transparent border-t-gray-900"></div>
+                    </div>
+                )}
+              </div>
             ))
           )}
           
           <input
             ref={inputRef}
             type="text"
-            className="flex-1 bg-transparent outline-none text-sm min-w-[60px] h-6 placeholder:text-gray-500"
+            className="flex-1 bg-transparent outline-none text-sm min-w-[20px] h-6 placeholder:text-gray-500"
             placeholder={selectedOptions.length === 0 ? placeholder : ""}
             value={searchTerm}
             onChange={(e) => {
@@ -227,6 +275,7 @@ export function DynamicSelect({
         <div 
           onMouseDown={(e) => e.preventDefault()}
           className="absolute top-full mt-1 w-full rounded-md border bg-white z-20 max-h-60 overflow-y-auto shadow-lg"
+          style={dropdownStyle}
         >
           {loading ? (
             <div className="flex justify-center items-center p-4">
@@ -247,11 +296,27 @@ export function DynamicSelect({
                     {isMulti ? (
                       <ManualCheckbox checked={isSelected} />
                     ) : (
-                      <div
-                        className={`w-2 h-2 rounded-full mr-1 ${
-                          isSelected ? "bg-blue-500" : "bg-transparent"
-                        }`}
-                      ></div>
+                      <>
+                        {option.color ? (
+                           <div
+                             style={{
+                               width: "8px",
+                               height: "8px",
+                               borderRadius: "50%",
+                               backgroundColor: option.color,
+                               marginRight: "8px",
+                               flexShrink: 0,
+                             }}
+                           />
+                        ) : (
+                          // Fallback to old behavior if no color
+                          <div
+                            className={`w-2 h-2 rounded-full mr-1 ${
+                              isSelected ? "bg-blue-500" : "bg-transparent"
+                            }`}
+                          ></div>
+                        )}
+                      </>
                     )}
                     <label className="flex-1 cursor-pointer text-gray-700">{option.name}</label>
                     {!isMulti && isSelected && (

@@ -47,6 +47,9 @@ import { CommentsSection } from "../../ToDoView/CommentsSection";
 import { NewWorkOrderForm } from "../../NewWorkOrderForm/NewWorkOrderFrom";
 import { LinkedProcedurePreview } from "../../ToDoView/LinkedProcedurePreview"; // Ensure this path is correct
 import { procedureService } from "../../../../store/procedures/procedures.service"; // Import Service
+import { DynamicSelect } from "../../NewWorkOrderForm/DynamicSelect";
+import { WorkOrderAssetStatusModal } from "../../NewWorkOrderForm/WorkOrderAssetStatusModal";
+import { assetService } from "../../../../store/assets/assets.service";
 
 // --- HELPER FUNCTIONS ---
 
@@ -229,6 +232,11 @@ export default function WorkOrderDetailModal({
   const [activeStatus, setActiveStatus] = useState(workOrder?.status || "open");
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  
+  // ✅ Asset Status Live Update State
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [isAssetStatusModalOpen, setIsAssetStatusModalOpen] = useState(false);
+  const [pendingAssetStatus, setPendingAssetStatus] = useState<string>("");
   
   // User Names & Refs
   const [createdByName, setCreatedByName] = useState<string>("System");
@@ -422,6 +430,33 @@ export default function WorkOrderDetailModal({
   const handleClose = () => {
     setPanel("details");
     onClose();
+  };
+
+  const handleAssetStatusSelect = (val: string | string[]) => {
+      const status = val as string;
+      setPendingAssetStatus(status);
+      setIsAssetStatusModalOpen(true);
+  };
+
+  const handleConfirmAssetStatus = async (data: any) => {
+      if (!workOrder.assets || workOrder.assets.length === 0) return;
+      const assetId = workOrder.assets[0].id;
+
+      try {
+          await assetService.updateAssetStatus(assetId, {
+              status: data.status,
+              notes: data.notes,
+              since: data.since,
+              to: data.to,
+              downtimeType: data.downtimeType
+          });
+          toast.success("Asset status updated successfully");
+          if (onRefreshWorkOrders) onRefreshWorkOrders();
+          setIsAssetStatusModalOpen(false);
+      } catch (err) {
+          console.error("Failed to update asset status", err);
+          toast.error("Failed to update asset status");
+      }
   };
 
   // Prepare data for rendering
@@ -676,6 +711,37 @@ export default function WorkOrderDetailModal({
                         {/* Details Grid (Clickable) */}
                         <div className="border-t pt-6 grid grid-cols-2 gap-6">
                             <div><h3 className="text-sm font-medium mb-2 text-gray-700">Assets</h3><div className="flex items-start gap-2"><Factory className="h-4 w-4 text-gray-400 mt-0.5" /><span className="text-sm">{renderClickableList(workOrder.assets, navigate, (id) => `/assets?assetId=${id}`)}</span></div></div>
+                            
+                            {/* ✅ Asset Status Fields (Static Display) */}
+                            {(workOrder.assetStatus || (workOrder.assets && workOrder.assets.length > 0)) && (
+                                <div>
+                                    <h3 className="text-sm font-medium mb-2 text-gray-700">Asset Status</h3>
+                                    <div className="flex items-center gap-2">
+                                        <div className={`h-2.5 w-2.5 rounded-full ${
+                                            ((workOrder.assets?.[0]?.status || workOrder.assetStatus) || "online").toLowerCase() === 'offline' ? 'bg-red-500' :
+                                            ((workOrder.assets?.[0]?.status || workOrder.assetStatus) || "online").toLowerCase() === 'online' ? 'bg-green-500' : 
+                                            ((workOrder.assets?.[0]?.status || workOrder.assetStatus) || "online").toLowerCase() === 'do not track' || ((workOrder.assets?.[0]?.status || workOrder.assetStatus) || "online").toLowerCase() === 'donottrack' ? 'bg-yellow-500' : 'bg-gray-400'
+                                        }`} />
+                                        <span className="text-sm text-gray-900 capitalize">
+                                            {((workOrder.assets?.[0]?.status || workOrder.assetStatus) || "—").toLowerCase() === 'donottrack' ? 'Do Not Track' : (workOrder.assets?.[0]?.status || workOrder.assetStatus) || "—"}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {workOrder.assetDowntimeType && (
+                                <div><h3 className="text-sm font-medium mb-2 text-gray-700">Downtime Type</h3><p className="text-sm text-gray-500 capitalize">{workOrder.assetDowntimeType}</p></div>
+                            )}
+                             {workOrder.assetStatusSince && (
+                                <div><h3 className="text-sm font-medium mb-2 text-gray-700">Since</h3><p className="text-sm text-gray-500">{formatDate(workOrder.assetStatusSince, true)}</p></div>
+                            )}
+                            {workOrder.assetStatusTo && (
+                                <div><h3 className="text-sm font-medium mb-2 text-gray-700">Estimated Up</h3><p className="text-sm text-gray-500">{formatDate(workOrder.assetStatusTo, true)}</p></div>
+                            )}
+                            {workOrder.assetStatusNotes && (
+                                <div className="col-span-2"><h3 className="text-sm font-medium mb-2 text-gray-700">Status Notes</h3><p className="text-sm text-gray-500">{workOrder.assetStatusNotes}</p></div>
+                            )}
+
                             <div><h3 className="text-sm font-medium mb-2 text-gray-700">Location</h3><div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-gray-400" /><span className="text-sm"><span onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (workOrder.location?.id) navigate(`/locations/${workOrder.location.id}`); }} className={workOrder.location?.id ? "text-blue-600 hover:underline cursor-pointer" : ""}>{workOrder.location?.name || workOrder.location || "N/A"}</span></span></div></div>
                             <div><h3 className="text-sm font-medium mb-2 text-gray-700">Estimated Time</h3><div className="flex items-center gap-2"><Clock className="h-4 w-4 text-gray-400" /><span className="text-sm text-gray-900">{formatDecimalHoursToDisplay(workOrder.estimatedTimeHours)}</span></div></div>
                             <div><h3 className="text-sm font-medium mb-2 text-gray-700">Work Type</h3><div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-gray-400" /><span className="text-sm text-gray-900">{workOrder.workType || "N/A"}</span></div></div>
@@ -770,11 +836,23 @@ export default function WorkOrderDetailModal({
                                 <LinkedProcedurePreview 
                                   selectedWorkOrder={{
                                     ...workOrder,
-                                    // Polyfill already handled by safeWorkOrder, but keeping check safe
-                                    procedures: safeWorkOrder.procedures
-                                  }} 
+                                    procedures: safeWorkOrder.procedures 
+                                  }}
                                 />
                             </div>
+                        )}
+
+                        {/* ✅ Asset Status Update Modal */}
+                        {isAssetStatusModalOpen && (
+                            <WorkOrderAssetStatusModal 
+                                initialStatus={pendingAssetStatus || 'online'}
+                                initialNotes={workOrder.assetStatusNotes}
+                                initialDowntimeType={workOrder.assetDowntimeType}
+                                initialSince={workOrder.assetStatusSince}
+                                initialTo={workOrder.assetStatusTo}
+                                onClose={() => setIsAssetStatusModalOpen(false)}
+                                onSubmit={handleConfirmAssetStatus}
+                            />
                         )}
 
                         {/* LOGS (Created By / Updated By) */}
@@ -793,7 +871,7 @@ export default function WorkOrderDetailModal({
                                 setComment={setComment}
                                 attachment={attachment}
                                 setAttachment={setAttachment}
-                                fileRef={fileRef}
+                                fileRef={fileRef as React.RefObject<HTMLInputElement>}
                                 selectedWorkOrder={workOrder}
                             />
                         </div>

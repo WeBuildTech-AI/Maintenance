@@ -87,7 +87,9 @@ export const assetService = {
   },
 
   deleteAsset: async (id: string): Promise<void> => {
-    await api.delete(`/assets/${id}`);
+    await api.delete(`assets/batch-delete`, {
+      data: { ids: [id] },
+    });
   },
 
   fetchDeleteAsset: async (): Promise<AssetResponse[]> => {
@@ -129,17 +131,10 @@ export const assetService = {
 
   // ✅ UPDATED with Debugging Logs
   fetchAssetStatusLog: async (id: string): Promise<AssetLogResponse> => {
-    console.log(`🔥 [Service] API Call Started: /assets/${id}/logs`);
-    try {
-      const res = await api.get(`/assets/${id}/logs`, {
-        headers: { Accept: "application/json" },
-      });
-      console.log("✅ [Service] API Success. Raw Data:", res.data);
-      return res.data;
-    } catch (error) {
-      console.error("❌ [Service] API Failed:", error);
-      throw error;
-    }
+    const res = await api.get(`/assets/${id}/logs`, {
+      headers: { Accept: "application/json" },
+    });
+    return res.data;
   },
 
   deleteAssetStatus: async (id: string): Promise<void> => {
@@ -150,5 +145,10 @@ export const assetService = {
     await api.delete(`assets/batch-delete`, {
       data: { ids },
     });
+  },
+
+  updateAssetLogDuration: async (id: string): Promise<any> => {
+    const res = await api.patch(`/assets/${id}/logs/duration`);
+    return res.data;
   },
 };

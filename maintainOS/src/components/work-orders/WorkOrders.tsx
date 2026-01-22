@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { useNavigate, useMatch } from "react-router-dom";
+import { useNavigate, useMatch, useLocation } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { FetchWorkOrdersParams } from "../../store/workOrders/workOrders.types";
 import { fetchWorkOrders } from "../../store/workOrders/workOrders.thunks";
@@ -14,6 +14,7 @@ import { WorkOrderHeaderComponent } from "./WorkOrderHeader";
 import { ToDoView } from "./ToDoView/ToDoView";
 import type { AppDispatch } from "../../store";
 import { workOrderService } from "../../store/workOrders";
+import WorkOrderDetailModal from "./Tableview/modals/WorkOrderDetailModal";
 
 export function WorkOrders() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -44,9 +45,14 @@ export function WorkOrders() {
 
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(false);
+  const [viewingWorkOrder, setViewingWorkOrder] = useState<WorkOrder | null>(null);
 
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
+  const location = useLocation();
+  
+  // Get prefill data from navigation state (from Assets offline prompt)
+  const prefillData = (location.state as any)?.prefillData;
 
   const isCreateRoute = useMatch("/work-orders/create");
   const editMatch = useMatch("/work-orders/:id/edit");
@@ -144,6 +150,39 @@ export function WorkOrders() {
     console.log("🔄 Refreshing Work Orders List...");
     setRefreshKey((prev) => prev + 1); // Trigger re-fetch
   }, []);
+
+  // ✅ Fetch Work Order for Detail View when URL changes
+  useEffect(() => {
+    const fetchViewingWorkOrder = async () => {
+      if (viewingId && viewingId !== selectedWorkOrder?.id) {
+        try {
+          const wo = await workOrderService.fetchWorkOrderById(viewingId);
+          setViewingWorkOrder(wo);
+        } catch (err) {
+          console.error("Failed to fetch work order", err);
+          navigate("/work-orders");
+        }
+      } else if (!viewingId) {
+        setViewingWorkOrder(null);
+      }
+    };
+    fetchViewingWorkOrder();
+  }, [viewingId]);
+
+  // ✅ Handle create route - open modal for list/calendar, set flag for TODO
+  useEffect(() => {
+    if (isCreateRoute) {
+      if (viewMode !== "todo") {
+        setIsModalOpen(true);
+      } else {
+        setCreatingWorkOrder(true);
+      }
+    } else {
+      if (viewMode !== "todo") {
+        setIsModalOpen(false);
+      }
+    }
+  }, [isCreateRoute, viewMode]);
 
   // ... (Assign/Edit/Create Handlers) ...
   const handleCreateClick = () => {
@@ -243,8 +282,25 @@ export function WorkOrders() {
 
       <NewWorkOrderModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          navigate("/work-orders");
+        }}
+        prefillData={prefillData}
       />
+
+      {/* ✅ Work Order Detail Modal (for List/Calendar View) */}
+      {viewingWorkOrder && (
+        <WorkOrderDetailModal
+          open={!!viewingWorkOrder}
+          onClose={() => {
+            setViewingWorkOrder(null);
+            navigate("/work-orders");
+          }}
+          workOrder={viewingWorkOrder}
+          onRefreshWorkOrders={handleRefreshWorkOrders}
+        />
+      )}
     </div>
   );
 }

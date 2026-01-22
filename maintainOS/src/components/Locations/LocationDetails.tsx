@@ -1,4 +1,5 @@
 import {
+  MoreVertical,
   Edit,
   MoreHorizontal,
   Link as LinkIcon,
@@ -23,7 +24,7 @@ import {
 } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
 import QRCode from "react-qr-code";
-import { formatDate } from "../utils/Date";
+
 import DeleteModal from "./DeleteModal";
 import { LocationImages } from "./LocationImages";
 import { LocationFiles } from "./LocationFiles";
@@ -38,14 +39,10 @@ import api from "../../store/auth/auth.service";
 interface LocationDetailsProps {
   selectedLocation: any;
   handleDeleteLocation: (id: string) => void;
-  user: {
-    id: string;
-    fullName: string;
-    email: string;
-  } | null;
+  user?: any;
   onEdit?: (location: any) => void;
   handleShowNewSubLocationForm: (show: boolean) => void;
-  restoreData: string;
+  showDeleted: boolean;
   fetchLocation: () => void;
   onClose: () => void;
   setShowSubLocation: (show: boolean) => void;
@@ -57,9 +54,8 @@ type DateRange = { startDate: string; endDate: string };
 const LocationDetails: React.FC<LocationDetailsProps> = ({
   selectedLocation,
   handleDeleteLocation,
-  user,
   handleShowNewSubLocationForm,
-  restoreData,
+  showDeleted,
   fetchLocation,
   onClose,
   onSubLocationClick,
@@ -72,6 +68,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
   // ✅ STATES FOR CREATOR AND UPDATER NAMES
   const [createdByName, setCreatedByName] = useState<string>("");
   const [updatedByName, setUpdatedByName] = useState<string>("");
+  const [subLocToDelete, setSubLocToDelete] = useState<any>(null);
 
   const handleRestoreLocationData = async (id: string) => {
     try {
@@ -138,6 +135,18 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
       </span>
     );
   };
+ 
+  const handleDeleteSubLocation = async (id: string) => {
+    try {
+      await api.delete("/locations/batch-delete", { data: { ids: [id] } });
+      toast.success("Sub-location deleted successfully!");
+      fetchLocation();
+    } catch (err) {
+      toast.error("Failed to delete the sub-location.");
+    } finally {
+      setSubLocToDelete(null);
+    }
+  };
 
   const [chartDateRanges, setChartDateRanges] = useState<
     Record<string, DateRange>
@@ -185,43 +194,57 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
             </Tooltip>
             
             {/* ✅ FIXED EDIT BUTTON LOGIC */}
-            <button
-              title="Edit"
-              className="flex cursor-pointer items-center gap-1 rounded-md border border-orange-600 px-3 py-1.5 text-orange-600 hover:bg-orange-50"
-              onClick={() => {
-                if (onEdit) {
-                  // If onEdit is provided (like in Modal), use it!
-                  onEdit(selectedLocation);
-                } else {
-                  // Fallback to navigation (like in Panel View)
-                  navigate(`/locations/${selectedLocation.id}/edit`);
-                }
-              }}
-            >
-              <Edit size={16} /> Edit
-            </button>
+            {!showDeleted && (
+              <>
+                <button
+                  title="Edit"
+                  className="flex cursor-pointer items-center gap-1 rounded-md border border-orange-600 px-3 py-1.5 text-orange-600 hover:bg-orange-50"
+                  onClick={() => {
+                    if (onEdit) {
+                      // If onEdit is provided (like in Modal), use it!
+                      onEdit(selectedLocation);
+                    } else {
+                      // Fallback to navigation (like in Panel View)
+                      navigate(`/locations/${selectedLocation.id}/edit`);
+                    }
+                  }}
+                >
+                  <Edit size={16} /> Edit
+                </button>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="mt-2">
-                <DropdownMenuItem onClick={() => setOpenDeleteModal(true)}>
-                  Delete
-                </DropdownMenuItem>
-                {restoreData && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="mt-2 text-sm">
+                    <DropdownMenuItem onClick={() => setOpenDeleteModal(true)}>
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
+
+            {showDeleted && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="mt-2 text-sm">
                   <DropdownMenuItem
                     onClick={() =>
                       handleRestoreLocationData(selectedLocation?.id)
                     }
                   >
-                    {restoreData}
+                    Restore
                   </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </div>
@@ -418,19 +441,41 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
           <div className="divide-y divide-gray-200 mb-4 bg-gray-50 rounded-lg border">
             {Array.isArray(selectedLocation?.children) &&
               selectedLocation.children.map((location: any) => (
-                <button
+                <div
                   key={location?.id || Math.random()}
                   className="w-full flex items-center justify-between py-3 px-3 hover:bg-gray-100 transition-colors group"
-                  onClick={() => onSubLocationClick(location)}
                 >
-                  <div className="flex items-center gap-2">
+                  <div 
+                    className="flex items-center gap-2 flex-1 cursor-pointer"
+                    onClick={() => onSubLocationClick(location)}
+                  >
                     <MapPin className="w-4 h-4 text-orange-600" />
                     <span className="text-gray-900 text-sm font-medium">
                       {location?.name || "Unnamed Location"}
                     </span>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
-                </button>
+                  <div className="flex items-center gap-2">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          className="text-red-600 focus:text-red-600 cursor-pointer"
+                          onClick={() => setSubLocToDelete(location)}
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <ChevronRight 
+                      className="w-4 h-4 text-gray-400 group-hover:text-gray-600 cursor-pointer" 
+                      onClick={() => onSubLocationClick(location)}
+                    />
+                  </div>
+                </div>
               ))}
             {(!selectedLocation?.children ||
               selectedLocation.children.length === 0) && (
@@ -444,13 +489,10 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
         <WorkOrderHistoryChart
           id="work-order-history"
           title="Work Order History"
-          workOrderHistory={selectedLocation?.workOrders}
+          workOrderHistory={{ id: selectedLocation.id, name: selectedLocation.name }}
           filters={filters}
           dateRange={chartDateRanges["work-order-history"]}
           onDateRangeChange={handleDateRangeChange}
-          groupByField="createdAt"
-          lineName="Created"
-          lineColor="#0091ff"
         />
 
         {/* ✅ UPDATED FOOTER INFO */}
@@ -506,6 +548,14 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
             handleDeleteLocation(selectedLocation.id);
             setOpenDeleteModal(false);
           }}
+        />
+      )}
+
+      {subLocToDelete && (
+        <DeleteModal
+          modalRef={modalRef}
+          onClose={() => setSubLocToDelete(null)}
+          onConfirm={() => handleDeleteSubLocation(subLocToDelete.id)}
         />
       )}
     </div>
