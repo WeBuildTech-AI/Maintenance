@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "../ui/button";
 import { Calendar, ChevronDown } from "lucide-react";
 import {
@@ -47,8 +48,28 @@ const getDefaultDateRange = () => {
 
 export function Reporting() {
   const defaultDates = getDefaultDateRange();
+  const [searchParams, setSearchParams] = useSearchParams();
   
-  const [activeTab, setActiveTab] = useState<TabType>("work-orders");
+  // Helper function to validate tab type
+  const isValidTab = (tab: string | null): tab is TabType => {
+    const validTabs: TabType[] = [
+      "work-orders",
+      "asset-health",
+      "reporting-details",
+      "recent-activity",
+      "export-data",
+      "custom-dashboards",
+    ];
+    return tab !== null && validTabs.includes(tab as TabType);
+  };
+
+  // Initialize activeTab from URL or default to 'work-orders'
+  const getInitialTab = (): TabType => {
+    const tabParam = searchParams.get("tab");
+    return isValidTab(tabParam) ? tabParam : "work-orders";
+  };
+
+  const [activeTab, setActiveTab] = useState<TabType>(getInitialTab());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [startDate, setStartDate] = useState(defaultDates.startDate);
   const [endDate, setEndDate] = useState(defaultDates.endDate);
@@ -62,6 +83,20 @@ export function Reporting() {
   );
   const [startDateError, setStartDateError] = useState<string | null>(null);
   const [endDateError, setEndDateError] = useState<string | null>(null);
+
+  // Sync activeTab with URL
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (isValidTab(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
+
+  // Update URL when activeTab changes
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+    setSearchParams({ tab });
+  };
 
   // Validate date format MM/DD/YYYY
   const isValidDateFormat = (dateStr: string): boolean => {
@@ -165,7 +200,7 @@ export function Reporting() {
 
   const handleNavigateToDetails = useCallback((chartType: string) => {
     setSelectedDetailChart(chartType);
-    setActiveTab("reporting-details");
+    handleTabChange("reporting-details");
   }, []);
 
   const monthNames = [
@@ -361,7 +396,7 @@ export function Reporting() {
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               className={cn(
                 "flex items-center px-4 py-3 text-sm font-medium border-b-2 transition-colors",
                 activeTab === tab.id
