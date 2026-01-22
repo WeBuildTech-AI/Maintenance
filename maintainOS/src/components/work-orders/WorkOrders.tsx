@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { useNavigate, useMatch, useLocation } from "react-router-dom";
+import { useNavigate, useMatch, useLocation, useSearchParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { FetchWorkOrdersParams } from "../../store/workOrders/workOrders.types";
 import { fetchWorkOrders } from "../../store/workOrders/workOrders.thunks";
@@ -24,10 +24,15 @@ export function WorkOrders() {
     null
   );
   // const [viewMode, setViewMode] = useState<ViewMode>("todo");
-  const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    const savedMode = localStorage.getItem("workOrderViewMode");
-    return (savedMode as ViewMode) || "todo";
-  });
+  /* Refactored to use URL Search Params */
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryViewMode = searchParams.get("view") as ViewMode | null;
+  const viewMode: ViewMode = queryViewMode && ["todo", "list", "calendar", "workload"].includes(queryViewMode) 
+    ? queryViewMode 
+    : "todo";
+
+  // Sync 'todo' to URL if missing, or just handle default silently. 
+  // Let's just use the derived value.
   const [workloadWeekOffset, setWorkloadWeekOffset] = useState(0);
   const [creatingWorkOrder, setCreatingWorkOrder] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -72,15 +77,10 @@ export function WorkOrders() {
 
   // store the view mode in local storage
 
+  // Persist view mode to localStorage when it changes (optional, but good for UX restoration if we want to redirect on load)
   useEffect(() => {
-    if (viewMode === "list") {
-      localStorage.setItem("workOrderViewMode", "list");
-    } else if (viewMode === "calendar") {
-      localStorage.setItem("workOrderViewMode", "calendar");
-    } else if (viewMode === "workload") {
-      // localStorage.setItem("workOrderViewMode", "workload");
-    } else {
-      localStorage.removeItem("workOrderViewMode");
+    if (viewMode) {
+      localStorage.setItem("workOrderViewMode", viewMode);
     }
   }, [viewMode]);
 
@@ -221,7 +221,7 @@ export function WorkOrders() {
       {/* ✅ Use as Component, not function call */}
       <WorkOrderHeaderComponent
         viewMode={viewMode}
-        setViewMode={setViewMode}
+        // setViewMode removed as it's now URL driven
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         setIsCreatingForm={setCreatingWorkOrder}

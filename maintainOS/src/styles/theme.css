@@ -1,11 +1,11 @@
-@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Poppins:wght@300;400;500;600&display=swap");
+/* Font import removed */
 
 .register-page-container {
   display: flex;
   height: 100vh;
   width: 100vw;
   background-color: #fff9ee;
-  font-family: "Poppins", sans-serif;
+  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
   overflow: hidden;
   padding: 25px;
   gap: 50px;
@@ -50,7 +50,7 @@
   top: 360px; /* Estimated visual center */
   width: 592px;
   height: 132px;
-  font-family: "Montserrat", sans-serif;
+  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 700;
   font-size: 54px;
   line-height: 100%;
@@ -66,7 +66,7 @@
   top: 513px; /* 360 + 132 + 21 */
   width: 529px;
   height: 66px;
-  font-family: "Poppins", sans-serif;
+  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 300;
   font-size: 22px;
   line-height: 100%;
@@ -101,7 +101,7 @@
 }
 
 .register-form-title {
-  font-family: "Montserrat", sans-serif;
+  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 700;
   font-size: 32px;
   line-height: 1.2;
@@ -110,7 +110,7 @@
 }
 
 .register-form-subtitle {
-  font-family: "Poppins", sans-serif;
+  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 400;
   font-size: 14px;
   color: #9a9a9a;
@@ -149,7 +149,7 @@
   padding: 0 16px;
   border: 1px solid #faad00;
   border-radius: 12px;
-  font-family: "Poppins", sans-serif;
+  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 14px;
   color: #000000;
   background-color: #ffffff;
@@ -178,7 +178,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-family: "Poppins", sans-serif;
+  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 12px;
   color: #000000;
 }
@@ -207,7 +207,7 @@
   background-color: #ffc649;
   border: none;
   border-radius: 12px;
-  font-family: "Montserrat", sans-serif;
+  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 700;
   font-size: 16px;
   color: #ffffff;
@@ -221,7 +221,7 @@
 
 .register-footer {
   text-align: center;
-  font-family: "Poppins", sans-serif;
+  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 14px;
   color: #9a9a9a;
 }
@@ -379,7 +379,7 @@ input[type="radio"]:hover {
   top: 513px; /* 360px + 132px + 21px gap */
   width: 529px;
   height: 66px;
-  font-family: "Poppins", sans-serif;
+  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 22px;
   font-weight: 300;
   line-height: 100%;
@@ -412,7 +412,7 @@ input[type="radio"]:hover {
 }
 
 .register-form-title {
-  font-family: "Montserrat", sans-serif;
+  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 32px;
   font-weight: 700;
   color: #000000;
@@ -420,7 +420,7 @@ input[type="radio"]:hover {
 }
 
 .register-form-subtitle {
-  font-family: "Poppins", sans-serif;
+  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 12px;
   font-weight: 300;
   color: #000000;
@@ -462,7 +462,7 @@ input[type="radio"]:hover {
   border: 1px solid transparent;
   border-radius: 4px; /* Default radius, will adjust if specified. Design JSON didn't specify input radius, screenshot looks slightly rounded like 4-8px. */
   padding: 0 16px;
-  font-family: "Poppins", sans-serif;
+  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 14px; /* Standard */
   color: #000;
   box-sizing: border-box;
@@ -528,7 +528,7 @@ input[type="radio"]:hover {
   color: #ffffff;
   border: none;
   border-radius: 12px;
-  font-family: "Poppins", sans-serif;
+  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 16px;
   font-weight: 600; /* Looks bold in screenshot */
   cursor: pointer;
@@ -589,4 +589,159 @@ input[type="radio"]:hover {
   .register-btn-primary {
     width: 100%;
   }
+}
+
+/* =========================================
+   Top Header Theme Styles
+   ========================================= */
+
+.top-header-container {
+  height: 64px;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.header-left-section {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+}
+
+.header-logo-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.header-logo-text {
+  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 100%;
+  letter-spacing: 0.04em;
+  color: #000000;
+}
+
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.nav-link {
+  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #6b7280;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  padding-bottom: 2px;
+  transition: all 0.2s;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  line-height: 100%;
+  letter-spacing: 0.04em;
+}
+
+.nav-link:hover {
+  color: #faad00;
+}
+
+.nav-link.active {
+  color: #000000;
+  border-bottom-color: #faad00;
+  font-weight: 600;
+}
+
+.more-dropdown-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #6b7280;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  height: 64px;
+  line-height: 100%;
+  letter-spacing: 0.04em;
+}
+
+.more-dropdown-btn:hover {
+  color: #faad00;
+}
+
+.header-right-section {
+  display: flex;
+  align-items: center;
+  gap: 21px;
+}
+
+.header-icon-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-icon-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.more-dropdown-content {
+  width: 220px;
+  border-radius: 10px;
+  border: 1px solid #e1e3e6;
+  background-color: white;
+  padding: 10px;
+  box-shadow: 0px 10px 15px -3px rgba(0, 0, 0, 0.1), 0px 4px 6px -2px rgba(0, 0, 0, 0.05);
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+}
+
+.dropdown-nav-link {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  padding: 10px;
+  gap: 12px;
+  color: #344254;
+  letter-spacing: 0.02em;
+  border-radius: 7px;
+  white-space: nowrap;
+  transition: all 0.2s ease-in-out;
+}
+
+.dropdown-nav-link:hover,
+.dropdown-nav-link.active {
+  background-color: #fff1d3;
+  color: #344254;
+  font-weight: 400;
 }
