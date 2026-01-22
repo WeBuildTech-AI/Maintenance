@@ -1,4 +1,4 @@
-import { MapPin } from "lucide-react";
+import { Tag } from "lucide-react";
 
 
 export function AssetType({ asset }: { asset: any }) {
@@ -10,7 +10,7 @@ export function AssetType({ asset }: { asset: any }) {
           <div className="space-y-2">
             {asset.assetTypes.map((item) => (
               <div key={item.id} className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-orange-500" />
+                <Tag className="h-4 w-4 text-orange-500" />
                 <span>{item.name}</span>
               </div>
             ))}
