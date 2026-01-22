@@ -21,6 +21,7 @@ import { PartTable } from "./PartTable";
 /* ✅ Import partService */
 import { partService } from "../../store/parts/parts.service";
 import { FetchPartsParams } from "../../store/parts/parts.types"; 
+import { DiscardChangesModal } from "../work-orders/ToDoView/DiscardChangesModal";//discard popup//
 
 // Define ViewMode locally to avoid type errors if not imported
 type ViewMode = "table" | "panel";
@@ -35,6 +36,23 @@ export function Inventory() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
+  const isEditingOrCreating =
+    location.pathname.includes("/create") ||
+    location.pathname.includes("/edit");
+  //handlers
+  const handleConfirmDiscard = () => {
+    setShowDiscardModal(false);
+
+    if (pendingPath) {
+      navigate(pendingPath);
+      setPendingPath(null);
+    }
+  };
+
+  const handleCancelDiscard = () => {
+    setShowDiscardModal(false);
+    setPendingPath(null);
+  };
 
   // Search State
   const [searchQuery, setSearchQuery] = useState("");
@@ -51,7 +69,9 @@ export function Inventory() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
   const [shouldSelectFirst, setShouldSelectFirst] = useState(false);
-
+  // ✅ Discard modal state (Work Orders pattern)
+  const [showDiscardModal, setShowDiscardModal] = useState(false);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
   // ✅ PAGINATION STATE
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10; 
@@ -341,7 +361,17 @@ export function Inventory() {
                     key={it.id}
                     item={it}
                     selected={location.pathname.includes(it.id)}
-                    onSelect={() => navigate(`/inventory/${it.id}`)}
+                    onSelect={() => {
+                      const targetPath = `/inventory/${it.id}`;
+
+                      if (isEditingOrCreating) {
+                        setPendingPath(targetPath);
+                        setShowDiscardModal(true);
+                        return;
+                      }
+
+                      navigate(targetPath);
+                    }}
                   />
               ))}
             </div>
@@ -406,6 +436,12 @@ export function Inventory() {
           </div>
         </div>
       )}
+      {/* ✅ DISCARD CHANGES MODAL (GLOBAL) */}
+      <DiscardChangesModal
+        isOpen={showDiscardModal}
+        onDiscard={handleConfirmDiscard}
+        onKeepEditing={handleCancelDiscard}
+      />
     </div>
   );
 }
