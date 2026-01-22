@@ -644,7 +644,7 @@ export function EditAutomationForm({ automationId, onBack }: EditAutomationFormP
         </div>
       </div>
 
-      {/* Modals */}
+   
       <ConfirmDiscardModal
         open={showDiscardModal}
         onCancel={() => setShowDiscardModal(false)}
