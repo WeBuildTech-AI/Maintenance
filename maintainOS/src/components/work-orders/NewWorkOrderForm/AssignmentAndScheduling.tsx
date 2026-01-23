@@ -353,6 +353,7 @@ export function AssignmentAndScheduling({
           onCtaClick={onOpenInviteModal}
           activeDropdown={activeDropdown}
           setActiveDropdown={setActiveDropdown}
+          limitOptions={3}
           className="w-full"
         />
       </div>
@@ -474,6 +475,7 @@ export function AssignmentAndScheduling({
             onFetch={() => {}}
             activeDropdown={activeDropdown}
             setActiveDropdown={setActiveDropdown}
+            limitOptions={3} 
             className="w-full"
           />
 
@@ -487,6 +489,7 @@ export function AssignmentAndScheduling({
             onFetch={() => {}}
             activeDropdown={activeDropdown}
             setActiveDropdown={setActiveDropdown}
+            limitOptions={3} 
             className="w-full"
           />
         </div>
