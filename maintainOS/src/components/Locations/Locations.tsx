@@ -12,11 +12,10 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../ui/button";
-import { Card, CardContent } from "../ui/card";
 import { NewLocationForm } from "./NewLocationForm/NewLocationForm";
 import { deleteLocation, locationService } from "../../store/locations";
 import type { LocationResponse } from "../../store/locations";
-import { FetchLocationsParams } from "../../store/locations/locations.types";
+import type { FetchLocationsParams } from "../../store/locations/locations.types";
 import type { ViewMode } from "../purchase-orders/po.types";
 import { LocationHeaderComponent } from "./LocationsHeader";
 import Loader from "../Loader/Loader";
@@ -701,9 +700,7 @@ export function Locations() {
                         ? handleSubLocationCreated
                         : handleRootLocationCreate
                     }
-                    setSelectedLocation={setSelectedLocation}
                     onSuccess={handleFormSuccess}
-                    fetchLocations={fetchLocations}
                     isEdit={isEditMode}
                     editData={locationToEdit}
                     initialParentId={parentIdFromUrl}

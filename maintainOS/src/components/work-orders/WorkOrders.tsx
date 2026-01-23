@@ -30,7 +30,8 @@ export function WorkOrders() {
   });
   const [workloadWeekOffset, setWorkloadWeekOffset] = useState(0);
   const [creatingWorkOrder, setCreatingWorkOrder] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  // const [showSettings, setShowSettings] = useState(false);
+  const [, setShowSettings] = useState(false); // ✅ Unused state value
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
@@ -55,11 +56,11 @@ export function WorkOrders() {
   const prefillData = (location.state as any)?.prefillData;
 
   const isCreateRoute = useMatch("/work-orders/create");
-  const editMatch = useMatch("/work-orders/:id/edit");
+  // const editMatch = useMatch("/work-orders/:id/edit"); // Unused
   const viewMatch = useMatch("/work-orders/:id");
 
-  const isEditMode = !!editMatch;
-  const editingId = editMatch?.params?.id;
+  // const isEditMode = !!editMatch; // Unused
+  // const editingId = editMatch?.params?.id; // Unused
   const viewingId = viewMatch?.params?.id;
 
   // Debounce Search
@@ -114,7 +115,7 @@ export function WorkOrders() {
             );
             if (freshData) {
               // @ts-ignore
-              setSelectedWorkOrder(freshData);
+              setSelectedWorkOrder(freshData as WorkOrder);
             }
           }
         } else {
@@ -162,7 +163,7 @@ export function WorkOrders() {
         try {
           const wo = await workOrderService.fetchWorkOrderById(viewingId);
           console.log("✅ [WorkOrders] Fetched work order:", wo?.id);
-          setViewingWorkOrder(wo);
+          setViewingWorkOrder(wo as unknown as WorkOrder);
         } catch (err) {
           console.error("❌ [WorkOrders] Failed to fetch work order", err);
           navigate("/work-orders");
@@ -191,11 +192,11 @@ export function WorkOrders() {
   }, [isCreateRoute, viewMode]);
 
   // ... (Assign/Edit/Create Handlers) ...
-  const handleCreateClick = () => {
-    navigate("/work-orders/create");
-    setCreatingWorkOrder(true);
-    setIsModalOpen(false);
-  };
+  // const handleCreateClick = () => {
+  //   navigate("/work-orders/create");
+  //   setCreatingWorkOrder(true);
+  //   setIsModalOpen(false);
+  // };
   const handleCancelCreate = () => {
     navigate("/work-orders");
     setCreatingWorkOrder(false);
@@ -256,9 +257,9 @@ export function WorkOrders() {
               onCancelCreate={handleCancelCreate}
               onRefreshWorkOrders={handleRefreshWorkOrders}
               // ✅ PASSING PAGINATION PROPS
-              currentPage={filterParams.page || 1}
-              itemsPerPage={filterParams.limit || 20}
-              onParamsChange={handleFilterChange}
+              // currentPage={filterParams.page || 1}
+              // itemsPerPage={filterParams.limit || 20}
+              // onParamsChange={handleFilterChange}
 
               // ✅ OPTIMISTIC UPDATES
               onWorkOrderCreate={(newWo) => {

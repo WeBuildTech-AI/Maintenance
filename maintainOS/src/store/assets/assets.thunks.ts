@@ -308,7 +308,8 @@ export const fetchFilterData = createAsyncThunk(
         teamsRes,
         assetTypesRes,
         manufacturersRes,
-        proceduresRes
+        proceduresRes,
+        assetsRes // ✅ Added assets fetch
       ] = await Promise.all([
         locationService.fetchLocationsName(),
         partService.fetchPartsName(),
@@ -317,7 +318,8 @@ export const fetchFilterData = createAsyncThunk(
         teamService.fetchTeamsName(),
         assetService.fetchAssetType(),
         assetService.fetchAssetManufacturer(),
-        procedureService.fetchProcedures()
+        procedureService.fetchProcedures(),
+        assetService.fetchAssetsName() // ✅ Added assets fetch
       ]);
 
       // Helper to format data uniformly
@@ -338,7 +340,8 @@ export const fetchFilterData = createAsyncThunk(
         teams: format(teamsRes, "Team"),
         assetTypes: format(assetTypesRes, "Asset Type"),
         manufacturers: format(manufacturersRes, "Manufacturer"),
-        procedures: format(proceduresRes, "Procedure")
+        procedures: format(proceduresRes, "Procedure"),
+        assets: format(assetsRes, "Asset") // ✅ Added assets data for Parent Asset dropdown
       };
 
       console.log("🟢 All asset filter data fetched successfully");

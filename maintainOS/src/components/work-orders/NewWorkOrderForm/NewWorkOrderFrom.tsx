@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useLocation, useSearchParams, useMatch } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -11,13 +11,14 @@ import { AssetsAndProcedures } from "./AssetsAndProcedures";
 import { AssignmentAndScheduling } from "./AssignmentAndScheduling";
 import { WorkOrderClassificationAndLinks } from "./WorkOrderClassificationAndLinks";
 
-import type { SelectOption } from "../NewWorkOrderForm/DynamicSelect";
+// import type { SelectOption } from "../NewWorkOrderForm/DynamicSelect"; // REMOVED unused import
 import {
   createWorkOrder,
   updateWorkOrder,
   fetchWorkOrderById,
+  fetchFilterData,
 } from "../../../store/workOrders/workOrders.thunks";
-import { fetchFilterData } from "../../utils/filterDataFetcher";
+// import { fetchFilterData } from "../../utils/filterDataFetcher"; // REMOVED
 import { procedureService } from "../../../store/procedures/procedures.service";
 import { LinkedProcedurePreviewModal } from "./LinkedProcedurePreviewModal";
 import AddProcedureModal from "../WorkloadView/Modal/AddProcedureModal";
@@ -27,7 +28,8 @@ import GenerateProcedure from "../../Library/GenerateProcedure/GenerateProcedure
 import TimeOverviewPanel from "./../panels/TimeOverviewPanel";
 import OtherCostsPanel from "./../panels/OtherCostsPanel";
 import UpdatePartsPanel from "./../panels/UpdatePartsPanel";
-import { locationService } from "../../../store/locations";
+// import { locationService } from "../../../store/locations"; // REMOVED unused import
+import type { RootState } from "../../../store"; // Added RootState import
 
 
 
@@ -180,6 +182,9 @@ export function NewWorkOrderForm({
   const [searchParams] = useSearchParams();
   const authUser = useSelector((state: any) => state.auth.user);
 
+  // Gets cached filter data from Redux
+  const filterData = useSelector((state: RootState) => state.workOrders.filterData);
+
   // ✅ LOCAL STATE TO HOLD BASELINE DATA (Fixes issue where 'existingWorkOrder' prop is stale)
   const [originalData, setOriginalData] = useState<any>(existingWorkOrder || {});
 
@@ -205,7 +210,7 @@ export function NewWorkOrderForm({
 
   const [assetIds, setAssetIds] = useState<string[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  const [assigneeOptions, setAssigneeOptions] = useState<{ id: string, name: string }[]>([]);
+  // const [assigneeOptions, setAssigneeOptions] = useState<{ id: string, name: string }[]>([]); // Derived from Redux now
 
   const [dueDate, setDueDate] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -223,34 +228,45 @@ export function NewWorkOrderForm({
   const [partIds, setPartIds] = useState<string[]>([]);
   const [vendorIds, setVendorIds] = useState<string[]>([]);
 
-
-
-  const [locationOptions, setLocationOptions] = useState<SelectOption[]>([]);
-  const [assetOptions, setAssetOptions] = useState<SelectOption[]>([]);
-  const [teamOptions, setTeamOptions] = useState<SelectOption[]>([]);
-  const [categoryOptions, setCategoryOptions] = useState<SelectOption[]>([]);
-  const [partOptions, setPartOptions] = useState<SelectOption[]>([]);
-  const [vendorOptions, setVendorOptions] = useState<SelectOption[]>([]);
+  // Removed local options state
+  // const [locationOptions, setLocationOptions] = useState<SelectOption[]>([]);
+  // const [assetOptions, setAssetOptions] = useState<SelectOption[]>([]);
+  // const [teamOptions, setTeamOptions] = useState<SelectOption[]>([]);
+  // const [categoryOptions, setCategoryOptions] = useState<SelectOption[]>([]);
+  // const [partOptions, setPartOptions] = useState<SelectOption[]>([]);
+  // const [vendorOptions, setVendorOptions] = useState<SelectOption[]>([]);
 
   const [linkedProcedure, setLinkedProcedure] = useState<any>(null);
   const [isProcedureLoading, setIsProcedureLoading] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isAddProcModalOpen, setIsAddProcModalOpen] = useState(false);
 
+  // Fetch all filter data on mount
+  useEffect(() => {
+    dispatch(fetchFilterData());
+  }, [dispatch]);
+
+  // Derive options from Redux state
+  const locationOptions = useMemo(() => filterData?.locations || [], [filterData]);
+  const assetOptions = useMemo(() => filterData?.assets || [], [filterData]);
+  const teamOptions = useMemo(() => filterData?.teams || [], [filterData]);
+  const categoryOptions = useMemo(() => filterData?.categories || [], [filterData]);
+  const partOptions = useMemo(() => filterData?.parts || [], [filterData]);
+  const vendorOptions = useMemo(() => filterData?.vendors || [], [filterData]);
+  const assigneeOptions = useMemo(() => filterData?.users || [], [filterData]);
+
+
   // ✅ ADDED: Capture asset from Asset Detail navigation state
   useEffect(() => {
     if (location.state?.prefilledAsset) {
-      const { id, name } = location.state.prefilledAsset;
+      const { id } = location.state.prefilledAsset; // removed name because options come from Redux now
       const assetIdStr = String(id);
 
       // Select the asset
       setAssetIds((prev) => (prev.includes(assetIdStr) ? prev : [...prev, assetIdStr]));
 
-      // Ensure the name is in the dropdown options
-      setAssetOptions((prev) => {
-        if (prev.some((opt) => opt.id === assetIdStr)) return prev;
-        return [...prev, { id: assetIdStr, name: name }];
-      });
+      // Removed manual option setting since we rely on Redux options now
+      // setAssetOptions(...) 
 
       // Clear state so it doesn't stay prefilled if user refreshes or navigates back
       window.history.replaceState({}, document.title);
@@ -261,14 +277,7 @@ export function NewWorkOrderForm({
     const paramLocationId = searchParams.get("locationId");
     if (paramLocationId && !activeId) {
       setLocationId(paramLocationId);
-
-      locationService.fetchLocationById(paramLocationId)
-        .then((loc: any) => {
-          if (loc) {
-            setLocationOptions([{ id: loc.id, name: loc.name }]);
-          }
-        })
-        .catch((err: any) => console.error("Error prefilling location:", err));
+      // Removed manual fetch location by ID and option setting
     }
   }, [searchParams, activeId]);
 
@@ -276,22 +285,13 @@ export function NewWorkOrderForm({
     if (location.state?.prefilledPart) {
       const part = location.state.prefilledPart;
       setPartIds((prev) => prev.includes(part.id) ? prev : [...prev, part.id]);
-      setPartOptions((prev) => prev.some((opt) => opt.id === part.id) ? prev : [...prev, { id: part.id, name: part.name }]);
+      // Removed manual option setting
     }
   }, [location.state]);
 
-  const handleFetch = async (type: string, setOptions: (val: SelectOption[]) => void) => {
-    try {
-      const { data } = await fetchFilterData(type);
-      const normalized = Array.isArray(data) ? data.map((d: any) => ({
-        id: d.id,
-        name: d.name || d.title || d.fullName || "Unknown"
-      })) : [];
-      setOptions(normalized);
-    } catch (e) {
-      console.error(`Failed fetching ${type}`, e);
-    }
-  };
+
+  // Removed handleFetch
+  // const handleFetch = async (type: string, setOptions: (val: SelectOption[]) => void) => { ... }
 
   useEffect(() => {
     if (location.state?.procedureData) {
@@ -404,40 +404,40 @@ export function NewWorkOrderForm({
 
       if (data.location) {
         setLocationId(data.location.id);
-        setLocationOptions([{ id: data.location.id, name: data.location.name || "Unknown Location" }]);
+        // setLocationOptions removed
       } else if (data.locationId) {
         setLocationId(data.locationId);
       }
 
       if (data.assets) {
         setAssetIds(data.assets.map((a: any) => a.id));
-        setAssetOptions(data.assets.map((a: any) => ({ id: a.id, name: a.name || "Unknown Asset" })));
+        // setAssetOptions removed
       } else { setAssetIds(data.assetIds || []); }
 
       if (data.teams) {
         setTeamIds(data.teams.map((t: any) => t.id));
-        setTeamOptions(data.teams.map((t: any) => ({ id: t.id, name: t.name || "Unknown Team" })));
+        // setTeamOptions removed
       } else { setTeamIds(data.assignedTeamIds || []); }
 
       if (data.categories) {
         setCategoryIds(data.categories.map((c: any) => c.id));
-        setCategoryOptions(data.categories.map((c: any) => ({ id: c.id, name: c.name || "Unknown Category" })));
+        // setCategoryOptions removed
       } else { setCategoryIds(data.categoryIds || []); }
 
       if (data.parts) {
         setPartIds(data.parts.map((p: any) => p.id));
-        setPartOptions(data.parts.map((p: any) => ({ id: p.id, name: p.name || "Unknown Part" })));
+        // setPartOptions removed
       } else { setPartIds(data.partIds || []); }
 
       if (data.vendors) {
         setVendorIds(data.vendors.map((v: any) => v.id));
-        setVendorOptions(data.vendors.map((v: any) => ({ id: v.id, name: v.name || "Unknown Vendor" })));
+        // setVendorOptions removed
       } else { setVendorIds(data.vendorIds || []); }
 
       if (data.assignees) {
         setSelectedUsers(data.assignees.map((u: any) => u.id));
-        setAssigneeOptions(data.assignees.map((u: any) => ({ id: u.id, name: u.fullName || u.name || "Unknown" })));
-      } else { setSelectedUsers(data.assigneeIds || []); setAssigneeOptions([]); }
+        // setAssigneeOptions removed
+      } else { setSelectedUsers(data.assigneeIds || []); }
 
       if (data.procedures && data.procedures.length > 0) setLinkedProcedure(data.procedures[0]);
       else if (data.procedure) setLinkedProcedure(data.procedure);
@@ -490,15 +490,11 @@ export function NewWorkOrderForm({
       // Only apply prefill if not editing an existing work order
       if (prefillData.assetIds && prefillData.assetIds.length > 0) {
         setAssetIds(prefillData.assetIds);
-        if (prefillData.assetName) {
-          setAssetOptions([{ id: prefillData.assetIds[0], name: prefillData.assetName }]);
-        }
+        // Removed manual option setting
       }
       if (prefillData.locationId) {
         setLocationId(prefillData.locationId);
-        if (prefillData.locationName) {
-          setLocationOptions([{ id: prefillData.locationId, name: prefillData.locationName }]);
-        }
+        // Removed manual option setting
       }
 
     }
@@ -605,12 +601,12 @@ export function NewWorkOrderForm({
             description={description} onDescriptionChange={setDescription}
             estimatedTime={estimatedTime} onEstimatedTimeChange={setEstimatedTime}
             locationId={locationId} onLocationSelect={(val) => setLocationId(val as string)}
-            locationOptions={locationOptions} isLocationsLoading={false} onFetchLocations={() => handleFetch("locations", setLocationOptions)} onCreateLocation={() => toast("Open Create Location Modal")}
+            locationOptions={locationOptions} isLocationsLoading={!filterData} onFetchLocations={() => { }} onCreateLocation={() => toast("Open Create Location Modal")}
             activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown}
           />
           <AssetsAndProcedures
             assetIds={assetIds} onAssetSelect={(val) => setAssetIds(val as string[])}
-            assetOptions={assetOptions} isAssetsLoading={false} onFetchAssets={() => handleFetch("assets", setAssetOptions)} onCreateAsset={() => toast("Open Create Asset Modal")}
+            assetOptions={assetOptions} isAssetsLoading={!filterData} onFetchAssets={() => { }} onCreateAsset={() => toast("Open Create Asset Modal")}
             activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown}
             linkedProcedure={linkedProcedure} onRemoveProcedure={() => setLinkedProcedure(null)} onPreviewProcedure={() => setIsPreviewOpen(true)} onEditProcedure={handleEditLinkedProcedure} setLinkedProcedure={setLinkedProcedure}
           />
@@ -626,10 +622,10 @@ export function NewWorkOrderForm({
             selectedPriority={selectedPriority} onPriorityChange={setSelectedPriority}
             status={status} onStatusChange={setStatus}
             qrCodeValue={qrCodeValue} onQrCodeChange={setQrCodeValue}
-            teamIds={teamIds} onTeamSelect={(val) => setTeamIds(val as string[])} teamOptions={teamOptions} isTeamsLoading={false} onFetchTeams={() => handleFetch("team-members", setTeamOptions)} onCreateTeam={() => toast("Open Create Team Modal")}
-            categoryIds={categoryIds} onCategorySelect={(val) => setCategoryIds(val as string[])} categoryOptions={categoryOptions} isCategoriesLoading={false} onFetchCategories={() => handleFetch("categories", setCategoryOptions)} onCreateCategory={() => toast("Open Create Category Modal")}
-            partIds={partIds} onPartSelect={(val) => setPartIds(val as string[])} partOptions={partOptions} isPartsLoading={false} onFetchParts={() => handleFetch("parts", setPartOptions)} onCreatePart={() => toast("Open Create Part Modal")}
-            vendorIds={vendorIds} onVendorSelect={(val) => setVendorIds(val as string[])} vendorOptions={vendorOptions} isVendorsLoading={false} onFetchVendors={() => handleFetch("vendors", setVendorOptions)} onCreateVendor={() => toast("Open Create Vendor Modal")}
+            teamIds={teamIds} onTeamSelect={(val) => setTeamIds(val as string[])} teamOptions={teamOptions} isTeamsLoading={!filterData} onFetchTeams={() => { }} onCreateTeam={() => toast("Open Create Team Modal")}
+            categoryIds={categoryIds} onCategorySelect={(val) => setCategoryIds(val as string[])} categoryOptions={categoryOptions} isCategoriesLoading={!filterData} onFetchCategories={() => { }} onCreateCategory={() => toast("Open Create Category Modal")}
+            partIds={partIds} onPartSelect={(val) => setPartIds(val as string[])} partOptions={partOptions} isPartsLoading={!filterData} onFetchParts={() => { }} onCreatePart={() => toast("Open Create Part Modal")}
+            vendorIds={vendorIds} onVendorSelect={(val) => setVendorIds(val as string[])} vendorOptions={vendorOptions} isVendorsLoading={!filterData} onFetchVendors={() => { }} onCreateVendor={() => toast("Open Create Vendor Modal")}
             activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown}
             onPanelClick={setCurrentPanel} isEditMode={isEditing}
             partUsages={originalData?.partUsages}

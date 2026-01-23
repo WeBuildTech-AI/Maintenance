@@ -129,6 +129,7 @@ export interface FilterData {
   assetTypes: any[];
   manufacturers: any[];
   procedures: any[];
+  assets: any[]; // ✅ Added for Parent Asset dropdown
 }
 
 export interface AssetsState {

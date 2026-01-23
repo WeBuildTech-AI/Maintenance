@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import toast from "react-hot-toast";
@@ -10,14 +10,11 @@ import { FooterActions } from "./FooterActions";
 import { BlobUpload, type BUD } from "../../utils/BlobUpload";
 
 import type { RootState, AppDispatch } from "../../../store";
-import { createLocation, updateLocation } from "../../../store/locations";
+import { createLocation, updateLocation, fetchFilterData } from "../../../store/locations";
 import type { LocationResponse } from "../../../store/locations";
 
 // ✅ Import Shared DynamicSelect
-import { DynamicSelect, type SelectOption } from "../../common/DynamicSelect";
-import { vendorService } from "../../../store/vendors";
-import { locationService } from "../../../store/locations";
-import { teamService } from "../../../store/teams";
+import { DynamicSelect } from "../../common/DynamicSelect";
 
 type NewLocationFormProps = {
   onCancel: () => void;
@@ -27,8 +24,6 @@ type NewLocationFormProps = {
   editData?: LocationResponse | null;
   initialParentId?: string;
   isSubLocation?: boolean;
-  fetchLocations: () => void;
-  fetchLocationById: () => void;
 };
 
 export function NewLocationForm({
@@ -39,8 +34,6 @@ export function NewLocationForm({
   editData = null,
   initialParentId,
   isSubLocation = false,
-  fetchLocations,
-  fetchLocationById,
 }: NewLocationFormProps) {
   const [locationImages, setLocationImages] = useState<BUD[]>([]);
   const [locationDocs, setLocationDocs] = useState<BUD[]>([]);
@@ -55,16 +48,22 @@ export function NewLocationForm({
 
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
-  // Options State
-  const [teamOptions, setTeamOptions] = useState<SelectOption[]>([]);
-  const [vendorOptions, setVendorOptions] = useState<SelectOption[]>([]);
-  const [parentOptions, setParentOptions] = useState<SelectOption[]>([]);
-
-  const [loadingType, setLoadingType] = useState<string | null>(null);
-
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector((state: RootState) => state.auth.user);
+  const { filterData } = useSelector((state: RootState) => state.locations);
+
+  // ✅ Dispatch fetchFilterData on mount
+  useEffect(() => {
+    dispatch(fetchFilterData());
+  }, [dispatch]);
+
+  // ✅ Derive Options from Redux (Memoized)
+  const teamOptions = useMemo(() => filterData?.teams || [], [filterData]);
+  const vendorOptions = useMemo(() => filterData?.vendors || [], [filterData]);
+  const parentOptions = useMemo(() => filterData?.parents || [], [filterData]);
+
+  const isLoading = !filterData;
 
   useEffect(() => {
     if (isEdit && editData) {
@@ -76,7 +75,7 @@ export function NewLocationForm({
       // 1. Handle Parent ID
       setParentLocationId(editData.parentLocationId || "");
 
-      // 2. Handle Vendors (IDs + Hydration)
+      // 2. Handle Vendors (IDs)
       if (editData.vendorIds && editData.vendorIds.length > 0) {
         setVendorId(editData.vendorIds);
       } else if (
@@ -88,24 +87,9 @@ export function NewLocationForm({
         setVendorId([]);
       }
 
-      // ✅ Hydrate Vendor Options
-      if ((editData as any).vendors && Array.isArray((editData as any).vendors)) {
-        setVendorOptions((editData as any).vendors);
-      }
-
-      // 3. Handle Teams (IDs + Hydration)
+      // 3. Handle Teams (IDs)
       if (editData.teamsInCharge && editData.teamsInCharge.length > 0) {
         setTeamInCharge(editData.teamsInCharge);
-      }
-
-      // ✅ Hydrate Team Options
-      if ((editData as any).teams && Array.isArray((editData as any).teams)) {
-        setTeamOptions((editData as any).teams);
-      }
-
-      // 4. Handle Parent (Hydration)
-      if ((editData as any).parentLocation) {
-        setParentOptions([(editData as any).parentLocation]);
       }
 
       // Images & Files
@@ -137,32 +121,6 @@ export function NewLocationForm({
     }
   };
 
-  // ✅ FETCHING LOGIC LIFTED HERE
-  const handleFetchTeams = async () => {
-    setLoadingType("teams");
-    try {
-      const res: SelectOption[] = await teamService.fetchTeamsName();
-      setTeamOptions(res);
-    } catch (e) { console.error(e); } finally { setLoadingType(null); }
-  };
-
-  const handleFetchVendors = async () => {
-    setLoadingType("vendors");
-    try {
-      const res: SelectOption[] = await vendorService.fetchVendorName();
-      setVendorOptions(res);
-    } catch (e) { console.error(e); } finally { setLoadingType(null); }
-  };
-
-  const handleFetchParents = async () => {
-    setLoadingType("parents");
-    try {
-      const res: SelectOption[] = await locationService.fetchParentLocations();
-      setParentOptions(res);
-    } catch (e) { console.error(e); } finally { setLoadingType(null); }
-  };
-
-
   const handleSubmitLocation = async () => {
     if (!user?.id || !user?.organizationId) {
       toast.error("User or Organization ID missing.");
@@ -176,7 +134,7 @@ export function NewLocationForm({
     setSubmitLocationFormLoader(true);
     const formData = new FormData();
 
-    // 🛠️ HELPER FUNCTIONS FOR COMPARISON
+    // 🛠️ HELPER FUNCTIONS
     const isDifferent = (newVal: string, oldVal?: string) => {
       return (newVal || "").trim() !== (oldVal || "").trim();
     };
@@ -194,13 +152,10 @@ export function NewLocationForm({
     };
 
     if (isEdit && editData) {
-      // 🚀 EDIT MODE: Only append changed fields
-
+      // 🚀 EDIT MODE
       if (isDifferent(name, editData.name)) {
         formData.append("name", String(name.trim()));
       }
-
-      // NOTE: We do NOT append 'createdBy' in edit mode as per requirement
 
       if (isDifferent(description, editData.description)) {
         formData.append("description", String(description));
@@ -210,14 +165,12 @@ export function NewLocationForm({
         formData.append("address", String(address));
       }
 
-      // Check QR Code (Compare without prefix)
       const oldQr = editData.qrCode ? editData.qrCode.split("/").pop() : "";
       if (isDifferent(qrCode, oldQr)) {
         formData.append("qrCode", `location/${String(qrCode)}`);
       }
 
       if (isDifferent(parentLocationId, editData.parentLocationId)) {
-        // Send empty string if cleared, or new ID
         if (parentLocationId) {
           formData.append("parentLocationId", String(parentLocationId));
         }
@@ -231,7 +184,6 @@ export function NewLocationForm({
         vendorId.forEach((vendor) => formData.append("vendorIds[]", vendor));
       }
 
-      // Check Images
       const oldImages = editData.locationImages || editData.photoUrls;
       if (isFilesDifferent(locationImages, oldImages)) {
         locationImages?.forEach((image, index) => {
@@ -240,7 +192,6 @@ export function NewLocationForm({
         });
       }
 
-      // Check Docs
       const oldDocs = editData.locationDocs || editData.files;
       if (isFilesDifferent(locationDocs, oldDocs)) {
         locationDocs?.forEach((doc, index) => {
@@ -250,7 +201,7 @@ export function NewLocationForm({
       }
 
     } else {
-      // 🆕 CREATE MODE: Send everything
+      // 🆕 CREATE MODE
       formData.append("name", String(name.trim()));
       formData.append("createdBy", String(user.id));
 
@@ -295,8 +246,6 @@ export function NewLocationForm({
         );
         isSubLocation ? fetchLocationById() : onCreate(res);
       }
-
-      // setTimeout(() => fetchLocations(), 500);
       onCancel();
     } catch (err: any) {
       console.error("Failed to submit location:", err);
@@ -317,7 +266,6 @@ export function NewLocationForm({
   return (
     <>
       <div className="flex flex-col h-full overflow-hidden">
-        {/* ✅ FIXED: Header is hidden when editing (isEdit=true) */}
         {!isEdit && (
           <div className="p-4 border-b flex-none">
             <h2 className="text-lg font-semibold">{title}</h2>
@@ -355,8 +303,8 @@ export function NewLocationForm({
               value={teamInCharge}
               onSelect={(val) => setTeamInCharge(val as string[])}
               options={teamOptions}
-              onFetch={handleFetchTeams}
-              loading={loadingType === "teams"}
+              onFetch={() => { }}
+              loading={isLoading}
               activeDropdown={activeDropdown}
               setActiveDropdown={setActiveDropdown}
               ctaText="+ Create New Team"
@@ -382,8 +330,8 @@ export function NewLocationForm({
               value={vendorId}
               onSelect={(val) => setVendorId(val as string[])}
               options={vendorOptions}
-              onFetch={handleFetchVendors}
-              loading={loadingType === "vendors"}
+              onFetch={() => { }}
+              loading={isLoading}
               activeDropdown={activeDropdown}
               setActiveDropdown={setActiveDropdown}
               ctaText="+ Create New Vendor"
@@ -401,8 +349,8 @@ export function NewLocationForm({
                 value={parentLocationId}
                 onSelect={(val) => setParentLocationId(val as string)}
                 options={parentOptions}
-                onFetch={handleFetchParents}
-                loading={loadingType === "parents"}
+                onFetch={() => { }}
+                loading={isLoading}
                 activeDropdown={activeDropdown}
                 setActiveDropdown={setActiveDropdown}
                 ctaText="+ Create New Parent Location"
@@ -411,18 +359,7 @@ export function NewLocationForm({
               />
             </div>
           )}
-          {/* Sublocation or Edit mode - we might want to show it but disabled, or just hide it? 
-              The original code disabled it: disabled={isEdit || isSubLocation}
-              DynamicSelect doesn't have a 'disabled' prop yet in my copy. 
-              Let's add a disabled check or just render a read-only view if needed.
-              Original code:
-                <Dropdowns disabled={isEdit || isSubLocation} ... />
-              If disabled, maybe we just show the name if selected? 
-              Actually, for now, if it's edit or sublocation, existing code PASSED disabled=true.
-              Let's respect that by NOT rendering the dropdown or rendering a disabled-like state if needed.
-              However, DynamicSelect doesn't have 'disabled' prop in my implementation.
-              I'll just wrap it in a div with pointer-events-none opacity-50 if disabled.
-          */}
+
           {(isEdit || isSubLocation) && (
             <div className="opacity-60 pointer-events-none">
               <h3 className="mb-2 text-base font-medium text-gray-900">Parent Location</h3>
