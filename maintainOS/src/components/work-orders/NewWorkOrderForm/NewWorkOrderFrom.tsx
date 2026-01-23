@@ -613,13 +613,34 @@ export function NewWorkOrderForm({
     }
   };
 
+  // ✅ REFRESH HANDLER FOR PANELS
+  const handlePanelRefresh = async () => {
+    if (activeId) {
+      try {
+        const resultAction = await dispatch(fetchWorkOrderById(activeId));
+        if (fetchWorkOrderById.fulfilled.match(resultAction)) {
+          setOriginalData(resultAction.payload);
+          // We don't overwrite form fields (title, etc) to preserve any unsaved edits there?
+          // Actually, if I'm in a panel, I replaced the view. 
+          // When I come back, 'form' view re-renders.
+          // State like 'workOrderName' is controlled state.
+          // 'originalData' is background data. 
+          // If I update 'originalData', the classification links (which use originalData.parts) will update.
+        }
+      } catch (e) {
+        console.error("Failed to refresh after panel update", e);
+      }
+    }
+  };
+
   if (loading || isProcedureLoading)
     return (<div className="flex flex-col items-center justify-center h-full gap-2 text-gray-500"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /><p className="text-sm font-medium">Loading...</p></div>);
 
   // ✅ FIX: Use 'originalData' (fetched state) instead of 'existingWorkOrder' (prop) to ensure Edit Mode has data
-  if (currentPanel === 'time') return <TimeOverviewPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={originalData} workOrderId={activeId} />;
-  if (currentPanel === 'cost') return <OtherCostsPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={originalData} workOrderId={activeId} />;
-  if (currentPanel === 'parts') return <UpdatePartsPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={originalData} workOrderId={activeId} />;
+  // ✅ ADDED onSaveSuccess to refresh parent data explicitly
+  if (currentPanel === 'time') return <TimeOverviewPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={originalData} workOrderId={activeId} onSaveSuccess={handlePanelRefresh} />;
+  if (currentPanel === 'cost') return <OtherCostsPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={originalData} workOrderId={activeId} onSaveSuccess={handlePanelRefresh} />;
+  if (currentPanel === 'parts') return <UpdatePartsPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={originalData} workOrderId={activeId} onSaveSuccess={handlePanelRefresh} />;
 
   return (
     <>
