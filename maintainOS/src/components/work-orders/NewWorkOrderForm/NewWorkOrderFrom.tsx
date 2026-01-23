@@ -78,7 +78,20 @@ const getChangedFields = (original: any, current: any) => {
       origVal = original.location.id;
     }
 
+    // 🛠️ FIX: Handle Partial Data (Summary Object) vs UI Defaults
+    // If original is missing the field (undefined/null), and current is matching the 'default',
+    // DO NOT count it as a change to avoid overwriting backend data with UI defaults.
+    const defaults: Record<string, string> = {
+      status: "open",
+      workType: "reactive",
+      priority: "low"
+    };
+
     if (current[key] !== undefined && origVal !== current[key]) {
+      // If original is missing and current is just the default, ignore it
+      if ((origVal === undefined || origVal === null) && current[key] === defaults[key]) {
+        return;
+      }
       changes[key] = current[key];
     }
   });
