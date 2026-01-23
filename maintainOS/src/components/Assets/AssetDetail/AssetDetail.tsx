@@ -121,13 +121,8 @@ export const AssetDetail: FC<AssetDetailProps> = ({
     const fetchHistory = async () => {
       const assetId = asset?.id?.toString();
 
-      if (assetId) {
-        // Removed the check that skipped fetching if ID matched, 
-        // because we need to refetch if status/time updates.
-
+      if (assetId && showHistory) { // ✅ Only fetch if History tab is active
         setLoadingLogs(true);
-        // console.time(`⏱️ fetchHistory logs: ${assetId}`);
-
         try {
           const res = await assetService.fetchAssetStatusLog(assetId);
 
@@ -135,16 +130,12 @@ export const AssetDetail: FC<AssetDetailProps> = ({
             setHistoryLogs(res.logs);
             lastFetchedHistoryIdRef.current = assetId;
 
-            // ✅ Extract Latest Update Info
+            // Optional: Update global last updated info from logs if needed, 
+            // but relying on asset.updatedAt for initial view is faster.
             if (res.logs.length > 0) {
               const latestLog = res.logs[0];
               if (latestLog) {
-                // Update User Name
-                if (latestLog.user?.fullName) {
-                  setUpdatedUserName(latestLog.user.fullName);
-                }
-                // Update Date
-                setLastUpdatedDate(latestLog.createdAt); // Logs use createdAt as the event time
+                setLastUpdatedDate(latestLog.createdAt);
               }
             }
           } else {
@@ -155,13 +146,14 @@ export const AssetDetail: FC<AssetDetailProps> = ({
           setHistoryLogs([]);
         } finally {
           setLoadingLogs(false);
-          // try { console.timeEnd(`⏱️ fetchHistory logs: ${assetId}`); } catch(e) {}
         }
       }
     };
 
-    fetchHistory();
-  }, [asset?.id, asset?.updatedAt, asset?.status]); // ✅ Added dependencies to refresh on update
+    if (showHistory) {
+      fetchHistory();
+    }
+  }, [asset?.id, showHistory]); // ✅ Depend on showHistory
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {

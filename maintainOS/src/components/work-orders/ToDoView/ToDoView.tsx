@@ -29,6 +29,8 @@ export function ToDoView({
   onWorkOrderCreate,
   onWorkOrderUpdate,
   onOptimisticUpdate,
+  pagination,
+  onPageChange,
 }: ToDoViewProps & {
   creatingWorkOrder?: boolean;
   onCancelCreate?: () => void;
@@ -62,48 +64,7 @@ export function ToDoView({
   // Logic for activeList (filtered work orders) remains same
   // const activeList = ... 
 
-  // ✅ Pagination Logic
-  // If server-side pagination is active, we don't slice locally because the parent already fetches only the current page.
-  // Exception: If the parent fetches generic lists and we want to page locally, we use slice.
-  // But here user specifically asked for API param. So parent passes "Data for Page X".
-  // Note: "Data for Page X" might contain mix of Todo/Done.
-  // If the user is on "Todo" tab, they see only todos from that Page X chunk.
-  // This is typical for "Search/Filter API" pagination.
 
-  const currentTableData = pagination
-    ? activeList // Show all items in the valid chunk
-    : useMemo(() => {
-      const firstPageIndex = (currentPage - 1) * itemsPerPage;
-      const lastPageIndex = firstPageIndex + itemsPerPage;
-      return activeList.slice(firstPageIndex, lastPageIndex);
-    }, [currentPage, activeList, itemsPerPage]);
-
-  const handleNextPage = () => {
-    if (pagination) {
-      if (pagination.currentPage < pagination.totalPages) {
-        onPageChange?.(pagination.currentPage + 1);
-      }
-    } else {
-      if (currentPage < Math.ceil(activeList.length / itemsPerPage)) {
-        setLocalPage((p) => p + 1);
-      }
-    }
-  };
-
-  const handlePrevPage = () => {
-    if (pagination) {
-      if (pagination.currentPage > 1) {
-        onPageChange?.(pagination.currentPage - 1);
-      }
-    } else {
-      if (currentPage > 1) {
-        setLocalPage((p) => p - 1);
-      }
-    }
-  };
-
-  const totalCountDisplay = pagination ? pagination.totalItems : activeList.length;
-  const totalPagesDisplay = pagination ? pagination.totalPages : Math.ceil(activeList.length / itemsPerPage);
 
   // ... (return JSX)
   // Need to find where pagination controls are rendered and update them to use `currentPage`, `totalCountDisplay`, `handleNextPage`, `handlePrevPage`.
@@ -148,9 +109,8 @@ export function ToDoView({
     setActivePanel("details");
   }, [selectedWorkOrder?.id]);
 
-  // ✅ PAGINATION STATE ADDED HERE
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  // ✅ PAGINATION STATE ADDED HERE (REMOVED DUPLICATES)
+
 
   const isEditRoute = useMatch("/work-orders/:workOrderId/edit");
   const isCreateRoute = useMatch("/work-orders/create");
