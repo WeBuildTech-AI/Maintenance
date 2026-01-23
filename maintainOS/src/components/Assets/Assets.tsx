@@ -149,8 +149,29 @@ export const Assets: FC = () => {
 
   // --- 4. Fetch Assets ---
 
-  const fetchAssetsData = useCallback(async () => {
+  // --- 4. Fetch Assets ---
+  // ✅ PERF: Track last fetched params to prevent duplicates
+  const lastFetchedParamsRef = useRef<string>("");
+
+  const fetchAssetsData = useCallback(async (force = false) => {
+    // Construct current params key
+    const currentParams = {
+      ...filterParams,
+      search: debouncedSearch,
+      showDeleted
+    };
+    const paramsKey = JSON.stringify(currentParams);
+
+    // Skip if params haven't changed (unless forced or new fetch needed)
+    if (!force && paramsKey === lastFetchedParamsRef.current && assetData.length > 0) {
+      // console.log("⚡ Skipping duplicate fetch for:", paramsKey);
+      return;
+    }
+
     setLoading(true);
+    const timerLabel = "⏱️ fetchAssets execution time";
+    // Reset timer just in case (though timeEnd throws if not exists, time overwrites or throws? Chrome throws if exists)
+    try { console.time(timerLabel); } catch (e) { /* ignore */ }
 
     try {
       let assets: any;
@@ -169,6 +190,7 @@ export const Assets: FC = () => {
       // 2. Selection Logic
       if (assets && assets.length > 0) {
         setAssetData(assets);
+        lastFetchedParamsRef.current = paramsKey; // ✅ Update ref on success
 
         const urlAssetId = searchParams.get("assetId");
 
@@ -191,6 +213,7 @@ export const Assets: FC = () => {
       } else {
         setAssetData([]);
         setSelectedAsset(null);
+        lastFetchedParamsRef.current = paramsKey; // ✅ Update ref even on empty (valid result)
       }
     } catch (err) {
       console.error("Failed to fetch assets:", err);
@@ -199,8 +222,9 @@ export const Assets: FC = () => {
       toast.error("Failed to load assets.");
     } finally {
       setLoading(false);
+      try { console.timeEnd(timerLabel); } catch (e) { /* ignore */ }
     }
-  }, [showDeleted, filterParams, debouncedSearch]);
+  }, [showDeleted, filterParams, debouncedSearch, searchParams, assetData.length, selectedAsset]);
 
   // --- 5. Selection Logic ---
   useEffect(() => {
@@ -214,13 +238,16 @@ export const Assets: FC = () => {
   }, [assetData, paramAssetId]);
 
   const fetchAllLocationData = useCallback(async () => {
+    // ✅ PERF: Reuse existing locations
+    if (allLocationData.length > 0) return;
+
     try {
       const locations: Location[] = await locationService.fetchLocations();
       setAllLocationData(locations);
     } catch (err) {
       console.error("Failed to fetch locations:", err);
     }
-  }, []);
+  }, [allLocationData.length]);
 
   useEffect(() => {
     fetchAssetsData();

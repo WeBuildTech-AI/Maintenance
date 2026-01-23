@@ -116,23 +116,27 @@ export function NewAssetForm({
 
       if (assetData.status) setStatus(assetData.status);
 
-      if (assetData.location) setLocationId(toId(assetData.location.id));
-      if (assetData.manufacturer) setManufacturerId(toId(assetData.manufacturer.id));
-      if (assetData.vendor) setVendorId(toId(assetData.vendor.id));
-      if (assetData.parentAsset) setParentAssetId(toId(assetData.parentAsset.id));
+      // ✅ Handle both Object (with id) and direct ID string
+      const getId = (obj: any, idField: any) => {
+        if (obj && typeof obj === 'object' && obj.id) return toId(obj.id);
+        if (idField) return toId(idField);
+        return "";
+      };
 
-      // Arrays
-      if (Array.isArray(assetData.teamsInCharge)) {
-        setTeamIds(assetData.teamsInCharge.map((t: any) => toId(t.id)));
-      }
-      if (Array.isArray(assetData.parts)) {
-        setPartIds(assetData.parts.map((p: any) => toId(p.id)));
-      }
-      if (Array.isArray(assetData.assetTypes)) {
-        setAssetTypeIds(assetData.assetTypes.map((t: any) => toId(t.id)));
-      } else if (assetData.assetTypeIds) {
-        setAssetTypeIds(assetData.assetTypeIds.map(toId));
-      }
+      setLocationId(getId(assetData.location, assetData.locationId));
+      setManufacturerId(getId(assetData.manufacturer, assetData.manufacturerId));
+      setVendorId(getId(assetData.vendor, assetData.vendorId));
+      setParentAssetId(getId(assetData.parentAsset, assetData.parentAssetId));
+
+      // ✅ Handle Arrays (Strings IDs or Objects with ID)
+      const getIds = (arr: any, fallbackArr: any) => {
+        const source = Array.isArray(arr) ? arr : (Array.isArray(fallbackArr) ? fallbackArr : []);
+        return source.map((item: any) => (typeof item === 'object' && item.id ? toId(item.id) : toId(item)));
+      };
+
+      setTeamIds(getIds(assetData.teams, assetData.teamsInCharge)); // 'teams' vs 'teamsInCharge'
+      setPartIds(getIds(assetData.parts, assetData.partIds));
+      setAssetTypeIds(getIds(assetData.assetTypes, assetData.assetTypeIds));
     }
   }, [isEdit, assetData]);
 

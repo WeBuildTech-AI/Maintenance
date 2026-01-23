@@ -12,18 +12,23 @@ import toast from "react-hot-toast";
 import NewWorkOrderModal from "../../../work-orders/NewWorkOrderModal";
 
 // --- Main Component ---
+// --- Main Component ---
 export function AssetStatusReadings({
   asset,
   fetchAssetsData,
   setSeeMoreAssetStatus,
   seeMoreFlag,
   getAssetStatusLog,
+  updatedUser, // ✅ Prop for correct user
+  lastUpdatedDate, // ✅ Prop for correct date
 }: {
   asset: any;
-  fetchAssetsData?: () => void;
-  setSeeMoreAssetStatus: boolean;
+  fetchAssetsData?: (force?: boolean) => void;
+  setSeeMoreAssetStatus: (value: boolean) => void;
   seeMoreFlag: boolean;
   getAssetStatusLog?: () => void;
+  updatedUser?: string;
+  lastUpdatedDate?: string | null;
 }) {
   const user = useSelector((state: RootState) => state.auth.user);
 
@@ -36,7 +41,7 @@ export function AssetStatusReadings({
   useEffect(() => {
     setAssetStatus(asset?.status || "online");
   }, [asset]);
-  
+
   // Offline work order prompt
   const [isOfflinePromptOpen, setIsOfflinePromptOpen] = useState(false);
   const [isNewWorkOrderModalOpen, setIsNewWorkOrderModalOpen] = useState(false);
@@ -94,7 +99,7 @@ export function AssetStatusReadings({
 
       // Optional refetch
       if (typeof fetchAssetsData === "function") {
-        fetchAssetsData();
+        fetchAssetsData(true);
       }
       if (typeof getAssetStatusLog === "function") {
         getAssetStatusLog();
@@ -102,7 +107,7 @@ export function AssetStatusReadings({
 
       setIsModalOpen(false);
       toast.success("Asset Status Successfully updated");
-      
+
       // ✅ Check if status changed to offline - show work order prompt
       if (finalStatusData.status?.toLowerCase() === 'offline') {
         setIsOfflinePromptOpen(true);
@@ -127,7 +132,7 @@ export function AssetStatusReadings({
           isLoading={isLoading}
         />
       )}
-      
+
       {/* \u2705 Offline Work Order Prompt */}
       <OfflinePromptModal
         isOpen={isOfflinePromptOpen}
@@ -208,9 +213,9 @@ export function AssetStatusReadings({
           <p className="text-sm text-muted-foreground">
             Last updated :{" "}
             <span className="font-medium text-orange-600 capitalize">
-              {user?.fullName}
+              {updatedUser || "Unknown"}
             </span>{" "}
-            , {formatFriendlyDate(asset?.updatedAt)}
+            , {formatFriendlyDate(lastUpdatedDate || asset?.updatedAt)}
           </p>
         )}
       </div>
@@ -283,9 +288,8 @@ const OfflineSinceDropdown = ({
         >
           <span>{offlineSince}</span>
           <ChevronDown
-            className={`w-5 h-5 text-gray-500 transition-transform ${
-              offlineSinceDropdown ? "rotate-180" : ""
-            }`}
+            className={`w-5 h-5 text-gray-500 transition-transform ${offlineSinceDropdown ? "rotate-180" : ""
+              }`}
           />
         </button>
         {offlineSinceDropdown && (
@@ -525,9 +529,8 @@ export function UpdateAssetStatusModal({
 
         <form onSubmit={handleFormSubmit}>
           <div
-            className={`p-6 space-y-4 max-h-[70vh] ${
-              isAnyDropdownOpen ? "overflow-visible" : "overflow-y-auto"
-            }`}
+            className={`p-6 space-y-4 max-h-[70vh] ${isAnyDropdownOpen ? "overflow-visible" : "overflow-y-auto"
+              }`}
           >
             {/* Status Dropdown (Unchanged) */}
             <div>
@@ -542,9 +545,8 @@ export function UpdateAssetStatusModal({
                 >
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-2.5 h-2.5 ${
-                        statuses.find((s) => s.value === selectedStatus)?.color
-                      } rounded-full`}
+                      className={`w-2.5 h-2.5 ${statuses.find((s) => s.value === selectedStatus)?.color
+                        } rounded-full`}
                     ></div>
                     <span>
                       {statuses.find((s) => s.value === selectedStatus)?.name ||
@@ -552,9 +554,8 @@ export function UpdateAssetStatusModal({
                     </span>
                   </div>
                   <ChevronDown
-                    className={`w-5 h-5 text-blue-500 transition-transform ${
-                      statusDropdown ? "rotate-180" : ""
-                    }`}
+                    className={`w-5 h-5 text-blue-500 transition-transform ${statusDropdown ? "rotate-180" : ""
+                      }`}
                   />
                 </button>
                 {statusDropdown && (
@@ -606,9 +607,8 @@ export function UpdateAssetStatusModal({
                         ?.value || "Select downtime type"}
                     </span>
                     <ChevronDown
-                      className={`w-5 h-5 text-gray-500 transition-transform ${
-                        downtimeDropdown ? "rotate-180" : ""
-                      }`}
+                      className={`w-5 h-5 text-gray-500 transition-transform ${downtimeDropdown ? "rotate-180" : ""
+                        }`}
                     />
                   </button>
                   {downtimeDropdown && (
