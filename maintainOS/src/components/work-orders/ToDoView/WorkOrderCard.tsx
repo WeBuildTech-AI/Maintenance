@@ -203,14 +203,14 @@ export function WorkOrderCard({
               )}
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="relative" ref={dropdownRef}>
+            <div className="flex items-center gap-2 flex-nowrap min-w-0">
+              <div className="relative flex-shrink-0" ref={dropdownRef}>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     setStatusOpen(!statusOpen);
                   }}
-                  className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-xs font-medium transition-colors ${currentStatus.bg} ${currentStatus.border} ${currentStatus.color} hover:opacity-90`}
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-xs font-medium transition-colors ${currentStatus.bg} ${currentStatus.border} ${currentStatus.color} hover:opacity-90 whitespace-nowrap`}
                 >
                   <StatusIcon size={12} />
                   <span>{currentStatus.label}</span>
@@ -238,39 +238,16 @@ export function WorkOrderCard({
 
               {wo.priority && wo.priority !== "None" && (
                 <span
-                  className={`inline-flex items-center rounded px-2 py-1 text-xs font-medium border ${priorityStyles[wo.priority] ?? "bg-gray-100 text-gray-600 border-gray-200"}`}
+                  className={`flex-shrink-0 inline-flex items-center rounded px-2 py-1 text-xs font-medium border ${priorityStyles[wo.priority] ?? "bg-gray-100 text-gray-600 border-gray-200"}`}
                 >
                   {formatPriority(wo.priority)}
                 </span>
               )}
 
               {isOverdue && (
-                <span className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium bg-red-100 text-red-700 border border-red-200 ml-auto">
+                <span className="flex-shrink-0 inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium bg-red-100 text-red-700 border border-red-200 ml-auto whitespace-nowrap">
                   <AlertCircle size={10} /> Overdue
                 </span>
-              )}
-
-              {!isOverdue && assignees.length > 0 && (
-                <div className="flex items-center -space-x-2 ml-auto">
-                  {displayAssignees.map((u: any, i: number) => (
-                    <div
-                      key={u.id || i}
-                      className="w-6 h-6 rounded-full border border-white bg-gray-100 flex items-center justify-center text-[9px] font-bold text-gray-600 overflow-hidden"
-                      title={u.fullName || u.name}
-                    >
-                      {u.avatar ? (
-                        <img src={u.avatar} alt={u.fullName} className="w-full h-full object-cover" />
-                      ) : (
-                        (u.fullName || u.name || "?")[0].toUpperCase()
-                      )}
-                    </div>
-                  ))}
-                  {remainingAssignees > 0 && (
-                    <div className="w-6 h-6 rounded-full border border-white bg-gray-200 flex items-center justify-center text-[9px] font-bold text-gray-600">
-                      +{remainingAssignees}
-                    </div>
-                  )}
-                </div>
               )}
             </div>
           </div>
