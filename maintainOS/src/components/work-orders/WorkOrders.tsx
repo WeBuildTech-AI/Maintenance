@@ -220,6 +220,7 @@ export function WorkOrders() {
       } else if (!viewingId || viewingId === "create" || viewingId === "edit") {
         console.log("🟡 [WorkOrders] Clearing viewingWorkOrder (viewingId:", viewingId, ")");
         setViewingWorkOrder(null);
+        setSelectedWorkOrder(null); // ✅ Clear selectedWorkOrder when navigating to root
       }
     };
     fetchViewingWorkOrder();
@@ -318,9 +319,10 @@ export function WorkOrders() {
                 navigate(`/work-orders/${newWo.id}`);
               }}
               onWorkOrderUpdate={(updatedWo) => {
-                setWorkOrders((prev) => prev.map((wo) => wo.id === updatedWo.id ? updatedWo : wo));
+                setWorkOrders((prev) => prev.map((wo) => wo.id === updatedWo.id ? { ...wo, ...updatedWo } : wo));
                 if (selectedWorkOrder?.id === updatedWo.id) {
-                  setSelectedWorkOrder(updatedWo);
+                  // ✅ Merge update to preserve expanded relations (assets, parts, etc)
+                  setSelectedWorkOrder((prev: any) => (prev ? { ...prev, ...updatedWo } : updatedWo));
                 }
               }}
               onOptimisticUpdate={(id: string, patch: any) => {

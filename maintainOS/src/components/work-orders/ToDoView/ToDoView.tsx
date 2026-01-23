@@ -12,6 +12,9 @@ import { CommentsSection } from "./CommentsSection";
 import { NewWorkOrderForm } from "../NewWorkOrderForm/NewWorkOrderFrom";
 import { useNavigate, useMatch } from "react-router-dom";
 import { LinkedProcedurePreview } from "./LinkedProcedurePreview";
+import { useDispatch } from "react-redux";
+import { createWorkOrder } from "../../../store/workOrders/workOrders.thunks";
+import toast from "react-hot-toast";
 
 export type StatusKey = "open" | "on_hold" | "in_progress" | "done";
 
@@ -53,7 +56,11 @@ export function ToDoView({
   const [showDiscardModal, setShowDiscardModal] = useState(false);
   const [pendingWorkOrder, setPendingWorkOrder] = useState<any | null>(null);
 
+  // ✅ Copy Work Order State
+  const [workOrderToCopy, setWorkOrderToCopy] = useState<any | null>(null);
+
   const navigate = useNavigate();
+  const dispatch = useDispatch<any>();
 
   // ✅ Sort state
   const [sortType, setSortType] = useState("Creation Date");
@@ -334,6 +341,9 @@ export function ToDoView({
                   safeAssignee={safeAssignee}
                   getInitials={getInitials}
                   activeTab={activeTab}
+                  onWorkOrderUpdate={onWorkOrderUpdate}
+                  onRefresh={onRefreshWorkOrders}
+                  onScrollToProcedure={handleScrollToProcedure}
                 />
               ))}
             </div>
@@ -361,24 +371,29 @@ export function ToDoView({
       {/* Right Panel */}
       <div className="flex-1 bg-card mr-3 ml-2 mb-2 border border-border min-h-0 flex flex-col">
 
-        {/* ✅ CASE 1: CREATE NEW WORK ORDER */}
+        {/* ✅ CASE 1: CREATE NEW WORK ORDER (Empty or Copy) */}
         {isCreateRoute || creatingWorkOrder ? (
           <NewWorkOrderForm
             // ✅ KEY PROP ADDED: Forces React to re-mount component freshly
-            key="create-work-order-form"
+            // If copying, use a different key to force refresh
+            key={workOrderToCopy ? `copy-${workOrderToCopy.id || 'new'}` : "create-work-order-form"}
             onCreate={(newWo) => {
               // ✅ OPTIMISTIC
               if (newWo && onWorkOrderCreate) onWorkOrderCreate(newWo);
 
               onCancelCreate?.();
               setEditingWorkOrder(null);
+              setWorkOrderToCopy(null); // Clear copy state
               // onRefreshWorkOrders?.();
             }}
-            // ✅ Explicitly NULL to clear any previous data
-            existingWorkOrder={null}
+            // ✅ Pass copied data if available
+            existingWorkOrder={workOrderToCopy || null}
             editId={editingId}
             isEditMode={false}
-            onCancel={onCancelCreate}
+            onCancel={() => {
+              onCancelCreate?.();
+              setWorkOrderToCopy(null);
+            }}
           />
         )
 
@@ -416,6 +431,50 @@ export function ToDoView({
                   setActiveStatus={setActiveStatus}
                   CopyPageU={CopyPageU}
                   onEdit={handleEditWorkOrder}
+                  // ✅ Handle Copy
+                  onCopy={async (wo: any) => {
+                    if (!wo) return;
+                    const loadingToast = toast.loading("Creating copy...");
+                    try {
+                      let recurrenceRule = wo.recurrenceRule;
+                      if (typeof recurrenceRule === 'string') {
+                        try { recurrenceRule = JSON.parse(recurrenceRule); } catch (e) { }
+                      }
+
+                      const payload: any = {
+                        title: `Copy - ${wo.title}`,
+                        status: "open",
+                        description: wo.description,
+                        priority: wo.priority,
+                        workType: wo.workType,
+                        estimatedTimeHours: wo.estimatedTimeHours,
+                        startDate: null,
+                        dueDate: null,
+
+                        locationId: wo.location?.id || wo.locationId,
+                        assetIds: wo.assets?.map((a: any) => a.id) || (wo.assetId ? [wo.assetId] : []),
+                        assigneeIds: wo.assignees?.map((a: any) => a.id) || [],
+                        assignedTeamIds: wo.teams?.map((t: any) => t.id) || [],
+                        vendorIds: wo.vendors?.map((v: any) => v.id) || [],
+                        categoryIds: wo.categories?.map((c: any) => c.id) || [],
+                        procedureIds: wo.procedures?.map((p: any) => p.id) || [],
+                        partIds: wo.parts?.map((p: any) => p.id) || wo.partUsages?.map((p: any) => p.part?.id || p.partId) || [],
+                        recurrenceRule: recurrenceRule,
+                      };
+
+                      Object.keys(payload).forEach(key => (payload[key] === undefined || payload[key] === null) && delete payload[key]);
+
+                      const newWo = await dispatch(createWorkOrder(payload)).unwrap();
+
+                      toast.success("Work Order Copied!", { id: loadingToast });
+                      if (onWorkOrderCreate) onWorkOrderCreate(newWo);
+                      if (newWo?.id) onSelectWorkOrder(newWo);
+
+                    } catch (err: any) {
+                      console.error(err);
+                      toast.error(err?.message || "Failed to copy work order", { id: loadingToast });
+                    }
+                  }}
                   onRefreshWorkOrders={onRefreshWorkOrders}
                   activePanel={activePanel}
                   setActivePanel={setActivePanel}
