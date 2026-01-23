@@ -16,6 +16,8 @@ import type { AppDispatch } from "../../store";
 import { locationService } from "../../store/locations";
 import AssetStatusMoreDetails from "./AssetDetail/sections/AssetStatusMoreDetails";
 import { useSearchParams } from "react-router-dom";
+import { DiscardChangesModal } from "../work-orders/ToDoView/DiscardChangesModal";
+ //discard popup//
 
 export interface Location {
   id: number | string;
@@ -77,6 +79,9 @@ export const Assets: FC = () => {
   const [shouldSelectFirst, setShouldSelectFirst] = useState(false);
   const [allLocationData, setAllLocationData] = useState<Location[]>([]);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
+  // ✅ Discard Modal State (copied from Work Orders pattern)
+  const [showDiscardModal, setShowDiscardModal] = useState(false);
+  const [pendingAsset, setPendingAsset] = useState<Asset | null>(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
 
@@ -354,12 +359,42 @@ export const Assets: FC = () => {
     }
   }, [shouldSelectFirst, sortedAndFilteredAssets]);
 
-  // ✅ New Handler to switch asset and close edit mode
-  const handleSelectAsset = useCallback((asset: Asset) => {
+
+  const proceedWithAssetSelection = useCallback((asset: Asset) => {
     setSelectedAsset(asset);
     setShowNewAssetForm(false);
     setEditingAsset(null);
   }, []);
+
+  const handleSelectAsset = useCallback(
+    (asset: Asset) => {
+      // 🛑 If editing or creating asset and switching asset → show discard modal
+      if (editingAsset || showNewAssetForm) {
+        if (showNewAssetForm || (editingAsset && asset?.id !== editingAsset.id)) {
+          setPendingAsset(asset);
+          setShowDiscardModal(true);
+          return;
+        }
+      }
+
+      proceedWithAssetSelection(asset);
+    },
+    [editingAsset, showNewAssetForm, proceedWithAssetSelection]
+  );
+
+  const handleConfirmDiscard = () => {
+    setShowDiscardModal(false);
+    if (pendingAsset) {
+      proceedWithAssetSelection(pendingAsset);
+      setPendingAsset(null);
+    }
+  };
+
+  const handleCancelDiscard = () => {
+    setShowDiscardModal(false);
+    setPendingAsset(null);
+  };
+
 
   const handleDeleteAsset = useCallback(
     (id: string | number) => {
@@ -519,6 +554,11 @@ export const Assets: FC = () => {
           </div>
         )}
       </div>
+      <DiscardChangesModal
+        isOpen={showDiscardModal}
+        onDiscard={handleConfirmDiscard}
+        onKeepEditing={handleCancelDiscard}
+      />
     </>
   );
 };
