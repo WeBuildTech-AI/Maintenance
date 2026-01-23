@@ -40,14 +40,27 @@ const cleanPayload = (data: any) => {
 };
 
 export const workOrderService = {
-  fetchWorkOrders: async (params?: FetchWorkOrdersParams): Promise<WorkOrderResponse[]> => {
+  fetchWorkOrders: async (params?: FetchWorkOrdersParams): Promise<{ data: WorkOrderResponse[]; meta: any }> => {
     const res = await api.get("/work-orders", {
       params,
       paramsSerializer: { indexes: null }
     });
-    if (res.data && Array.isArray(res.data.items)) return res.data.items;
-    if (Array.isArray(res.data)) return res.data;
-    return [];
+    if (res.data && Array.isArray(res.data.items)) {
+      return { data: res.data.items, meta: res.data.meta };
+    }
+    if (Array.isArray(res.data)) {
+      return {
+        data: res.data,
+        meta: {
+          totalItems: res.data.length,
+          itemCount: res.data.length,
+          itemsPerPage: res.data.length,
+          totalPages: 1,
+          currentPage: 1
+        }
+      };
+    }
+    return { data: [], meta: { totalItems: 0, itemCount: 0, itemsPerPage: 0, totalPages: 0, currentPage: 1 } };
   },
 
   fetchWorkOrderById: async (id: string): Promise<WorkOrderResponse> => {

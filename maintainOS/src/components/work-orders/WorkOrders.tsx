@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { useNavigate, useMatch, useLocation } from "react-router-dom";
+import { useNavigate, useMatch, useLocation, useSearchParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { type FetchWorkOrdersParams } from "../../store/workOrders/workOrders.types";
 import { fetchWorkOrders } from "../../store/workOrders/workOrders.thunks";
@@ -39,12 +39,17 @@ export function WorkOrders() {
   // ✅ 1. Refresh Key State
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // URL Pagination
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentPage = parseInt(searchParams.get("page") || "1", 10);
+
   const [filterParams, setFilterParams] = useState<FetchWorkOrdersParams>({
-    page: 1,
     limit: 20,
+    // page is now derived from URL
   });
 
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
+  const [meta, setMeta] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [viewingWorkOrder, setViewingWorkOrder] = useState<WorkOrder | null>(null);
 
@@ -97,6 +102,7 @@ export function WorkOrders() {
         let result: any;
         const apiPayload = {
           ...filterParams,
+          page: currentPage, // ✅ Use URL page
           title: debouncedSearch || undefined,
         };
 
@@ -110,27 +116,44 @@ export function WorkOrders() {
 
         if (showDeleted) {
           result = await workOrderService.fetchDeleteWorkOrder();
-        } else {
-          result = await dispatch(fetchWorkOrders(apiPayload)).unwrap();
-        }
-
-        if (Array.isArray(result)) {
-          // @ts-ignore
-          setWorkOrders(result);
-
-          // 🔥 REAL-TIME UPDATE FIX:
-          if (selectedWorkOrder) {
-            const freshData = result.find(
-              (w: any) => w.id === selectedWorkOrder.id
-            );
-            if (freshData) {
-              // @ts-ignore
-              setSelectedWorkOrder(freshData as WorkOrder);
-            }
+          // Deleted endpoint might return array directly or object
+          if (Array.isArray(result)) {
+            setWorkOrders(result);
+            setMeta(null);
+          } else if (result?.data) {
+            setWorkOrders(result.data);
+            setMeta(result.meta);
           }
         } else {
-          setWorkOrders([]);
+          result = await dispatch(fetchWorkOrders(apiPayload)).unwrap();
+
+          if (result && result.data) {
+            // @ts-ignore
+            setWorkOrders(result.data);
+            setMeta(result.meta);
+
+            // 🔥 REAL-TIME UPDATE FIX:
+            if (selectedWorkOrder) {
+              const freshData = result.data.find(
+                (w: any) => w.id === selectedWorkOrder.id
+              );
+              if (freshData) {
+                // @ts-ignore
+                setSelectedWorkOrder((prev) => (prev ? { ...prev, ...freshData } : freshData));
+              }
+            }
+
+          } else if (Array.isArray(result)) {
+            // Fallback for old thunk/service behavior
+            // @ts-ignore
+            setWorkOrders(result);
+            setMeta({ totalItems: result.length, totalPages: 1, currentPage: 1 });
+          } else {
+            setWorkOrders([]);
+            setMeta(null);
+          }
         }
+
       } catch (error) {
         console.error("❌ Error fetching work orders:", error);
         setWorkOrders([]);
@@ -155,7 +178,7 @@ export function WorkOrders() {
         activeTimers.current.delete("WORK_ORDER_LIST_API");
       }
     };
-  }, [dispatch, filterParams, debouncedSearch, refreshKey, showDeleted]);
+  }, [dispatch, filterParams, debouncedSearch, refreshKey, showDeleted, currentPage]); // ✅ Added currentPage
 
   // Stable Callback for Filters & Pagination
   const handleFilterChange = useCallback(
@@ -170,6 +193,10 @@ export function WorkOrders() {
     },
     []
   );
+
+  const handlePageChange = (newPage: number) => {
+    setSearchParams({ page: newPage.toString() });
+  };
 
   // ✅ 3. Update Handle Refresh Function
   const handleRefreshWorkOrders = useCallback(() => {
@@ -307,9 +334,13 @@ export function WorkOrders() {
               onCancelCreate={handleCancelCreate}
               onRefreshWorkOrders={handleRefreshWorkOrders}
               // ✅ PASSING PAGINATION PROPS
-              // currentPage={filterParams.page || 1}
-              // itemsPerPage={filterParams.limit || 20}
-              // onParamsChange={handleFilterChange}
+              pagination={{
+                currentPage: currentPage,
+                totalPages: meta?.totalPages || 1,
+                totalItems: meta?.totalItems || 0,
+                itemsPerPage: Number(filterParams.limit) || 20
+              }}
+              onPageChange={handlePageChange}
 
               // ✅ OPTIMISTIC UPDATES
               onWorkOrderCreate={(newWo) => {

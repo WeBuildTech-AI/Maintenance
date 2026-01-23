@@ -33,12 +33,85 @@ export function ToDoView({
   creatingWorkOrder?: boolean;
   onCancelCreate?: () => void;
   onRefreshWorkOrders?: () => void;
-  // ✅ OPTIMISTIC PROPS
   onWorkOrderCreate?: (wo: any) => void;
   onWorkOrderUpdate?: (wo: any) => void;
   onOptimisticUpdate?: (id: string, patch: any) => void;
+  // ✅ Server-Side Pagination Props
+  pagination?: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+  };
+  onPageChange?: (page: number) => void;
 }) {
+  // ✅ Local Pagination State (Fallback)
+  const [localPage, setLocalPage] = useState(1);
+
+  // Use passed pagination or local
+  const currentPage = pagination ? pagination.currentPage : localPage;
+  const itemsPerPage = pagination ? pagination.itemsPerPage : 10;
+
   const [activeTab, setActiveTab] = useState<"todo" | "done">("todo");
+  // ... existing state ...
+
+  // [Skipping middle hooks code provided in view... assuming generic structure]
+
+  // ...
+
+  // Logic for activeList (filtered work orders) remains same
+  // const activeList = ... 
+
+  // ✅ Pagination Logic
+  // If server-side pagination is active, we don't slice locally because the parent already fetches only the current page.
+  // Exception: If the parent fetches generic lists and we want to page locally, we use slice.
+  // But here user specifically asked for API param. So parent passes "Data for Page X".
+  // Note: "Data for Page X" might contain mix of Todo/Done.
+  // If the user is on "Todo" tab, they see only todos from that Page X chunk.
+  // This is typical for "Search/Filter API" pagination.
+
+  const currentTableData = pagination
+    ? activeList // Show all items in the valid chunk
+    : useMemo(() => {
+      const firstPageIndex = (currentPage - 1) * itemsPerPage;
+      const lastPageIndex = firstPageIndex + itemsPerPage;
+      return activeList.slice(firstPageIndex, lastPageIndex);
+    }, [currentPage, activeList, itemsPerPage]);
+
+  const handleNextPage = () => {
+    if (pagination) {
+      if (pagination.currentPage < pagination.totalPages) {
+        onPageChange?.(pagination.currentPage + 1);
+      }
+    } else {
+      if (currentPage < Math.ceil(activeList.length / itemsPerPage)) {
+        setLocalPage((p) => p + 1);
+      }
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (pagination) {
+      if (pagination.currentPage > 1) {
+        onPageChange?.(pagination.currentPage - 1);
+      }
+    } else {
+      if (currentPage > 1) {
+        setLocalPage((p) => p - 1);
+      }
+    }
+  };
+
+  const totalCountDisplay = pagination ? pagination.totalItems : activeList.length;
+  const totalPagesDisplay = pagination ? pagination.totalPages : Math.ceil(activeList.length / itemsPerPage);
+
+  // ... (return JSX)
+  // Need to find where pagination controls are rendered and update them to use `currentPage`, `totalCountDisplay`, `handleNextPage`, `handlePrevPage`.
+  // Usually near closing `</div>` of the list column.
+
+  // Assuming the render method matches previous `ToDoView.tsx` content which I need to see completely to invoke replace correctly on the footer.
+  // I will just inject the props logic at top first.
+
   const [activeStatus, setActiveStatus] = useState<StatusKey>("open");
   const [comment, setComment] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
@@ -155,20 +228,36 @@ export function ToDoView({
 
   // ✅ PAGINATION LOGIC
   useEffect(() => {
-    setCurrentPage(1);
-  }, [activeTab, sortType, sortOrder, unreadFirst]);
+    if (!pagination) setLocalPage(1);
+  }, [activeTab, sortType, sortOrder, unreadFirst, pagination]);
 
-  const totalItems = activeList.length;
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  const totalItems = pagination ? pagination.totalItems : activeList.length;
+
+  const startIndex = pagination
+    ? (pagination.currentPage - 1) * pagination.itemsPerPage
+    : (localPage - 1) * itemsPerPage;
+
+  // For display "1-20" or "21-40", we use the theoretical page window
+  // taking into account we might be at the end.
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-  const currentItems = activeList.slice(startIndex, endIndex);
+
+  // If server-side, activeList IS the current page data. If local, we slice.
+  const currentItems = pagination ? activeList : activeList.slice((localPage - 1) * itemsPerPage, ((localPage - 1) * itemsPerPage) + itemsPerPage);
 
   const handlePrevPage = () => {
-    if (currentPage > 1) setCurrentPage((p) => p - 1);
+    if (pagination && onPageChange) {
+      if (pagination.currentPage > 1) onPageChange(pagination.currentPage - 1);
+    } else {
+      if (localPage > 1) setLocalPage((p) => p - 1);
+    }
   };
 
   const handleNextPage = () => {
-    if (endIndex < totalItems) setCurrentPage((p) => p + 1);
+    if (pagination && onPageChange) {
+      if (endIndex < totalItems) onPageChange(pagination.currentPage + 1);
+    } else {
+      if (endIndex < totalItems) setLocalPage((p) => p + 1);
+    }
   };
 
   // --------------------------------------------------
