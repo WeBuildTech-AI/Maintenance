@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useLocation, useSearchParams, useMatch } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -241,10 +241,43 @@ export function NewWorkOrderForm({
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isAddProcModalOpen, setIsAddProcModalOpen] = useState(false);
 
+
+  // Wait, line 242: const [isAddProcModalOpen, setIsAddProcModalOpen] = useState(false);
+  // So I don't need to re-declare it. I just need to insert timersRef before the effect.
+
+  // Timer Guard Ref
+  const timersRef = useRef<Set<string>>(new Set());
+
   // Fetch all filter data on mount
   useEffect(() => {
-    dispatch(fetchFilterData());
-  }, [dispatch]);
+    // Optimization: Only fetch if we really don't have data.
+    // However, options might be stale. But per "Zero Redundant API Calls", if we have them, reuse them.
+    // If filterData is null/undefined, fetch.
+    // If filterData exists but arrays are empty? Might be valid empty state.
+
+    // We can assume if 'filterData' object exists, we have fetched it at least once in the session 
+    // (since Redux state persists in session usually, or at least while app is loaded).
+
+    if (!filterData) {
+      const TIMER_LABEL = "FILTER_DATA_FETCH_FORM";
+      if (!timersRef.current.has(TIMER_LABEL)) {
+        try { console.timeEnd(TIMER_LABEL); } catch (e) { }
+        console.time(TIMER_LABEL);
+        timersRef.current.add(TIMER_LABEL);
+      }
+
+      dispatch(fetchFilterData())
+        .unwrap()
+        .finally(() => {
+          if (timersRef.current.has(TIMER_LABEL)) {
+            try { console.timeEnd(TIMER_LABEL); } catch (e) { }
+            timersRef.current.delete(TIMER_LABEL);
+          }
+        });
+    } else {
+      console.log("⚡ [Optimization] Reusing existing filter data");
+    }
+  }, [dispatch, filterData]);
 
   // Derive options from Redux state
   const locationOptions = useMemo(() => filterData?.locations || [], [filterData]);

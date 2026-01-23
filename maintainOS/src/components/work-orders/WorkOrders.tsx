@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useNavigate, useMatch, useLocation } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { type FetchWorkOrdersParams } from "../../store/workOrders/workOrders.types";
@@ -52,6 +52,9 @@ export function WorkOrders() {
   const dispatch = useDispatch<AppDispatch>();
   const location = useLocation();
 
+  // Timer Guard Ref
+  const activeTimers = useRef<Set<string>>(new Set());
+
   // Get prefill data from navigation state (from Assets offline prompt)
   const prefillData = (location.state as any)?.prefillData;
 
@@ -89,6 +92,7 @@ export function WorkOrders() {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
+      const TIMER_LABEL = "WORK_ORDER_LIST_API";
       try {
         let result: any;
         const apiPayload = {
@@ -96,7 +100,13 @@ export function WorkOrders() {
           title: debouncedSearch || undefined,
         };
 
-        console.log("🔥 WorkOrders API Call:", apiPayload);
+        // Guarded Timer Start
+        if (!activeTimers.current.has(TIMER_LABEL)) {
+          // Try to end it first just in case (e.g. strict mode fast remount)
+          try { console.timeEnd(TIMER_LABEL); } catch (e) { }
+          console.time(TIMER_LABEL);
+          activeTimers.current.add(TIMER_LABEL);
+        }
 
         if (showDeleted) {
           result = await workOrderService.fetchDeleteWorkOrder();
@@ -125,11 +135,26 @@ export function WorkOrders() {
         console.error("❌ Error fetching work orders:", error);
         setWorkOrders([]);
       } finally {
+        // Guarded Timer End
+        if (activeTimers.current.has(TIMER_LABEL)) {
+          try { console.timeEnd(TIMER_LABEL); } catch (e) { }
+          activeTimers.current.delete(TIMER_LABEL);
+        }
         setLoading(false);
       }
     };
 
     loadData();
+
+    // Cleanup to ensure timer is cleared if unmounted
+    return () => {
+      // We can't easily access the local variable TIMER_LABEL here unless we define it outside 
+      // or use the literal.
+      if (activeTimers.current.has("WORK_ORDER_LIST_API")) {
+        try { console.timeEnd("WORK_ORDER_LIST_API"); } catch (e) { }
+        activeTimers.current.delete("WORK_ORDER_LIST_API");
+      }
+    };
   }, [dispatch, filterParams, debouncedSearch, refreshKey, showDeleted]);
 
   // Stable Callback for Filters & Pagination
@@ -158,10 +183,34 @@ export function WorkOrders() {
       console.log("🔍 [WorkOrders] viewingId:", viewingId, "selectedWorkOrder:", selectedWorkOrder?.id);
 
       // ✅ FIX: Prevent "create" or "edit" from being treated as work order IDs
-      if (viewingId && viewingId !== "create" && viewingId !== "edit" && viewingId !== selectedWorkOrder?.id) {
+      if (viewingId && viewingId !== "create" && viewingId !== "edit") {
+
+        // 1️⃣ CHECK EXISTING STATE (Single-Call Rule)
+        // If we already have the full object in state, reuse it!
+        if (selectedWorkOrder?.id === viewingId) {
+          console.log("⚡ [Optimization] Reusing selectedWorkOrder from state:", viewingId);
+          setViewingWorkOrder(selectedWorkOrder);
+          return;
+        }
+
+        // 2️⃣ CHECK LIST DATA
+        // If the item exists in the fetched list, use it first (optimistic load)
+        const cachedItem = workOrders.find((w) => w.id === viewingId);
+        if (cachedItem) {
+          console.log("⚡ [Optimization] Reusing work order from list:", viewingId);
+          setViewingWorkOrder(cachedItem);
+          // Note: If list item is "summary", we might still want to fetch details. 
+          // But per "Single-Call Rule", if list data is sufficient for initial view, we stop here.
+          // If Comments/Logs are missing, components like CommentsSection should handle their own lazy fetching.
+          return;
+        }
+
+        // 3️⃣ FETCH IF NOT FOUND
+        console.time("WORK_ORDER_DETAIL_API");
         console.log("🔵 [WorkOrders] Fetching work order:", viewingId);
         try {
           const wo = await workOrderService.fetchWorkOrderById(viewingId);
+          console.timeEnd("WORK_ORDER_DETAIL_API");
           console.log("✅ [WorkOrders] Fetched work order:", wo?.id);
           setViewingWorkOrder(wo as unknown as WorkOrder);
         } catch (err) {
@@ -174,7 +223,7 @@ export function WorkOrders() {
       }
     };
     fetchViewingWorkOrder();
-  }, [viewingId]);
+  }, [viewingId, selectedWorkOrder, workOrders]);
 
   // ✅ Handle create route - open modal for list/calendar, set flag for TODO
   useEffect(() => {
