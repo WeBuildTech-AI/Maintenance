@@ -5,6 +5,22 @@ import { LuClipboardCheck } from "react-icons/lu";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { SortModal } from "../../utils/SortModal";
 
+const getSortLabel = (type: string, order: "asc" | "desc") => {
+  if (type === "Creation Date") {
+    return order === "asc" ? "Oldest First" : "Newest First";
+  }
+  if (type === "Last Updated") {
+    return order === "asc" ? "Least Recent First" : "Most Recent First";
+  }
+  if (type === "Due Date") {
+    return order === "asc" ? "Earliest First" : "Latest First";
+  
+  }
+  if (type === "Priority") {
+    return order === "asc" ? "Lowest First  " : "Highest First";
+  }
+  return order === "asc" ? "Ascending Order" : "Descending Order";
+};
 export function ToDoTabs({
   activeTab,
   setActiveTab,
@@ -73,7 +89,8 @@ export function ToDoTabs({
               onClick={() => setIsModalOpen((p) => !p)}
               className="flex items-center gap-1 text-blue-600 font-medium"
             >
-              {currentSortType} : {currentSortOrder === "asc" ? "Ascending" : "Descending"}
+              {currentSortType} : {getSortLabel(currentSortType, currentSortOrder)}
+
               {isModalOpen ? (
                 <ChevronUp className="w-4 h-4 text-blue-600" />
               ) : (

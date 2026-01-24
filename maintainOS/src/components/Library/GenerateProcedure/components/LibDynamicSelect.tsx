@@ -104,9 +104,11 @@ export function LibDynamicSelect({
       const current = Array.isArray(selectedVals) ? selectedVals : [];
       const next = current.includes(id) ? current.filter((v) => v !== id) : [...current, id];
       onChange(next);
+     
+      setActiveDropdown(null);
     } else {
       onChange(id);
-      setActiveDropdown(null);
+      setActiveDropdown(null); // already closing
     }
   };
 
@@ -172,7 +174,8 @@ export function LibDynamicSelect({
       </div>
 
       {open && (
-        <div className="absolute top-full mt-1 w-full bg-white border rounded-md z-40 max-h-56 overflow-auto shadow-lg">
+        <div className="absolute top-full mt-1 w-full bg-white border rounded-md z-40 overflow-y-auto shadow-lg" style={{ maxHeight: "240px" }}  >
+
           {loading ? (
             <div className="p-4 flex justify-center">{spinner}</div>
           ) : (

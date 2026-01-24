@@ -39,6 +39,7 @@ import { Tooltip } from "../../ui/tooltip";
 import { format, subDays } from "date-fns";
 import { WorkOrderHistoryChart } from "../../utils/WorkOrderHistoryChart";
 import { formatINR } from "../../utils/dollar_rupee_convert";
+import { formatLabel } from "../../utils/asset_formater";
 
 type DateRange = { startDate: string; endDate: string };
 
@@ -374,8 +375,9 @@ export function PartDetails({
   const minUnits =
     partData.minInStock ?? partData.locations?.[0]?.minimumInStock ?? 0;
   const partType = Array.isArray(partData.partsType)
-    ? partData.partsType[0]?.name || partData.partsType[0] || "N/A"
-    : partData.partsType?.name || "N/A";
+    ? formatLabel(partData.partsType[0]?.name || partData.partsType[0] || "N/A")
+    : formatLabel(partData.partsType?.name || "N/A");
+
 
   if (isEditing) {
     if (loading || !editItem) {

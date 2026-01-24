@@ -26,6 +26,31 @@ import { DiscardChangesModal } from "../work-orders/ToDoView/DiscardChangesModal
 // Define ViewMode locally to avoid type errors if not imported
 type ViewMode = "table" | "panel";
 
+
+
+// ✅ Helper: Sort Label for Parts Inventory
+const getSortLabel = (type: string, order: "asc" | "desc") => {
+  if (type === "Creation Date") {
+    return order === "asc" ? "Oldest First" : "Newest First";
+  }
+
+  if (type === "Last Updated") {
+    return order === "asc" ? "Least Recent First" : "Most Recent First";
+  }
+
+  if (type === "Name") {
+    return order === "asc" ? "Ascending Order" : "Descending Order";
+  }
+
+  if (type === "Units in Stock") {
+    return order === "asc" ? "Lowest First" : "Highest First";
+  }
+
+  return order === "asc" ? "Ascending Order" : "Descending Order";
+};
+
+
+
 export function Inventory() {
   const [parts, setParts] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
@@ -274,7 +299,8 @@ export function Inventory() {
                   onClick={() => setIsDropdownOpen((p) => !p)}
                   className="flex items-center gap-1 text-blue-600 font-medium focus:outline-none hover:text-blue-700"
                 >
-                  {sortType} : {sortOrder === "asc" ? "Asc" : "Desc"}
+                  {sortType} : {getSortLabel(sortType, sortOrder)}
+
                   {isDropdownOpen ? (
                     <ChevronUp className="w-4 h-4" />
                   ) : (
