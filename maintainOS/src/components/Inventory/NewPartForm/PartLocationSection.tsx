@@ -180,8 +180,8 @@ export function PartLocationSection({
           </label>
           <input
             type="number"
-            value={newItem.unitInStock || ""}
-            onChange={(e) => setNewItem((s) => ({ ...s, unitInStock: Number(e.target.value) }))}
+            value={newItem.unitsInStock || ""}
+            onChange={(e) => setNewItem((s) => ({ ...s, unitsInStock: Number(e.target.value) }))}
             style={{
               height: "40px",
               border: "1px solid #e5e7eb",

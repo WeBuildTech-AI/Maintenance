@@ -47,7 +47,6 @@ export function MeterDetail({
   const [createdUserName, setCreatedUserName] = useState("Unknown");
   const [updatedUserName, setUpdatedUserName] = useState("Unknown");
   const [openMeterDeleteModal, setOpenMeterDeleteModal] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
   const modalRef = React.useRef<HTMLDivElement>(null);
 
   const handleRestoreData = async () => {
@@ -116,25 +115,7 @@ export function MeterDetail({
     }
   };
 
-  if (isEditing) {
-    return (
-      <div className="h-full overflow-y-auto p-2">
-        <NewMeterForm
-          editingMeter={selectedMeter}
-          onCancel={() => setIsEditing(false)}
-          onCreate={(updatedMeter: any) => {
-            // ✅ Optimistic Update
-            if (onOptimisticUpdate) {
-              onOptimisticUpdate(updatedMeter);
-            } else if (fetchMeters) {
-              fetchMeters();
-            }
-            setIsEditing(false);
-          }}
-        />
-      </div>
-    );
-  }
+
 
   return (
     <>
@@ -171,7 +152,7 @@ export function MeterDetail({
                 variant="ghost"
                 size="sm"
                 className="gap-2 text-orange-600"
-                onClick={() => setIsEditing(true)}
+                onClick={() => navigate(`/meters/${selectedMeter.id}/edit`)}
               >
                 <Edit className="h-4 w-4" />
                 Edit

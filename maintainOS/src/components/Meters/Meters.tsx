@@ -32,6 +32,9 @@ export function Meters() {
   // ✅ 1. Asset ID capture logic
   const prefillAssetId = searchParams.get("assetId");
 
+  const viewMatch = useMatch("/meters/:meterId");
+  const viewingId = viewMatch?.params?.meterId;
+
   // ✅ FIX 1: Agar 'assetId' URL me hai, lekin hum '/create' route par nahi hain, toh redirect karo
   useEffect(() => {
     if (prefillAssetId && !isCreateRoute && !isEditRoute) {
@@ -99,18 +102,9 @@ export function Meters() {
 
     if (debouncedSearch) params.search = debouncedSearch;
 
-    // Sirf tabhi meterId set karo jab hum CREATE ya EDIT mode me NA ho
-    if (viewMode === "panel" && selectedMeter?.id && !isCreateRoute && !isEditRoute) {
-      params.meterId = selectedMeter.id;
-    }
-
     if (viewMode === "panel" && showReadingMeter) {
       params.reading = "true";
     }
-
-    // Sorting
-    params.sort = sortType;
-    params.order = sortOrder;
 
     // Asset ID persist rakhna hai agar available hai
     if (prefillAssetId) {
@@ -122,12 +116,7 @@ export function Meters() {
     viewMode,
     debouncedSearch,
     showReadingMeter,
-    selectedMeter?.id,
     prefillAssetId,
-    sortType,
-    sortOrder,
-    isCreateRoute, // Check added
-    isEditRoute,   // Check added
     setSearchParams,
   ]);
 
@@ -225,31 +214,49 @@ export function Meters() {
     return meters;
   }, [meterData, sortType, sortOrder]);
 
+  // ✅ Fetch Meter for Detail View when URL changes (Path-based)
   useEffect(() => {
-    if (loading) return;
-    if (!sortedMeters || sortedMeters.length === 0) {
-      setSelectedMeter(null);
-      return;
-    }
+    const fetchViewingMeter = async () => {
+      // ✅ FIX: Prevent "create" or "edit" from being treated as meter IDs
+      if (viewingId && viewingId !== "create" && viewingId !== "edit") {
 
-    const urlMeterId = searchParams.get("meterId");
+        // 1️⃣ CHECK EXISTING STATE (Single-Call Rule)
+        if (selectedMeter?.id === viewingId) {
+          return;
+        }
 
-    // Agar URL me meterId hai, to usse select karo
-    if (urlMeterId) {
-      const found = sortedMeters.find((m) => String(m.id) === String(urlMeterId));
-      if (found) {
-        setSelectedMeter(found);
-        return;
+        // 2️⃣ CHECK LIST DATA (Optimistic Load)
+        const cachedItem = sortedMeters.find((m) => String(m.id) === String(viewingId));
+        if (cachedItem) {
+          setSelectedMeter(cachedItem);
+          return;
+        }
+
+        // 3️⃣ FETCH IF NOT FOUND
+        setLoading(true);
+        try {
+          const m = await meterService.fetchMeterById(viewingId); // Assuming fetchMeterById exists
+          // If not exists, we might need to fallback to list fetch or handle error
+          if (m) setSelectedMeter(m);
+        } catch (err) {
+          console.error("❌ Failed to fetch meter details", err);
+          // navigate("/meters"); // Optional: redirect on failure
+        } finally {
+          setLoading(false);
+        }
+      } else if (!viewingId || viewingId === "create") {
+        // ✅ Fallback: Select first item from SORTED list if available
+        if (sortedMeters.length > 0 && !isCreateRoute && !isEditRoute) {
+          const firstItem = sortedMeters[0];
+          navigate(`/meters/${firstItem.id}`, { replace: true });
+        } else {
+          setSelectedMeter(null);
+        }
       }
-    }
+    };
 
-    // Default fallback - Select FIRST SORTED item
-    setSelectedMeter((prev) => {
-      if (!prev) return sortedMeters[0];
-      const updated = sortedMeters.find((m) => m.id === prev.id);
-      return updated || sortedMeters[0];
-    });
-  }, [loading, sortedMeters, searchParams]);
+    fetchViewingMeter();
+  }, [viewingId, sortedMeters]); // Removed selectedMeter to allow effect to run on sort change
 
   useEffect(() => {
     fetchMeters();
@@ -340,7 +347,10 @@ export function Meters() {
               <MetersList
                 filteredMeters={paginatedMeters}
                 selectedMeter={selectedMeter}
-                setSelectedMeter={setSelectedMeter}
+                setSelectedMeter={(meter: any) => {
+                  navigate(`/meters/${meter.id}`);
+                  setSelectedMeter(meter); // Optimistic proper update
+                }}
                 loading={loading}
                 handleShowNewMeterForm={handleShowNewMeterForm}
                 handleCreateForm={handleCreateForm}
