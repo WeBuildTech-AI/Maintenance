@@ -59,6 +59,7 @@ interface DynamicSelectProps {
   setActiveDropdown: (name: string | null) => void;
   onSearch?: (term: string) => void; 
   dropdownStyle?: React.CSSProperties;
+  limitOptions?: number;
 }
 
 export function DynamicSelect({
@@ -75,6 +76,7 @@ export function DynamicSelect({
   setActiveDropdown,
   onSearch,
   dropdownStyle,
+  limitOptions,
 }: DynamicSelectProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null); 
@@ -123,9 +125,13 @@ export function DynamicSelect({
     isMulti ? (value as string[]).includes(opt.id) : opt.id === value
   );
 
-  const displayedOptions = onSearch 
+  //
+  const filteredOptions = onSearch 
     ? options 
     : options.filter(opt => opt.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  const displayedOptions = filteredOptions;
+
 
   // ✅ NEW: Logic for "+N" display
   const firstOption = selectedOptions[0];
@@ -147,7 +153,8 @@ export function DynamicSelect({
             <>
               {/* 1. Show First Option */}
               <div className="relative group/tag flex items-center">
-                <Badge key={firstOption.id} variant="secondary" className="flex items-center gap-1 max-w-[120px] min-w-0">
+                <Badge key={firstOption.id} variant="secondary" className="flex items-center gap-1 min-w-0">
+
                   {firstOption.color && (
                     <div
                       style={{
@@ -159,8 +166,8 @@ export function DynamicSelect({
                       }}
                     />
                   )}
-                  <span className="truncate">
-                    {firstOption.name.length > 9 ? firstOption.name.substring(0, 9) + "..." : firstOption.name}
+                  <span className="whitespace-normal break-words">
+                    {firstOption.name}
                   </span>
                   <button
                     className="ml-auto rounded-full outline-none shrink-0"
@@ -208,7 +215,8 @@ export function DynamicSelect({
             // Standard Rendering for Single Select (or fallback)
             selectedOptions.map((option) => (
               <div key={option.id} className="relative group/tag flex items-center">
-                <Badge variant="secondary" className="flex items-center gap-1 max-w-[120px] min-w-0">
+                <Badge variant="secondary" className="flex items-center gap-1 min-w-0">
+
                   {option.color && (
                     <div
                       style={{
@@ -220,8 +228,8 @@ export function DynamicSelect({
                       }}
                     />
                   )}
-                  <span className="truncate">
-                    {option.name.length > 9 ? option.name.substring(0, 9) + "..." : option.name}
+                  <span className="whitespace-normal break-words">
+                    {option.name}
                   </span>
                   <button
                     className="ml-auto rounded-full outline-none shrink-0"
@@ -274,8 +282,11 @@ export function DynamicSelect({
       {open && (
         <div 
           onMouseDown={(e) => e.preventDefault()}
-          className="absolute top-full mt-1 w-full rounded-md border bg-white z-20 max-h-60 overflow-y-auto shadow-lg"
-          style={dropdownStyle}
+          className="absolute top-full mt-1 w-full rounded-md border bg-white z-20 overflow-y-auto shadow-lg"
+          style={{
+            maxHeight: limitOptions ? `${limitOptions * 48}px` : "240px",
+            ...dropdownStyle,
+          }}
         >
           {loading ? (
             <div className="flex justify-center items-center p-4">
