@@ -1584,7 +1584,7 @@ input[type="radio"]:hover {
   overflow: hidden !important;
   display: flex !important;
   flex-direction: column !important;
-  background-color: var(--color-white) !important;
+  background-color: var(--calendar-bg) !important;
 }
 
 .calendar-header-row {
@@ -1595,7 +1595,7 @@ input[type="radio"]:hover {
   /* Let's stick to simple 7 cols for Month View */
   grid-template-columns: repeat(7, 1fr) !important;
   border-bottom: 1px solid var(--border-light) !important;
-  background-color: white !important;
+  background-color: var(--calendar-bg) !important;
   z-index: 10 !important;
 }
 
@@ -1639,7 +1639,7 @@ input[type="radio"]:hover {
   display: grid !important;
   grid-template-columns: repeat(7, 1fr) !important;
   border-bottom: 1px solid var(--border-light) !important;
-  background-color: var(--color-white) !important;
+  background-color: var(--calendar-bg) !important;
   position: sticky !important;
   top: 0 !important;
   z-index: 20 !important;
@@ -1710,20 +1710,24 @@ input[type="radio"]:hover {
   width: 50px !important;
   min-width: 50px !important;
   border-right: 1px solid var(--border-light) !important;
-  background-color: var(--color-white) !important;
+  background-color: var(--calendar-bg) !important;
   font-size: 11px !important;
   color: #9CA3AF !important;
-  font-weight: 400 !important;
-  text-align: left !important;
-  padding-left: 8px !important;
-  padding-top: 96px !important;
+  font-weight: 500 !important;
+  text-align: right !important;
+  padding-right: 8px !important;
 }
 
 .week-time-slot {
   height: 80px !important;
   display: flex !important;
   align-items: flex-start !important;
+  justify-content: flex-end !important;
   margin-top: 0px !important;
+  transform: none !important;
+  /* Removed translateY(-6px) to fix clipping of 12 AM */
+  line-height: 14px !important;
+  /* Ensure text height is tight and predictable */
 }
 
 /* Week Day Columns */
@@ -1739,23 +1743,42 @@ input[type="radio"]:hover {
 
 .week-hour-line {
   height: 80px !important;
-  border-bottom: 1px solid rgba(229, 231, 235, 0.5) !important;
+  border-bottom: 1px solid #D1D5DB !important;
   width: 100% !important;
   position: absolute !important;
+}
+
+.week-half-hour-line {
+  height: 0px !important;
+  /* height determines spacing if relative, but here we use absolute top. actually better to be height 0 or just border */
+  /* If I set height 80px, it might push things if not absolute. But it will be absolute. */
+  border-bottom: 1px dashed #9CA3AF !important;
+  /* Darker gray (Gray-400) for better visibility */
+  width: 100% !important;
+  position: absolute !important;
+  pointer-events: none !important;
+  z-index: 5 !important;
+  /* Ensure it sits above background/grid-cells but below events */
 }
 
 .week-event-card {
   position: absolute !important;
   left: 4px !important;
   right: 4px !important;
-  padding: 8px !important;
-  border-radius: 8px !important;
-  font-size: 12px !important;
+  padding: 4px !important;
+  /* Reduced padding directly here too */
+  border-radius: 6px !important;
+  /* Slightly tighter radius */
+  font-size: 11px !important;
+  /* Reduced base font size */
   border-width: 1px !important;
-  opacity: 0.9 !important;
+  opacity: 0.95 !important;
   transition: all 0.2s !important;
   cursor: pointer !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  z-index: 10 !important;
+  /* Ensure it's above grid lines */
+  overflow: hidden !important;
 }
 
 .week-event-card:hover {

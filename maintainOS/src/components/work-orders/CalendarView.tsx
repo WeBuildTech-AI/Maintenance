@@ -692,7 +692,7 @@ export function CalendarView({
           )}
 
           {/* Grid Body */}
-          <div className="flex-1 overflow-auto bg-white custom-scrollbar">
+          <div className="flex-1 overflow-auto bg-transparent custom-scrollbar">
             {viewMode === 'calendar' && (
               <div className="grid grid-cols-7 grid-rows-5 h-full border-l border-gray-100">
                 {monthDays.map((day) => {
@@ -763,39 +763,123 @@ export function CalendarView({
                       <div key={colIndex} className="week-day-column">
                         {/* Grid Lines (Hour markers) */}
                         {Array.from({ length: 24 }).map((_, h) => (
-                          <div key={h} className="week-hour-line" style={{ top: `${h * 80}px` }}></div>
+                          <div key={h}>
+                            <div className="week-hour-line" style={{ top: `${h * 80}px` }}></div>
+                            <div className="week-half-hour-line" style={{ top: `${h * 80 + 40}px` }}></div>
+                          </div>
                         ))}
 
-                        {/* Events */}
-                        {day.events.map((evt: any) => {
-                          let startHour = 9;
-                          if (evt.dueDate) {
-                            const d = new Date(evt.dueDate);
-                            if (!isNaN(d.getTime())) startHour = d.getHours();
-                          }
+                        {/* Events Processed & Grouped for Overlaps */}
+                        {(() => {
+                          const hourBuckets: Record<number, any[]> = {};
 
-                          const top = startHour * 80;
-                          const height = (evt.estimatedTimeHours || 2) * 80;
+                          // 1. Generate all segments first
+                          day.events.forEach((evt: any) => {
+                            let startHour = 9;
+                            let startMinutes = 0;
+                            const timeSource = evt.startDate || evt.dueDate;
+                            if (timeSource) {
+                              const d = new Date(timeSource);
+                              if (!isNaN(d.getTime())) {
+                                startHour = d.getHours();
+                                startMinutes = d.getMinutes();
+                              }
+                            }
 
-                          const eventClass = evt.status === 'done' ? 'bg-green-100 border-green-200 text-green-800' :
-                            evt.status === 'in_progress' ? 'bg-blue-100 border-blue-200 text-blue-800' :
-                              evt.workType === 'preventive' ? 'bg-purple-100 border-purple-200 text-purple-800' :
-                                'bg-orange-100 border-orange-200 text-orange-800';
+                            const duration = evt.estimatedTimeHours || 2;
+                            const fullHours = Math.ceil(duration); // e.g. 4.75 -> 5 segments
 
-                          return (
-                            <div
-                              key={evt.id}
-                              className={`week-event-card ${eventClass}`}
-                              style={{ top: `${top}px`, height: `${height}px` }}
-                              onClick={(e) => handleEventClick(e, evt.id, day.fullDate, evt.isGhost)}
-                              onMouseEnter={(e) => handleMouseEnter(e, evt.id, day.fullDate, evt.isGhost)}
-                              onMouseLeave={handleMouseLeave}
-                            >
-                              <div className="font-semibold truncate leading-tight">{evt.title}</div>
-                              <div className="opacity-80 truncate text-[10px] mt-0.5">{evt.original?.asset || 'No Asset'}</div>
-                            </div>
-                          );
-                        })}
+                            const getDurationColor = (h: number) => {
+                              if (h <= 1) return '#FFF9C4';
+                              if (h <= 1.5) return '#C8E6C9';
+                              if (h <= 2) return '#BBDEFB';
+                              if (h <= 3) return '#FFCCBC';
+                              if (h <= 4) return '#E1BEE7';
+                              return '#CFD8DC';
+                            };
+                            const bgColor = getDurationColor(duration);
+
+                            for (let i = 0; i < fullHours; i++) {
+                              const hourIndex = startHour + i;
+                              // Ensure bucket exists
+                              if (!hourBuckets[hourIndex]) hourBuckets[hourIndex] = [];
+
+                              const segmentTop = (startHour + i) * 80 + (startMinutes / 60) * 80;
+
+                              // Calculate height: Full hour by default, proportional if last segment
+                              let segmentHeight = 78; // Default 80px - 2px gap
+
+                              if (i === fullHours - 1) {
+                                // Last segment calculation
+                                const remainingDuration = duration - i;
+                                // effective fraction (min 0.25h to ensure visibility, max 1.0h)
+                                const fraction = Math.min(1, Math.max(0.0, remainingDuration));
+                                segmentHeight = (fraction * 80) - 2;
+
+                                // Optional: Enforce min height for visibility if desired (e.g. 20px)
+                                if (segmentHeight < 20) segmentHeight = 20;
+                              }
+
+                              hourBuckets[hourIndex].push({
+                                id: `${evt.id}-seg-${i}`,
+                                originalId: evt.id,
+                                evt,
+                                top: segmentTop,
+                                height: segmentHeight,
+                                bgColor,
+                                isFirst: i === 0
+                              });
+                            }
+                          });
+
+                          // 2. Render buckets
+                          return Object.entries(hourBuckets).flatMap(([hour, segments]) => {
+                            return segments.map((seg, idx) => {
+                              const count = segments.length;
+                              const widthPct = 100 / count;
+                              const leftPct = idx * widthPct;
+
+                              // Add a small gap between cards if there are multiple
+                              const gap = count > 1 ? 2 : 0;
+                              const widthCalc = count > 1 ? `calc(${widthPct}% - ${gap}px)` : `${widthPct}%`;
+
+                              return (
+                                <div
+                                  key={seg.id}
+                                  className="week-event-card hover:brightness-95 hover:z-50"
+                                  style={{
+                                    top: `${seg.top}px`,
+                                    height: `${seg.height}px`,
+                                    backgroundColor: seg.bgColor,
+                                    border: `1px solid ${seg.bgColor}`,
+                                    borderLeft: `3px solid rgba(0,0,0,0.1)`,
+                                    padding: '2px 4px',
+                                    color: '#374151',
+                                    width: widthCalc,
+                                    left: `${leftPct}%`,
+                                    position: 'absolute',
+                                    zIndex: 10 + idx, // Stagger z-index slightly
+                                    overflow: 'hidden'
+                                  }}
+                                  onClick={(e) => handleEventClick(e, seg.originalId, day.fullDate, seg.evt.isGhost)}
+                                  onMouseEnter={(e) => handleMouseEnter(e, seg.originalId, day.fullDate, seg.evt.isGhost)}
+                                  onMouseLeave={handleMouseLeave}
+                                >
+                                  {seg.isFirst ? (
+                                    <>
+                                      <div className="font-semibold truncate leading-none text-[10px] mb-0.5">{seg.evt.title}</div>
+                                      <div className="opacity-80 truncate text-[9px] leading-none">{seg.evt.original?.asset || 'No Asset'}</div>
+                                    </>
+                                  ) : (
+                                    <div className="opacity-60 truncate text-[9px] leading-none italic flex items-center h-full">
+                                      (cont.) {seg.evt.title}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            });
+                          });
+                        })()}
                       </div>
                     ))}
                   </div>
