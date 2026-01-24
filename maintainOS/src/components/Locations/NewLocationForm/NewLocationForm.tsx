@@ -24,6 +24,7 @@ type NewLocationFormProps = {
   editData?: LocationResponse | null;
   initialParentId?: string;
   isSubLocation?: boolean;
+  fetchLocationById?: () => void;
 };
 
 export function NewLocationForm({
@@ -34,6 +35,7 @@ export function NewLocationForm({
   editData = null,
   initialParentId,
   isSubLocation = false,
+  fetchLocationById,
 }: NewLocationFormProps) {
   const [locationImages, setLocationImages] = useState<BUD[]>([]);
   const [locationDocs, setLocationDocs] = useState<BUD[]>([]);
@@ -244,9 +246,13 @@ export function NewLocationForm({
         toast.success(
           isSubLocation ? "Sub-location added!" : "Location created!"
         );
-        isSubLocation ? fetchLocationById() : onCreate(res);
+        if (isSubLocation) {
+          fetchLocationById?.();
+          onCancel();
+        } else {
+          onCreate(res);
+        }
       }
-      onCancel();
     } catch (err: any) {
       console.error("Failed to submit location:", err);
       toast.error(err.message || "An error occurred.");

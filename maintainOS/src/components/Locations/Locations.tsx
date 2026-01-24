@@ -312,10 +312,14 @@ export function Locations() {
   };
 
   const handleRootLocationCreate = (newLocation: LocationResponse) => {
+    // 1. Optimistic Update (Immediate UI response)
     const updatedLocations = [newLocation, ...locations];
     setLocations(updatedLocations);
     setSelectedLocation(newLocation);
     navigate(`/locations/${newLocation.id}`);
+
+    // 2. Fetch Fresh Data (Requested by User)
+    fetchLocations();
   };
 
   const handleSubLocationCreated = (newSubLocation: LocationResponse) => {

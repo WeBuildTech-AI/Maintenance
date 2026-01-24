@@ -152,7 +152,18 @@ const getChangedFields = (original: any, current: any) => {
 
   Object.keys(arrayMap).forEach((payloadKey) => {
     const originalKey = arrayMap[payloadKey];
-    const originalIds = original[originalKey]?.map((item: any) => item.id) || [];
+
+    let originalIds: string[] = [];
+
+    // 1. Try to get IDs from relational objects (e.g. original.assets -> map ids)
+    if (original[originalKey] && Array.isArray(original[originalKey])) {
+      originalIds = original[originalKey].map((item: any) => item.id);
+    }
+    // 2. Fallback: Try to get IDs from flat array (e.g. original.assetIds)
+    else if (original[payloadKey] && Array.isArray(original[payloadKey])) {
+      originalIds = original[payloadKey];
+    }
+
     const currentIds = current[payloadKey] || [];
 
     if (hasArrayChanged(originalIds, currentIds)) {

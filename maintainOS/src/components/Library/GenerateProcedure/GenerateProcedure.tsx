@@ -14,7 +14,7 @@ export default function GenerateProcedure({
   onCreate,
   onUpdate,
 }: {
-  onBack: () => void,
+  onBack: (proc?: any) => void,
   editingProcedureId: string | null;
   onCreate?: (proc: any) => void;
   onUpdate?: (proc: any) => void;
@@ -112,11 +112,12 @@ export default function GenerateProcedure({
         <ProcedureBuilder
           name={builderData.name}
           description={builderData.desc}
-          onBack={() => {
+          onBack={(proc) => {
             setBuilderData(null);
-            onBack();
+            onBack(proc);
           }}
           editingProcedureId={null}
+          onCreate={onCreate}
         />
       </ProcedureBuilderProvider>
     );
