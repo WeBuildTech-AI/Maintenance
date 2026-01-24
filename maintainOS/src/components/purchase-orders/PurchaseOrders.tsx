@@ -59,6 +59,19 @@ const formatStatus = (status?: string) => {
     .replace(/_/g, " ")   // partially fulfilled
     .replace(/\b\w/g, (c) => c.toUpperCase()); // Partially Fulfilled
 };
+// map for sortby
+const getSortLabel = (type: string, order: "asc" | "desc") => {
+  if (type === "Creation Date") {
+    return order === "asc" ? "Oldest First" : "Newest First";
+  }
+  if (type === "Last Updated") {
+    return order === "asc" ? "Least Recent First" : "Most Recent First";
+  }
+  if (type === "Name") {
+    return order === "asc" ? "Ascending Order" : "Descending Order";
+  }
+  return order === "asc" ? "Ascending Order" : "Descending Order";
+};
 
 
 // --- Helper Function: Detect Changes ---
@@ -1037,8 +1050,8 @@ export function PurchaseOrders() {
                   onClick={toggleDropdown}
                   className="flex items-center gap-1 text-sm text-blue-600 font-semibold focus:outline-none"
                 >
-                  {sortType}:{" "}
-                  {sortOrder === "asc" ? "Ascending Order" : "Descending Order"}
+                  {sortType} :{" "}
+                  {getSortLabel(sortType, sortOrder)}
                   {isDropdownOpen ? (
                     <ChevronUp className="w-4 h-4 text-blue-600" />
                   ) : (

@@ -35,6 +35,23 @@ import LocationDetails from "./LocationDetails";
 import SubLocation from "./SubLocation";
 import { DiscardChangesModal } from "../work-orders/ToDoView/DiscardChangesModal";
 
+
+const getSortLabel = (type: string, order: "asc" | "desc") => {
+  if (type === "Creation Date") {
+    return order === "asc" ? "Oldest First" : "Newest First";
+  }
+
+  if (type === "Last Updated") {
+    return order === "asc" ? "Least Recent First" : "Most Recent First";
+  }
+
+  if (type === "Name") {
+    return order === "asc" ? "Ascending Order" : "Descending Order";
+  }
+
+  return order === "asc" ? "Ascending Order" : "Descending Order";
+};
+
 export function Locations() {
   const dispatch = useDispatch<AppDispatch>();
 
@@ -499,7 +516,8 @@ export function Locations() {
                     onClick={() => setIsDropdownOpen((p) => !p)}
                     className="flex items-center gap-1 text-blue-600 font-medium focus:outline-none hover:text-blue-700"
                   >
-                    {sortType} : {sortOrder === "asc" ? "Asc" : "Desc"}
+                    {sortType} : {getSortLabel(sortType, sortOrder)}
+
                     {isDropdownOpen ? (
                       <ChevronUp size={16} />
                     ) : (

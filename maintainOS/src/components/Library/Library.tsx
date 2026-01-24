@@ -33,6 +33,30 @@ const priorityToValue = (priority: string | null | undefined): number => {
 
 const allToggleableColumns = ["Last updated", "Category", "Created At"];
 
+//
+//  Helper: Sort Label for Library (UI Mapping)
+const getSortLabel = (type: string, order: "asc" | "desc") => {
+  if (type === "Creation Date") {
+    return order === "asc" ? "Oldest First" : "Newest First";
+  }
+
+  if (type === "Due Date") {
+    return order === "asc" ? "Earliest First" : "Latest First";
+  }
+
+  if (type === "Last Updated") {
+    return order === "asc" ? "Least Recent First" : "Most Recent First";
+  }
+
+  if (type === "Priority") {
+    return order === "asc" ? "Lowest First" : "Highest First";
+  }
+
+  // fallback (should not happen ideally)
+  return order === "asc" ? "Ascending Order" : "Descending Order";
+};
+
+
 export function Library() {
   const navigate = useNavigate();
   const location = useLocation(); 
@@ -269,7 +293,7 @@ export function Library() {
     if (sortType === "Last Updated") return sortOrder === "asc" ? "Least Recent First" : "Most Recent First";
     if (sortType === "Title") return sortOrder === "asc" ? "A-Z" : "Z-A";
     return sortType;
-  };
+  };  
 
   return (
     <div className="flex flex-col bg-white w-full h-screen overflow-hidden">
@@ -324,7 +348,7 @@ export function Library() {
                                 onClick={() => setIsSortModalOpen(true)}
                                 className="text-blue-600 text-sm cursor-pointer inline-flex items-center gap-1"
                               >
-                                {sortType}: {getSortOrderText()}
+                                {sortType}: {getSortLabel(sortType, sortOrder)}
                                 <ChevronDown size={16} />
                               </button>
                             </div>

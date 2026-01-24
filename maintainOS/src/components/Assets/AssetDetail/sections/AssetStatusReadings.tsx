@@ -289,7 +289,7 @@ const OfflineSinceDropdown = ({
           />
         </button>
         {offlineSinceDropdown && (
-          <div className="absolute w-full z-50 h-32 overflow-x-auto bg-white border border-gray-200 rounded-md shadow-lg mt-1 z-30">
+          <div className="absolute w-full z-50 h-32 overflow-y-auto bg-white border border-gray-200 rounded-md shadow-lg mt-1 z-30">
             {offlineSinceOptions.map((opt) => (
               <button
                 type="button"
@@ -407,6 +407,9 @@ export function UpdateAssetStatusModal({
   const [statusDropdown, setStatusDropdown] = useState(false);
   const [downtimeDropdown, setDowntimeDropdown] = useState(false);
   const [offlineSinceDropdown, setOfflineSinceDropdown] = useState(false);
+  const [offlineReason, setOfflineReason] = useState("");
+  const [reasonDropdown, setReasonDropdown] = useState(false);
+
 
   const statuses = [
     { name: "Online", value: "online", color: "bg-green-500" },
@@ -426,7 +429,14 @@ export function UpdateAssetStatusModal({
     },
   ];
   // --- +++++++ BADLAAV KHATM +++++++ ---
-
+  //
+  const offlineReasons = [
+    { name: "Maintenance", value: "maintenance" },
+    { name: "Breakdown", value: "breakdown" },
+    { name: "Power Failure", value: "power_failure" },
+    { name: "Network Issue", value: "network_issue" },
+    { name: "Other", value: "other" },
+  ];
   const offlineSinceOptions = [
     "Now",
     "1 hour ago",
@@ -500,7 +510,8 @@ export function UpdateAssetStatusModal({
   };
 
   const isAnyDropdownOpen =
-    statusDropdown || downtimeDropdown || offlineSinceDropdown;
+    statusDropdown || downtimeDropdown || offlineSinceDropdown || reasonDropdown;
+
 
   return (
     <div
@@ -525,9 +536,8 @@ export function UpdateAssetStatusModal({
 
         <form onSubmit={handleFormSubmit}>
           <div
-            className={`p-6 space-y-4 max-h-[70vh] ${
-              isAnyDropdownOpen ? "overflow-visible" : "overflow-y-auto"
-            }`}
+            className="p-6 space-y-4 max-h-[70vh] overflow-y-auto"
+
           >
             {/* Status Dropdown (Unchanged) */}
             <div>
@@ -589,48 +599,98 @@ export function UpdateAssetStatusModal({
             />
 
             {/* --- Conditional Fields (Unchanged) --- */}
-
             {selectedStatus === "offline" && (
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
-                  Downtime Type <span className="text-red-500">(required)</span>
-                </label>
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setDowntimeDropdown(!downtimeDropdown)}
-                    className="w-full capitalize flex cursor-pointer items-center justify-between px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-                  >
-                    <span>
-                      {downtimeTypes.find((t) => t.value === downtimeType)
-                        ?.value || "Select downtime type"}
-                    </span>
-                    <ChevronDown
-                      className={`w-5 h-5 text-gray-500 transition-transform ${
-                        downtimeDropdown ? "rotate-180" : ""
-                      }`}
-                    />
-                  </button>
-                  {downtimeDropdown && (
-                    <div className="absolute z-50  w-full bg-white cursor-pointer border border-gray-200 rounded-md shadow-lg mt-1 z-30">
-                      {downtimeTypes.map((type) => (
-                        <button
-                          type="button"
-                          key={type.value}
-                          onClick={() => {
-                            setDowntimeType(type.value); // Yeh ab "planned" ya "unplanned" set karega
-                            setDowntimeDropdown(false);
-                          }}
-                          className="w-full px-3 py-2 text-left hover:bg-gray-50"
-                        >
-                          {type.name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+              <div className="space-y-4">
+                {/* Downtime Type */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                    Downtime Type <span className="text-red-500">(required)</span>
+                  </label>
+
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setDowntimeDropdown(!downtimeDropdown)}
+                      className="w-full capitalize flex cursor-pointer items-center justify-between px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                    >
+                      <span>
+                        {downtimeTypes.find((t) => t.value === downtimeType)?.name ||
+                          "Select downtime type"}
+                      </span>
+                      <ChevronDown
+                        className={`w-5 h-5 text-gray-500 transition-transform ${
+                          downtimeDropdown ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+
+                    {downtimeDropdown && (
+                      <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1 max-h-[120px] overflow-y-auto">
+
+                        {downtimeTypes.map((type) => (
+                          <button
+                            type="button"
+                            key={type.value}
+                            onClick={() => {
+                              setDowntimeType(type.value);
+                              setDowntimeDropdown(false);
+                            }}
+                            className="w-full px-3 py-2 text-left hover:bg-gray-50"
+                          >
+                            {type.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Reason Dropdown (UI only) */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                    Reason
+                  </label>
+
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setReasonDropdown(!reasonDropdown)}
+                      className="w-full flex cursor-pointer items-center justify-between px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                    >
+                      <span>
+                        {offlineReasons.find((r) => r.value === offlineReason)?.name ||
+                          "Select reason"}
+                      </span>
+                      <ChevronDown
+                        className={`w-5 h-5 text-gray-500 transition-transform ${
+                          reasonDropdown ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+
+                    {reasonDropdown && (
+                      <div className="absolute z-50 w-full h-32 overflow-y-auto bg-white border border-gray-200 rounded-md shadow-lg mt-1">
+                        {offlineReasons.map((reason) => (
+                          <button
+                            type="button"
+                            key={reason.value}
+                            onClick={() => {
+                              setOfflineReason(reason.value);
+                              setReasonDropdown(false);
+                            }}
+                            className="w-full px-3 py-2 text-left hover:bg-gray-50"
+                          >
+                            {reason.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
+
+            
 
             <OfflineSinceDropdown
               offlineSince={offlineSince}
