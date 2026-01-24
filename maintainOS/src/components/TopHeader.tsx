@@ -41,7 +41,7 @@ interface TopHeaderProps {
 
 // ... existing interfaces
 
-const defaultModule = { to: "/work-orders", label: "Workorder", icon: Wrench, id: "nav-link-workorders" };
+const defaultModule = { to: "/work-orders", label: "Work Orders", icon: Wrench, id: "nav-link-workorders" };
 const reportingModule = { to: "/reporting", label: "Reporting", icon: TrendingUp, id: "nav-link-reporting" };
 
 const secondaryLinks = [
@@ -66,20 +66,24 @@ export function TopHeader({ user, onLogout }: TopHeaderProps) {
 
   // Find if current path matches any secondary link
   const activeSecondary = secondaryLinks.find(link => currentPath.startsWith(link.to));
-  
+
   // The first link is either the active secondary module or the default "Workorder"
   const dynamicModule = activeSecondary || defaultModule;
 
   return (
     <header className="top-header-container" id="top-header">
-      {/* Left Section: Logo & Navigation */}
+      {/* Left Section: Logo */}
       <div className="header-left-section" id="header-left-section">
         {/* Logo */}
         <Link to="/" className="header-logo-link" id="header-logo-link">
           <img src="/maintainOSLOGO.svg" alt="MaintainOS" className="h-6 w-auto" id="header-logo-image" />
           <span className="header-logo-text" id="header-logo-text">MaintainOS</span>
         </Link>
-        
+      </div>
+
+      {/* Center Section: Navigation */}
+      {/* Center Section: Navigation */}
+      <div className="header-center-section" id="header-center-section">
         {/* Navigation - Primary Links */}
         <nav className="header-nav" id="header-nav">
           {/* Dynamic Module Link */}
@@ -130,52 +134,75 @@ export function TopHeader({ user, onLogout }: TopHeaderProps) {
               })}
             </DropdownMenuContent>
           </DropdownMenu>
-        </nav>
 
-        {/* View Dropdown (Only visible on Work Orders) */}
-        {currentPath.startsWith("/work-orders") && (
-          <div className="ml-6" style={{ marginRight: 'auto' }}> {/* Flexible spacer if needed, or just adjacent */}
-             <DropdownMenu>
+          {/* View Dropdown (Only visible on Work Orders) */}
+          {currentPath.startsWith("/work-orders") && (
+            <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="more-dropdown-btn" id="nav-dropdown-view-trigger">
-                   View <ChevronDown size={16} />
+                  {location.search.includes("view=calendar")
+                    ? "Calendar View"
+                    : location.search.includes("view=list")
+                      ? "List View"
+                      : "Panel View"}
+                  <ChevronDown size={16} />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="more-dropdown-content" id="nav-dropdown-view-content" style={{ width: '180px' }}>
+              <DropdownMenuContent
+                align="start"
+                className="more-dropdown-content"
+                id="nav-dropdown-view-content"
+                style={{ width: "180px" }}
+              >
                 <DropdownMenuItem asChild>
-                  <Link to="/work-orders?view=todo" className={`dropdown-nav-link ${location.search.includes("view=todo") || !location.search.includes("view=") ? "active" : ""}`}>
+                  <Link
+                    to="/work-orders?view=todo"
+                    className={`dropdown-nav-link ${location.search.includes("view=todo") ||
+                        !location.search.includes("view=")
+                        ? "active"
+                        : ""
+                      }`}
+                  >
                     <LayoutGrid className="mr-2 h-4 w-4" />
                     <span>Panel View</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/work-orders?view=calendar" className={`dropdown-nav-link ${location.search.includes("view=calendar") ? "active" : ""}`}>
+                  <Link
+                    to="/work-orders?view=calendar"
+                    className={`dropdown-nav-link ${location.search.includes("view=calendar") ? "active" : ""
+                      }`}
+                  >
                     <Calendar className="mr-2 h-4 w-4" />
                     <span>Calendar View</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/work-orders?view=list" className={`dropdown-nav-link ${location.search.includes("view=list") ? "active" : ""}`}>
+                  <Link
+                    to="/work-orders?view=list"
+                    className={`dropdown-nav-link ${location.search.includes("view=list") ? "active" : ""
+                      }`}
+                  >
                     <List className="mr-2 h-4 w-4" />
                     <span>List View</span>
                   </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
-        )}
+          )}
+        </nav>
       </div>
 
       {/* Right Section: Icons & User Profile */}
       <div className="header-right-section" id="header-right-section">
         <button className="header-icon-btn" id="header-icon-notifications">
-            <Bell size={20} color="#6b7280" strokeWidth={2} />
+          <Bell size={20} color="#6b7280" strokeWidth={2} />
         </button>
         <button className="header-icon-btn" id="header-icon-messages">
-             <MessageSquare size={20} color="#6b7280" strokeWidth={2} />
+          <MessageSquare size={20} color="#6b7280" strokeWidth={2} />
         </button>
         <button className="header-icon-btn" id="header-icon-settings">
-             <Settings size={20} color="#6b7280" strokeWidth={2} />
+          <Settings size={20} color="#6b7280" strokeWidth={2} />
         </button>
 
         {/* User Profile */}
