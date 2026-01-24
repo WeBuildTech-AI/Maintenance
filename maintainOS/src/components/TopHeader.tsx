@@ -158,9 +158,9 @@ export function TopHeader({ user, onLogout }: TopHeaderProps) {
                   <Link
                     to="/work-orders?view=todo"
                     className={`dropdown-nav-link ${location.search.includes("view=todo") ||
-                        !location.search.includes("view=")
-                        ? "active"
-                        : ""
+                      !location.search.includes("view=")
+                      ? "active"
+                      : ""
                       }`}
                   >
                     <LayoutGrid className="mr-2 h-4 w-4" />
@@ -169,7 +169,7 @@ export function TopHeader({ user, onLogout }: TopHeaderProps) {
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link
-                    to="/work-orders?view=calendar"
+                    to="/work-orders?view=calendar-week"
                     className={`dropdown-nav-link ${location.search.includes("view=calendar") ? "active" : ""
                       }`}
                   >

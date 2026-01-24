@@ -27,14 +27,7 @@ import {
   format,
   isSameMonth,
   isSameDay,
-  startOfMonth,
-  endOfMonth,
-  startOfWeek,
-  endOfWeek,
-  eachDayOfInterval,
-  format,
-  isSameMonth,
-  isSameDay,
+
   // date helpers
   getWeek,
   startOfDay,
@@ -375,13 +368,20 @@ interface CalendarViewProps {
   // ✅ Props for controlled state
   currentDate?: Date;
   viewMode?: ViewMode; // Use imported type
+  // ✅ Navigation handlers
+  onPrevDate?: () => void;
+  onNextDate?: () => void;
+  onDateChange?: (date: Date) => void;
 }
 
 export function CalendarView({
   workOrders,
   onRefreshWorkOrders,
   currentDate: propCurrentDate, // Rename to avoid confusion if we used local state, but we won't
-  viewMode: propViewMode // Default to month if missing
+  viewMode: propViewMode = 'calendar-week', // Default to week view
+  onPrevDate,
+  onNextDate,
+  onDateChange
 }: CalendarViewProps) {
   // ✅ REDUX HOOKS
   const dispatch = useAppDispatch();
@@ -580,13 +580,18 @@ export function CalendarView({
           <div className="mini-calendar-header">
             <span className="mini-calendar-title">{format(currentDate, 'MMMM yyyy')}</span>
             <div className="flex gap-1">
-              {/* 
-                     Note: Mini calendar inputs currently do nothing or could trigger global change.
-                     Since we removed local state, we'd need to emit up if we want these to work.
-                     For now, let's leave them visual or disable them if no handlers passed
-                 */}
-              <button className="mini-calendar-nav-btn"><ChevronLeft size={16} /></button>
-              <button className="mini-calendar-nav-btn"><ChevronRight size={16} /></button>
+              <button
+                className="mini-calendar-nav-btn"
+                onClick={onPrevDate}
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                className="mini-calendar-nav-btn"
+                onClick={onNextDate}
+              >
+                <ChevronRight size={16} />
+              </button>
             </div>
           </div>
 
@@ -594,14 +599,34 @@ export function CalendarView({
             {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => (
               <div key={d} className="mini-calendar-day-header">{d}</div>
             ))}
-            {miniCalendarDays.slice(0, 42).map((d, i) => (
-              <div
-                key={i}
-                className={`mini-calendar-day ${isSameDay(d, today) ? 'active' : ''} ${!isSameMonth(d, currentDate) ? 'text-muted' : ''}`}
-              >
-                {format(d, 'd')}
-              </div>
-            ))}
+            {miniCalendarDays.slice(0, 42).map((d, i) => {
+              const isCurrentMonth = isSameMonth(d, currentDate);
+              const isSelected = isSameDay(d, currentDate);
+
+              const handleDateClick = (e: React.MouseEvent) => {
+                e.stopPropagation();
+
+                if (isCurrentMonth && onDateChange) {
+                  onDateChange(d);
+                }
+              };
+
+              return (
+                <div
+                  key={i}
+                  className={`mini-calendar-day 
+                    ${isSelected ? 'active' : ''} 
+                    ${!isCurrentMonth ? 'text-muted' : ''}`}
+                  onClick={handleDateClick}
+                  style={{
+                    cursor: isCurrentMonth ? 'pointer' : 'default',
+                    pointerEvents: 'auto'
+                  }}
+                >
+                  {isCurrentMonth ? format(d, 'd') : ''}
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -666,54 +691,117 @@ export function CalendarView({
             />
           )}
 
-          {/* Header Row */}
-          <div className="calendar-header-row">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => (
-              <div key={i} className="calendar-header-cell">
-                <div className="calendar-header-day">{d}</div>
-              </div>
-            ))}
-          </div>
-
           {/* Grid Body */}
-          <div className="flex-1 overflow-auto bg-white">
+          <div className="flex-1 overflow-auto bg-white custom-scrollbar">
             {viewMode === 'calendar' && (
               <div className="grid grid-cols-7 grid-rows-5 h-full border-l border-gray-100">
-                {monthDays.map((day) => (
-                  <div
-                    key={day.fullDate.toISOString()}
-                    className={`calendar-day-cell ${!day.isCurrentMonth ? 'other-month' : ''} ${selectedDate === format(day.fullDate, 'yyyy-MM-dd') ? 'bg-blue-50/20' : ''}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDayClick(day.fullDate, day.events);
-                    }}
-                  >
-                    <div className={`calendar-day-number ${day.isToday ? 'today' : ''}`}>{day.date}</div>
-                    <div className="flex-1 flex flex-col gap-1 overflow-hidden">
-                      {day.events?.slice(0, 4).map((evt: any) => (
-                        <div
-                          key={`${evt.id}-${day.date}`}
-                          className={`event-chip ${evt.status === 'done' ? 'green' :
-                            evt.status === 'in_progress' ? 'blue' :
-                              evt.priority === 'High' ? 'orange' : 'purple'
-                            }`}
-                          onClick={(e) => handleEventClick(e, evt.id, day.fullDate, evt.isGhost)}
-                          onMouseEnter={(e) => handleMouseEnter(e, evt.id, day.fullDate, evt.isGhost)}
-                          onMouseLeave={handleMouseLeave}
-                        >
-                          {evt.title}
-                        </div>
-                      ))}
-                      {day.events?.length > 4 && (
-                        <span className="text-[10px] text-gray-400 pl-1">+{day.events.length - 4} more</span>
-                      )}
+                {monthDays.map((day) => {
+                  const isSelected = isSameDay(day.fullDate, currentDate);
+
+                  return (
+                    <div
+                      key={day.fullDate.toISOString()}
+                      className={`calendar-day-cell ${!day.isCurrentMonth ? 'other-month' : ''} ${selectedDate === format(day.fullDate, 'yyyy-MM-dd') ? 'bg-blue-50/20' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDayClick(day.fullDate, day.events);
+                      }}
+                    >
+                      <div className={`calendar-day-number ${day.isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}`}>{day.date}</div>
+                      <div className="flex-1 flex flex-col gap-1 overflow-hidden">
+                        {day.events?.slice(0, 4).map((evt: any) => (
+                          <div
+                            key={`${evt.id}-${day.date}`}
+                            className={`event-chip ${evt.status === 'done' ? 'green' :
+                              evt.status === 'in_progress' ? 'blue' :
+                                evt.priority === 'High' ? 'orange' : 'purple'
+                              }`}
+                            onClick={(e) => handleEventClick(e, evt.id, day.fullDate, evt.isGhost)}
+                            onMouseEnter={(e) => handleMouseEnter(e, evt.id, day.fullDate, evt.isGhost)}
+                            onMouseLeave={handleMouseLeave}
+                          >
+                            {evt.title}
+                          </div>
+                        ))}
+                        {day.events?.length > 4 && (
+                          <span className="text-[10px] text-gray-400 pl-1">+{day.events.length - 4} more</span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
-            {/* Fallback or Week View if enabled later - keeping standard structure */}
+            {viewMode === 'calendar-week' && (
+              <div className="flex flex-col h-full">
+                {/* Week Header */}
+                <div className="week-view-header">
+                  {/* Day Columns Header */}
+                  {weekDays.map((day, i) => (
+                    <div key={i} className={`week-day-header ${day.isToday ? 'today' : ''}`}>
+                      <div className="week-day-name">{format(day.fullDate, 'EEE')}</div>
+                      <div className={`week-day-number ${day.isToday ? 'today' : ''}`}>{format(day.fullDate, 'd')}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Week Grid (Scrollable) */}
+                <div className="flex overflow-auto">
+                  {/* Time Axis (Left - Separate Column) */}
+                  <div className="week-time-axis">
+                    {Array.from({ length: 24 }).map((_, hour) => (
+                      <div key={hour} className="week-time-slot">
+                        {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Days Grid */}
+                  <div className="week-view-grid">
+                    {weekDays.map((day, colIndex) => (
+                      <div key={colIndex} className="week-day-column">
+                        {/* Grid Lines (Hour markers) */}
+                        {Array.from({ length: 24 }).map((_, h) => (
+                          <div key={h} className="week-hour-line" style={{ top: `${h * 80}px` }}></div>
+                        ))}
+
+                        {/* Events */}
+                        {day.events.map((evt: any) => {
+                          let startHour = 9;
+                          if (evt.dueDate) {
+                            const d = new Date(evt.dueDate);
+                            if (!isNaN(d.getTime())) startHour = d.getHours();
+                          }
+
+                          const top = startHour * 80;
+                          const height = (evt.estimatedTimeHours || 2) * 80;
+
+                          const eventClass = evt.status === 'done' ? 'bg-green-100 border-green-200 text-green-800' :
+                            evt.status === 'in_progress' ? 'bg-blue-100 border-blue-200 text-blue-800' :
+                              evt.workType === 'preventive' ? 'bg-purple-100 border-purple-200 text-purple-800' :
+                                'bg-orange-100 border-orange-200 text-orange-800';
+
+                          return (
+                            <div
+                              key={evt.id}
+                              className={`week-event-card ${eventClass}`}
+                              style={{ top: `${top}px`, height: `${height}px` }}
+                              onClick={(e) => handleEventClick(e, evt.id, day.fullDate, evt.isGhost)}
+                              onMouseEnter={(e) => handleMouseEnter(e, evt.id, day.fullDate, evt.isGhost)}
+                              onMouseLeave={handleMouseLeave}
+                            >
+                              <div className="font-semibold truncate leading-tight">{evt.title}</div>
+                              <div className="opacity-80 truncate text-[10px] mt-0.5">{evt.original?.asset || 'No Asset'}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

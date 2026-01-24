@@ -50,7 +50,8 @@ export function UnifiedHeader({
     const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
     // Format Date Title
-    const title = (viewMode === 'calendar')
+    // Format Date Title
+    const title = (viewMode === 'calendar' || viewMode === 'calendar-week')
         ? format(currentDate, "MMMM yyyy")
         : (viewMode === 'workload') ? 'Workload' : "Work Orders";
 
@@ -81,13 +82,13 @@ export function UnifiedHeader({
                     <h1 className="header-title min-w-[200px]" data-testid="header-title">{title}</h1>
 
                     {/* Date Navigation (Calendar Only) - Single Container Style */}
-                    {viewMode === 'calendar' && (
+                    {(viewMode === 'calendar' || viewMode === 'calendar-week') && (
                         <div className="header-date-nav">
                             <button className="header-nav-arrow" data-testid="nav-prev-btn" onClick={onPrevDate}>
                                 <ChevronLeft className="h-4 w-4" />
                             </button>
                             <span className="header-nav-text" data-testid="nav-current-btn">
-                                This Month
+                                {viewMode === 'calendar-week' ? 'This Week' : 'This Month'}
                             </span>
                             <button className="header-nav-arrow" data-testid="nav-next-btn" onClick={onNextDate}>
                                 <ChevronRight className="h-4 w-4" />

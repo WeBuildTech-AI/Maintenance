@@ -28,7 +28,7 @@ export function WorkOrders() {
   /* Refactored to use URL Search Params */
   const [searchParams, setSearchParams] = useSearchParams();
   const queryViewMode = searchParams.get("view") as ViewMode | null;
-  const viewMode: ViewMode = queryViewMode && ["todo", "list", "calendar", "workload"].includes(queryViewMode)
+  const viewMode: ViewMode = queryViewMode && ["todo", "list", "calendar", "calendar-week", "workload"].includes(queryViewMode)
     ? queryViewMode
     : "todo";
 
@@ -36,11 +36,11 @@ export function WorkOrders() {
   const [calendarDate, setCalendarDate] = useState(new Date());
 
   const handlePrevDate = useCallback(() => {
-    setCalendarDate(prev => viewMode === 'workload' ? subWeeks(prev, 1) : subMonths(prev, 1));
+    setCalendarDate(prev => (viewMode === 'workload' || viewMode === 'calendar-week') ? subWeeks(prev, 1) : subMonths(prev, 1));
   }, [viewMode]);
 
   const handleNextDate = useCallback(() => {
-    setCalendarDate(prev => viewMode === 'workload' ? addWeeks(prev, 1) : addMonths(prev, 1));
+    setCalendarDate(prev => (viewMode === 'workload' || viewMode === 'calendar-week') ? addWeeks(prev, 1) : addMonths(prev, 1));
   }, [viewMode]);
 
   // Sync 'todo' to URL if missing, or just handle default silently. 
@@ -245,6 +245,11 @@ export function WorkOrders() {
         currentDate={calendarDate}
         onPrevDate={handlePrevDate}
         onNextDate={handleNextDate}
+        onViewModeChange={(mode) => {
+          const params = new URLSearchParams(searchParams);
+          params.set('view', mode);
+          setSearchParams(params);
+        }}
       />
 
       {loading && workOrders.length === 0 && (
@@ -283,12 +288,14 @@ export function WorkOrders() {
             />
           )}
 
-          {viewMode === "calendar" && (
+          {(viewMode === "calendar" || viewMode === "calendar-week") && (
             <CalendarView
               workOrders={workOrders}
-              currentDate={calendarDate} // ✅ Prop
-            // We typically use month view default for calendar string in URL
-            // If sub-view needed, we can expand
+              currentDate={calendarDate}
+              viewMode="calendar-week"
+              onPrevDate={handlePrevDate}
+              onNextDate={handleNextDate}
+              onDateChange={setCalendarDate}
             />
           )}
 
