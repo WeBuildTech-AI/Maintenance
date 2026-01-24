@@ -104,6 +104,11 @@ export interface WorkOrderResponse {
   otherCostTotal?: string;
   partsCostTotal?: string;
   timeCostTotal?: string;
+  // Missing props used in CalendarView
+  recurrenceRule?: any;
+  workType?: string;
+  estimatedTimeHours?: number;
+  isDeleted?: boolean;
 }
 
 export interface CreateWorkOrderData {
@@ -143,9 +148,9 @@ export interface FetchWorkOrdersParams {
   page?: number | string;
   limit?: number | string;
   title?: string;
-  
+
   // Dynamic Keys from QueryBuilder (e.g. statusOneOf, assetIsEmpty)
-  [key: string]: any; 
+  [key: string]: any;
 }
 
 export interface FieldResponse {

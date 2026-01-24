@@ -15,6 +15,7 @@ import { ToDoView } from "./ToDoView/ToDoView";
 import type { AppDispatch } from "../../store";
 import { workOrderService } from "../../store/workOrders";
 import WorkOrderDetailModal from "./Tableview/modals/WorkOrderDetailModal";
+import { addMonths, subMonths, addWeeks, subWeeks } from "date-fns"; // ✅ Added imports
 
 export function WorkOrders() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -30,6 +31,17 @@ export function WorkOrders() {
   const viewMode: ViewMode = queryViewMode && ["todo", "list", "calendar", "workload"].includes(queryViewMode)
     ? queryViewMode
     : "todo";
+
+  // ✅ Calendar State Lifted
+  const [calendarDate, setCalendarDate] = useState(new Date());
+
+  const handlePrevDate = useCallback(() => {
+    setCalendarDate(prev => viewMode === 'workload' ? subWeeks(prev, 1) : subMonths(prev, 1));
+  }, [viewMode]);
+
+  const handleNextDate = useCallback(() => {
+    setCalendarDate(prev => viewMode === 'workload' ? addWeeks(prev, 1) : addMonths(prev, 1));
+  }, [viewMode]);
 
   // Sync 'todo' to URL if missing, or just handle default silently. 
   // Let's just use the derived value.
@@ -229,6 +241,10 @@ export function WorkOrders() {
         setIsSettingsModalOpen={setIsSettingsModalOpen}
         onFilterChange={handleFilterChange}
         setShowDeleted={setShowDeleted}
+        // ✅ Passed Props
+        currentDate={calendarDate}
+        onPrevDate={handlePrevDate}
+        onNextDate={handleNextDate}
       />
 
       {loading && workOrders.length === 0 && (
@@ -267,7 +283,14 @@ export function WorkOrders() {
             />
           )}
 
-          {viewMode === "calendar" && <CalendarView workOrders={workOrders} />}
+          {viewMode === "calendar" && (
+            <CalendarView
+              workOrders={workOrders}
+              currentDate={calendarDate} // ✅ Prop
+            // We typically use month view default for calendar string in URL
+            // If sub-view needed, we can expand
+            />
+          )}
 
           {viewMode === "workload" && (
             <WorkloadView

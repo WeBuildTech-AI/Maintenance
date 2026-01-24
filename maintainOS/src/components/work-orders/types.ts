@@ -1,6 +1,6 @@
 import { type Dispatch, type SetStateAction } from "react";
 
-export type ViewMode = "todo" | "list" | "calendar" | "workload";
+export type ViewMode = "todo" | "list" | "calendar" | "workload" | "calendar-week";
 
 export interface WorkOrderAssignee {
   name: string;
@@ -39,7 +39,7 @@ export interface ListViewProps {
   onRefreshWorkOrders: any;
   setIsSettingsModalOpen: any;
   isSettingsModalOpen: boolean;
-   showDeleted: boolean;
+  showDeleted: boolean;
   setShowDeleted: (value: boolean) => void;
 }
 

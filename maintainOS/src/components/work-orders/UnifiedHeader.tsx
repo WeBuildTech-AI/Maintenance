@@ -25,6 +25,11 @@ interface WorkOrderHeaderProps {
     setIsSettingsModalOpen?: Dispatch<SetStateAction<boolean>>;
     setShowDeleted?: Dispatch<SetStateAction<boolean>>;
     onFilterChange?: (params: FetchWorkOrdersParams) => void;
+    // ✅ New Props for Calendar Navigation
+    currentDate?: Date;
+    onPrevDate?: () => void;
+    onNextDate?: () => void;
+    onViewModeChange?: (mode: ViewMode) => void;
 }
 
 export function UnifiedHeader({
@@ -36,13 +41,18 @@ export function UnifiedHeader({
     setIsSettingsModalOpen,
     onFilterChange,
     setShowSettings,
+    currentDate = new Date(),
+    onPrevDate,
+    onNextDate,
+    onViewModeChange
 }: WorkOrderHeaderProps) {
-    const isCalendar = viewMode === "calendar";
+    const isCalendar = viewMode === "calendar" || viewMode === "calendar-week"; // Assuming we might distinguish modes or handled by parent
     const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
-    // Mock date for Calendar view design (Jan 2026 as per screenshot)
-    const currentDate = new Date(2026, 0, 1);
-    const title = isCalendar ? format(currentDate, "MMM yyyy") : "Work Orders";
+    // Format Date Title
+    const title = (viewMode === 'calendar')
+        ? format(currentDate, "MMMM yyyy")
+        : (viewMode === 'workload') ? 'Workload' : "Work Orders";
 
     const handleFilterApply = (filters: Record<string, string[]>) => {
         // Prepare params for API
@@ -67,19 +77,19 @@ export function UnifiedHeader({
         <header className="header-section">
             <div className="header-row">
                 {/* Left Side: Title & Date Navigation */}
-                <div className="header-title-group">
-                    <h1 className="header-title" data-testid="header-title">{title}</h1>
+                <div className="header-title-group flex items-center">
+                    <h1 className="header-title min-w-[200px]" data-testid="header-title">{title}</h1>
 
                     {/* Date Navigation (Calendar Only) - Single Container Style */}
-                    {isCalendar && (
+                    {viewMode === 'calendar' && (
                         <div className="header-date-nav">
-                            <button className="header-nav-arrow" data-testid="nav-prev-btn">
+                            <button className="header-nav-arrow" data-testid="nav-prev-btn" onClick={onPrevDate}>
                                 <ChevronLeft className="h-4 w-4" />
                             </button>
                             <span className="header-nav-text" data-testid="nav-current-btn">
-                                This Week
+                                This Month
                             </span>
-                            <button className="header-nav-arrow" data-testid="nav-next-btn">
+                            <button className="header-nav-arrow" data-testid="nav-next-btn" onClick={onNextDate}>
                                 <ChevronRight className="h-4 w-4" />
                             </button>
                         </div>
