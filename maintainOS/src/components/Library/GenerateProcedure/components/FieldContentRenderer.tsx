@@ -8,7 +8,7 @@ import {
 import { useProcedureBuilder } from "../ProcedureBuilderContext";
 import { type FieldData } from "../types";
 // --- [NEW] Imports for fetching data and using the custom dropdown ---
-import { useState,  useCallback } from "react";
+import { useState, useCallback } from "react";
 import { meterService } from "../../../../store/meters/meters.service";
 import type { MeterResponse } from "../../../../store/meters/meters.types";
 
@@ -63,7 +63,7 @@ export function FieldContentRenderer({
 
     setIsLoadingMeters(true);
     try {
-      const data = await meterService.fetchMeters(1000, 1, 0); // Default pagination
+      const data = await meterService.fetchMetersSummary();
       setMeters(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error("Failed to fetch meters:", e);
@@ -72,10 +72,10 @@ export function FieldContentRenderer({
       setIsLoadingMeters(false);
     }
   }, [isLoadingMeters, meters.length]); // Dependencies
-  
-  const handleMeterSelectChange = (meterId: string | string[]) => {
+
+  const handleMeterSelectChange = async (meterId: string | string[]) => {
     const selectedId = Array.isArray(meterId) ? meterId[0] : meterId;
-    
+
     if (!selectedId) {
       // Handle "None" or "Clear"
       handleFieldPropChange(field.id, "selectedMeter", "");
@@ -85,13 +85,24 @@ export function FieldContentRenderer({
       return;
     }
 
-    const selectedMeter = meters.find(m => m.id === selectedId);
-    if (!selectedMeter) return;
-
+    // 1. Optimistic Update (Name) using Summary Data
+    const summaryMeter = meters.find(m => m.id === selectedId);
     handleFieldPropChange(field.id, "selectedMeter", selectedId);
-    handleFieldPropChange(field.id, "selectedMeterName", selectedMeter.name);
-    handleFieldPropChange(field.id, "meterUnit", selectedMeter.measurement?.symbol || "");
-    handleFieldPropChange(field.id, "lastReading", selectedMeter.last_reading?.value || null);
+    if (summaryMeter) {
+      handleFieldPropChange(field.id, "selectedMeterName", summaryMeter.name);
+    }
+
+    // 2. Fetch Full Details for Unit & Last Reading
+    try {
+      const fullMeter = await meterService.fetchMeterById(selectedId);
+      if (fullMeter) {
+        handleFieldPropChange(field.id, "meterUnit", fullMeter.measurement?.symbol || "");
+        // @ts-ignore - Assuming last_reading exists on API response
+        handleFieldPropChange(field.id, "lastReading", fullMeter.last_reading?.value || null);
+      }
+    } catch (error) {
+      console.error("Failed to fetch meter details:", error);
+    }
   };
 
 
@@ -102,8 +113,8 @@ export function FieldContentRenderer({
     unit?: string;
     className?: string;
   }) => (
-    
-    <div className={`relative ${className}`}> 
+
+    <div className={`relative ${className}`}>
       <textarea
         placeholder="Reading will be entered here"
         disabled
@@ -197,9 +208,8 @@ export function FieldContentRenderer({
                     type={type}
                     id={`opt-${field.id}-${index}`}
                     name={`group-${field.id}`}
-                    className={`h-4 w-4 ${
-                      type === "radio" ? "rounded-full" : "rounded"
-                    } border-gray-300 text-blue-600 focus:ring-blue-500`}
+                    className={`h-4 w-4 ${type === "radio" ? "rounded-full" : "rounded"
+                      } border-gray-300 text-blue-600 focus:ring-blue-500`}
                   />
                   <label
                     htmlFor={`opt-${field.id}-${index}`}
@@ -314,10 +324,10 @@ export function FieldContentRenderer({
                 Select Meter
               </label>
               {/* --- [FIX] Native <select> ko <LibDynamicSelect> se replace kiya --- */}
-              <div 
+              <div
                 className="flex items-center bg-white"
                 // Click ko field tak bubble hone se rokein
-                onClick={(e) => e.stopPropagation()} 
+                onClick={(e) => e.stopPropagation()}
               >
                 <LibDynamicSelect
                   // --- [NEW] Icon prop add karein ---

@@ -1,7 +1,6 @@
-import { User, MapPin, AlertCircle, Calendar, Briefcase } from "lucide-react";
+import { User, MapPin, AlertCircle, Calendar, Briefcase, Activity } from "lucide-react";
 import FilterBar from "../utils/FilterBar";
 
-// Reporting-specific filters
 const ALL_FILTERS = [
   // --- API FILTERS (Fetch data dynamically) ---
   {
@@ -50,6 +49,36 @@ const ALL_FILTERS = [
       { label: "Preventive", value: "preventive" },
       { label: "Other", value: "other" },
     ],
+  },
+  // --- ASSET HEALTH SPECIFIC FILTERS ---
+  {
+    key: "criticality",
+    label: "Criticality",
+    icon: <AlertCircle size={16} />,
+    options: [
+      { label: "High", value: "high" },
+      { label: "Medium", value: "medium" },
+      { label: "Low", value: "low" },
+    ],
+  },
+  {
+    key: "downtimeReason",
+    label: "Downtime Reason",
+    icon: <Activity size={16} />,
+  },
+  {
+    key: "downtimeType",
+    label: "Downtime Type",
+    icon: <Activity size={16} />,
+    options: [
+      { label: "Planned", value: "planned" },
+      { label: "Unplanned", value: "unplanned" },
+    ],
+  },
+  {
+    key: "assetTypes",
+    label: "Asset Types",
+    icon: <Briefcase size={16} />,
   },
   // --- NEW FILTERS WITH ICONS ---
   {
@@ -106,6 +135,11 @@ const ALL_FILTERS = [
     key: "status",
     label: "Status",
     icon: <AlertCircle size={16} />,
+    options: [
+      { label: "Online", value: "online" },
+      { label: "Offline", value: "offline" },
+      { label: "Do Not Track", value: "do_not_track" },
+    ],
   },
   {
     key: "category",
@@ -133,11 +167,6 @@ const ALL_FILTERS = [
     icon: <Briefcase size={16} />,
   },
   {
-    key: "workType",
-    label: "Work Type",
-    icon: <Briefcase size={16} />,
-  },
-  {
     key: "startDate",
     label: "Start Date",
     icon: <Calendar size={16} />,
@@ -146,17 +175,27 @@ const ALL_FILTERS = [
 
 interface ReportingFilterBarProps {
   onParamsChange?: (params: any) => void;
+  activeTab?: string;
 }
 
 export default function ReportingFilterBar({
   onParamsChange,
+  activeTab = "work-orders",
 }: ReportingFilterBarProps) {
-  console.log("🔵 ReportingFilterBar rendered");
-  console.log("🔵 Filters count:", ALL_FILTERS.length);
+  // Different default filters based on active tab
+  const getDefaultKeys = () => {
+    if (activeTab === "asset-health") {
+      return ["criticality", "status", "downtimeReason", "downtimeType", "assetTypes"];
+    }
+    // Default for work-orders and other tabs
+    return ["assignedTo", "dueDate", "location", "priority"];
+  };
+
   return (
     <FilterBar
+      key={activeTab} // Force re-render when tab changes
       allFilters={ALL_FILTERS}
-      defaultKeys={["assignedTo", "dueDate", "location", "priority"]}
+      defaultKeys={getDefaultKeys()}
       onParamsChange={onParamsChange}
     />
   );

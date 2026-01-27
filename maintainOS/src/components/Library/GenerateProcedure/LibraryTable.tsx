@@ -252,11 +252,10 @@ export function LibraryTable({
             <AntTooltip title="Delete Selected">
               <button
                 onClick={() => setIsBatchDeleteModalOpen(true)}
-                className={`flex items-center gap-1 transition ${
-                  isDeleting
+                className={`flex items-center gap-1 transition ${isDeleting
                     ? "text-gray-400 cursor-not-allowed"
                     : "text-red-600 hover:text-red-700"
-                }`}
+                  }`}
                 disabled={isDeleting}
               >
                 {isDeleting ? (
@@ -361,7 +360,7 @@ export function LibraryTable({
               <Pencil size={18} />
             </button>
           </AntTooltip>
-          
+
           <AntTooltip title="Duplicate">
             <button
               onClick={() => handleDuplicate(record.fullData)}
@@ -418,9 +417,8 @@ export function LibraryTable({
 
       {/* Main Table Card */}
       <Card
-        className={`flex-1 flex flex-col shadow-sm border rounded-lg overflow-hidden ${
-          showDeleted ? "border-yellow-300" : "border-gray-200"
-        }`}
+        className={`flex-1 flex flex-col shadow-sm border rounded-lg overflow-hidden ${showDeleted ? "border-yellow-300" : "border-gray-200"
+          }`}
       >
         <CardContent className="flex-1 p-0 overflow-hidden">
           <Table
@@ -442,11 +440,10 @@ export function LibraryTable({
 
         {/* Pagination Footer */}
         <div
-          className={`flex-shrink-0 flex items-center justify-end p-3 border-t ${
-            showDeleted
+          className={`flex-shrink-0 flex items-center justify-end p-3 border-t ${showDeleted
               ? "bg-yellow-50 border-yellow-200"
               : "bg-white border-gray-100"
-          }`}
+            }`}
         >
           <div className="inline-flex items-center gap-4 rounded-md border bg-white p-2 shadow-sm">
             <span className="text-sm text-gray-600">
@@ -500,9 +497,8 @@ export function LibraryTable({
         onClose={() => setIsBatchDeleteModalOpen(false)}
         onConfirm={handleConfirmBatchDelete}
         title="Delete Procedures"
-        message={`Are you sure you want to delete ${selectedCount} ${
-          selectedCount === 1 ? "procedure" : "procedures"
-        }?`}
+        message={`Are you sure you want to delete ${selectedCount} ${selectedCount === 1 ? "procedure" : "procedures"
+          }?`}
       />
     </div>
   );

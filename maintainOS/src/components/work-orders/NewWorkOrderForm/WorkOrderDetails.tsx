@@ -123,7 +123,20 @@ export function WorkOrderDetails({
 
       <div className="mt-4">
         <h3 className="mb-4 text-sm font-medium text-gray-900">Location</h3>
-        <DynamicSelect name="location" placeholder="Select a location..." options={locationOptions} loading={isLocationsLoading} value={locationId} onSelect={onLocationSelect} onFetch={onFetchLocations} ctaText="+ Create New Location" onCtaClick={onCreateLocation} activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown} />
+        <DynamicSelect 
+          name="location" 
+          placeholder="Select a location..." 
+          options={locationOptions} 
+          loading={isLocationsLoading} 
+          value={locationId} 
+          onSelect={onLocationSelect} 
+          onFetch={onFetchLocations} 
+          ctaText="+ Create New Location" 
+          onCtaClick={onCreateLocation} 
+          activeDropdown={activeDropdown} 
+          setActiveDropdown={setActiveDropdown} 
+          limitOptions={3} 
+        />
       </div>
     </>
   );

@@ -26,7 +26,7 @@ export const store = configureStore({
   reducer: {
     user: userReducer,
     auth: authReducer,
-    messaging : messageReducer,
+    messaging: messageReducer,
     workOrders: workOrdersReducer,
     automations: automationsReducer,
     // users: usersReducer,

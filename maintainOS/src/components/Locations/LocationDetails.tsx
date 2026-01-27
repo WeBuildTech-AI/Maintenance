@@ -34,6 +34,7 @@ import { format, subDays } from "date-fns";
 import { WorkOrderHistoryChart } from "../utils/WorkOrderHistoryChart";
 // ✅ IMPORT API INSTANCE
 import api from "../../store/auth/auth.service";
+import { formatLabel } from "../utils/asset_formater";
 
 // Props interface
 interface LocationDetailsProps {
@@ -131,7 +132,8 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
       <span
         className={`px-2 py-0.5 rounded text-[10px] font-medium border uppercase ${style}`}
       >
-        {status?.replace("_", " ")}
+        {formatLabel(status)}
+
       </span>
     );
   };
@@ -348,7 +350,8 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
                     {meter.name}
                   </span>
                   <span className="text-xs text-gray-500 uppercase bg-white border px-2 py-0.5 rounded">
-                    {meter.meterType}
+                    {formatLabel(meter.meterType)}
+
                   </span>
                 </div>
               ))}

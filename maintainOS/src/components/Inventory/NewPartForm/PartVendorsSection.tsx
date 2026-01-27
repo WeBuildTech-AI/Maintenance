@@ -258,6 +258,8 @@ function PartVendorsSection({
           setActiveDropdown={setActiveDropdown}
           ctaText="+ Add New Asset"
           onCtaClick={handleAddNewAsset}
+          limitOptions={3}
+
         />
       </div>
 
@@ -282,6 +284,8 @@ function PartVendorsSection({
           setActiveDropdown={setActiveDropdown}
           ctaText="+ Add New Team"
           onCtaClick={handleAddNewTeam}
+          limitOptions={3}
+
         />
       </div>
 
@@ -306,6 +310,8 @@ function PartVendorsSection({
           setActiveDropdown={setActiveDropdown}
           ctaText="+ Add New Vendor"
           onCtaClick={handleAddNewVendor}
+          limitOptions={3}
+
         />
       </div>
     </section>

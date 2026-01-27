@@ -132,6 +132,8 @@ export function PartLocationSection({
                 name="part_location"
                 activeDropdown={activeDropdown}
                 setActiveDropdown={setActiveDropdown}
+                limitOptions={3}
+
               />
             </div>
           </div>
