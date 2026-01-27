@@ -562,6 +562,48 @@ export function CalendarView({
     return eachDayOfInterval({ start, end });
   }, [currentDate]);
 
+
+  // ✅ Dynamic Row Heights Calculation
+  const hourHeights = useMemo(() => {
+    if (viewMode !== 'calendar-week') return new Array(24).fill(80);
+
+    return Array.from({ length: 24 }).map((_, hourIndex) => {
+      let maxSegments = 0;
+
+      weekDays.forEach((day) => {
+        let segmentsInThisHour = 0;
+        day.events.forEach((evt: any) => {
+          let startHour = 9;
+          let startMinutes = 0;
+          const timeSource = evt.startDate || evt.dueDate;
+          if (timeSource) {
+            const d = new Date(timeSource);
+            if (!isNaN(d.getTime())) {
+              startHour = d.getHours();
+              startMinutes = d.getMinutes();
+            }
+          }
+          const duration = evt.estimatedTimeHours || 2;
+          const fullHours = Math.ceil(duration);
+          const evtStart = startHour + (startMinutes / 60);
+
+          for (let i = 0; i < fullHours; i++) {
+            const currentSegmentHour = Math.floor(evtStart + i);
+            if (currentSegmentHour === hourIndex) {
+              segmentsInThisHour++;
+            }
+          }
+        });
+
+        if (segmentsInThisHour > maxSegments) maxSegments = segmentsInThisHour;
+      });
+
+      // Calculate height: Base 80px. Each chip is ~36px (32px + 4px margin).
+      // We add a little extra buffer.
+      return Math.max(80, (maxSegments * 38) + 20);
+    });
+  }, [weekDays, viewMode]);
+
   return (
     <div className="calendar-page-layout">
 
@@ -614,8 +656,8 @@ export function CalendarView({
               return (
                 <div
                   key={i}
-                  className={`mini-calendar-day 
-                    ${isSelected ? 'active' : ''} 
+                  className={`mini-calendar-day
+                    ${isSelected ? 'active' : ''}
                     ${!isCurrentMonth ? 'text-muted' : ''}`}
                   onClick={handleDateClick}
                   style={{
@@ -747,33 +789,29 @@ export function CalendarView({
                 </div>
 
                 {/* Week Grid (Scrollable) */}
-                <div className="flex overflow-auto">
+                <div className="flex overflow-auto h-full">
                   {/* Time Axis (Left - Separate Column) */}
                   <div className="week-time-axis">
                     {Array.from({ length: 24 }).map((_, hour) => (
-                      <div key={hour} className="week-time-slot">
+                      <div
+                        key={hour}
+                        className="week-time-slot"
+                        style={{ height: `${hourHeights[hour]}px` }}
+                      >
                         {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
                       </div>
                     ))}
                   </div>
 
                   {/* Days Grid */}
-                  <div className="week-view-grid">
+                  <div className="week-view-grid flex px-0">
                     {weekDays.map((day, colIndex) => (
-                      <div key={colIndex} className="week-day-column">
-                        {/* Grid Lines (Hour markers) */}
-                        {Array.from({ length: 24 }).map((_, h) => (
-                          <div key={h}>
-                            <div className="week-hour-line" style={{ top: `${h * 80}px` }}></div>
-                            <div className="week-half-hour-line" style={{ top: `${h * 80 + 40}px` }}></div>
-                          </div>
-                        ))}
+                      <div key={colIndex} className="week-day-column flex-1 border-r border-gray-100">
+                        {/* Render 24 Hour Slots */}
+                        {Array.from({ length: 24 }).map((_, hourIndex) => {
+                          // Filter & Process Segments for this Hour
+                          const segmentsInHour: any[] = [];
 
-                        {/* Events Processed & Grouped for Overlaps */}
-                        {(() => {
-                          const hourBuckets: Record<number, any[]> = {};
-
-                          // 1. Generate all segments first
                           day.events.forEach((evt: any) => {
                             let startHour = 9;
                             let startMinutes = 0;
@@ -787,99 +825,140 @@ export function CalendarView({
                             }
 
                             const duration = evt.estimatedTimeHours || 2;
-                            const fullHours = Math.ceil(duration); // e.g. 4.75 -> 5 segments
+                            const fullHours = Math.ceil(duration);
 
-                            const getDurationColor = (h: number) => {
-                              if (h <= 1) return '#FFF9C4';
-                              if (h <= 1.5) return '#C8E6C9';
-                              if (h <= 2) return '#BBDEFB';
-                              if (h <= 3) return '#FFCCBC';
-                              if (h <= 4) return '#E1BEE7';
-                              return '#CFD8DC';
-                            };
-                            const bgColor = getDurationColor(duration);
+                            // Check if this evt intersects this hour
+                            // Calculate absolute start/end for the EVENT
+                            const evtStart = startHour + (startMinutes / 60);
+                            const evtEnd = evtStart + duration;
 
+                            // Include if the event covers any part of this hour index (e.g. 9 to 10)
+                            // Segment i (0 to fullHours-1) maps to hour (startHour + i)
+                            // We can just iterate the logic we had:
                             for (let i = 0; i < fullHours; i++) {
-                              const hourIndex = startHour + i;
-                              // Ensure bucket exists
-                              if (!hourBuckets[hourIndex]) hourBuckets[hourIndex] = [];
+                              const currentSegmentHour = Math.floor(evtStart + i);
 
-                              const segmentTop = (startHour + i) * 80 + (startMinutes / 60) * 80;
+                              if (currentSegmentHour === hourIndex) {
+                                // Calculate Properties for this specific segment
+                                const isFirst = (i === 0);
+                                const isLast = (i === fullHours - 1);
 
-                              // Calculate height: Full hour by default, proportional if last segment
-                              let segmentHeight = 78; // Default 80px - 2px gap
+                                // Determine if we are in "Stacking Mode" for this specific slot
+                                // (If more than 1 event starts/intersects this hour)
+                                // We know segmentsInHour isn't fully populated yet in this loop.
+                                // But we can pre-calculate count for this hour/day effectively?
+                                // Actually, we are iterating `day.events`.
+                                // We can just calculate the total count efficiently first.
+                                const totalEventsInThisHour = day.events.filter((e: any) => {
+                                  let s = 9, m = 0;
+                                  const ts = e.startDate || e.dueDate;
+                                  if (ts) { const td = new Date(ts); if (!isNaN(td.getTime())) { s = td.getHours(); m = td.getMinutes(); } }
+                                  const dur = e.estimatedTimeHours || 2;
+                                  const eStart = s + (m / 60);
+                                  const eEnd = eStart + dur;
+                                  // Intersects?
+                                  return (eStart < hourIndex + 1) && (eEnd > hourIndex);
+                                }).length;
 
-                              if (i === fullHours - 1) {
-                                // Last segment calculation
-                                const remainingDuration = duration - i;
-                                // effective fraction (min 0.25h to ensure visibility, max 1.0h)
-                                const fraction = Math.min(1, Math.max(0.0, remainingDuration));
-                                segmentHeight = (fraction * 80) - 2;
+                                const isStacked = totalEventsInThisHour > 1;
 
-                                // Optional: Enforce min height for visibility if desired (e.g. 20px)
-                                if (segmentHeight < 20) segmentHeight = 20;
+                                // Top Offset (Margin Top) - Scale with dynamic height
+                                // Only applies if it's the very first segment and starts mid-hour
+                                const marginTop = (isFirst) ? (startMinutes / 60) * hourHeights[hourIndex] : 0;
+
+                                // Height Calculation
+                                // Start of this segment in this hour
+                                const segStartInHour = isFirst ? (startMinutes / 60) : 0;
+                                // End of this segment in this hour
+                                const segEndInHour = Math.min(1, evtEnd - currentSegmentHour);
+
+                                const segDurationFraction = segEndInHour - segStartInHour;
+
+                                // HYBRID LOGIC:
+                                // If Stacked: Fixed compact height (32px approx) to fit many.
+                                // If Single: Scale to fill the visual time slot.
+                                let segmentHeight;
+                                if (isStacked) {
+                                  segmentHeight = 32; // Fixed compact
+                                } else {
+                                  segmentHeight = segDurationFraction * hourHeights[hourIndex];
+                                  segmentHeight = Math.max(segmentHeight - 2, 24); // Border/Min adjustment
+                                }
+
+                                const getDurationColor = (h: number) => {
+                                  if (h <= 1) return '#FFF9C4';
+                                  if (h <= 1.5) return '#C8E6C9';
+                                  if (h <= 2) return '#BBDEFB';
+                                  if (h <= 3) return '#FFCCBC';
+                                  if (h <= 4) return '#E1BEE7';
+                                  return '#CFD8DC';
+                                };
+
+                                segmentsInHour.push({
+                                  id: `${evt.id}-h${hourIndex}`,
+                                  evt,
+                                  marginTop,
+                                  height: segmentHeight,
+                                  bgColor: getDurationColor(duration),
+                                  isFirst,
+                                  isStacked // Pass this down if needed for styling
+                                });
                               }
-
-                              hourBuckets[hourIndex].push({
-                                id: `${evt.id}-seg-${i}`,
-                                originalId: evt.id,
-                                evt,
-                                top: segmentTop,
-                                height: segmentHeight,
-                                bgColor,
-                                isFirst: i === 0
-                              });
                             }
                           });
 
-                          // 2. Render buckets
-                          return Object.entries(hourBuckets).flatMap(([hour, segments]) => {
-                            return segments.map((seg, idx) => {
-                              const count = segments.length;
-                              const widthPct = 100 / count;
-                              const leftPct = idx * widthPct;
+                          return (
+                            <div
+                              key={hourIndex}
+                              className="relative border-b border-gray-100 flex flex-col items-start gap-1 custom-scrollbar-vertical pr-1 py-1"
+                              style={{ height: `${hourHeights[hourIndex]}px`, width: '100%' }}
+                            >
+                              {/* Half hour Guide Line */}
+                              <div className="absolute top-1/2 left-0 w-full border-b border-dashed border-gray-100 pointer-events-none" />
 
-                              // Add a small gap between cards if there are multiple
-                              const gap = count > 1 ? 2 : 0;
-                              const widthCalc = count > 1 ? `calc(${widthPct}% - ${gap}px)` : `${widthPct}%`;
-
-                              return (
+                              {/* Render Segments */}
+                              {segmentsInHour.map((seg) => (
                                 <div
                                   key={seg.id}
-                                  className="week-event-card hover:brightness-95 hover:z-50"
+                                  className="shrink-0 relative hover:brightness-95 cursor-pointer shadow-sm overflow-hidden transition-all hover:shadow-md mx-auto"
                                   style={{
-                                    top: `${seg.top}px`,
-                                    height: `${seg.height}px`,
+                                    marginTop: '4px', // Standard gap
+                                    minHeight: '32px', // Fixed height for slimmer look
+                                    height: '32px',
                                     backgroundColor: seg.bgColor,
+                                    // Remove localized border logic, use uniform border
                                     border: `1px solid ${seg.bgColor}`,
-                                    borderLeft: `3px solid rgba(0,0,0,0.1)`,
-                                    padding: '2px 4px',
-                                    color: '#374151',
-                                    width: widthCalc,
-                                    left: `${leftPct}%`,
-                                    position: 'absolute',
-                                    zIndex: 10 + idx, // Stagger z-index slightly
-                                    overflow: 'hidden'
+                                    borderRadius: '9999px', // Force Capsule
+                                    width: '90%', // Force Width
+                                    fontSize: '10px',
+                                    padding: '4px 8px', // More padding for pill look
+                                    color: '#1f2937', // Gray-800
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'center'
                                   }}
-                                  onClick={(e) => handleEventClick(e, seg.originalId, day.fullDate, seg.evt.isGhost)}
-                                  onMouseEnter={(e) => handleMouseEnter(e, seg.originalId, day.fullDate, seg.evt.isGhost)}
+                                  onClick={(e) => handleEventClick(e, seg.evt.id, day.fullDate, seg.evt.isGhost)}
+                                  onMouseEnter={(e) => handleMouseEnter(e, seg.evt.id, day.fullDate, seg.evt.isGhost)}
                                   onMouseLeave={handleMouseLeave}
                                 >
                                   {seg.isFirst ? (
                                     <>
-                                      <div className="font-semibold truncate leading-none text-[10px] mb-0.5">{seg.evt.title}</div>
-                                      <div className="opacity-80 truncate text-[9px] leading-none">{seg.evt.original?.asset || 'No Asset'}</div>
+                                      <div className="font-bold truncate leading-snug">{seg.evt.title}</div>
+                                      {/* Optional: specific styling for secondary text if needed */}
+                                      {seg.evt.original?.location?.name && (
+                                        <div className="opacity-70 truncate text-[10px] mt-0.5">{seg.evt.original.location.name}</div>
+                                      )}
                                     </>
                                   ) : (
-                                    <div className="opacity-60 truncate text-[9px] leading-none italic flex items-center h-full">
+                                    <div className="opacity-60 truncate italic flex items-center h-full text-[10px]">
                                       (cont.) {seg.evt.title}
                                     </div>
                                   )}
                                 </div>
-                              );
-                            });
-                          });
-                        })()}
+                              ))}
+                            </div>
+                          );
+                        })}
                       </div>
                     ))}
                   </div>

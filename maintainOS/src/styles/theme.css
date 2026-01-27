@@ -1689,13 +1689,17 @@ input[type="radio"]:hover {
 
 /* Week View Grid */
 .week-view-grid {
-  display: grid !important;
-  grid-template-columns: repeat(7, 1fr) !important;
+  display: flex !important;
+  /* Switched to flex to allow min-width expansion */
+  /* grid-template-columns: repeat(7, 1fr) !important; REMOVED */
   flex: 1 !important;
   overflow-y: auto !important;
+  overflow-x: auto !important;
+  /* Allow horizontal scroll for expanded columns */
   position: relative !important;
   min-height: 1920px !important;
   height: fit-content !important;
+  width: 100% !important;
 }
 
 /* Week Grid Wrapper (Time + Calendar) */
@@ -1719,7 +1723,7 @@ input[type="radio"]:hover {
 }
 
 .week-time-slot {
-  height: 80px !important;
+  height: 80px;
   display: flex !important;
   align-items: flex-start !important;
   justify-content: flex-end !important;
@@ -1761,10 +1765,29 @@ input[type="radio"]:hover {
   /* Ensure it sits above background/grid-cells but below events */
 }
 
+/* Custom Scrollbar for Vertical Hour Slots */
+.custom-scrollbar-vertical::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar-vertical::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar-vertical::-webkit-scrollbar-thumb {
+  background-color: #9CA3AF;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.custom-scrollbar-vertical:hover::-webkit-scrollbar-thumb {
+  background-color: #6B7280;
+}
+
 .week-event-card {
   position: absolute !important;
-  left: 4px !important;
-  right: 4px !important;
+  /* Left is calculated dynamically in JS */
   padding: 4px !important;
   /* Reduced padding directly here too */
   border-radius: 6px !important;
