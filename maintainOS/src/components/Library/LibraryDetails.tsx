@@ -3,7 +3,7 @@ import {
   ClipboardList,
   MoreVertical,
   Pencil,
-  User,
+  User as UserIcon,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { useState, useEffect } from "react";
@@ -21,6 +21,9 @@ import type { AppDispatch, RootState } from "../../store";
 import { ConfirmationModal } from "./GenerateProcedure/components/ConfirmationModal";
 import { WorkOrderHistoryChart } from "../utils/WorkOrderHistoryChart";
 import { format, subDays } from "date-fns";
+
+import type { AuthResponse } from "../../store/auth/auth.types";
+import { userService } from "../../store/users/users.service";
 
 // --- Helper function to format dates ---
 function formatDisplayDate(dateString: string) {
@@ -47,8 +50,51 @@ const DetailsTabContent = ({ procedure }: { procedure: any }) => {
   const updatedDate = formatDisplayDate(procedure.updatedAt);
   const procedureId = procedure.id || "N/A";
 
-  const user = useSelector((state: RootState) => state.auth.user);
-  const fullName = user?.fullName;
+  const user = useSelector((state: RootState) => state.auth.user) as AuthResponse["user"];
+
+  const [creatorName, setCreatorName] = useState("Loading...");
+  const [updaterName, setUpdaterName] = useState("Loading...");
+
+  useEffect(() => {
+    const fetchCreator = async () => {
+      if (!procedure.createdBy) {
+        setCreatorName("Unknown User");
+        return;
+      }
+      // If the ID matches the current logged-in user, use their name directly
+      if (user && user.id === procedure.createdBy) {
+        setCreatorName(user.fullName);
+        return;
+      }
+      try {
+        const u = await userService.fetchUserById(procedure.createdBy);
+        setCreatorName(u.fullName);
+      } catch (error) {
+        setCreatorName("Unknown User");
+      }
+    };
+
+    const fetchUpdater = async () => {
+      if (!procedure.updatedBy) {
+        setUpdaterName("Unknown User");
+        return;
+      }
+      // If the ID matches the current logged-in user, use their name directly
+      if (user && user.id === procedure.updatedBy) {
+        setUpdaterName(user.fullName);
+        return;
+      }
+      try {
+        const u = await userService.fetchUserById(procedure.updatedBy);
+        setUpdaterName(u.fullName);
+      } catch (error) {
+        setUpdaterName("Unknown User");
+      }
+    };
+
+    fetchCreator();
+    fetchUpdater();
+  }, [procedure.createdBy, procedure.updatedBy, user]);
 
   // Helpers for display
   const assets = procedure.assets || [];
@@ -93,11 +139,11 @@ const DetailsTabContent = ({ procedure }: { procedure: any }) => {
       {/* Created/Updated Info */}
       <div className="space-y-3">
         <div className="flex items-center gap-2 text-sm text-gray-600">
-          <User size={16} className="text-blue-600" />
+          <UserIcon size={16} className="text-blue-600" />
           <span>
             Created By{" "}
             <span className="font-semibold text-gray-900">
-              {fullName || "Unknown User"}
+              {creatorName}
             </span>{" "}
             on {createdDate}
           </span>
@@ -106,7 +152,7 @@ const DetailsTabContent = ({ procedure }: { procedure: any }) => {
           <span>
             Last updated by{" "}
             <span className="font-semibold text-gray-900">
-              {fullName || "Unknown User"}
+              {updaterName}
             </span>{" "}
             on {updatedDate}
           </span>
@@ -295,31 +341,28 @@ export function LibraryDetails({
           <nav className="flex" aria-label="Tabs">
             <button
               onClick={() => setActiveTab("fields")}
-              className={`flex-1 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-center ${
-                activeTab === "fields"
-                  ? "text-blue-600 border-blue-600"
-                  : "text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300"
-              }`}
+              className={`flex-1 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-center ${activeTab === "fields"
+                ? "text-blue-600 border-blue-600"
+                : "text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300"
+                }`}
             >
               Fields
             </button>
             <button
               onClick={() => setActiveTab("details")}
-              className={`flex-1 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-center ${
-                activeTab === "details"
-                  ? "text-blue-600 border-blue-600"
-                  : "text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300"
-              }`}
+              className={`flex-1 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-center ${activeTab === "details"
+                ? "text-blue-600 border-blue-600"
+                : "text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300"
+                }`}
             >
               Details
             </button>
             <button
               onClick={() => setActiveTab("history")}
-              className={`flex-1 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-center ${
-                activeTab === "history"
-                  ? "text-blue-600 border-blue-600"
-                  : "text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300"
-              }`}
+              className={`flex-1 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-center ${activeTab === "history"
+                ? "text-blue-600 border-blue-600"
+                : "text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300"
+                }`}
             >
               History
             </button>
@@ -353,9 +396,6 @@ export function LibraryDetails({
             filters={filters}
             dateRange={chartDateRanges["work-order-history"]}
             onDateRangeChange={handleDateRangeChange}
-            groupByField="createdAt"
-            lineName="Created"
-            lineColor="#0091ff"
           />
         )}
       </div>

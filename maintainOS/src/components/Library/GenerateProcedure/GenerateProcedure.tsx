@@ -1,19 +1,19 @@
 import { useState, useEffect } from "react";
-import { Plus, Rocket, Loader2 } from "lucide-react"; 
+import { Plus, Rocket, Loader2 } from "lucide-react";
 import CreateProcedureModal from "./CreateProcedureModal";
 import ProcedureBuilder from "./ProcedureBuilder";
-import { ProcedureBuilderProvider } from "./ProcedureBuilderContext"; 
+import { ProcedureBuilderProvider } from "./ProcedureBuilderContext";
 
 import { procedureService } from "../../../store/procedures/procedures.service";
-import { convertJSONToState } from "./utils/conversion"; 
+import { convertJSONToState } from "./utils/conversion";
 import type { FieldData, ProcedureSettingsState } from "./types";
 
-export default function GenerateProcedure({ 
-  onBack, 
-  editingProcedureId 
-}: { 
+export default function GenerateProcedure({
+  onBack,
+  editingProcedureId
+}: {
   onBack: () => void,
-  editingProcedureId: string | null; 
+  editingProcedureId: string | null;
 }) {
   const [openModal, setOpenModal] = useState(false);
   const [builderData, setBuilderData] = useState<{ name: string; desc: string } | null>(null);
@@ -32,7 +32,7 @@ export default function GenerateProcedure({
       document.body.style.overflow = "auto";
     };
   }, [openModal]);
-  
+
   // --- DATA FETCHING ---
   useEffect(() => {
     if (editingProcedureId) {
@@ -41,30 +41,30 @@ export default function GenerateProcedure({
         try {
           const apiData = await procedureService.fetchProcedureById(editingProcedureId);
           console.log("Fetched API data for edit:", apiData);
-          
+
           // @ts-ignore 
-          const convertedState = convertJSONToState(apiData); 
-          
+          const convertedState = convertJSONToState(apiData);
+
           setPrefetchedData({
             ...convertedState,
             name: apiData.title,
             description: apiData.description || "",
           });
-          
+
         } catch (error) {
           console.error("Failed to fetch procedure for editing:", error);
           alert("Failed to load procedure for editing.");
-          onBack(); 
+          onBack();
         } finally {
           setIsLoading(false);
         }
       };
-      
+
       fetchAndConvertData();
     }
-  }, [editingProcedureId]); 
-  
-  
+  }, [editingProcedureId]);
+
+
   // --- RENDER ---
 
   // 1. Edit Mode (Loading)
@@ -83,12 +83,12 @@ export default function GenerateProcedure({
       <ProcedureBuilderProvider
         name={prefetchedData.name}
         description={prefetchedData.description}
-        initialState={prefetchedData} 
+        initialState={prefetchedData}
       >
         <ProcedureBuilder
           name={prefetchedData.name}
           description={prefetchedData.description}
-          onBack={onBack} 
+          onBack={onBack}
           editingProcedureId={editingProcedureId}
           initialState={prefetchedData} // ✅ FIX: Passing initial state for diffing
         />
@@ -107,15 +107,15 @@ export default function GenerateProcedure({
           name={builderData.name}
           description={builderData.desc}
           onBack={() => {
-            setBuilderData(null); 
-            onBack(); 
+            setBuilderData(null);
+            onBack();
           }}
-          editingProcedureId={null} 
+          editingProcedureId={null}
         />
       </ProcedureBuilderProvider>
     );
   }
-  
+
   // 4. Create Mode (Initial view - Modal dikhayein)
   if (!editingProcedureId) {
     return (
@@ -128,8 +128,37 @@ export default function GenerateProcedure({
           alignItems: "center",
           justifyContent: "center",
           overflow: "hidden",
+          position: "relative", // Needed for absolute positioning of header
         }}
       >
+        {/* HEADER WITH BUTTONS */}
+        <div
+          style={{
+            position: "absolute",
+            top: 20,
+            left: 20,
+            display: "flex",
+            gap: "12px",
+            zIndex: 10
+          }}
+        >
+          <button
+            onClick={onBack}
+            style={{
+              background: "#fff",
+              border: "1px solid #d1d5db",
+              borderRadius: "6px",
+              padding: "8px 16px",
+              cursor: "pointer",
+              color: "#374151",
+              fontSize: "0.9rem",
+              fontWeight: 500,
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+
         <div
           style={{
             display: "grid",

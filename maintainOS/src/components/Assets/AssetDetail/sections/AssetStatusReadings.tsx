@@ -36,7 +36,7 @@ export function AssetStatusReadings({
   useEffect(() => {
     setAssetStatus(asset?.status || "online");
   }, [asset]);
-  
+
   // Offline work order prompt
   const [isOfflinePromptOpen, setIsOfflinePromptOpen] = useState(false);
   const [isNewWorkOrderModalOpen, setIsNewWorkOrderModalOpen] = useState(false);
@@ -102,7 +102,7 @@ export function AssetStatusReadings({
 
       setIsModalOpen(false);
       toast.success("Asset Status Successfully updated");
-      
+
       // ✅ Check if status changed to offline - show work order prompt
       if (finalStatusData.status?.toLowerCase() === 'offline') {
         setIsOfflinePromptOpen(true);
@@ -127,7 +127,7 @@ export function AssetStatusReadings({
           isLoading={isLoading}
         />
       )}
-      
+
       {/* \u2705 Offline Work Order Prompt */}
       <OfflinePromptModal
         isOpen={isOfflinePromptOpen}
@@ -283,9 +283,8 @@ const OfflineSinceDropdown = ({
         >
           <span>{offlineSince}</span>
           <ChevronDown
-            className={`w-5 h-5 text-gray-500 transition-transform ${
-              offlineSinceDropdown ? "rotate-180" : ""
-            }`}
+            className={`w-5 h-5 text-gray-500 transition-transform ${offlineSinceDropdown ? "rotate-180" : ""
+              }`}
           />
         </button>
         {offlineSinceDropdown && (
@@ -447,8 +446,9 @@ export function UpdateAssetStatusModal({
 
   const isFormValid = () => {
     if (!selectedStatus) return false;
-    if (selectedStatus === "offline" && !downtimeType) {
-      return false;
+    // Modified: Check both downtimeType AND offlineReason
+    if (selectedStatus === "offline") {
+      if (!downtimeType || !offlineReason) return false;
     }
     if (offlineSince === "Custom date") {
       return fromDate && fromTime && toDate && toTime;
@@ -471,6 +471,8 @@ export function UpdateAssetStatusModal({
     // --- CHANGE 1: Sirf 'downtimeType' ke liye check karein ki status offline hai ya nahi ---
     if (selectedStatus === "offline") {
       submitData.downtimeType = downtimeType;
+      // ✅ ADDED: downtimeReason is required
+      submitData.downtimeReason = offlineReason;
     }
 
     // --- CHANGE 2: Date calculation logic ko bahar nikaal diya ---
@@ -552,9 +554,8 @@ export function UpdateAssetStatusModal({
                 >
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-2.5 h-2.5 ${
-                        statuses.find((s) => s.value === selectedStatus)?.color
-                      } rounded-full`}
+                      className={`w-2.5 h-2.5 ${statuses.find((s) => s.value === selectedStatus)?.color
+                        } rounded-full`}
                     ></div>
                     <span>
                       {statuses.find((s) => s.value === selectedStatus)?.name ||
@@ -562,9 +563,8 @@ export function UpdateAssetStatusModal({
                     </span>
                   </div>
                   <ChevronDown
-                    className={`w-5 h-5 text-blue-500 transition-transform ${
-                      statusDropdown ? "rotate-180" : ""
-                    }`}
+                    className={`w-5 h-5 text-blue-500 transition-transform ${statusDropdown ? "rotate-180" : ""
+                      }`}
                   />
                 </button>
                 {statusDropdown && (
@@ -618,9 +618,8 @@ export function UpdateAssetStatusModal({
                           "Select downtime type"}
                       </span>
                       <ChevronDown
-                        className={`w-5 h-5 text-gray-500 transition-transform ${
-                          downtimeDropdown ? "rotate-180" : ""
-                        }`}
+                        className={`w-5 h-5 text-gray-500 transition-transform ${downtimeDropdown ? "rotate-180" : ""
+                          }`}
                       />
                     </button>
 
@@ -662,9 +661,8 @@ export function UpdateAssetStatusModal({
                           "Select reason"}
                       </span>
                       <ChevronDown
-                        className={`w-5 h-5 text-gray-500 transition-transform ${
-                          reasonDropdown ? "rotate-180" : ""
-                        }`}
+                        className={`w-5 h-5 text-gray-500 transition-transform ${reasonDropdown ? "rotate-180" : ""
+                          }`}
                       />
                     </button>
 
@@ -690,7 +688,7 @@ export function UpdateAssetStatusModal({
               </div>
             )}
 
-            
+
 
             <OfflineSinceDropdown
               offlineSince={offlineSince}

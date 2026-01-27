@@ -2,13 +2,13 @@ import { useState } from "react";
 import { ChevronLeft, Eye, Loader2 } from "lucide-react";
 import ProcedureBody from "./ProcedureBody";
 import ProcedureSettings from "./ProcedureSettings";
-import { useLayout } from "../../MainLayout"; 
+import { useLayout } from "../../MainLayout";
 import { useProcedureBuilder } from "./ProcedureBuilderContext";
 import { convertStateToJSON } from "./utils/conversion";
 import { ProcedurePreviewModal } from "./components/ProcedurePreviewModal";
 import { useDispatch } from "react-redux";
-import { type RootState, type AppDispatch } from "../../../store"; 
-import { createProcedure, updateProcedure } from "../../../store/procedures/procedures.thunks"; 
+import { type RootState, type AppDispatch } from "../../../store";
+import { createProcedure, updateProcedure } from "../../../store/procedures/procedures.thunks";
 import type { FieldData, ProcedureSettingsState } from "./types";
 
 interface BuilderProps {
@@ -29,14 +29,14 @@ export default function ProcedureBuilder({
   description,
   onBack,
   editingProcedureId,
-  initialState, 
+  initialState,
 }: BuilderProps) {
   const [activeTab, setActiveTab] = useState<"fields" | "settings">("fields");
   const [showPreview, setShowPreview] = useState(false);
 
   const [isSaving, setIsSaving] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
-  
+
   const { totalFieldCount, fields, settings, procedureName, procedureDescription } = useProcedureBuilder();
 
   const { sidebarWidth } = useLayout();
@@ -47,14 +47,14 @@ export default function ProcedureBuilder({
   // --- Helper to remove IDs from payload (for clean JSON) ---
   // --- Helper to remove IDs from payload (for clean JSON) ---
   const removeId = (obj: any) => {
-    const { 
-      id, 
+    const {
+      id,
       // condition, // FIXED: Do NOT remove condition!
       parentId,
-      sectionId, 
-      ...rest 
+      sectionId,
+      ...rest
     } = obj;
-    
+
     // Recursive cleanup
     if (rest.children) {
       rest.children = rest.children.map(removeId);
@@ -82,9 +82,9 @@ export default function ProcedureBuilder({
 
   // --- SAVE TEMPLATE LOGIC (With Partial Update) ---
   const handleSaveOrUpdateTemplate = async () => {
-    
+
     setIsSaving(true);
-    
+
     // 1. Generate Current Payload
     const currentPayload = preparePayload(fields, settings, procedureName, procedureDescription);
 
@@ -96,9 +96,9 @@ export default function ProcedureBuilder({
         if (initialState) {
           // Generate Initial Payload from original state to compare against
           const initialPayload = preparePayload(initialState.fields, initialState.settings, initialState.name, initialState.description);
-          
+
           const diff: any = {};
-          
+
           // Compare Keys
           Object.keys(currentPayload).forEach(key => {
             // Deep comparison using JSON.stringify for simplicity on objects/arrays
@@ -106,13 +106,13 @@ export default function ProcedureBuilder({
               diff[key] = currentPayload[key];
             }
           });
-          
+
           // Structural Integrity Check:
           const structureKeys = ['rootFields', 'headings', 'sections'];
           const structureChanged = structureKeys.some(k => diff[k]);
 
           if (structureChanged) {
-             structureKeys.forEach(k => diff[k] = currentPayload[k]);
+            structureKeys.forEach(k => diff[k] = currentPayload[k]);
           }
 
           finalPayload = diff;
@@ -122,9 +122,9 @@ export default function ProcedureBuilder({
         console.log(JSON.stringify(finalPayload, null, 2));
 
         if (Object.keys(finalPayload).length === 0) {
-           alert("No changes detected.");
-           setIsSaving(false);
-           return;
+          alert("No changes detected.");
+          setIsSaving(false);
+          return;
         }
 
         await dispatch(updateProcedure({ id: editingProcedureId, procedureData: finalPayload })).unwrap();
@@ -133,14 +133,14 @@ export default function ProcedureBuilder({
         // --- CREATE MODE: Send Full Payload ---
         console.log("--- CREATE PAYLOAD TO API ---");
         console.log(JSON.stringify(currentPayload, null, 2));
-        
+
         await dispatch(createProcedure(currentPayload)).unwrap();
       }
-      
+
       // Success
       setIsSaving(false);
-      onBack(); 
-      
+      onBack();
+
     } catch (error: any) {
       // Error
       setIsSaving(false);
@@ -169,10 +169,31 @@ export default function ProcedureBuilder({
           transition: "left 0.3s ease-in-out",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          {/* CANCEL BUTTON */}
           <button
             onClick={onBack}
-            title="Back to Library" // ✅ Added Tooltip
+            title="Cancel"
+            style={{
+              background: "#fff",
+              border: "1px solid #d1d5db",
+              borderRadius: "6px",
+              padding: "6px 12px",
+              cursor: "pointer",
+              color: "#374151",
+              fontSize: "0.9rem",
+              fontWeight: 500,
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            Cancel
+          </button>
+
+          {/* BACK BUTTON */}
+          <button
+            onClick={onBack}
+            title="Back to previous page"
             style={{
               background: "none",
               border: "none",
@@ -180,11 +201,17 @@ export default function ProcedureBuilder({
               color: "#2563eb",
               display: "flex",
               alignItems: "center",
+              gap: "4px",
+              fontWeight: 500,
             }}
           >
             <ChevronLeft size={20} />
+            Back
           </button>
-          <span style={{ fontWeight: 500, color: "#111827" }}>{procedureName}</span>
+
+          <div style={{ height: "24px", width: "1px", background: "#e5e7eb", margin: "0 4px" }} />
+
+          <span style={{ fontWeight: 600, color: "#111827", fontSize: "1.1rem" }}>{procedureName}</span>
         </div>
         <div
           style={{
@@ -253,7 +280,7 @@ export default function ProcedureBuilder({
           {/* --- ACTION BUTTON --- */}
           {activeTab === "fields" ? (
             <button
-              onClick={() => setActiveTab("settings")} 
+              onClick={() => setActiveTab("settings")}
               style={{
                 backgroundColor: "#2563eb",
                 color: "#fff",
@@ -271,7 +298,7 @@ export default function ProcedureBuilder({
             </button>
           ) : (
             <button
-              onClick={handleSaveOrUpdateTemplate} 
+              onClick={handleSaveOrUpdateTemplate}
               disabled={isSaving}
               style={{
                 backgroundColor: isSaving ? "#d1d5db" : "#2563eb", // Disable color
