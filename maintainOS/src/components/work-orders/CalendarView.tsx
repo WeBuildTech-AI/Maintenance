@@ -4,10 +4,10 @@ import { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Lock, RefreshCcw, CheckCircle2,
-  User, X, Clock, Calendar as CalendarIcon, ChevronRight as ChevronRightIcon,
+  X, Clock, Calendar as CalendarIcon, ChevronRight as ChevronRightIcon,
   ChevronLeft, ChevronRight,
   // ✅ Added Icons
-  MapPin, Factory, AlertCircle, Search, Plus
+  Search, Plus
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
@@ -29,7 +29,7 @@ import {
   isSameDay,
 
   // date helpers
-  getWeek,
+
   startOfDay,
   isBefore,
   isAfter,
@@ -38,6 +38,7 @@ import {
 } from 'date-fns';
 import WorkOrderDetailModal from './Tableview/modals/WorkOrderDetailModal';
 import type { WorkOrderResponse as WorkOrder } from '../../store/workOrders/workOrders.types';
+import EventDetailPopover from './EventDetailPopover';
 import type { ViewMode } from "./types";
 
 // --- 1. Day List Modal (For Mobile/Overflow) ---
@@ -142,184 +143,7 @@ function DayListModal({
   );
 }
 
-// ✅ HELPER: Priority Colors
-const getPriorityColor = (priority?: string) => {
-  switch (priority?.toLowerCase()) {
-    case 'high': return 'text-red-700 bg-red-50 border-red-200';
-    case 'medium': return 'text-orange-700 bg-orange-50 border-orange-200';
-    case 'low': return 'text-green-700 bg-green-50 border-green-200';
-    default: return 'text-gray-700 bg-gray-50 border-gray-200';
-  }
-};
 
-// --- 2. Hover Popover (Smart UI: Locked vs Details) ---
-function EventDetailPopover({
-  workOrder,
-  anchorRect,
-  eventDate,
-  isGhost
-}: {
-  workOrder: any;
-  anchorRect: DOMRect;
-  eventDate?: Date;
-  isGhost?: boolean;
-}) {
-  const formatDate = (date?: string) => date ? format(new Date(date), 'MMM d, yyyy') : '-';
-  const assignee = workOrder.assignees?.[0] || workOrder.assignedTo;
-  const assigneeName = typeof assignee === 'object' ? (assignee.fullName || assignee.name) : '-';
-
-  const getStatusStyle = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'in_progress': return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'done':
-      case 'completed': return 'bg-green-100 text-green-700 border-green-200';
-      case 'locked': return 'bg-gray-100 text-gray-500 border-gray-200';
-      default: return 'bg-gray-100 text-gray-700 border-gray-200';
-    }
-  };
-
-  const statusLabel = workOrder.status ? workOrder.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Open';
-
-  const POPOVER_HEIGHT = 380; // Increased slightly for content
-  const POPOVER_WIDTH = 320;
-  const SCREEN_HEIGHT = typeof window !== 'undefined' ? window.innerHeight : 800;
-  const SCREEN_WIDTH = typeof window !== 'undefined' ? window.innerWidth : 1200;
-
-  const spaceBelow = SCREEN_HEIGHT - anchorRect.bottom;
-  const openUpwards = spaceBelow < POPOVER_HEIGHT;
-  const spaceRight = SCREEN_WIDTH - anchorRect.left;
-  const openLeftwards = spaceRight < POPOVER_WIDTH;
-
-  const style: React.CSSProperties = {
-    position: 'fixed',
-    width: `${POPOVER_WIDTH}px`,
-    zIndex: 1000,
-    pointerEvents: 'none',
-  };
-
-  if (openUpwards) {
-    style.bottom = `${SCREEN_HEIGHT - anchorRect.top + 8}px`;
-  } else {
-    style.top = `${anchorRect.bottom + 8}px`;
-  }
-
-  if (openLeftwards) {
-    style.left = `${anchorRect.right - POPOVER_WIDTH}px`;
-  } else {
-    style.left = `${anchorRect.left}px`;
-  }
-
-  return (
-    <div
-      className="bg-white rounded-lg shadow-xl border border-gray-200 text-sm animate-in fade-in zoom-in-95 duration-150"
-      style={style}
-    >
-      <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-start gap-2 bg-gray-50/50">
-        <h3 className="font-semibold text-gray-900 line-clamp-2 leading-tight">
-          {workOrder.title || "Untitled Work Order"}
-        </h3>
-        {isGhost && <Lock size={16} className="text-amber-500 flex-shrink-0 mt-1" />}
-      </div>
-
-      <div className="p-4 space-y-3">
-
-        {!isGhost ? (
-          <>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-500">Status</span>
-              <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusStyle(workOrder.status)}`}>
-                {workOrder.status === 'in_progress' && <RefreshCcw size={10} className="animate-spin-slow" />}
-                {(workOrder.status === 'done' || workOrder.status === 'completed') && <CheckCircle2 size={10} />}
-                {statusLabel}
-              </span>
-            </div>
-
-            {/* ✅ Priority Section */}
-            {workOrder.priority && (
-              <div className="flex justify-between items-center">
-                <span className="text-gray-500 flex items-center gap-2">
-                  <AlertCircle size={14} className="text-gray-400" /> Priority
-                </span>
-                <span className={`px-2 py-0.5 rounded text-xs font-medium border uppercase ${getPriorityColor(workOrder.priority)}`}>
-                  {workOrder.priority}
-                </span>
-              </div>
-            )}
-
-            <div className="h-px bg-gray-100 my-2" />
-          </>
-        ) : (
-          <div className="flex justify-center items-center p-2 bg-amber-50 text-amber-700 text-xs font-medium rounded border border-amber-100 mb-2">
-            <span>Completion Required</span>
-          </div>
-        )}
-
-        <div className="flex justify-between items-center">
-          <span className="text-gray-500">Due Date</span>
-          <span className="text-gray-900 font-medium">{formatDate(eventDate?.toISOString() || workOrder.dueDate)}</span>
-        </div>
-
-        {/* ✅ Location Section */}
-        <div className="flex justify-between items-start gap-4">
-          <span className="text-gray-500 shrink-0 flex items-center gap-2">
-            <MapPin size={14} className="text-gray-400" /> Location
-          </span>
-          <div className="flex items-center gap-1 text-right overflow-hidden">
-            {workOrder.location ? (
-              <span className="text-gray-900 truncate font-medium">{workOrder.location.name}</span>
-            ) : (
-              <span className="text-gray-400">-</span>
-            )}
-          </div>
-        </div>
-
-        {/* ✅ Assets Section */}
-        <div className="flex justify-between items-start gap-4">
-          <span className="text-gray-500 shrink-0 flex items-center gap-2">
-            <Factory size={14} className="text-gray-400" /> Assets
-          </span>
-          <div className="flex flex-wrap justify-end gap-1">
-            {workOrder.assets && workOrder.assets.length > 0 ? (
-              workOrder.assets.slice(0, 3).map((a: any) => (
-                <span key={a.id} className="flex items-center gap-1 px-2 py-1 bg-gray-50 border border-gray-200 rounded text-xs text-gray-700 max-w-[120px] truncate">
-                  <span className="truncate">{a.name}</span>
-                </span>
-              ))
-            ) : (
-              <span className="text-gray-400">-</span>
-            )}
-            {workOrder.assets && workOrder.assets.length > 3 && (
-              <span className="text-xs text-gray-400 mt-1">+{workOrder.assets.length - 3} more</span>
-            )}
-          </div>
-        </div>
-
-        <div className="flex justify-between items-center">
-          <span className="text-gray-500">Estimated Time</span>
-          {/* ✅ UPDATED: Format to 2 decimal places */}
-          <span className="text-gray-900">{workOrder.estimatedTimeHours ? `${Number(workOrder.estimatedTimeHours).toFixed(2)}h` : '-'}</span>
-        </div>
-
-        <div className="flex justify-between items-center">
-          <span className="text-gray-500">Work Type</span>
-          <span className="text-gray-900">{workOrder.workType || 'Reactive'}</span>
-        </div>
-
-        <div className="flex justify-between items-center">
-          <span className="text-gray-500">Assigned To</span>
-          {assigneeName !== '-' ? (
-            <div className="flex items-center gap-1.5 text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
-              <User size={12} />
-              <span className="font-medium text-xs truncate max-w-[120px]">{assigneeName}</span>
-            </div>
-          ) : (
-            <span>-</span>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // --- 3. RECURRENCE LOGIC (UPDATED: GHOST PROJECTION) ---
 
@@ -710,6 +534,7 @@ export function CalendarView({
               anchorRect={anchorRect}
               eventDate={hoveredEventDate}
               isGhost={hoveredEventGhost}
+              onClose={handleMouseLeave}
             />
           )}
 
