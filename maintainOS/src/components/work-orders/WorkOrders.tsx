@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate, useMatch, useLocation, useSearchParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { FetchWorkOrdersParams } from "../../store/workOrders/workOrders.types";
+import type { FetchWorkOrdersParams } from "../../store/workOrders/workOrders.types";
 import { fetchWorkOrders } from "../../store/workOrders/workOrders.thunks";
 import { CalendarView } from "./CalendarView";
 import { ListView } from "./ListView";
@@ -72,11 +72,8 @@ export function WorkOrders() {
   const prefillData = (location.state as any)?.prefillData;
 
   const isCreateRoute = useMatch("/work-orders/create");
-  const editMatch = useMatch("/work-orders/:id/edit");
   const viewMatch = useMatch("/work-orders/:id");
 
-  const isEditMode = !!editMatch;
-  const editingId = editMatch?.params?.id;
   const viewingId = viewMatch?.params?.id;
 
   // Debounce Search
@@ -324,7 +321,7 @@ export function WorkOrders() {
           open={!!viewingWorkOrder}
           onClose={() => {
             setViewingWorkOrder(null);
-            navigate("/work-orders");
+            navigate(`/work-orders?view=${viewMode}`);
           }}
           workOrder={viewingWorkOrder}
           onRefreshWorkOrders={handleRefreshWorkOrders}

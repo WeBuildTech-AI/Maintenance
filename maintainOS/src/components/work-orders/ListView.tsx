@@ -1,5 +1,6 @@
 "use client";
 import React, { useMemo, useState, useRef, useEffect } from "react";
+import { useAppSelector } from "../../store/hooks";
 import { Card, CardContent } from "./../ui/card";
 import {
   Pencil,
@@ -69,7 +70,7 @@ const PriorityChip = ({ priority }: { priority: string }) => {
   const styleClass = PRIORITY_STYLES[pKey] || PRIORITY_STYLES.none;
 
   return (
-    <div 
+    <div
       className={`
         inline-flex items-center justify-center 
         px-2 py-0.5  /* Reduced padding for smaller height */
@@ -87,16 +88,17 @@ const PriorityChip = ({ priority }: { priority: string }) => {
 };
 
 // B. Status Cell Component (Dropdown Logic + Fixed Box Model)
-const StatusCell = ({ 
-  currentStatus, 
-  workOrderId, 
-  onRefresh 
-}: { 
-  currentStatus: string; 
-  workOrderId: string; 
-  onRefresh: () => void; 
+const StatusCell = ({
+  currentStatus,
+  workOrderId,
+  onRefresh
+}: {
+  currentStatus: string;
+  workOrderId: string;
+  onRefresh: () => void;
 }) => {
   const dispatch = useDispatch<AppDispatch>();
+  const user = useAppSelector((state) => state.auth.user);
   const [loading, setLoading] = useState(false);
 
   const statusKey = (currentStatus || "open").toLowerCase();
@@ -107,7 +109,7 @@ const StatusCell = ({
     if (newStatus === statusKey) return;
     setLoading(true);
     try {
-      await dispatch(updateWorkOrderStatus({ id: workOrderId, status: newStatus })).unwrap();
+      await dispatch(updateWorkOrderStatus({ id: workOrderId, status: newStatus, authorId: user?.id || "" })).unwrap();
       onRefresh(); // Refresh the list to reflect changes
       toast.success(`Status updated to ${newStatus}`);
     } catch (error) {
@@ -170,12 +172,12 @@ const allAvailableColumns = [
   "Categories",
   "Asset",
   "Location",
-  "Due Date",      
-  "Total Cost",    
-  "Recurrence",    
+  "Due Date",
+  "Total Cost",
+  "Recurrence",
   "Created On",
   "Updated On",
-  "Procedure", 
+  "Procedure",
 ];
 
 interface WorkOrderRow {
@@ -246,17 +248,17 @@ const columnConfig: Record<string, ColumnConfigItem> = {
     width: 150,
     sorter: (a, b) => (a.location || "").localeCompare(b.location || ""),
   },
-  "Due Date": { 
+  "Due Date": {
     dataIndex: "dueDate",
     width: 150,
     sorter: (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
   },
-  "Total Cost": { 
+  "Total Cost": {
     dataIndex: "totalCost",
     width: 130,
     sorter: (a, b) => Number(a.totalCost) - Number(b.totalCost),
   },
-  "Recurrence": { 
+  "Recurrence": {
     dataIndex: "recurrence",
     width: 150,
     sorter: (a, b) => (a.recurrence || "").localeCompare(b.recurrence || ""),
@@ -358,7 +360,7 @@ export function ListView({
   // VIEW MODAL (Details/Edit)
   const [viewModal, setViewModal] = useState(false);
   const [selectedWO, setSelectedWO] = useState(null);
-  
+
   const navigate = useNavigate();
 
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
@@ -504,11 +506,10 @@ export function ListView({
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className={`flex items-center gap-1 transition ${
-                  isDeleting
-                    ? "text-gray-400 cursor-not-allowed"
-                    : "text-red-600 hover:text-red-700"
-                }`}
+                className={`flex items-center gap-1 transition ${isDeleting
+                  ? "text-gray-400 cursor-not-allowed"
+                  : "text-red-600 hover:text-red-700"
+                  }`}
               >
                 {isDeleting ? (
                   <Loader2 size={16} className="animate-spin" />
@@ -565,7 +566,7 @@ export function ListView({
               className="truncate cursor-pointer text-gray-700 hover:text-blue-600 hover:underline"
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/work-orders/${record.id}`);
+                navigate(`/work-orders/${record.id}?view=list`);
               }}
             >
               {title}
@@ -587,15 +588,15 @@ export function ListView({
         if (colName === "Status") {
           // ✅ FIX: Use StatusCell Component
           renderFunc = (status: any, record: any) => (
-            <StatusCell 
-              currentStatus={status} 
-              workOrderId={record.id} 
-              onRefresh={onRefreshWorkOrders} 
+            <StatusCell
+              currentStatus={status}
+              workOrderId={record.id}
+              onRefresh={onRefreshWorkOrders}
             />
           );
         } else if (colName === "Priority") {
-           // ✅ FIX: Use PriorityChip Component
-           renderFunc = (priority: any) => (
+          // ✅ FIX: Use PriorityChip Component
+          renderFunc = (priority: any) => (
             <PriorityChip priority={priority} />
           );
         } else if (colName === "Created On" || colName === "Updated On" || colName === "Due Date") {
@@ -614,8 +615,8 @@ export function ListView({
             <span className="text-gray-700 capitalize">{val || "One-time"}</span>
           );
         } else if (colName === "Procedure") {
-           // ✅ FIX: Standard text for Procedure
-           renderFunc = (val: any) => (
+          // ✅ FIX: Standard text for Procedure
+          renderFunc = (val: any) => (
             <span className="text-gray-700">{val}</span>
           );
         }
@@ -691,13 +692,13 @@ export function ListView({
       let recStr = "One-time";
       try {
         if (item.recurrenceRule) {
-            const parsed = typeof item.recurrenceRule === 'string' 
-                ? JSON.parse(item.recurrenceRule) 
-                : item.recurrenceRule;
-            recStr = parsed.type || "Custom";
+          const parsed = typeof item.recurrenceRule === 'string'
+            ? JSON.parse(item.recurrenceRule)
+            : item.recurrenceRule;
+          recStr = parsed.type || "Custom";
         }
       } catch (e) {
-          recStr = "One-time";
+        recStr = "One-time";
       }
 
       // ✅ 6. Procedure Mapping Fix

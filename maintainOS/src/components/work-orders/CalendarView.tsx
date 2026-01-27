@@ -7,7 +7,7 @@ import {
   X, Clock, Calendar as CalendarIcon, ChevronRight as ChevronRightIcon,
   ChevronLeft, ChevronRight,
   // ✅ Added Icons
-  Search, Plus
+  Search, Plus, Wrench
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
@@ -94,7 +94,7 @@ function DayListModal({
               <div
                 key={evt.id}
                 onClick={(e) => onItemClick(e, evt.id, date, evt.isGhost)}
-                className={`group flex items-center justify-between p-4 bg-white border border-gray-200 rounded-xl shadow-sm transition-all duration-200
+                className={`group flex items-center justify-between p-4 bg-white border border-gray-200 rounded-md shadow-sm transition-all duration-200
                   ${evt.status === 'locked'
                     ? 'opacity-60 cursor-not-allowed bg-gray-50 grayscale'
                     : 'hover:shadow-md hover:border-blue-400 hover:translate-x-1 cursor-pointer'
@@ -234,7 +234,7 @@ export function CalendarView({
   // Probably matches the main calendar. Let's make it match.)
 
   // ✅ UPDATED HANDLER: Dispatch to Redux
-  const handleEventClick = (e: React.MouseEvent, id: string, eventDate: Date, isGhost?: boolean) => {
+  const handleEventClick = (e: React.MouseEvent, id: string, _eventDate: Date, isGhost?: boolean) => {
     e.stopPropagation();
 
     // 🔒 BLOCKING: If ghost, prevent opening
@@ -246,8 +246,8 @@ export function CalendarView({
       return;
     }
 
-    // ✅ Navigate to URL instead of dispatching
-    navigate(`/work-orders/${id}`);
+    // ✅ Navigate to URL with view parameter to keep current view
+    navigate(`/work-orders/${id}?view=${viewMode}`);
 
     // Clear other UI states
     setDayListModalData(null);
@@ -278,8 +278,6 @@ export function CalendarView({
   // ✅ CORE LOGIC: Merge Real + Ghost Events
   const getEventsForDay = (day: Date) => {
     const dayStart = startOfDay(day);
-    const todayStart = startOfDay(new Date());
-    const isFuture = isAfter(dayStart, todayStart);
 
     // 1. Real Events (Strict Due Date)
     const realEvents = workOrders.filter(wo => isStrictDueDate(wo, day));
@@ -586,8 +584,12 @@ export function CalendarView({
                             onClick={(e) => handleEventClick(e, evt.id, day.fullDate, evt.isGhost)}
                             onMouseEnter={(e) => handleMouseEnter(e, evt.id, day.fullDate, evt.isGhost)}
                             onMouseLeave={handleMouseLeave}
+                            style={{ borderRadius: '4px' }}
                           >
-                            {evt.title}
+                            <div className="flex items-center gap-1 truncate w-full">
+                              {evt.isGhost ? <Lock size={10} className="shrink-0" /> : <Wrench size={10} className="shrink-0" />}
+                              <span className="truncate">{evt.title}</span>
+                            </div>
                           </div>
                         ))}
                         {day.events?.length > 4 && (
@@ -666,7 +668,6 @@ export function CalendarView({
                               if (currentSegmentHour === hourIndex) {
                                 // Calculate Properties for this specific segment
                                 const isFirst = (i === 0);
-                                const isLast = (i === fullHours - 1);
 
                                 // Determine if we are in "Stacking Mode" for this specific slot
                                 // (If more than 1 event starts/intersects this hour)
@@ -753,32 +754,30 @@ export function CalendarView({
                                     backgroundColor: seg.bgColor,
                                     // Remove localized border logic, use uniform border
                                     border: `1px solid ${seg.bgColor}`,
-                                    borderRadius: '9999px', // Force Capsule
+                                    borderRadius: '4px', // Reduced radius
                                     width: '90%', // Force Width
                                     fontSize: '10px',
-                                    padding: '4px 8px', // More padding for pill look
+                                    padding: '2px 6px', // Adjusted padding for tighter look
                                     color: '#1f2937', // Gray-800
                                     display: 'flex',
-                                    flexDirection: 'column',
-                                    justifyContent: 'center'
+                                    flexDirection: 'row', // Horizontal for icon + title
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    justifyContent: 'flex-start'
                                   }}
                                   onClick={(e) => handleEventClick(e, seg.evt.id, day.fullDate, seg.evt.isGhost)}
                                   onMouseEnter={(e) => handleMouseEnter(e, seg.evt.id, day.fullDate, seg.evt.isGhost)}
                                   onMouseLeave={handleMouseLeave}
                                 >
-                                  {seg.isFirst ? (
-                                    <>
-                                      <div className="font-bold truncate leading-snug">{seg.evt.title}</div>
-                                      {/* Optional: specific styling for secondary text if needed */}
-                                      {seg.evt.original?.location?.name && (
-                                        <div className="opacity-70 truncate text-[10px] mt-0.5">{seg.evt.original.location.name}</div>
-                                      )}
-                                    </>
+                                  {seg.evt.isGhost || seg.evt.id.startsWith('ghost-') ? (
+                                    <Lock size={10} className="shrink-0 text-gray-500" />
                                   ) : (
-                                    <div className="opacity-60 truncate italic flex items-center h-full text-[10px]">
-                                      (cont.) {seg.evt.title}
-                                    </div>
+                                    <Wrench size={10} className="shrink-0 text-gray-700" />
                                   )}
+
+                                  <div className="font-bold truncate leading-snug flex-1">
+                                    {seg.isFirst ? seg.evt.title : `(cont.) ${seg.evt.title}`}
+                                  </div>
                                 </div>
                               ))}
                             </div>
