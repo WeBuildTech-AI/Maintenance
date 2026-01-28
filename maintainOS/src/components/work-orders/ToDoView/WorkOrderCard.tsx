@@ -26,6 +26,7 @@ export function WorkOrderCard({
   selectedWorkOrder,
   onSelectWorkOrder,
   onRefresh,
+  onWorkOrderUpdate,
 }: any) {
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector((state: any) => state.auth?.user);
@@ -39,7 +40,7 @@ export function WorkOrderCard({
   };
 
   const titleInitials = getTitleInitials(wo.title);
-  
+
   const colors = [
     "bg-red-100 text-red-700 border-red-200",
     "bg-orange-100 text-orange-700 border-orange-200",
@@ -56,7 +57,7 @@ export function WorkOrderCard({
     "bg-pink-100 text-pink-700 border-pink-200",
     "bg-rose-100 text-rose-700 border-rose-200",
   ];
-  
+
   const hash = wo.title.split("").reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
   const colorClass = colors[hash % colors.length];
 
@@ -96,10 +97,10 @@ export function WorkOrderCard({
   const isOverdue = useMemo(() => {
     if (!wo.dueDate) return false;
     if (wo.status === "done" || wo.status === "completed") return false;
-    
+
     const due = new Date(wo.dueDate);
     const now = new Date();
-    return due < now; 
+    return due < now;
   }, [wo.dueDate, wo.status]);
 
   const handleStatusChange = async (newStatus: string) => {
@@ -107,33 +108,35 @@ export function WorkOrderCard({
     if (wo.status === newStatus) return;
 
     if (!user?.id) {
-        toast.error("User not found. Cannot update status.");
-        return;
+      toast.error("User not found. Cannot update status.");
+      return;
     }
 
     try {
       if (newStatus === "done" || newStatus === "completed") {
-        await dispatch(patchWorkOrderComplete(wo.id)).unwrap();
+        const result = await dispatch(patchWorkOrderComplete(wo.id)).unwrap();
         toast.success("Work order completed");
-      } 
+        if (onWorkOrderUpdate) onWorkOrderUpdate(result);
+      }
       // ✅ Use New Status API
       else if (
-          newStatus === "in_progress" || 
-          newStatus === "on_hold" || 
-          newStatus === "open"
+        newStatus === "in_progress" ||
+        newStatus === "on_hold" ||
+        newStatus === "open"
       ) {
-        await dispatch(
-            updateWorkOrderStatus({
-                id: wo.id,
-                authorId: user.id,
-                status: newStatus
-            })
+        const result = await dispatch(
+          updateWorkOrderStatus({
+            id: wo.id,
+            authorId: user.id,
+            status: newStatus
+          })
         ).unwrap();
         toast.success(`Status updated to ${newStatus.replace("_", " ")}`);
+        if (onWorkOrderUpdate) onWorkOrderUpdate(result);
       }
       else {
         // Fallback
-         await dispatch(
+        const result = await dispatch(
           updateWorkOrder({
             id: wo.id,
             authorId: user.id,
@@ -141,6 +144,7 @@ export function WorkOrderCard({
           })
         ).unwrap();
         toast.success(`Status updated to ${newStatus.replace("_", " ")}`);
+        if (onWorkOrderUpdate) onWorkOrderUpdate(result);
       }
 
       // ✅ Force Refresh immediately after successful API call
@@ -199,14 +203,14 @@ export function WorkOrderCard({
               )}
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="relative" ref={dropdownRef}>
+            <div className="flex items-center gap-2 flex-nowrap min-w-0">
+              <div className="relative flex-shrink-0" ref={dropdownRef}>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     setStatusOpen(!statusOpen);
                   }}
-                  className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-xs font-medium transition-colors ${currentStatus.bg} ${currentStatus.border} ${currentStatus.color} hover:opacity-90`}
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-xs font-medium transition-colors ${currentStatus.bg} ${currentStatus.border} ${currentStatus.color} hover:opacity-90 whitespace-nowrap`}
                 >
                   <StatusIcon size={12} />
                   <span>{currentStatus.label}</span>
@@ -234,39 +238,16 @@ export function WorkOrderCard({
 
               {wo.priority && wo.priority !== "None" && (
                 <span
-                  className={`inline-flex items-center rounded px-2 py-1 text-xs font-medium border ${priorityStyles[wo.priority] ?? "bg-gray-100 text-gray-600 border-gray-200"}`}
+                  className={`flex-shrink-0 inline-flex items-center rounded px-2 py-1 text-xs font-medium border ${priorityStyles[wo.priority] ?? "bg-gray-100 text-gray-600 border-gray-200"}`}
                 >
-                {formatPriority(wo.priority)}
+                  {formatPriority(wo.priority)}
                 </span>
               )}
 
               {isOverdue && (
-                <span className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium bg-red-100 text-red-700 border border-red-200 ml-auto">
-                    <AlertCircle size={10} /> Overdue
+                <span className="flex-shrink-0 inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium bg-red-100 text-red-700 border border-red-200 ml-auto whitespace-nowrap">
+                  <AlertCircle size={10} /> Overdue
                 </span>
-              )}
-
-              {!isOverdue && assignees.length > 0 && (
-                  <div className="flex items-center -space-x-2 ml-auto">
-                     {displayAssignees.map((u: any, i: number) => (
-                         <div 
-                            key={u.id || i} 
-                            className="w-6 h-6 rounded-full border border-white bg-gray-100 flex items-center justify-center text-[9px] font-bold text-gray-600 overflow-hidden"
-                            title={u.fullName || u.name}
-                         >
-                             {u.avatar ? (
-                                 <img src={u.avatar} alt={u.fullName} className="w-full h-full object-cover" />
-                             ) : (
-                                 (u.fullName || u.name || "?")[0].toUpperCase()
-                             )}
-                         </div>
-                     ))}
-                     {remainingAssignees > 0 && (
-                         <div className="w-6 h-6 rounded-full border border-white bg-gray-200 flex items-center justify-center text-[9px] font-bold text-gray-600">
-                            +{remainingAssignees}
-                         </div>
-                     )}
-                  </div>
               )}
             </div>
           </div>

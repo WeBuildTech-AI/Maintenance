@@ -70,10 +70,10 @@ const formatDecimalHoursToDisplay = (hours: any) => {
   if (hours === undefined || hours === null || hours === "") return "N/A";
   const num = Number(hours);
   if (isNaN(num)) return "N/A";
-  
+
   const h = Math.floor(num);
   const m = Math.round((num - h) * 60);
-  
+
   if (h === 0 && m === 0) return "0h 0m";
   if (h === 0) return `${m}m`;
   if (m === 0) return `${h}h`;
@@ -121,13 +121,12 @@ const renderAssetList = (assets: any[], navigate: any) => {
           </span>
           {asset.status && (
             <div className="mt-1 flex items-center">
-              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
-                asset.status.toLowerCase() === 'online' 
-                  ? 'bg-green-100 text-green-700' 
-                  : asset.status.toLowerCase() === 'offline' 
-                    ? 'bg-red-100 text-red-700' 
-                    : 'bg-gray-100 text-gray-600'
-              }`}>
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${asset.status.toLowerCase() === 'online'
+                ? 'bg-green-100 text-green-700'
+                : asset.status.toLowerCase() === 'offline'
+                  ? 'bg-red-100 text-red-700'
+                  : 'bg-gray-100 text-gray-600'
+                }`}>
                 {asset.status === 'doNotTrack' ? 'Not Tracked' : asset.status.charAt(0).toUpperCase() + asset.status.slice(1).replace("_", " ")}
               </span>
             </div>
@@ -148,13 +147,13 @@ function parseRecurrenceRule(raw: any, startDateIso?: string, dueDateIso?: strin
   let rule: any = raw;
   try { if (typeof raw === "string") rule = JSON.parse(raw); } catch (e) { rule = raw; }
   if (!rule || !rule.type) return null;
-  
+
   const type = String(rule.type).toLowerCase();
   if (type.includes("daily")) return { title: "Repeats daily.", short: "Daily" };
   if (type.includes("weekly")) return { title: "Repeats weekly.", short: "Weekly" };
   if (type.includes("monthly")) return { title: "Repeats monthly.", short: "Monthly" };
   if (type.includes("yearly")) return { title: "Repeats yearly.", short: "Yearly" };
-  
+
   return { title: "Repeats based on schedule.", short: "Custom" };
 }
 
@@ -173,6 +172,7 @@ export function WorkOrderDetails({
   onScrollToComments,
   onStatusChangeSuccess,
   onScrollToProcedure,
+  onCopy, // ✅ New Prop
 }: any) {
   const navigate = useNavigate();
   const dispatch = useDispatch<any>();
@@ -310,40 +310,40 @@ export function WorkOrderDetails({
 
     } catch (error: any) {
       console.error("Status update failed", error);
-      
-      const errorMessage = 
+
+      const errorMessage =
         (typeof error === 'string' && error) ||
-        error?.message || 
-        error?.data?.message || 
-        error?.response?.data?.message || 
+        error?.message ||
+        error?.data?.message ||
+        error?.response?.data?.message ||
         "";
 
       // Matches: "Required procedure fields are missing"
       if (
-        errorMessage === "Required procedure fields are missing" || 
+        errorMessage === "Required procedure fields are missing" ||
         errorMessage.includes("Required procedure fields are missing")
       ) {
-         // 1. Toast
-         toast.error("Complete Required Procedure Fields");
-         
-         // 2. Vibrate
-         if (navigator.vibrate) {
-            navigator.vibrate(200);
-         }
+        // 1. Toast
+        toast.error("Complete Required Procedure Fields");
 
-         // 3. Shake Button
-         setIsShaking(true);
-         setTimeout(() => setIsShaking(false), 500);
+        // 2. Vibrate
+        if (navigator.vibrate) {
+          navigator.vibrate(200);
+        }
 
-         // 4. Scroll to Procedure
-         if (onScrollToProcedure) {
+        // 3. Shake Button
+        setIsShaking(true);
+        setTimeout(() => setIsShaking(false), 500);
+
+        // 4. Scroll to Procedure
+        if (onScrollToProcedure) {
           onScrollToProcedure();
-         }
+        }
 
       } else {
-         toast.error(errorMessage || "Failed to update status");
+        toast.error(errorMessage || "Failed to update status");
       }
-      
+
       setActiveStatus(prevStatus);
     }
   };
@@ -388,7 +388,7 @@ export function WorkOrderDetails({
               <div ref={dropdownRef} className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-56 mt-2" style={{ right: 0, top: "40px" }}>
                 <ul className="text-sm text-gray-700">
                   <li onClick={() => alert("Mark as unread")} className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Mark as unread</li>
-                  <li onClick={() => alert("Copy to new work order")} className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Copy to New Work Order</li>
+                  <li onClick={() => { if (onCopy) onCopy(selectedWorkOrder); setIsDropdownOpen(false); }} className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Copy to New Work Order</li>
                   <li onClick={handleDeleteClick} className="px-4 py-2 text-red-600 hover:bg-red-50 cursor-pointer border-t">Delete</li>
                 </ul>
               </div>
@@ -422,14 +422,13 @@ export function WorkOrderDetails({
               {[{ key: "open", label: "Open", Icon: MessageSquare }, { key: "on_hold", label: "On hold", Icon: PauseCircle }, { key: "in_progress", label: "In Progress", Icon: Clock }, { key: "done", label: "Done", Icon: CheckCircle2 }].map(({ key, label, Icon }) => {
                 const isActive = (activeStatus || "open").toLowerCase() === key;
                 return (
-                  <button 
-                    key={key} 
-                    type="button" 
-                    onClick={() => handleStatusChange(key)} 
-                    disabled={isDeleting} 
-                    className={`h-16 w-20 rounded-lg border shadow-md inline-flex flex-col items-center justify-center gap-2 transition-all outline-none ${
-                      isActive ? "bg-orange-600 text-white border-orange-600" : "bg-orange-50 text-sidebar-foreground border-gray-200 hover:bg-orange-100"
-                    } ${activeStatus === key && isShaking ? "shake-animation" : ""}`}
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => handleStatusChange(key)}
+                    disabled={isDeleting}
+                    className={`h-16 w-20 rounded-lg border shadow-md inline-flex flex-col items-center justify-center gap-2 transition-all outline-none ${isActive ? "bg-orange-600 text-white border-orange-600" : "bg-orange-50 text-sidebar-foreground border-gray-200 hover:bg-orange-100"
+                      } ${activeStatus === key && isShaking ? "shake-animation" : ""}`}
                   >
                     <Icon className="h-4 w-4" />
                     <span className="text-xs font-medium leading-none text-center px-2 truncate">{label}</span>
@@ -479,7 +478,7 @@ export function WorkOrderDetails({
           <div><h3 className="text-sm font-medium mb-2">Parts</h3><div className="flex items-start gap-2"><Wrench className="h-4 w-4 text-muted-foreground mt-0.5" /><span className="text-sm">{renderClickableList(selectedWorkOrder.parts, navigate, (id) => `/inventory/${id}`)}</span></div></div>
           <div><h3 className="text-sm font-medium mb-2">Categories</h3><div className="flex items-start gap-2"><Layers className="h-4 w-4 text-muted-foreground mt-0.5" /><span className="text-sm">{renderClickableList(selectedWorkOrder.categories, navigate, (id) => `/categories/${id}`)}</span></div></div>
           <div><h3 className="text-sm font-medium mb-2">Procedures</h3><div className="flex items-start gap-2"><ClipboardList className="h-4 w-4 text-muted-foreground mt-0.5" /><span className="text-sm">{renderClickableList(selectedWorkOrder.procedures, navigate, (id) => `/library/${id}`, "title")}</span></div></div>
-          
+
           {selectedWorkOrder.meters && selectedWorkOrder.meters.length > 0 && (
             <div><h3 className="text-sm font-medium mb-2">Meters</h3><div className="flex items-start gap-2"><Gauge className="h-4 w-4 text-muted-foreground mt-0.5" /><span className="text-sm">{selectedWorkOrder.meters.map((meter: any, i: number) => (<span key={meter.id || i}><span onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/meters?meterId=${meter.id}`); }} className="text-blue-600 hover:underline cursor-pointer">{meter.name || "Unknown Meter"}</span>{i < selectedWorkOrder.meters.length - 1 && ", "}</span>))}</span></div></div>
           )}
@@ -500,7 +499,7 @@ export function WorkOrderDetails({
         {/* Time & Cost Section */}
         <div className="border-t p-6">
           <h3 className="text-lg font-bold text-gray-900 mb-6">Time & Cost Tracking</h3>
-          
+
           {/* Parts */}
           <div className="mb-6">
             <div className="flex justify-between items-center mb-3">
@@ -508,25 +507,25 @@ export function WorkOrderDetails({
               <button onClick={() => setActivePanel("parts")} className="text-sm text-blue-600 font-medium hover:underline">Add / Edit</button>
             </div>
             <div className="border border-gray-200 rounded-md overflow-hidden">
-                <table className="w-full text-left text-sm">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                        <tr><th className="px-4 py-2 font-medium text-gray-500 text-xs">Part</th><th className="px-4 py-2 font-medium text-gray-500 text-xs">Location</th><th className="px-4 py-2 font-medium text-gray-500 text-xs text-right">Qty</th><th className="px-4 py-2 font-medium text-gray-500 text-xs text-right">Cost</th></tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {selectedWorkOrder.partUsages?.length === 0 ? <tr><td colSpan={4} className="px-4 py-4 text-center text-gray-400 italic">No parts added</td></tr> : 
-                        selectedWorkOrder.partUsages?.map((p: any, i: number) => (
-                            <tr key={i} className="bg-white">
-                                <td className="px-4 py-3 text-gray-900 font-medium">{p.part?.name || "Unknown"}</td>
-                                <td className="px-4 py-3 text-gray-600">{p.location?.name || "—"}</td>
-                                <td className="px-4 py-3 text-gray-900 text-right">{p.quantity}</td>
-                                <td className="px-4 py-3 text-gray-900 text-right">{formatCurrency(Number(p.unitCost) || 0)}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                    <tfoot className="bg-white border-t border-gray-200">
-                        <tr><td colSpan={3} className="px-4 py-3 font-medium text-gray-900">Parts Cost</td><td className="px-4 py-3 font-medium text-gray-900 text-right">{formatCurrency(financials.partsCost)}</td></tr>
-                    </tfoot>
-                </table>
+              <table className="w-full text-left text-sm">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr><th className="px-4 py-2 font-medium text-gray-500 text-xs">Part</th><th className="px-4 py-2 font-medium text-gray-500 text-xs">Location</th><th className="px-4 py-2 font-medium text-gray-500 text-xs text-right">Qty</th><th className="px-4 py-2 font-medium text-gray-500 text-xs text-right">Cost</th></tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {selectedWorkOrder.partUsages?.length === 0 ? <tr><td colSpan={4} className="px-4 py-4 text-center text-gray-400 italic">No parts added</td></tr> :
+                    selectedWorkOrder.partUsages?.map((p: any, i: number) => (
+                      <tr key={i} className="bg-white">
+                        <td className="px-4 py-3 text-gray-900 font-medium">{p.part?.name || "Unknown"}</td>
+                        <td className="px-4 py-3 text-gray-600">{p.location?.name || "—"}</td>
+                        <td className="px-4 py-3 text-gray-900 text-right">{p.quantity}</td>
+                        <td className="px-4 py-3 text-gray-900 text-right">{formatCurrency(Number(p.unitCost) || 0)}</td>
+                      </tr>
+                    ))}
+                </tbody>
+                <tfoot className="bg-white border-t border-gray-200">
+                  <tr><td colSpan={3} className="px-4 py-3 font-medium text-gray-900">Parts Cost</td><td className="px-4 py-3 font-medium text-gray-900 text-right">{formatCurrency(financials.partsCost)}</td></tr>
+                </tfoot>
+              </table>
             </div>
           </div>
 
@@ -534,33 +533,33 @@ export function WorkOrderDetails({
           <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
               <h4 className="text-sm font-semibold text-gray-900">Time</h4>
-              <button 
-                 onClick={() => setActivePanel("time")} 
-                 className="text-sm text-blue-600 font-medium hover:underline"
+              <button
+                onClick={() => setActivePanel("time")}
+                className="text-sm text-blue-600 font-medium hover:underline"
               >
-                 Add Time
+                Add Time
               </button>
             </div>
             {/* Total Duration Row */}
             <div className="flex justify-between items-center py-2 ">
-                <span className="text-sm text-gray-900">Total Duration</span>
-                <button 
-                  onClick={() => setActivePanel("time")}
-                  className="text-sm font-medium text-gray-900 hover:text-blue-600 hover:underline"
-                >
-                  {formatDurationDetailed(financials.totalMinutes)}
-                </button>
+              <span className="text-sm text-gray-900">Total Duration</span>
+              <button
+                onClick={() => setActivePanel("time")}
+                className="text-sm font-medium text-gray-900 hover:text-blue-600 hover:underline"
+              >
+                {formatDurationDetailed(financials.totalMinutes)}
+              </button>
             </div>
             {/* Time Cost Row */}
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="text-sm text-gray-900">Time Cost</span>
-                <span className="text-sm font-medium text-gray-900">{formatCurrency(financials.timeCost)}</span>
+              <span className="text-sm text-gray-900">Time Cost</span>
+              <span className="text-sm font-medium text-gray-900">{formatCurrency(financials.timeCost)}</span>
             </div>
           </div>
 
           {/* Other Costs */}
           <div className="mb-6"><div className="flex justify-between items-center mb-2"><h4 className="text-sm font-semibold text-gray-900">Other Costs</h4><button onClick={() => setActivePanel("cost")} className="text-sm text-blue-600 font-medium hover:underline">Add Other Cost</button></div><div className="flex justify-between items-center py-2 border-b border-gray-100"><span className="text-sm text-gray-900">Other Costs Total</span><span className="text-sm font-medium text-gray-900">{formatCurrency(financials.otherCost)}</span></div></div>
-          
+
           <div className="bg-gray-50 rounded-lg p-4 flex justify-between items-center mt-4 border border-gray-200">
             <span className="text-sm font-semibold text-gray-900">Total Work Order Cost</span><span className="text-lg font-bold text-gray-900">{formatCurrency(financials.totalCost)}</span>
           </div>

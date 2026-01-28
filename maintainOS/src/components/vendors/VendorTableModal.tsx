@@ -13,6 +13,8 @@ interface VendorTableModalProps {
   onClose: () => void;
   fetchData: () => void;
   showDeleted?: boolean;
+  onOptimisticUpdate?: (v: any) => void;
+  onOptimisticDelete?: (ids: string[]) => void;
 }
 
 export default function VendorTableModal({
@@ -20,6 +22,8 @@ export default function VendorTableModal({
   onClose,
   fetchData,
   showDeleted = false,
+  onOptimisticUpdate,
+  onOptimisticDelete,
 }: VendorTableModalProps) {
   const dispatch = useDispatch<AppDispatch>();
 
@@ -69,33 +73,38 @@ export default function VendorTableModal({
             /* ---------------- EDIT MODE ---------------- */
             // Wrapped in p-4 div to match AssetTableModal edit form style
             <div className="p-4">
-               <VendorForm
-                  initialData={vendor} 
-                  
-                  // Cancel -> Switch back to View Mode (Does NOT close modal)
-                  onCancel={() => setIsEditing(false)} 
-                  
-                  // Submit -> Call PATCH API via Redux
-                  onSubmit={(data: FormData) => {
-                    return dispatch(updateVendor({ id: vendor.id, data })).unwrap();
-                  }}
-                  
-                  // Success -> Refresh Table & Close Modal
-                  onSuccess={() => {
-                    fetchData(); 
-                    onClose();   
-                  }}
-                />
+              <VendorForm
+                initialData={vendor}
+
+                // Cancel -> Switch back to View Mode (Does NOT close modal)
+                onCancel={() => setIsEditing(false)}
+
+                // Submit -> Call PATCH API via Redux
+                onSubmit={(data: FormData) => {
+                  return dispatch(updateVendor({ id: vendor.id, data })).unwrap();
+                }}
+
+                // Success -> Refresh Table & Close Modal
+                onSuccess={(updatedVendor: any) => {
+                  if (onOptimisticUpdate) onOptimisticUpdate(updatedVendor);
+                  else fetchData();
+                  onClose();
+                }}
+              />
             </div>
           ) : (
             /* ---------------- VIEW MODE ---------------- */
             <VendorDetails
               vendor={vendor}
-              
+
               // Switch to Edit Mode
-              onEdit={() => setIsEditing(true)} 
-              
-              onDeleteSuccess={onClose}
+              onEdit={() => setIsEditing(true)}
+
+              onDeleteSuccess={() => {
+                if (onOptimisticDelete) onOptimisticDelete([vendor.id]);
+                else fetchData();
+                onClose();
+              }}
               restoreData={showDeleted ? "Restore" : ""}
               onClose={onClose}
               fetchVendors={fetchData}

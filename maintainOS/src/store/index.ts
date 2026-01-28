@@ -4,13 +4,13 @@ import socketMiddleware from './messages/socketMiddleware';
 import userReducer from "./userSlice";
 // import { usersReducer } from "./users";
 // import { organizationsReducer } from "./organization";
-// import { assetsReducer } from "./assets";
+import { assetsReducer } from "./assets";
 import { automationsReducer } from "./automations";
 // import { categoriesReducer } from "./categories";
 // import { metersReducer } from "./meters";
 import { partsReducer } from "./parts";
-// import { locationsReducer } from "./locations";
-// import { proceduresReducer } from "./procedures";
+import { locationsReducer } from "./locations"; // ✅ Uncommented
+import { proceduresReducer } from "./procedures"; // ✅ Uncommented
 // import { purchaseOrdersReducer } from "./purchaseOrders";
 // import { teamMembersReducer } from "./teamMembers";
 // import { teamsReducer } from "./teams";
@@ -31,12 +31,12 @@ export const store = configureStore({
     automations: automationsReducer,
     // users: usersReducer,
     // organizations: organizationsReducer,
-    // assets: assetsReducer,
+    assets: assetsReducer,
     // categories: categoriesReducer,
     // meters: metersReducer,
     parts: partsReducer,
-    // locations: locationsReducer,
-    // procedures: proceduresReducer,
+    locations: locationsReducer, // ✅ Uncommented
+    procedures: proceduresReducer, // ✅ Added
     // purchaseOrders: purchaseOrdersReducer,
     // teamMembers: teamMembersReducer,
     // teams: teamsReducer,

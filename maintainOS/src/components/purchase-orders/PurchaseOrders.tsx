@@ -94,7 +94,7 @@ function getChangedFields(
     "contactName",
     "phoneOrMail",
   ];
-  
+
 
   for (const key of keysToCompare) {
     if (key === "vendorContactIds") {
@@ -152,7 +152,7 @@ export function PurchaseOrders() {
   const [sortType, setSortType] = useState("Creation Date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [shouldSelectFirst, setShouldSelectFirst] = useState(false); // Added for auto-selection logic
-  
+
   // ✅ Sort Dropdown State (Updated Logic)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>(null);
@@ -214,7 +214,7 @@ export function PurchaseOrders() {
     if (!isDropdownOpen && headerRef.current) {
       const rect = headerRef.current.getBoundingClientRect();
       setDropdownPos({
-        top: rect.bottom, 
+        top: rect.bottom,
         left: rect.left + rect.width / 2,
       });
     }
@@ -354,19 +354,19 @@ export function PurchaseOrders() {
   // 👇 3. SYNC SELECTION & EDIT STATE WITH URL
   useEffect(() => {
     if (getPurchaseOrderData.length === 0) return;
-    
+
     // Auto-select logic
     if (viewMode === "panel") {
-        if (shouldSelectFirst) {
-            navigate(`/purchase-orders/${getPurchaseOrderData[0].id}`, { replace: true });
-            setShouldSelectFirst(false);
-            return;
-        } else if (!routeId && !isCreateRoute) {
-            navigate(`/purchase-orders/${getPurchaseOrderData[0].id}`, {
-              replace: true,
-            });
-            return; 
-        }
+      if (shouldSelectFirst) {
+        navigate(`/purchase-orders/${getPurchaseOrderData[0].id}`, { replace: true });
+        setShouldSelectFirst(false);
+        return;
+      } else if (!routeId && !isCreateRoute) {
+        navigate(`/purchase-orders/${getPurchaseOrderData[0].id}`, {
+          replace: true,
+        });
+        return;
+      }
     }
 
     if (routeId) {
@@ -384,12 +384,12 @@ export function PurchaseOrders() {
         }
       }
     } else {
-        // If not create route and no routeId, and not auto-selecting, verify selection state
-       if (viewMode === "panel" && !selectedPOId && !isCreateRoute) {
-           // handled above
-       } else if (viewMode !== 'panel') {
-          setSelectedPOId(null);
-       }
+      // If not create route and no routeId, and not auto-selecting, verify selection state
+      if (viewMode === "panel" && !selectedPOId && !isCreateRoute) {
+        // handled above
+      } else if (viewMode !== 'panel') {
+        setSelectedPOId(null);
+      }
     }
   }, [routeId, getPurchaseOrderData, editMatch, newPO.id, shouldSelectFirst, viewMode, isCreateRoute]);
 
@@ -397,11 +397,11 @@ export function PurchaseOrders() {
   // ✅ CRITICAL FIX: FORCE RESET STATE ON /create ROUTE
   useEffect(() => {
     if (isCreateRoute) {
-        setNewPO(initialPOState);
-        setOriginalPOForEdit(null);
-        setIsEditingPO(false); // Force Create Mode
-        setApiError(null);
-        setAttachedFiles([]);
+      setNewPO(initialPOState);
+      setOriginalPOForEdit(null);
+      setIsEditingPO(false); // Force Create Mode
+      setApiError(null);
+      setAttachedFiles([]);
     }
   }, [isCreateRoute]);
 
@@ -566,12 +566,12 @@ export function PurchaseOrders() {
     // --- 3. Tax Lines Mapping (Corrected for label/value) ---
     const mappedTaxLines = poToEdit.taxesAndCosts
       ? poToEdit.taxesAndCosts.map((t: any) => ({
-          id: t.id || cryptoId(),
-          label: t.taxLabel || t.label || "", //  'label' key ensure ki
-          value: t.taxValue || t.value || 0, //  'value' key ensure ki
-          type: t.taxCategory === "PERCENTAGE" ? "percentage" : "fixed",
-          isTaxable: t.isTaxable,
-        }))
+        id: t.id || cryptoId(),
+        label: t.taxLabel || t.label || "", //  'label' key ensure ki
+        value: t.taxValue || t.value || 0, //  'value' key ensure ki
+        type: t.taxCategory === "PERCENTAGE" ? "percentage" : "fixed",
+        isTaxable: t.isTaxable,
+      }))
       : [];
 
     // --- 4. Construct Form State ---
@@ -619,19 +619,19 @@ export function PurchaseOrders() {
       items:
         poToEdit.orderItems && poToEdit.orderItems.length > 0
           ? poToEdit.orderItems.map((item: any) => ({
-              id: item.id || `temp_${Math.random().toString(36).substr(2, 9)}`,
-              partId: item.part?.id || item.partId || null,
-              itemName: item.itemName || item.part?.name || "",
-              partNumber: item.partNumber || item.part?.partNumber || "",
-              quantity: item.unitsOrdered || 0,
-              unitCost: item.unitCost || 0,
-            }))
+            id: item.id || `temp_${Math.random().toString(36).substr(2, 9)}`,
+            partId: item.part?.id || item.partId || null,
+            itemName: item.itemName || item.part?.name || "",
+            partNumber: item.partNumber || item.part?.partNumber || "",
+            quantity: item.unitsOrdered || 0,
+            unitCost: item.unitCost || 0,
+          }))
           : [
-              {
-                ...initialPOState.items[0],
-                id: `temp_${Math.random().toString(36).substr(2, 9)}`,
-              },
-            ],
+            {
+              ...initialPOState.items[0],
+              id: `temp_${Math.random().toString(36).substr(2, 9)}`,
+            },
+          ],
 
       // ✅ Taxes
       // @ts-ignore
@@ -644,6 +644,19 @@ export function PurchaseOrders() {
     setIsEditingPO(true);
     setApiError(null);
     setAttachedFiles([]);
+  };
+
+  // ✅ OPTIMISTIC UPDATE HELPERS
+  const handlePOCreate = (newPO: PurchaseOrder) => {
+    setGetPurchaseOrderData((prev) => [newPO, ...prev]);
+    setSelectedPOId(newPO.id);
+  };
+
+  const handlePOUpdate = (updatedPO: PurchaseOrder) => {
+    setGetPurchaseOrderData((prev) =>
+      prev.map((po) => (po.id === updatedPO.id ? updatedPO : po))
+    );
+    setSelectedPOId(updatedPO.id);
   };
 
   // ✅ NEW HANDLER: Direct Clone & Save
@@ -713,9 +726,10 @@ export function PurchaseOrders() {
 
       toast.success("Purchase Order copied successfully!");
 
-      // 3. Refresh List and Navigate to new PO
-      await fetchPurchaseOrder();
+      // 3. Optimistic Update (No Re-fetch)
+      // await fetchPurchaseOrder(); // ❌ Removed
       if (response && response.id) {
+        handlePOCreate(response as any); // ✅ Optimistic Update
         navigate(`/purchase-orders/${response.id}`);
       }
     } catch (error: any) {
@@ -739,7 +753,7 @@ export function PurchaseOrders() {
   // 🔴🔴🔴 FIXED: CREATE HANDLER (NO VALIDATION) 🔴🔴🔴
   const handleCreatePurchaseOrder = async () => {
     // ⚠️ Validation Removed as Requested by User
-    
+
     // 2. Start Loading
     setIsCreating(true);
     setApiError(null);
@@ -807,15 +821,20 @@ export function PurchaseOrders() {
           payload
         );
 
-        navigate("/purchase-orders");
-
-        resetNewPO();
-        fetchPurchaseOrder();
         toast.success("Purchase Order created!");
 
+        // await fetchPurchaseOrder(); // ❌ Removed
+
+        // ✅ Optimistic Update
+        resetNewPO();
         if (response && response.id) {
+          handlePOCreate(response as any);
           navigate(`/purchase-orders/${response.id}`);
+        } else {
+          // Fallback if no ID is returned (unlikely)
+          navigate("/purchase-orders");
         }
+
       } else {
         setApiError("Client Error: Service not initialized.");
       }
@@ -909,10 +928,16 @@ export function PurchaseOrders() {
         );
 
         toast.success("Purchase Order updated!");
-        navigate(`/purchase-orders/${newPO.id}`);
 
+        // await fetchPurchaseOrder(); // ❌ Removed
+
+        // ✅ Optimistic Update
         resetNewPO();
-        fetchPurchaseOrder();
+        if (response) {
+          handlePOUpdate(response as any);
+          navigate(`/purchase-orders/${newPO.id}`);
+        }
+
       } else {
         setApiError("Client Error: Update service not initialized.");
       }
@@ -931,6 +956,14 @@ export function PurchaseOrders() {
     }
   };
 
+  const handlePODelete = (id: string) => {
+    setGetPurchaseOrderData((prev) => prev.filter((po) => po.id !== id));
+    if (selectedPOId === id) {
+      setSelectedPOId(null);
+      navigate("/purchase-orders");
+    }
+  };
+
   const handleConfirm = async (id: string | undefined) => {
     if (!id) {
       toast.error("No PO selected for action.");
@@ -941,19 +974,33 @@ export function PurchaseOrders() {
       if (modalAction === "reject") {
         await purchaseOrderService.rejectPurchaseOrder(id);
         toast.success("Successfully Rejected ");
+        // ✅ Optimistic Update
+        setGetPurchaseOrderData((s) =>
+          s.map((po) => (po.id === id ? { ...po, status: "rejected" } : po))
+        );
       } else if (modalAction === "approve") {
         await purchaseOrderService.approvePurchaseOrder(id);
         toast.success("Successfully Approved ");
+        // ✅ Optimistic Update
+        setGetPurchaseOrderData((s) =>
+          s.map((po) => (po.id === id ? { ...po, status: "approved" } : po))
+        );
       } else if (modalAction === "delete") {
         await purchaseOrderService.deletePurchaseOrder(id);
         toast.success("Deleted Successfully");
 
-        navigate("/purchase-orders");
+        // ✅ Optimistic Update
+        handlePODelete(id);
+        // navigate("/purchase-orders"); // Already handled in handlePODelete
       } else if (modalAction === "cancelled") {
         await purchaseOrderService.cancelPurchaseOrder(id);
         toast.success("Cancelled Successfully");
+        // ✅ Optimistic Update
+        setGetPurchaseOrderData((s) =>
+          s.map((po) => (po.id === id ? { ...po, status: "cancelled" } : po))
+        );
       }
-      fetchPurchaseOrder();
+      // fetchPurchaseOrder(); // ❌ Removed
     } catch (error) {
       console.error("Action failed:", error);
       toast.error("Action failed!");
@@ -1002,10 +1049,10 @@ export function PurchaseOrders() {
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           setIsCreatingForm={() => {
-             // Force Reset when button clicked from Header
-             resetNewPO();
-             setIsCreating(false);
-             navigate("/purchase-orders/create");
+            // Force Reset when button clicked from Header
+            resetNewPO();
+            setIsCreating(false);
+            navigate("/purchase-orders/create");
           }}
           setShowSettings={setShowSettings}
           setIsSettingModalOpen={setIsSettingModalOpen}
@@ -1038,9 +1085,9 @@ export function PurchaseOrders() {
         <div className="flex flex-1 min-h-0">
           {/* Left List */}
           <div className="w-96 mr-2 ml-3 mb-2 border border-border flex flex-col min-h-0">
-            
+
             {/* ✅ Updated List Header with Styled Sort Dropdown (FIXED) */}
-            <div 
+            <div
               ref={headerRef}
               className="flex items-center justify-between px-5 py-3 border-b bg-white ml-3 relative z-40"
             >
@@ -1107,21 +1154,19 @@ export function PurchaseOrders() {
                         key={po.id}
                         onClick={() => navigate(`/purchase-orders/${po.id}`)}
                         //  INLINE Yellow Theme Styling
-                        className={`cursor-pointer border rounded-lg p-4 mb-3 transition-all duration-200 hover:shadow-md ${
-                          isSelected
-                            ? "border-yellow-400 bg-yellow-50 ring-1 ring-yellow-400"
-                            : "border-gray-200 bg-white hover:border-yellow-200"
-                        }`}
+                        className={`cursor-pointer border rounded-lg p-4 mb-3 transition-all duration-200 hover:shadow-md ${isSelected
+                          ? "border-yellow-400 bg-yellow-50 ring-1 ring-yellow-400"
+                          : "border-gray-200 bg-white hover:border-yellow-200"
+                          }`}
                       >
                         {/* List Item Content */}
                         <div className="flex items-start gap-4">
                           {/* Icon/Avatar Wrapper */}
                           <div
-                            className={`h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-full border overflow-hidden ${
-                              isSelected
-                                ? "bg-white border-yellow-200 text-yellow-600"
-                                : "bg-gray-50 border-gray-100 text-gray-500"
-                            }`}
+                            className={`h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-full border overflow-hidden ${isSelected
+                              ? "bg-white border-yellow-200 text-yellow-600"
+                              : "bg-gray-50 border-gray-100 text-gray-500"
+                              }`}
                           >
                             <span className="text-xs font-bold">
                               {initials}
@@ -1156,15 +1201,14 @@ export function PurchaseOrders() {
 
                             {/* Row 3: Footer (Cost + Overdue) */}
                             <div
-                              className={`mt-2 pt-2 border-t border-dashed flex items-center justify-between text-xs ${
-                                isSelected
-                                  ? "border-yellow-200"
-                                  : "border-gray-100"
-                              }`}
+                              className={`mt-2 pt-2 border-t border-dashed flex items-center justify-between text-xs ${isSelected
+                                ? "border-yellow-200"
+                                : "border-gray-100"
+                                }`}
                             >
                               <div className="flex mt-1 items-center gap-1 font-medium text-gray-700">
                                 <span className="text-gray-400">₹</span>
-                                  {formatINR(totalCost).replace("₹", "")}
+                                {formatINR(totalCost).replace("₹", "")}
                               </div>
 
                               {isOverdue && (
@@ -1290,11 +1334,10 @@ export function PurchaseOrders() {
                       openSection === section.label ? null : section.label
                     )
                   }
-                  className={`flex items-center justify-between w-full px-4 py-3 text-sm transition-all rounded-md ${
-                    sortType === section.label
-                      ? "text-orange-600 font-medium bg-gray-50"
-                      : "text-gray-800 hover:bg-gray-50"
-                  }`}
+                  className={`flex items-center justify-between w-full px-4 py-3 text-sm transition-all rounded-md ${sortType === section.label
+                    ? "text-orange-600 font-medium bg-gray-50"
+                    : "text-gray-800 hover:bg-gray-50"
+                    }`}
                 >
                   <span>{section.label}</span>
                   {openSection === section.label ? (
@@ -1325,11 +1368,10 @@ export function PurchaseOrders() {
                             setShouldSelectFirst(true); // ✅ Trigger auto-select
                             setIsDropdownOpen(false);
                           }}
-                          className={`flex items-center justify-between px-6 py-2 text-left text-sm transition rounded-md ${
-                            isSelected
-                              ? "text-blue-600 bg-blue-50 font-medium"
-                              : "text-gray-700 hover:text-blue-500 hover:bg-white"
-                          }`}
+                          className={`flex items-center justify-between px-6 py-2 text-left text-sm transition rounded-md ${isSelected
+                            ? "text-blue-600 bg-blue-50 font-medium"
+                            : "text-gray-700 hover:text-blue-500 hover:bg-white"
+                            }`}
                         >
                           {opt}
                           {isSelected && (

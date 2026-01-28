@@ -25,14 +25,14 @@ export async function saveVendor({
     if (initialData && onSubmit) {
       // 🟢 UPDATE FLOW
       // ✅ Await the update action so we don't close before it finishes
-      await onSubmit(formData);
+      const updatedDiff = await onSubmit(formData);
 
       toast.success("Vendor updated successfully", {
         style: { background: "#ffffff", color: "#333" },
       });
 
       // ✅ Call onSuccess so parent re-fetches data immediately
-      if (onSuccess) onSuccess(initialData);
+      if (onSuccess) onSuccess(updatedDiff);
     } else {
       // 🟢 CREATE FLOW
       const created = await dispatch(createVendor(formData)).unwrap();

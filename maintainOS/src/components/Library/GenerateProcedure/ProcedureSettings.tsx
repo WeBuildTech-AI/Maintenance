@@ -1,12 +1,15 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react"; // ✅ Added useEffect
+import React, { useState, useMemo, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import LibDynamicSelect, {
   type LibSelectOption,
 } from "./components/LibDynamicSelect";
-import { useProcedureBuilder } from "./ProcedureBuilderContext"; 
-import { ProcedureSettingsState } from "./types"; 
-import { fetchFilterData } from "../../utils/filterDataFetcher";
+import { useProcedureBuilder } from "./ProcedureBuilderContext";
+// import { ProcedureSettingsState } from "./types"; // Unused
+// import { fetchFilterData } from "../../utils/filterDataFetcher"; // REMOVED
+import { fetchFilterData } from "../../../store/procedures/procedures.thunks";
+import type { RootState } from "../../../store";
 
 /**
  * ProcedureSettings.tsx
@@ -14,87 +17,37 @@ import { fetchFilterData } from "../../utils/filterDataFetcher";
  */
 
 export default function ProcedureSettings() {
-  const { settings, setSettings } = useProcedureBuilder(); 
+  const dispatch = useDispatch<any>();
+  const { settings, setSettings } = useProcedureBuilder();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
-  const [categoryOptions, setCategoryOptions] = useState<LibSelectOption[]>([]);
-  const [assetOptions, setAssetOptions] = useState<LibSelectOption[]>([]);
-  const [locationOptions, setLocationOptions] = useState<LibSelectOption[]>([]);
-  const [teamOptions, setTeamOptions] = useState<LibSelectOption[]>([]);
+  // Gets cached filter data from Redux
+  const filterData = useSelector((state: RootState) => state.procedures.filterData);
+  const isLoading = !filterData;
 
-  const [loadingCategories, setLoadingCategories] = useState(false);
-  const [loadingAssets, setLoadingAssets] = useState(false);
-  const [loadingLocations, setLoadingLocations] = useState(false);
-  const [loadingTeams, setLoadingTeams] = useState(false);
-  
-  // --- Data Fetcher ---
-  const loadOptions = useCallback(async (filterType: string) => {
-    const key = filterType.toLowerCase();
-    
-    if (key === 'categories') setLoadingCategories(true);
-    if (key === 'assets') setLoadingAssets(true);
-    if (key === 'locations') setLoadingLocations(true);
-    if (key === 'team members') setLoadingTeams(true);
-
-    try {
-      const result = await fetchFilterData(key);
-      
-      // Map to { id, label }
-      const options = Array.isArray(result.data) 
-        ? result.data.map((item: any) => ({
-            id: item.id,
-            label: item.name || item.title || item.fullName || "Unknown",
-          }))
-        : [];
-
-      if (key === 'categories') setCategoryOptions(options);
-      if (key === 'assets') setAssetOptions(options);
-      if (key === 'locations') setLocationOptions(options);
-      if (key === 'team members') setTeamOptions(options);
-
-    } catch (error) {
-      console.error(`Failed to load ${filterType}:`, error);
-    } finally {
-      if (key === 'categories') setLoadingCategories(false);
-      if (key === 'assets') setLoadingAssets(false);
-      if (key === 'locations') setLoadingLocations(false);
-      if (key === 'team members') setLoadingTeams(false);
-    }
-  }, []); 
-
-  // =========================================================
-  // ✅ HYDRATION FIX: Auto-fetch options if values exist
-  // =========================================================
-
-  // 1. Categories
+  // Fetch all filter data on mount
   useEffect(() => {
-    if (settings.categories.length > 0 && categoryOptions.length === 0 && !loadingCategories) {
-      loadOptions('categories');
-    }
-  }, [settings.categories, categoryOptions.length, loadingCategories, loadOptions]);
+    dispatch(fetchFilterData());
+  }, [dispatch]);
 
-  // 2. Assets
-  useEffect(() => {
-    if (settings.assets.length > 0 && assetOptions.length === 0 && !loadingAssets) {
-      loadOptions('assets');
-    }
-  }, [settings.assets, assetOptions.length, loadingAssets, loadOptions]);
+  // Derive options from Redux state
+  const categoryOptions = useMemo<LibSelectOption[]>(() =>
+    (filterData?.categories || []).map(c => ({ id: c.id, label: c.name })),
+    [filterData]);
 
-  // 3. Locations
-  useEffect(() => {
-    if (settings.locations.length > 0 && locationOptions.length === 0 && !loadingLocations) {
-      loadOptions('locations');
-    }
-  }, [settings.locations, locationOptions.length, loadingLocations, loadOptions]);
+  const assetOptions = useMemo<LibSelectOption[]>(() =>
+    (filterData?.assets || []).map(a => ({ id: a.id, label: a.name })),
+    [filterData]);
 
-  // 4. Teams
-  useEffect(() => {
-    if (settings.teamsInCharge.length > 0 && teamOptions.length === 0 && !loadingTeams) {
-      loadOptions('team members');
-    }
-  }, [settings.teamsInCharge, teamOptions.length, loadingTeams, loadOptions]);
+  const locationOptions = useMemo<LibSelectOption[]>(() =>
+    (filterData?.locations || []).map(l => ({ id: l.id, label: l.name })),
+    [filterData]);
 
-  // =========================================================
+  const teamOptions = useMemo<LibSelectOption[]>(() =>
+    (filterData?.teams || []).map(t => ({ id: t.id, label: t.name })),
+    [filterData]);
+
+  // Removed manual loadOptions and useEffects for hydration as options are now always available from Redux
 
   const handleVisibilityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSettings((p) => ({
@@ -187,17 +140,17 @@ export default function ProcedureSettings() {
               <label style={labelStyle}>Categories</label>
               <LibDynamicSelect
                 options={categoryOptions}
-                value={settings.categories} 
+                value={settings.categories}
                 onChange={(v) =>
                   setSettings((p) => ({ ...p, categories: v as string[] }))
-                } 
-                fetchOptions={() => loadOptions('categories')}
-                loading={loadingCategories}
+                }
+                fetchOptions={() => { }} // No-op
+                loading={isLoading}
                 placeholder="Start typing..."
                 name="lib-categories"
                 activeDropdown={activeDropdown}
                 setActiveDropdown={setActiveDropdown}
-                isMulti={true} 
+                isMulti={true}
                 ctaText="Create category"
                 onCtaClick={() => alert("Create category")}
               />
@@ -207,12 +160,12 @@ export default function ProcedureSettings() {
               <label style={labelStyle}>Assets</label>
               <LibDynamicSelect
                 options={assetOptions}
-                value={settings.assets} 
+                value={settings.assets}
                 onChange={(v) =>
                   setSettings((p) => ({ ...p, assets: v as string[] }))
-                } 
-                fetchOptions={() => loadOptions('assets')}
-                loading={loadingAssets}
+                }
+                fetchOptions={() => { }} // No-op
+                loading={isLoading}
                 placeholder="Start typing..."
                 name="lib-assets"
                 activeDropdown={activeDropdown}
@@ -225,12 +178,12 @@ export default function ProcedureSettings() {
               <label style={labelStyle}>Locations</label>
               <LibDynamicSelect
                 options={locationOptions}
-                value={settings.locations} 
+                value={settings.locations}
                 onChange={(v) =>
                   setSettings((p) => ({ ...p, locations: v as string[] }))
                 }
-                fetchOptions={() => loadOptions('locations')}
-                loading={loadingLocations}
+                fetchOptions={() => { }} // No-op
+                loading={isLoading}
                 placeholder="Start typing..."
                 name="lib-locations"
                 activeDropdown={activeDropdown}
@@ -255,9 +208,9 @@ export default function ProcedureSettings() {
               value={settings.teamsInCharge}
               onChange={(v) =>
                 setSettings((p) => ({ ...p, teamsInCharge: v as string[] }))
-              } 
-              fetchOptions={() => loadOptions('team members')}
-              loading={loadingTeams}
+              }
+              fetchOptions={() => { }} // No-op
+              loading={isLoading}
               name="lib-teams"
               activeDropdown={activeDropdown}
               setActiveDropdown={setActiveDropdown}
@@ -279,7 +232,7 @@ export default function ProcedureSettings() {
                 type="radio"
                 name="visibility"
                 value="private"
-                checked={settings.visibility === "private"} 
+                checked={settings.visibility === "private"}
                 onChange={handleVisibilityChange}
                 style={{ marginTop: 6 }}
               />
@@ -297,7 +250,7 @@ export default function ProcedureSettings() {
                 type="radio"
                 name="visibility"
                 value="public"
-                checked={settings.visibility === "public"} 
+                checked={settings.visibility === "public"}
                 onChange={handleVisibilityChange}
                 style={{ marginTop: 6 }}
               />
