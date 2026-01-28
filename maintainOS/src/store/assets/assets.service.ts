@@ -35,7 +35,7 @@ export const assetService = {
         serialNumber: "serialContains",
         year: "yearContains",
         workOrderRecurrence: "workOrderRecurrence",
-        asset: "name", 
+        asset: "name",
       };
 
       Object.keys(params).forEach((key) => {
@@ -44,11 +44,11 @@ export const assetService = {
 
         const value = params[key];
         if (value !== undefined && value !== null && value !== "") {
-           if (Array.isArray(value)) {
-             apiParams[apiKey] = value.join(',');
-           } else {
-             apiParams[apiKey] = String(value);
-           }
+          if (Array.isArray(value)) {
+            apiParams[apiKey] = value.join(',');
+          } else {
+            apiParams[apiKey] = String(value);
+          }
         }
       });
     }
@@ -129,11 +129,15 @@ export const assetService = {
     return res.data;
   },
 
-  // ✅ UPDATED with Debugging Logs
   fetchAssetStatusLog: async (id: string): Promise<AssetLogResponse> => {
     const res = await api.get(`/assets/${id}/logs`, {
       headers: { Accept: "application/json" },
     });
+    return res.data;
+  },
+
+  fetchLatestAssetLog: async (id: string): Promise<any> => {
+    const res = await api.get(`/assets/${id}/logs/latest`);
     return res.data;
   },
 
