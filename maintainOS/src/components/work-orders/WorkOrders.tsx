@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { useNavigate, useMatch, useLocation, useSearchParams } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { type FetchWorkOrdersParams } from "../../store/workOrders/workOrders.types";
 import { fetchWorkOrders } from "../../store/workOrders/workOrders.thunks";
@@ -50,7 +50,8 @@ export function WorkOrders() {
 
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [meta, setMeta] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
   const [viewingWorkOrder, setViewingWorkOrder] = useState<WorkOrder | null>(null);
 
   const navigate = useNavigate();
@@ -63,12 +64,19 @@ export function WorkOrders() {
   // Get prefill data from navigation state (from Assets offline prompt)
   const prefillData = (location.state as any)?.prefillData;
 
-  const isCreateRoute = useMatch("/work-orders/create");
-  const viewMatch = useMatch("/work-orders/:id");
-  const editMatch = useMatch("/work-orders/:id/edit");
+  // ✅ FIX: More robust route matching that handles weird URL encoding (like spaces vs hyphens)
+  // Fallback: If useMatch fails, manually extract ID from pathname segments.
+  const getWorkOrderIdFromUrl = () => {
+    const segments = location.pathname.split("/").filter(Boolean);
+    if (segments.length >= 2 && (segments[0].toLowerCase() === "work-orders" || segments[0].toLowerCase() === "work orders")) {
+      const id = segments[1];
+      if (id !== "create" && id !== "edit") return id;
+    }
+    return null;
+  };
 
-  // ✅ FIX: Resolve ID from either View or Edit route
-  const viewingId = viewMatch?.params?.id || editMatch?.params?.id;
+  const isCreateRoute = location.pathname.includes("/create");
+  const viewingId = getWorkOrderIdFromUrl();
 
   // Debounce Search
   useEffect(() => {
@@ -96,6 +104,7 @@ export function WorkOrders() {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
+      setHasError(false);
       const TIMER_LABEL = "WORK_ORDER_LIST_API";
       try {
         let result: any;
@@ -156,6 +165,7 @@ export function WorkOrders() {
       } catch (error) {
         console.error("❌ Error fetching work orders:", error);
         setWorkOrders([]);
+        setHasError(true);
       } finally {
         // Guarded Timer End
         if (activeTimers.current.has(TIMER_LABEL)) {
@@ -167,17 +177,15 @@ export function WorkOrders() {
     };
 
     loadData();
+  }, [dispatch, filterParams, debouncedSearch, refreshKey, showDeleted, currentPage]);
 
-    // Cleanup to ensure timer is cleared if unmounted
-    return () => {
-      // We can't easily access the local variable TIMER_LABEL here unless we define it outside 
-      // or use the literal.
-      if (activeTimers.current.has("WORK_ORDER_LIST_API")) {
-        try { console.timeEnd("WORK_ORDER_LIST_API"); } catch (e) { }
-        activeTimers.current.delete("WORK_ORDER_LIST_API");
-      }
-    };
-  }, [dispatch, filterParams, debouncedSearch, refreshKey, showDeleted, currentPage]); // ✅ Added currentPage
+  // ✅ SAFETY RE-FETCH: If list is empty but we are viewing an ID, force a refresh
+  useEffect(() => {
+    if (!loading && workOrders.length === 0 && viewingId && !isCreateRoute) {
+      console.log("⚠️ [WorkOrders] List empty while viewing ID, triggering safety refresh...");
+      setRefreshKey(prev => prev + 1);
+    }
+  }, [loading, workOrders.length, viewingId, isCreateRoute]);
 
   // Stable Callback for Filters & Pagination
   const handleFilterChange = useCallback(
@@ -197,73 +205,63 @@ export function WorkOrders() {
     setSearchParams({ page: newPage.toString() });
   };
 
-  // ✅ 3. Update Handle Refresh Function
+  // ✅ 3. Update Handle Refresh Function (Atomic Reset)
   const handleRefreshWorkOrders = useCallback(async () => {
-    console.log("🔄 Refreshing Work Orders List...");
-    setRefreshKey((prev) => prev + 1); // Trigger re-fetch
+    console.log("🔄 [WorkOrders] Refreshing Work Orders & Resetting State...");
 
-    // ⚡ Also refresh the currently viewed work order details
-    if (viewingId && viewingId !== "create" && viewingId !== "edit") {
-      try {
-        const updatedWo = await workOrderService.fetchWorkOrderById(viewingId);
-        // Update both states to ensure UI consistency
-        setViewingWorkOrder((prev) => (prev?.id === updatedWo.id ? (updatedWo as unknown as WorkOrder) : prev));
-        setSelectedWorkOrder((prev) => (prev?.id === updatedWo.id ? (updatedWo as unknown as WorkOrder) : prev));
-      } catch (error) {
-        console.error("Failed to refresh detail view:", error);
-      }
-    }
-  }, [viewingId]);
+    // 1. Clear Selection & Detail State
+    setSelectedWorkOrder(null);
+    setViewingWorkOrder(null);
+    setCreatingWorkOrder(false);
 
-  // ✅ Fetch Work Order for Detail View when URL changes
+    // 2. Clear List to show loader (prevent flicker of old data)
+    setWorkOrders([]);
+
+    // 3. Navigate to root to trigger auto-select fresh
+    navigate("/work-orders");
+
+    // 4. Trigger re-fetch
+    setRefreshKey((prev) => prev + 1);
+  }, [navigate]);
+
+  // ✅ Fetch Work Order for Detail View
   useEffect(() => {
     const fetchViewingWorkOrder = async () => {
-      console.log("🔍 [WorkOrders] viewingId:", viewingId, "selectedWorkOrder:", selectedWorkOrder?.id);
-
-      // ✅ FIX: Prevent "create" or "edit" from being treated as work order IDs
-      if (viewingId && viewingId !== "create" && viewingId !== "edit") {
-
-        // 1️⃣ CHECK EXISTING STATE (Single-Call Rule)
-        // If we already have the full object in state, reuse it!
-        // ✅ BUG FIX: Use String() for robust comparison (handles string vs number IDs)
-        if (selectedWorkOrder && String(selectedWorkOrder.id) === String(viewingId)) {
-          console.log("⚡ [Optimization] Reusing selectedWorkOrder from state:", viewingId);
-          setViewingWorkOrder(selectedWorkOrder);
-          return;
+      if (!viewingId) {
+        if (!isCreateRoute) {
+          setViewingWorkOrder(null);
+          setSelectedWorkOrder(null);
         }
+        return;
+      }
 
-        // 2️⃣ CHECK LIST DATA
-        // If the item exists in the fetched list, use it first (optimistic load)
-        const cachedItem = workOrders.find((w) => String(w.id) === String(viewingId));
-        if (cachedItem) {
-          console.log("⚡ [Optimization] Reusing work order from list:", viewingId);
-          setViewingWorkOrder(cachedItem);
-          setSelectedWorkOrder(cachedItem); // ✅ Sync selection
-          return;
-        }
+      // 1️⃣ CHECK EXISTING STATE (Sync check)
+      if (selectedWorkOrder && String(selectedWorkOrder.id) === String(viewingId)) {
+        if (viewingWorkOrder?.id !== selectedWorkOrder.id) setViewingWorkOrder(selectedWorkOrder);
+        return;
+      }
 
-        // 3️⃣ FETCH IF NOT FOUND
-        console.time("WORK_ORDER_DETAIL_API");
-        console.log("🔵 [WorkOrders] Fetching work order:", viewingId);
-        try {
-          const wo = await workOrderService.fetchWorkOrderById(viewingId);
-          console.timeEnd("WORK_ORDER_DETAIL_API");
-          console.log("✅ [WorkOrders] Fetched work order:", wo?.id);
-          const typedWo = wo as unknown as WorkOrder;
-          setViewingWorkOrder(typedWo);
-          setSelectedWorkOrder(typedWo); // ✅ Sync selection
-        } catch (err) {
-          console.error("❌ [WorkOrders] Failed to fetch work order", err);
-          navigate("/work-orders");
-        }
-      } else if (!viewingId && !isCreateRoute) {
-        console.log("🟡 [WorkOrders] Clearing viewingWorkOrder (No ID)");
-        setViewingWorkOrder(null);
-        setSelectedWorkOrder(null);
+      // 2️⃣ CHECK LIST DATA
+      const cachedItem = workOrders.find((w) => String(w.id) === String(viewingId));
+      if (cachedItem) {
+        setViewingWorkOrder(cachedItem);
+        setSelectedWorkOrder(cachedItem);
+        return;
+      }
+
+      // 3️⃣ FETCH IF NOT FOUND
+      try {
+        const wo = await workOrderService.fetchWorkOrderById(viewingId);
+        const typedWo = wo as unknown as WorkOrder;
+        setViewingWorkOrder(typedWo);
+        setSelectedWorkOrder(typedWo);
+      } catch (err) {
+        console.error("❌ Failed to fetch work order", err);
+        navigate("/work-orders");
       }
     };
     fetchViewingWorkOrder();
-  }, [viewingId, selectedWorkOrder, workOrders]);
+  }, [viewingId, workOrders.length]); // ✅ Fixed dependency loop
 
   // ✅ Handle create route - open modal for list/calendar, set flag for TODO
   useEffect(() => {
@@ -297,6 +295,24 @@ export function WorkOrders() {
     setCreatingWorkOrder(false);
   };
 
+  const handleViewModeChange = useCallback((newMode: ViewMode) => {
+    console.log("🔄 [WorkOrders] Switching View Mode to:", newMode);
+
+    // 1. Atomically reset selection states to prevent flicker
+    setSelectedWorkOrder(null);
+    setViewingWorkOrder(null);
+    setCreatingWorkOrder(false);
+
+    // 2. Set the new mode
+    setViewMode(newMode);
+
+    // 3. Clear the URL to root to prevent the detail modal/panel from opening in the new view
+    navigate("/work-orders");
+
+    // 4. Force a clean refresh key
+    setRefreshKey(prev => prev + 1);
+  }, [navigate]);
+
   // ✅ Robust status check helper
   const isWorkOrderCompleted = (status: any) => {
     if (!status) return false;
@@ -319,7 +335,7 @@ export function WorkOrders() {
       {/* ✅ Use as Component, not function call */}
       <WorkOrderHeaderComponent
         viewMode={viewMode}
-        setViewMode={setViewMode}
+        onViewModeChange={handleViewModeChange}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         setIsCreatingForm={setCreatingWorkOrder}
@@ -331,8 +347,11 @@ export function WorkOrders() {
       />
 
       {loading && workOrders.length === 0 && (
-        <div className="flex items-center justify-center h-full text-muted-foreground">
-          Loading work orders...
+        <div className="flex-1 flex flex-col items-center justify-center p-8 bg-background">
+          <div className="flex flex-col items-center gap-3">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500"></div>
+            <span className="text-medium font-medium text-muted-foreground">Loading work orders...</span>
+          </div>
         </div>
       )}
 
@@ -347,6 +366,8 @@ export function WorkOrders() {
               creatingWorkOrder={creatingWorkOrder}
               onCancelCreate={handleCancelCreate}
               onRefreshWorkOrders={handleRefreshWorkOrders}
+              hasError={hasError}
+              loading={loading}
               // ✅ PASSING PAGINATION PROPS
               pagination={{
                 currentPage: currentPage,
@@ -389,10 +410,19 @@ export function WorkOrders() {
               setIsSettingsModalOpen={setIsSettingsModalOpen}
               showDeleted={showDeleted}
               setShowDeleted={setShowDeleted}
+              loading={loading}
+              hasError={hasError}
             />
           )}
 
-          {viewMode === "calendar" && <CalendarView workOrders={workOrders} />}
+          {viewMode === "calendar" && (
+            <CalendarView
+              workOrders={workOrders}
+              onRefreshWorkOrders={handleRefreshWorkOrders}
+              loading={loading}
+              hasError={hasError}
+            />
+          )}
 
           {viewMode === "workload" && (
             <WorkloadView

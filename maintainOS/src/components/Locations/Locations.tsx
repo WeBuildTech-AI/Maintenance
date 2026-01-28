@@ -96,11 +96,11 @@ export function Locations() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   const user = useSelector((state: RootState) => state.auth.user);
-  
+
   // Sorting State
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [sortType, setSortType] = useState("Creation Date");
-  const [sortOrder, setSortOrder] = useState("desc");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const headerRef = useRef<HTMLDivElement>(null);
@@ -670,7 +670,9 @@ export function Locations() {
                             }
 
                             // ✅ Normal navigation
-                            setSelectedLocation(item);
+                            if (selectedLocation?.id !== item.id) {
+                              fetchLocationById(item.id);
+                            }
                             navigate(targetPath);
                           }}
                           className={`cursor-pointer border rounded-lg p-4 mb-3 transition-all duration-200 hover:shadow-md ${isSelected
@@ -805,6 +807,7 @@ export function Locations() {
                       setActiveSubLocation(subLoc);
                       setShowSubLocation(true);
                     }}
+                    loading={detailsLoading}
                   />
                 ) : (
                   /* Empty State */
@@ -828,6 +831,6 @@ export function Locations() {
       />
 
     </>
-    
+
   );
 }

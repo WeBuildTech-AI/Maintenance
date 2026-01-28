@@ -84,7 +84,7 @@ export function NewPartForm({
         locationId:
           prev.locationId || firstLoc?.locationId || firstLoc?.id || "",
         area: prev.area || firstLoc?.area || "",
-        unitInStock: prev.unitInStock ?? firstLoc?.unitsInStock ?? 0,
+        unitsInStock: prev.unitsInStock ?? firstLoc?.unitsInStock ?? 0,
         minInStock: prev.minInStock ?? firstLoc?.minimumInStock ?? 0,
       };
     });
@@ -129,7 +129,7 @@ export function NewPartForm({
       const primaryLocationUpdate = {
         locationId: newItem.locationId || "",
         area: newItem.area || "",
-        unitsInStock: Number(newItem.unitInStock ?? 0),
+        unitsInStock: Number(newItem.unitsInStock ?? 0),
         minimumInStock: Number(newItem.minInStock ?? 0),
       };
 

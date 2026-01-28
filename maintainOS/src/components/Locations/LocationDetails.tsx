@@ -48,6 +48,7 @@ interface LocationDetailsProps {
   onClose: () => void;
   setShowSubLocation: (show: boolean) => void;
   onSubLocationClick: (location: any) => void;
+  loading?: boolean;
 }
 
 type DateRange = { startDate: string; endDate: string };
@@ -61,6 +62,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
   onClose,
   onSubLocationClick,
   onEdit, // ✅ Extract onEdit prop
+  loading,
 }) => {
   const navigate = useNavigate();
   const [openDeleteModal, setOpenDeleteModal] = React.useState(false);
@@ -110,17 +112,19 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
     };
 
     if (selectedLocation?.createdBy) {
+      setCreatedByName(""); // Reset
       fetchUserName(selectedLocation.createdBy, setCreatedByName);
     } else {
       setCreatedByName("-");
     }
 
     if (selectedLocation?.updatedBy) {
+      setUpdatedByName(""); // Reset
       fetchUserName(selectedLocation.updatedBy, setUpdatedByName);
     } else {
       setUpdatedByName("-");
     }
-  }, [selectedLocation]);
+  }, [selectedLocation?.id]); // ✅ Only re-run when ID strictly changes
 
   // Helper for Status Badge
   const StatusBadge = ({ status }: { status: string }) => {
@@ -177,6 +181,19 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
       },
     }));
   };
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center h-full bg-white">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500"></div>
+          <span className="text-sm font-medium text-muted-foreground">Loading details...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!selectedLocation) return null;
 
   return (
     <div className="mx-auto flex flex-col h-full bg-white relative">

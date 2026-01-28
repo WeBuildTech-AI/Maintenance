@@ -10,7 +10,7 @@ import { EmptyState } from "./EmptyState";
 import { WorkOrderDetails } from "./WorkOrderDetails";
 import { CommentsSection } from "./CommentsSection";
 import { NewWorkOrderForm } from "../NewWorkOrderForm/NewWorkOrderFrom";
-import { useNavigate, useMatch } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { LinkedProcedurePreview } from "./LinkedProcedurePreview";
 import { useDispatch } from "react-redux";
 import { createWorkOrder } from "../../../store/workOrders/workOrders.thunks";
@@ -31,6 +31,8 @@ export function ToDoView({
   onOptimisticUpdate,
   pagination,
   onPageChange,
+  hasError,
+  loading,
 }: ToDoViewProps & {
   creatingWorkOrder?: boolean;
   onCancelCreate?: () => void;
@@ -46,6 +48,7 @@ export function ToDoView({
     itemsPerPage: number;
   };
   onPageChange?: (page: number) => void;
+  loading?: boolean;
 }) {
   // ✅ Local Pagination State (Fallback)
   const [localPage, setLocalPage] = useState(1);
@@ -112,11 +115,20 @@ export function ToDoView({
   // ✅ PAGINATION STATE ADDED HERE (REMOVED DUPLICATES)
 
 
-  const isEditRoute = useMatch("/work-orders/:workOrderId/edit");
-  const isCreateRoute = useMatch("/work-orders/create");
-  const isDetailRoute = useMatch("/work-orders/:workOrderId");
-  const editingId = isEditRoute?.params?.workOrderId;
-  const detailId = isDetailRoute?.params?.workOrderId;
+  // ✅ FIX: Synchronized URL extraction logic with WorkOrders.tsx
+  const getWorkOrderIdFromUrl = () => {
+    const segments = window.location.pathname.split("/").filter(Boolean);
+    if (segments.length >= 2 && (segments[0].toLowerCase() === "work-orders" || segments[0].toLowerCase() === "work orders")) {
+      const id = segments[1];
+      if (id !== "create" && id !== "edit") return id;
+    }
+    return null;
+  };
+
+  const isEditRoute = window.location.pathname.includes("/edit");
+  const isCreateRoute = window.location.pathname.includes("/create");
+  const detailId = getWorkOrderIdFromUrl();
+  const editingId = (isEditRoute || editingWorkOrder) ? (editingWorkOrder?.id || detailId) : null;
   const isEditMode = !!isEditRoute;
 
   // 📌 Sort change handler
@@ -359,12 +371,19 @@ export function ToDoView({
   // MODIFIED: Only run if we have NO selection and are NOT creating/editing. 
   // IMPORTANT: Added dependency on 'activeList.length' ONLY to trigger on data load, 
   // but guarding against re-selecting if the user simply updated a work order.
+  // ✅ AUTO-SELECT FIRST ITEM (ONLY AT ROOT PATH /work-orders)
+  // If we are strictly at the root and nothing is selected, select the first one.
+  // ✅ AUTO-SELECT FIRST ITEM (ONLY AT ROOT PATH /work-orders)
+  // If we are strictly at the root and nothing is selected, select the first one.
   useEffect(() => {
-    if (activeList.length > 0 && !selectedWorkOrder && !creatingWorkOrder && !editingWorkOrder && !detailId) {
-      // Only select first if we really have nothing selected
+    const segments = window.location.pathname.split("/").filter(Boolean);
+    const isAtWorkOrdersRoot = segments.length === 1 && (segments[0].toLowerCase() === "work-orders" || segments[0].toLowerCase() === "work orders");
+
+    if (isAtWorkOrdersRoot && activeList.length > 0 && !selectedWorkOrder && !creatingWorkOrder && !editingWorkOrder && !detailId) {
+      console.log("🎯 [ToDoView] Auto-selecting first item at root:", activeList[0].id);
       handleSelectWorkOrder(activeList[0]);
     }
-  }, [activeList.length, creatingWorkOrder, editingWorkOrder, detailId]); // Removed `activeList` dependency to avoid re-running on every item change within list
+  }, [activeList.length, selectedWorkOrder?.id, creatingWorkOrder, editingWorkOrder, detailId]);
 
   // --------------------------------------------------
   // 🧱 UI
@@ -386,11 +405,19 @@ export function ToDoView({
 
         {/* LIST CONTAINER */}
         <div className="flex-1 overflow-auto relative z-0 bg-white">
-          {activeList.length === 0 ? (
+          {loading && activeList.length === 0 ? (
+            <div className="flex h-full items-center justify-center text-muted-foreground">
+              <div className="flex flex-col items-center gap-2">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                <span className="text-sm font-medium">Loading...</span>
+              </div>
+            </div>
+          ) : activeList.length === 0 ? (
             <EmptyState
-              message="No work orders"
-              subtext="Switch tabs or create a new work order."
-              buttonText="Create Work Order"
+              message={hasError ? "Failed to load" : "No work orders"}
+              subtext={hasError ? "There was an error fetching data. Please try again." : "Switch tabs or create a new work order."}
+              buttonText={hasError ? "Retry" : "Create Work Order"}
+              onButtonClick={hasError ? onRefreshWorkOrders : undefined}
             />
           ) : (
             <div className="space-y-2 p-4">
@@ -480,99 +507,120 @@ export function ToDoView({
             />
           )
 
-            // ✅ CASE 3: VIEW DETAILS OR EMPTY
-            : !selectedWorkOrder ? (
-              <EmptyState
-                message="No work order selected"
-                subtext="Select a work order from the list to view its details."
-              />
-            ) : (
-              <div className="overflow-y-auto">
-                <WorkOrderDetails
-                  selectedWorkOrder={selectedWorkOrder}
-                  selectedAvatarUrl={selectedAvatarUrl}
-                  selectedAssignee={selectedAssignee}
-                  getInitials={getInitials}
-                  activeStatus={activeStatus}
-                  setActiveStatus={setActiveStatus}
-                  CopyPageU={CopyPageU}
-                  onEdit={handleEditWorkOrder}
-                  // ✅ Handle Copy
-                  onCopy={async (wo: any) => {
-                    if (!wo) return;
-                    const loadingToast = toast.loading("Creating copy...");
-                    try {
-                      let recurrenceRule = wo.recurrenceRule;
-                      if (typeof recurrenceRule === 'string') {
-                        try { recurrenceRule = JSON.parse(recurrenceRule); } catch (e) { }
-                      }
-
-                      const payload: any = {
-                        title: `Copy - ${wo.title}`,
-                        status: "open",
-                        description: wo.description,
-                        priority: wo.priority,
-                        workType: wo.workType,
-                        estimatedTimeHours: wo.estimatedTimeHours,
-                        startDate: null,
-                        dueDate: null,
-
-                        locationId: wo.location?.id || wo.locationId,
-                        assetIds: wo.assets?.map((a: any) => a.id) || (wo.assetId ? [wo.assetId] : []),
-                        assigneeIds: wo.assignees?.map((a: any) => a.id) || [],
-                        assignedTeamIds: wo.teams?.map((t: any) => t.id) || [],
-                        vendorIds: wo.vendors?.map((v: any) => v.id) || [],
-                        categoryIds: wo.categories?.map((c: any) => c.id) || [],
-                        procedureIds: wo.procedures?.map((p: any) => p.id) || [],
-                        partIds: wo.parts?.map((p: any) => p.id) || wo.partUsages?.map((p: any) => p.part?.id || p.partId) || [],
-                        recurrenceRule: recurrenceRule,
-                      };
-
-                      Object.keys(payload).forEach(key => (payload[key] === undefined || payload[key] === null) && delete payload[key]);
-
-                      const newWo = await dispatch(createWorkOrder(payload)).unwrap();
-
-                      toast.success("Work Order Copied!", { id: loadingToast });
-                      if (onWorkOrderCreate) onWorkOrderCreate(newWo);
-                      if (newWo?.id) onSelectWorkOrder(newWo);
-
-                    } catch (err: any) {
-                      console.error(err);
-                      toast.error(err?.message || "Failed to copy work order", { id: loadingToast });
-                    }
-                  }}
-                  onRefreshWorkOrders={onRefreshWorkOrders}
-                  activePanel={activePanel}
-                  setActivePanel={setActivePanel}
-                  onScrollToComments={handleScrollToComments}
-                  onScrollToProcedure={handleScrollToProcedure}
-                  // ✅ Trigger the state update in parent
-                  onStatusChangeSuccess={() => setLogRefreshTrigger((prev) => prev + 1)}
-                  // ✅ OPTIMISTIC UPDATE
-                  onWorkOrderUpdate={onWorkOrderUpdate}
-                  onOptimisticUpdate={onOptimisticUpdate}
+            // ✅ CASE 3: ERROR STATE
+            : hasError ? (
+              <div className="flex-1 flex flex-col h-full">
+                <EmptyState
+                  message="Failed to load"
+                  subtext="There was an error fetching data. Please retry."
+                  buttonText="Retry"
+                  onButtonClick={onRefreshWorkOrders}
                 />
-
-                {/* ✅ Render sub-panels only when active */}
-                {activePanel === "details" && (
-                  <>
-                    <LinkedProcedurePreview selectedWorkOrder={selectedWorkOrder} />
-
-                    <CommentsSection
-                      ref={commentsRef}
-                      comment={comment}
-                      setComment={setComment}
-                      attachment={attachment}
-                      setAttachment={setAttachment}
-                      fileRef={fileRef}
-                      selectedWorkOrder={selectedWorkOrder}
-                      // Pass the trigger to re-fetch logs
-                      refreshTrigger={logRefreshTrigger}
-                    />
-                  </>
-                )}
               </div>
-            )}
+            )
+
+              // ✅ CASE 4: VIEW DETAILS OR EMPTY
+              : !selectedWorkOrder ? (
+                detailId ? (
+                  <div className="flex h-full items-center justify-center text-muted-foreground p-8">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                      <span className="text-sm font-medium">Loading details...</span>
+                    </div>
+                  </div>
+                ) : (
+                  <EmptyState
+                    message="No work order selected"
+                    subtext="Select a work order from the list to view its details."
+                  />
+                )
+              ) : (
+                <div className="overflow-y-auto">
+                  <WorkOrderDetails
+                    selectedWorkOrder={selectedWorkOrder}
+                    selectedAvatarUrl={selectedAvatarUrl}
+                    selectedAssignee={selectedAssignee}
+                    getInitials={getInitials}
+                    activeStatus={activeStatus}
+                    setActiveStatus={setActiveStatus}
+                    CopyPageU={CopyPageU}
+                    onEdit={handleEditWorkOrder}
+                    // ✅ Handle Copy
+                    onCopy={async (wo: any) => {
+                      if (!wo) return;
+                      const loadingToast = toast.loading("Creating copy...");
+                      try {
+                        let recurrenceRule = wo.recurrenceRule;
+                        if (typeof recurrenceRule === 'string') {
+                          try { recurrenceRule = JSON.parse(recurrenceRule); } catch (e) { }
+                        }
+
+                        const payload: any = {
+                          title: `Copy - ${wo.title}`,
+                          status: "open",
+                          description: wo.description,
+                          priority: wo.priority,
+                          workType: wo.workType,
+                          estimatedTimeHours: wo.estimatedTimeHours,
+                          startDate: null,
+                          dueDate: null,
+
+                          locationId: wo.location?.id || wo.locationId,
+                          assetIds: wo.assets?.map((a: any) => a.id) || (wo.assetId ? [wo.assetId] : []),
+                          assigneeIds: wo.assignees?.map((a: any) => a.id) || [],
+                          assignedTeamIds: wo.teams?.map((t: any) => t.id) || [],
+                          vendorIds: wo.vendors?.map((v: any) => v.id) || [],
+                          categoryIds: wo.categories?.map((c: any) => c.id) || [],
+                          procedureIds: wo.procedures?.map((p: any) => p.id) || [],
+                          partIds: wo.parts?.map((p: any) => p.id) || wo.partUsages?.map((p: any) => p.part?.id || p.partId) || [],
+                          recurrenceRule: recurrenceRule,
+                        };
+
+                        Object.keys(payload).forEach(key => (payload[key] === undefined || payload[key] === null) && delete payload[key]);
+
+                        const newWo = await dispatch(createWorkOrder(payload)).unwrap();
+
+                        toast.success("Work Order Copied!", { id: loadingToast });
+                        if (onWorkOrderCreate) onWorkOrderCreate(newWo);
+                        if (newWo?.id) onSelectWorkOrder(newWo);
+
+                      } catch (err: any) {
+                        console.error(err);
+                        toast.error(err?.message || "Failed to copy work order", { id: loadingToast });
+                      }
+                    }}
+                    onRefreshWorkOrders={onRefreshWorkOrders}
+                    activePanel={activePanel}
+                    setActivePanel={setActivePanel}
+                    onScrollToComments={handleScrollToComments}
+                    onScrollToProcedure={handleScrollToProcedure}
+                    // ✅ Trigger the state update in parent
+                    onStatusChangeSuccess={() => setLogRefreshTrigger((prev) => prev + 1)}
+                    // ✅ OPTIMISTIC UPDATE
+                    onWorkOrderUpdate={onWorkOrderUpdate}
+                    onOptimisticUpdate={onOptimisticUpdate}
+                  />
+
+                  {/* ✅ Render sub-panels only when active */}
+                  {activePanel === "details" && (
+                    <>
+                      <LinkedProcedurePreview selectedWorkOrder={selectedWorkOrder} />
+
+                      <CommentsSection
+                        ref={commentsRef}
+                        comment={comment}
+                        setComment={setComment}
+                        attachment={attachment}
+                        setAttachment={setAttachment}
+                        fileRef={fileRef}
+                        selectedWorkOrder={selectedWorkOrder}
+                        // Pass the trigger to re-fetch logs
+                        refreshTrigger={logRefreshTrigger}
+                      />
+                    </>
+                  )}
+                </div>
+              )}
       </div>
 
 
