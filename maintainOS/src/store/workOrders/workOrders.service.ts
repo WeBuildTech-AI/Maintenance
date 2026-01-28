@@ -24,7 +24,8 @@ const cleanPayload = (data: any) => {
   Object.keys(data).forEach((key) => {
     const value = data[key];
     if (Array.isArray(value)) {
-      if (value.length > 0) cleaned[key] = value;
+      // ✅ Allow empty arrays to pass through (for clearing relations)
+      cleaned[key] = value;
       return;
     }
     if (value && typeof value === 'object' && !(value instanceof Date)) {

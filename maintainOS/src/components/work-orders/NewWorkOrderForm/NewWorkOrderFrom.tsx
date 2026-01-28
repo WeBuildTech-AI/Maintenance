@@ -66,7 +66,6 @@ const getChangedFields = (original: any, current: any) => {
   // 1. Simple Fields
   const simpleFields = [
     "title", "description", "priority", "status", "workType",
-    "locationId",
     "locationId"
   ];
 
@@ -79,20 +78,28 @@ const getChangedFields = (original: any, current: any) => {
     }
 
     // 🛠️ FIX: Handle Partial Data (Summary Object) vs UI Defaults
-    // If original is missing the field (undefined/null), and current is matching the 'default',
-    // DO NOT count it as a change to avoid overwriting backend data with UI defaults.
     const defaults: Record<string, string> = {
       status: "open",
       workType: "reactive",
       priority: "low"
     };
 
-    if (current[key] !== undefined && origVal !== current[key]) {
-      // If original is missing and current is just the default, ignore it
-      if ((origVal === undefined || origVal === null) && current[key] === defaults[key]) {
+    // Current value from form state (e.g., "new title", null, or undefined)
+    const currVal = current[key];
+
+    // If current value is explicitly defined (including null for clearing)
+    if (currVal !== undefined) {
+
+      // If original matches current, no change
+      if (origVal === currVal) return;
+
+      // Special case: If original is missing/null, and current is just the default UI value -- IGNORE
+      // (This prevents overwriting backend data with defaults if backend data was partial)
+      if ((origVal === undefined || origVal === null) && defaults[key] && currVal === defaults[key]) {
         return;
       }
-      changes[key] = current[key];
+
+      changes[key] = currVal;
     }
   });
 
@@ -167,6 +174,7 @@ const getChangedFields = (original: any, current: any) => {
     const currentIds = current[payloadKey] || [];
 
     if (hasArrayChanged(originalIds, currentIds)) {
+      // ✅ Reverting back to empty array [] as backend rejects [null]
       changes[payloadKey] = currentIds;
     }
   });

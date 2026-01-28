@@ -7,7 +7,7 @@ import { useDispatch, useSelector } from "react-redux";
 import type { SelectOption } from "./DynamicSelect";
 import { fetchLocationsName } from "../../../store/locations/locations.thunks";
 import { fetchAssetsName } from "../../../store/assets/assets.thunks";
-import { partService } from "../../../store/parts"; 
+import { partService } from "../../../store/parts";
 import { VendorPrimaryDetails } from "./VendorPrimaryDetails";
 import { VendorContactInput, type ContactFormData } from "./VendorContactInput";
 import { VendorLinkedItems } from "./VendorLinkedItems";
@@ -28,20 +28,20 @@ const hasArrayChanged = (current: string[], initial: string[] = []) => {
 
 // Helper to compare complex objects (Contacts)
 const hasContactsChanged = (current: any[], initial: any[] = []) => {
-    const normalize = (c: any) => ({
-        fullName: c.fullName || c.name || "",
-        role: c.role || "",
-        email: c.email || "",
-        phoneNumber: c.phoneNumber || c.phone || "",
-        phoneExtension: c.phoneExtension || "",
-        contactColor: c.contactColor || c.color || "#EC4899",
-        id: (c.id || c._id || "").toString(),
-    });
+  const normalize = (c: any) => ({
+    fullName: c.fullName || c.name || "",
+    role: c.role || "",
+    email: c.email || "",
+    phoneNumber: c.phoneNumber || c.phone || "",
+    phoneExtension: c.phoneExtension || "",
+    contactColor: c.contactColor || c.color || "#EC4899",
+    id: (c.id || c._id || "").toString(),
+  });
 
-    const c1 = current.map(normalize);
-    const c2 = initial.map(normalize);
+  const c1 = current.map(normalize);
+  const c2 = initial.map(normalize);
 
-    return JSON.stringify(c1) !== JSON.stringify(c2);
+  return JSON.stringify(c1) !== JSON.stringify(c2);
 };
 
 export function VendorForm({
@@ -87,9 +87,9 @@ export function VendorForm({
 
   // Store original IDs for dirty checking later
   const originalIds = useRef({
-      locations: [] as string[],
-      assets: [] as string[],
-      parts: [] as string[],
+    locations: [] as string[],
+    assets: [] as string[],
+    parts: [] as string[],
   });
 
   // --- Fetchers ---
@@ -165,8 +165,8 @@ export function VendorForm({
           const c = Array.isArray(initialData.contacts)
             ? initialData.contacts
             : typeof initialData.contacts === "string"
-            ? JSON.parse(initialData.contacts)
-            : [initialData.contacts];
+              ? JSON.parse(initialData.contacts)
+              : [initialData.contacts];
           setContacts(c);
         } catch {
           setContacts([]);
@@ -217,16 +217,16 @@ export function VendorForm({
 
     // Helper to append only if changed
     const appendIfChanged = (key: string, currentVal: any, initialVal: any) => {
-        if (!isEdit || currentVal !== initialVal) {
-            // Treat undefined/null as empty string for comparison safety
-            const sCurrent = currentVal === undefined || currentVal === null ? "" : String(currentVal);
-            const sInitial = initialVal === undefined || initialVal === null ? "" : String(initialVal);
-            
-            if (!isEdit || sCurrent !== sInitial) {
-                formData.append(key, currentVal);
-                hasChanges = true;
-            }
+      if (!isEdit || currentVal !== initialVal) {
+        // Treat undefined/null as empty string for comparison safety
+        const sCurrent = currentVal === undefined || currentVal === null ? "" : String(currentVal);
+        const sInitial = initialVal === undefined || initialVal === null ? "" : String(initialVal);
+
+        if (!isEdit || sCurrent !== sInitial) {
+          formData.append(key, currentVal);
+          hasChanges = true;
         }
+      }
     };
 
     appendIfChanged("name", form.name.trim(), initialData?.name);
@@ -236,41 +236,53 @@ export function VendorForm({
 
     // Contacts
     if (!isEdit || hasContactsChanged(contacts, initialData?.contacts)) {
-        hasChanges = true;
-        if (Array.isArray(contacts)) {
-            // Signal empty array if it's now empty
-            if (contacts.length === 0) {
-                 formData.append("contacts", "[]"); 
-            } else {
-                contacts.forEach((contact, index) => {
-                    formData.append(`contacts[${index}][fullName]`, contact.fullName || "");
-                    formData.append(`contacts[${index}][role]`, contact.role || "");
-                    formData.append(`contacts[${index}][email]`, contact.email || "");
-                    formData.append(`contacts[${index}][phoneNumber]`, contact.phoneNumber || "");
-                    formData.append(`contacts[${index}][phoneExtension]`, contact.phoneExtension || "");
-                    formData.append(`contacts[${index}][contactColor]`, contact.contactColor || "#EC4899");
-                    if ((contact as any).id) {
-                         formData.append(`contacts[${index}][id]`, (contact as any).id);
-                    } else if ((contact as any)._id) {
-                         formData.append(`contacts[${index}][id]`, (contact as any)._id);
-                    }
-                });
+      hasChanges = true;
+      if (Array.isArray(contacts)) {
+        // Signal empty array if it's now empty
+        if (contacts.length === 0) {
+          formData.append("contacts", "[]");
+        } else {
+          contacts.forEach((contact, index) => {
+            formData.append(`contacts[${index}][fullName]`, contact.fullName || "");
+            formData.append(`contacts[${index}][role]`, contact.role || "");
+            formData.append(`contacts[${index}][email]`, contact.email || "");
+            formData.append(`contacts[${index}][phoneNumber]`, contact.phoneNumber || "");
+            formData.append(`contacts[${index}][phoneExtension]`, contact.phoneExtension || "");
+            formData.append(`contacts[${index}][contactColor]`, contact.contactColor || "#EC4899");
+            if ((contact as any).id) {
+              formData.append(`contacts[${index}][id]`, (contact as any).id);
+            } else if ((contact as any)._id) {
+              formData.append(`contacts[${index}][id]`, (contact as any)._id);
             }
+          });
         }
+      }
     }
 
-    // Dropdowns (Arrays)
+    // Dropdowns (Arrays) - Handled like contacts: send "[]" if cleared
     if (!isEdit || hasArrayChanged(selectedLocationIds, originalIds.current.locations)) {
-        hasChanges = true;
+      hasChanges = true;
+      if (selectedLocationIds.length === 0) {
+        formData.append("locations", "[]");
+      } else {
         selectedLocationIds.forEach((id) => formData.append("locations[]", id));
+      }
     }
     if (!isEdit || hasArrayChanged(selectedAssetIds, originalIds.current.assets)) {
-        hasChanges = true;
+      hasChanges = true;
+      if (selectedAssetIds.length === 0) {
+        formData.append("assetIds", "[]");
+      } else {
         selectedAssetIds.forEach((id) => formData.append("assetIds[]", id));
+      }
     }
     if (!isEdit || hasArrayChanged(selectedPartIds, originalIds.current.parts)) {
-        hasChanges = true;
+      hasChanges = true;
+      if (selectedPartIds.length === 0) {
+        formData.append("partIds", "[]");
+      } else {
         selectedPartIds.forEach((id) => formData.append("partIds[]", id));
+      }
     }
 
     // Files (Always send if present, simpler for backend sync)
@@ -288,10 +300,10 @@ export function VendorForm({
 
     // ✅ PRODUCTION FIX: If edit mode and NO changes, don't call API
     if (isEdit && !hasChanges) {
-        toast.success("No changes detected.");
-        setSubmitting(false);
-        onCancel(); // Close modal
-        return;
+      toast.success("No changes detected.");
+      setSubmitting(false);
+      onCancel(); // Close modal
+      return;
     }
 
     await saveVendor({
@@ -344,19 +356,19 @@ export function VendorForm({
           onLocationsChange={setSelectedLocationIds}
           onFetchLocations={handleFetchLocations}
           locationsLoading={locationsLoading}
-          
+
           availableAssets={availableAssets}
           selectedAssetIds={selectedAssetIds}
           onAssetsChange={setSelectedAssetIds}
           onFetchAssets={handleFetchAssets}
           assetsLoading={assetsLoading}
-          
+
           availableParts={availableParts}
           selectedPartIds={selectedPartIds}
           onPartsChange={setSelectedPartIds}
-          onFetchParts={handleFetchParts} 
+          onFetchParts={handleFetchParts}
           partsLoading={partsLoading}
-          
+
           onCtaClick={handleCtaClick}
 
           vendorType={form.vendorType}

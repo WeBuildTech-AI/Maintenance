@@ -272,14 +272,24 @@ export function AssignmentAndScheduling({
     }
   }, [recurrenceRule]);
 
+  // ✅ FIX: Recurrence Logic - Update parent only if changed
   useEffect(() => {
-    let rule = null;
+    let rule: any = null;
     if (selectedFreq === "Daily") rule = { type: "daily" };
-    else if (selectedFreq === "Weekly") { if (selectedWeekDays.length > 0) rule = { type: "weekly", daysOfWeek: [...selectedWeekDays].sort((a, b) => a - b) }; }
-    else if (selectedFreq === "Monthly") { if (monthMode === "date") rule = { type: "monthly_by_date", dayOfMonth }; else rule = { type: "monthly_by_weekday", weekOfMonth, weekdayOfMonth }; }
+    else if (selectedFreq === "Weekly") {
+      if (selectedWeekDays.length > 0) rule = { type: "weekly", daysOfWeek: [...selectedWeekDays].sort((a, b) => a - b) };
+    }
+    else if (selectedFreq === "Monthly") {
+      if (monthMode === "date") rule = { type: "monthly_by_date", dayOfMonth };
+      else rule = { type: "monthly_by_weekday", weekOfMonth, weekdayOfMonth };
+    }
     else if (selectedFreq === "Yearly") rule = { type: "yearly", intervalYears: yearInterval };
-    setRecurrenceRule(rule);
-  }, [selectedFreq, selectedWeekDays, monthMode, dayOfMonth, weekOfMonth, weekdayOfMonth, yearInterval, setRecurrenceRule]);
+
+    // Prevent infinite loop by checking deep equality
+    if (JSON.stringify(rule) !== JSON.stringify(recurrenceRule)) {
+      setRecurrenceRule(rule);
+    }
+  }, [selectedFreq, selectedWeekDays, monthMode, dayOfMonth, weekOfMonth, weekdayOfMonth, yearInterval, recurrenceRule, setRecurrenceRule]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

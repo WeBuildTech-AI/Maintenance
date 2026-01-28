@@ -145,8 +145,9 @@ export function NewMeterForm({
       formData.append("meterType", meterType);
 
       if (description.trim()) formData.append("description", description);
-      if (asset) formData.append("assetId", asset);
-      if (location) formData.append("locationId", location);
+      // ✅ Allow clearing by sending empty string if value is missing/cleared
+      formData.append("assetId", asset || "");
+      formData.append("locationId", location || "");
 
       const freqUnit = readingFrequencyUnit;
       const freqValue = String(readingFrequencyValue || "").trim();
@@ -274,8 +275,8 @@ export function NewMeterForm({
               type="button"
               onClick={() => setMeterType("manual")}
               className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${meterType === "manual"
-                  ? "border-orange-600 bg-white-50 text-orange-600 ring-1 ring-blue-500/20"
-                  : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                ? "border-orange-600 bg-white-50 text-orange-600 ring-1 ring-blue-500/20"
+                : "border-gray-300 text-gray-700 hover:bg-gray-50"
                 }`}
             >
               <User className="h-4 w-4" />
@@ -285,8 +286,8 @@ export function NewMeterForm({
               type="button"
               onClick={() => setMeterType("automated")}
               className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${meterType === "automated"
-                  ? "border-orange-600 bg-white-50 text-orange-600 ring-1 ring-blue-500/20"
-                  : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                ? "border-orange-600 bg-white-50 text-orange-600 ring-1 ring-blue-500/20"
+                : "border-gray-300 text-gray-700 hover:bg-gray-50"
                 }`}
             >
               <Lock className="h-4 w-4" />
