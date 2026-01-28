@@ -462,10 +462,16 @@ export function ToDoView({
               existingWorkOrder={editingWorkOrder}
               editId={editingId}
               isEditMode={isEditMode}
-              onCreate={() => {
+              onCreate={(updatedWo) => {
+                // ✅ REAL-TIME UPDATE: Pass the payload up!
+                if (updatedWo && onWorkOrderUpdate) onWorkOrderUpdate(updatedWo);
+
+                // Select it so the Details panel updates immediately
+                if (updatedWo) onSelectWorkOrder(updatedWo);
+
                 setEditingWorkOrder(null);
                 onCancelCreate?.();
-                onRefreshWorkOrders?.();
+                // onRefreshWorkOrders?.(); // Optional if we trust the optimistic update
               }}
               onCancel={handleEditCancel}
             />
