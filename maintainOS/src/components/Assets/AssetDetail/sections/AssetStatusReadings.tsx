@@ -435,12 +435,14 @@ export function UpdateAssetStatusModal({
   // --- +++++++ BADLAAV KHATM +++++++ ---
   //
   const offlineReasons = [
-    { name: "Maintenance", value: "maintenance" },
-    { name: "Breakdown", value: "breakdown" },
-    { name: "Power Failure", value: "power_failure" },
-    { name: "Network Issue", value: "network_issue" },
-    { name: "Other", value: "other" },
+  { name: "Electrical Fault", value: "electrical_fault" },
+  { name: "Equipment Failure", value: "equipment_failure" },
+  { name: "Inspection", value: "inspection" },
+  { name: "Operator Error", value: "operator_error" },
+  { name: "Planned Maintenance", value: "planned_maintenance" },
+  { name: "Tool Failure", value: "tool_failure" },
   ];
+
   const offlineSinceOptions = [
     "Now",
     "1 hour ago",
@@ -605,7 +607,10 @@ export function UpdateAssetStatusModal({
 
             {/* --- Conditional Fields (Unchanged) --- */}
             {selectedStatus === "offline" && (
-              <div>
+
+              <div className="space-y-4">
+                
+                {/* downtimetype */}
                 <label className="block text-sm font-medium text-gray-900 mb-2">
                   Downtime Type <span className="text-red-500">(required)</span>
                 </label>
@@ -642,6 +647,55 @@ export function UpdateAssetStatusModal({
                     </div>
                   )}
                 </div>
+                    
+                    {/* ✅ Reason Dropdown (AFTER Downtime Type) */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-900 mb-2">
+                        Downtime Reason <span className="text-red-500">(required)</span>
+                      </label>
+
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setReasonDropdown(!reasonDropdown)}
+                          className="w-full capitalize flex cursor-pointer items-center justify-between px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                        >
+                          <span>
+                            {offlineReasons.find((r) => r.value === offlineReason)?.name ||
+                              "Select reason"}
+                          </span>
+                          <ChevronDown
+                            className={`w-5 h-5 text-gray-500 transition-transform ${
+                              reasonDropdown ? "rotate-180" : ""
+                            }`}
+                          />
+                        </button>
+
+                        {reasonDropdown && (
+                          <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1" style={{
+                              maxHeight: "120px", // shows ~3 items
+                              overflowY: "auto",
+                            }}
+                          >
+
+                            {offlineReasons.map((reason) => (
+                              <button
+                                type="button"
+                                key={reason.value}
+                                onClick={() => {
+                                  setOfflineReason(reason.value);
+                                  setReasonDropdown(false);
+                                }}
+                                className="w-full px-3 py-2 text-left hover:bg-gray-50"
+                              >
+                                {reason.name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                
               </div>
             )}
 
