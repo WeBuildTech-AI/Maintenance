@@ -137,10 +137,13 @@ export function DynamicSelect({
       <style>{checkboxStyles}</style>
 
       <div
-        className="flex items-center gap-1 rounded-md border border-gray-300 bg-white py-1 px-2 min-h-[36px] cursor-pointer focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 overflow-hidden"
-        onClick={handleToggle}
-      >
-        <div className="flex flex-wrap items-center gap-1 flex-1">
+          className="flex items-center gap-1 rounded-md border border-gray-300 bg-white 
+                      py-1 px-2 min-h-[36px] cursor-pointer 
+                      focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500"
+          onClick={handleToggle}
+        >
+        <div className="flex items-center gap-1 flex-1 min-w-0">
+
           
           {/* ✅ RENDER LOGIC: If Multi, show 1 + Count. If Single, show all (which is just 1) */}
           {isMulti && selectedOptions.length > 0 ? (
@@ -150,9 +153,9 @@ export function DynamicSelect({
                 <Badge
                   key={firstOption.id}
                   variant="secondary"
-                  className="flex items-center gap-1 px-2 py-1 flex-wrap max-w-full"
+                  className="flex items-center gap-1 px-2 py-1 max-w-[150px]"
                 >
-                  <span className="whitespace-normal break-all">
+                  <span className="truncate block">
                     {firstOption.name}
                   </span>
                   <button
@@ -201,8 +204,8 @@ export function DynamicSelect({
             // Standard Rendering for Single Select (or fallback)
             selectedOptions.map((option) => (
               <div key={option.id} className="relative group/tag flex items-center">
-                <Badge variant="secondary" className="flex items-center gap-1 max-w-full min-w-0">
-                  <span className="whitespace-normal break-all">
+                <Badge variant="secondary" className="flex items-center gap-1 max-w-[150px] min-w-0">
+                  <span className="truncate block">
                     {option.name}
                   </span>
                   <button

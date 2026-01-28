@@ -326,9 +326,10 @@ export function NewMeterForm({
         </div>
 
         {/* Asset & Location */}
-        <div className="flex gap-6 px-6 pb-6 pt-6">
+        <div className="grid grid-cols-2 gap-6 px-6 pb-6 pt-6">
           {/* Asset */}
-          <div className="flex-1">
+
+          <div className="min-w-0">
             <h3 className="mb-2 text-sm font-medium text-gray-700">Asset</h3>
             <DynamicSelect
               name="asset"

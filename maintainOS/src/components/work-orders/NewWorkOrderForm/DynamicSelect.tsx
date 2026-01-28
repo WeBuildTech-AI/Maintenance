@@ -139,11 +139,11 @@ export function DynamicSelect({
   const hasHidden = hiddenOptions.length > 0;
 
   return (
-    <div className={`relative ${open ? "z-50" : ""}`} ref={dropdownRef}>
+    <div className={`relative w-full ${open ? "z-50" : ""}`} ref={dropdownRef}>
       <style>{checkboxStyles}</style>
 
       <div
-        className="flex items-center gap-1 rounded-md border border-gray-300 bg-white py-1 px-2 min-h-[36px] cursor-pointer focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 overflow-hidden"
+        className="flex items-center gap-1 rounded-md border border-gray-300 bg-white py-1 px-2 min-h-[36px] cursor-pointer focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 w-full"
         onClick={handleToggle}
       >
         <div className="flex flex-wrap items-center gap-1 flex-1 min-w-0">
@@ -166,7 +166,7 @@ export function DynamicSelect({
                       }}
                     />
                   )}
-                  <span className="whitespace-normal break-words">
+                  <span className="truncate max-w-[120px]">
                     {firstOption.name}
                   </span>
                   <button
@@ -215,7 +215,8 @@ export function DynamicSelect({
             // Standard Rendering for Single Select (or fallback)
             selectedOptions.map((option) => (
               <div key={option.id} className="relative group/tag flex items-center">
-                <Badge variant="secondary" className="flex items-center gap-1 min-w-0">
+                <Badge variant="secondary" className="flex items-center gap-1 max-w-full truncate">
+
 
                   {option.color && (
                     <div
@@ -228,7 +229,8 @@ export function DynamicSelect({
                       }}
                     />
                   )}
-                  <span className="whitespace-normal break-words">
+                  <span className="truncate max-w-[120px]">
+
                     {option.name}
                   </span>
                   <button
@@ -256,7 +258,8 @@ export function DynamicSelect({
           <input
             ref={inputRef}
             type="text"
-            className="flex-1 bg-transparent outline-none text-sm min-w-[20px] h-6 placeholder:text-gray-500"
+            className="flex-1 bg-transparent outline-none text-sm min-w-0 h-6 placeholder:text-gray-500"
+
             placeholder={selectedOptions.length === 0 ? placeholder : ""}
             value={searchTerm}
             onChange={(e) => {
