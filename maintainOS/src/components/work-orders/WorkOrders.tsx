@@ -199,10 +199,22 @@ export function WorkOrders() {
   };
 
   // ✅ 3. Update Handle Refresh Function
-  const handleRefreshWorkOrders = useCallback(() => {
+  const handleRefreshWorkOrders = useCallback(async () => {
     console.log("🔄 Refreshing Work Orders List...");
     setRefreshKey((prev) => prev + 1); // Trigger re-fetch
-  }, []);
+
+    // ⚡ Also refresh the currently viewed work order details
+    if (viewingId && viewingId !== "create" && viewingId !== "edit") {
+      try {
+        const updatedWo = await workOrderService.fetchWorkOrderById(viewingId);
+        // Update both states to ensure UI consistency
+        setViewingWorkOrder((prev) => (prev?.id === updatedWo.id ? (updatedWo as unknown as WorkOrder) : prev));
+        setSelectedWorkOrder((prev) => (prev?.id === updatedWo.id ? (updatedWo as unknown as WorkOrder) : prev));
+      } catch (error) {
+        console.error("Failed to refresh detail view:", error);
+      }
+    }
+  }, [viewingId]);
 
   // ✅ Fetch Work Order for Detail View when URL changes
   useEffect(() => {
