@@ -37,7 +37,7 @@ const getDefaultDateRange = () => {
   const today = new Date();
   const oneMonthAgo = new Date(today);
   oneMonthAgo.setMonth(today.getMonth() - 1);
-  
+
   return {
     startDate: formatDate(oneMonthAgo),
     endDate: formatDate(today),
@@ -49,7 +49,7 @@ const getDefaultDateRange = () => {
 export function Reporting() {
   const defaultDates = getDefaultDateRange();
   const [searchParams, setSearchParams] = useSearchParams();
-  
+
   // Helper function to validate tab type
   const isValidTab = (tab: string | null): tab is TabType => {
     const validTabs: TabType[] = [
@@ -85,12 +85,12 @@ export function Reporting() {
   const [endDateError, setEndDateError] = useState<string | null>(null);
 
   // Sync activeTab with URL
-  useEffect(() => {
-    const tabParam = searchParams.get("tab");
-    if (isValidTab(tabParam)) {
-      setActiveTab(tabParam);
-    }
-  }, [searchParams]);
+  // useEffect(() => {
+  //   const tabParam = searchParams.get("tab");
+  //   if (isValidTab(tabParam)) {
+  //     setActiveTab(tabParam);
+  //   }
+  // }, [searchParams]);
 
   // Update URL when activeTab changes
   const handleTabChange = (tab: TabType) => {
@@ -121,7 +121,7 @@ export function Reporting() {
     // Remove non-numeric characters except slashes
     const cleaned = value.replace(/[^0-9/]/g, '');
     const numbers = cleaned.replace(/\//g, '');
-    
+
     if (numbers.length <= 2) {
       return numbers;
     } else if (numbers.length <= 4) {
@@ -135,7 +135,7 @@ export function Reporting() {
   const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatDateInput(e.target.value);
     setTempStartDate(formatted);
-    
+
     if (formatted.length === 10) {
       const date = parseDate(formatted);
       if (date) {
@@ -157,7 +157,7 @@ export function Reporting() {
   const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatDateInput(e.target.value);
     setTempEndDate(formatted);
-    
+
     if (formatted.length === 10) {
       const date = parseDate(formatted);
       if (date) {
@@ -244,7 +244,7 @@ export function Reporting() {
     // Validate both dates before applying
     const startValid = parseDate(tempStartDate);
     const endValid = parseDate(tempEndDate);
-    
+
     if (!startValid) {
       setStartDateError('Please enter a valid start date');
       return;
@@ -257,7 +257,7 @@ export function Reporting() {
       setEndDateError('End date must be after start date');
       return;
     }
-    
+
     setStartDate(tempStartDate);
     setEndDate(tempEndDate);
     setStartDateError(null);
@@ -332,7 +332,7 @@ export function Reporting() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-full bg-gray-50">
       {/* Header */}
       <header className="border-b border-border bg-white px-6 py-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -462,40 +462,38 @@ export function Reporting() {
 
             {/* Calendar */}
             <div className="p-0">
-            {/* Date Inputs */}
-            <div className="flex items-center gap-2 mb-3">
-              <div className="flex-1">
-                <input
-                  type="text"
-                  value={tempStartDate}
-                  onChange={handleStartDateChange}
-                  maxLength={10}
-                  className={`w-full px-2 py-1 border rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    startDateError ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="MM/DD/YYYY"
-                />
-                {startDateError && (
-                  <p className="text-xs text-red-500 mt-1">{startDateError}</p>
-                )}
+              {/* Date Inputs */}
+              <div className="flex items-center gap-2 mb-3">
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    value={tempStartDate}
+                    onChange={handleStartDateChange}
+                    maxLength={10}
+                    className={`w-full px-2 py-1 border rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${startDateError ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    placeholder="MM/DD/YYYY"
+                  />
+                  {startDateError && (
+                    <p className="text-xs text-red-500 mt-1">{startDateError}</p>
+                  )}
+                </div>
+                <span className="text-gray-400 text-sm">to</span>
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    value={tempEndDate}
+                    onChange={handleEndDateChange}
+                    maxLength={10}
+                    className={`w-full px-2 py-1 border rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${endDateError ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    placeholder="MM/DD/YYYY"
+                  />
+                  {endDateError && (
+                    <p className="text-xs text-red-500 mt-1">{endDateError}</p>
+                  )}
+                </div>
               </div>
-              <span className="text-gray-400 text-sm">to</span>
-              <div className="flex-1">
-                <input
-                  type="text"
-                  value={tempEndDate}
-                  onChange={handleEndDateChange}
-                  maxLength={10}
-                  className={`w-full px-2 py-1 border rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    endDateError ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="MM/DD/YYYY"
-                />
-                {endDateError && (
-                  <p className="text-xs text-red-500 mt-1">{endDateError}</p>
-                )}
-              </div>
-            </div>
               {/* Month/Year Selector */}
               <div className="flex items-center justify-between mb-3">
                 <button
