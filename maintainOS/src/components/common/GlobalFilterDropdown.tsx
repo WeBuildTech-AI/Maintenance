@@ -15,7 +15,7 @@ export type FilterCategory =
     | "workType"
     | "startDate"
     | "priority"
-    | "assignedTo";
+    | "assignee";
 
 interface GlobalFilterDropdownProps {
     onClose: () => void;
@@ -54,7 +54,7 @@ export function GlobalFilterDropdown({ onClose, onApply, initialFilters, classNa
         { id: "startDate", label: "Start Date" },
         { id: "workType", label: "Work Type" },
         { id: "recurrence", label: "Recurrence" },
-        { id: "assignedTo", label: "Assigned To" },
+        { id: "assignee", label: "Assigned To" },
     ];
 
     // Toggle Selection Logic
@@ -87,10 +87,10 @@ export function GlobalFilterDropdown({ onClose, onApply, initialFilters, classNa
             case "location":
                 options = (filterData?.locations || []).map((l: any) => ({ id: l.id, label: l.name }));
                 break;
-            case "assignedTo":
+            case "assignee":
                 options = (filterData?.users || []).map((u: any) => ({
                     id: u.id,
-                    label: `${u.firstName} ${u.lastName}`
+                    label: u.name || `${u.firstName} ${u.lastName}`
                 }));
                 break;
             case "status":

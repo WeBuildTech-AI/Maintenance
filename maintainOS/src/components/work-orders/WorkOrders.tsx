@@ -247,6 +247,7 @@ export function WorkOrders() {
           params.set('view', mode);
           setSearchParams(params);
         }}
+        pageTitle="Work Orders"
       />
 
       {loading && workOrders.length === 0 && (
@@ -293,6 +294,8 @@ export function WorkOrders() {
               onPrevDate={handlePrevDate}
               onNextDate={handleNextDate}
               onDateChange={setCalendarDate}
+              onFilterChange={handleFilterChange}
+              filters={filterParams}
             />
           )}
 

@@ -692,17 +692,23 @@ input[type="radio"]:hover {
 .more-dropdown-btn {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   font-family: var(--font-sans);
   font-size: 14px;
-  font-weight: 400;
-  color: var(--color-gray-500);
-  background: transparent;
-  border: none;
+  font-weight: 500;
+  color: var(--color-gray-600);
+  background: var(--color-white);
+  border: 1px solid var(--border-subtle);
+  border-color: #E1E3E6;
+  border-radius: 6px;
   cursor: pointer;
-  height: 64px;
+  height: 36px;
+  padding: 0 12px;
   line-height: 100%;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
+  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
+  /* User requested box shadow */
+  transition: all 0.2s ease;
 }
 
 .more-dropdown-btn:hover {
@@ -738,9 +744,9 @@ input[type="radio"]:hover {
 .more-dropdown-content {
   width: 220px;
   border-radius: 10px;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid #E1E3E6;
   background-color: var(--color-white);
-  padding: 10px;
+  padding: 5px;
   box-shadow: 0px 10px 15px -3px rgba(0, 0, 0, 0.1), 0px 4px 6px -2px rgba(0, 0, 0, 0.05);
   display: flex !important;
   flex-direction: column !important;
@@ -756,21 +762,25 @@ input[type="radio"]:hover {
   text-decoration: none;
   font-family: var(--font-sans);
   font-size: 13px;
-  font-weight: 400;
-  padding: 10px;
+  font-weight: 500;
+  padding: 8px 12px;
   gap: 12px;
-  color: var(--color-gray-700);
+  color: var(--color-gray-600);
   letter-spacing: 0.02em;
   border-radius: 7px;
   white-space: nowrap;
   transition: all 0.2s ease-in-out;
 }
 
-.dropdown-nav-link:hover,
+.dropdown-nav-link:hover {
+  background-color: var(--color-gray-50);
+  color: var(--color-gray-900);
+}
+
 .dropdown-nav-link.active {
-  background-color: var(--register-dropdown-hover-bg);
-  color: var(--color-gray-700);
-  font-weight: 400;
+  background-color: #FFF1D3;
+  color: var(--color-gray-900);
+  font-weight: 500;
 }
 
 /* --- Premium Header Components --- */
@@ -800,9 +810,9 @@ input[type="radio"]:hover {
 }
 
 .header-title {
-  font-size: 1.5rem;
-  /* 24px / text-2xl */
-  font-weight: 700;
+  font-size: 1.125rem;
+  /* 18px / text-lg */
+  font-weight: 600;
   color: var(--color-gray-900);
   /* gray-900 */
   letter-spacing: -0.025em;

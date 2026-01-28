@@ -2,9 +2,10 @@ import type { Dispatch, SetStateAction } from "react";
 import type { ViewMode } from "./types";
 import { Button } from "../ui/button";
 import {
+    LayoutGrid,
+    List,
+    Calendar as CalendarIcon,
     Search,
-    ChevronLeft,
-    ChevronRight,
     ChevronDown,
     Settings,
 } from "lucide-react";
@@ -14,6 +15,12 @@ import { format } from "date-fns";
 import { GlobalFilterDropdown } from "../common/GlobalFilterDropdown";
 import { useState } from "react";
 import type { FetchWorkOrdersParams } from "../../store/workOrders/workOrders.types";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 
 interface WorkOrderHeaderProps {
     viewMode: ViewMode;
@@ -30,6 +37,7 @@ interface WorkOrderHeaderProps {
     onPrevDate?: () => void;
     onNextDate?: () => void;
     onViewModeChange?: (mode: ViewMode) => void;
+    pageTitle?: string;
 }
 
 export function UnifiedHeader({
@@ -42,31 +50,50 @@ export function UnifiedHeader({
     onFilterChange,
     setShowSettings,
     currentDate = new Date(),
-    onPrevDate,
-    onNextDate,
-    onViewModeChange
+    onViewModeChange,
+    pageTitle
 }: WorkOrderHeaderProps) {
     const isCalendar = viewMode === "calendar" || viewMode === "calendar-week"; // Assuming we might distinguish modes or handled by parent
     const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
     // Format Date Title
     // Format Date Title
-    const title = (viewMode === 'calendar' || viewMode === 'calendar-week')
+    const title = pageTitle || ((viewMode === 'calendar' || viewMode === 'calendar-week')
         ? format(currentDate, "MMMM yyyy")
-        : (viewMode === 'workload') ? 'Workload' : "Work Orders";
+        : (viewMode === 'workload') ? 'Workload' : "Work Orders");
+
+    const getViewLabel = () => {
+        if (viewMode === 'todo') return 'Panel View';
+        if (viewMode === 'list') return 'List View';
+        if (viewMode === 'calendar' || viewMode === 'calendar-week') return 'Calendar View';
+        if (viewMode === 'workload') return 'Workload View';
+        return 'View';
+    };
 
     const handleFilterApply = (filters: Record<string, string[]>) => {
         // Prepare params for API
-        const params: FetchWorkOrdersParams = {};
+        const params: Record<string, any> = {};
 
         Object.entries(filters).forEach(([key, values]) => {
             if (values.length > 0) {
-                // Pass as array, let the API client stringify if needed (e.g. qs)
-                // or assume backend handles arrays (common in this app)
-                params[key] = values;
+                // Map assignedTo to assignee if it comes from GlobalFilterDropdown
+                const apiKey = key === "assignedTo" ? "assignee" : key;
+
+                // For standard filters, append OneOf as requested
+                if (["asset", "location", "status", "priority", "assignee", "workType", "category", "part", "vendor"].includes(apiKey)) {
+                    params[`${apiKey}OneOf`] = values.join(",");
+                } else if (["dueDate", "startDate"].includes(apiKey)) {
+                    params[`${apiKey}Preset`] = values[0];
+                } else {
+                    params[apiKey] = values.join(",");
+                }
             } else {
                 // Clear filter if empty
-                params[key] = undefined;
+                // We need to clear all possible variants
+                const apiKey = key === "assignedTo" ? "assignee" : key;
+                params[`${apiKey}OneOf`] = null;
+                params[`${apiKey}Preset`] = null;
+                params[apiKey] = null;
             }
         });
 
@@ -78,23 +105,44 @@ export function UnifiedHeader({
         <header className="header-section">
             <div className="header-row">
                 {/* Left Side: Title & Date Navigation */}
-                <div className="header-title-group flex items-center">
-                    <h1 className="header-title min-w-[200px]" data-testid="header-title">{title}</h1>
+                <div className="header-title-group flex items-center gap-4">
+                    <h1 className="header-title min-w-[120px]" data-testid="header-title">{title}</h1>
 
-                    {/* Date Navigation (Calendar Only) - Single Container Style */}
-                    {(viewMode === 'calendar' || viewMode === 'calendar-week') && (
-                        <div className="header-date-nav">
-                            <button className="header-nav-arrow" data-testid="nav-prev-btn" onClick={onPrevDate}>
-                                <ChevronLeft className="h-4 w-4" />
+                    {/* View Switcher Dropdown */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button className="more-dropdown-btn h-9" data-testid="view-switcher-trigger">
+                                {viewMode === 'todo' && <LayoutGrid className="mr-1 h-4 w-4" />}
+                                {viewMode === 'list' && <List className="mr-1 h-4 w-4" />}
+                                {(viewMode === 'calendar' || viewMode === 'calendar-week') && <CalendarIcon className="mr-1 h-4 w-4" />}
+                                {getViewLabel()}
+                                <ChevronDown className="ml-1 h-4 w-4" />
                             </button>
-                            <span className="header-nav-text" data-testid="nav-current-btn">
-                                {viewMode === 'calendar-week' ? 'This Week' : 'This Month'}
-                            </span>
-                            <button className="header-nav-arrow" data-testid="nav-next-btn" onClick={onNextDate}>
-                                <ChevronRight className="h-4 w-4" />
-                            </button>
-                        </div>
-                    )}
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="more-dropdown-content" style={{ width: "180px" }}>
+                            <DropdownMenuItem
+                                onClick={() => onViewModeChange?.('todo')}
+                                className={`dropdown-nav-link ${viewMode === 'todo' ? 'active' : ''}`}
+                            >
+                                <LayoutGrid className="mr-2 h-4 w-4" />
+                                <span>Panel View</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={() => onViewModeChange?.('calendar-week')}
+                                className={`dropdown-nav-link ${viewMode === 'calendar-week' || viewMode === 'calendar' ? 'active' : ''}`}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                <span>Calendar View</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={() => onViewModeChange?.('list')}
+                                className={`dropdown-nav-link ${viewMode === 'list' ? 'active' : ''}`}
+                            >
+                                <List className="mr-2 h-4 w-4" />
+                                <span>List View</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
 
                 {/* Right Side: Search, Filter, Actions */}

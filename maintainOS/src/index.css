@@ -512,6 +512,10 @@
 }
 
 @layer utilities {
+  .font-sf-pro {
+    font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+
   .\@container\/card-header {
     container: card-header / inline-size;
   }

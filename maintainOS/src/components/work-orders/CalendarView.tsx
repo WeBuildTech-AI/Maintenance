@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Lock, RefreshCcw, CheckCircle2,
@@ -34,7 +34,9 @@ import {
   isBefore,
   isAfter,
   getDay,
-  getDate
+  getDate,
+  subMonths,
+  addMonths
 } from 'date-fns';
 import WorkOrderDetailModal from './Tableview/modals/WorkOrderDetailModal';
 import type { WorkOrderResponse as WorkOrder } from '../../store/workOrders/workOrders.types';
@@ -196,6 +198,8 @@ interface CalendarViewProps {
   onPrevDate?: () => void;
   onNextDate?: () => void;
   onDateChange?: (date: Date) => void;
+  onFilterChange?: (params: any) => void;
+  filters?: any;
 }
 
 export function CalendarView({
@@ -205,12 +209,15 @@ export function CalendarView({
   viewMode: propViewMode = 'calendar-week', // Default to week view
   onPrevDate,
   onNextDate,
-  onDateChange
+  onDateChange,
+  onFilterChange,
+  filters = {}
 }: CalendarViewProps) {
   // ✅ REDUX HOOKS
   const dispatch = useAppDispatch();
   // Fetch active WO from Global State
   const selectedWorkOrder = useAppSelector((state) => state.workOrders.selectedWorkOrder);
+  const filterData = useAppSelector((state) => state.workOrders.filterData);
   const navigate = useNavigate();
 
   // Controlled or Uncontrolled fallback (though usually controlled now)
@@ -219,6 +226,20 @@ export function CalendarView({
 
   // Local state for INTERACTION, not data
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [peopleSearchQuery, setPeopleSearchQuery] = useState("");
+  const [isPeopleDropdownOpen, setIsPeopleDropdownOpen] = useState(false);
+  const peopleSearchRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (peopleSearchRef.current && !peopleSearchRef.current.contains(event.target as Node)) {
+        setIsPeopleDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const today = startOfDay(new Date());
 
@@ -439,6 +460,23 @@ export function CalendarView({
           Create Workorder
         </button>
 
+        {/* ✅ This Week Navigation (Added below Create Button) */}
+        <div className="flex items-center justify-between border border-gray-200 rounded-lg p-2 bg-white mt-4 shadow-sm">
+          <button
+            onClick={onPrevDate}
+            className="p-1 hover:bg-gray-100 rounded-md transition-colors text-gray-400 hover:text-gray-900"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <span className="text-sm font-semibold text-gray-700">This Week</span>
+          <button
+            onClick={onNextDate}
+            className="p-1 hover:bg-gray-100 rounded-md transition-colors text-gray-400 hover:text-gray-900"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+
         {/* Mini Calendar */}
         <div className="calendar-mini-wrapper">
           <div className="mini-calendar-header">
@@ -446,13 +484,15 @@ export function CalendarView({
             <div className="flex gap-1">
               <button
                 className="mini-calendar-nav-btn"
-                onClick={onPrevDate}
+                // ✅ UPDATED: Jump by MONTH instead of relying on default week nav
+                onClick={() => onDateChange?.(subMonths(currentDate, 1))}
               >
                 <ChevronLeft size={16} />
               </button>
               <button
                 className="mini-calendar-nav-btn"
-                onClick={onNextDate}
+                // ✅ UPDATED: Jump by MONTH
+                onClick={() => onDateChange?.(addMonths(currentDate, 1))}
               >
                 <ChevronRight size={16} />
               </button>
@@ -494,28 +534,129 @@ export function CalendarView({
           </div>
         </div>
 
-        {/* People Search */}
-        <div className="calendar-people-search">
-          <div className="people-search-input-wrapper">
-            <Search className="people-search-icon" />
-            <input className="people-search-input" placeholder="Search for people" />
+        {/* People Search Dropdown */}
+        <div className="calendar-people-search relative flex flex-col z-50" ref={peopleSearchRef}>
+          <div className="people-search-input-wrapper relative w-full mb-1">
+            <Search className="people-search-icon absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <input
+              className="people-search-input w-full pl-8 pr-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Search for people"
+              value={peopleSearchQuery}
+              onChange={(e) => {
+                setPeopleSearchQuery(e.target.value);
+                setIsPeopleDropdownOpen(true);
+              }}
+              onFocus={() => setIsPeopleDropdownOpen(true)}
+              onClick={() => setIsPeopleDropdownOpen(true)}
+            />
           </div>
-          <div className="people-avatars-row">
-            <div className="people-chip">
-              <Avatar className="people-chip-avatar">
-                <AvatarImage src="/avatar-rajesh.png" />
-                <AvatarFallback>R</AvatarFallback>
-              </Avatar>
-              <span className="people-chip-name">Rajesh</span>
+
+          {/* Results Dropdown */}
+          {isPeopleDropdownOpen && (
+            <div
+              className="people-results-dropdown absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-[1000] overflow-hidden"
+              style={{ maxHeight: '180px' }}
+            >
+              <div className="overflow-y-auto custom-scrollbar p-1 flex flex-col gap-1" style={{ maxHeight: '180px' }}>
+                {(filterData?.users || [])
+                  .filter(u => u.name.toLowerCase().includes(peopleSearchQuery.toLowerCase()))
+                  .map(user => {
+                    const isSelected = (filters?.assigneeOneOf?.split(',') || []).includes(user.id);
+
+                    const handleToggleUser = () => {
+                      const currentIds = filters?.assigneeOneOf?.split(',').filter(Boolean) || [];
+                      const newIds = isSelected
+                        ? currentIds.filter((id: string) => id !== user.id)
+                        : [...currentIds, user.id];
+
+                      onFilterChange?.({ assigneeOneOf: newIds.length > 0 ? newIds.join(',') : undefined });
+                      setIsPeopleDropdownOpen(false); // ✅ Auto-close on selection
+                    };
+
+                    const initials = user.name
+                      .split(' ')
+                      .map((n: string) => n[0])
+                      .join('')
+                      .toUpperCase()
+                      .slice(0, 2);
+
+                    return (
+                      <div
+                        key={user.id}
+                        className={`people-dropdown-card flex items-center gap-2 p-1.5 rounded-md border transition-all cursor-pointer ${isSelected ? 'border-yellow-400 bg-yellow-50/50' : 'border-transparent hover:border-yellow-300 hover:bg-yellow-50/30'
+                          }`}
+                        onClick={handleToggleUser}
+                      >
+                        <div className="h-7 w-7 rounded-full border border-yellow-400 flex items-center justify-center bg-white shrink-0">
+                          <Avatar className="h-6 w-6">
+                            {user.image && <AvatarImage src={user.image} />}
+                            <AvatarFallback className="bg-transparent text-gray-800 text-[9px] font-bold">{initials}</AvatarFallback>
+                          </Avatar>
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-bold text-gray-900 truncate leading-tight">{user.name}</span>
+                          <span className="text-[9px] text-gray-500 truncate leading-tight">Team Member</span>
+                        </div>
+                        {isSelected && (
+                          <div className="ml-auto">
+                            <CheckCircle2 size={12} className="text-yellow-500" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                {(filterData?.users || []).filter(u => u.name.toLowerCase().includes(peopleSearchQuery.toLowerCase())).length === 0 && (
+                  <div className="p-2 text-center text-[10px] text-gray-500">No people found</div>
+                )}
+              </div>
             </div>
-            <div className="people-chip">
-              <Avatar className="people-chip-avatar">
-                <AvatarImage src="/avatar-ashwini.png" />
-                <AvatarFallback>A</AvatarFallback>
-              </Avatar>
-              <span className="people-chip-name">Ashwini</span>
+          )}
+
+          {/* Selected People Display (Cards below input) */}
+          {(filters?.assigneeOneOf?.split(',').filter(Boolean).length || 0) > 0 && (
+            <div className="people-selected-row flex flex-col gap-1.5 mt-2">
+              {(filterData?.users || [])
+                .filter(user => (filters?.assigneeOneOf?.split(',') || []).includes(user.id))
+                .map(user => {
+                  const initials = user.name
+                    .split(' ')
+                    .map((n: string) => n[0])
+                    .join('')
+                    .toUpperCase()
+                    .slice(0, 2);
+
+                  return (
+                    <div
+                      key={user.id}
+                      className="people-selected-card flex items-center gap-2 p-1.5 rounded-lg border border-yellow-400 bg-white shadow-sm relative group"
+                    >
+                      <div className="h-8 w-8 rounded-full border border-yellow-400 flex items-center justify-center bg-white shrink-0">
+                        <Avatar className="h-7 w-7">
+                          {user.image && <AvatarImage src={user.image} />}
+                          <AvatarFallback className="bg-transparent text-gray-800 text-[10px] font-bold">{initials}</AvatarFallback>
+                        </Avatar>
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-bold text-gray-900 truncate leading-tight">{user.name}</span>
+                        <span className="text-[10px] text-gray-500 truncate leading-tight">Team Member</span>
+                      </div>
+                      <button
+                        className="ml-auto p-1 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-red-500"
+                        onClick={() => {
+                          const currentIds = filters?.assigneeOneOf?.split(',').filter(Boolean) || [];
+                          const newIds = currentIds.filter((id: string) => id !== user.id);
+                          onFilterChange?.({ assigneeOneOf: newIds.length > 0 ? newIds.join(',') : undefined });
+                        }}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  );
+                })}
             </div>
-          </div>
+          )}
+
+
         </div>
       </div>
 
@@ -690,7 +831,7 @@ export function CalendarView({
 
                                 // Top Offset (Margin Top) - Scale with dynamic height
                                 // Only applies if it's the very first segment and starts mid-hour
-                                const marginTop = (isFirst) ? (startMinutes / 60) * hourHeights[hourIndex] : 0;
+                                const realMarginTop = (isFirst) ? (startMinutes / 60) * hourHeights[hourIndex] : 0;
 
                                 // Height Calculation
                                 // Start of this segment in this hour
@@ -723,7 +864,7 @@ export function CalendarView({
                                 segmentsInHour.push({
                                   id: `${evt.id}-h${hourIndex}`,
                                   evt,
-                                  marginTop,
+                                  marginTop: realMarginTop,
                                   height: segmentHeight,
                                   bgColor: getDurationColor(duration),
                                   isFirst,

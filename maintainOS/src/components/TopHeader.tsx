@@ -37,9 +37,7 @@ interface TopHeaderProps {
   onLogout?: () => void;
 }
 
-// ... existing imports
 
-// ... existing interfaces
 
 const defaultModule = { to: "/work-orders", label: "Work Orders", icon: Wrench, id: "nav-link-workorders" };
 const reportingModule = { to: "/reporting", label: "Reporting", icon: TrendingUp, id: "nav-link-reporting" };
@@ -86,15 +84,15 @@ export function TopHeader({ user, onLogout }: TopHeaderProps) {
       <div className="header-center-section" id="header-center-section">
         {/* Navigation - Primary Links */}
         <nav className="header-nav" id="header-nav">
-          {/* Dynamic Module Link */}
+          {/* Work Orders Link (Static) */}
           <NavLink
-            to={dynamicModule.to}
-            id={dynamicModule.id}
+            to="/work-orders"
+            id="nav-link-workorders"
             className={({ isActive }) =>
               `nav-link ${isActive ? "active" : ""}`
             }
           >
-            {dynamicModule.label}
+            Work Orders
           </NavLink>
 
           {/* Reporting Link (Fixed) */}
@@ -107,6 +105,17 @@ export function TopHeader({ user, onLogout }: TopHeaderProps) {
           >
             {reportingModule.label}
           </NavLink>
+
+          {/* Active Secondary Link (Dynamic) - Displayed only if active and not Work Orders */}
+          {activeSecondary && activeSecondary.to !== "/work-orders" && (
+            <NavLink
+              to={activeSecondary.to}
+              id={activeSecondary.id}
+              className="nav-link active"
+            >
+              {activeSecondary.label}
+            </NavLink>
+          )}
 
           {/* More Dropdown */}
           <DropdownMenu>
@@ -134,62 +143,6 @@ export function TopHeader({ user, onLogout }: TopHeaderProps) {
               })}
             </DropdownMenuContent>
           </DropdownMenu>
-
-          {/* View Dropdown (Only visible on Work Orders) */}
-          {currentPath.startsWith("/work-orders") && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="more-dropdown-btn" id="nav-dropdown-view-trigger">
-                  {location.search.includes("view=calendar")
-                    ? "Calendar View"
-                    : location.search.includes("view=list")
-                      ? "List View"
-                      : "Panel View"}
-                  <ChevronDown size={16} />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="start"
-                className="more-dropdown-content"
-                id="nav-dropdown-view-content"
-                style={{ width: "180px" }}
-              >
-                <DropdownMenuItem asChild>
-                  <Link
-                    to="/work-orders?view=todo"
-                    className={`dropdown-nav-link ${location.search.includes("view=todo") ||
-                      !location.search.includes("view=")
-                      ? "active"
-                      : ""
-                      }`}
-                  >
-                    <LayoutGrid className="mr-2 h-4 w-4" />
-                    <span>Panel View</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link
-                    to="/work-orders?view=calendar-week"
-                    className={`dropdown-nav-link ${location.search.includes("view=calendar") ? "active" : ""
-                      }`}
-                  >
-                    <Calendar className="mr-2 h-4 w-4" />
-                    <span>Calendar View</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link
-                    to="/work-orders?view=list"
-                    className={`dropdown-nav-link ${location.search.includes("view=list") ? "active" : ""
-                      }`}
-                  >
-                    <List className="mr-2 h-4 w-4" />
-                    <span>List View</span>
-                  </Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
         </nav>
       </div>
 
