@@ -373,7 +373,7 @@ export function AssignmentAndScheduling({
               <div className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl p-4 animate-in fade-in zoom-in-95 duration-100">
                 <DayPicker
                   mode="single"
-                  selected={safeParseDate(dueDate)}
+                  selected={dueDate ? safeParseDate(dueDate) : undefined}
                   onSelect={(date) => date && handleDueDateChange(date)}
                 />
               </div>
@@ -423,7 +423,7 @@ export function AssignmentAndScheduling({
               <div className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl p-4 animate-in fade-in zoom-in-95 duration-100">
                 <DayPicker
                   mode="single"
-                  selected={safeParseDate(startDate)}
+                  selected={startDate ? safeParseDate(startDate) : undefined}
                   onSelect={(date) => date && handleStartDateChange(date)}
                 />
               </div>
@@ -470,7 +470,7 @@ export function AssignmentAndScheduling({
             onFetch={() => { }}
             activeDropdown={activeDropdown}
             setActiveDropdown={setActiveDropdown}
-            limitOptions={3} 
+            limitOptions={3}
             className="w-full"
           />
 
@@ -484,7 +484,7 @@ export function AssignmentAndScheduling({
             onFetch={() => { }}
             activeDropdown={activeDropdown}
             setActiveDropdown={setActiveDropdown}
-            limitOptions={3} 
+            limitOptions={3}
             className="w-full"
           />
         </div>
