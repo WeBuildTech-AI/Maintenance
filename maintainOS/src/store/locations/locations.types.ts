@@ -15,8 +15,8 @@ export interface LocationResponse {
   qrCode: string;
   parentLocationId: string;
   children: LocationResponse[];
-  locationImages?: BUD[]; 
-  locationDocs?: BUD[]; 
+  locationImages?: BUD[];
+  locationDocs?: BUD[];
   teamsInCharge: string[];
   vendorIds: string[];
   // Keep old fields for backward compatibility during transition
@@ -27,15 +27,15 @@ export interface LocationResponse {
 export interface CreateLocationData {
   organizationId: string;
   name: string;
-  createdBy: string; 
+  createdBy: string;
   description?: string;
   address?: string;
-  qrCode?: string; 
-  locationImages?: BUD[]; 
-  locationDocs?: BUD[]; 
+  qrCode?: string;
+  locationImages?: BUD[];
+  locationDocs?: BUD[];
   teamsInCharge: string[];
   vendorIds: string[];
-  parentLocationId?: string; 
+  parentLocationId?: string;
 }
 
 // ✅ API FILTER PARAMETERS
@@ -43,9 +43,9 @@ export interface FetchLocationsParams {
   page?: number | string;
   limit?: number | string;
   search?: string; // Fuzzy search on location name or address
-  
+
   // Dynamic Keys from QueryBuilder (e.g. teamsOneOf, assetIsEmpty)
-  [key: string]: any; 
+  [key: string]: any;
 }
 
 export interface UpdateLocationData {
@@ -58,9 +58,20 @@ export interface UpdateLocationData {
   postalCode?: string;
 }
 
+export interface FilterData {
+  teams: { id: string; name: string }[];
+  vendors: { id: string; name: string }[];
+  parents: { id: string; name: string }[];
+  users?: { id: string; name: string }[];
+  assets?: { id: string; name: string }[];
+  parts?: { id: string; name: string }[];
+  procedures?: { id: string; name: string }[];
+}
+
 export interface LocationsState {
   locations: LocationResponse[];
   selectedLocation: LocationResponse | null;
   loading: boolean;
   error: string | null;
+  filterData?: FilterData;
 }

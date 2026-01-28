@@ -34,10 +34,20 @@ export interface UpdateProcedureData {
 export interface FetchProceduresParams {
   page?: number | string;
   limit?: number | string;
-  search?: string; 
-  
+  search?: string;
+
   // Dynamic Keys from QueryBuilder (e.g. statusOneOf, assetIsEmpty)
-  [key: string]: any; 
+  [key: string]: any;
+}
+
+export interface FilterData {
+  locations: any[];
+  assets: any[];
+  vendors: any[];
+  categories: any[];
+  users: any[];
+  teams: any[];
+  // Add others if needed
 }
 
 export interface ProceduresState {
@@ -45,4 +55,5 @@ export interface ProceduresState {
   selectedProcedure: ProcedureResponse | null;
   loading: boolean;
   error: string | null;
+  filterData?: FilterData;
 }

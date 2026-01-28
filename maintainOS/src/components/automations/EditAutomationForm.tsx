@@ -607,7 +607,7 @@ export function EditAutomationForm({ automationId, onBack }: EditAutomationFormP
               </div>
             ))}
 
-            {/* Show action selection if no actions or show selector */}
+         
             {actions.length === 0 || showActionSelector ? (
               <div className="space-y-3 mb-6">
                 <ActionItem
@@ -644,7 +644,7 @@ export function EditAutomationForm({ automationId, onBack }: EditAutomationFormP
         </div>
       </div>
 
-      {/* Modals */}
+   
       <ConfirmDiscardModal
         open={showDiscardModal}
         onCancel={() => setShowDiscardModal(false)}

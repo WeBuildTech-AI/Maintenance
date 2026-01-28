@@ -16,22 +16,22 @@
   import PartVendorsSection from "./PartVendorsSection";
   import type { BUD } from "../../utils/BlobUpload";
 
-  export function NewPartForm({
-    newItem,
-    setNewItem,
-    addVendorRow,
-    removeVendorRow,
-    onCancel,
-    onCreate,
-  }: {
-    newItem: any;
-    setNewItem: React.Dispatch<React.SetStateAction<any>>;
-    addVendorRow: () => void;
-    removeVendorRow: (idx: number) => void;
-    onCancel: () => void;
-    onCreate: () => void;
-  }) {
-    const dispatch = useDispatch<AppDispatch>();
+export function NewPartForm({
+  newItem,
+  setNewItem,
+  addVendorRow,
+  removeVendorRow,
+  onCancel,
+  onCreate,
+}: {
+  newItem: any;
+  setNewItem: React.Dispatch<React.SetStateAction<any>>;
+  addVendorRow: () => void;
+  removeVendorRow: (idx: number) => void;
+  onCancel: () => void;
+  onCreate: (part?: any) => void;
+}) {
+  const dispatch = useDispatch<AppDispatch>();
 
     const organizationId = useSelector(
       (state: RootState) => state.auth?.user?.organizationId
@@ -54,29 +54,29 @@
       if (newItem?.partDocs) setPartDocs(newItem.partDocs);
     }, [newItem?.partImages, newItem?.partDocs]);
 
-    // Normalize Data on Load (Pre-fill Locations, Assets, etc.)
-    React.useEffect(() => {
-      if (!newItem) return;
-      setNewItem((prev: any) => {
-        const firstLoc = prev.locations?.[0];
-        return {
-          ...prev,
-          // Arrays Normalization to prevent undefined errors
-          assetIds:
-            prev.assetIds && prev.assetIds.length > 0
-              ? prev.assetIds
-              : prev.assets?.map((a: any) => a.id) || [],
-          teamsInCharge:
-            prev.teamsInCharge && prev.teamsInCharge.length > 0
-              ? prev.teamsInCharge
-              : prev.teams?.map((t: any) => t.id) || [],
-          vendorIds:
-            prev.vendorIds && prev.vendorIds.length > 0
-              ? prev.vendorIds
-              : prev.vendors?.map((v: any) => v.id) || [],
-          partsType: Array.isArray(prev.partsType)
-            ? prev.partsType
-            : prev.partsType
+  // Normalize Data on Load (Pre-fill Locations, Assets, etc.)
+  React.useEffect(() => {
+    if (!newItem) return;
+    setNewItem((prev: any) => {
+      const firstLoc = prev.locations?.[0];
+      return {
+        ...prev,
+        // Arrays Normalization to prevent undefined errors
+        assetIds:
+          prev.assetIds && prev.assetIds.length > 0
+            ? prev.assetIds
+            : prev.assets?.map((a: any) => a.id) || [],
+        teamsInCharge:
+          prev.teamsInCharge && prev.teamsInCharge.length > 0
+            ? prev.teamsInCharge
+            : prev.teams?.map((t: any) => t.id) || [],
+        vendorIds:
+          prev.vendorIds && prev.vendorIds.length > 0
+            ? prev.vendorIds
+            : prev.vendors?.map((v: any) => v.id) || [],
+        partsType: Array.isArray(prev.partsType)
+          ? prev.partsType
+          : prev.partsType
             ? [prev.partsType]
             : [],
 
@@ -112,15 +112,15 @@
             : `part/${newItem.qrCode}`
           : "";
 
-        // Arrays
-        const currentPartsType = Array.isArray(newItem.partsType) ? newItem.partsType : [];
-        const currentAssetIds = Array.isArray(newItem.assetIds) ? newItem.assetIds : [];
-        const currentTeams = Array.isArray(newItem.teamsInCharge) ? newItem.teamsInCharge : [];
-        const currentVendorIds = Array.isArray(newItem.vendorIds) ? newItem.vendorIds : [];
-        
-        // Images/Docs
-        const currentImages = Array.isArray(partImages) ? partImages : [];
-        const currentDocs = Array.isArray(partDocs) ? partDocs : [];
+      // Arrays
+      const currentPartsType = Array.isArray(newItem.partsType) ? newItem.partsType : [];
+      const currentAssetIds = Array.isArray(newItem.assetIds) ? newItem.assetIds : [];
+      const currentTeams = Array.isArray(newItem.teamsInCharge) ? newItem.teamsInCharge : [];
+      const currentVendorIds = Array.isArray(newItem.vendorIds) ? newItem.vendorIds : [];
+
+      // Images/Docs
+      const currentImages = Array.isArray(partImages) ? partImages : [];
+      const currentDocs = Array.isArray(partDocs) ? partDocs : [];
 
         // ---------------------------------------------------------
         // 🛠️ FIXED LOCATIONS LOGIC
@@ -135,43 +135,31 @@
 
         let currentLocations: any[] = [];
 
-        if (newItem.locations && newItem.locations.length > 0) {
-          // If locations exist, we update the FIRST one with the flat form data
-          currentLocations = newItem.locations.map((loc: any, index: number) => {
-              if (index === 0) {
-                  // Override first location with active form inputs
-                  return {
-                      ...loc,
-                      ...primaryLocationUpdate,
-                      locationId: primaryLocationUpdate.locationId // Explicitly ensure ID is updated
-                  };
-              }
-              // Return other locations unchanged (normalized)
-              return {
-                  locationId: loc.locationId || loc.id,
-                  area: loc.area || "",
-                  unitsInStock: Number(loc.unitsInStock ?? 0),
-                  minimumInStock: Number(loc.minimumInStock ?? 0),
-              };
-          });
-        } else {
-          // If no locations array, create one from flat fields if locationId is present
-          if (primaryLocationUpdate.locationId) {
-              currentLocations.push(primaryLocationUpdate);
+      if (newItem.locations && newItem.locations.length > 0) {
+        // If locations exist, we update the FIRST one with the flat form data
+        currentLocations = newItem.locations.map((loc: any, index: number) => {
+          if (index === 0) {
+            // Override first location with active form inputs
+            return {
+              ...loc,
+              ...primaryLocationUpdate,
+              locationId: primaryLocationUpdate.locationId // Explicitly ensure ID is updated
+            };
           }
+          // Return other locations unchanged (normalized)
+          return {
+            locationId: loc.locationId || loc.id,
+            area: loc.area || "",
+            unitsInStock: Number(loc.unitsInStock ?? 0),
+            minimumInStock: Number(loc.minimumInStock ?? 0),
+          };
+        });
+      } else {
+        // If no locations array, create one from flat fields if locationId is present
+        if (primaryLocationUpdate.locationId) {
+          currentLocations.push(primaryLocationUpdate);
         }
-
-        // ---------------------------------------------------------
-        // 🛠️ BUILD PAYLOAD (ONLY CHANGED FIELDS)
-        // ---------------------------------------------------------
-        const payload: any = {};
-
-        if (isEditing) {
-          // --- Basic Fields ---
-          if (newItem.name !== original.name) payload.name = newItem.name;
-          if (newItem.description !== original.description) payload.description = newItem.description;
-          if (currentUnitCost !== (original.unitCost || 0)) payload.unitCost = currentUnitCost;
-          if (currentQrCode !== (original.qrCode || "")) payload.qrCode = currentQrCode;
+      }
 
           // --- Simple Arrays (Asset, Teams, Types, Vendors) ---
           if (!areArraysEqual(currentPartsType, original.partsType || [])) {
@@ -225,6 +213,11 @@
           payload.unitCost = currentUnitCost;
           payload.qrCode = currentQrCode;
           payload.partsType = currentPartsType;
+        }
+
+        // Check Asset IDs
+        const originalAssetIds = original.assets?.map((a: any) => a.id) || original.assetIds || [];
+        if (!areArraysEqual(currentAssetIds, originalAssetIds)) {
           payload.assetIds = currentAssetIds;
           payload.teamsInCharge = currentTeams;
           payload.vendorIds = currentVendorIds;
@@ -233,21 +226,25 @@
           payload.partDocs = currentDocs;
         }
 
-        // 🛑 Final Safety Check: If Edit Mode and Payload is empty, warn user
-        if (isEditing && Object.keys(payload).length === 0) {
-          toast("No changes detected.");
-          return;
+        // --- Complex Objects (Locations) ---
+        const originalLocsMapped = (original.locations || []).map((loc: any) => ({
+          locationId: loc.locationId || loc.id,
+          area: loc.area || "",
+          unitsInStock: Number(loc.unitsInStock ?? 0),
+          minimumInStock: Number(loc.minimumInStock ?? 0),
+        }));
+
+        // Compare constructed currentLocations vs original
+        if (JSON.stringify(currentLocations) !== JSON.stringify(originalLocsMapped)) {
+          payload.locations = currentLocations;
         }
 
-        // 🔥 Dispatch (JSON Payload)
-        if (isEditing) {
-          await dispatch(
-            updatePart({ id: String(newItem.id), partData: payload })
-          ).unwrap();
-          toast.success("Part updated successfully!");
-        } else {
-          await dispatch(createPart(payload)).unwrap();
-          toast.success("Part created successfully!");
+        // --- Files (Images / Docs) ---
+        if (JSON.stringify(currentImages) !== JSON.stringify(original.partImages || [])) {
+          payload.partImages = currentImages;
+        }
+        if (JSON.stringify(currentDocs) !== JSON.stringify(original.partDocs || [])) {
+          payload.partDocs = currentDocs;
         }
 
         onCreate();
@@ -257,32 +254,56 @@
       }
     };
 
-    return (
-      <div className="h-full flex flex-col min-h-0">
-        <PartHeader isEditing={!!newItem.id} />
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          <div className="mx-auto w-full max-w-[840px] p-6 space-y-20">
-            <PartBasicDetails newItem={newItem} setNewItem={setNewItem} />
-            <PartFilesSection
-              partImages={partImages}
-              partDocs={partDocs}
-              onBlobChange={handleBlobChange}
-            />
-            <PartQRCodeSection
-              qrCode={(newItem.qrCode && newItem.qrCode.split("/").pop()) || ""}
-              setQrCode={(code) =>
-                setNewItem((s: any) => ({ ...s, qrCode: code }))
-              }
-            />
-            <PartType newItem={newItem} setNewItem={setNewItem} />
-            <PartLocationSection newItem={newItem} setNewItem={setNewItem} />
-            <PartVendorsSection
-              newItem={newItem}
-              setNewItem={setNewItem}
-              addVendorRow={addVendorRow}
-              removeVendorRow={removeVendorRow}
-            />
-          </div>
+      // 🛑 Final Safety Check: If Edit Mode and Payload is empty, warn user
+      if (isEditing && Object.keys(payload).length === 0) {
+        toast("No changes detected.");
+        return;
+      }
+
+      let res;
+      // 🔥 Dispatch (JSON Payload)
+      if (isEditing) {
+        res = await dispatch(
+          updatePart({ id: String(newItem.id), partData: payload })
+        ).unwrap();
+        toast.success("Part updated successfully!");
+      } else {
+        res = await dispatch(createPart(payload)).unwrap();
+        toast.success("Part created successfully!");
+      }
+
+      onCreate(res);
+    } catch (error: any) {
+      console.error("❌ Error saving part:", error);
+      toast.error(error?.message || "Failed to save part");
+    }
+  };
+
+  return (
+    <div className="h-full flex flex-col min-h-0">
+      <PartHeader isEditing={!!newItem.id} />
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="mx-auto w-full max-w-[840px] p-6 space-y-20">
+          <PartBasicDetails newItem={newItem} setNewItem={setNewItem} />
+          <PartFilesSection
+            partImages={partImages}
+            partDocs={partDocs}
+            onBlobChange={handleBlobChange}
+          />
+          <PartQRCodeSection
+            qrCode={(newItem.qrCode && newItem.qrCode.split("/").pop()) || ""}
+            setQrCode={(code) =>
+              setNewItem((s: any) => ({ ...s, qrCode: code }))
+            }
+          />
+          <PartType newItem={newItem} setNewItem={setNewItem} />
+          <PartLocationSection newItem={newItem} setNewItem={setNewItem} />
+          <PartVendorsSection
+            newItem={newItem}
+            setNewItem={setNewItem}
+            addVendorRow={addVendorRow}
+            removeVendorRow={removeVendorRow}
+          />
         </div>
         <PartFooter
           onCancel={onCancel}

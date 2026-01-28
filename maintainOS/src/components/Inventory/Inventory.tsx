@@ -20,8 +20,7 @@ import { PartTable } from "./PartTable";
 
 /* ✅ Import partService */
 import { partService } from "../../store/parts/parts.service";
-import { FetchPartsParams } from "../../store/parts/parts.types"; 
-import { DiscardChangesModal } from "../work-orders/ToDoView/DiscardChangesModal";//discard popup//
+import { FetchPartsParams } from "../../store/parts/parts.types";
 
 // Define ViewMode locally to avoid type errors if not imported
 type ViewMode = "table" | "panel";
@@ -99,7 +98,7 @@ export function Inventory() {
   const [pendingPath, setPendingPath] = useState<string | null>(null);
   // ✅ PAGINATION STATE
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10; 
+  const itemsPerPage = 10;
 
   const [filterParams, setFilterParams] = useState<FetchPartsParams>({
     page: 1,
@@ -216,13 +215,13 @@ export function Inventory() {
       // We want to avoid overriding /create or /edit
       const isCreateOrEdit = location.pathname.includes('/create') || location.pathname.includes('/edit');
       const hasId = location.pathname !== '/inventory' && location.pathname !== '/inventory/';
-      
+
       if (shouldSelectFirst) {
-          navigate(`/inventory/${sortedParts[0].id}`);
-          setShouldSelectFirst(false);
+        navigate(`/inventory/${sortedParts[0].id}`);
+        setShouldSelectFirst(false);
       } else if (!hasId && !isCreateOrEdit) {
-          // Initial load default selection
-           navigate(`/inventory/${sortedParts[0].id}`, { replace: true });
+        // Initial load default selection
+        navigate(`/inventory/${sortedParts[0].id}`, { replace: true });
       }
     }
   }, [sortedParts, shouldSelectFirst, viewMode, location.pathname, navigate]);
@@ -243,6 +242,19 @@ export function Inventory() {
   // Reset page on sort change
   useEffect(() => setCurrentPage(1), [sortType, sortOrder, searchQuery]);
 
+  // ✅ OPTIMISTIC HANDLERS
+  const handlePartCreate = (newPart: any) => {
+    setParts((prev) => [newPart, ...prev]);
+    // Optional: Select the new part
+    if (viewMode === 'panel') {
+      navigate(`/inventory/${newPart.id}`);
+    }
+  };
+
+  const handlePartUpdate = (updatedPart: any) => {
+    setParts((prev) => prev.map((p) => p.id === updatedPart.id ? updatedPart : p));
+  };
+
   return (
     <div className="flex flex-col h-full bg-background">
       {InventoryHeaderComponent(
@@ -252,12 +264,12 @@ export function Inventory() {
         setSearchQuery,
         // ✅ FIX: Pass navigation to the 5th arg (setIsCreatingForm) 
         // because InventoryHeader calls setIsCreatingForm(true) on click.
-        () => navigate("/inventory/create"), 
+        () => navigate("/inventory/create"),
         // 6th arg: setShowSettings (dummy/placeholder as it's not state-managed here yet)
-        () => {}, 
+        () => { },
         setIsSettingsModalOpen,
         setShowDeleted,
-        handleFilterChange 
+        handleFilterChange
       )}
 
       {/* 🟩 TABLE VIEW */}
@@ -287,7 +299,7 @@ export function Inventory() {
         <div className="flex flex-1 min-h-0 h-full">
           {/* LEFT LIST */}
           <div className="w-96 mr-2 ml-3 mb-2 border border-border flex flex-col min-h-0">
-            
+
             {/* Header / Sort Bar (Like ToDoTabs) */}
             <div
               ref={headerRef}
@@ -323,7 +335,7 @@ export function Inventory() {
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                 <div className="py-1">
+                <div className="py-1">
                   {[
                     { label: "Creation Date", options: ["Oldest First", "Newest First"] },
                     { label: "Last Updated", options: ["Least Recent First", "Most Recent First"] },
@@ -331,44 +343,43 @@ export function Inventory() {
                     { label: "Units in Stock", options: ["Lowest First", "Highest First"] },
                   ].map((section) => (
                     <div key={section.label}>
-                       <button
-                         onClick={() => setOpenSection(openSection === section.label ? null : section.label)}
-                         className="flex items-center justify-between w-full px-4 py-2 text-left hover:bg-gray-100 rounded-md"
-                       >
-                          <span>{section.label}</span>
-                          {openSection === section.label ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                       </button>
-                       {openSection === section.label && (
-                         <div className="pl-4 pr-2 bg-gray-50 py-1 space-y-1">
-                            {section.options.map(opt => {
-                              const isAsc = opt.includes("Asc") || opt.includes("Oldest") || opt.includes("Least") || opt.includes("Lowest");
-                              const isSelected = sortType === section.label && sortOrder === (isAsc ? "asc" : "desc");
+                      <button
+                        onClick={() => setOpenSection(openSection === section.label ? null : section.label)}
+                        className="flex items-center justify-between w-full px-4 py-2 text-left hover:bg-gray-100 rounded-md"
+                      >
+                        <span>{section.label}</span>
+                        {openSection === section.label ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                      </button>
+                      {openSection === section.label && (
+                        <div className="pl-4 pr-2 bg-gray-50 py-1 space-y-1">
+                          {section.options.map(opt => {
+                            const isAsc = opt.includes("Asc") || opt.includes("Oldest") || opt.includes("Least") || opt.includes("Lowest");
+                            const isSelected = sortType === section.label && sortOrder === (isAsc ? "asc" : "desc");
 
-                              return (
-                               <button 
-                                  key={opt}
-                                  onClick={() => {
-                                      setSortType(section.label);
-                                      setSortOrder(isAsc ? "asc" : "desc");
-                                      setShouldSelectFirst(true);
-                                      setIsDropdownOpen(false);
-                                  }}
-                                  className={`w-full flex items-center justify-between text-left text-xs px-2 py-1.5 rounded transition-colors ${
-                                      isSelected
-                                        ? "text-blue-600 bg-blue-50 font-medium"
-                                        : "text-gray-600 hover:bg-gray-100"
-                                    }`}
-                               >
-                                  <span>{opt}</span>
-                                  {isSelected && <Check className="w-3.5 h-3.5 text-blue-600" />}
-                               </button>
-                              );
-                            })}
-                         </div>
-                       )}
+                            return (
+                              <button
+                                key={opt}
+                                onClick={() => {
+                                  setSortType(section.label);
+                                  setSortOrder(isAsc ? "asc" : "desc");
+                                  setShouldSelectFirst(true);
+                                  setIsDropdownOpen(false);
+                                }}
+                                className={`w-full flex items-center justify-between text-left text-xs px-2 py-1.5 rounded transition-colors ${isSelected
+                                  ? "text-blue-600 bg-blue-50 font-medium"
+                                  : "text-gray-600 hover:bg-gray-100"
+                                  }`}
+                              >
+                                <span>{opt}</span>
+                                {isSelected && <Check className="w-3.5 h-3.5 text-blue-600" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   ))}
-                 </div>
+                </div>
               </div>
             )}
 
@@ -376,29 +387,19 @@ export function Inventory() {
             <div className="flex-1 overflow-auto bg-white p-4 space-y-2">
               {loading && (
                 <div className="flex items-center justify-center h-full">
-                   <p className="text-sm text-gray-500">Loading parts...</p>
+                  <p className="text-sm text-gray-500">Loading parts...</p>
                 </div>
               )}
               {!loading && parts.length === 0 && (
                 <EmptyState variant="list" onCreate={() => navigate("/inventory/create")} />
               )}
               {!loading && currentItems.map((it) => (
-                  <PartCard
-                    key={it.id}
-                    item={it}
-                    selected={location.pathname.includes(it.id)}
-                    onSelect={() => {
-                      const targetPath = `/inventory/${it.id}`;
-
-                      if (isEditingOrCreating) {
-                        setPendingPath(targetPath);
-                        setShowDiscardModal(true);
-                        return;
-                      }
-
-                      navigate(targetPath);
-                    }}
-                  />
+                <PartCard
+                  key={it.id}
+                  item={it}
+                  selected={location.pathname.includes(it.id)}
+                  onSelect={() => navigate(`/inventory/${it.id}`)}
+                />
               ))}
             </div>
 
@@ -410,19 +411,19 @@ export function Inventory() {
                     {startIndex + 1} – {endIndex} of {totalItems}
                   </span>
                   <div className="flex items-center gap-1">
-                    <button 
-                      onClick={handlePrevPage} 
+                    <button
+                      onClick={handlePrevPage}
                       disabled={currentPage === 1}
                       className="text-gray-400 hover:text-gray-800 disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
                     </button>
-                    <button 
-                      onClick={handleNextPage} 
+                    <button
+                      onClick={handleNextPage}
                       disabled={endIndex >= totalItems}
                       className="text-gray-400 hover:text-gray-800 disabled:opacity-30 disabled:cursor-not-allowed"
                     >
-                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                     </button>
                   </div>
                 </div>
@@ -436,7 +437,7 @@ export function Inventory() {
               <Route path="/" element={<EmptyState variant="panel" />} />
               <Route
                 path="create"
-                element={<CreatePartRoute onSuccess={refreshParts} />}
+                element={<CreatePartRoute onSuccess={refreshParts} onOptimisticCreate={handlePartCreate} />}
               />
               <Route
                 path=":id"
@@ -452,7 +453,7 @@ export function Inventory() {
               />
               <Route
                 path=":id/edit"
-                element={<EditPartRoute onSuccess={refreshParts} />}
+                element={<EditPartRoute onSuccess={refreshParts} onOptimisticUpdate={handlePartUpdate} />}
               />
               <Route
                 path=":id/restock"
@@ -473,7 +474,7 @@ export function Inventory() {
 }
 
 /* ✅ CREATE ROUTE (UPDATED TO HANDLE COPY) */
-function CreatePartRoute({ onSuccess }: { onSuccess: () => void }) {
+function CreatePartRoute({ onSuccess, onOptimisticCreate }: { onSuccess: () => void; onOptimisticCreate: (p: any) => void }) {
   const navigate = useNavigate();
   const location = useLocation(); // ✅ Added access to location state
 
@@ -527,9 +528,15 @@ function CreatePartRoute({ onSuccess }: { onSuccess: () => void }) {
         }))
       }
       onCancel={() => navigate("/inventory")}
-      onCreate={() => {
-        onSuccess();
-        navigate("/inventory", { state: { refresh: true } });
+      onCreate={(newPart) => {
+        if (newPart) {
+          onOptimisticCreate(newPart);
+          navigate(`/inventory/${newPart.id}`);
+        } else {
+          // Fallback
+          onSuccess();
+          navigate("/inventory", { state: { refresh: true } });
+        }
       }}
     />
   );
@@ -548,7 +555,7 @@ function PartDetailRoute({
   const { id } = useParams();
   const navigate = useNavigate();
   const part = parts.find((p) => String(p.id) === String(id));
-  
+
   if (!part) return <EmptyState variant="panel" />;
 
   const delta = (part.unitsInStock || 0) - (part.minInStock || 0);
@@ -568,7 +575,7 @@ function PartDetailRoute({
 }
 
 /* ✅ EDIT ROUTE */
-function EditPartRoute({ onSuccess }: { onSuccess: () => void }) {
+function EditPartRoute({ onSuccess, onOptimisticUpdate }: { onSuccess: () => void; onOptimisticUpdate: (p: any) => void }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [editItem, setEditItem] = useState<any>(null);
@@ -619,9 +626,14 @@ function EditPartRoute({ onSuccess }: { onSuccess: () => void }) {
         }))
       }
       onCancel={() => navigate(`/inventory/${id}`)}
-      onCreate={() => {
-        onSuccess();
-        navigate(`/inventory/${id}`, { state: { refresh: true } });
+      onCreate={(updatedPart) => {
+        if (updatedPart) {
+          onOptimisticUpdate(updatedPart);
+          navigate(`/inventory/${id}`);
+        } else {
+          onSuccess();
+          navigate(`/inventory/${id}`, { state: { refresh: true } });
+        }
       }}
     />
   );

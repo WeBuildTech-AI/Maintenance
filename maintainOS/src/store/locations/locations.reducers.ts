@@ -10,6 +10,7 @@ import {
   fetchLocationById,
   fetchLocations,
   updateLocation,
+  fetchFilterData, // ✅ Added
 } from "./locations.thunks";
 
 const initialState: LocationsState = {
@@ -17,6 +18,7 @@ const initialState: LocationsState = {
   selectedLocation: null,
   loading: false,
   error: null,
+  filterData: undefined, // ✅ Added
 };
 
 const locationsSlice = createSlice({
@@ -111,6 +113,17 @@ const locationsSlice = createSlice({
       .addCase(deleteLocation.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+      .addCase(fetchFilterData.pending, () => {
+        // state.loading = true;
+      })
+      .addCase(fetchFilterData.fulfilled, (state, action) => {
+        state.filterData = action.payload;
+        // state.loading = false;
+      })
+      .addCase(fetchFilterData.rejected, (_state, action) => {
+        // state.loading = false
+        console.error("Filter Data Fetch Error:", action.payload);
       });
   },
 });

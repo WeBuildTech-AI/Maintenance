@@ -93,7 +93,7 @@ export interface FetchAssetsParams {
   page?: number;
   limit?: number;
   name?: string;
-  
+
   status?: string | string[];
   criticality?: string | string[];
   location?: any;
@@ -110,7 +110,32 @@ export interface FetchAssetsParams {
   workOrderRecurrence?: string;
   asset?: any;
 
-  statusOneOf?: string;
   locationOneOf?: string;
   [key: string]: any;
+}
+
+export interface DropdownOption {
+  label: string;
+  value: string;
+  image?: string | null;
+}
+
+export interface FilterData {
+  locations: any[];
+  parts: any[];
+  vendors: any[];
+  categories: any[];
+  teams: any[];
+  assetTypes: any[];
+  manufacturers: any[];
+  procedures: any[];
+  assets: any[]; // ✅ Added for Parent Asset dropdown
+}
+
+export interface AssetsState {
+  assets: AssetResponse[];
+  selectedAsset: AssetResponse | null;
+  loading: boolean;
+  error: string | null;
+  filterData?: FilterData;
 }

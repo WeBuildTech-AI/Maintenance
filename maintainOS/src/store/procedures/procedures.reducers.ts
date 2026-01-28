@@ -10,11 +10,12 @@ import {
   fetchProcedureById,
   fetchProcedures,
   updateProcedure,
-  duplicateProcedure, 
-  batchDeleteProcedures, 
+  duplicateProcedure,
+  batchDeleteProcedures,
   // --- 👇 [CHANGE] NAYE THUNKS IMPORT KAREIN ---
   restoreProcedure,
   fetchDeletedProcedures,
+  fetchFilterData, // ✅ Added
 } from "./procedures.thunks";
 
 const initialState: ProceduresState = {
@@ -22,6 +23,7 @@ const initialState: ProceduresState = {
   selectedProcedure: null,
   loading: false,
   error: null,
+  filterData: undefined, // ✅ Added
 };
 
 const proceduresSlice = createSlice({
@@ -135,7 +137,7 @@ const proceduresSlice = createSlice({
       })
 
       .addCase(duplicateProcedure.pending, (state) => {
-        state.loading = true; 
+        state.loading = true;
         state.error = null;
       })
       .addCase(duplicateProcedure.fulfilled, (state, action) => {
@@ -153,8 +155,8 @@ const proceduresSlice = createSlice({
       })
       .addCase(batchDeleteProcedures.fulfilled, (state, action) => {
         state.loading = false;
-        const deletedIds = new Set(action.payload); 
-        
+        const deletedIds = new Set(action.payload);
+
         state.procedures = state.procedures.filter(
           (procedure) => !deletedIds.has(procedure.id)
         );
@@ -170,7 +172,7 @@ const proceduresSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-      
+
       // --- 👇 [CHANGE] YEH NAYE CASES ADD KIYE GAYE HAIN ---
       .addCase(restoreProcedure.pending, (state) => {
         // Option: loading state dikha sakte hain
@@ -188,8 +190,22 @@ const proceduresSlice = createSlice({
       .addCase(restoreProcedure.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
-      });
+      })
       // --- END RESTORE ---
+
+      // ✅ Filter Data Cases
+      .addCase(fetchFilterData.pending, () => {
+        // Optional: set loading if causing UI block, but usually silent
+        // state.loading = true;
+      })
+      .addCase(fetchFilterData.fulfilled, (state, action) => {
+        // state.loading = false;
+        state.filterData = action.payload;
+      })
+      .addCase(fetchFilterData.rejected, (_state, action) => {
+        // state.loading = false;
+        console.error("Filter Data Fetch Error:", action.payload);
+      });
   },
 });
 

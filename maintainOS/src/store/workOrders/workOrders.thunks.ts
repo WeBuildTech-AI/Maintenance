@@ -266,7 +266,7 @@ export const addPartUsage = createAsyncThunk(
   async ({ id, data }: { id: string; data: CreatePartUsageData }, { rejectWithValue }) => {
     try {
       const res = await workOrderService.addPartUsage(id, data);
-      return res; 
+      return res;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || "Failed to add parts");
     }
@@ -367,7 +367,7 @@ export const fetchFilterData = createAsyncThunk(
   "workOrders/fetchFilterData",
   async (_, { getState, rejectWithValue }) => {
     const state = getState() as RootState;
-    
+
     // ✅ Check if data already exists in Redux
     if (state.workOrders.filterData) {
       console.log("🟡 Filter data already exists in Redux. Skipping API calls.");
@@ -376,7 +376,7 @@ export const fetchFilterData = createAsyncThunk(
 
     try {
       console.log("🔵 Fetching all filter data in parallel...");
-      
+
       const [
         locationsRes,
         partsRes,

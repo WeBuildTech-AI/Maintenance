@@ -37,7 +37,8 @@ export default function ProcedureBody({ name, description }: ProcedureBodyProps)
     findFieldRecursive,
     isAddConditionModalOpen, // [NEW]
     setIsAddConditionModalOpen, // [NEW]
-    setProcedureName // [NEW]
+    setProcedureName, // [NEW]
+    setProcedureDescription, // [NEW] (Added this)
     // --- END ---
   } = useProcedureBuilder();
 
@@ -45,20 +46,34 @@ export default function ProcedureBody({ name, description }: ProcedureBodyProps)
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState(name);
 
-  // Sync tempTitle if name prop changes from outside (optional but safer)
-  // useEffect(() => { setTempTitle(name); }, [name]);
+  // --- Description Edit State ---
+  const [isEditingDesc, setIsEditingDesc] = useState(false);
+  const [tempDesc, setTempDesc] = useState(description);
 
   const handleTitleSave = () => {
     if (tempTitle.trim()) {
-       setProcedureName(tempTitle);
+      setProcedureName(tempTitle);
     } else {
-       setTempTitle(name); // Revert if empty
+      setTempTitle(name); // Revert if empty
     }
     setIsEditingTitle(false);
   };
 
+  const handleDescSave = () => {
+    // Save even if empty (allows clearing description)
+    setProcedureDescription(tempDesc);
+    setIsEditingDesc(false);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleTitleSave();
+  };
+
+  const handleDescKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) { // Allow Shift+Enter for new lines
+      e.preventDefault();
+      handleDescSave();
+    }
   };
 
   const sensors = useSensors(
@@ -69,6 +84,7 @@ export default function ProcedureBody({ name, description }: ProcedureBodyProps)
     })
   );
 
+  // ... (handleSaveLink stays here) ...
   // --- 🐞 YEH FUNCTION UPDATE KIYA GAYA HAI (Array mein add karne ke liye) ---
   const handleSaveLink = (url: string, text: string) => {
     if (isLinkModalOpen.fieldId) {
@@ -104,14 +120,13 @@ export default function ProcedureBody({ name, description }: ProcedureBodyProps)
       <div className="relative flex w-full">
         <div className="flex-1 flex justify-center items-start">
           <div
-            className={`flex-1 max-w-2xl rounded-lg shadow-sm p-10 transition-colors ${
-              canDropOnRoot && isOverRoot ? "bg-yellow-50" : "bg-white"
-            }`}
+            className={`flex-1 max-w-2xl rounded-lg shadow-sm p-10 transition-colors ${canDropOnRoot && isOverRoot ? "bg-yellow-50" : "bg-white"
+              }`}
             onClick={() => setActiveContainerId("root")}
           >
             {isEditingTitle ? (
               <div className="flex items-center gap-2 mb-1">
-                <input 
+                <input
                   autoFocus
                   value={tempTitle}
                   onChange={(e) => setTempTitle(e.target.value)}
@@ -121,21 +136,51 @@ export default function ProcedureBody({ name, description }: ProcedureBodyProps)
                 />
               </div>
             ) : (
-                <div className="flex items-center gap-2 mb-1 group">
-                    <h2 className="text-2xl font-semibold">{name}</h2>
-                    <button 
-                       onClick={(e) => {
-                         e.stopPropagation();
-                         setTempTitle(name);
-                         setIsEditingTitle(true);
-                       }}
-                       className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded-full"
-                    >
-                        <Edit2 size={16} className="text-gray-500" />
-                    </button>
-                </div>
+              <div className="flex items-center gap-2 mb-1 group">
+                <h2 className="text-2xl font-semibold">{name}</h2>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setTempTitle(name);
+                    setIsEditingTitle(true);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded-full"
+                >
+                  <Edit2 size={16} className="text-gray-500" />
+                </button>
+              </div>
             )}
-            <p className="text-gray-500 mb-6">{description}</p>
+
+            {/* --- Editable Description --- */}
+            {isEditingDesc ? (
+              <div className="mb-6">
+                <textarea
+                  autoFocus
+                  value={tempDesc}
+                  onChange={(e) => setTempDesc(e.target.value)}
+                  onBlur={handleDescSave}
+                  onKeyDown={handleDescKeyDown}
+                  className="text-gray-500 border border-blue-500 rounded px-2 py-1 outline-none w-full resize-none"
+                  rows={2}
+                />
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 mb-6 group">
+                <p className={`text-gray-500 ${!description ? "italic opacity-50" : ""}`}>
+                  {description || "Add a description..."}
+                </p>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setTempDesc(description);
+                    setIsEditingDesc(true);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded-full"
+                >
+                  <Edit2 size={14} className="text-gray-400" />
+                </button>
+              </div>
+            )}
 
             {fields.length === 0 ? (
               <div className="text-center py-20 text-gray-500">
@@ -177,9 +222,9 @@ export default function ProcedureBody({ name, description }: ProcedureBodyProps)
         />
 
         <AddConditionModal
-           isOpen={!!isAddConditionModalOpen.fieldId}
-           onClose={() => setIsAddConditionModalOpen({ fieldId: null })}
-           fieldId={isAddConditionModalOpen.fieldId}
+          isOpen={!!isAddConditionModalOpen.fieldId}
+          onClose={() => setIsAddConditionModalOpen({ fieldId: null })}
+          fieldId={isAddConditionModalOpen.fieldId}
         />
 
         <DragOverlay>

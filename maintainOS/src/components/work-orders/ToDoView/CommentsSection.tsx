@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useEffect, useState, useMemo } from "react";
+import { forwardRef, useEffect, useState, useMemo, useRef } from "react";
 import { Paperclip, X, Loader2, Filter } from "lucide-react";
 import { formatBytes } from "../../../utils/formatBytes";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
@@ -10,7 +10,7 @@ import {
   fetchWorkOrderLogs,
 } from "../../../store/workOrders/workOrders.thunks";
 import toast from "react-hot-toast";
-import { User as UserIcon } from "lucide-react"; 
+import { User as UserIcon } from "lucide-react";
 
 const formatCommentDate = (dateString?: string) => {
   if (!dateString) return "";
@@ -31,7 +31,7 @@ interface CommentsSectionProps {
   attachment: File | null;
   setAttachment: (file: File | null) => void;
   fileRef: React.RefObject<HTMLInputElement>;
-  refreshTrigger?: number; 
+  refreshTrigger?: number;
 }
 
 export const CommentsSection = forwardRef<
@@ -52,10 +52,13 @@ export const CommentsSection = forwardRef<
   // ✅ FILTER STATE
   const [filter, setFilter] = useState<'all' | 'comments' | 'logs'>('all');
 
+  // Timer Guard Ref
+  const activeTimers = useRef<Set<string>>(new Set());
+
   // Sync prop changes
   useEffect(() => {
     if (selectedWorkOrder?.comments) {
-        setLocalComments(selectedWorkOrder.comments);
+      setLocalComments(selectedWorkOrder.comments);
     }
   }, [selectedWorkOrder]);
 
@@ -64,19 +67,67 @@ export const CommentsSection = forwardRef<
     if (selectedWorkOrder?.id) {
       if (!refreshTrigger || refreshTrigger === 0) setIsLoading(true);
 
-      Promise.all([
+      // ✅ OPTIMIZATION: Check if data is already available
+      const hasComments = Array.isArray(selectedWorkOrder.comments) && selectedWorkOrder.comments.length > 0;
+
+      const shouldFetchComments = !hasComments;
+      const COMMENTS_LABEL = "COMMENTS_FETCH";
+      const LOGS_LABEL = "LOGS_FETCH";
+
+      if (shouldFetchComments) {
+        if (!activeTimers.current.has(COMMENTS_LABEL)) {
+          try { console.timeEnd(COMMENTS_LABEL); } catch (e) { }
+          console.time(COMMENTS_LABEL);
+          activeTimers.current.add(COMMENTS_LABEL);
+        }
+
         dispatch(fetchWorkOrderComments(selectedWorkOrder.id))
           .unwrap()
-          .then((res) => setLocalComments(res)),
+          .then((res) => setLocalComments(res))
+          .finally(() => {
+            if (activeTimers.current.has(COMMENTS_LABEL)) {
+              try { console.timeEnd(COMMENTS_LABEL); } catch (e) { }
+              activeTimers.current.delete(COMMENTS_LABEL);
+            }
+          });
+      } else {
+        console.log("⚡ [Optimization] Reusing existing comments");
+      }
 
-        dispatch(fetchWorkOrderLogs(selectedWorkOrder.id))
-          .unwrap()
-          .then((res) => {
-            if (Array.isArray(res)) setLocalLogs(res);
-          }),
-      ])
-        .finally(() => setIsLoading(false));
+      // Always fetch logs? Or check if we have them cached in store?
+      // Strict Mode Double-Fetch Guard for Logs
+      if (!activeTimers.current.has(LOGS_LABEL)) {
+        try { console.timeEnd(LOGS_LABEL); } catch (e) { }
+        console.time(LOGS_LABEL);
+        activeTimers.current.add(LOGS_LABEL);
+      }
+
+      dispatch(fetchWorkOrderLogs(selectedWorkOrder.id))
+        .unwrap()
+        .then((res) => {
+          if (Array.isArray(res)) setLocalLogs(res);
+        })
+        .finally(() => {
+          if (activeTimers.current.has(LOGS_LABEL)) {
+            try { console.timeEnd(LOGS_LABEL); } catch (e) { }
+            activeTimers.current.delete(LOGS_LABEL);
+          }
+          setIsLoading(false);
+        });
+
     }
+
+    return () => {
+      // Cleanup
+      if (activeTimers.current.has("COMMENTS_FETCH")) {
+        try { console.timeEnd("COMMENTS_FETCH"); } catch (e) { }
+        activeTimers.current.delete("COMMENTS_FETCH");
+      }
+      if (activeTimers.current.has("LOGS_FETCH")) {
+        try { console.timeEnd("LOGS_FETCH"); } catch (e) { }
+        activeTimers.current.delete("LOGS_FETCH");
+      }
+    };
   }, [dispatch, selectedWorkOrder?.id, refreshTrigger]);
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -104,13 +155,13 @@ export const CommentsSection = forwardRef<
       setComment("");
       setAttachment(null);
       toast.success("Comment added");
-      
+
       // ✅ Switch to comments tab to see new message
       setFilter('comments');
 
       const updatedComments = await dispatch(fetchWorkOrderComments(selectedWorkOrder.id)).unwrap();
       setLocalComments(updatedComments);
-      
+
     } catch (error: any) {
       toast.error(typeof error === "string" ? error : "Failed to send comment");
     } finally {
@@ -120,7 +171,7 @@ export const CommentsSection = forwardRef<
 
   const timelineItems = useMemo(() => {
     const currentLogs = Array.isArray(localLogs) ? localLogs : [];
-    
+
     let items = [
       ...localComments.map((c: any) => ({ ...c, type: "comment" })),
       ...currentLogs.map((l: any) => ({ ...l, type: "log" })),
@@ -218,11 +269,10 @@ export const CommentsSection = forwardRef<
           <button
             key={tab.id}
             onClick={() => setFilter(tab.id as any)}
-            className={`py-3 text-xs font-medium border-b-2 transition-colors ${
-              filter === tab.id 
-                ? 'border-blue-600 text-blue-600' 
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
+            className={`py-3 text-xs font-medium border-b-2 transition-colors ${filter === tab.id
+              ? 'border-blue-600 text-blue-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
           >
             {tab.label}
           </button>
@@ -277,7 +327,7 @@ export const CommentsSection = forwardRef<
                 key={`${item.type}-${item.id || index}`}
                 className="flex gap-3 items-start group"
               >
-                
+
 
                 {/* CONTENT */}
                 <div className="flex-1">
@@ -291,11 +341,10 @@ export const CommentsSection = forwardRef<
                   </div>
 
                   <div
-                    className={`text-sm leading-relaxed w-fit max-w-full break-words ${
-                      isLog
-                        ? "text-gray-700 italic px-1"
-                        : "bg-[#FFFCF5]  shadow-[0_2px_8px_-3px_rgba(234,179,8,0.15)] rounded-lg hover:shadow-[0_4px_12px_-4px_rgba(234,179,8,0.2)] transition-shadow"
-                    }`}
+                    className={`text-sm leading-relaxed w-fit max-w-full break-words ${isLog
+                      ? "text-gray-700 italic px-1"
+                      : "bg-[#FFFCF5]  shadow-[0_2px_8px_-3px_rgba(234,179,8,0.15)] rounded-lg hover:shadow-[0_4px_12px_-4px_rgba(234,179,8,0.2)] transition-shadow"
+                      }`}
                   >
                     {messageText?.split("\n").map((line: string, i: number) => (
                       <p key={i} className="min-h-[1.25rem]">

@@ -10,10 +10,14 @@ import type { FieldData, ProcedureSettingsState } from "./types";
 
 export default function GenerateProcedure({
   onBack,
-  editingProcedureId
+  editingProcedureId,
+  onCreate,
+  onUpdate,
 }: {
-  onBack: () => void,
+  onBack: (proc?: any) => void,
   editingProcedureId: string | null;
+  onCreate?: (proc: any) => void;
+  onUpdate?: (proc: any) => void;
 }) {
   const [openModal, setOpenModal] = useState(false);
   const [builderData, setBuilderData] = useState<{ name: string; desc: string } | null>(null);
@@ -91,6 +95,8 @@ export default function GenerateProcedure({
           onBack={onBack}
           editingProcedureId={editingProcedureId}
           initialState={prefetchedData} // ✅ FIX: Passing initial state for diffing
+          onCreate={onCreate}
+          onUpdate={onUpdate}
         />
       </ProcedureBuilderProvider>
     );
@@ -106,11 +112,12 @@ export default function GenerateProcedure({
         <ProcedureBuilder
           name={builderData.name}
           description={builderData.desc}
-          onBack={() => {
+          onBack={(proc) => {
             setBuilderData(null);
-            onBack();
+            onBack(proc);
           }}
           editingProcedureId={null}
+          onCreate={onCreate}
         />
       </ProcedureBuilderProvider>
     );

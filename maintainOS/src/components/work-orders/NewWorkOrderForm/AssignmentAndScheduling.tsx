@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { Calendar, X } from "lucide-react"; 
-import { fetchFilterData } from "../../utils/filterDataFetcher";
+import { Calendar, X } from "lucide-react";
+// import { fetchFilterData } from "../../utils/filterDataFetcher"; // REMOVED
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import { DynamicSelect } from "./DynamicSelect";
@@ -62,7 +62,7 @@ export const constructSecureISO = (currentIso: string, newDate?: Date, newTimeSt
 
     // Use the new date (which usually comes as 00:00 local from DayPicker)
     d = new Date(newDate);
-    
+
     // Re-apply the preserved time
     d.setHours(currentH, currentM, currentS, 0);
   }
@@ -70,7 +70,7 @@ export const constructSecureISO = (currentIso: string, newDate?: Date, newTimeSt
   // 3. If the user picked a new TIME (from Input)
   if (newTimeStr) {
     const [h, m] = newTimeStr.split(':').map(Number);
-    
+
     if (!isNaN(h) && !isNaN(m)) {
       // Apply the new time to the existing date
       d.setHours(h, m, 0, 0);
@@ -136,7 +136,7 @@ export const TimePickerInput = ({ value, onChange, onClear, className }: TimePic
   return (
     <div
       ref={containerRef}
-      className={className} 
+      className={className}
       style={{ display: "flex", alignItems: "center", position: "relative", cursor: "pointer", paddingRight: "30px" }}
     >
       <div className="flex items-center text-sm text-gray-900 w-full h-full">
@@ -181,7 +181,7 @@ interface Props {
   selectedWorkType: string;
   setSelectedWorkType: (value: string) => void;
   onOpenInviteModal: () => void;
-  recurrenceRule: any; 
+  recurrenceRule: any;
   setRecurrenceRule: (value: any) => void;
   initialAssignees?: { id: string; name: string }[];
   startTime?: string;
@@ -208,22 +208,22 @@ export function AssignmentAndScheduling({
 }: Props) {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [selectedFreq, setSelectedFreq] = useState("");
-  const [users, setUsers] = useState<{ id: string; name: string }[]>(initialAssignees);
-  const [isLoading, setIsLoading] = useState(false);
-  
+  // const [users, setUsers] = useState<{ id: string; name: string }[]>(initialAssignees); // REMOVED local state
+  // const [isLoading, setIsLoading] = useState(false); // REMOVED local state
+
   const [showDueCalendar, setShowDueCalendar] = useState(false);
   const [showStartCalendar, setShowStartCalendar] = useState(false);
   const dueRef = useRef<HTMLDivElement>(null);
   const startRef = useRef<HTMLDivElement>(null);
 
   const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const [selectedWeekDays, setSelectedWeekDays] = useState<number[]>([]); 
+  const [selectedWeekDays, setSelectedWeekDays] = useState<number[]>([]);
   const [monthMode, setMonthMode] = useState<"date" | "weekday">("date");
   const [dayOfMonth, setDayOfMonth] = useState(1);
   const [weekOfMonth, setWeekOfMonth] = useState(1);
-  const [weekdayOfMonth, setWeekdayOfMonth] = useState(1); 
+  const [weekdayOfMonth, setWeekdayOfMonth] = useState(1);
   const [yearInterval, setYearInterval] = useState(1);
-  const monthDaysList = Array.from({length: 31}, (_, i) => i + 1);
+  const monthDaysList = Array.from({ length: 31 }, (_, i) => i + 1);
 
   const workTypes = ["Reactive", "Preventive", "Other"].map(t => ({ id: t, name: t }));
   const recurrenceOptions = ["Does not repeat", "Daily", "Weekly", "Monthly", "Yearly"].map(r => ({ id: r, name: r }));
@@ -235,25 +235,26 @@ export function AssignmentAndScheduling({
   // Sync state if props change
   useEffect(() => {
     if (dueTime || (dueDate && dueDate.includes("T"))) {
-       if(!showDueTimeInput) setShowDueTimeInput(true);
+      if (!showDueTimeInput) setShowDueTimeInput(true);
     }
   }, [dueTime, dueDate]);
 
   useEffect(() => {
     if (startTime || (startDate && startDate.includes("T"))) {
-       if(!showStartTimeInput) setShowStartTimeInput(true);
+      if (!showStartTimeInput) setShowStartTimeInput(true);
     }
   }, [startTime, startDate]);
 
-  useEffect(() => {
-    if (initialAssignees.length > 0) {
-      setUsers((prev) => {
-        const existingIds = new Set(prev.map(u => u.id));
-        const newUsers = initialAssignees.filter(u => !existingIds.has(u.id));
-        return [...prev, ...newUsers];
-      });
-    }
-  }, [initialAssignees]);
+  // REMOVED user syncing effect since we use props directly
+  // useEffect(() => {
+  //   if (initialAssignees.length > 0) {
+  //     setUsers((prev) => {
+  //       const existingIds = new Set(prev.map(u => u.id));
+  //       const newUsers = initialAssignees.filter(u => !existingIds.has(u.id));
+  //       return [...prev, ...newUsers];
+  //     });
+  //   }
+  // }, [initialAssignees]);
 
   // Recurrence Logic
   useEffect(() => {
@@ -262,10 +263,10 @@ export function AssignmentAndScheduling({
         const rule = typeof recurrenceRule === 'string' ? JSON.parse(recurrenceRule) : recurrenceRule;
         const type = rule.type?.toLowerCase();
         if (type === 'daily') setSelectedFreq("Daily");
-        else if (type === 'weekly') { setSelectedFreq("Weekly"); if(rule.daysOfWeek) setSelectedWeekDays(rule.daysOfWeek); }
-        else if (type === 'monthly_by_date') { setSelectedFreq("Monthly"); setMonthMode("date"); if(rule.dayOfMonth) setDayOfMonth(rule.dayOfMonth); }
-        else if (type === 'monthly_by_weekday') { setSelectedFreq("Monthly"); setMonthMode("weekday"); if(rule.weekOfMonth) setWeekOfMonth(rule.weekOfMonth); if(rule.weekdayOfMonth) setWeekdayOfMonth(rule.weekdayOfMonth); }
-        else if (type === 'yearly') { setSelectedFreq("Yearly"); if(rule.intervalYears) setYearInterval(rule.intervalYears); }
+        else if (type === 'weekly') { setSelectedFreq("Weekly"); if (rule.daysOfWeek) setSelectedWeekDays(rule.daysOfWeek); }
+        else if (type === 'monthly_by_date') { setSelectedFreq("Monthly"); setMonthMode("date"); if (rule.dayOfMonth) setDayOfMonth(rule.dayOfMonth); }
+        else if (type === 'monthly_by_weekday') { setSelectedFreq("Monthly"); setMonthMode("weekday"); if (rule.weekOfMonth) setWeekOfMonth(rule.weekOfMonth); if (rule.weekdayOfMonth) setWeekdayOfMonth(rule.weekdayOfMonth); }
+        else if (type === 'yearly') { setSelectedFreq("Yearly"); if (rule.intervalYears) setYearInterval(rule.intervalYears); }
         else setSelectedFreq("Does not repeat");
       } catch (e) { console.error("Failed to parse recurrence rule", e); }
     }
@@ -274,7 +275,7 @@ export function AssignmentAndScheduling({
   useEffect(() => {
     let rule = null;
     if (selectedFreq === "Daily") rule = { type: "daily" };
-    else if (selectedFreq === "Weekly") { if (selectedWeekDays.length > 0) rule = { type: "weekly", daysOfWeek: [...selectedWeekDays].sort((a,b)=>a-b) }; }
+    else if (selectedFreq === "Weekly") { if (selectedWeekDays.length > 0) rule = { type: "weekly", daysOfWeek: [...selectedWeekDays].sort((a, b) => a - b) }; }
     else if (selectedFreq === "Monthly") { if (monthMode === "date") rule = { type: "monthly_by_date", dayOfMonth }; else rule = { type: "monthly_by_weekday", weekOfMonth, weekdayOfMonth }; }
     else if (selectedFreq === "Yearly") rule = { type: "yearly", intervalYears: yearInterval };
     setRecurrenceRule(rule);
@@ -289,14 +290,8 @@ export function AssignmentAndScheduling({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const fetchUsers = async () => {
-    try {
-      setIsLoading(true);
-      const { data } = await fetchFilterData("users");
-      const normalized = Array.isArray(data) && data.length ? data.map((u: any) => ({ id: u.id, name: u.fullName || u.name || "Unnamed User" })) : [];
-      setUsers((prev) => { const existingIds = new Set(prev.map(u => u.id)); return [...prev, ...normalized.filter((u: any) => !existingIds.has(u.id))]; });
-    } catch (err) { console.error("Error fetching users", err); } finally { setIsLoading(false); }
-  };
+  // REMOVED fetchUsers function
+  // const fetchUsers = async () => { ... }
 
   const getYearlyDateLabel = () => {
     if (!startDate) return "the start date";
@@ -344,11 +339,11 @@ export function AssignmentAndScheduling({
         <DynamicSelect
           name="assignees"
           placeholder="Select assignees..."
-          options={users}
-          loading={isLoading}
+          options={initialAssignees} // Use prop directly
+          loading={false} // No local loading
           value={selectedUsers}
           onSelect={(val) => setSelectedUsers(val as string[])}
-          onFetch={fetchUsers}
+          onFetch={() => { }} // No local fetch
           ctaText="+ Invite New Member"
           onCtaClick={onOpenInviteModal}
           activeDropdown={activeDropdown}
@@ -363,35 +358,35 @@ export function AssignmentAndScheduling({
         <h3 className="mb-4 text-base font-medium text-gray-900">Due Date</h3>
         <div style={{ display: "flex", gap: "12px", width: "100%", alignItems: "center" }}>
           <div style={{ position: "relative", flex: 1 }}>
-            <input 
-              type="text" 
-              readOnly 
-              value={getDisplayDate(dueDate)} 
-              onClick={() => setShowDueCalendar(!showDueCalendar)} 
-              placeholder="Select date" 
-              className="w-full h-9 px-3 pr-10 border border-gray-300 rounded-md text-gray-900 text-[13px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white cursor-pointer transition-all shadow-sm placeholder-gray-400" 
+            <input
+              type="text"
+              readOnly
+              value={getDisplayDate(dueDate)}
+              onClick={() => setShowDueCalendar(!showDueCalendar)}
+              placeholder="Select date"
+              className="w-full h-9 px-3 pr-10 border border-gray-300 rounded-md text-gray-900 text-[13px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white cursor-pointer transition-all shadow-sm placeholder-gray-400"
             />
             <div style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
-               <Calendar className="h-4 w-4 text-gray-400" />
+              <Calendar className="h-4 w-4 text-gray-400" />
             </div>
             {showDueCalendar && (
               <div className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl p-4 animate-in fade-in zoom-in-95 duration-100">
-                  <DayPicker 
-                      mode="single" 
-                      selected={safeParseDate(dueDate)} 
-                      onSelect={(date) => date && handleDueDateChange(date)} 
-                  />
+                <DayPicker
+                  mode="single"
+                  selected={safeParseDate(dueDate)}
+                  onSelect={(date) => date && handleDueDateChange(date)}
+                />
               </div>
             )}
           </div>
           {showDueTimeInput ? (
             <div style={{ position: "relative", width: "140px" }}>
-              <TimePickerInput 
+              <TimePickerInput
                 value={getTimeString(dueDate)}
                 onChange={handleDueTimeChange}
-                onClear={() => { 
-                    handleDueTimeChange("00:00"); 
-                    setShowDueTimeInput(false); 
+                onClear={() => {
+                  handleDueTimeChange("00:00");
+                  setShowDueTimeInput(false);
                 }}
                 className="w-full h-9 px-3 border border-gray-300 rounded-md text-gray-900 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all"
               />
@@ -413,35 +408,35 @@ export function AssignmentAndScheduling({
         <h3 className="mb-4 text-base font-medium text-gray-900">Start Date</h3>
         <div style={{ display: "flex", gap: "12px", width: "100%", alignItems: "center" }}>
           <div style={{ position: "relative", flex: 1 }}>
-            <input 
-              type="text" 
-              readOnly 
-              value={getDisplayDate(startDate)} 
-              onClick={() => setShowStartCalendar(!showStartCalendar)} 
-              placeholder="Select date" 
-              className="w-full h-9 px-3 pr-10 border border-gray-300 rounded-md text-gray-900 text-[13px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white cursor-pointer transition-all shadow-sm placeholder-gray-400" 
+            <input
+              type="text"
+              readOnly
+              value={getDisplayDate(startDate)}
+              onClick={() => setShowStartCalendar(!showStartCalendar)}
+              placeholder="Select date"
+              className="w-full h-9 px-3 pr-10 border border-gray-300 rounded-md text-gray-900 text-[13px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white cursor-pointer transition-all shadow-sm placeholder-gray-400"
             />
             <div style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
-               <Calendar className="h-4 w-4 text-gray-400" />
+              <Calendar className="h-4 w-4 text-gray-400" />
             </div>
             {showStartCalendar && (
               <div className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl p-4 animate-in fade-in zoom-in-95 duration-100">
-                  <DayPicker 
-                      mode="single" 
-                      selected={safeParseDate(startDate)} 
-                      onSelect={(date) => date && handleStartDateChange(date)} 
-                  />
+                <DayPicker
+                  mode="single"
+                  selected={safeParseDate(startDate)}
+                  onSelect={(date) => date && handleStartDateChange(date)}
+                />
               </div>
             )}
           </div>
           {showStartTimeInput ? (
             <div style={{ position: "relative", width: "140px" }}>
-              <TimePickerInput 
+              <TimePickerInput
                 value={getTimeString(startDate)}
                 onChange={handleStartTimeChange}
-                onClear={() => { 
-                    handleStartTimeChange("00:00"); 
-                    setShowStartTimeInput(false); 
+                onClear={() => {
+                  handleStartTimeChange("00:00");
+                  setShowStartTimeInput(false);
                 }}
                 className="w-full h-9 px-3 border border-gray-300 rounded-md text-gray-900 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all"
               />
@@ -472,7 +467,7 @@ export function AssignmentAndScheduling({
               setSelectedFreq(val as string);
               if (val === "Monthly") { setMonthMode("date"); setDayOfMonth(1); }
             }}
-            onFetch={() => {}}
+            onFetch={() => { }}
             activeDropdown={activeDropdown}
             setActiveDropdown={setActiveDropdown}
             limitOptions={3} 
@@ -486,7 +481,7 @@ export function AssignmentAndScheduling({
             loading={false}
             value={selectedWorkType}
             onSelect={(val) => setSelectedWorkType(val as string)}
-            onFetch={() => {}}
+            onFetch={() => { }}
             activeDropdown={activeDropdown}
             setActiveDropdown={setActiveDropdown}
             limitOptions={3} 

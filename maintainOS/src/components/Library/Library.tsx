@@ -112,7 +112,35 @@ export function Library() {
     if (!isFormOpen && stateViewMode && (stateViewMode === "panel" || stateViewMode === "table")) {
       setViewMode(stateViewMode);
     }
-  }, [location.state, isFormOpen]);
+
+    // Check for created procedure passed via navigation
+    const createdProc = (location.state as any)?.createdProcedure;
+    if (createdProc && createdProc.id && !isFormOpen) {
+
+      // ✅ Ensure createdAt exists for sorting
+      const procWithDate = {
+        ...createdProc,
+        createdAt: createdProc.createdAt || new Date().toISOString()
+      };
+
+      setProcedures((prev) => {
+        // Avoid duplicates
+        if (prev.some((p) => p.id === procWithDate.id)) {
+          // If it exists but we want to update it (e.g. edit case), we could map it.
+          // But for 'create', it shouldn't exist. 
+          // If it does, let's update it to be safe.
+          return prev.map(p => p.id === procWithDate.id ? procWithDate : p);
+        }
+        return [procWithDate, ...prev];
+      });
+
+      setSelectedProcedure(procWithDate);
+      setShouldSelectFirst(false); // Disable auto-select-first logic to prefer our explicit selection
+
+      // Clear the state so we don't re-process on future renders
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, isFormOpen, navigate]);
 
   // --- OPTIMIZED: Debounce Search Effect ---
   // Only updates the trigger state 'debouncedSearch' after 500ms of inactivity
@@ -261,8 +289,24 @@ export function Library() {
     if (routeId !== proc.id) navigate(`/library/${proc.id}`);
   };
 
-  // ✅ FIX: Read viewMode state when returning from builder
-  const handleBackFromBuilder = useCallback(() => {
+  // ✅ OPTIMISTIC HANDLERS
+  const handleProcedureCreate = (newProc: any) => {
+    setProcedures((prev) => [newProc, ...prev]);
+    // Optional: select the new procedure
+    setSelectedProcedure(newProc);
+  };
+
+  const handleProcedureUpdate = (updatedProc: any) => {
+    setProcedures((prev) => prev.map((p) => p.id === updatedProc.id ? { ...p, ...updatedProc } : p));
+    if (selectedProcedure?.id === updatedProc.id) {
+      setSelectedProcedure((prev: any) => ({ ...prev, ...updatedProc }));
+    }
+    if (modalProcedure?.id === updatedProc.id) {
+      setModalProcedure((prev: any) => ({ ...prev, ...updatedProc }));
+    }
+  };
+
+  const handleBackFromBuilder = useCallback((createdProc?: any) => {
     // Check if we have a specific return path or just go to root
     const returnPath = location.state?.returnPath || "/library";
     // Check if we have a preserved view mode from when we entered edit mode
@@ -271,11 +315,11 @@ export function Library() {
     navigate(returnPath, {
       state: {
         previousFormState: location.state?.previousFormState,
-        previousViewMode: preservedViewMode // Pass it back so Library re-mounts with correct view
+        previousViewMode: preservedViewMode, // Pass it back so Library re-mounts with correct view
+        createdProcedure: createdProc // ✅ Pass created procedure
       }
     });
-    fetchData();
-  }, [location.state, fetchData, navigate]);
+  }, [location.state, navigate]);
 
   const handleModalClose = () => {
     setModalProcedure(null);
@@ -304,6 +348,8 @@ export function Library() {
           <GenerateProcedure
             onBack={handleBackFromBuilder}
             editingProcedureId={isEditMode ? routeId : null}
+            onCreate={handleProcedureCreate}
+            onUpdate={handleProcedureUpdate}
           />
         </div>
       ) : (

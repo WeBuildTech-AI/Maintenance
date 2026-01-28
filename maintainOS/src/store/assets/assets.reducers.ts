@@ -7,6 +7,7 @@ import {
   fetchAssetById,
   fetchAssets,
   updateAsset,
+  fetchFilterData,
 } from "./assets.thunks";
 
 const initialState: AssetsState = {
@@ -105,6 +106,10 @@ const assetsSlice = createSlice({
       .addCase(deleteAsset.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+
+      .addCase(fetchFilterData.fulfilled, (state, action) => {
+        state.filterData = action.payload;
       });
   },
 });

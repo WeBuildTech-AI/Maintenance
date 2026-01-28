@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
-import { useNavigate, useMatch, useLocation } from "react-router-dom";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useNavigate, useMatch, useLocation, useSearchParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { FetchWorkOrdersParams } from "../../store/workOrders/workOrders.types";
+import { type FetchWorkOrdersParams } from "../../store/workOrders/workOrders.types";
 import { fetchWorkOrders } from "../../store/workOrders/workOrders.thunks";
 import { CalendarView } from "./CalendarView";
 import { ListView } from "./ListView";
@@ -30,7 +30,8 @@ export function WorkOrders() {
   });
   const [workloadWeekOffset, setWorkloadWeekOffset] = useState(0);
   const [creatingWorkOrder, setCreatingWorkOrder] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  // const [showSettings, setShowSettings] = useState(false);
+  const [, setShowSettings] = useState(false); // ✅ Unused state value
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
@@ -38,28 +39,36 @@ export function WorkOrders() {
   // ✅ 1. Refresh Key State
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // URL Pagination
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentPage = parseInt(searchParams.get("page") || "1", 10);
+
   const [filterParams, setFilterParams] = useState<FetchWorkOrdersParams>({
-    page: 1,
     limit: 20,
+    // page is now derived from URL
   });
 
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
+  const [meta, setMeta] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [viewingWorkOrder, setViewingWorkOrder] = useState<WorkOrder | null>(null);
 
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const location = useLocation();
-  
+
+  // Timer Guard Ref
+  const activeTimers = useRef<Set<string>>(new Set());
+
   // Get prefill data from navigation state (from Assets offline prompt)
   const prefillData = (location.state as any)?.prefillData;
 
   const isCreateRoute = useMatch("/work-orders/create");
-  const editMatch = useMatch("/work-orders/:id/edit");
+  // const editMatch = useMatch("/work-orders/:id/edit"); // Unused
   const viewMatch = useMatch("/work-orders/:id");
 
-  const isEditMode = !!editMatch;
-  const editingId = editMatch?.params?.id;
+  // const isEditMode = !!editMatch; // Unused
+  // const editingId = editMatch?.params?.id; // Unused
   const viewingId = viewMatch?.params?.id;
 
   // Debounce Search
@@ -88,48 +97,88 @@ export function WorkOrders() {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
+      const TIMER_LABEL = "WORK_ORDER_LIST_API";
       try {
         let result: any;
         const apiPayload = {
           ...filterParams,
+          page: currentPage, // ✅ Use URL page
           title: debouncedSearch || undefined,
         };
 
-        console.log("🔥 WorkOrders API Call:", apiPayload);
+        // Guarded Timer Start
+        if (!activeTimers.current.has(TIMER_LABEL)) {
+          // Try to end it first just in case (e.g. strict mode fast remount)
+          try { console.timeEnd(TIMER_LABEL); } catch (e) { }
+          console.time(TIMER_LABEL);
+          activeTimers.current.add(TIMER_LABEL);
+        }
 
         if (showDeleted) {
           result = await workOrderService.fetchDeleteWorkOrder();
-        } else {
-          result = await dispatch(fetchWorkOrders(apiPayload)).unwrap();
-        }
-
-        if (Array.isArray(result)) {
-          // @ts-ignore
-          setWorkOrders(result);
-
-          // 🔥 REAL-TIME UPDATE FIX:
-          if (selectedWorkOrder) {
-            const freshData = result.find(
-              (w: any) => w.id === selectedWorkOrder.id
-            );
-            if (freshData) {
-              // @ts-ignore
-              setSelectedWorkOrder(freshData);
-            }
+          // Deleted endpoint might return array directly or object
+          if (Array.isArray(result)) {
+            setWorkOrders(result);
+            setMeta(null);
+          } else if (result?.data) {
+            setWorkOrders(result.data);
+            setMeta(result.meta);
           }
         } else {
-          setWorkOrders([]);
+          result = await dispatch(fetchWorkOrders(apiPayload)).unwrap();
+
+          if (result && result.data) {
+            // @ts-ignore
+            setWorkOrders(result.data);
+            setMeta(result.meta);
+
+            // 🔥 REAL-TIME UPDATE FIX:
+            if (selectedWorkOrder) {
+              const freshData = result.data.find(
+                (w: any) => w.id === selectedWorkOrder.id
+              );
+              if (freshData) {
+                // @ts-ignore
+                setSelectedWorkOrder((prev) => (prev ? { ...prev, ...freshData } : freshData));
+              }
+            }
+
+          } else if (Array.isArray(result)) {
+            // Fallback for old thunk/service behavior
+            // @ts-ignore
+            setWorkOrders(result);
+            setMeta({ totalItems: result.length, totalPages: 1, currentPage: 1 });
+          } else {
+            setWorkOrders([]);
+            setMeta(null);
+          }
         }
+
       } catch (error) {
         console.error("❌ Error fetching work orders:", error);
         setWorkOrders([]);
       } finally {
+        // Guarded Timer End
+        if (activeTimers.current.has(TIMER_LABEL)) {
+          try { console.timeEnd(TIMER_LABEL); } catch (e) { }
+          activeTimers.current.delete(TIMER_LABEL);
+        }
         setLoading(false);
       }
     };
 
     loadData();
-  }, [dispatch, filterParams, debouncedSearch, refreshKey, showDeleted]);
+
+    // Cleanup to ensure timer is cleared if unmounted
+    return () => {
+      // We can't easily access the local variable TIMER_LABEL here unless we define it outside 
+      // or use the literal.
+      if (activeTimers.current.has("WORK_ORDER_LIST_API")) {
+        try { console.timeEnd("WORK_ORDER_LIST_API"); } catch (e) { }
+        activeTimers.current.delete("WORK_ORDER_LIST_API");
+      }
+    };
+  }, [dispatch, filterParams, debouncedSearch, refreshKey, showDeleted, currentPage]); // ✅ Added currentPage
 
   // Stable Callback for Filters & Pagination
   const handleFilterChange = useCallback(
@@ -145,6 +194,10 @@ export function WorkOrders() {
     []
   );
 
+  const handlePageChange = (newPage: number) => {
+    setSearchParams({ page: newPage.toString() });
+  };
+
   // ✅ 3. Update Handle Refresh Function
   const handleRefreshWorkOrders = useCallback(() => {
     console.log("🔄 Refreshing Work Orders List...");
@@ -154,20 +207,51 @@ export function WorkOrders() {
   // ✅ Fetch Work Order for Detail View when URL changes
   useEffect(() => {
     const fetchViewingWorkOrder = async () => {
-      if (viewingId && viewingId !== selectedWorkOrder?.id) {
+      console.log("🔍 [WorkOrders] viewingId:", viewingId, "selectedWorkOrder:", selectedWorkOrder?.id);
+
+      // ✅ FIX: Prevent "create" or "edit" from being treated as work order IDs
+      if (viewingId && viewingId !== "create" && viewingId !== "edit") {
+
+        // 1️⃣ CHECK EXISTING STATE (Single-Call Rule)
+        // If we already have the full object in state, reuse it!
+        if (selectedWorkOrder?.id === viewingId) {
+          console.log("⚡ [Optimization] Reusing selectedWorkOrder from state:", viewingId);
+          setViewingWorkOrder(selectedWorkOrder);
+          return;
+        }
+
+        // 2️⃣ CHECK LIST DATA
+        // If the item exists in the fetched list, use it first (optimistic load)
+        const cachedItem = workOrders.find((w) => w.id === viewingId);
+        if (cachedItem) {
+          console.log("⚡ [Optimization] Reusing work order from list:", viewingId);
+          setViewingWorkOrder(cachedItem);
+          // Note: If list item is "summary", we might still want to fetch details. 
+          // But per "Single-Call Rule", if list data is sufficient for initial view, we stop here.
+          // If Comments/Logs are missing, components like CommentsSection should handle their own lazy fetching.
+          return;
+        }
+
+        // 3️⃣ FETCH IF NOT FOUND
+        console.time("WORK_ORDER_DETAIL_API");
+        console.log("🔵 [WorkOrders] Fetching work order:", viewingId);
         try {
           const wo = await workOrderService.fetchWorkOrderById(viewingId);
-          setViewingWorkOrder(wo);
+          console.timeEnd("WORK_ORDER_DETAIL_API");
+          console.log("✅ [WorkOrders] Fetched work order:", wo?.id);
+          setViewingWorkOrder(wo as unknown as WorkOrder);
         } catch (err) {
-          console.error("Failed to fetch work order", err);
+          console.error("❌ [WorkOrders] Failed to fetch work order", err);
           navigate("/work-orders");
         }
-      } else if (!viewingId) {
+      } else if (!viewingId || viewingId === "create" || viewingId === "edit") {
+        console.log("🟡 [WorkOrders] Clearing viewingWorkOrder (viewingId:", viewingId, ")");
         setViewingWorkOrder(null);
+        setSelectedWorkOrder(null); // ✅ Clear selectedWorkOrder when navigating to root
       }
     };
     fetchViewingWorkOrder();
-  }, [viewingId]);
+  }, [viewingId, selectedWorkOrder, workOrders]);
 
   // ✅ Handle create route - open modal for list/calendar, set flag for TODO
   useEffect(() => {
@@ -185,11 +269,11 @@ export function WorkOrders() {
   }, [isCreateRoute, viewMode]);
 
   // ... (Assign/Edit/Create Handlers) ...
-  const handleCreateClick = () => {
-    navigate("/work-orders/create");
-    setCreatingWorkOrder(true);
-    setIsModalOpen(false);
-  };
+  // const handleCreateClick = () => {
+  //   navigate("/work-orders/create");
+  //   setCreatingWorkOrder(true);
+  //   setIsModalOpen(false);
+  // };
   const handleCancelCreate = () => {
     navigate("/work-orders");
     setCreatingWorkOrder(false);
@@ -250,9 +334,35 @@ export function WorkOrders() {
               onCancelCreate={handleCancelCreate}
               onRefreshWorkOrders={handleRefreshWorkOrders}
               // ✅ PASSING PAGINATION PROPS
-              currentPage={filterParams.page || 1}
-              itemsPerPage={filterParams.limit || 20}
-              onParamsChange={handleFilterChange}
+              pagination={{
+                currentPage: currentPage,
+                totalPages: meta?.totalPages || 1,
+                totalItems: meta?.totalItems || 0,
+                itemsPerPage: Number(filterParams.limit) || 20
+              }}
+              onPageChange={handlePageChange}
+
+              // ✅ OPTIMISTIC UPDATES
+              onWorkOrderCreate={(newWo) => {
+                setWorkOrders((prev) => [newWo, ...prev]);
+                setSelectedWorkOrder(newWo);
+                setCreatingWorkOrder(false);
+                navigate(`/work-orders/${newWo.id}`);
+              }}
+              onWorkOrderUpdate={(updatedWo) => {
+                setWorkOrders((prev) => prev.map((wo) => wo.id === updatedWo.id ? { ...wo, ...updatedWo } : wo));
+                if (selectedWorkOrder?.id === updatedWo.id) {
+                  // ✅ Merge update to preserve expanded relations (assets, parts, etc)
+                  setSelectedWorkOrder((prev: any) => (prev ? { ...prev, ...updatedWo } : updatedWo));
+                }
+              }}
+              onOptimisticUpdate={(id: string, patch: any) => {
+                setWorkOrders((prev) => prev.map((wo) => wo.id === id ? { ...wo, ...patch } : wo));
+                if (selectedWorkOrder?.id === id) {
+                  // @ts-ignore
+                  setSelectedWorkOrder((prev) => (prev ? { ...prev, ...patch } : null));
+                }
+              }}
             />
           )}
 
@@ -289,8 +399,8 @@ export function WorkOrders() {
         prefillData={prefillData}
       />
 
-      {/* ✅ Work Order Detail Modal (for List/Calendar View) */}
-      {viewingWorkOrder && (
+      {/* ✅ Work Order Detail Modal (for List/Calendar View ONLY - not ToDo) */}
+      {viewingWorkOrder && viewMode !== "todo" && (
         <WorkOrderDetailModal
           open={!!viewingWorkOrder}
           onClose={() => {

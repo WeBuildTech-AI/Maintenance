@@ -83,20 +83,18 @@ export function MeterCard({
         setShowReadingMeter(false);
       }}
       // ✅ Consistent Yellow Theme Styling
-      className={`cursor-pointer border rounded-lg p-3 mb-3 transition-all duration-200 hover:shadow-md ${
-        isSelected
+      className={`cursor-pointer border rounded-lg p-3 mb-3 transition-all duration-200 hover:shadow-md ${isSelected
           ? "border-yellow-400 bg-yellow-50 ring-1 ring-yellow-400"
           : "border-gray-200 bg-white hover:border-yellow-200"
-      }`}
+        }`}
     >
       <div className="flex items-start gap-4">
         {/* ✅ Icon Wrapper: Circular with Gauge Icon */}
         <div
-          className={`h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-full border ${
-            isSelected
+          className={`h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-full border ${isSelected
               ? "bg-white border-yellow-200 text-yellow-600"
               : "bg-gray-50 border-gray-100 text-gray-500"
-          }`}
+            }`}
         >
           {/* Use Initials if available, else generic Gauge icon */}
           {renderInitials(meter.name) ? (
@@ -125,26 +123,29 @@ export function MeterCard({
           </div>
 
           {/* Row 2: Location / Asset Info */}
-          <div className="mt-1 flex justify-between item-center  space-y-0.5">
+          <div className="mt-1 flex flex-col gap-1">
             {meter.asset && (
-              <div className="flex items-center gap-1.5 text-sm text-gray-500 truncate">
-                <Building2 size={12} className="text-gray-400" />
-                <span>{meter.asset.name}</span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Building2 size={12} className="text-gray-400 flex-shrink-0" />
+                <span className="text-xs text-gray-500 truncate" title={meter.asset.name}>
+                  {meter.asset.name}
+                </span>
               </div>
             )}
             {meter.location && (
-              <div className="flex items-center gap-1.5 text-sm mt-1 text-xs text-gray-500 truncate">
-                <MapPin size={12} className="text-gray-400" />
-                <span>{meter.location.name}</span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <MapPin size={12} className="text-gray-400 flex-shrink-0" />
+                <span className="text-xs text-gray-500 truncate" title={meter.location.name}>
+                  {meter.location.name}
+                </span>
               </div>
             )}
           </div>
 
           {/* Row 3: Next Reading Footer */}
           <div
-            className={`mt-2 pt-4 border-t border-dashed flex items-center gap-2 text-xs font-medium ${
-              isSelected ? "border-yellow-200" : "border-gray-100"
-            }`}
+            className={`mt-2 pt-4 border-t border-dashed flex items-center gap-2 text-xs font-medium ${isSelected ? "border-yellow-200" : "border-gray-100"
+              }`}
           >
             <CalendarClock
               size={13}
