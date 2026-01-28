@@ -604,6 +604,9 @@ export function NewWorkOrderForm({
       if (recurrenceRule) {
         const rule = typeof recurrenceRule === 'string' ? JSON.parse(recurrenceRule) : recurrenceRule;
         formState.recurrenceRule = rule;
+      } else {
+        // ✅ Explicitly send null if no recurrence rule (handles "Does not repeat" case)
+        formState.recurrenceRule = null;
       }
 
       setLoading(true);
