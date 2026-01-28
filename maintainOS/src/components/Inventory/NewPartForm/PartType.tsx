@@ -82,6 +82,8 @@ const PartType = ({
         name="part_type"
         activeDropdown={activeDropdown}
         setActiveDropdown={setActiveDropdown}
+        limitOptions={3}
+
       />
     </section>
   );

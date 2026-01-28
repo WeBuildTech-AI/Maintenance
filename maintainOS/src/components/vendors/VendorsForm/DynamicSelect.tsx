@@ -59,6 +59,7 @@ interface DynamicSelectProps {
   name: string;
   activeDropdown: string | null;
   setActiveDropdown: (name: string | null) => void;
+   limitOptions?: number;
 }
 
 export function DynamicSelect({
@@ -74,6 +75,7 @@ export function DynamicSelect({
   name,
   activeDropdown,
   setActiveDropdown,
+  limitOptions = 3,
 }: DynamicSelectProps) {
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 
@@ -118,17 +120,26 @@ export function DynamicSelect({
     }
   };
 
+  // //---?
   const toggleOption = (id: string) => {
     if (isMulti) {
-      const newSelected = value.includes(id)
-        ? value.filter((v) => v !== id)
-        : [...value, id];
+      const arr = value as string[];
+
+      let newSelected: string[];
+
+      if (arr.includes(id)) {
+        newSelected = arr.filter(v => v !== id);
+      } else {
+        newSelected = [...new Set([...arr, id])]; // ✅ REMOVE DUPLICATES
+      }
+
       onSelect(newSelected);
     } else {
       onSelect(id);
       setActiveDropdown(null);
     }
   };
+  // //--?
 
   const selectedOptions = isMulti
     ? options.filter((opt) => value.includes(opt.id))
@@ -152,9 +163,12 @@ export function DynamicSelect({
               <Badge
                 key={option.id}
                 variant="secondary"
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 flex-wrap max-w-full"
               >
-                {option.name}
+                <span className="whitespace-normal break-words">
+                  {option.name}
+                </span>
+                
                 {isMulti && (
                   <button
                     className="ml-1 rounded-full outline-none"
@@ -182,8 +196,9 @@ export function DynamicSelect({
 
       {open && (
         <div
-          onMouseDown={(e) => e.stopPropagation()} // ✅ prevent premature close
-          className="absolute top-full mt-1 w-full rounded-md border bg-white z-20 max-h-60 overflow-y-auto shadow-lg"
+          onMouseDown={(e) => e.stopPropagation()}
+          className="absolute top-full mt-1 w-full rounded-md border bg-white z-20 overflow-y-auto shadow-lg"
+          style={{ maxHeight: `${limitOptions * 40}px` }} // ✅ 3 items height
         >
           {loading ? (
             <div className="flex justify-center items-center p-4">

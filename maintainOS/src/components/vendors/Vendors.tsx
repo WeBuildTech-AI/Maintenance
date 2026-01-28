@@ -22,6 +22,26 @@ import VendorDetails from "./VendorDetails/VendorDetails";
 import { VendorTable } from "./VendorTable";
 import { EmptyState } from "../Inventory/EmptyState"; // Reuse EmptyState
 
+
+// Helper: Sort Label for Vendors (UI Mapping)
+const getSortLabel = (type: string, order: "asc" | "desc") => {
+  if (type === "Creation Date") {
+    return order === "asc" ? "Oldest First" : "Newest First";
+  }
+
+  if (type === "Last Updated") {
+    return order === "asc" ? "Least Recent First" : "Most Recent First";
+  }
+
+  if (type === "Name") {
+    return order === "asc" ? "Ascending Order" : "Descending Order";
+  }
+
+  return order === "asc" ? "Ascending Order" : "Descending Order";
+};
+
+
+
 export function Vendors() {
   const [vendors, setVendors] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<"panel" | "table">("panel");
@@ -256,8 +276,8 @@ export function Vendors() {
                   onClick={() => setIsDropdownOpen((p) => !p)}
                   className="flex items-center gap-1 text-blue-600 font-medium focus:outline-none hover:text-blue-700"
                 >
-                  {sortType} :{" "}
-                  {sortOrder === "asc" ? "Asc" : "Desc"}
+                  {sortType} : {getSortLabel(sortType, sortOrder)}
+
                   {isDropdownOpen ? (
                     <ChevronUp className="w-4 h-4" />
                   ) : (

@@ -47,9 +47,13 @@ import { CommentsSection } from "../../ToDoView/CommentsSection";
 import { NewWorkOrderForm } from "../../NewWorkOrderForm/NewWorkOrderFrom";
 import { LinkedProcedurePreview } from "../../ToDoView/LinkedProcedurePreview"; // Ensure this path is correct
 import { procedureService } from "../../../../store/procedures/procedures.service"; // Import Service
+
+import { formatLabel } from "../../../utils/asset_formater";
+
 import { DynamicSelect } from "../../NewWorkOrderForm/DynamicSelect";
 import { WorkOrderAssetStatusModal } from "../../NewWorkOrderForm/WorkOrderAssetStatusModal";
 import { assetService } from "../../../../store/assets/assets.service";
+
 
 // --- HELPER FUNCTIONS ---
 
@@ -616,7 +620,8 @@ export default function WorkOrderDetailModal({
             </div>
             <div className="mt-2.5 flex gap-4 text-sm text-gray-500 pb-2">
               <span className="flex items-center gap-1">
-                <Repeat size={14} /> {safeRender(workOrder.priority)}
+                <Repeat size={14} /> {formatLabel(workOrder.priority)}
+
               </span>
               <span className="flex items-center gap-1">
                 <CalendarDays size={14} /> Due by{" "}

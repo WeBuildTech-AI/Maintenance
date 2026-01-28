@@ -1,20 +1,20 @@
-// NewPartForm.tsx
-"use client";
+  // NewPartForm.tsx
+  "use client";
 
-import * as React from "react";
-import { useDispatch, useSelector } from "react-redux";
-import type { AppDispatch, RootState } from "../../../store";
-import { createPart, updatePart } from "../../../store/parts/parts.thunks";
-import { PartHeader } from "./PartHeader";
-import { PartBasicDetails } from "./PartBasicDetails";
-import { PartQRCodeSection } from "./PartQRCodeSection";
-import { PartLocationSection } from "./PartLocationSection";
-import { PartFilesSection } from "./PartFilesSection";
-import { PartFooter } from "./PartFooter";
-import PartType from "./PartType";
-import toast from "react-hot-toast";
-import PartVendorsSection from "./PartVendorsSection";
-import type { BUD } from "../../utils/BlobUpload";
+  import * as React from "react";
+  import { useDispatch, useSelector } from "react-redux";
+  import type { AppDispatch, RootState } from "../../../store";
+  import { createPart, updatePart } from "../../../store/parts/parts.thunks";
+  import { PartHeader } from "./PartHeader";
+  import { PartBasicDetails } from "./PartBasicDetails";
+  import { PartQRCodeSection } from "./PartQRCodeSection";
+  import { PartLocationSection } from "./PartLocationSection";
+  import { PartFilesSection } from "./PartFilesSection";
+  import { PartFooter } from "./PartFooter";
+  import PartType from "./PartType";
+  import toast from "react-hot-toast";
+  import PartVendorsSection from "./PartVendorsSection";
+  import type { BUD } from "../../utils/BlobUpload";
 
 export function NewPartForm({
   newItem,
@@ -33,26 +33,26 @@ export function NewPartForm({
 }) {
   const dispatch = useDispatch<AppDispatch>();
 
-  const organizationId = useSelector(
-    (state: RootState) => state.auth?.user?.organizationId
-  );
+    const organizationId = useSelector(
+      (state: RootState) => state.auth?.user?.organizationId
+    );
 
-  const [partImages, setPartImages] = React.useState<BUD[]>([]);
-  const [partDocs, setPartDocs] = React.useState<BUD[]>([]);
+    const [partImages, setPartImages] = React.useState<BUD[]>([]);
+    const [partDocs, setPartDocs] = React.useState<BUD[]>([]);
 
-  const handleBlobChange = (data: { formId: string; buds: BUD[] }) => {
-    if (data.formId === "part_images") {
-      setPartImages(data.buds);
-    } else if (data.formId === "part_docs") {
-      setPartDocs(data.buds);
-    }
-  };
+    const handleBlobChange = (data: { formId: string; buds: BUD[] }) => {
+      if (data.formId === "part_images") {
+        setPartImages(data.buds);
+      } else if (data.formId === "part_docs") {
+        setPartDocs(data.buds);
+      }
+    };
 
-  // Sync images/docs from newItem (Edit Mode)
-  React.useEffect(() => {
-    if (newItem?.partImages) setPartImages(newItem.partImages);
-    if (newItem?.partDocs) setPartDocs(newItem.partDocs);
-  }, [newItem?.partImages, newItem?.partDocs]);
+    // Sync images/docs from newItem (Edit Mode)
+    React.useEffect(() => {
+      if (newItem?.partImages) setPartImages(newItem.partImages);
+      if (newItem?.partDocs) setPartDocs(newItem.partDocs);
+    }, [newItem?.partImages, newItem?.partDocs]);
 
   // Normalize Data on Load (Pre-fill Locations, Assets, etc.)
   React.useEffect(() => {
@@ -80,37 +80,37 @@ export function NewPartForm({
             ? [prev.partsType]
             : [],
 
-        // Map Location Data to Top-Level Fields for Inputs
-        locationId:
-          prev.locationId || firstLoc?.locationId || firstLoc?.id || "",
-        area: prev.area || firstLoc?.area || "",
-        unitInStock: prev.unitInStock ?? firstLoc?.unitsInStock ?? 0,
-        minInStock: prev.minInStock ?? firstLoc?.minimumInStock ?? 0,
-      };
-    });
-  }, [newItem?.id, setNewItem]);
+          // Map Location Data to Top-Level Fields for Inputs
+          locationId:
+            prev.locationId || firstLoc?.locationId || firstLoc?.id || "",
+          area: prev.area || firstLoc?.area || "",
+          unitInStock: prev.unitInStock ?? firstLoc?.unitsInStock ?? 0,
+          minInStock: prev.minInStock ?? firstLoc?.minimumInStock ?? 0,
+        };
+      });
+    }, [newItem?.id, setNewItem]);
 
-  // ✅ HELPER: Compare Arrays (Order doesn't matter)
-  const areArraysEqual = (arr1: any[], arr2: any[]) => {
-    if (!Array.isArray(arr1) || !Array.isArray(arr2)) return false;
-    if (arr1.length !== arr2.length) return false;
-    const sorted1 = [...arr1].sort();
-    const sorted2 = [...arr2].sort();
-    return JSON.stringify(sorted1) === JSON.stringify(sorted2);
-  };
+    // ✅ HELPER: Compare Arrays (Order doesn't matter)
+    const areArraysEqual = (arr1: any[], arr2: any[]) => {
+      if (!Array.isArray(arr1) || !Array.isArray(arr2)) return false;
+      if (arr1.length !== arr2.length) return false;
+      const sorted1 = [...arr1].sort();
+      const sorted2 = [...arr2].sort();
+      return JSON.stringify(sorted1) === JSON.stringify(sorted2);
+    };
 
-  const handleSubmitPart = async () => {
-    try {
-      const isEditing = !!newItem.id;
-      const original = newItem._original || {}; // The original data before editing
+    const handleSubmitPart = async () => {
+      try {
+        const isEditing = !!newItem.id;
+        const original = newItem._original || {}; // The original data before editing
 
-      // 1. Prepare Current Values (Cleaned)
-      const currentUnitCost = newItem.unitCost ? Number(newItem.unitCost) : 0;
-      const currentQrCode = newItem.qrCode
-        ? newItem.qrCode.startsWith("part/")
-          ? newItem.qrCode
-          : `part/${newItem.qrCode}`
-        : "";
+        // 1. Prepare Current Values (Cleaned)
+        const currentUnitCost = newItem.unitCost ? Number(newItem.unitCost) : 0;
+        const currentQrCode = newItem.qrCode
+          ? newItem.qrCode.startsWith("part/")
+            ? newItem.qrCode
+            : `part/${newItem.qrCode}`
+          : "";
 
       // Arrays
       const currentPartsType = Array.isArray(newItem.partsType) ? newItem.partsType : [];
@@ -122,18 +122,18 @@ export function NewPartForm({
       const currentImages = Array.isArray(partImages) ? partImages : [];
       const currentDocs = Array.isArray(partDocs) ? partDocs : [];
 
-      // ---------------------------------------------------------
-      // 🛠️ FIXED LOCATIONS LOGIC
-      // ---------------------------------------------------------
-      // Capture the PRIMARY location from the flat form fields (updated by PartLocationSection)
-      const primaryLocationUpdate = {
-        locationId: newItem.locationId || "",
-        area: newItem.area || "",
-        unitsInStock: Number(newItem.unitInStock ?? 0),
-        minimumInStock: Number(newItem.minInStock ?? 0),
-      };
+        // ---------------------------------------------------------
+        // 🛠️ FIXED LOCATIONS LOGIC
+        // ---------------------------------------------------------
+        // Capture the PRIMARY location from the flat form fields (updated by PartLocationSection)
+        const primaryLocationUpdate = {
+          locationId: newItem.locationId || "",
+          area: newItem.area || "",
+          unitsInStock: Number(newItem.unitInStock ?? 0),
+          minimumInStock: Number(newItem.minInStock ?? 0),
+        };
 
-      let currentLocations: any[] = [];
+        let currentLocations: any[] = [];
 
       if (newItem.locations && newItem.locations.length > 0) {
         // If locations exist, we update the FIRST one with the flat form data
@@ -161,20 +161,57 @@ export function NewPartForm({
         }
       }
 
-      // ---------------------------------------------------------
-      // 🛠️ BUILD PAYLOAD (ONLY CHANGED FIELDS)
-      // ---------------------------------------------------------
-      const payload: any = {};
+          // --- Simple Arrays (Asset, Teams, Types, Vendors) ---
+          if (!areArraysEqual(currentPartsType, original.partsType || [])) {
+            payload.partsType = currentPartsType;
+          }
+          
+          // Check Asset IDs
+          const originalAssetIds = original.assets?.map((a: any) => a.id) || original.assetIds || [];
+          if (!areArraysEqual(currentAssetIds, originalAssetIds)) {
+            payload.assetIds = currentAssetIds;
+          }
 
-      if (isEditing) {
-        // --- Basic Fields ---
-        if (newItem.name !== original.name) payload.name = newItem.name;
-        if (newItem.description !== original.description) payload.description = newItem.description;
-        if (currentUnitCost !== (original.unitCost || 0)) payload.unitCost = currentUnitCost;
-        if (currentQrCode !== (original.qrCode || "")) payload.qrCode = currentQrCode;
+          // Check Team IDs
+          const originalTeamIds = original.teams?.map((t: any) => t.id) || original.teamsInCharge || [];
+          if (!areArraysEqual(currentTeams, originalTeamIds)) {
+            payload.teamsInCharge = currentTeams;
+          }
 
-        // --- Simple Arrays (Asset, Teams, Types, Vendors) ---
-        if (!areArraysEqual(currentPartsType, original.partsType || [])) {
+          // Check Vendor IDs
+          const originalVendorIds = original.vendors?.map((v: any) => v.id) || original.vendorIds || [];
+          if (!areArraysEqual(currentVendorIds, originalVendorIds)) {
+            payload.vendorIds = currentVendorIds;
+          }
+
+          // --- Complex Objects (Locations) ---
+          const originalLocsMapped = (original.locations || []).map((loc: any) => ({
+              locationId: loc.locationId || loc.id,
+              area: loc.area || "",
+              unitsInStock: Number(loc.unitsInStock ?? 0),
+              minimumInStock: Number(loc.minimumInStock ?? 0),
+          }));
+          
+          // Compare constructed currentLocations vs original
+          if (JSON.stringify(currentLocations) !== JSON.stringify(originalLocsMapped)) {
+              payload.locations = currentLocations;
+          }
+
+          // --- Files (Images / Docs) ---
+          if (JSON.stringify(currentImages) !== JSON.stringify(original.partImages || [])) {
+            payload.partImages = currentImages;
+          }
+          if (JSON.stringify(currentDocs) !== JSON.stringify(original.partDocs || [])) {
+            payload.partDocs = currentDocs;
+          }
+
+        } else {
+          // --- CREATE MODE: Send Everything ---
+          payload.organizationId = organizationId || "";
+          payload.name = newItem.name;
+          payload.description = newItem.description || "";
+          payload.unitCost = currentUnitCost;
+          payload.qrCode = currentQrCode;
           payload.partsType = currentPartsType;
         }
 
@@ -182,18 +219,11 @@ export function NewPartForm({
         const originalAssetIds = original.assets?.map((a: any) => a.id) || original.assetIds || [];
         if (!areArraysEqual(currentAssetIds, originalAssetIds)) {
           payload.assetIds = currentAssetIds;
-        }
-
-        // Check Team IDs
-        const originalTeamIds = original.teams?.map((t: any) => t.id) || original.teamsInCharge || [];
-        if (!areArraysEqual(currentTeams, originalTeamIds)) {
           payload.teamsInCharge = currentTeams;
-        }
-
-        // Check Vendor IDs
-        const originalVendorIds = original.vendors?.map((v: any) => v.id) || original.vendorIds || [];
-        if (!areArraysEqual(currentVendorIds, originalVendorIds)) {
           payload.vendorIds = currentVendorIds;
+          payload.locations = currentLocations;
+          payload.partImages = currentImages;
+          payload.partDocs = currentDocs;
         }
 
         // --- Complex Objects (Locations) ---
@@ -217,21 +247,12 @@ export function NewPartForm({
           payload.partDocs = currentDocs;
         }
 
-      } else {
-        // --- CREATE MODE: Send Everything ---
-        payload.organizationId = organizationId || "";
-        payload.name = newItem.name;
-        payload.description = newItem.description || "";
-        payload.unitCost = currentUnitCost;
-        payload.qrCode = currentQrCode;
-        payload.partsType = currentPartsType;
-        payload.assetIds = currentAssetIds;
-        payload.teamsInCharge = currentTeams;
-        payload.vendorIds = currentVendorIds;
-        payload.locations = currentLocations;
-        payload.partImages = currentImages;
-        payload.partDocs = currentDocs;
+        onCreate();
+      } catch (error: any) {
+        console.error("❌ Error saving part:", error);
+        toast.error(error?.message || "Failed to save part");
       }
+    };
 
       // 🛑 Final Safety Check: If Edit Mode and Payload is empty, warn user
       if (isEditing && Object.keys(payload).length === 0) {
@@ -284,13 +305,12 @@ export function NewPartForm({
             removeVendorRow={removeVendorRow}
           />
         </div>
+        <PartFooter
+          onCancel={onCancel}
+          onCreate={handleSubmitPart}
+          disabled={!newItem.name}
+          isEditing={!!newItem.id}
+        />
       </div>
-      <PartFooter
-        onCancel={onCancel}
-        onCreate={handleSubmitPart}
-        disabled={!newItem.name}
-        isEditing={!!newItem.id}
-      />
-    </div>
-  );
-}
+    );
+  }

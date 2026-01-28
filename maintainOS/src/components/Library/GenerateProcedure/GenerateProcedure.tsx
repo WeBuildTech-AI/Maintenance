@@ -135,8 +135,37 @@ export default function GenerateProcedure({
           alignItems: "center",
           justifyContent: "center",
           overflow: "hidden",
+          position: "relative", // Needed for absolute positioning of header
         }}
       >
+        {/* HEADER WITH BUTTONS */}
+        <div
+          style={{
+            position: "absolute",
+            top: 20,
+            left: 20,
+            display: "flex",
+            gap: "12px",
+            zIndex: 10
+          }}
+        >
+          <button
+            onClick={onBack}
+            style={{
+              background: "#fff",
+              border: "1px solid #d1d5db",
+              borderRadius: "6px",
+              padding: "8px 16px",
+              cursor: "pointer",
+              color: "#374151",
+              fontSize: "0.9rem",
+              fontWeight: 500,
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+
         <div
           style={{
             display: "grid",

@@ -32,6 +32,24 @@ import {
 import toast, { Toaster } from "react-hot-toast";
 import LocationDetails from "./LocationDetails";
 import SubLocation from "./SubLocation";
+import { DiscardChangesModal } from "../work-orders/ToDoView/DiscardChangesModal";
+
+
+const getSortLabel = (type: string, order: "asc" | "desc") => {
+  if (type === "Creation Date") {
+    return order === "asc" ? "Oldest First" : "Newest First";
+  }
+
+  if (type === "Last Updated") {
+    return order === "asc" ? "Least Recent First" : "Most Recent First";
+  }
+
+  if (type === "Name") {
+    return order === "asc" ? "Ascending Order" : "Descending Order";
+  }
+
+  return order === "asc" ? "Ascending Order" : "Descending Order";
+};
 
 export function Locations() {
   const dispatch = useDispatch<AppDispatch>();
@@ -78,7 +96,7 @@ export function Locations() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   const user = useSelector((state: RootState) => state.auth.user);
-
+  
   // Sorting State
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [sortType, setSortType] = useState("Creation Date");
@@ -88,8 +106,38 @@ export function Locations() {
   const headerRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
+
+  //
   const [showDeleted, setShowDeleted] = useState(false);
   const [showSubLocation, setShowSubLocation] = useState(false);
+
+  // ✅ Discard handlers (ADD HERE 👇)
+  const handleConfirmDiscard = () => {
+    setShowDiscardModal(false);
+
+    if (pendingPath) {
+      const id = pendingPath.split("/").pop(); // extract id from url
+
+      const found = findLocationDeep(locations, id!);
+      if (found) {
+        setSelectedLocation(found);
+      }
+
+      navigate(pendingPath);
+      setPendingPath(null);
+    }
+  };
+
+
+  const handleCancelDiscard = () => {
+    setShowDiscardModal(false);
+    setPendingPath(null);
+  };
+
+  // ✅ Discard modal state (same as Work Orders)
+  const [showDiscardModal, setShowDiscardModal] = useState(false);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
+
 
   const navigate = useNavigate();
   const isCreateRoute = useMatch("/locations/create");
@@ -97,6 +145,11 @@ export function Locations() {
   const isCreateSubLocationRoute = useMatch(
     "/locations/:parentId/create-sublocation"
   );
+
+  // ✅ Detect edit/create mode using URL
+  const isEditingOrCreating =
+    !!isCreateRoute || !!isEditRoute || !!isCreateSubLocationRoute;
+
 
   const isEditMode = !!isEditRoute;
   const parentIdFromUrl = isCreateSubLocationRoute?.params.parentId;
@@ -478,7 +531,8 @@ export function Locations() {
                     onClick={() => setIsDropdownOpen((p) => !p)}
                     className="flex items-center gap-1 text-blue-600 font-medium focus:outline-none hover:text-blue-700"
                   >
-                    {sortType} : {sortOrder === "asc" ? "Asc" : "Desc"}
+                    {sortType} : {getSortLabel(sortType, sortOrder)}
+
                     {isDropdownOpen ? (
                       <ChevronUp size={16} />
                     ) : (
@@ -604,9 +658,20 @@ export function Locations() {
                       return (
                         <div
                           key={item.id}
+                          //
                           onClick={() => {
+                            const targetPath = `/locations/${item.id}`;
+
+                            // ✅ If editing or creating → show discard popup
+                            if (isEditRoute || isCreateRoute || isCreateSubLocationRoute) {
+                              setPendingPath(targetPath);
+                              setShowDiscardModal(true);
+                              return;
+                            }
+
+                            // ✅ Normal navigation
                             setSelectedLocation(item);
-                            navigate(`/locations/${item.id}`);
+                            navigate(targetPath);
                           }}
                           className={`cursor-pointer border rounded-lg p-4 mb-3 transition-all duration-200 hover:shadow-md ${isSelected
                             ? "border-yellow-400 bg-yellow-50 ring-1 ring-yellow-400"
@@ -756,6 +821,13 @@ export function Locations() {
           </div>
         )}
       </div>
+      <DiscardChangesModal
+        isOpen={showDiscardModal}
+        onDiscard={handleConfirmDiscard}
+        onKeepEditing={handleCancelDiscard}
+      />
+
     </>
+    
   );
 }

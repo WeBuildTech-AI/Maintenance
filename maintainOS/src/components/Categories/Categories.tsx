@@ -28,6 +28,8 @@ import { categoryService } from "../../store/categories";
 
 // Import the updated form component
 import { NewCategoryForm } from "./NewCategoriesForm"; 
+import { DiscardChangesModal } from "../work-orders/ToDoView/DiscardChangesModal";//discard popup//
+
 
 // --- Types ---
 interface Category {
@@ -96,6 +98,13 @@ export function Categories() {
     data: Category | null;
   }>({ mode: "closed", data: null });
 
+  // ✅ Discard Modal State (same pattern as Assets & Work Orders)
+  const [showDiscardModal, setShowDiscardModal] = useState(false);
+  const [pendingCategory, setPendingCategory] = useState<Category | null>(null);
+
+
+
+
   const fetchCategories = async () => {
     setIsLoading(true);
     try {
@@ -129,11 +138,35 @@ export function Categories() {
     fetchCategories();
   }, []);
 
-  // Handlers
-  const handleSelectCategory = (category: Category) => {
+  const proceedWithCategorySelection = (category: Category) => {
     setSelectedCategory(category);
     setFormState({ mode: "closed", data: null });
   };
+  // Handlers
+  const handleSelectCategory = (category: Category) => {
+    // 🛑 If creating or editing → show discard modal
+    if (formState.mode === "create" || formState.mode === "edit") {
+      setPendingCategory(category);
+      setShowDiscardModal(true);
+      return;
+    }
+
+    proceedWithCategorySelection(category);
+  };
+  //
+  const handleConfirmDiscard = () => {
+    setShowDiscardModal(false);
+    if (pendingCategory) {
+      proceedWithCategorySelection(pendingCategory);
+      setPendingCategory(null);
+    }
+  };
+
+  const handleCancelDiscard = () => {
+    setShowDiscardModal(false);
+    setPendingCategory(null);
+  };
+
 
   const handleAddNew = () => {
     setFormState({ mode: "create", data: null });
@@ -260,6 +293,12 @@ export function Categories() {
             )
           )}
         </main>
+        <DiscardChangesModal
+          isOpen={showDiscardModal}
+          onDiscard={handleConfirmDiscard}
+          onKeepEditing={handleCancelDiscard}
+        />
+
       </div>
     </div>
   );

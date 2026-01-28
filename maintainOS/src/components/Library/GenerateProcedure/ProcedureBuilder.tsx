@@ -281,7 +281,28 @@ export default function ProcedureBuilder({
           transition: "left 0.3s ease-in-out",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          {/* CANCEL BUTTON */}
+          <button
+            onClick={onBack}
+            title="Cancel"
+            style={{
+              background: "#fff",
+              border: "1px solid #d1d5db",
+              borderRadius: "6px",
+              padding: "6px 12px",
+              cursor: "pointer",
+              color: "#374151",
+              fontSize: "0.9rem",
+              fontWeight: 500,
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            Cancel
+          </button>
+
+          {/* BACK BUTTON */}
           <button
             onClick={handleBackClick} // ✅ Use new handler
             title="Back to Library" // ✅ Added Tooltip
@@ -292,11 +313,17 @@ export default function ProcedureBuilder({
               color: "#2563eb",
               display: "flex",
               alignItems: "center",
+              gap: "4px",
+              fontWeight: 500,
             }}
           >
             <ChevronLeft size={20} />
+            Back
           </button>
-          <span style={{ fontWeight: 500, color: "#111827" }}>{procedureName}</span>
+
+          <div style={{ height: "24px", width: "1px", background: "#e5e7eb", margin: "0 4px" }} />
+
+          <span style={{ fontWeight: 600, color: "#111827", fontSize: "1.1rem" }}>{procedureName}</span>
         </div>
         <div
           style={{

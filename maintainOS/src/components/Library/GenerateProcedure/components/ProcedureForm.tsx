@@ -291,11 +291,11 @@ function SignatureRunner({
         alert("Please provide a signature before saving.");
         return;
       }
-      
+
       // ✅ FIX: Removed 'getTrimmedCanvas()' which causes the crash.
       // Used standard 'toDataURL()' instead.
       const dataURL = sigCanvas.current.toDataURL("image/png");
-      
+
       onChange(dataURL);
       setIsModalOpen(false);
     }
@@ -798,9 +798,8 @@ function YesNoRunner({
               key={key}
               type="button"
               onClick={() => handleStatusClick(key)}
-              className={`flex items-center justify-center h-12 rounded-md border text-base font-medium transition-all duration-200 ${
-                isActive ? config.active : config.inactive
-              }`}
+              className={`flex items-center justify-center h-12 rounded-md border text-base font-medium transition-all duration-200 ${isActive ? config.active : config.inactive
+                }`}
             >
               {config.label}
             </button>
@@ -1433,7 +1432,10 @@ const PreviewField = memo(function PreviewField({
               onChange={(e) => updateAnswer(fieldId, e.target.checked)}
               disabled
             />
-            <span style={{ fontSize: "0.9rem" }}>{fieldLabel}</span>
+            <span style={{ fontSize: "0.9rem" }}>
+              {fieldLabel}
+              {isRequired && <span className="text-red-500 ml-1">*</span>}
+            </span>
           </label>
         );
 
@@ -1535,9 +1537,8 @@ const PreviewField = memo(function PreviewField({
                   onClick={() => updateAnswer(fieldId, opt.toLowerCase())}
                   style={{
                     padding: "10px",
-                    border: `1px solid ${
-                      isSelected ? style.border : "#d1d5db"
-                    }`,
+                    border: `1px solid ${isSelected ? style.border : "#d1d5db"
+                      }`,
                     borderRadius: "6px",
                     background: isSelected ? style.bg : "white",
                     color: isSelected ? style.text : "#374151",
@@ -1578,9 +1579,8 @@ const PreviewField = memo(function PreviewField({
                   onClick={() => updateAnswer(fieldId, opt.toLowerCase())}
                   style={{
                     padding: "10px",
-                    border: `1px solid ${
-                      isSelected ? "#007AFF" : "#d1d5db"
-                    }`,
+                    border: `1px solid ${isSelected ? "#007AFF" : "#d1d5db"
+                      }`,
                     borderRadius: "6px",
                     background: isSelected ? "#f0f7ff" : "white",
                     color: isSelected ? "#007AFF" : "#374151",
@@ -1831,7 +1831,7 @@ export function ProcedureForm({
   // --- Reset answers when procedure ID changes ---
   useEffect(() => {
     if (resetKey) {
-        setAnswers(initialAnswers || {});
+      setAnswers(initialAnswers || {});
     }
   }, [resetKey]);
 
@@ -1849,7 +1849,7 @@ export function ProcedureForm({
   // --- RECURSIVE RENDER FUNCTION ---
   const renderAllItems = useCallback(
     (items: any[], allFieldsInScope: any[]): React.ReactNode[] => {
-      
+
       const renderRecursive = (currentItem: any): React.ReactNode => {
         // 1. Render the current item
         const node = (
@@ -1870,7 +1870,7 @@ export function ProcedureForm({
 
         // 3. If no children, return just the node
         if (children.length === 0) {
-           return node;
+          return node;
         }
 
         // 4. If children exist, render them recursively (wrapped in logic)
@@ -1882,11 +1882,11 @@ export function ProcedureForm({
                 child.condition,
                 currentItem.id ? answers[currentItem.id.toString()] : undefined
               );
-              
+
               const shouldRender = isMet || alwaysShowConditionalFields;
 
               if (shouldRender) {
-                 return (
+                return (
                   <div
                     key={child.id}
                     className="pl-6 border-l-2 border-blue-100 ml-2 animate-in fade-in slide-in-from-left-2 mt-2"
@@ -1897,7 +1897,7 @@ export function ProcedureForm({
                         Condition: {(child.condition?.conditionOperator || (child.condition as any)?.type)?.replace(/_/g, " ")} {child.condition?.conditionValue || (child.condition as any)?.value}
                       </div>
                     )}
-                    
+
                     {renderRecursive(child)}
                   </div>
                 );
@@ -1911,7 +1911,7 @@ export function ProcedureForm({
       // Only process items that are ROOTS in the current context (no parent OR parent is not in this list)
       // Note: In a section, 'items' might be just the section fields. We treat those as roots relative to the section if they have no parent.
       const roots = items.filter((f) => !f.parentId); // Simple check: If it has a parent, it's a child.
-      
+
       return roots.map(renderRecursive);
     },
     [answers, updateAnswer, variant, onFieldSave, alwaysShowConditionalFields, showConditionLabel]

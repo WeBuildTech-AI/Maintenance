@@ -293,7 +293,7 @@ const OfflineSinceDropdown = ({
           />
         </button>
         {offlineSinceDropdown && (
-          <div className="absolute w-full z-50 h-32 overflow-x-auto bg-white border border-gray-200 rounded-md shadow-lg mt-1 z-30">
+          <div className="absolute w-full z-50 h-32 overflow-y-auto bg-white border border-gray-200 rounded-md shadow-lg mt-1 z-30">
             {offlineSinceOptions.map((opt) => (
               <button
                 type="button"
@@ -411,6 +411,9 @@ export function UpdateAssetStatusModal({
   const [statusDropdown, setStatusDropdown] = useState(false);
   const [downtimeDropdown, setDowntimeDropdown] = useState(false);
   const [offlineSinceDropdown, setOfflineSinceDropdown] = useState(false);
+  const [offlineReason, setOfflineReason] = useState("");
+  const [reasonDropdown, setReasonDropdown] = useState(false);
+
 
   const statuses = [
     { name: "Online", value: "online", color: "bg-green-500" },
@@ -430,7 +433,14 @@ export function UpdateAssetStatusModal({
     },
   ];
   // --- +++++++ BADLAAV KHATM +++++++ ---
-
+  //
+  const offlineReasons = [
+    { name: "Maintenance", value: "maintenance" },
+    { name: "Breakdown", value: "breakdown" },
+    { name: "Power Failure", value: "power_failure" },
+    { name: "Network Issue", value: "network_issue" },
+    { name: "Other", value: "other" },
+  ];
   const offlineSinceOptions = [
     "Now",
     "1 hour ago",
@@ -441,8 +451,9 @@ export function UpdateAssetStatusModal({
 
   const isFormValid = () => {
     if (!selectedStatus) return false;
-    if (selectedStatus === "offline" && !downtimeType) {
-      return false;
+    // Modified: Check both downtimeType AND offlineReason
+    if (selectedStatus === "offline") {
+      if (!downtimeType || !offlineReason) return false;
     }
     if (offlineSince === "Custom date") {
       return fromDate && fromTime && toDate && toTime;
@@ -465,6 +476,8 @@ export function UpdateAssetStatusModal({
     // --- CHANGE 1: Sirf 'downtimeType' ke liye check karein ki status offline hai ya nahi ---
     if (selectedStatus === "offline") {
       submitData.downtimeType = downtimeType;
+      // ✅ ADDED: downtimeReason is required
+      submitData.downtimeReason = offlineReason;
     }
 
     // --- CHANGE 2: Date calculation logic ko bahar nikaal diya ---
@@ -504,7 +517,8 @@ export function UpdateAssetStatusModal({
   };
 
   const isAnyDropdownOpen =
-    statusDropdown || downtimeDropdown || offlineSinceDropdown;
+    statusDropdown || downtimeDropdown || offlineSinceDropdown || reasonDropdown;
+
 
   return (
     <div
@@ -590,7 +604,6 @@ export function UpdateAssetStatusModal({
             />
 
             {/* --- Conditional Fields (Unchanged) --- */}
-
             {selectedStatus === "offline" && (
               <div>
                 <label className="block text-sm font-medium text-gray-900 mb-2">
@@ -631,6 +644,8 @@ export function UpdateAssetStatusModal({
                 </div>
               </div>
             )}
+
+
 
             <OfflineSinceDropdown
               offlineSince={offlineSince}

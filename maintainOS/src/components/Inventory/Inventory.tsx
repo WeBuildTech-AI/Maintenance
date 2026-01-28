@@ -25,6 +25,31 @@ import { FetchPartsParams } from "../../store/parts/parts.types";
 // Define ViewMode locally to avoid type errors if not imported
 type ViewMode = "table" | "panel";
 
+
+
+// ✅ Helper: Sort Label for Parts Inventory
+const getSortLabel = (type: string, order: "asc" | "desc") => {
+  if (type === "Creation Date") {
+    return order === "asc" ? "Oldest First" : "Newest First";
+  }
+
+  if (type === "Last Updated") {
+    return order === "asc" ? "Least Recent First" : "Most Recent First";
+  }
+
+  if (type === "Name") {
+    return order === "asc" ? "Ascending Order" : "Descending Order";
+  }
+
+  if (type === "Units in Stock") {
+    return order === "asc" ? "Lowest First" : "Highest First";
+  }
+
+  return order === "asc" ? "Ascending Order" : "Descending Order";
+};
+
+
+
 export function Inventory() {
   const [parts, setParts] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
@@ -35,6 +60,23 @@ export function Inventory() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
+  const isEditingOrCreating =
+    location.pathname.includes("/create") ||
+    location.pathname.includes("/edit");
+  //handlers
+  const handleConfirmDiscard = () => {
+    setShowDiscardModal(false);
+
+    if (pendingPath) {
+      navigate(pendingPath);
+      setPendingPath(null);
+    }
+  };
+
+  const handleCancelDiscard = () => {
+    setShowDiscardModal(false);
+    setPendingPath(null);
+  };
 
   // Search State
   const [searchQuery, setSearchQuery] = useState("");
@@ -51,7 +93,9 @@ export function Inventory() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
   const [shouldSelectFirst, setShouldSelectFirst] = useState(false);
-
+  // ✅ Discard modal state (Work Orders pattern)
+  const [showDiscardModal, setShowDiscardModal] = useState(false);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
   // ✅ PAGINATION STATE
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -267,7 +311,8 @@ export function Inventory() {
                   onClick={() => setIsDropdownOpen((p) => !p)}
                   className="flex items-center gap-1 text-blue-600 font-medium focus:outline-none hover:text-blue-700"
                 >
-                  {sortType} : {sortOrder === "asc" ? "Asc" : "Desc"}
+                  {sortType} : {getSortLabel(sortType, sortOrder)}
+
                   {isDropdownOpen ? (
                     <ChevronUp className="w-4 h-4" />
                   ) : (
@@ -418,6 +463,12 @@ export function Inventory() {
           </div>
         </div>
       )}
+      {/* ✅ DISCARD CHANGES MODAL (GLOBAL) */}
+      <DiscardChangesModal
+        isOpen={showDiscardModal}
+        onDiscard={handleConfirmDiscard}
+        onKeepEditing={handleCancelDiscard}
+      />
     </div>
   );
 }

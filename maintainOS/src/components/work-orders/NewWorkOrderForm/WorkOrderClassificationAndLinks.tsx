@@ -160,6 +160,8 @@ export function WorkOrderClassificationAndLinks({
           onFetch={() => {}}
           activeDropdown={activeDropdown}
           setActiveDropdown={setActiveDropdown}
+          limitOptions={3}
+
           className="w-full"
         />
       </div>
@@ -177,6 +179,7 @@ export function WorkOrderClassificationAndLinks({
             onFetch={() => {}}
             activeDropdown={activeDropdown}
             setActiveDropdown={setActiveDropdown}
+            limitOptions={3}
             className="w-full"
           />
         </div>
@@ -196,6 +199,8 @@ export function WorkOrderClassificationAndLinks({
           onCtaClick={onCreateTeam}
           activeDropdown={activeDropdown}
           setActiveDropdown={setActiveDropdown}
+          limitOptions={3}
+
         />
       </div>
 
@@ -213,6 +218,8 @@ export function WorkOrderClassificationAndLinks({
           onCtaClick={onCreateCategory}
           activeDropdown={activeDropdown}
           setActiveDropdown={setActiveDropdown}
+          limitOptions={3}
+
         />
       </div>
 
@@ -230,6 +237,8 @@ export function WorkOrderClassificationAndLinks({
           onCtaClick={onCreatePart}
           activeDropdown={activeDropdown}
           setActiveDropdown={setActiveDropdown}
+          limitOptions={3}
+
         />
       </div>
 
@@ -247,6 +256,8 @@ export function WorkOrderClassificationAndLinks({
           onCtaClick={onCreateVendor}
           activeDropdown={activeDropdown}
           setActiveDropdown={setActiveDropdown}
+          limitOptions={3}
+
         />
       </div>
 

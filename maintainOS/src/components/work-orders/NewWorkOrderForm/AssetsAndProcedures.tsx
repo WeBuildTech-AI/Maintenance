@@ -81,6 +81,8 @@ export function AssetsAndProcedures({
               activeDropdown={activeDropdown}
               setActiveDropdown={setActiveDropdown}
               className="w-full"
+              limitOptions={3}
+
             />
           </div>
 

@@ -121,6 +121,7 @@ export function LocationFormDialog({
               onFetch={fetchLocationOptions}
               activeDropdown={activeDropdown}
               setActiveDropdown={setActiveDropdown}
+              limitOptions={3}
               onSelect={(val) => {
                 const id = Array.isArray(val) ? val[0] : val;
                 const selectedOpt = locationOptions.find((opt) => opt.id === id);

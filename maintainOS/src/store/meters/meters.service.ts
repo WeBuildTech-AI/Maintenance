@@ -21,7 +21,7 @@ export const meterService = {
       paramsSerializer: { indexes: null },
       headers: { Accept: "application/json" },
     });
-    
+
     // Handle both potential response structures just in case
     if (res.data && Array.isArray(res.data.items)) return res.data.items;
     if (Array.isArray(res.data)) return res.data;
@@ -76,7 +76,12 @@ export const meterService = {
   },
 
   restoreMeterData: async (id: string): Promise<MeterResponse> => {
-      const res = await api.patch(`/meters/${id}/restore`);
-      return res.data;
-    },
+    const res = await api.patch(`/meters/${id}/restore`);
+    return res.data;
+  },
+
+  fetchMetersSummary: async (): Promise<MeterResponse[]> => {
+    const res = await api.get(`/meters/summary`);
+    return res.data;
+  },
 };
