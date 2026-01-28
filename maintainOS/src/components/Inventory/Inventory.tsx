@@ -17,6 +17,7 @@ import { PartCard } from "./PartCard";
 import { PartDetails } from "./PartDetail/PartDetails";
 import RestockModal from "./PartDetail/RestockModal";
 import { PartTable } from "./PartTable";
+import { DiscardChangesModal } from "./DiscardChangesModal";
 
 /* ✅ Import partService */
 import { partService } from "../../store/parts/parts.service";
