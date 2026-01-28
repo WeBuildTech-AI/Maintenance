@@ -315,7 +315,15 @@ export function ToDoView({
     setEditingWorkOrder(null);
     onCancelCreate?.();
     setActivePanel("details");
-    if (item?.id) setTimeout(() => navigate(`/work-orders/${item.id}`), 0);
+
+    // reset auto-select ref to allow re-selection of same item if needed later
+    if (hasAutoSelectedRef.current === item?.id) {
+      hasAutoSelectedRef.current = null;
+    }
+
+    if (item?.id) {
+      navigate(`/work-orders/${item.id}`);
+    }
   };
 
   const handleConfirmDiscard = () => {
