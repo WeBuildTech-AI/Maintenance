@@ -43,6 +43,13 @@ import type { WorkOrderResponse as WorkOrder } from '../../store/workOrders/work
 import EventDetailPopover from './EventDetailPopover';
 import type { ViewMode } from "./types";
 
+// Helper to truncate title
+const truncateTitle = (title: string, maxLength: number = 16) => {
+  if (!title) return '';
+  if (title.length <= maxLength) return title;
+  return title.substring(0, maxLength) + '...';
+};
+
 // --- 1. Day List Modal (For Mobile/Overflow) ---
 function DayListModal({
   date,
@@ -116,7 +123,7 @@ function DayListModal({
 
                   <div className="flex flex-col min-w-0">
                     <span className={`text-sm font-semibold truncate ${evt.status === 'locked' ? 'text-gray-500' : 'text-gray-900 group-hover:text-blue-700'}`}>
-                      {evt.title}
+                      {truncateTitle(evt.title)}
                     </span>
                     <span className="text-xs text-gray-500 capitalize flex items-center gap-1">
                       {evt.status?.replace('_', ' ') || 'Open'}
@@ -729,7 +736,7 @@ export function CalendarView({
                           >
                             <div className="flex items-center gap-1 truncate w-full">
                               {evt.isGhost ? <Lock size={10} className="shrink-0" /> : <Wrench size={10} className="shrink-0" />}
-                              <span className="truncate">{evt.title}</span>
+                              <span className="truncate">{truncateTitle(evt.title)}</span>
                             </div>
                           </div>
                         ))}
@@ -917,7 +924,7 @@ export function CalendarView({
                                   )}
 
                                   <div className="font-bold truncate leading-snug flex-1">
-                                    {seg.isFirst ? seg.evt.title : `(cont.) ${seg.evt.title}`}
+                                    {seg.isFirst ? truncateTitle(seg.evt.title) : `(cont.) ${truncateTitle(seg.evt.title)}`}
                                   </div>
                                 </div>
                               ))}
