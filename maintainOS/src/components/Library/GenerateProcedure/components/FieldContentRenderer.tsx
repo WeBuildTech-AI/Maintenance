@@ -134,6 +134,7 @@ export function FieldContentRenderer({
           />
           <label htmlFor={`cb-${field.id}`} className="text-gray-700">
             {field.label || "Checkbox"}
+            {field.isRequired && <span className="text-red-500 ml-1">*</span>}
           </label>
         </div>
       );
