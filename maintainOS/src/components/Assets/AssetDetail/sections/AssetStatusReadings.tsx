@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 import type { RootState, AppDispatch } from "../../../../store";
 import { formatFriendlyDate } from "../../../utils/Date";
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "../../../ui/button";
 // Make sure this path to your thunk is correct
 import { assetService, updateAssetStatus } from "../../../../store/assets";
@@ -130,7 +131,10 @@ export function AssetStatusReadings({
 
       // ✅ Check if status changed to offline - show work order prompt
       if (finalStatusData.status?.toLowerCase() === 'offline') {
+        console.log("Status is offline, opening prompt...");
         setIsOfflinePromptOpen(true);
+      } else {
+        console.log("Status is NOT offline:", finalStatusData.status);
       }
     } catch (error: any) {
       console.error("Failed to update asset status:", error);
@@ -766,21 +770,21 @@ export function UpdateAssetStatusModal({
 }
 
 // \u2705 Offline Asset Work Order Prompt Modal
-interface OfflinePromptModalProps {
+export interface OfflinePromptModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreateWorkOrder: () => void;
 }
 
-function OfflinePromptModal({ isOpen, onClose, onCreateWorkOrder }: OfflinePromptModalProps) {
+export function OfflinePromptModal({ isOpen, onClose, onCreateWorkOrder }: OfflinePromptModalProps) {
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 300,
+        zIndex: 9999,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -819,6 +823,7 @@ function OfflinePromptModal({ isOpen, onClose, onCreateWorkOrder }: OfflinePromp
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
