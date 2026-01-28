@@ -24,7 +24,7 @@ export function AssetStatusReadings({
 }: {
   asset: any;
   fetchAssetsData?: (force?: boolean) => void;
-  setSeeMoreAssetStatus: (value: boolean) => void;
+  setSeeMoreAssetStatus?: (value: boolean) => void;
   seeMoreFlag: boolean;
   getAssetStatusLog?: () => void;
   updatedUser?: string;
@@ -141,7 +141,6 @@ export function AssetStatusReadings({
     }
   };
 
-  // ... (Baaki ka JSX code same rahega) ...
   return (
     <div>
       {isModalOpen && statusToUpdate && (
@@ -181,7 +180,7 @@ export function AssetStatusReadings({
         <h2 className="text-lg font-medium">Status</h2>
         {seeMoreFlag === false ? null : (
           <Button
-            onClick={() => setSeeMoreAssetStatus?.()}
+            onClick={() => setSeeMoreAssetStatus?.(true)}
             className="gap-1 bg-white p-2 cursor-pointer text-orange-600 hover:text-orange-600 hover:bg-orange-50  h-auto"
           >
             See More
@@ -239,7 +238,7 @@ export function AssetStatusReadings({
           </p>
         )}
       </div>
-    </div>
+    </div >
   );
 }
 

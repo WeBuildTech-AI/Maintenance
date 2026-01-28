@@ -17,7 +17,7 @@ import { locationService } from "../../store/locations";
 import AssetStatusMoreDetails from "./AssetDetail/sections/AssetStatusMoreDetails";
 import { useSearchParams } from "react-router-dom";
 import { DiscardChangesModal } from "../work-orders/ToDoView/DiscardChangesModal";
- //discard popup//
+//discard popup//
 
 export interface Location {
   id: number | string;
@@ -112,7 +112,14 @@ export const Assets: FC = () => {
     const params: any = {};
     if (debouncedSearch) params.search = debouncedSearch;
     if (seeMoreAssetStatus) params.moreDetails = "true";
-    if (selectedAsset?.id) params.assetId = selectedAsset.id;
+    if (seeMoreAssetStatus) params.moreDetails = "true";
+
+    // ✅ Fix: Preserve assetId from URL if loading/refreshing and selectedAsset is not yet set
+    if (selectedAsset?.id) {
+      params.assetId = selectedAsset.id;
+    } else if (seeMoreAssetStatus && searchParams.get("assetId")) {
+      params.assetId = searchParams.get("assetId");
+    }
     if (filterParams.page && filterParams.page > 1)
       params.page = filterParams.page.toString();
 
