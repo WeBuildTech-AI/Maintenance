@@ -754,7 +754,15 @@ export function ListView({
           <Table
             columns={columns}
             dataSource={dataSource}
-            loading={loading}
+            loading={{
+              spinning: loading,
+              indicator: (
+                <div className="flex flex-col items-center gap-3">
+                  <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+                  <span className="text-sm font-medium animate-pulse text-muted-foreground">Work Orders Loading...</span>
+                </div>
+              )
+            }}
             pagination={false}
             // ✅ UPDATED: Scroll calculation adjusted for Full Screen List feel
             scroll={{ x: "max-content", y: "calc(100vh - 280px)" }}

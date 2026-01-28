@@ -143,4 +143,5 @@ export interface RestockThunkArgs {
   addedUnits: number;
   notes?: string;
   restockImages: BUD[];
+  unitCost?: number;
 }

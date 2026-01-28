@@ -1,13 +1,13 @@
 // src/store/parts/parts.service.ts
 import api from "../auth/auth.service";
-import type { 
-  PartResponse, 
-  FetchPartsParams, 
-  CreatePartPayload, 
+import type {
+  PartResponse,
+  FetchPartsParams,
+  CreatePartPayload,
   UpdatePartPayload,
   PartActivityLog,
-  RestockThunkArgs, 
-  PartRestockLog 
+  RestockThunkArgs,
+  PartRestockLog
 } from "./parts.types";
 
 export const partService = {
@@ -53,7 +53,21 @@ export const partService = {
   },
 
   restockPart: async (partId: string, payload: RestockThunkArgs): Promise<PartResponse> => {
-    const res = await api.post(`/parts/${partId}/restock`, payload);
+    // 🆕 Transform payload to match "restockTargets" schema
+    // Remove partId from body as it's in the URL
+    const { partId: _, locationId, addedUnits, ...rest } = payload;
+
+    const formattedPayload = {
+      ...rest,
+      restockTargets: [
+        {
+          locationId,
+          addedUnits,
+        },
+      ],
+    };
+
+    const res = await api.post(`/parts/${partId}/restock`, formattedPayload);
     return res.data;
   },
 
@@ -73,7 +87,7 @@ export const partService = {
     });
   },
 
-  fetchDeletePart: async (): Promise<PartResponse[]> => { 
+  fetchDeletePart: async (): Promise<PartResponse[]> => {
     const res = await api.get(`parts/deleted/all`);
     return res.data;
   },
@@ -87,21 +101,21 @@ export const partService = {
   fetchPartLogs: async (id: string): Promise<PartActivityLog[]> => {
     console.log(`📡 Fetching logs for Part ID: ${id}`);
     const res = await api.get(`/parts/get/logs/${id}`);
-    
+
     console.log("🔥 RAW API RESPONSE:", res);
-    
+
     // Robust checks to find the array
     if (Array.isArray(res.data)) {
-        console.log("✅ Found array in res.data:", res.data);
-        return res.data;
+      console.log("✅ Found array in res.data:", res.data);
+      return res.data;
     }
     if (res.data && Array.isArray(res.data.data)) {
-        console.log("✅ Found array in res.data.data:", res.data.data);
-        return res.data.data;
+      console.log("✅ Found array in res.data.data:", res.data.data);
+      return res.data.data;
     }
     if (res.data && Array.isArray(res.data.items)) {
-        console.log("✅ Found array in res.data.items:", res.data.items);
-        return res.data.items;
+      console.log("✅ Found array in res.data.items:", res.data.items);
+      return res.data.items;
     }
 
     console.warn("⚠️ No array found in response!", res.data);

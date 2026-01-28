@@ -350,7 +350,7 @@ export function WorkOrders() {
         <div className="flex-1 flex flex-col items-center justify-center p-8 bg-background">
           <div className="flex flex-col items-center gap-3">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500"></div>
-            <span className="text-medium font-medium text-muted-foreground">Loading work orders...</span>
+            <span className="text-sm font-medium text-muted-foreground animate-pulse">Work Orders Loading...</span>
           </div>
         </div>
       )}

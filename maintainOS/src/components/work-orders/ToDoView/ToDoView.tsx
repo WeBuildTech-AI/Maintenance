@@ -406,10 +406,10 @@ export function ToDoView({
         {/* LIST CONTAINER */}
         <div className="flex-1 overflow-auto relative z-0 bg-white">
           {loading && activeList.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-muted-foreground">
-              <div className="flex flex-col items-center gap-2">
+            <div className="flex h-full items-center justify-center text-muted-foreground p-8">
+              <div className="flex flex-col items-center gap-3">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-                <span className="text-sm font-medium">Loading...</span>
+                <span className="text-sm font-medium animate-pulse">Loading work orders...</span>
               </div>
             </div>
           ) : activeList.length === 0 ? (
@@ -523,9 +523,9 @@ export function ToDoView({
               : !selectedWorkOrder ? (
                 detailId ? (
                   <div className="flex h-full items-center justify-center text-muted-foreground p-8">
-                    <div className="flex flex-col items-center gap-2">
+                    <div className="flex flex-col items-center gap-3">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-                      <span className="text-sm font-medium">Loading details...</span>
+                      <span className="text-sm font-medium animate-pulse">Loading details...</span>
                     </div>
                   </div>
                 ) : (

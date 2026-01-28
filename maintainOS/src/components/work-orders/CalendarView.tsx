@@ -613,7 +613,15 @@ export function CalendarView({ workOrders, onRefreshWorkOrders, loading, hasErro
           <div className="w-24"></div>
         </header>
 
-        <div className="flex-1 flex flex-col overflow-auto">
+        <div className="flex-1 flex flex-col overflow-auto relative">
+          {loading && (
+            <div className="absolute inset-0 z-50 bg-white/60 backdrop-blur-[1px] flex items-center justify-center">
+              <div className="flex flex-col items-center gap-3">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500"></div>
+                <span className="text-sm font-medium animate-pulse text-muted-foreground">Work Orders Loading...</span>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-7 border-b border-gray-200 flex-shrink-0 sticky top-0 bg-white z-10">
             {dayHeaders.map(day => <div key={day} className="py-2 px-3 text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200 last:border-r-0">{day}</div>)}
           </div>
