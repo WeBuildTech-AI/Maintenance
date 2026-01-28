@@ -281,12 +281,13 @@ export function ToDoView({
     }
   }, [detailId, selectedWorkOrder, todoWorkOrders, doneWorkOrders]);
 
-  useEffect(() => {
-    if (selectedWorkOrder && (editingWorkOrder || creatingWorkOrder)) {
-      setEditingWorkOrder(null);
-      onCancelCreate?.();
-    }
-  }, [selectedWorkOrder]);
+  // 🛑 REMOVED: This was causing "Edit" mode to exit prematurely when selectedWorkOrder updated (e.g., real-time sync)
+  // useEffect(() => {
+  //   if (selectedWorkOrder && (editingWorkOrder || creatingWorkOrder)) {
+  //     setEditingWorkOrder(null);
+  //     onCancelCreate?.();
+  //   }
+  // }, [selectedWorkOrder]);
 
   const handleEditCancel = () => {
     setEditingWorkOrder(null);
@@ -355,11 +356,15 @@ export function ToDoView({
   };
 
   // ✅ AUTO-SELECT FIRST ITEM (Newest/Top of list)
+  // MODIFIED: Only run if we have NO selection and are NOT creating/editing. 
+  // IMPORTANT: Added dependency on 'activeList.length' ONLY to trigger on data load, 
+  // but guarding against re-selecting if the user simply updated a work order.
   useEffect(() => {
     if (activeList.length > 0 && !selectedWorkOrder && !creatingWorkOrder && !editingWorkOrder && !detailId) {
+      // Only select first if we really have nothing selected
       handleSelectWorkOrder(activeList[0]);
     }
-  }, [activeList, selectedWorkOrder, creatingWorkOrder, editingWorkOrder, detailId]);
+  }, [activeList.length, creatingWorkOrder, editingWorkOrder, detailId]); // Removed `activeList` dependency to avoid re-running on every item change within list
 
   // --------------------------------------------------
   // 🧱 UI
@@ -438,7 +443,6 @@ export function ToDoView({
               // ✅ OPTIMISTIC
               if (newWo && onWorkOrderCreate) onWorkOrderCreate(newWo);
 
-              onCancelCreate?.();
               setEditingWorkOrder(null);
               setWorkOrderToCopy(null); // Clear copy state
               // onRefreshWorkOrders?.();
@@ -470,7 +474,6 @@ export function ToDoView({
                 if (updatedWo) onSelectWorkOrder(updatedWo);
 
                 setEditingWorkOrder(null);
-                onCancelCreate?.();
                 // onRefreshWorkOrders?.(); // Optional if we trust the optimistic update
               }}
               onCancel={handleEditCancel}

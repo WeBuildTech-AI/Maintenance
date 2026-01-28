@@ -64,12 +64,11 @@ export function WorkOrders() {
   const prefillData = (location.state as any)?.prefillData;
 
   const isCreateRoute = useMatch("/work-orders/create");
-  // const editMatch = useMatch("/work-orders/:id/edit"); // Unused
   const viewMatch = useMatch("/work-orders/:id");
+  const editMatch = useMatch("/work-orders/:id/edit");
 
-  // const isEditMode = !!editMatch; // Unused
-  // const editingId = editMatch?.params?.id; // Unused
-  const viewingId = viewMatch?.params?.id;
+  // ✅ FIX: Resolve ID from either View or Edit route
+  const viewingId = viewMatch?.params?.id || editMatch?.params?.id;
 
   // Debounce Search
   useEffect(() => {
@@ -226,7 +225,8 @@ export function WorkOrders() {
 
         // 1️⃣ CHECK EXISTING STATE (Single-Call Rule)
         // If we already have the full object in state, reuse it!
-        if (selectedWorkOrder?.id === viewingId) {
+        // ✅ BUG FIX: Use String() for robust comparison (handles string vs number IDs)
+        if (selectedWorkOrder && String(selectedWorkOrder.id) === String(viewingId)) {
           console.log("⚡ [Optimization] Reusing selectedWorkOrder from state:", viewingId);
           setViewingWorkOrder(selectedWorkOrder);
           return;
@@ -234,13 +234,11 @@ export function WorkOrders() {
 
         // 2️⃣ CHECK LIST DATA
         // If the item exists in the fetched list, use it first (optimistic load)
-        const cachedItem = workOrders.find((w) => w.id === viewingId);
+        const cachedItem = workOrders.find((w) => String(w.id) === String(viewingId));
         if (cachedItem) {
           console.log("⚡ [Optimization] Reusing work order from list:", viewingId);
           setViewingWorkOrder(cachedItem);
-          // Note: If list item is "summary", we might still want to fetch details. 
-          // But per "Single-Call Rule", if list data is sufficient for initial view, we stop here.
-          // If Comments/Logs are missing, components like CommentsSection should handle their own lazy fetching.
+          setSelectedWorkOrder(cachedItem); // ✅ Sync selection
           return;
         }
 
@@ -251,15 +249,17 @@ export function WorkOrders() {
           const wo = await workOrderService.fetchWorkOrderById(viewingId);
           console.timeEnd("WORK_ORDER_DETAIL_API");
           console.log("✅ [WorkOrders] Fetched work order:", wo?.id);
-          setViewingWorkOrder(wo as unknown as WorkOrder);
+          const typedWo = wo as unknown as WorkOrder;
+          setViewingWorkOrder(typedWo);
+          setSelectedWorkOrder(typedWo); // ✅ Sync selection
         } catch (err) {
           console.error("❌ [WorkOrders] Failed to fetch work order", err);
           navigate("/work-orders");
         }
-      } else if (!viewingId || viewingId === "create" || viewingId === "edit") {
-        console.log("🟡 [WorkOrders] Clearing viewingWorkOrder (viewingId:", viewingId, ")");
+      } else if (!viewingId && !isCreateRoute) {
+        console.log("🟡 [WorkOrders] Clearing viewingWorkOrder (No ID)");
         setViewingWorkOrder(null);
-        setSelectedWorkOrder(null); // ✅ Clear selectedWorkOrder when navigating to root
+        setSelectedWorkOrder(null);
       }
     };
     fetchViewingWorkOrder();

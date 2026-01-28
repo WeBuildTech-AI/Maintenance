@@ -30,7 +30,11 @@ export function WorkOrderCard({
 }: any) {
   const dispatch = useDispatch<AppDispatch>();
   const user = useSelector((state: any) => state.auth?.user);
-  const isSelected = selectedWorkOrder?.id === wo.id;
+
+  // ✅ Highlight if explicitly selected OR if matching the currently edited/viewed ID (based on URL)
+  // Strict equality check on pathname to avoid partial matches (e.g. ID "1" matching "/work-orders/10")
+  const isSelected = selectedWorkOrder?.id === wo.id ||
+    (window.location.pathname === `/work-orders/${wo.id}` || window.location.pathname === `/work-orders/${wo.id}/edit`);
 
   const getTitleInitials = (title: string) => {
     if (!title) return "WO";
@@ -171,7 +175,9 @@ export function WorkOrderCard({
   return (
     <div
       onClick={() => onSelectWorkOrder(wo)}
-      className={`cursor-pointer border rounded shadow-sm hover:shadow transition relative group ${isSelected ? "border-primary bg-blue-50/30" : "border-gray-200 bg-white"
+      className={`cursor-pointer border rounded shadow-sm hover:shadow transition relative group ${isSelected
+        ? "border-orange-500 ring-1 ring-orange-500 bg-orange-50/10"
+        : "border-gray-200 bg-white hover:border-orange-200"
         }`}
     >
       <div className="p-4">
