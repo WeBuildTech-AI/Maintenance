@@ -288,7 +288,8 @@ export function WorkOrderDetails({
 
     if (!user?.id) { toast.error("User not authenticated"); setActiveStatus(prevStatus); return; }
 
-    if (onOptimisticUpdate && selectedWorkOrder?.id) {
+    // ✅ DISABLE Optimistic Update for "Done" to prevent jumping before validation
+    if (onOptimisticUpdate && selectedWorkOrder?.id && newStatus !== "done" && newStatus !== "completed") {
       onOptimisticUpdate(selectedWorkOrder.id, { status: newStatus });
     }
 
@@ -344,6 +345,10 @@ export function WorkOrderDetails({
         toast.error(errorMessage || "Failed to update status");
       }
 
+      if (onOptimisticUpdate && selectedWorkOrder?.id) {
+        // ⚠️ Rollback Optimistic Update
+        onOptimisticUpdate(selectedWorkOrder.id, { status: prevStatus });
+      }
       setActiveStatus(prevStatus);
     }
   };

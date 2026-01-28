@@ -285,18 +285,20 @@ export function WorkOrders() {
     setCreatingWorkOrder(false);
   };
 
+  // ✅ Robust status check helper
+  const isWorkOrderCompleted = (status: any) => {
+    if (!status) return false;
+    const s = String(status).toLowerCase().trim();
+    return s === "done" || s === "completed";
+  };
+
   const todoWorkOrders = useMemo(
-    () =>
-      workOrders.filter(
-        (wo) => !["done", "completed"].includes(wo.status?.toLowerCase())
-      ),
+    () => workOrders.filter((wo) => !isWorkOrderCompleted(wo.status)),
     [workOrders]
   );
+
   const doneWorkOrders = useMemo(
-    () =>
-      workOrders.filter((wo) =>
-        ["done", "completed"].includes(wo.status?.toLowerCase())
-      ),
+    () => workOrders.filter((wo) => isWorkOrderCompleted(wo.status)),
     [workOrders]
   );
 
