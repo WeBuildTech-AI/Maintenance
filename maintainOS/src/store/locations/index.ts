@@ -7,4 +7,4 @@ export {
   setSelectedLocation,
 } from "./locations.reducers";
 
-//
+//store
