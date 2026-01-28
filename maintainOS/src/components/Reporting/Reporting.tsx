@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useLocation } from "react-router-dom";
 import { Button } from "../ui/button";
 import { Calendar, ChevronDown } from "lucide-react";
 import {
@@ -49,6 +49,7 @@ const getDefaultDateRange = () => {
 export function Reporting() {
   const defaultDates = getDefaultDateRange();
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
 
   // Helper function to validate tab type
   const isValidTab = (tab: string | null): tab is TabType => {
@@ -83,6 +84,13 @@ export function Reporting() {
   );
   const [startDateError, setStartDateError] = useState<string | null>(null);
   const [endDateError, setEndDateError] = useState<string | null>(null);
+
+  // Close date picker dialog when navigating away from reporting page
+  useEffect(() => {
+    if (!location.pathname.startsWith('/reporting')) {
+      setShowDatePicker(false);
+    }
+  }, [location.pathname]);
 
   // Sync activeTab with URL
   // useEffect(() => {

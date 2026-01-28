@@ -29,7 +29,8 @@ export function DowntimeReasonsChart({ onLoadingChange }: DowntimeReasonsChartPr
   // Notify parent that static data is loaded
   useEffect(() => {
     onLoadingChange?.(false);
-  }, [onLoadingChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Static, no dependencies needed
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-4">

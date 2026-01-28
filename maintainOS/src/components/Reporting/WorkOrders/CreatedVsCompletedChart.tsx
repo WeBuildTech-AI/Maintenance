@@ -53,7 +53,8 @@ export function CreatedVsCompletedChart({
   // Notify parent of loading state changes
   useEffect(() => {
     onLoadingChange?.(statusLoading);
-  }, [statusLoading, onLoadingChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusLoading]); // Only depend on statusLoading, not onLoadingChange
 
   // 2. Fetch Created By Date (For Blue Line)
   const {
