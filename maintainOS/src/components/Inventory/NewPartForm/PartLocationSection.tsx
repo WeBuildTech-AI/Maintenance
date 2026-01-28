@@ -6,7 +6,7 @@ import { DynamicSelect, type SelectOption } from "../../common/DynamicSelect";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../../store";
 import { fetchLocationsName } from "../../../store/locations/locations.thunks";
-import { LocationFormDialog } from "./LocationFormDialog";
+
 
 export function PartLocationSection({
   newItem,
@@ -225,11 +225,6 @@ export function PartLocationSection({
             }}
           />
         </div>
-      </div>
-
-      {/* Add Location Modal */}
-      <div>
-        <LocationFormDialog newItem={newItem} setNewItem={setNewItem} />
       </div>
     </div>
   );
