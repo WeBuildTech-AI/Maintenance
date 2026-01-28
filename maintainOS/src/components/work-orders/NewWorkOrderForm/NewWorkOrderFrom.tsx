@@ -588,7 +588,12 @@ export function NewWorkOrderForm({
         title: workOrderName,
         description,
         // ✅ UI Mapping back to Backend strings
-        status: { "Open": "open", "In Progress": "in_progress", "On Hold": "on_hold", "Completed": "completed" }[status] || "open",
+        status: (() => {
+          if (status === "On Hold") return "on_hold";
+          if (status === "In Progress") return "in_progress";
+          if (status === "Completed") return "completed";
+          return "open";
+        })(),
         workType: selectedWorkType ? selectedWorkType.toLowerCase() : "reactive", // Fallback and ensure lowercase
         qrCode: qrCodeValue || undefined,
         priority: { None: "low", Low: "low", Medium: "medium", High: "high", Urgent: "urgent" }[selectedPriority] || "low",
