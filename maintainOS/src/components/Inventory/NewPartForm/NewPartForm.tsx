@@ -164,6 +164,24 @@ export function NewPartForm({
       const payload: any = {};
 
       if (isEditing) {
+        // --- 1. Basic Fields Checks ---
+        if (newItem.name !== original.name) {
+          payload.name = newItem.name;
+        }
+        if ((newItem.description || "") !== (original.description || "")) {
+          payload.description = newItem.description || "";
+        }
+        // Unit Cost
+        if (currentUnitCost !== (original.unitCost || 0)) {
+          console.log("Unit Cost Changed:", currentUnitCost);
+          payload.unitCost = currentUnitCost;
+        }
+        // QR Code
+        const originalQr = original.qrCode || "";
+        if (currentQrCode !== originalQr) {
+          payload.qrCode = currentQrCode;
+        }
+
         // --- Simple Arrays (Asset, Teams, Types, Vendors) ---
         if (!areArraysEqual(currentPartsType, original.partsType || [])) {
           payload.partsType = currentPartsType;
