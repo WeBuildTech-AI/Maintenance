@@ -4,19 +4,29 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useLocation, useSearchParams, useMatch } from "react-router-dom";
 import toast from "react-hot-toast";
-import { Loader2 } from "lucide-react";
+import {
+  Loader2,
+  Trash2,
+  MoreVertical,
+  X,
+  Clock,
+  Plus,
+  Users,
+  FileText,
+  MapPin,
+  Box,
+  ChevronDown,
+  RotateCw,
+  Calendar,
+  ChevronUp,
+  ChevronDown as ChevronDownIcon
+} from "lucide-react";
 
-import { WorkOrderDetails } from "./WorkOrderDetails";
-import { AssetsAndProcedures } from "./AssetsAndProcedures";
-import { AssignmentAndScheduling } from "./AssignmentAndScheduling";
-import { WorkOrderClassificationAndLinks } from "./WorkOrderClassificationAndLinks";
-
-// import type { SelectOption } from "../NewWorkOrderForm/DynamicSelect"; // REMOVED unused import
+import { DynamicSelect, type SelectOption } from "../NewWorkOrderForm/DynamicSelect";
 import {
   createWorkOrder,
   updateWorkOrder,
   fetchWorkOrderById,
-  fetchFilterData,
 } from "../../../store/workOrders/workOrders.thunks";
 // import { fetchFilterData } from "../../utils/filterDataFetcher"; // REMOVED
 import { procedureService } from "../../../store/procedures/procedures.service";
@@ -66,6 +76,7 @@ const getChangedFields = (original: any, current: any) => {
   // 1. Simple Fields
   const simpleFields = [
     "title", "description", "priority", "status", "workType",
+    "locationId",
     "locationId"
   ];
 
@@ -77,29 +88,8 @@ const getChangedFields = (original: any, current: any) => {
       origVal = original.location.id;
     }
 
-    // 🛠️ FIX: Handle Partial Data (Summary Object) vs UI Defaults
-    const defaults: Record<string, string> = {
-      status: "open",
-      workType: "reactive",
-      priority: "low"
-    };
-
-    // Current value from form state (e.g., "new title", null, or undefined)
-    const currVal = current[key];
-
-    // If current value is explicitly defined (including null for clearing)
-    if (currVal !== undefined) {
-
-      // If original matches current, no change
-      if (origVal === currVal) return;
-
-      // Special case: If original is missing/null, and current is just the default UI value -- IGNORE
-      // (This prevents overwriting backend data with defaults if backend data was partial)
-      if ((origVal === undefined || origVal === null) && defaults[key] && currVal === defaults[key]) {
-        return;
-      }
-
-      changes[key] = currVal;
+    if (current[key] !== undefined && origVal !== current[key]) {
+      changes[key] = current[key];
     }
   });
 
@@ -159,22 +149,10 @@ const getChangedFields = (original: any, current: any) => {
 
   Object.keys(arrayMap).forEach((payloadKey) => {
     const originalKey = arrayMap[payloadKey];
-
-    let originalIds: string[] = [];
-
-    // 1. Try to get IDs from relational objects (e.g. original.assets -> map ids)
-    if (original[originalKey] && Array.isArray(original[originalKey])) {
-      originalIds = original[originalKey].map((item: any) => item.id);
-    }
-    // 2. Fallback: Try to get IDs from flat array (e.g. original.assetIds)
-    else if (original[payloadKey] && Array.isArray(original[payloadKey])) {
-      originalIds = original[payloadKey];
-    }
-
+    const originalIds = original[originalKey]?.map((item: any) => item.id) || [];
     const currentIds = current[payloadKey] || [];
 
     if (hasArrayChanged(originalIds, currentIds)) {
-      // ✅ Reverting back to empty array [] as backend rejects [null]
       changes[payloadKey] = currentIds;
     }
   });
@@ -231,7 +209,6 @@ export function NewWorkOrderForm({
   const [currentPanel, setCurrentPanel] = useState<'form' | 'time' | 'cost' | 'parts'>('form');
 
   const [loading, setLoading] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   // --- Form State ---
   const [workOrderName, setWorkOrderName] = useState("");
@@ -242,7 +219,7 @@ export function NewWorkOrderForm({
 
   const [assetIds, setAssetIds] = useState<string[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  // const [assigneeOptions, setAssigneeOptions] = useState<{ id: string, name: string }[]>([]); // Derived from Redux now
+  const [assigneeOptions, setAssigneeOptions] = useState<{ id: string, name: string }[]>([]);
 
   const [dueDate, setDueDate] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -260,18 +237,18 @@ export function NewWorkOrderForm({
   const [partIds, setPartIds] = useState<string[]>([]);
   const [vendorIds, setVendorIds] = useState<string[]>([]);
 
-  // Removed local options state
-  // const [locationOptions, setLocationOptions] = useState<SelectOption[]>([]);
-  // const [assetOptions, setAssetOptions] = useState<SelectOption[]>([]);
-  // const [teamOptions, setTeamOptions] = useState<SelectOption[]>([]);
-  // const [categoryOptions, setCategoryOptions] = useState<SelectOption[]>([]);
-  // const [partOptions, setPartOptions] = useState<SelectOption[]>([]);
-  // const [vendorOptions, setVendorOptions] = useState<SelectOption[]>([]);
+  const [locationOptions, setLocationOptions] = useState<SelectOption[]>([]);
+  const [assetOptions, setAssetOptions] = useState<SelectOption[]>([]);
+  const [teamOptions, setTeamOptions] = useState<SelectOption[]>([]);
+  const [categoryOptions, setCategoryOptions] = useState<SelectOption[]>([]);
+  const [partOptions, setPartOptions] = useState<SelectOption[]>([]);
+  const [vendorOptions, setVendorOptions] = useState<SelectOption[]>([]);
 
   const [linkedProcedure, setLinkedProcedure] = useState<any>(null);
   const [isProcedureLoading, setIsProcedureLoading] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isAddProcModalOpen, setIsAddProcModalOpen] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
 
   // Wait, line 242: const [isAddProcModalOpen, setIsAddProcModalOpen] = useState(false);
@@ -330,8 +307,11 @@ export function NewWorkOrderForm({
       // Select the asset
       setAssetIds((prev) => (prev.includes(assetIdStr) ? prev : [...prev, assetIdStr]));
 
-      // Removed manual option setting since we rely on Redux options now
-      // setAssetOptions(...) 
+      // Ensure the name is in the dropdown options
+      setAssetOptions((prev) => {
+        if (prev.some((opt) => opt.id === assetIdStr)) return prev;
+        return [...prev, { id: assetIdStr, name: name }];
+      });
 
       // Clear state so it doesn't stay prefilled if user refreshes or navigates back
       window.history.replaceState({}, document.title);
@@ -342,7 +322,14 @@ export function NewWorkOrderForm({
     const paramLocationId = searchParams.get("locationId");
     if (paramLocationId && !activeId) {
       setLocationId(paramLocationId);
-      // Removed manual fetch location by ID and option setting
+
+      locationService.fetchLocationById(paramLocationId)
+        .then((loc: any) => {
+          if (loc) {
+            setLocationOptions([{ id: loc.id, name: loc.name }]);
+          }
+        })
+        .catch((err: any) => console.error("Error prefilling location:", err));
     }
   }, [searchParams, activeId]);
 
@@ -501,8 +488,8 @@ export function NewWorkOrderForm({
 
       if (data.assignees) {
         setSelectedUsers(data.assignees.map((u: any) => u.id));
-        // setAssigneeOptions removed
-      } else { setSelectedUsers(data.assigneeIds || []); }
+        setAssigneeOptions(data.assignees.map((u: any) => ({ id: u.id, name: u.fullName || u.name || "Unknown" })));
+      } else { setSelectedUsers(data.assigneeIds || []); setAssigneeOptions([]); }
 
       if (data.procedures && data.procedures.length > 0) setLinkedProcedure(data.procedures[0]);
       else if (data.procedure) setLinkedProcedure(data.procedure);
@@ -555,25 +542,21 @@ export function NewWorkOrderForm({
       // Only apply prefill if not editing an existing work order
       if (prefillData.assetIds && prefillData.assetIds.length > 0) {
         setAssetIds(prefillData.assetIds);
-        // Removed manual option setting
+        if (prefillData.assetName) {
+          setAssetOptions([{ id: prefillData.assetIds[0], name: prefillData.assetName }]);
+        }
       }
       if (prefillData.locationId) {
         setLocationId(prefillData.locationId);
-        // Removed manual option setting
+        if (prefillData.locationName) {
+          setLocationOptions([{ id: prefillData.locationId, name: prefillData.locationName }]);
+        }
       }
 
     }
   }, [prefillData, activeId]);
 
-  const handleEditLinkedProcedure = () => {
-    if (linkedProcedure?.id) {
-      const currentFormState = {
-        workOrderName, description, locationId, estimatedTime, assetIds, selectedUsers, dueDate, startDate, selectedWorkType, selectedPriority, qrCodeValue, recurrenceRule, teamIds, categoryIds, partIds, vendorIds, procedureId: linkedProcedure.id,
-        status
-      };
-      navigate(`/library/${linkedProcedure.id}/edit`, { state: { returnPath: location.pathname, previousFormState: currentFormState } });
-    }
-  };
+
 
   const handleEditorBack = async () => {
     if (activeId) navigate(`/work-orders/${activeId}/edit`);
@@ -674,7 +657,12 @@ export function NewWorkOrderForm({
   };
 
   if (loading || isProcedureLoading)
-    return (<div className="flex flex-col items-center justify-center h-full gap-2 text-gray-500"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /><p className="text-sm font-medium">Loading...</p></div>);
+    return (
+      <div className="wo-loading-container">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <p className="text-sm font-medium">Loading...</p>
+      </div>
+    );
 
   // ✅ FIX: Use 'originalData' (fetched state) instead of 'existingWorkOrder' (prop) to ensure Edit Mode has data
   // ✅ ADDED onSaveSuccess to refresh parent data explicitly
@@ -684,54 +672,239 @@ export function NewWorkOrderForm({
 
   return (
     <>
-      <div className="flex h-full flex-col overflow-hidden rounded-lg border bg-white relative">
-        {deepEditingProcedureId && linkedProcedure && <div className="absolute inset-0 z-50 bg-white flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4"><GenerateProcedure onBack={handleEditorBack} editingProcedureId={deepEditingProcedureId} /></div>}
-        <div className="flex-none border-b px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold">{isEditing ? "Edit Work Order" : "New Work Order"}</h2>
-        </div>
-        <div className="min-h-0 flex-1 overflow-y-auto p-6">
-          <WorkOrderDetails
-            name={workOrderName} onNameChange={setWorkOrderName}
-            description={description} onDescriptionChange={setDescription}
-            estimatedTime={estimatedTime} onEstimatedTimeChange={setEstimatedTime}
-            locationId={locationId} onLocationSelect={(val) => setLocationId(val as string)}
-            locationOptions={locationOptions} isLocationsLoading={!filterData} onFetchLocations={() => { }} onCreateLocation={() => toast("Open Create Location Modal")}
-            activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown}
-          />
-          <AssetsAndProcedures
-            assetIds={assetIds} onAssetSelect={(val) => setAssetIds(val as string[])}
-            assetOptions={assetOptions} isAssetsLoading={!filterData} onFetchAssets={() => { }} onCreateAsset={() => toast("Open Create Asset Modal")}
-            activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown}
-            linkedProcedure={linkedProcedure} onRemoveProcedure={() => setLinkedProcedure(null)} onPreviewProcedure={() => setIsPreviewOpen(true)} onEditProcedure={handleEditLinkedProcedure} setLinkedProcedure={setLinkedProcedure}
-          />
-          <AssignmentAndScheduling
-            selectedUsers={selectedUsers} setSelectedUsers={setSelectedUsers}
-            dueDate={dueDate} setDueDate={setDueDate} startDate={startDate} setStartDate={setStartDate}
-            selectedWorkType={selectedWorkType} setSelectedWorkType={setSelectedWorkType}
-            recurrenceRule={recurrenceRule} setRecurrenceRule={setRecurrenceRule}
-            onOpenInviteModal={() => toast("Invite modal open")} initialAssignees={assigneeOptions}
+      <div className="wo-form-container">
+        {deepEditingProcedureId && linkedProcedure && (
+          <div className="wo-form-full-overlay animate-in fade-in slide-in-from-bottom-4">
+            <GenerateProcedure onBack={handleEditorBack} editingProcedureId={deepEditingProcedureId} />
+          </div>
+        )}
 
-          />
-          <WorkOrderClassificationAndLinks
-            selectedPriority={selectedPriority} onPriorityChange={setSelectedPriority}
-            status={status} onStatusChange={setStatus}
-            qrCodeValue={qrCodeValue} onQrCodeChange={setQrCodeValue}
-            teamIds={teamIds} onTeamSelect={(val) => setTeamIds(val as string[])} teamOptions={teamOptions} isTeamsLoading={!filterData} onFetchTeams={() => { }} onCreateTeam={() => toast("Open Create Team Modal")}
-            categoryIds={categoryIds} onCategorySelect={(val) => setCategoryIds(val as string[])} categoryOptions={categoryOptions} isCategoriesLoading={!filterData} onFetchCategories={() => { }} onCreateCategory={() => toast("Open Create Category Modal")}
-            partIds={partIds} onPartSelect={(val) => setPartIds(val as string[])} partOptions={partOptions} isPartsLoading={!filterData} onFetchParts={() => { }} onCreatePart={() => toast("Open Create Part Modal")}
-            vendorIds={vendorIds} onVendorSelect={(val) => setVendorIds(val as string[])} vendorOptions={vendorOptions} isVendorsLoading={!filterData} onFetchVendors={() => { }} onCreateVendor={() => toast("Open Create Vendor Modal")}
-            activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown}
-            onPanelClick={setCurrentPanel} isEditMode={isEditing}
-            partUsages={originalData?.partUsages}
-            timeEntries={originalData?.timeEntries}
-            otherCosts={originalData?.otherCosts}
-          />
+        {/* --- HEADER --- */}
+        <div className="wo-form-header">
+          <div className="wo-form-header-left">
+            <div className="wo-form-tab-active">{isEditing ? "Edit" : "New"}</div>
+
+            <div className="wo-form-priority-container">
+              <span className="wo-form-priority-label">Priority</span>
+              <div className="wo-form-priority-dots">
+                {[
+                  { key: "None", class: "none" },
+                  { key: "Low", class: "low" },
+                  { key: "Medium", class: "medium" },
+                  { key: "High", class: "high" },
+                  { key: "Urgent", class: "urgent" }
+                ].map((p) => (
+                  <div
+                    key={p.key}
+                    onClick={() => setSelectedPriority(p.key)}
+                    className={`wo-form-priority-dot ${p.class} ${selectedPriority === p.key ? "active" : ""}`}
+                    title={p.key}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="wo-form-header-actions">
+            {isEditing && (
+              <button onClick={() => toast("Delete clicked")} className="wo-form-action-btn">
+                <Trash2 className="wo-icon-standard" />
+              </button>
+            )}
+            <button className="wo-form-action-btn">
+              <MoreVertical className="wo-icon-standard" />
+            </button>
+            <button onClick={() => { if (onCancel) onCancel(); else navigate("/work-orders"); }} className="wo-form-action-btn">
+              <X className="wo-icon-standard" />
+            </button>
+          </div>
         </div>
-        <div className="sticky bottom-0 flex items-center justify-end gap-3 border-t bg-white px-6 py-4">
-          <button type="button" onClick={() => { if (onCancel) onCancel(); else navigate("/work-orders"); }} className="rounded-md border border-gray-300 px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors">Cancel</button>
-          <button type="button" onClick={handleSubmit} className="rounded-md border border-orange-600 bg-orange-600 px-6 py-2 text-sm font-medium text-white hover:bg-orange-700 transition-colors">{isEditing ? "Update" : "Create"}</button>
+
+        {/* --- CONTENT --- */}
+        <div className="wo-form-content">
+          {/* TITLE & ID */}
+          <input
+            type="text"
+            className="wo-form-title-input"
+            value={workOrderName}
+            onChange={(e) => setWorkOrderName(e.target.value)}
+            placeholder="Hydraulic Regular Reading"
+          />
+          <div className="wo-form-id-label">Work order ID: {activeId || "New"}</div>
+
+          <div className="wo-modal-divider" />
+
+          {/* DATES ROW */}
+          <div className="wo-form-row">
+            <div className="wo-form-icon-wrapper"><Clock className="wo-icon-brand" /></div>
+            <div className="wo-form-label">Due Date:</div>
+            <div className="wo-form-date-display">
+              {dueDate ? new Date(dueDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : "Select Due Date"}
+              <Calendar size={16} className="cursor-pointer" />
+            </div>
+            <button className="wo-form-time-btn" onClick={() => toast("Time selector open")}>
+              <Plus size={12} /> Time
+            </button>
+
+            <div className="wo-form-vertical-divider"></div>
+
+            <div className="wo-form-icon-wrapper"><Clock className="wo-icon-brand" /></div>
+            <div className="wo-form-label">Start Date:</div>
+            <div className="wo-form-date-display">
+              {startDate ? new Date(startDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : "Select Start Date"}
+              <Calendar size={16} className="cursor-pointer" />
+            </div>
+            <button className="wo-form-time-btn" onClick={() => toast("Time selector open")}>
+              <Plus size={12} /> Time
+            </button>
+          </div>
+
+          <div className="wo-modal-divider" />
+
+          {/* ESTIMATED TIME ROW */}
+          <div className="wo-form-row">
+            <div className="wo-form-icon-wrapper"><Clock className="wo-icon-brand" /></div>
+            <div className="wo-form-label">Estimated Time:</div>
+            <div className="wo-form-time-input-group">
+              <div className="wo-form-time-unit">
+                <span>{estimatedTime.split(':')[0] || '0'} H</span>
+                <div className="wo-form-time-spinners">
+                  <button className="wo-form-time-spinner-btn" onClick={() => toast("Increment hours")}>
+                    <ChevronUp size={14} />
+                  </button>
+                  <button className="wo-form-time-spinner-btn" onClick={() => toast("Decrement hours")}>
+                    <ChevronDownIcon size={14} />
+                  </button>
+                </div>
+              </div>
+              <div className="wo-form-time-unit">
+                <span>{estimatedTime.split(':')[1] || '00'} M</span>
+                <div className="wo-form-time-spinners">
+                  <button className="wo-form-time-spinner-btn" onClick={() => toast("Increment minutes")}>
+                    <ChevronUp size={14} />
+                  </button>
+                  <button className="wo-form-time-spinner-btn" onClick={() => toast("Decrement minutes")}>
+                    <ChevronDownIcon size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="wo-modal-divider" />
+
+          {/* ADD PEOPLE SECTION */}
+          <div className="wo-people-section-header">
+            <Users className="wo-icon-brand" />
+            <span className="wo-form-section-title">Add People</span>
+          </div>
+
+          <div className="wo-form-people-input-wrapper">
+            <div className="wo-icon-box-orange">
+              <Users className="wo-icon-brand" style={{ color: "currentColor", width: 20, height: 20 }} />
+            </div>
+            <input
+              className="wo-form-people-input"
+              placeholder="Enter names or emails"
+              onFocus={() => handleFetch("team-members", (opts) => setAssigneeOptions(opts))}
+            />
+          </div>
+
+          <div className="wo-form-selected-peoples">
+            {assigneeOptions.slice(0, 2).map((user) => (
+              <div key={user.id} className="wo-form-person-item">
+                <div className="wo-avatar-small blue">
+                  {user.name.charAt(0)}
+                </div>
+                <span className="wo-form-person-name">{user.name}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="wo-modal-divider" />
+
+          {/* DESCRIPTION SECTION */}
+          <div className="wo-form-row items-start pt-4">
+            <div className="wo-form-icon-wrapper mt-1"><FileText className="wo-icon-brand" /></div>
+            <div className="wo-form-textarea-wrapper flex-1">
+              <textarea
+                className="wo-form-textarea"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Record and monitor hydraulic pressure..."
+                rows={4}
+              />
+            </div>
+          </div>
+
+          <div className="wo-modal-divider" />
+
+          {/* DETAILS GRID */}
+          <div className="wo-details-grid">
+            {/* Location */}
+            <div className="wo-form-row">
+              <div className="wo-form-icon-wrapper"><MapPin className="wo-icon-brand" /></div>
+              <div className="flex-1">
+                <DynamicSelect
+                  name="location"
+                  placeholder="Select Location"
+                  value={locationId}
+                  options={locationOptions}
+                  onSelect={(val) => setLocationId(val as string)}
+                  onFetch={() => handleFetch("locations", setLocationOptions)}
+                  loading={false}
+                  activeDropdown={activeDropdown}
+                  setActiveDropdown={setActiveDropdown}
+                  className="wo-form-select-item"
+                />
+              </div>
+              <button className="wo-form-action-btn"><Plus size={20} /></button>
+            </div>
+
+            {/* Asset */}
+            <div className="wo-form-row">
+              <div className="wo-form-icon-wrapper"><Box className="wo-icon-brand" /></div>
+              <div className="flex-1">
+                <DynamicSelect
+                  name="asset"
+                  placeholder="Select Asset"
+                  value={assetIds}
+                  options={assetOptions}
+                  onSelect={(val) => setAssetIds(val as string[])}
+                  onFetch={() => handleFetch("assets", setAssetOptions)}
+                  loading={false}
+                  activeDropdown={activeDropdown}
+                  setActiveDropdown={setActiveDropdown}
+                  className="wo-form-select-item"
+                />
+              </div>
+              <button className="wo-form-action-btn mr-4"><Plus size={20} /></button>
+
+              <div className="wo-form-status-badge" onClick={() => toast("Status selector open")}>
+                <span>{status}</span>
+                <ChevronDown size={14} />
+              </div>
+            </div>
+
+            {/* Frequency */}
+            <div className="wo-form-row">
+              <div className="wo-form-icon-wrapper"><RotateCw className="wo-icon-brand" /></div>
+              <div className="wo-form-select-item">
+                <span>{recurrenceRule?.type || "Repeat daily"}</span>
+                <ChevronDown size={14} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* --- FOOTER --- */}
+        <div className="wo-form-footer">
+          <button onClick={handleSubmit} className="wo-form-submit-btn">
+            {isEditing ? "Update" : "Create"}
+          </button>
         </div>
       </div>
+
       <LinkedProcedurePreviewModal isOpen={isPreviewOpen} onClose={() => setIsPreviewOpen(false)} procedure={linkedProcedure} />
       <AddProcedureModal isOpen={isAddProcModalOpen} onClose={() => setIsAddProcModalOpen(false)} onSelect={(proc: any) => { setLinkedProcedure(proc); setIsAddProcModalOpen(false); }} />
     </>

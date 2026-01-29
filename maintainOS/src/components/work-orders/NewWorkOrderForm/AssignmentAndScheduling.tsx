@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Calendar, X } from "lucide-react";
-// import { fetchFilterData } from "../../utils/filterDataFetcher"; // REMOVED
+import { fetchFilterData } from "../../utils/filterDataFetcher";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import { DynamicSelect } from "./DynamicSelect";
@@ -208,8 +208,8 @@ export function AssignmentAndScheduling({
 }: Props) {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [selectedFreq, setSelectedFreq] = useState("");
-  // const [users, setUsers] = useState<{ id: string; name: string }[]>(initialAssignees); // REMOVED local state
-  // const [isLoading, setIsLoading] = useState(false); // REMOVED local state
+  const [users, setUsers] = useState<{ id: string; name: string }[]>(initialAssignees);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [showDueCalendar, setShowDueCalendar] = useState(false);
   const [showStartCalendar, setShowStartCalendar] = useState(false);
@@ -276,13 +276,8 @@ export function AssignmentAndScheduling({
   useEffect(() => {
     let rule: any = null;
     if (selectedFreq === "Daily") rule = { type: "daily" };
-    else if (selectedFreq === "Weekly") {
-      if (selectedWeekDays.length > 0) rule = { type: "weekly", daysOfWeek: [...selectedWeekDays].sort((a, b) => a - b) };
-    }
-    else if (selectedFreq === "Monthly") {
-      if (monthMode === "date") rule = { type: "monthly_by_date", dayOfMonth };
-      else rule = { type: "monthly_by_weekday", weekOfMonth, weekdayOfMonth };
-    }
+    else if (selectedFreq === "Weekly") { if (selectedWeekDays.length > 0) rule = { type: "weekly", daysOfWeek: [...selectedWeekDays].sort((a, b) => a - b) }; }
+    else if (selectedFreq === "Monthly") { if (monthMode === "date") rule = { type: "monthly_by_date", dayOfMonth }; else rule = { type: "monthly_by_weekday", weekOfMonth, weekdayOfMonth }; }
     else if (selectedFreq === "Yearly") rule = { type: "yearly", intervalYears: yearInterval };
 
     // Prevent infinite loop by checking deep equality
@@ -383,7 +378,7 @@ export function AssignmentAndScheduling({
               <div className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl p-4 animate-in fade-in zoom-in-95 duration-100">
                 <DayPicker
                   mode="single"
-                  selected={dueDate ? safeParseDate(dueDate) : undefined}
+                  selected={safeParseDate(dueDate)}
                   onSelect={(date) => date && handleDueDateChange(date)}
                 />
               </div>
@@ -433,7 +428,7 @@ export function AssignmentAndScheduling({
               <div className="absolute z-50 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl p-4 animate-in fade-in zoom-in-95 duration-100">
                 <DayPicker
                   mode="single"
-                  selected={startDate ? safeParseDate(startDate) : undefined}
+                  selected={safeParseDate(startDate)}
                   onSelect={(date) => date && handleStartDateChange(date)}
                 />
               </div>

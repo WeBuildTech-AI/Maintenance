@@ -306,6 +306,7 @@ const DropdownMenuContent = React.forwardRef<
 DropdownMenuContent.displayName = "DropdownMenuContent";
 
 type DropdownMenuItemProps = {
+  asChild?: boolean;
   inset?: boolean;
   variant?: "default" | "destructive";
   onSelect?: () => void;
@@ -313,20 +314,20 @@ type DropdownMenuItemProps = {
 
 const DropdownMenuItem = React.forwardRef<HTMLButtonElement, DropdownMenuItemProps>(
   (
-    { inset, variant = "default", className, onClick, onSelect, ...props },
+    { asChild = false, inset, variant = "default", className, onClick, onSelect, ...props },
     ref,
   ) => {
     const { setOpen } = useDropdownMenuContext("DropdownMenuItem");
+    const Comp = (asChild ? Slot : "button") as any;
 
     return (
-      <button
+      <Comp
         ref={ref}
-        type="button"
         role="menuitem"
         data-slot="dropdown-menu-item"
         data-inset={inset ? "true" : undefined}
         data-variant={variant}
-        onClick={(event) => {
+        onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
           onClick?.(event);
           if (!event.defaultPrevented) {
             onSelect?.();

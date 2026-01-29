@@ -7,6 +7,7 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App.tsx";
 import { store } from "./store";
 import "./index.css";
+import "./styles/theme.css";
 import { AppToaster } from "./components/ui/use-toast";
 import reportWebVitals from "./reportWebVitals.ts";
 // import { Integrations } from "@sentry/tracing";

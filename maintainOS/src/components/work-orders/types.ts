@@ -1,6 +1,6 @@
 // import { type Dispatch, type SetStateAction } from "react";
 
-export type ViewMode = "todo" | "list" | "calendar" | "workload";
+export type ViewMode = "todo" | "list" | "calendar" | "workload" | "calendar-week";
 
 export interface WorkOrderAssignee {
   name: string;

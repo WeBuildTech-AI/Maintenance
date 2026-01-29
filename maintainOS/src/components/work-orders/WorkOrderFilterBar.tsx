@@ -4,20 +4,20 @@ import FilterBar from "../utils/FilterBar";
 // ✅ EXACT OPTIONS FROM SCREENSHOTS
 const ALL_FILTERS = [
   // --- API FILTERS (Fetch data dynamically) ---
-  { key: "asset", label: "Asset", icon: <Settings size={16} />, disableAutoFetch: true }, 
+  { key: "asset", label: "Asset", icon: <Settings size={16} />, disableAutoFetch: true },
   { key: "location", label: "Location", icon: <MapPin size={16} />, disableAutoFetch: true },
   { key: "part", label: "Part", icon: <Settings size={16} />, disableAutoFetch: true },
   { key: "vendor", label: "Vendor", icon: <Network size={16} />, disableAutoFetch: true },
   { key: "category", label: "Category", icon: <Layers size={16} />, disableAutoFetch: true },
-  { key: "assignedTo", label: "Assigned To", icon: <User size={16} />, disableAutoFetch: true },
+  { key: "assignee", label: "Assigned To", icon: <User size={16} />, disableAutoFetch: true },
   { key: "completedBy", label: "Completed By", icon: <User size={16} />, disableAutoFetch: true },
   { key: "requestedBy", label: "Requested By", icon: <User size={16} />, disableAutoFetch: true },
   { key: "procedure", label: "Procedure", icon: <Wrench size={16} />, disableAutoFetch: true },
 
   // --- HARDCODED FILTERS (Based on Screenshots) ---
-  { 
-    key: "status", 
-    label: "Status", 
+  {
+    key: "status",
+    label: "Status",
     icon: <Tag size={16} />,
     options: [
       { label: "Open", value: "open" },
@@ -25,9 +25,9 @@ const ALL_FILTERS = [
       { label: "In Progress", value: "in_progress" }
     ]
   },
-  { 
-    key: "priority", 
-    label: "Priority", 
+  {
+    key: "priority",
+    label: "Priority",
     icon: <AlertCircle size={16} />,
     options: [
       { label: "None", value: "none" },
@@ -36,9 +36,9 @@ const ALL_FILTERS = [
       { label: "High", value: "high" }
     ]
   },
-  { 
-    key: "parentSubWorkOrder", 
-    label: "Parent/Sub-Work Order", 
+  {
+    key: "parentSubWorkOrder",
+    label: "Parent/Sub-Work Order",
     icon: <ClipboardCheck size={16} />,
     options: [
       { label: "Parent Work Order", value: "parent" },
@@ -46,18 +46,18 @@ const ALL_FILTERS = [
       { label: "Neither Parent/Sub-Work Order", value: "neither" }
     ]
   },
-  { 
-    key: "sharedExported", 
-    label: "Shared/Exported", 
+  {
+    key: "sharedExported",
+    label: "Shared/Exported",
     icon: <Share2 size={16} />,
     options: [
       { label: "Emailed to Vendor", value: "emailed" },
       { label: "Exported to PDF", value: "exported" }
     ]
   },
-  { 
-    key: "dueDate", 
-    label: "Due Date", 
+  {
+    key: "dueDate",
+    label: "Due Date",
     icon: <Clock size={16} />,
     options: [
       { label: "Today", value: "today" },
@@ -69,9 +69,9 @@ const ALL_FILTERS = [
       { label: "Custom Date", value: "custom" }
     ]
   },
-  { 
-    key: "workType", 
-    label: "Work Type", 
+  {
+    key: "workType",
+    label: "Work Type",
     icon: <Briefcase size={16} />,
     options: [
       { label: "Reactive", value: "reactive" },
@@ -79,9 +79,9 @@ const ALL_FILTERS = [
       { label: "Other", value: "other" }
     ]
   },
-  { 
-    key: "startDate", 
-    label: "Start Date", 
+  {
+    key: "startDate",
+    label: "Start Date",
     icon: <Calendar size={16} />,
     options: [
       { label: "Today", value: "today" },
@@ -91,9 +91,9 @@ const ALL_FILTERS = [
       { label: "Custom Date", value: "custom" }
     ]
   },
-  { 
-    key: "recurrence", 
-    label: "Recurrence", 
+  {
+    key: "recurrence",
+    label: "Recurrence",
     icon: <Repeat size={16} />,
     hideCondition: true, // ✅ HIDDEN AS PER SCREENSHOT
     options: [
@@ -101,9 +101,9 @@ const ALL_FILTERS = [
       { label: "Non-Repeating", value: "non_repeating" }
     ]
   },
-  { 
-    key: "fromRequest", 
-    label: "From a Request", 
+  {
+    key: "fromRequest",
+    label: "From a Request",
     icon: <ClipboardList size={16} />,
     options: [
       { label: "Yes", value: "true" },
@@ -137,7 +137,7 @@ export default function WorkOrderFilterBar({ onParamsChange }: WorkOrderFilterBa
 
     return ALL_FILTERS.map((filter) => {
       let options: any[] = [];
-      
+
       switch (filter.key) {
         case "location":
           options = filterData.locations || [];
@@ -157,19 +157,19 @@ export default function WorkOrderFilterBar({ onParamsChange }: WorkOrderFilterBa
         case "procedure":
           options = filterData.procedures || [];
           break;
-        case "assignedTo":
-           // "Assigned To" usually maps to Team or User. 
-           // Based on filterDataFetcher, "assigned to" maps to users.
-           // But wait, filterDataFetcher handles "assigned to" -> "users".
-           // Let's use users.
-           options = filterData.users || []; 
-           break;
+        case "assignee":
+          // "Assigned To" usually maps to Team or User. 
+          // Based on filterDataFetcher, "assigned to" maps to users.
+          // But wait, filterDataFetcher handles "assigned to" -> "users".
+          // Let's use users.
+          options = filterData.users || [];
+          break;
         case "completedBy":
-           options = filterData.users || [];
-           break;
+          options = filterData.users || [];
+          break;
         case "requestedBy":
-           options = filterData.users || [];
-           break;
+          options = filterData.users || [];
+          break;
         // If there are other dynamic filters in ALL_FILTERS like "assetTypes", handle them or leave as is.
         // assetTypes was not in my fetchFilterData thunk explicitly? 
         // fetchFilterData fetched: locations, parts, assets, vendors, categories, users, procedures, teams, meters.
@@ -196,7 +196,7 @@ export default function WorkOrderFilterBar({ onParamsChange }: WorkOrderFilterBa
       defaultKeys={[
         "asset",
         "status",
-        "assignedTo"
+        "assignee"
       ]}
       onParamsChange={onParamsChange}
     />

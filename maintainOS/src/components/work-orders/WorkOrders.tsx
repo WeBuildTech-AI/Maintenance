@@ -1,20 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { useNavigate, useMatch, useLocation, useSearchParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { type FetchWorkOrdersParams } from "../../store/workOrders/workOrders.types";
+import type { FetchWorkOrdersParams } from "../../store/workOrders/workOrders.types";
 import { fetchWorkOrders } from "../../store/workOrders/workOrders.thunks";
 import { CalendarView } from "./CalendarView";
 import { ListView } from "./ListView";
 import NewWorkOrderModal from "./NewWorkOrderModal";
 import type { ViewMode, WorkOrder } from "./types";
 import { WorkloadView } from "./WorkloadView/WorkloadView";
-import { WorkOrderHeaderComponent } from "./WorkOrderHeader";
+import { UnifiedHeader } from "./UnifiedHeader"; // Updated Import
 import { ToDoView } from "./ToDoView/ToDoView";
 import type { AppDispatch } from "../../store";
 import { workOrderService } from "../../store/workOrders";
 import WorkOrderDetailModal from "./Tableview/modals/WorkOrderDetailModal";
+import { addMonths, subMonths, addWeeks, subWeeks } from "date-fns"; // ✅ Added imports
 
 export function WorkOrders() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -24,10 +25,26 @@ export function WorkOrders() {
     null
   );
   // const [viewMode, setViewMode] = useState<ViewMode>("todo");
-  const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    const savedMode = localStorage.getItem("workOrderViewMode");
-    return (savedMode as ViewMode) || "todo";
-  });
+  /* Refactored to use URL Search Params */
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryViewMode = searchParams.get("view") as ViewMode | null;
+  const viewMode: ViewMode = queryViewMode && ["todo", "list", "calendar", "calendar-week", "workload"].includes(queryViewMode)
+    ? queryViewMode
+    : "todo";
+
+  // ✅ Calendar State Lifted
+  const [calendarDate, setCalendarDate] = useState(new Date());
+
+  const handlePrevDate = useCallback(() => {
+    setCalendarDate(prev => (viewMode === 'workload' || viewMode === 'calendar-week') ? subWeeks(prev, 1) : subMonths(prev, 1));
+  }, [viewMode]);
+
+  const handleNextDate = useCallback(() => {
+    setCalendarDate(prev => (viewMode === 'workload' || viewMode === 'calendar-week') ? addWeeks(prev, 1) : addMonths(prev, 1));
+  }, [viewMode]);
+
+  // Sync 'todo' to URL if missing, or just handle default silently. 
+  // Let's just use the derived value.
   const [workloadWeekOffset, setWorkloadWeekOffset] = useState(0);
   const [creatingWorkOrder, setCreatingWorkOrder] = useState(false);
   // const [showSettings, setShowSettings] = useState(false);
@@ -58,25 +75,13 @@ export function WorkOrders() {
   const dispatch = useDispatch<AppDispatch>();
   const location = useLocation();
 
-  // Timer Guard Ref
-  const activeTimers = useRef<Set<string>>(new Set());
-
   // Get prefill data from navigation state (from Assets offline prompt)
   const prefillData = (location.state as any)?.prefillData;
 
-  // ✅ FIX: More robust route matching that handles weird URL encoding (like spaces vs hyphens)
-  // Fallback: If useMatch fails, manually extract ID from pathname segments.
-  const getWorkOrderIdFromUrl = () => {
-    const segments = location.pathname.split("/").filter(Boolean);
-    if (segments.length >= 2 && (segments[0].toLowerCase() === "work-orders" || segments[0].toLowerCase() === "work orders")) {
-      const id = segments[1];
-      if (id !== "create" && id !== "edit") return id;
-    }
-    return null;
-  };
+  const isCreateRoute = useMatch("/work-orders/create");
+  const viewMatch = useMatch("/work-orders/:id");
 
-  const isCreateRoute = location.pathname.includes("/create");
-  const viewingId = getWorkOrderIdFromUrl();
+  const viewingId = viewMatch?.params?.id;
 
   // Debounce Search
   useEffect(() => {
@@ -88,15 +93,10 @@ export function WorkOrders() {
 
   // store the view mode in local storage
 
+  // Persist view mode to localStorage when it changes (optional, but good for UX restoration if we want to redirect on load)
   useEffect(() => {
-    if (viewMode === "list") {
-      localStorage.setItem("workOrderViewMode", "list");
-    } else if (viewMode === "calendar") {
-      localStorage.setItem("workOrderViewMode", "calendar");
-    } else if (viewMode === "workload") {
-      // localStorage.setItem("workOrderViewMode", "workload");
-    } else {
-      localStorage.removeItem("workOrderViewMode");
+    if (viewMode) {
+      localStorage.setItem("workOrderViewMode", viewMode);
     }
   }, [viewMode]);
 
@@ -332,10 +332,9 @@ export function WorkOrders() {
 
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* ✅ Use as Component, not function call */}
-      <WorkOrderHeaderComponent
+      {/* ✅ Use Unified Component */}
+      <UnifiedHeader
         viewMode={viewMode}
-        onViewModeChange={handleViewModeChange}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         setIsCreatingForm={setCreatingWorkOrder}
@@ -344,6 +343,16 @@ export function WorkOrders() {
         setIsSettingsModalOpen={setIsSettingsModalOpen}
         onFilterChange={handleFilterChange}
         setShowDeleted={setShowDeleted}
+        // ✅ Passed Props
+        currentDate={calendarDate}
+        onPrevDate={handlePrevDate}
+        onNextDate={handleNextDate}
+        onViewModeChange={(mode) => {
+          const params = new URLSearchParams(searchParams);
+          params.set('view', mode);
+          setSearchParams(params);
+        }}
+        pageTitle="Work Orders"
       />
 
       {loading && workOrders.length === 0 && (
@@ -415,12 +424,16 @@ export function WorkOrders() {
             />
           )}
 
-          {viewMode === "calendar" && (
+          {(viewMode === "calendar" || viewMode === "calendar-week") && (
             <CalendarView
               workOrders={workOrders}
-              onRefreshWorkOrders={handleRefreshWorkOrders}
-              loading={loading}
-              hasError={hasError}
+              currentDate={calendarDate}
+              viewMode="calendar-week"
+              onPrevDate={handlePrevDate}
+              onNextDate={handleNextDate}
+              onDateChange={setCalendarDate}
+              onFilterChange={handleFilterChange}
+              filters={filterParams}
             />
           )}
 
@@ -449,7 +462,7 @@ export function WorkOrders() {
           open={!!viewingWorkOrder}
           onClose={() => {
             setViewingWorkOrder(null);
-            navigate("/work-orders");
+            navigate(`/work-orders?view=${viewMode}`);
           }}
           workOrder={viewingWorkOrder}
           onRefreshWorkOrders={handleRefreshWorkOrders}

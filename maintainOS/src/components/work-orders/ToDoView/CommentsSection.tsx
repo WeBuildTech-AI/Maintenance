@@ -1,8 +1,7 @@
 "use client";
 
-import { forwardRef, useEffect, useState, useMemo, useRef } from "react";
-import { Paperclip, X, Loader2, Filter } from "lucide-react";
-import { formatBytes } from "../../../utils/formatBytes";
+import { forwardRef, useEffect, useState, useMemo } from "react";
+import { Paperclip, X, Loader2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import {
   addWorkOrderComment,
@@ -10,7 +9,6 @@ import {
   fetchWorkOrderLogs,
 } from "../../../store/workOrders/workOrders.thunks";
 import toast from "react-hot-toast";
-import { User as UserIcon } from "lucide-react";
 
 const formatCommentDate = (dateString?: string) => {
   if (!dateString) return "";
@@ -193,45 +191,41 @@ export const CommentsSection = forwardRef<
   return (
     <>
       {/* INPUT SECTION */}
-      <div className="border-t p-6 bg-gray-50/50">
-        <h3 className="text-lg font-medium mb-2">Activity & Comments</h3>
+      <div className="wo-modal-comments-container">
+        <h3 className="wo-modal-comments-header">Add Comments</h3>
 
-        <textarea
-          ref={ref}
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          placeholder="Write a comment…"
-          rows={3}
-          className="w-full text-sm rounded-lg bg-white px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-orange-300 focus:border-orange-500 resize-none outline-none"
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              handleSend();
-            }
-          }}
-        />
+        <div className="wo-modal-comments-input-wrapper">
+          <textarea
+            ref={ref}
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Typing..."
+            rows={3}
+            className="wo-modal-comments-textarea"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+          />
 
-        <div className="p-1 flex justify-between items-end mt-2">
-          {attachment ? (
-            <div className="group flex items-center gap-3 rounded-md border border-gray-200 bg-white px-2 py-1">
-              <div className="min-w-0">
-                <div className="text-xs font-medium truncate max-w-[200px]">
+          <div className="wo-modal-comments-toolbar">
+            {attachment ? (
+              <div className="group flex items-center gap-2 rounded-md border border-gray-200 bg-white px-2 py-1">
+                <span className="text-xs font-medium truncate max-w-[150px]">
                   {attachment.name}
-                </div>
+                </span>
+                <button
+                  type="button"
+                  onClick={clearAttachment}
+                  className="text-gray-500 hover:text-red-500"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={clearAttachment}
-                className="ml-1 text-gray-500"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          ) : (
-            <div />
-          )}
+            ) : null}
 
-          <div className="flex items-center gap-3">
             <input
               ref={fileRef}
               type="file"
@@ -240,7 +234,7 @@ export const CommentsSection = forwardRef<
             />
             <button
               onClick={() => fileRef.current?.click()}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="wo-modal-comments-attach-btn"
             >
               <Paperclip className="h-5 w-5" />
             </button>
@@ -248,31 +242,29 @@ export const CommentsSection = forwardRef<
             <button
               onClick={handleSend}
               disabled={isSubmitting || !comment.trim()}
-              className="inline-flex items-center gap-2 rounded bg-orange-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-50"
+              className="wo-modal-comments-send-btn"
             >
-              {isSubmitting && (
-                <Loader2 className="h-3 w-3 animate-spin" />
+              {isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Send"
               )}
-              Send
             </button>
           </div>
         </div>
       </div>
 
       {/* ✅ FILTER TABS */}
-      <div className="flex items-center gap-6 px-6 border-b border-gray-100 bg-white">
+      <div className="wo-modal-tabs-container">
         {[
-          { id: 'all', label: 'All Activity' },
+          { id: 'all', label: 'All Activities' },
           { id: 'comments', label: 'Comments' },
           { id: 'logs', label: 'Logs' }
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setFilter(tab.id as any)}
-            className={`py-3 text-xs font-medium border-b-2 transition-colors ${filter === tab.id
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+            className={`wo-modal-tab ${filter === tab.id ? 'active' : ''}`}
           >
             {tab.label}
           </button>
@@ -280,7 +272,7 @@ export const CommentsSection = forwardRef<
       </div>
 
       {/* TIMELINE */}
-      <div className="space-y-6 p-6 bg-white">
+      <div className="wo-modal-timeline-list">
 
         {isLoading ? (
           <div className="space-y-6">
@@ -304,10 +296,6 @@ export const CommentsSection = forwardRef<
           timelineItems.map((item: any, index: number) => {
             const author = item.author || currentUser || {};
             const authorName = author.fullName || "Unknown User";
-            const authorAvatar = author.avatarUrl || null;
-            const initials =
-              authorName.charAt(0)?.toUpperCase() || "U";
-
             const isLog = item.type === "log";
 
             let messageText = "";
@@ -325,33 +313,29 @@ export const CommentsSection = forwardRef<
             return (
               <div
                 key={`${item.type}-${item.id || index}`}
-                className="flex gap-3 items-start group"
+                className="wo-modal-timeline-item"
               >
+                <div className="wo-modal-timeline-header">
+                  <span className="wo-modal-timeline-author">
+                    {authorName}
+                  </span>
+                  <span className="wo-modal-timeline-date">
+                    {formatCommentDate(item.createdAt)}
+                  </span>
+                </div>
 
-
-                {/* CONTENT */}
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm font-semibold text-gray-900">
-                      {authorName}
+                <div
+                  className={
+                    isLog
+                      ? "wo-modal-timeline-message wo-modal-timeline-log-message"
+                      : "wo-modal-timeline-message wo-modal-timeline-comment-bubble"
+                  }
+                >
+                  {messageText?.split("\n").map((line: string, i: number) => (
+                    <p key={i} className="min-h-[1.25rem]">
+                      {line}
                     </p>
-                    <span className="text-xs text-gray-400">
-                      {formatCommentDate(item.createdAt)}
-                    </span>
-                  </div>
-
-                  <div
-                    className={`text-sm leading-relaxed w-fit max-w-full break-words ${isLog
-                      ? "text-gray-700 italic px-1"
-                      : "bg-[#FFFCF5]  shadow-[0_2px_8px_-3px_rgba(234,179,8,0.15)] rounded-lg hover:shadow-[0_4px_12px_-4px_rgba(234,179,8,0.2)] transition-shadow"
-                      }`}
-                  >
-                    {messageText?.split("\n").map((line: string, i: number) => (
-                      <p key={i} className="min-h-[1.25rem]">
-                        {line}
-                      </p>
-                    ))}
-                  </div>
+                  ))}
                 </div>
               </div>
             );

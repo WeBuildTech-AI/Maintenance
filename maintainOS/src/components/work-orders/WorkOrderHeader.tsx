@@ -1,31 +1,22 @@
 import type { Dispatch, SetStateAction } from "react";
 import type { ViewMode } from "./types";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
 import {
-  Calendar,
-  ChevronDown,
-  LayoutGrid,
-  List,
   Plus,
   Search,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
   Settings,
-  Users,
 } from "lucide-react";
 import { Input } from "../ui/input";
 import WorkOrderFilterBar from "./WorkOrderFilterBar";
 import type { FetchWorkOrdersParams } from "../../store/workOrders/workOrders.types";
 import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 
 interface WorkOrderHeaderProps {
   viewMode: ViewMode;
-  setViewMode?: Dispatch<SetStateAction<ViewMode>>; // Keep for backward compat if needed, but pref onViewModeChange
-  onViewModeChange?: (mode: ViewMode) => void;
   searchQuery: string;
   setSearchQuery: Dispatch<SetStateAction<string>>;
   setIsCreatingForm: Dispatch<SetStateAction<boolean>>;
@@ -38,134 +29,85 @@ interface WorkOrderHeaderProps {
 
 export function WorkOrderHeaderComponent({
   viewMode,
-  setViewMode,
-  onViewModeChange,
   searchQuery,
   setSearchQuery,
-  setIsSettingsModalOpen,
   onFilterChange,
-  setShowDeleted,
+  setIsSettingsModalOpen,
 }: WorkOrderHeaderProps) {
   const navigate = useNavigate();
+  const isCalendar = viewMode === "calendar";
+
+  // Mock date for Calendar view design (Jan 2026 as per screenshot)
+  const currentDate = new Date(2026, 0, 1);
+  const title = isCalendar ? format(currentDate, "MMM yyyy") : "Work Orders";
 
   return (
-    <header className=" border-border bg-card px-6 py-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <div className="flex item-center gap-6">
-            <h1 className="text-2xl font-semibold">Work Orders</h1>
-            <div className=" flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex-shrink-0">
-                    {viewMode === "todo" && (
-                      <>
-                        <LayoutGrid className="h-4 w-4 mr-2" />
-                        To-Do View
-                      </>
-                    )}
-                    {viewMode === "list" && (
-                      <>
-                        <List className="h-4 w-4 mr-2" />
-                        List View
-                      </>
-                    )}
-                    {viewMode === "calendar" && (
-                      <>
-                        <Calendar className="h-4 w-4 mr-2" />
-                        Calendar View
-                      </>
-                    )}
-                    {viewMode === "workload" && (
-                      <>
-                        <Users className="h-4 w-4 mr-2" />
-                        Workload View
-                      </>
-                    )}
-                    <ChevronDown className="h-4 w-4 ml-2" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuItem
-                    onClick={() => {
-                      if (onViewModeChange) onViewModeChange("todo");
-                      else setViewMode?.("todo");
-                      setShowDeleted?.(false);
-                    }}
-                  >
-                    <LayoutGrid className="h-4 w-4 mr-2" />
-                    To-Do View
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      if (onViewModeChange) onViewModeChange("list");
-                      else setViewMode?.("list");
-                    }}
-                  >
-                    <List className="h-4 w-4 mr-2" />
-                    List View
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      if (onViewModeChange) onViewModeChange("calendar");
-                      else setViewMode?.("calendar");
-                      setShowDeleted?.(false);
-                    }}
-                  >
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Calendar View
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      if (onViewModeChange) onViewModeChange("workload");
-                      else setViewMode?.("workload");
-                      setShowDeleted?.(false);
-                    }}
-                  >
-                    <Users className="h-4 w-4 mr-2" />
-                    Workload View
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
+    <header className="header-section">
+      <div className="header-row">
+        {/* Left Side: Title & Optional Filter Dropdown */}
+        <div className="header-title-group">
+          <h1 className="header-title">{title}</h1>
+          {isCalendar && (
+            <Button variant="outline" className="header-filter-btn">
+              Filter
+              <ChevronDown className="h-4 w-4 ml-1 opacity-50" />
+            </Button>
+          )}
         </div>
-        <div className="flex items-center gap-3">
-          <div className="relative border-orange-600 focus:border-orange-600  ">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-orange-600" />
+
+        {/* Right Side: Search & Actions */}
+        <div className="header-actions-group">
+          {/* Search Bar */}
+          <div className={`header-search-container ${!isCalendar ? "list-variant" : ""}`}>
+            <Search className={`header-search-icon ${!isCalendar ? "list-variant" : ""}`} />
             <Input
-              placeholder="Search work orders  "
-              className="w-96 pl-9 bg-white border-orange-600  "
+              placeholder={isCalendar ? "Search Workorder" : "Search work orders"}
+              className={`header-search-input ${!isCalendar ? "list-variant" : ""}`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button
-            className="gap-2 cursor-pointer bg-orange-600 hover:outline-none"
-            onClick={() => {
-              navigate('/work-orders/create');
-            }}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            New Work Order
-          </Button>
+
+          {/* Conditional Actions */}
+          {isCalendar ? (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" className="header-nav-btn">
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+              <Button variant="outline" className="header-nav-btn-text">
+                This Week
+              </Button>
+              <Button variant="outline" className="header-nav-btn">
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+            </div>
+          ) : (
+            <Button
+              className="header-primary-btn"
+              onClick={() => navigate("/work-orders/create")}
+            >
+              <Plus className="h-4 w-4" />
+              New Work Order
+            </Button>
+          )}
         </div>
       </div>
-      <div className="flex items-center mt-4 p-1 h-10 justify-between">
-        {/* Left: Filter bar */}
-        <WorkOrderFilterBar onParamsChange={onFilterChange} />
 
-        {/* Right: Settings button (only for table view) */}
-        {viewMode === "list" && (
+      {/* Row 2: List View specific Filter Bar */}
+      {!isCalendar && (
+        <div className="header-row mt-2">
+          <div className="flex items-center gap-2 w-full">
+            <WorkOrderFilterBar onParamsChange={onFilterChange} />
+          </div>
+          {/* Settings button for list view could go here if needed, consistent with previous design */}
           <button
-            // onClick={() => setIsSettingsModalOpen?.(true)}
             onClick={() => setIsSettingsModalOpen?.(true)}
-            className="p-2 rounded-md border hover:bg-gray-100 transition"
+            className="header-nav-btn ml-2"
           >
-            <Settings className="h-5 w-5 text-orange-600" />
+            <Settings className="h-5 w-5 text-gray-500 hover:text-orange-600 transition-all" />
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </header>
   );
 }

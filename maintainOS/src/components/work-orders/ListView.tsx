@@ -1,5 +1,6 @@
 "use client";
 import React, { useMemo, useState, useRef, useEffect } from "react";
+import { useAppSelector } from "../../store/hooks";
 import { Card, CardContent } from "./../ui/card";
 import {
   MoreVertical,
@@ -95,6 +96,7 @@ const StatusCell = ({
   onRefresh: () => void;
 }) => {
   const dispatch = useDispatch<AppDispatch>();
+  const user = useAppSelector((state) => state.auth.user);
   const [loading, setLoading] = useState(false);
 
   const statusKey = (currentStatus || "open").toLowerCase();
@@ -105,7 +107,7 @@ const StatusCell = ({
     if (newStatus === statusKey) return;
     setLoading(true);
     try {
-      await dispatch(updateWorkOrderStatus({ id: workOrderId, authorId: "", status: newStatus })).unwrap();
+      await dispatch(updateWorkOrderStatus({ id: workOrderId, status: newStatus, authorId: user?.id || "" })).unwrap();
       onRefresh(); // Refresh the list to reflect changes
       toast.success(`Status updated to ${newStatus}`);
     } catch (error) {
@@ -564,7 +566,7 @@ export function ListView({
               className="truncate cursor-pointer text-gray-700 hover:text-blue-600 hover:underline"
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/work-orders/${record.id}`);
+                navigate(`/work-orders/${record.id}?view=list`);
               }}
             >
               {title}
