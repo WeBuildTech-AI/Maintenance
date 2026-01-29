@@ -752,9 +752,12 @@ export function CalendarView({
             )}
 
             {viewMode === 'calendar-week' && (
-              <div className="flex flex-col h-full">
-                {/* Week Header */}
-                <div className="week-view-header">
+              <div className="flex flex-col h-full overflow-auto custom-scrollbar relative">
+                {/* Week Header (Sticky Top) */}
+                <div className="week-view-header sticky top-0 z-[50] min-w-max">
+                  {/* Sticky Corner for Time Axis overlap */}
+                  <div className="week-header-corner"></div>
+
                   {/* Day Columns Header */}
                   {weekDays.map((day, i) => (
                     <div key={i} className={`week-day-header ${day.isToday ? 'today' : ''}`}>
@@ -764,10 +767,10 @@ export function CalendarView({
                   ))}
                 </div>
 
-                {/* Week Grid (Scrollable) */}
-                <div className="flex overflow-auto h-full">
-                  {/* Time Axis (Left - Separate Column) */}
-                  <div className="week-time-axis">
+                {/* Week Grid + Time Axis (Body) */}
+                <div className="flex flex-1 min-w-max">
+                  {/* Time Axis (Left - Sticky Left) */}
+                  <div className="week-time-axis sticky left-0 z-[30] bg-white">
                     {Array.from({ length: 24 }).map((_, hour) => (
                       <div
                         key={hour}
