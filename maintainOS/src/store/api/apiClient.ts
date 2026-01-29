@@ -1,5 +1,5 @@
 import axios from "axios";
-import { getRuntimeConfig } from "../../config/runtimeConfig";
+
 
 
 let apiInstance: ReturnType<typeof axios.create> | null = null;
@@ -7,10 +7,11 @@ let apiInstance: ReturnType<typeof axios.create> | null = null;
 export async function getApiClient() {
   if (apiInstance) return apiInstance;
 
-  const config = await getRuntimeConfig;
+  // Prioritize local env, fallback to runtime config if needed (or remove runtime config if deprecated)
+  const baseUrl = import.meta.env.VITE_API_URL;
 
   apiInstance = axios.create({
-    baseURL: config.api_url,
+    baseURL: baseUrl,
     timeout: 20000,
   });
 

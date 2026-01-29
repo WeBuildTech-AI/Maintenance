@@ -28,7 +28,7 @@ import {
   updateWorkOrder,
   fetchWorkOrderById,
 } from "../../../store/workOrders/workOrders.thunks";
-// import { fetchFilterData } from "../../utils/filterDataFetcher"; // REMOVED
+import { fetchFilterData } from "../../../store/workOrders/workOrders.thunks";
 import { procedureService } from "../../../store/procedures/procedures.service";
 import { LinkedProcedurePreviewModal } from "./LinkedProcedurePreviewModal";
 import AddProcedureModal from "../WorkloadView/Modal/AddProcedureModal";
@@ -38,7 +38,7 @@ import GenerateProcedure from "../../Library/GenerateProcedure/GenerateProcedure
 import TimeOverviewPanel from "./../panels/TimeOverviewPanel";
 import OtherCostsPanel from "./../panels/OtherCostsPanel";
 import UpdatePartsPanel from "./../panels/UpdatePartsPanel";
-// import { locationService } from "../../../store/locations"; // REMOVED unused import
+import { locationService } from "../../../store/locations";
 import type { RootState } from "../../../store"; // Added RootState import
 
 
@@ -219,7 +219,7 @@ export function NewWorkOrderForm({
 
   const [assetIds, setAssetIds] = useState<string[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  const [assigneeOptions, setAssigneeOptions] = useState<{ id: string, name: string }[]>([]);
+  const [manualAssigneeOptions, setManualAssigneeOptions] = useState<{ id: string, name: string }[]>([]);
 
   const [dueDate, setDueDate] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -237,12 +237,9 @@ export function NewWorkOrderForm({
   const [partIds, setPartIds] = useState<string[]>([]);
   const [vendorIds, setVendorIds] = useState<string[]>([]);
 
-  const [locationOptions, setLocationOptions] = useState<SelectOption[]>([]);
-  const [assetOptions, setAssetOptions] = useState<SelectOption[]>([]);
-  const [teamOptions, setTeamOptions] = useState<SelectOption[]>([]);
-  const [categoryOptions, setCategoryOptions] = useState<SelectOption[]>([]);
-  const [partOptions, setPartOptions] = useState<SelectOption[]>([]);
-  const [vendorOptions, setVendorOptions] = useState<SelectOption[]>([]);
+  const [manualLocationOptions, setManualLocationOptions] = useState<SelectOption[]>([]);
+  const [manualAssetOptions, setManualAssetOptions] = useState<SelectOption[]>([]);
+  // Removed redundant state for teams, categories, parts, vendors (using Redux only)
 
   const [linkedProcedure, setLinkedProcedure] = useState<any>(null);
   const [isProcedureLoading, setIsProcedureLoading] = useState(false);
@@ -289,28 +286,55 @@ export function NewWorkOrderForm({
   }, [dispatch, filterData]);
 
   // Derive options from Redux state
-  const locationOptions = useMemo(() => filterData?.locations || [], [filterData]);
-  const assetOptions = useMemo(() => filterData?.assets || [], [filterData]);
+  const locationOptions = useMemo(() => {
+    const fromRedux = filterData?.locations || [];
+    const manual = manualLocationOptions;
+    // Merge and dedup by ID
+    const combined = [...fromRedux];
+    manual.forEach(m => {
+      if (!combined.find(r => r.id === m.id)) combined.push(m);
+    });
+    return combined;
+  }, [filterData, manualLocationOptions]);
+
+  const assetOptions = useMemo(() => {
+    const fromRedux = filterData?.assets || [];
+    const manual = manualAssetOptions;
+    const combined = [...fromRedux];
+    manual.forEach(m => {
+      if (!combined.find(r => r.id === m.id)) combined.push(m);
+    });
+    return combined;
+  }, [filterData, manualAssetOptions]);
   const teamOptions = useMemo(() => filterData?.teams || [], [filterData]);
   const categoryOptions = useMemo(() => filterData?.categories || [], [filterData]);
   const partOptions = useMemo(() => filterData?.parts || [], [filterData]);
   const vendorOptions = useMemo(() => filterData?.vendors || [], [filterData]);
-  const assigneeOptions = useMemo(() => filterData?.users || [], [filterData]);
+  const assigneeOptions = useMemo(() => {
+    const fromRedux = filterData?.users || [];
+    const manual = manualAssigneeOptions;
+    const combined = [...fromRedux];
+    manual.forEach(m => {
+      // @ts-ignore
+      if (!combined.find(r => r.id === m.id)) combined.push(m);
+    });
+    return combined;
+  }, [filterData, manualAssigneeOptions]);
 
 
   // ✅ ADDED: Capture asset from Asset Detail navigation state
   useEffect(() => {
     if (location.state?.prefilledAsset) {
-      const { id } = location.state.prefilledAsset; // removed name because options come from Redux now
+      const { id, name } = location.state.prefilledAsset;
       const assetIdStr = String(id);
 
       // Select the asset
       setAssetIds((prev) => (prev.includes(assetIdStr) ? prev : [...prev, assetIdStr]));
 
       // Ensure the name is in the dropdown options
-      setAssetOptions((prev) => {
+      setManualAssetOptions((prev) => {
         if (prev.some((opt) => opt.id === assetIdStr)) return prev;
-        return [...prev, { id: assetIdStr, name: name }];
+        return [...prev, { id: assetIdStr, name: name || "Unknown Asset" }];
       });
 
       // Clear state so it doesn't stay prefilled if user refreshes or navigates back
@@ -326,7 +350,7 @@ export function NewWorkOrderForm({
       locationService.fetchLocationById(paramLocationId)
         .then((loc: any) => {
           if (loc) {
-            setLocationOptions([{ id: loc.id, name: loc.name }]);
+            setManualLocationOptions([{ id: loc.id, name: loc.name }]);
           }
         })
         .catch((err: any) => console.error("Error prefilling location:", err));
@@ -488,8 +512,8 @@ export function NewWorkOrderForm({
 
       if (data.assignees) {
         setSelectedUsers(data.assignees.map((u: any) => u.id));
-        setAssigneeOptions(data.assignees.map((u: any) => ({ id: u.id, name: u.fullName || u.name || "Unknown" })));
-      } else { setSelectedUsers(data.assigneeIds || []); setAssigneeOptions([]); }
+        setManualAssigneeOptions(data.assignees.map((u: any) => ({ id: u.id, name: u.fullName || u.name || "Unknown" })));
+      } else { setSelectedUsers(data.assigneeIds || []); setManualAssigneeOptions([]); }
 
       if (data.procedures && data.procedures.length > 0) setLinkedProcedure(data.procedures[0]);
       else if (data.procedure) setLinkedProcedure(data.procedure);
@@ -543,13 +567,13 @@ export function NewWorkOrderForm({
       if (prefillData.assetIds && prefillData.assetIds.length > 0) {
         setAssetIds(prefillData.assetIds);
         if (prefillData.assetName) {
-          setAssetOptions([{ id: prefillData.assetIds[0], name: prefillData.assetName }]);
+          setManualAssetOptions([{ id: prefillData.assetIds[0], name: prefillData.assetName }]);
         }
       }
       if (prefillData.locationId) {
         setLocationId(prefillData.locationId);
         if (prefillData.locationName) {
-          setLocationOptions([{ id: prefillData.locationId, name: prefillData.locationName }]);
+          setManualLocationOptions([{ id: prefillData.locationId, name: prefillData.locationName }]);
         }
       }
 
@@ -806,7 +830,6 @@ export function NewWorkOrderForm({
             <input
               className="wo-form-people-input"
               placeholder="Enter names or emails"
-              onFocus={() => handleFetch("team-members", (opts) => setAssigneeOptions(opts))}
             />
           </div>
 
@@ -851,7 +874,7 @@ export function NewWorkOrderForm({
                   value={locationId}
                   options={locationOptions}
                   onSelect={(val) => setLocationId(val as string)}
-                  onFetch={() => handleFetch("locations", setLocationOptions)}
+                  onFetch={() => { }}
                   loading={false}
                   activeDropdown={activeDropdown}
                   setActiveDropdown={setActiveDropdown}
@@ -871,7 +894,7 @@ export function NewWorkOrderForm({
                   value={assetIds}
                   options={assetOptions}
                   onSelect={(val) => setAssetIds(val as string[])}
-                  onFetch={() => handleFetch("assets", setAssetOptions)}
+                  onFetch={() => { }}
                   loading={false}
                   activeDropdown={activeDropdown}
                   setActiveDropdown={setActiveDropdown}

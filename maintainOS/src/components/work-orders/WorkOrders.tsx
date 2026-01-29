@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useNavigate, useMatch, useLocation, useSearchParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import type { FetchWorkOrdersParams } from "../../store/workOrders/workOrders.types";
@@ -20,6 +20,7 @@ import { addMonths, subMonths, addWeeks, subWeeks } from "date-fns"; // ✅ Adde
 export function WorkOrders() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const activeTimers = useRef(new Set<string>());
 
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrder | null>(
     null
@@ -57,7 +58,7 @@ export function WorkOrders() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   // URL Pagination
-  const [searchParams, setSearchParams] = useSearchParams();
+
   const currentPage = parseInt(searchParams.get("page") || "1", 10);
 
   const [filterParams, setFilterParams] = useState<FetchWorkOrdersParams>({
@@ -295,23 +296,7 @@ export function WorkOrders() {
     setCreatingWorkOrder(false);
   };
 
-  const handleViewModeChange = useCallback((newMode: ViewMode) => {
-    console.log("🔄 [WorkOrders] Switching View Mode to:", newMode);
 
-    // 1. Atomically reset selection states to prevent flicker
-    setSelectedWorkOrder(null);
-    setViewingWorkOrder(null);
-    setCreatingWorkOrder(false);
-
-    // 2. Set the new mode
-    setViewMode(newMode);
-
-    // 3. Clear the URL to root to prevent the detail modal/panel from opening in the new view
-    navigate("/work-orders");
-
-    // 4. Force a clean refresh key
-    setRefreshKey(prev => prev + 1);
-  }, [navigate]);
 
   // ✅ Robust status check helper
   const isWorkOrderCompleted = (status: any) => {

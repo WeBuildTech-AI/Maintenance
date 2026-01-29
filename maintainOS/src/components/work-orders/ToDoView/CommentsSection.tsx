@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useEffect, useState, useMemo } from "react";
+import { forwardRef, useEffect, useState, useMemo, useRef } from "react";
 import { Paperclip, X, Loader2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import {
