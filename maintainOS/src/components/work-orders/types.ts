@@ -1,4 +1,4 @@
-import { type Dispatch, type SetStateAction } from "react";
+// import { type Dispatch, type SetStateAction } from "react";
 
 export type ViewMode = "todo" | "list" | "calendar" | "workload";
 
@@ -39,13 +39,33 @@ export interface ListViewProps {
   onRefreshWorkOrders: any;
   setIsSettingsModalOpen: any;
   isSettingsModalOpen: boolean;
-   showDeleted: boolean;
+  showDeleted: boolean;
   setShowDeleted: (value: boolean) => void;
+  loading?: boolean;
+  hasError?: boolean;
+}
+
+export interface CalendarViewProps {
+  workOrders: WorkOrder[];
+  onRefreshWorkOrders?: () => void;
+  loading?: boolean;
+  hasError?: boolean;
 }
 
 export interface ToDoViewProps {
   todoWorkOrders: WorkOrder[];
   doneWorkOrders: WorkOrder[];
-  selectedWorkOrder: WorkOrder;
-  onSelectWorkOrder: Dispatch<SetStateAction<WorkOrder>>;
+  selectedWorkOrder: WorkOrder | null;
+  onSelectWorkOrder: (wo: WorkOrder) => void;
+  hasError?: boolean;
+  loading?: boolean;
+  // ... rest of props usually handled by destructuring in component
+  creatingWorkOrder?: boolean;
+  onCancelCreate?: () => void;
+  onRefreshWorkOrders?: () => void;
+  pagination?: any;
+  onPageChange?: any;
+  onWorkOrderCreate?: (newWo: any) => void;
+  onWorkOrderUpdate?: (updatedWo: any) => void;
+  onOptimisticUpdate?: (id: string, patch: any) => void;
 }

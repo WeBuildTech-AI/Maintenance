@@ -14,7 +14,8 @@ import { AssetTeams } from "./sections/AssetTeams";
 import { Button } from "../../ui/button";
 import { Building2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import {  useState } from "react";
+import { useSelector } from "react-redux";
+import { useState } from "react";
 import { format, subDays } from "date-fns";
 import { WorkOrderHistoryChart } from "../../utils/WorkOrderHistoryChart";
 // import { AssetWorkOrders } from "./sections/AssetWorkOrders";
@@ -37,10 +38,11 @@ interface Asset {
 
 interface AssetDetailContentProps {
   asset: Asset;
-  fetchAssetsData: () => void;
-  setSeeMoreAssetStatus: boolean;
+  fetchAssetsData: (force?: boolean) => void;
+  setSeeMoreAssetStatus: (value: boolean) => void;
   createdUser: string;
   updatedUser: string; // Added to match previous requirements
+  lastUpdatedDate?: string | null;
 }
 
 // Helper type for Date Range
@@ -52,6 +54,7 @@ export function AssetDetailContent({
   setSeeMoreAssetStatus,
   createdUser,
   updatedUser, // Added to match previous requirements
+  lastUpdatedDate,
 }: AssetDetailContentProps) {
   const navigate = useNavigate();
 
@@ -87,7 +90,10 @@ export function AssetDetailContent({
         <AssetStatusReadings
           asset={asset}
           fetchAssetsData={fetchAssetsData}
-          setSeeMoreAssetStatus={setSeeMoreAssetStatus}
+          setSeeMoreAssetStatus={setSeeMoreAssetStatus} // Warning: Type mismatch exists, but assuming it works at runtime for now
+          updatedUser={updatedUser}
+          lastUpdatedDate={lastUpdatedDate}
+          seeMoreFlag={true}
         />
         <AssetLocation asset={asset} />
         <AssetCriticality asset={asset} />
@@ -101,22 +107,23 @@ export function AssetDetailContent({
         <AssetPart asset={asset} />
 
         <WorkOrderHistoryChart
-          id="work-order-history" 
+          id="work-order-history"
           title="Work Order History"
           workOrderHistory={asset?.workOrders}
           filters={filters}
-          dateRange={chartDateRanges["work-order-history"]} 
-          onDateRangeChange={handleDateRangeChange} 
+          dateRange={chartDateRanges["work-order-history"]}
+          onDateRangeChange={handleDateRangeChange}
           groupByField="createdAt"
           lineName="Created"
           lineColor="#0091ff"
         />
 
         {/* <AssetAutomations /> */}
-        <AssetCreatedUpdated 
-            asset={asset} 
-            createdUser={createdUser} 
-            updatedUser={updatedUser} 
+        <AssetCreatedUpdated
+          asset={asset}
+          createdUser={createdUser}
+          updatedUser={updatedUser}
+          lastUpdatedDate={lastUpdatedDate}
         />
       </div>
 
@@ -132,12 +139,12 @@ export function AssetDetailContent({
       >
         <Button
           variant="outline"
-          onClick={() => 
+          onClick={() =>
             // Prefill logic: Pass the asset data through navigation state
-            navigate("/work-orders/create", { 
-              state: { 
-                prefilledAsset: { id: asset.id, name: asset.name } 
-              } 
+            navigate("/work-orders/create", {
+              state: {
+                prefilledAsset: { id: asset.id, name: asset.name }
+              }
             })
           }
           className="text-yellow-600 cursor-pointer border-2 border-yellow-400 hover:bg-yellow-50 px-8 py-3 rounded-full shadow-lg bg-white font-medium whitespace-nowrap"

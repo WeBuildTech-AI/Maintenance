@@ -4,10 +4,12 @@ export function EmptyState({
   message,
   subtext,
   buttonText,
+  onButtonClick,
 }: {
   message: string;
   subtext: string;
   buttonText?: string;
+  onButtonClick?: () => void;
 }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
@@ -17,7 +19,10 @@ export function EmptyState({
         <p className="text-xs text-muted-foreground">{subtext}</p>
       </div>
       {buttonText && (
-        <button className="inline-flex items-center gap-2 rounded bg-orange-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-orange-700">
+        <button
+          onClick={onButtonClick}
+          className="inline-flex items-center gap-2 rounded bg-orange-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-orange-700"
+        >
           {buttonText}
         </button>
       )}

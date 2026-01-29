@@ -48,7 +48,8 @@ export function UnplannedVsPlannedChart({
   // Notify parent of loading state changes
   useEffect(() => {
     onLoadingChange?.(loading);
-  }, [loading, onLoadingChange]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]); // Only depend on loading state, not onLoadingChange
 
   // Process data to group by asset
   const chartData = useMemo(() => {

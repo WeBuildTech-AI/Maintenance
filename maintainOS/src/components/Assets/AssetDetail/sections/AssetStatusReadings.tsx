@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 import type { RootState, AppDispatch } from "../../../../store";
 import { formatFriendlyDate } from "../../../utils/Date";
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "../../../ui/button";
 // Make sure this path to your thunk is correct
 import { assetService, updateAssetStatus } from "../../../../store/assets";
@@ -12,26 +13,48 @@ import toast from "react-hot-toast";
 import NewWorkOrderModal from "../../../work-orders/NewWorkOrderModal";
 
 // --- Main Component ---
+// --- Main Component ---
 export function AssetStatusReadings({
   asset,
   fetchAssetsData,
   setSeeMoreAssetStatus,
   seeMoreFlag,
   getAssetStatusLog,
+  updatedUser, // ✅ Prop for correct user
+  lastUpdatedDate, // ✅ Prop for correct date
 }: {
   asset: any;
-  fetchAssetsData?: () => void;
-  setSeeMoreAssetStatus: boolean;
+  fetchAssetsData?: (force?: boolean) => void;
+  setSeeMoreAssetStatus?: (value: boolean) => void;
   seeMoreFlag: boolean;
   getAssetStatusLog?: () => void;
+  updatedUser?: string;
+  lastUpdatedDate?: string | null;
 }) {
   const user = useSelector((state: RootState) => state.auth.user);
+
+  /* ✅ Fetch Latest Log State */
+  const [latestLog, setLatestLog] = useState<any>(null);
 
   const [assetStatus, setAssetStatus] = useState(asset?.status || "online");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [statusToUpdate, setStatusToUpdate] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const fetchLatestLog = async () => {
+    if (!asset?.id) return;
+    try {
+      const log = await assetService.fetchLatestAssetLog(asset.id);
+      setLatestLog(log);
+    } catch (error) {
+      console.error("Failed to fetch latest log", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchLatestLog();
+  }, [asset?.id]);
 
   useEffect(() => {
     setAssetStatus(asset?.status || "online");
@@ -92,9 +115,12 @@ export function AssetStatusReadings({
       // IMPORTANT FIX — UPDATE UI IMMEDIATELY
       setAssetStatus(finalStatusData.status);
 
+      // ✅ Refresh Latest Log
+      fetchLatestLog();
+
       // Optional refetch
       if (typeof fetchAssetsData === "function") {
-        fetchAssetsData();
+        fetchAssetsData(true);
       }
       if (typeof getAssetStatusLog === "function") {
         getAssetStatusLog();
@@ -105,7 +131,10 @@ export function AssetStatusReadings({
 
       // ✅ Check if status changed to offline - show work order prompt
       if (finalStatusData.status?.toLowerCase() === 'offline') {
+        console.log("Status is offline, opening prompt...");
         setIsOfflinePromptOpen(true);
+      } else {
+        console.log("Status is NOT offline:", finalStatusData.status);
       }
     } catch (error: any) {
       console.error("Failed to update asset status:", error);
@@ -116,7 +145,6 @@ export function AssetStatusReadings({
     }
   };
 
-  // ... (Baaki ka JSX code same rahega) ...
   return (
     <div>
       {isModalOpen && statusToUpdate && (
@@ -156,7 +184,7 @@ export function AssetStatusReadings({
         <h2 className="text-lg font-medium">Status</h2>
         {seeMoreFlag === false ? null : (
           <Button
-            onClick={() => setSeeMoreAssetStatus?.()}
+            onClick={() => setSeeMoreAssetStatus?.(true)}
             className="gap-1 bg-white p-2 cursor-pointer text-orange-600 hover:text-orange-600 hover:bg-orange-50  h-auto"
           >
             See More
@@ -208,13 +236,13 @@ export function AssetStatusReadings({
           <p className="text-sm text-muted-foreground">
             Last updated :{" "}
             <span className="font-medium text-orange-600 capitalize">
-              {user?.fullName}
+              {latestLog?.user?.fullName || latestLog?.user?.name || updatedUser || "Unknown"}
             </span>{" "}
-            , {formatFriendlyDate(asset?.updatedAt)}
+            , {formatFriendlyDate(latestLog?.createdAt || lastUpdatedDate || asset?.updatedAt)}
           </p>
         )}
       </div>
-    </div>
+    </div >
   );
 }
 
@@ -430,12 +458,14 @@ export function UpdateAssetStatusModal({
   // --- +++++++ BADLAAV KHATM +++++++ ---
   //
   const offlineReasons = [
-    { name: "Maintenance", value: "maintenance" },
-    { name: "Breakdown", value: "breakdown" },
-    { name: "Power Failure", value: "power_failure" },
-    { name: "Network Issue", value: "network_issue" },
-    { name: "Other", value: "other" },
+    { name: "Electrical Fault", value: "electrical_fault" },
+    { name: "Equipment Failure", value: "equipment_failure" },
+    { name: "Inspection", value: "inspection" },
+    { name: "Operator Error", value: "operator_error" },
+    { name: "Planned Maintenance", value: "planned_maintenance" },
+    { name: "Tool Failure", value: "tool_failure" },
   ];
+
   const offlineSinceOptions = [
     "Now",
     "1 hour ago",
@@ -538,8 +568,8 @@ export function UpdateAssetStatusModal({
 
         <form onSubmit={handleFormSubmit}>
           <div
-            className="p-6 space-y-4 max-h-[70vh] overflow-y-auto"
-
+            className={`p-6 space-y-4 max-h-[70vh] ${isAnyDropdownOpen ? "overflow-visible" : "overflow-y-auto"
+              }`}
           >
             {/* Status Dropdown (Unchanged) */}
             <div>
@@ -600,61 +630,58 @@ export function UpdateAssetStatusModal({
 
             {/* --- Conditional Fields (Unchanged) --- */}
             {selectedStatus === "offline" && (
+
               <div className="space-y-4">
-                {/* Downtime Type */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-2">
-                    Downtime Type <span className="text-red-500">(required)</span>
-                  </label>
 
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setDowntimeDropdown(!downtimeDropdown)}
-                      className="w-full capitalize flex cursor-pointer items-center justify-between px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-                    >
-                      <span>
-                        {downtimeTypes.find((t) => t.value === downtimeType)?.name ||
-                          "Select downtime type"}
-                      </span>
-                      <ChevronDown
-                        className={`w-5 h-5 text-gray-500 transition-transform ${downtimeDropdown ? "rotate-180" : ""
-                          }`}
-                      />
-                    </button>
-
-                    {downtimeDropdown && (
-                      <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1 max-h-[120px] overflow-y-auto">
-
-                        {downtimeTypes.map((type) => (
-                          <button
-                            type="button"
-                            key={type.value}
-                            onClick={() => {
-                              setDowntimeType(type.value);
-                              setDowntimeDropdown(false);
-                            }}
-                            className="w-full px-3 py-2 text-left hover:bg-gray-50"
-                          >
-                            {type.name}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                {/* downtimetype */}
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  Downtime Type <span className="text-red-500">(required)</span>
+                </label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setDowntimeDropdown(!downtimeDropdown)}
+                    className="w-full capitalize flex cursor-pointer items-center justify-between px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                  >
+                    <span>
+                      {downtimeTypes.find((t) => t.value === downtimeType)
+                        ?.value || "Select downtime type"}
+                    </span>
+                    <ChevronDown
+                      className={`w-5 h-5 text-gray-500 transition-transform ${downtimeDropdown ? "rotate-180" : ""
+                        }`}
+                    />
+                  </button>
+                  {downtimeDropdown && (
+                    <div className="absolute z-50  w-full bg-white cursor-pointer border border-gray-200 rounded-md shadow-lg mt-1 z-30">
+                      {downtimeTypes.map((type) => (
+                        <button
+                          type="button"
+                          key={type.value}
+                          onClick={() => {
+                            setDowntimeType(type.value); // Yeh ab "planned" ya "unplanned" set karega
+                            setDowntimeDropdown(false);
+                          }}
+                          className="w-full px-3 py-2 text-left hover:bg-gray-50"
+                        >
+                          {type.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                {/* Reason Dropdown (UI only) */}
+                {/* ✅ Reason Dropdown (AFTER Downtime Type) */}
                 <div>
                   <label className="block text-sm font-medium text-gray-900 mb-2">
-                    Reason
+                    Downtime Reason <span className="text-red-500">(required)</span>
                   </label>
 
                   <div className="relative">
                     <button
                       type="button"
                       onClick={() => setReasonDropdown(!reasonDropdown)}
-                      className="w-full flex cursor-pointer items-center justify-between px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                      className="w-full capitalize flex cursor-pointer items-center justify-between px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
                     >
                       <span>
                         {offlineReasons.find((r) => r.value === offlineReason)?.name ||
@@ -667,7 +694,12 @@ export function UpdateAssetStatusModal({
                     </button>
 
                     {reasonDropdown && (
-                      <div className="absolute z-50 w-full h-32 overflow-y-auto bg-white border border-gray-200 rounded-md shadow-lg mt-1">
+                      <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1" style={{
+                        maxHeight: "120px", // shows ~3 items
+                        overflowY: "auto",
+                      }}
+                      >
+
                         {offlineReasons.map((reason) => (
                           <button
                             type="button"
@@ -685,6 +717,7 @@ export function UpdateAssetStatusModal({
                     )}
                   </div>
                 </div>
+
               </div>
             )}
 
@@ -737,21 +770,21 @@ export function UpdateAssetStatusModal({
 }
 
 // \u2705 Offline Asset Work Order Prompt Modal
-interface OfflinePromptModalProps {
+export interface OfflinePromptModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreateWorkOrder: () => void;
 }
 
-function OfflinePromptModal({ isOpen, onClose, onCreateWorkOrder }: OfflinePromptModalProps) {
+export function OfflinePromptModal({ isOpen, onClose, onCreateWorkOrder }: OfflinePromptModalProps) {
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 300,
+        zIndex: 9999,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -790,6 +823,7 @@ function OfflinePromptModal({ isOpen, onClose, onCreateWorkOrder }: OfflinePromp
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

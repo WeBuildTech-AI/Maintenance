@@ -12,7 +12,7 @@ import {
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../store";
 import { vendorService, updateVendor } from "../../store/vendors"; // ✅ Added updateVendor
-import { FetchVendorsParams } from "../../store/vendors/vendors.types";
+import type { FetchVendorsParams } from "../../store/vendors/vendors.types";
 
 // Components
 import { VendorHeaderComponent } from "./VendorHeader"; // Ensure this matches InventoryHeaderComponent signature or adapt it
@@ -46,7 +46,6 @@ export function Vendors() {
   const [vendors, setVendors] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<"panel" | "table">("panel");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -68,7 +67,7 @@ export function Vendors() {
   // Settings / Filter States
   const [isSettingModalOpen, setIsSettingModalOpen] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [_, setShowSettings] = useState(false);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -104,7 +103,6 @@ export function Vendors() {
       setVendors(res || []);
     } catch (err: any) {
       console.error("Error fetching vendors:", err);
-      setError("Failed to load vendors");
       setVendors([]);
     } finally {
       setLoading(false);
@@ -188,13 +186,13 @@ export function Vendors() {
     if (viewMode === 'panel' && sortedVendors.length > 0) {
       const isCreateOrEdit = location.pathname.includes('/create') || location.pathname.includes('/edit');
       const hasId = location.pathname !== '/vendors' && location.pathname !== '/vendors/';
-      
+
       if (shouldSelectFirst) {
-          navigate(`/vendors/${sortedVendors[0].id}`);
-          setShouldSelectFirst(false);
+        navigate(`/vendors/${sortedVendors[0].id}`);
+        setShouldSelectFirst(false);
       } else if (!hasId && !isCreateOrEdit) {
-          // Initial load default selection
-           navigate(`/vendors/${sortedVendors[0].id}`, { replace: true });
+        // Initial load default selection
+        navigate(`/vendors/${sortedVendors[0].id}`, { replace: true });
       }
     }
   }, [sortedVendors, shouldSelectFirst, viewMode, location.pathname, navigate]);
@@ -213,6 +211,24 @@ export function Vendors() {
   };
 
   useEffect(() => setCurrentPage(1), [sortType, sortOrder, searchQuery]);
+
+  // ✅ OPTIMISTIC UPDATE HELPERS
+  const handleVendorCreate = (newVendor: any) => {
+    setVendors((prev) => [newVendor, ...prev]);
+    navigate(`/vendors/${newVendor.id}`);
+  };
+
+  const handleVendorUpdate = (updatedVendor: any) => {
+    setVendors((prev) =>
+      prev.map((v) => (v.id === updatedVendor.id ? updatedVendor : v))
+    );
+    navigate(`/vendors/${updatedVendor.id}`);
+  };
+
+  const handleVendorDelete = (deletedIds: string[]) => {
+    setVendors((prev) => prev.filter((v) => !deletedIds.includes(v.id)));
+    navigate("/vendors");
+  };
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -240,6 +256,8 @@ export function Vendors() {
             fetchVendors={refreshVendors}
             showDeleted={showDeleted}
             setShowDeleted={setShowDeleted}
+            onOptimisticUpdate={handleVendorUpdate}
+            onOptimisticDelete={handleVendorDelete}
           />
         </div>
       ) : (
@@ -333,11 +351,10 @@ export function Vendors() {
                                   setShouldSelectFirst(true);
                                   setIsDropdownOpen(false);
                                 }}
-                                className={`w-full flex items-center justify-between text-left text-xs px-2 py-1.5 rounded transition-colors ${
-                                  isSelected
-                                    ? "text-blue-600 bg-blue-50 font-medium"
-                                    : "text-gray-600 hover:bg-gray-100"
-                                }`}
+                                className={`w-full flex items-center justify-between text-left text-xs px-2 py-1.5 rounded transition-colors ${isSelected
+                                  ? "text-blue-600 bg-blue-50 font-medium"
+                                  : "text-gray-600 hover:bg-gray-100"
+                                  }`}
                               >
                                 <span>{opt}</span>
                                 {isSelected && (
@@ -434,26 +451,24 @@ export function Vendors() {
               <Route path="/" element={<EmptyState variant="panel" />} />
               <Route
                 path="create"
-                element={<CreateVendorRoute onSuccess={refreshVendors} />}
+                element={<CreateVendorRoute onSuccess={handleVendorCreate} />}
               />
+// function VendorDetailRoute usage in Vendors main component
               <Route
                 path=":id"
                 element={
                   <VendorDetailRoute
                     vendors={vendors}
-                    onVendorDeleted={(deletedId) =>
-                      setVendors((prev) =>
-                        prev.filter((v) => v.id !== deletedId)
-                      )
-                    }
+                    onVendorDeleted={(deletedId) => handleVendorDelete([deletedId])}
                     refreshVendors={refreshVendors}
                     showDeleted={showDeleted}
+                    onOptimisticUpdate={handleVendorUpdate}
                   />
                 }
               />
               <Route
                 path=":id/edit"
-                element={<EditVendorRoute onSuccess={refreshVendors} />}
+                element={<EditVendorRoute onSuccess={handleVendorUpdate} />}
               />
             </Routes>
           </div>
@@ -465,23 +480,20 @@ export function Vendors() {
 
 // --- SUB-ROUTES ---
 
-function CreateVendorRoute({ onSuccess }: { onSuccess: () => void }) {
+function CreateVendorRoute({ onSuccess }: { onSuccess: (v: any) => void }) {
   const navigate = useNavigate();
   return (
     <VendorForm
       onCancel={() => navigate("/vendors")}
-      onSuccess={() => {
-        onSuccess();
-        navigate("/vendors", { state: { refresh: true } });
-      }}
+      onSuccess={onSuccess} // ✅ Directly pass optimistic handler
     />
   );
 }
 
-function EditVendorRoute({ onSuccess }: { onSuccess: () => void }) {
+function EditVendorRoute({ onSuccess }: { onSuccess: (v: any) => void }) {
   const { id } = useParams();
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>(); // ✅ Dispatch hook
+  const dispatch = useDispatch<AppDispatch>();
   const [vendor, setVendor] = useState<any>(null);
 
   useEffect(() => {
@@ -495,15 +507,10 @@ function EditVendorRoute({ onSuccess }: { onSuccess: () => void }) {
       initialData={vendor}
       onCancel={() => navigate(`/vendors/${id}`)}
       onSubmit={(data: FormData) => {
-        // ✅ CRITICAL FIX: Return the dispatch promise so saveVendor awaits it
+        // ✅ Return promise for optimistic update
         return dispatch(updateVendor({ id: id!, data })).unwrap();
       }}
-      onSuccess={() => {
-        // ✅ This calls refreshVendors() in parent immediately
-        onSuccess();
-        // Force navigation to ensure state refresh if needed
-        navigate(`/vendors/${id}`, { state: { refresh: true } });
-      }}
+      onSuccess={onSuccess} // ✅ Directly pass optimistic handler
     />
   );
 }
@@ -513,11 +520,13 @@ function VendorDetailRoute({
   onVendorDeleted,
   refreshVendors,
   showDeleted,
+  onOptimisticUpdate,
 }: {
   vendors: any[];
   onVendorDeleted: (id: string) => void;
   refreshVendors: () => void;
   showDeleted: boolean;
+  onOptimisticUpdate: (v: any) => void;
 }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -533,6 +542,7 @@ function VendorDetailRoute({
       restoreData={showDeleted ? "true" : ""}
       onClose={() => navigate("/vendors")}
       fetchVendors={refreshVendors}
+      onOptimisticUpdate={onOptimisticUpdate}
     />
   );
 }

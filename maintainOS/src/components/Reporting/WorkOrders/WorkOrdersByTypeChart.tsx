@@ -55,7 +55,8 @@ export function WorkOrdersByTypeChart({
   // Notify parent of loading state changes
   useEffect(() => {
     onLoadingChange?.(workTypeLoading);
-  }, [workTypeLoading, onLoadingChange]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workTypeLoading]); // Only depend on loading state, not onLoadingChange
 
   const { data: workTypeByDateData } = useQuery<{
     getChartData: Array<{ groupValues: string[]; value: number }>;

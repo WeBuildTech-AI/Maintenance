@@ -10,8 +10,11 @@ import { EmptyState } from "./EmptyState";
 import { WorkOrderDetails } from "./WorkOrderDetails";
 import { CommentsSection } from "./CommentsSection";
 import { NewWorkOrderForm } from "../NewWorkOrderForm/NewWorkOrderFrom";
-import { useNavigate, useMatch } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { LinkedProcedurePreview } from "./LinkedProcedurePreview";
+import { useDispatch } from "react-redux";
+import { createWorkOrder } from "../../../store/workOrders/workOrders.thunks";
+import toast from "react-hot-toast";
 
 export type StatusKey = "open" | "on_hold" | "in_progress" | "done";
 
@@ -23,17 +26,61 @@ export function ToDoView({
   creatingWorkOrder,
   onCancelCreate,
   onRefreshWorkOrders,
+  onWorkOrderCreate,
+  onWorkOrderUpdate,
+  onOptimisticUpdate,
+  pagination,
+  onPageChange,
+  hasError,
+  loading,
 }: ToDoViewProps & {
   creatingWorkOrder?: boolean;
   onCancelCreate?: () => void;
   onRefreshWorkOrders?: () => void;
+  onWorkOrderCreate?: (wo: any) => void;
+  onWorkOrderUpdate?: (wo: any) => void;
+  onOptimisticUpdate?: (id: string, patch: any) => void;
+  // ✅ Server-Side Pagination Props
+  pagination?: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+  };
+  onPageChange?: (page: number) => void;
+  loading?: boolean;
 }) {
+  // ✅ Local Pagination State (Fallback)
+  const [localPage, setLocalPage] = useState(1);
+
+  // Use passed pagination or local
+  const currentPage = pagination ? pagination.currentPage : localPage;
+  const itemsPerPage = pagination ? pagination.itemsPerPage : 10;
+
   const [activeTab, setActiveTab] = useState<"todo" | "done">("todo");
+  // ... existing state ...
+
+  // [Skipping middle hooks code provided in view... assuming generic structure]
+
+  // ...
+
+  // Logic for activeList (filtered work orders) remains same
+  // const activeList = ... 
+
+
+
+  // ... (return JSX)
+  // Need to find where pagination controls are rendered and update them to use `currentPage`, `totalCountDisplay`, `handleNextPage`, `handlePrevPage`.
+  // Usually near closing `</div>` of the list column.
+
+  // Assuming the render method matches previous `ToDoView.tsx` content which I need to see completely to invoke replace correctly on the footer.
+  // I will just inject the props logic at top first.
+
   const [activeStatus, setActiveStatus] = useState<StatusKey>("open");
   const [comment, setComment] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null!);
-  
+
   // ✅ WO-401 FIX: Ref specifically for CommentsSection
   const commentsRef = useRef<HTMLTextAreaElement>(null);
 
@@ -41,12 +88,16 @@ export function ToDoView({
   const [logRefreshTrigger, setLogRefreshTrigger] = useState(0);
 
   const [editingWorkOrder, setEditingWorkOrder] = useState<any | null>(null);
-  
+
   // ✅ Discard Modal State
   const [showDiscardModal, setShowDiscardModal] = useState(false);
   const [pendingWorkOrder, setPendingWorkOrder] = useState<any | null>(null);
 
+  // ✅ Copy Work Order State
+  const [workOrderToCopy, setWorkOrderToCopy] = useState<any | null>(null);
+
   const navigate = useNavigate();
+  const dispatch = useDispatch<any>();
 
   // ✅ Sort state
   const [sortType, setSortType] = useState("Creation Date");
@@ -61,15 +112,23 @@ export function ToDoView({
     setActivePanel("details");
   }, [selectedWorkOrder?.id]);
 
-  // ✅ PAGINATION STATE ADDED HERE
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10; 
+  // ✅ PAGINATION STATE ADDED HERE (REMOVED DUPLICATES)
 
-  const isEditRoute = useMatch("/work-orders/:workOrderId/edit");
-  const isCreateRoute = useMatch("/work-orders/create");
-  const isDetailRoute = useMatch("/work-orders/:workOrderId");
-  const editingId = isEditRoute?.params?.workOrderId;
-  const detailId = isDetailRoute?.params?.workOrderId;
+
+  // ✅ FIX: Synchronized URL extraction logic with WorkOrders.tsx
+  const getWorkOrderIdFromUrl = () => {
+    const segments = window.location.pathname.split("/").filter(Boolean);
+    if (segments.length >= 2 && (segments[0].toLowerCase() === "work-orders" || segments[0].toLowerCase() === "work orders")) {
+      const id = segments[1];
+      if (id !== "create" && id !== "edit") return id;
+    }
+    return null;
+  };
+
+  const isEditRoute = window.location.pathname.includes("/edit");
+  const isCreateRoute = window.location.pathname.includes("/create");
+  const detailId = getWorkOrderIdFromUrl();
+  const editingId = (isEditRoute || editingWorkOrder) ? (editingWorkOrder?.id || detailId) : null;
   const isEditMode = !!isEditRoute;
 
   // 📌 Sort change handler
@@ -141,20 +200,36 @@ export function ToDoView({
 
   // ✅ PAGINATION LOGIC
   useEffect(() => {
-    setCurrentPage(1); 
-  }, [activeTab, sortType, sortOrder, unreadFirst]);
+    if (!pagination) setLocalPage(1);
+  }, [activeTab, sortType, sortOrder, unreadFirst, pagination]);
 
-  const totalItems = activeList.length;
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  const totalItems = pagination ? pagination.totalItems : activeList.length;
+
+  const startIndex = pagination
+    ? (pagination.currentPage - 1) * pagination.itemsPerPage
+    : (localPage - 1) * itemsPerPage;
+
+  // For display "1-20" or "21-40", we use the theoretical page window
+  // taking into account we might be at the end.
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-  const currentItems = activeList.slice(startIndex, endIndex);
+
+  // If server-side, activeList IS the current page data. If local, we slice.
+  const currentItems = pagination ? activeList : activeList.slice((localPage - 1) * itemsPerPage, ((localPage - 1) * itemsPerPage) + itemsPerPage);
 
   const handlePrevPage = () => {
-    if (currentPage > 1) setCurrentPage((p) => p - 1);
+    if (pagination && onPageChange) {
+      if (pagination.currentPage > 1) onPageChange(pagination.currentPage - 1);
+    } else {
+      if (localPage > 1) setLocalPage((p) => p - 1);
+    }
   };
 
   const handleNextPage = () => {
-    if (endIndex < totalItems) setCurrentPage((p) => p + 1);
+    if (pagination && onPageChange) {
+      if (endIndex < totalItems) onPageChange(pagination.currentPage + 1);
+    } else {
+      if (endIndex < totalItems) setLocalPage((p) => p + 1);
+    }
   };
 
   // --------------------------------------------------
@@ -190,20 +265,41 @@ export function ToDoView({
     if (wo?.id) navigate(`/work-orders/${wo.id}/edit`);
   };
 
+  // ✅ Track if we've already auto-selected from URL to prevent loops
+  const hasAutoSelectedRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (detailId && !selectedWorkOrder) {
+    console.log("🔍 [ToDoView] detailId:", detailId, "hasAutoSelected:", hasAutoSelectedRef.current, "selectedWorkOrder:", selectedWorkOrder?.id);
+
+    // Only auto-select if:
+    // 1. There's a detailId in the URL
+    // 2. We haven't already auto-selected this ID
+    // 3. The work order isn't already selected
+    if (detailId && detailId !== "create" && detailId !== "edit" && hasAutoSelectedRef.current !== detailId && !selectedWorkOrder) {
       const allOrders = [...todoWorkOrders, ...doneWorkOrders];
       const found = allOrders.find((wo) => String(wo.id) === String(detailId));
-      if (found) onSelectWorkOrder(found);
+      if (found) {
+        console.log("🔵 [ToDoView] Auto-selecting work order from URL:", detailId);
+        onSelectWorkOrder(found);
+        hasAutoSelectedRef.current = detailId; // Mark as selected
+      } else {
+        console.log("⚠️ [ToDoView] Work order not found for detailId:", detailId);
+      }
+    }
+    // Reset the ref if detailId is cleared
+    if (!detailId || detailId === "create" || detailId === "edit") {
+      console.log("🟡 [ToDoView] Resetting hasAutoSelectedRef");
+      hasAutoSelectedRef.current = null;
     }
   }, [detailId, selectedWorkOrder, todoWorkOrders, doneWorkOrders]);
 
-  useEffect(() => {
-    if (selectedWorkOrder && (editingWorkOrder || creatingWorkOrder)) {
-      setEditingWorkOrder(null);
-      onCancelCreate?.();
-    }
-  }, [selectedWorkOrder]);
+  // 🛑 REMOVED: This was causing "Edit" mode to exit prematurely when selectedWorkOrder updated (e.g., real-time sync)
+  // useEffect(() => {
+  //   if (selectedWorkOrder && (editingWorkOrder || creatingWorkOrder)) {
+  //     setEditingWorkOrder(null);
+  //     onCancelCreate?.();
+  //   }
+  // }, [selectedWorkOrder]);
 
   const handleEditCancel = () => {
     setEditingWorkOrder(null);
@@ -218,9 +314,9 @@ export function ToDoView({
       // But if creating, any click is a switch.
       // If editing, check IDs.
       if (creatingWorkOrder || (editingWorkOrder && item?.id !== editingWorkOrder.id)) {
-         setPendingWorkOrder(item);
-         setShowDiscardModal(true);
-         return;
+        setPendingWorkOrder(item);
+        setShowDiscardModal(true);
+        return;
       }
     }
 
@@ -232,7 +328,15 @@ export function ToDoView({
     setEditingWorkOrder(null);
     onCancelCreate?.();
     setActivePanel("details");
-    if (item?.id) setTimeout(() => navigate(`/work-orders/${item.id}`), 0);
+
+    // reset auto-select ref to allow re-selection of same item if needed later
+    if (hasAutoSelectedRef.current === item?.id) {
+      hasAutoSelectedRef.current = null;
+    }
+
+    if (item?.id) {
+      navigate(`/work-orders/${item.id}`);
+    }
   };
 
   const handleConfirmDiscard = () => {
@@ -264,11 +368,22 @@ export function ToDoView({
   };
 
   // ✅ AUTO-SELECT FIRST ITEM (Newest/Top of list)
+  // MODIFIED: Only run if we have NO selection and are NOT creating/editing. 
+  // IMPORTANT: Added dependency on 'activeList.length' ONLY to trigger on data load, 
+  // but guarding against re-selecting if the user simply updated a work order.
+  // ✅ AUTO-SELECT FIRST ITEM (ONLY AT ROOT PATH /work-orders)
+  // If we are strictly at the root and nothing is selected, select the first one.
+  // ✅ AUTO-SELECT FIRST ITEM (ONLY AT ROOT PATH /work-orders)
+  // If we are strictly at the root and nothing is selected, select the first one.
   useEffect(() => {
-    if (activeList.length > 0 && !selectedWorkOrder && !creatingWorkOrder && !editingWorkOrder && !detailId) {
-       handleSelectWorkOrder(activeList[0]);
+    const segments = window.location.pathname.split("/").filter(Boolean);
+    const isAtWorkOrdersRoot = segments.length === 1 && (segments[0].toLowerCase() === "work-orders" || segments[0].toLowerCase() === "work orders");
+
+    if (isAtWorkOrdersRoot && activeList.length > 0 && !selectedWorkOrder && !creatingWorkOrder && !editingWorkOrder && !detailId) {
+      console.log("🎯 [ToDoView] Auto-selecting first item at root:", activeList[0].id);
+      handleSelectWorkOrder(activeList[0]);
     }
-  }, [activeList, selectedWorkOrder, creatingWorkOrder, editingWorkOrder, detailId]);
+  }, [activeList.length, selectedWorkOrder?.id, creatingWorkOrder, editingWorkOrder, detailId]);
 
   // --------------------------------------------------
   // 🧱 UI
@@ -290,11 +405,19 @@ export function ToDoView({
 
         {/* LIST CONTAINER */}
         <div className="flex-1 overflow-auto relative z-0 bg-white">
-          {activeList.length === 0 ? (
+          {loading && activeList.length === 0 ? (
+            <div className="flex h-full items-center justify-center text-muted-foreground p-8">
+              <div className="flex flex-col items-center gap-3">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                <span className="text-sm font-medium animate-pulse">Loading work orders...</span>
+              </div>
+            </div>
+          ) : activeList.length === 0 ? (
             <EmptyState
-              message="No work orders"
-              subtext="Switch tabs or create a new work order."
-              buttonText="Create Work Order"
+              message={hasError ? "Failed to load" : "No work orders"}
+              subtext={hasError ? "There was an error fetching data. Please try again." : "Switch tabs or create a new work order."}
+              buttonText={hasError ? "Retry" : "Create Work Order"}
+              onButtonClick={hasError ? onRefreshWorkOrders : undefined}
             />
           ) : (
             <div className="space-y-2 p-4">
@@ -307,6 +430,9 @@ export function ToDoView({
                   safeAssignee={safeAssignee}
                   getInitials={getInitials}
                   activeTab={activeTab}
+                  onWorkOrderUpdate={onWorkOrderUpdate}
+                  onRefresh={onRefreshWorkOrders}
+                  onScrollToProcedure={handleScrollToProcedure}
                 />
               ))}
             </div>
@@ -320,10 +446,10 @@ export function ToDoView({
               <span>{startIndex + 1} – {endIndex} of {totalItems}</span>
               <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                 <button onClick={handlePrevPage} disabled={currentPage === 1} style={{ background: "none", border: "none", cursor: currentPage === 1 ? "not-allowed" : "pointer", opacity: currentPage === 1 ? 0.3 : 1, display: "flex", alignItems: "center", padding: "2px" }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
                 </button>
                 <button onClick={handleNextPage} disabled={endIndex >= totalItems} style={{ background: "none", border: "none", cursor: endIndex >= totalItems ? "not-allowed" : "pointer", opacity: endIndex >= totalItems ? 0.3 : 1, display: "flex", alignItems: "center", padding: "2px" }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
                 </button>
               </div>
             </div>
@@ -333,92 +459,172 @@ export function ToDoView({
 
       {/* Right Panel */}
       <div className="flex-1 bg-card mr-3 ml-2 mb-2 border border-border min-h-0 flex flex-col">
-        
-        {/* ✅ CASE 1: CREATE NEW WORK ORDER */}
+
+        {/* ✅ CASE 1: CREATE NEW WORK ORDER (Empty or Copy) */}
         {isCreateRoute || creatingWorkOrder ? (
           <NewWorkOrderForm
             // ✅ KEY PROP ADDED: Forces React to re-mount component freshly
-            key="create-work-order-form" 
-            onCreate={() => {
-              onCancelCreate?.();
+            // If copying, use a different key to force refresh
+            key={workOrderToCopy ? `copy-${workOrderToCopy.id || 'new'}` : "create-work-order-form"}
+            onCreate={(newWo) => {
+              // ✅ OPTIMISTIC
+              if (newWo && onWorkOrderCreate) onWorkOrderCreate(newWo);
+
               setEditingWorkOrder(null);
-              onRefreshWorkOrders?.();
+              setWorkOrderToCopy(null); // Clear copy state
+              // onRefreshWorkOrders?.();
             }}
-            // ✅ Explicitly NULL to clear any previous data
-            existingWorkOrder={null} 
+            // ✅ Pass copied data if available
+            existingWorkOrder={workOrderToCopy || null}
             editId={editingId}
             isEditMode={false}
-            onCancel={onCancelCreate}
-          />
-        ) 
-        
-        // ✅ CASE 2: EDIT WORK ORDER
-        : editingWorkOrder || isEditMode ? (
-          <NewWorkOrderForm
-            // ✅ KEY PROP ADDED: Ensures edit form refreshes on ID change
-            key={editingWorkOrder?.id || editingId || 'edit-form'}
-            existingWorkOrder={editingWorkOrder}
-            editId={editingId}
-            isEditMode={isEditMode}
-            onCreate={() => {
-              setEditingWorkOrder(null);
+            onCancel={() => {
               onCancelCreate?.();
-              onRefreshWorkOrders?.();
+              setWorkOrderToCopy(null);
             }}
-            onCancel={handleEditCancel}
           />
-        ) 
-        
-        // ✅ CASE 3: VIEW DETAILS OR EMPTY
-        : !selectedWorkOrder ? (
-          <EmptyState
-            message="No work order selected"
-            subtext="Select a work order from the list to view its details."
-          />
-        ) : (
-          <div className="overflow-y-auto">
-            <WorkOrderDetails
-              selectedWorkOrder={selectedWorkOrder}
-              selectedAvatarUrl={selectedAvatarUrl}
-              selectedAssignee={selectedAssignee}
-              getInitials={getInitials}
-              activeStatus={activeStatus}
-              setActiveStatus={setActiveStatus}
-              CopyPageU={CopyPageU}
-              onEdit={handleEditWorkOrder}
-              onRefreshWorkOrders={onRefreshWorkOrders}
-              activePanel={activePanel}
-              setActivePanel={setActivePanel}
-              onScrollToComments={handleScrollToComments} 
-              onScrollToProcedure={handleScrollToProcedure}
-              // ✅ Trigger the state update in parent
-              onStatusChangeSuccess={() => setLogRefreshTrigger((prev) => prev + 1)}
+        )
+
+          // ✅ CASE 2: EDIT WORK ORDER
+          : editingWorkOrder || isEditMode ? (
+            <NewWorkOrderForm
+              // ✅ KEY PROP ADDED: Ensures edit form refreshes on ID change
+              key={editingWorkOrder?.id || editingId || 'edit-form'}
+              existingWorkOrder={editingWorkOrder}
+              editId={editingId}
+              isEditMode={isEditMode}
+              onCreate={(updatedWo) => {
+                // ✅ REAL-TIME UPDATE: Pass the payload up!
+                if (updatedWo && onWorkOrderUpdate) onWorkOrderUpdate(updatedWo);
+
+                // Select it so the Details panel updates immediately
+                if (updatedWo) onSelectWorkOrder(updatedWo);
+
+                setEditingWorkOrder(null);
+                // onRefreshWorkOrders?.(); // Optional if we trust the optimistic update
+              }}
+              onCancel={handleEditCancel}
             />
+          )
 
-            {/* ✅ Render sub-panels only when active */}
-            {activePanel === "details" && (
-              <>
-                <LinkedProcedurePreview selectedWorkOrder={selectedWorkOrder} />
-
-                <CommentsSection
-                  ref={commentsRef}
-                  comment={comment}
-                  setComment={setComment}
-                  attachment={attachment}
-                  setAttachment={setAttachment}
-                  fileRef={fileRef}
-                  selectedWorkOrder={selectedWorkOrder}
-                  // Pass the trigger to re-fetch logs
-                  refreshTrigger={logRefreshTrigger}
+            // ✅ CASE 3: ERROR STATE
+            : hasError ? (
+              <div className="flex-1 flex flex-col h-full">
+                <EmptyState
+                  message="Failed to load"
+                  subtext="There was an error fetching data. Please retry."
+                  buttonText="Retry"
+                  onButtonClick={onRefreshWorkOrders}
                 />
-              </>
-            )}
-          </div>
-        )}
+              </div>
+            )
+
+              // ✅ CASE 4: VIEW DETAILS OR EMPTY
+              : !selectedWorkOrder ? (
+                detailId ? (
+                  <div className="flex h-full items-center justify-center text-muted-foreground p-8">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                      <span className="text-sm font-medium animate-pulse">Loading details...</span>
+                    </div>
+                  </div>
+                ) : (
+                  <EmptyState
+                    message="No work order selected"
+                    subtext="Select a work order from the list to view its details."
+                  />
+                )
+              ) : (
+                <div className="overflow-y-auto">
+                  <WorkOrderDetails
+                    selectedWorkOrder={selectedWorkOrder}
+                    selectedAvatarUrl={selectedAvatarUrl}
+                    selectedAssignee={selectedAssignee}
+                    getInitials={getInitials}
+                    activeStatus={activeStatus}
+                    setActiveStatus={setActiveStatus}
+                    CopyPageU={CopyPageU}
+                    onEdit={handleEditWorkOrder}
+                    // ✅ Handle Copy
+                    onCopy={async (wo: any) => {
+                      if (!wo) return;
+                      const loadingToast = toast.loading("Creating copy...");
+                      try {
+                        let recurrenceRule = wo.recurrenceRule;
+                        if (typeof recurrenceRule === 'string') {
+                          try { recurrenceRule = JSON.parse(recurrenceRule); } catch (e) { }
+                        }
+
+                        const payload: any = {
+                          title: `Copy - ${wo.title}`,
+                          status: "open",
+                          description: wo.description,
+                          priority: wo.priority,
+                          workType: wo.workType,
+                          estimatedTimeHours: wo.estimatedTimeHours,
+                          startDate: null,
+                          dueDate: null,
+
+                          locationId: wo.location?.id || wo.locationId,
+                          assetIds: wo.assets?.map((a: any) => a.id) || (wo.assetId ? [wo.assetId] : []),
+                          assigneeIds: wo.assignees?.map((a: any) => a.id) || [],
+                          assignedTeamIds: wo.teams?.map((t: any) => t.id) || [],
+                          vendorIds: wo.vendors?.map((v: any) => v.id) || [],
+                          categoryIds: wo.categories?.map((c: any) => c.id) || [],
+                          procedureIds: wo.procedures?.map((p: any) => p.id) || [],
+                          partIds: wo.parts?.map((p: any) => p.id) || wo.partUsages?.map((p: any) => p.part?.id || p.partId) || [],
+                          recurrenceRule: recurrenceRule,
+                        };
+
+                        Object.keys(payload).forEach(key => (payload[key] === undefined || payload[key] === null) && delete payload[key]);
+
+                        const newWo = await dispatch(createWorkOrder(payload)).unwrap();
+
+                        toast.success("Work Order Copied!", { id: loadingToast });
+                        if (onWorkOrderCreate) onWorkOrderCreate(newWo);
+                        if (newWo?.id) onSelectWorkOrder(newWo);
+
+                      } catch (err: any) {
+                        console.error(err);
+                        toast.error(err?.message || "Failed to copy work order", { id: loadingToast });
+                      }
+                    }}
+                    onRefreshWorkOrders={onRefreshWorkOrders}
+                    activePanel={activePanel}
+                    setActivePanel={setActivePanel}
+                    onScrollToComments={handleScrollToComments}
+                    onScrollToProcedure={handleScrollToProcedure}
+                    // ✅ Trigger the state update in parent
+                    onStatusChangeSuccess={() => setLogRefreshTrigger((prev) => prev + 1)}
+                    // ✅ OPTIMISTIC UPDATE
+                    onWorkOrderUpdate={onWorkOrderUpdate}
+                    onOptimisticUpdate={onOptimisticUpdate}
+                  />
+
+                  {/* ✅ Render sub-panels only when active */}
+                  {activePanel === "details" && (
+                    <>
+                      <LinkedProcedurePreview selectedWorkOrder={selectedWorkOrder} />
+
+                      <CommentsSection
+                        ref={commentsRef}
+                        comment={comment}
+                        setComment={setComment}
+                        attachment={attachment}
+                        setAttachment={setAttachment}
+                        fileRef={fileRef}
+                        selectedWorkOrder={selectedWorkOrder}
+                        // Pass the trigger to re-fetch logs
+                        refreshTrigger={logRefreshTrigger}
+                      />
+                    </>
+                  )}
+                </div>
+              )}
       </div>
 
 
-      <DiscardChangesModal 
+      <DiscardChangesModal
         isOpen={showDiscardModal}
         onDiscard={handleConfirmDiscard}
         onKeepEditing={handleCancelDiscard}

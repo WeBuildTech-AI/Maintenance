@@ -24,8 +24,9 @@ const cleanPayload = (data: any) => {
   Object.keys(data).forEach((key) => {
     const value = data[key];
     if (Array.isArray(value)) {
-      if (value.length > 0) cleaned[key] = value; 
-      return; 
+      // ✅ Allow empty arrays to pass through (for clearing relations)
+      cleaned[key] = value;
+      return;
     }
     if (value && typeof value === 'object' && !(value instanceof Date)) {
       const cleanedNested = cleanPayload(value);
@@ -40,14 +41,27 @@ const cleanPayload = (data: any) => {
 };
 
 export const workOrderService = {
-  fetchWorkOrders: async (params?: FetchWorkOrdersParams): Promise<WorkOrderResponse[]> => {
-    const res = await api.get("/work-orders", { 
-      params, 
-      paramsSerializer: { indexes: null } 
+  fetchWorkOrders: async (params?: FetchWorkOrdersParams): Promise<{ data: WorkOrderResponse[]; meta: any }> => {
+    const res = await api.get("/work-orders", {
+      params,
+      paramsSerializer: { indexes: null }
     });
-    if (res.data && Array.isArray(res.data.items)) return res.data.items;
-    if (Array.isArray(res.data)) return res.data;
-    return [];
+    if (res.data && Array.isArray(res.data.items)) {
+      return { data: res.data.items, meta: res.data.meta };
+    }
+    if (Array.isArray(res.data)) {
+      return {
+        data: res.data,
+        meta: {
+          totalItems: res.data.length,
+          itemCount: res.data.length,
+          itemsPerPage: res.data.length,
+          totalPages: 1,
+          currentPage: 1
+        }
+      };
+    }
+    return { data: [], meta: { totalItems: 0, itemCount: 0, itemsPerPage: 0, totalPages: 0, currentPage: 1 } };
   },
 
   fetchWorkOrderById: async (id: string): Promise<WorkOrderResponse> => {
@@ -64,7 +78,7 @@ export const workOrderService = {
 
   createWorkOrder: async (data: CreateWorkOrderData): Promise<WorkOrderResponse> => {
     const cleanedData = cleanPayload(data);
-    const res = await api.post(`work-orders`, cleanedData);
+    const res = await api.post(`/work-orders`, cleanedData);
     return res.data;
   },
 
@@ -125,14 +139,14 @@ export const workOrderService = {
     const item = {
       userId: data.userId,
       // Check for existence specifically, allowing 0
-      amount: (data.amount !== "" && data.amount !== undefined && data.amount !== null) 
-        ? Number(data.amount) 
+      amount: (data.amount !== "" && data.amount !== undefined && data.amount !== null)
+        ? Number(data.amount)
         : 0,
       // Use nullish coalescing to allow empty strings
       description: data.description ?? "",
       category: data.category || "other"
     };
-    
+
     // API expects items array
     const payload = { items: [item] };
     const res = await api.post(`/work-orders/${id}/other-costs`, payload);
@@ -143,8 +157,8 @@ export const workOrderService = {
     // ✅ FIX: Apply same robust logic to updates
     const payload = {
       userId: data.userId,
-      amount: (data.amount !== "" && data.amount !== undefined && data.amount !== null) 
-        ? Number(data.amount) 
+      amount: (data.amount !== "" && data.amount !== undefined && data.amount !== null)
+        ? Number(data.amount)
         : 0,
       description: data.description ?? "",
       category: data.category || "other"
@@ -163,9 +177,9 @@ export const workOrderService = {
     let finalMinutes = Number(data.minutes) || 0;
 
     if (finalHours === 0 && finalMinutes === 0 && (data as any).totalMinutes > 0) {
-       const total = Number((data as any).totalMinutes);
-       finalHours = Math.floor(total / 60);
-       finalMinutes = total % 60;
+      const total = Number((data as any).totalMinutes);
+      finalHours = Math.floor(total / 60);
+      finalMinutes = total % 60;
     }
 
     const item = {
@@ -200,7 +214,7 @@ export const workOrderService = {
 
   addPartUsage: async (id: string, data: CreatePartUsageData) => {
     const res = await api.post(`/work-orders/${id}/parts`, data);
-    return res.data; 
+    return res.data;
   },
 
   updatePartUsage: async (workOrderId: string, usageId: string, data: CreatePartUsageData) => {
@@ -225,7 +239,7 @@ export const workOrderService = {
 
   getFieldResponses: async (submissionId: string) => {
     const res = await api.get(`/procedure-field-responses/submission/${submissionId}`);
-    return res.data; 
+    return res.data;
   },
 
   fetchDeleteWorkOrder: async (): Promise<void> => {
@@ -252,7 +266,7 @@ export const workOrderService = {
       const res = await api.get(`/users/${id}`);
       return res.data;
     } catch (error) {
-      return {}; 
+      return {};
     }
   },
 };

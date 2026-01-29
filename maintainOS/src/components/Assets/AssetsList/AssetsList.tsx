@@ -146,11 +146,10 @@ export function AssetsList({
                       openSection === section.label ? null : section.label
                     )
                   }
-                  className={`flex items-center justify-between w-full px-4 py-3 text-sm transition-all rounded-md ${
-                    sortType === section.label
+                  className={`flex items-center justify-between w-full px-4 py-3 text-sm transition-all rounded-md ${sortType === section.label
                       ? "text-orange-600 font-medium bg-gray-50"
                       : "text-gray-800 hover:bg-gray-50"
-                  }`}
+                    }`}
                 >
                   <span>{section.label}</span>
                   {openSection === section.label ? (
@@ -180,11 +179,10 @@ export function AssetsList({
                             setSortOrder(currentOrder);
                             setIsDropdownOpen(false); // Close dropdown on selection
                           }}
-                          className={`flex items-center justify-between px-6 py-2 text-left text-sm transition rounded-md ${
-                            isSelected
+                          className={`flex items-center justify-between px-6 py-2 text-left text-sm transition rounded-md ${isSelected
                               ? "text-orange-600 bg-white"
                               : "text-gray-700 hover:text-blue-300 hover:bg-white"
-                          }`}
+                            }`}
                         >
                           {opt}
                           {isSelected && (
@@ -202,10 +200,16 @@ export function AssetsList({
       )}
 
       {/* --- Assets List Content --- */}
-      {loading ? (
+      {loading && assets.length === 0 ? (
         <Loader />
       ) : (
-        <div className="flex-1 overflow-y-auto min-h-0 p-4">
+        <div className="flex-1 overflow-y-auto min-h-0 p-4 relative">
+          {/* Show subtle loading overlay if refreshing */}
+          {loading && (
+            <div className="absolute inset-0 bg-white/50 z-10 flex justify-center pt-10">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600"></div>
+            </div>
+          )}
           <div className="">
             {assets.map((asset) => (
               <AssetCard

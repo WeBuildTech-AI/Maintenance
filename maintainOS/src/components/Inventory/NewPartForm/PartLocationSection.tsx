@@ -6,7 +6,7 @@ import { DynamicSelect, type SelectOption } from "../../common/DynamicSelect";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../../store";
 import { fetchLocationsName } from "../../../store/locations/locations.thunks";
-import { LocationFormDialog } from "./LocationFormDialog";
+
 
 export function PartLocationSection({
   newItem,
@@ -182,7 +182,7 @@ export function PartLocationSection({
           </label>
           <input
             type="number"
-            value={newItem.unitsInStock || ""}
+            value={newItem.unitsInStock ?? ""}
             onChange={(e) => setNewItem((s) => ({ ...s, unitsInStock: Number(e.target.value) }))}
             style={{
               height: "40px",
@@ -211,7 +211,7 @@ export function PartLocationSection({
           </label>
           <input
             type="number"
-            value={newItem.minInStock || ""}
+            value={newItem.minInStock ?? ""}
             onChange={(e) => setNewItem((s) => ({ ...s, minInStock: Number(e.target.value) }))}
             style={{
               height: "40px",
@@ -225,11 +225,6 @@ export function PartLocationSection({
             }}
           />
         </div>
-      </div>
-
-      {/* Add Location Modal */}
-      <div>
-        <LocationFormDialog newItem={newItem} setNewItem={setNewItem} />
       </div>
     </div>
   );

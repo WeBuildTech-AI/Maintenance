@@ -19,12 +19,13 @@ import {
 } from "lucide-react";
 import { Input } from "../ui/input";
 import WorkOrderFilterBar from "./WorkOrderFilterBar";
-import { FetchWorkOrdersParams } from "../../store/workOrders/workOrders.types";
+import type { FetchWorkOrdersParams } from "../../store/workOrders/workOrders.types";
 import { useNavigate } from "react-router-dom";
 
 interface WorkOrderHeaderProps {
   viewMode: ViewMode;
-  setViewMode: Dispatch<SetStateAction<ViewMode>>;
+  setViewMode?: Dispatch<SetStateAction<ViewMode>>; // Keep for backward compat if needed, but pref onViewModeChange
+  onViewModeChange?: (mode: ViewMode) => void;
   searchQuery: string;
   setSearchQuery: Dispatch<SetStateAction<string>>;
   setIsCreatingForm: Dispatch<SetStateAction<boolean>>;
@@ -38,17 +39,15 @@ interface WorkOrderHeaderProps {
 export function WorkOrderHeaderComponent({
   viewMode,
   setViewMode,
+  onViewModeChange,
   searchQuery,
   setSearchQuery,
-  setIsCreatingForm,
-  setShowSettings,
-  setIsModalOpen,
   setIsSettingsModalOpen,
   onFilterChange,
   setShowDeleted,
 }: WorkOrderHeaderProps) {
   const navigate = useNavigate();
-  
+
   return (
     <header className=" border-border bg-card px-6 py-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -89,20 +88,27 @@ export function WorkOrderHeaderComponent({
                 <DropdownMenuContent align="start">
                   <DropdownMenuItem
                     onClick={() => {
-                      setViewMode("todo");
+                      if (onViewModeChange) onViewModeChange("todo");
+                      else setViewMode?.("todo");
                       setShowDeleted?.(false);
                     }}
                   >
                     <LayoutGrid className="h-4 w-4 mr-2" />
                     To-Do View
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setViewMode("list")}>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (onViewModeChange) onViewModeChange("list");
+                      else setViewMode?.("list");
+                    }}
+                  >
                     <List className="h-4 w-4 mr-2" />
                     List View
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
-                      setViewMode("calendar");
+                      if (onViewModeChange) onViewModeChange("calendar");
+                      else setViewMode?.("calendar");
                       setShowDeleted?.(false);
                     }}
                   >
@@ -111,7 +117,8 @@ export function WorkOrderHeaderComponent({
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
-                      setViewMode("workload");
+                      if (onViewModeChange) onViewModeChange("workload");
+                      else setViewMode?.("workload");
                       setShowDeleted?.(false);
                     }}
                   >

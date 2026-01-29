@@ -53,7 +53,9 @@ export function InspectionCheckChart({
   // Notify parent of loading state changes
   useEffect(() => {
     onLoadingChange?.(resultLoading);
-  }, [resultLoading, onLoadingChange]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resultLoading]); // Only depend on loading state, not onLoadingChange // Only depend on loading state, not onLoadingChange
 
   // Fetch Inspection Check data grouped by date for the chart
   const { data: dateData } = useQuery<{

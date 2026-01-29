@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Package } from "lucide-react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import toast from "react-hot-toast";
 
 import { AssetNameInput } from "./fields/AssetNameInput";
@@ -20,13 +20,10 @@ import { useNavigate } from "react-router-dom";
 import {
   assetService,
   createAsset,
+  fetchFilterData, // ✅ Import fetchFilterData
 } from "../../../store/assets";
-import { locationService } from "../../../store/locations";
-import { teamService } from "../../../store/teams";
-import { vendorService } from "../../../store/vendors";
-import { partService } from "../../../store/parts";
 
-import type { AppDispatch } from "../../../store";
+import type { AppDispatch, RootState } from "../../../store";
 
 interface NewAssetFormProps {
   onCancel: () => void;
@@ -45,6 +42,9 @@ export function NewAssetForm({
 }: NewAssetFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+
+  // ✅ Access cached filter data from Redux
+  const { filterData } = useSelector((state: RootState) => state.assets);
 
   // --- Form State ---
   const [assetName, setAssetName] = useState("");
@@ -68,24 +68,6 @@ export function NewAssetForm({
 
   const [status, setStatus] = useState("online");
 
-  // --- Dropdown Options State ---
-  const [locationOptions, setLocationOptions] = useState<SelectOption[]>([]);
-  const [manufacturerOptions, setManufacturerOptions] = useState<SelectOption[]>([]);
-  const [vendorOptions, setVendorOptions] = useState<SelectOption[]>([]);
-  const [teamOptions, setTeamOptions] = useState<SelectOption[]>([]);
-  const [assetTypeOptions, setAssetTypeOptions] = useState<SelectOption[]>([]);
-  const [partOptions, setPartOptions] = useState<SelectOption[]>([]);
-  const [parentAssetOptions, setParentAssetOptions] = useState<SelectOption[]>([]);
-
-  // --- Loading States ---
-  const [loadingLocations, setLoadingLocations] = useState(false);
-  const [loadingManufacturers, setLoadingManufacturers] = useState(false);
-  const [loadingVendors, setLoadingVendors] = useState(false);
-  const [loadingTeams, setLoadingTeams] = useState(false);
-  const [loadingAssetTypes, setLoadingAssetTypes] = useState(false);
-  const [loadingParts, setLoadingParts] = useState(false);
-  const [loadingParentAssets, setLoadingParentAssets] = useState(false);
-
   // --- Active Dropdown Control ---
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
@@ -106,6 +88,21 @@ export function NewAssetForm({
     return sortedA.every((val, index) => val === sortedB[index]);
   };
 
+  // ✅ FETCH DATA ON MOUNT
+  useEffect(() => {
+    dispatch(fetchFilterData());
+  }, [dispatch]);
+
+  // ✅ PREPARE OPTIONS FROM REDUX
+  const locationOptions = useMemo(() => filterData?.locations.map(i => ({ id: toId(i.id), name: i.name })) || [], [filterData]);
+  const manufacturerOptions = useMemo(() => filterData?.manufacturers.map(i => ({ id: toId(i.id), name: i.name })) || [], [filterData]);
+  const vendorOptions = useMemo(() => filterData?.vendors.map(i => ({ id: toId(i.id), name: i.name })) || [], [filterData]);
+  const teamOptions = useMemo(() => filterData?.teams.map(i => ({ id: toId(i.id), name: i.name })) || [], [filterData]);
+  const assetTypeOptions = useMemo(() => filterData?.assetTypes.map(i => ({ id: toId(i.id), name: i.name })) || [], [filterData]);
+  const partOptions = useMemo(() => filterData?.parts.map(i => ({ id: toId(i.id), name: i.name })) || [], [filterData]);
+  const parentAssetOptions = useMemo(() => filterData?.assets.map(i => ({ id: toId(i.id), name: i.name })) || [], [filterData]);
+
+
   // --- Initialization (Edit Mode) ---
   useEffect(() => {
     if (isEdit && assetData) {
@@ -116,107 +113,32 @@ export function NewAssetForm({
       setSerialNumber(assetData.serialNumber || "");
       setQrCode(assetData.qrCode || "");
       setCriticality(assetData.criticality ? assetData.criticality.toLowerCase() : "");
-      
+
       if (assetData.status) setStatus(assetData.status);
 
-      if (assetData.location) {
-        setLocationId(toId(assetData.location.id));
-        setLocationOptions([{ id: toId(assetData.location.id), name: assetData.location.name }]);
-      }
-      if (assetData.manufacturer) {
-        setManufacturerId(toId(assetData.manufacturer.id));
-        setManufacturerOptions([{ id: toId(assetData.manufacturer.id), name: assetData.manufacturer.name }]);
-      }
-      if (assetData.vendor) {
-        setVendorId(toId(assetData.vendor.id));
-        setVendorOptions([{ id: toId(assetData.vendor.id), name: assetData.vendor.name }]);
-      }
-      if (assetData.parentAsset) {
-        setParentAssetId(toId(assetData.parentAsset.id));
-        setParentAssetOptions([{ id: toId(assetData.parentAsset.id), name: assetData.parentAsset.name }]);
-      }
+      // ✅ Handle both Object (with id) and direct ID string
+      const getId = (obj: any, idField: any) => {
+        if (obj && typeof obj === 'object' && obj.id) return toId(obj.id);
+        if (idField) return toId(idField);
+        return "";
+      };
 
-      // Arrays
-      if (Array.isArray(assetData.teamsInCharge)) {
-        setTeamIds(assetData.teamsInCharge.map((t: any) => toId(t.id)));
-        setTeamOptions(assetData.teamsInCharge.map((t: any) => ({ id: toId(t.id), name: t.name })));
-      }
-      if (Array.isArray(assetData.parts)) {
-        setPartIds(assetData.parts.map((p: any) => toId(p.id)));
-        setPartOptions(assetData.parts.map((p: any) => ({ id: toId(p.id), name: p.name })));
-      }
-      if (Array.isArray(assetData.assetTypes)) {
-         setAssetTypeIds(assetData.assetTypes.map((t: any) => toId(t.id)));
-         setAssetTypeOptions(assetData.assetTypes.map((t: any) => ({ id: toId(t.id), name: t.name })));
-      } else if (assetData.assetTypeIds) {
-         setAssetTypeIds(assetData.assetTypeIds.map(toId));
-      }
+      setLocationId(getId(assetData.location, assetData.locationId));
+      setManufacturerId(getId(assetData.manufacturer, assetData.manufacturerId));
+      setVendorId(getId(assetData.vendor, assetData.vendorId));
+      setParentAssetId(getId(assetData.parentAsset, assetData.parentAssetId));
+
+      // ✅ Handle Arrays (Strings IDs or Objects with ID)
+      const getIds = (arr: any, fallbackArr: any) => {
+        const source = Array.isArray(arr) ? arr : (Array.isArray(fallbackArr) ? fallbackArr : []);
+        return source.map((item: any) => (typeof item === 'object' && item.id ? toId(item.id) : toId(item)));
+      };
+
+      setTeamIds(getIds(assetData.teams, assetData.teamsInCharge)); // 'teams' vs 'teamsInCharge'
+      setPartIds(getIds(assetData.parts, assetData.partIds));
+      setAssetTypeIds(getIds(assetData.assetTypes, assetData.assetTypeIds));
     }
   }, [isEdit, assetData]);
-
-  // --- Fetch Handlers ---
-  const handleFetchLocations = async () => {
-    if (loadingLocations) return;
-    setLoadingLocations(true);
-    try {
-      const res = await locationService.fetchLocationsName();
-      setLocationOptions((res || []).map((i: any) => ({ id: toId(i.id), name: i.name })));
-    } catch (err) { console.error(err); } finally { setLoadingLocations(false); }
-  };
-
-  const handleFetchManufacturers = async () => {
-    if (loadingManufacturers) return;
-    setLoadingManufacturers(true);
-    try {
-      const res = await assetService.fetchAssetManufacturer();
-      setManufacturerOptions((res || []).map((i: any) => ({ id: toId(i.id), name: i.name })));
-    } catch (err) { console.error(err); } finally { setLoadingManufacturers(false); }
-  };
-
-  const handleFetchVendors = async () => {
-    if (loadingVendors) return;
-    setLoadingVendors(true);
-    try {
-      const res = await vendorService.fetchVendorName();
-      setVendorOptions((res || []).map((i: any) => ({ id: toId(i.id), name: i.name })));
-    } catch (err) { console.error(err); } finally { setLoadingVendors(false); }
-  };
-
-  const handleFetchTeams = async () => {
-    if (loadingTeams) return;
-    setLoadingTeams(true);
-    try {
-      const res = await teamService.fetchTeamsName();
-      setTeamOptions((Array.isArray(res) ? res : []).map((i: any) => ({ id: toId(i.id), name: i.name })));
-    } catch (err) { console.error(err); } finally { setLoadingTeams(false); }
-  };
-
-  const handleFetchAssetTypes = async () => {
-    if (loadingAssetTypes) return;
-    setLoadingAssetTypes(true);
-    try {
-      const res = await assetService.fetchAssetType();
-      setAssetTypeOptions((res || []).map((i: any) => ({ id: toId(i.id), name: i.name })));
-    } catch (err) { console.error(err); } finally { setLoadingAssetTypes(false); }
-  };
-
-  const handleFetchParts = async () => {
-    if (loadingParts) return;
-    setLoadingParts(true);
-    try {
-      const res = await partService.fetchPartsName();
-      setPartOptions((res || []).map((i: any) => ({ id: toId(i.id), name: i.name })));
-    } catch (err) { console.error(err); } finally { setLoadingParts(false); }
-  };
-
-  const handleFetchParentAssets = async () => {
-    if (loadingParentAssets) return;
-    setLoadingParentAssets(true);
-    try {
-      const res = await assetService.fetchAssetsName();
-      setParentAssetOptions((res || []).map((i: any) => ({ id: toId(i.id), name: i.name })));
-    } catch (err) { console.error(err); } finally { setLoadingParentAssets(false); }
-  };
 
   // ✅ CRITICAL HELPER: Converts empty string "" to null so backend clears the field
   const getNullableUUID = (val: string) => (val && val.trim() !== "" ? val : null);
@@ -233,14 +155,14 @@ export function NewAssetForm({
       // ------------------------------------------------
       // ✅ EDIT MODE: Compare and Send NULL if cleared
       // ------------------------------------------------
-      
+
       if (assetName !== assetData.name) payload.name = assetName;
       if (description !== (assetData.description || "")) payload.description = description;
       if (Number(year) !== (assetData.year || 0)) payload.year = Number(year);
       if (model !== (assetData.model || "")) payload.model = model;
       if (serialNumber !== (assetData.serialNumber || "")) payload.serialNumber = serialNumber;
       if (qrCode !== (assetData.qrCode || "")) payload.qrCode = qrCode;
-      
+
       const currentCrit = criticality ? criticality.toLowerCase() : "";
       const oldCrit = assetData.criticality ? assetData.criticality.toLowerCase() : "";
       if (currentCrit !== oldCrit) payload.criticality = criticality;
@@ -263,17 +185,17 @@ export function NewAssetForm({
       // Arrays: Always send current list (filtered for empty strings)
       const oldTeamIds = (assetData.teamsInCharge || []).map((t: any) => String(t.id));
       if (!arraysEqual(teamIds, oldTeamIds)) {
-         payload.teamsInCharge = teamIds.filter((id) => id && id.trim() !== "");
+        payload.teamsInCharge = teamIds.filter((id) => id && id.trim() !== "");
       }
 
       const oldPartIds = (assetData.parts || []).map((p: any) => String(p.id));
       if (!arraysEqual(partIds, oldPartIds)) {
-         payload.partIds = partIds.filter((id) => id && id.trim() !== "");
+        payload.partIds = partIds.filter((id) => id && id.trim() !== "");
       }
 
       const oldTypeIds = (assetData.assetTypes || []).map((t: any) => String(t.id));
       if (!arraysEqual(assetTypeIds, oldTypeIds)) {
-         payload.assetTypeIds = assetTypeIds.filter((id) => id && id.trim() !== "");
+        payload.assetTypeIds = assetTypeIds.filter((id) => id && id.trim() !== "");
       }
 
       if (Object.keys(payload).length === 0) {
@@ -286,7 +208,7 @@ export function NewAssetForm({
       // ✅ CREATE MODE: Only send fields that have values (No Nulls)
       // ------------------------------------------------
       payload.name = assetName;
-      payload.status = status; 
+      payload.status = status;
 
       if (description) payload.description = description;
       if (year) payload.year = Number(year);
@@ -322,7 +244,7 @@ export function NewAssetForm({
         toast.success("Asset created successfully");
         onCreate(created);
       }
-      fetchAssetsData();
+      // fetchAssetsData();
     } catch (error: any) {
       console.error(error);
       toast.error(error.message || "Failed to save asset");
@@ -359,12 +281,13 @@ export function NewAssetForm({
             value={locationId}
             onSelect={(val) => setLocationId(val as string)}
             options={locationOptions}
-            onFetch={handleFetchLocations}
-            loading={loadingLocations}
             activeDropdown={activeDropdown}
             setActiveDropdown={setActiveDropdown}
             ctaText="+ Create Location"
             onCtaClick={() => navigate("/locations")}
+            // ✅ No onFetch needed
+            onFetch={() => { }}
+            loading={false}
           />
         </div>
 
@@ -378,7 +301,8 @@ export function NewAssetForm({
             options={criticalityOptions}
             activeDropdown={activeDropdown}
             setActiveDropdown={setActiveDropdown}
-            onFetch={() => {}} 
+            // ✅ No onFetch needed
+            onFetch={() => { }}
             loading={false}
           />
         </div>
@@ -394,12 +318,13 @@ export function NewAssetForm({
             value={manufacturerId}
             onSelect={(val) => setManufacturerId(val as string)}
             options={manufacturerOptions}
-            onFetch={handleFetchManufacturers}
-            loading={loadingManufacturers}
             activeDropdown={activeDropdown}
             setActiveDropdown={setActiveDropdown}
             ctaText="+ Create Manufacturer"
             onCtaClick={() => toast("Create Manufacturer Logic")}
+            // ✅ No onFetch needed
+            onFetch={() => { }}
+            loading={false}
           />
         </div>
 
@@ -413,12 +338,13 @@ export function NewAssetForm({
             value={teamIds}
             onSelect={(val) => setTeamIds(val as string[])}
             options={teamOptions}
-            onFetch={handleFetchTeams}
-            loading={loadingTeams}
             activeDropdown={activeDropdown}
             setActiveDropdown={setActiveDropdown}
             ctaText="+ Create Team"
             onCtaClick={() => navigate("/teams/create")}
+            // ✅ No onFetch needed
+            onFetch={() => { }}
+            loading={false}
           />
         </div>
 
@@ -432,10 +358,11 @@ export function NewAssetForm({
             value={assetTypeIds}
             onSelect={(val) => setAssetTypeIds(val as string[])}
             options={assetTypeOptions}
-            onFetch={handleFetchAssetTypes}
-            loading={loadingAssetTypes}
             activeDropdown={activeDropdown}
             setActiveDropdown={setActiveDropdown}
+            // ✅ No onFetch needed
+            onFetch={() => { }}
+            loading={false}
           />
         </div>
 
@@ -447,12 +374,13 @@ export function NewAssetForm({
             value={vendorId}
             onSelect={(val) => setVendorId(val as string)}
             options={vendorOptions}
-            onFetch={handleFetchVendors}
-            loading={loadingVendors}
             activeDropdown={activeDropdown}
             setActiveDropdown={setActiveDropdown}
             ctaText="+ Create Vendor"
             onCtaClick={() => navigate("/vendor")}
+            // ✅ No onFetch needed
+            onFetch={() => { }}
+            loading={false}
           />
         </div>
 
@@ -464,12 +392,13 @@ export function NewAssetForm({
             value={partIds}
             onSelect={(val) => setPartIds(val as string[])}
             options={partOptions}
-            onFetch={handleFetchParts}
-            loading={loadingParts}
             activeDropdown={activeDropdown}
             setActiveDropdown={setActiveDropdown}
             ctaText="+ Create Part"
             onCtaClick={() => navigate("/inventory")}
+            // ✅ No onFetch needed
+            onFetch={() => { }}
+            loading={false}
           />
         </div>
 
@@ -481,10 +410,11 @@ export function NewAssetForm({
             value={parentAssetId}
             onSelect={(val) => setParentAssetId(val as string)}
             options={parentAssetOptions}
-            onFetch={handleFetchParentAssets}
-            loading={loadingParentAssets}
             activeDropdown={activeDropdown}
             setActiveDropdown={setActiveDropdown}
+            // ✅ No onFetch needed
+            onFetch={() => { }}
+            loading={false}
           />
         </div>
       </div>

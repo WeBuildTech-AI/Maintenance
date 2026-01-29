@@ -2,6 +2,7 @@ import {
   useState,
   type FC,
   useEffect,
+  useRef,
 } from "react";
 import { AssetDetailContent } from "./AssetDetailContent";
 import { AssetDetailHeader } from "./AssetDetailHeader";
@@ -37,28 +38,20 @@ interface AssetLog {
   user?: AssetLogUser; // Nested user object
 }
 
-interface Asset {
-  id: number | string;
-  name: string;
-  updatedAt: string;
-  createdAt: string;
-  location: any;
-  createdBy: string;
-  updatedBy: string;
-  [key: string]: any;
-}
-
 interface AssetDetailProps {
   asset: any;
-  onEdit: (asset: Asset) => void;
+  onEdit: (asset: any) => void;
   onDelete: (id: string | number) => void;
-  onCopy: (asset: Asset) => void;
-  fetchAssetsData: () => void;
+  onCopy: (asset: any) => void;
+  fetchAssetsData: (force?: boolean) => void;
   setSeeMoreAssetStatus: (value: boolean) => void;
   onClose: () => void;
   restoreData: string;
   showDeleted: boolean;
 }
+
+// ✅ GLOBAL CACHE (Module-level, resets on page reload)
+const userCache = new Map<string, string>();
 
 export const AssetDetail: FC<AssetDetailProps> = ({
   asset,
@@ -72,7 +65,7 @@ export const AssetDetail: FC<AssetDetailProps> = ({
   showDeleted,
 }) => {
   const [showHistory, setShowHistory] = useState<boolean>(false);
-  
+
   // ✅ State for User Names (Top Header)
   const [createdUserName, setCreatedUserName] = useState<string>("Loading...");
   const [updatedUserName, setUpdatedUserName] = useState<string>("Loading...");
@@ -81,60 +74,70 @@ export const AssetDetail: FC<AssetDetailProps> = ({
   const [historyLogs, setHistoryLogs] = useState<AssetLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
 
-  // ✅ Fetch User Names Effect (Real API Call)
+  // ✅ PERF: Track last fetched history ID to prevent re-fetching on toggle
+  const lastFetchedHistoryIdRef = useRef<string | null>(null);
+
+  // ✅ Fetch User Names Effect (Real API Call + Caching)
   useEffect(() => {
     const fetchUserNames = async () => {
-      // 1. Fetch Created By
-      if (asset?.createdBy) {
-        if (asset.createdBy.length > 20) {
-          try {
-            const res = await api.get(`/users/${asset.createdBy}`);
-            setCreatedUserName(res.data?.fullName || "Unknown");
-          } catch (error) {
-            console.error("Failed to fetch createdBy user", error);
-            setCreatedUserName("Unknown");
-          }
-        } else {
-           setCreatedUserName(asset.createdBy);
+      // Helper to fetch single user
+      const getUserName = async (userId: string): Promise<string> => {
+        if (!userId || userId.length <= 20) return userId || "System"; // Not a UUID or System
+
+        if (userCache.has(userId)) {
+          return userCache.get(userId)!;
         }
-      } else {
-        setCreatedUserName("System");
-      }
+
+        try {
+          const res = await api.get(`/users/${userId}`);
+          const name = res.data?.fullName || "Unknown";
+          userCache.set(userId, name);
+          return name;
+        } catch (error) {
+          console.error("Failed to fetch user", userId, error);
+          return "Unknown";
+        }
+      };
+
+      // 1. Fetch Created By
+      const createdBy = asset?.createdBy;
+      const createdName = await getUserName(createdBy);
+      setCreatedUserName(createdName);
 
       // 2. Fetch Updated By
-      if (asset?.updatedBy) {
-        if (asset.updatedBy.length > 20) {
-          try {
-            const res = await api.get(`/users/${asset.updatedBy}`);
-            setUpdatedUserName(res.data?.fullName || "Unknown");
-          } catch (error) {
-            console.error("Failed to fetch updatedBy user", error);
-            setUpdatedUserName("Unknown");
-          }
-        } else {
-            setUpdatedUserName(asset.updatedBy);
-        }
-      } else {
-        setUpdatedUserName("System");
-      }
+      const updatedBy = asset?.updatedBy;
+      const updatedName = await getUserName(updatedBy);
+      setUpdatedUserName(updatedName);
     };
 
     fetchUserNames();
   }, [asset?.createdBy, asset?.updatedBy]);
 
-  // ✅ NEW: Fetch Logs when History Tab is opened
+  // ✅ New State for Last Updated Date (from logs)
+  const [lastUpdatedDate, setLastUpdatedDate] = useState<string | null>(null);
+
+  // ✅ NEW: Fetch Logs Immediately to get "Last Updated" info
   useEffect(() => {
     const fetchHistory = async () => {
-      if (showHistory && asset?.id) {
+      const assetId = asset?.id?.toString();
+
+      if (assetId && showHistory) { // ✅ Only fetch if History tab is active
         setLoadingLogs(true);
         try {
-          const res = await assetService.fetchAssetStatusLog(asset.id.toString());
-          
-          // ✅ Debugging: Check console to see if logs are coming
-          // console.log("Logs Response:", res);
+          const res = await assetService.fetchAssetStatusLog(assetId);
 
           if (res && Array.isArray(res.logs)) {
             setHistoryLogs(res.logs);
+            lastFetchedHistoryIdRef.current = assetId;
+
+            // Optional: Update global last updated info from logs if needed, 
+            // but relying on asset.updatedAt for initial view is faster.
+            if (res.logs.length > 0) {
+              const latestLog = res.logs[0];
+              if (latestLog) {
+                setLastUpdatedDate(latestLog.createdAt);
+              }
+            }
           } else {
             setHistoryLogs([]);
           }
@@ -147,8 +150,10 @@ export const AssetDetail: FC<AssetDetailProps> = ({
       }
     };
 
-    fetchHistory();
-  }, [showHistory, asset?.id]);
+    if (showHistory) {
+      fetchHistory();
+    }
+  }, [asset?.id, showHistory]); // ✅ Depend on showHistory
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -215,19 +220,19 @@ export const AssetDetail: FC<AssetDetailProps> = ({
                       {log.status}
                     </span>
                   </div>
-                  
+
                   <p className="text-sm text-gray-600 mt-2">
                     Status changed by <span className="font-medium text-gray-900">
                       {log.user?.fullName || "System"}
                     </span>
                   </p>
-                  
+
                   {log.downtimeType && (
-                     <p className="text-xs text-red-500 mt-1">
-                       Downtime: {log.downtimeType}
-                     </p>
+                    <p className="text-xs text-red-500 mt-1">
+                      Downtime: {log.downtimeType}
+                    </p>
                   )}
-                  
+
                   <p className="text-xs text-gray-400 mt-1">
                     {formatDate(log.createdAt)}
                   </p>
@@ -243,6 +248,7 @@ export const AssetDetail: FC<AssetDetailProps> = ({
           setSeeMoreAssetStatus={setSeeMoreAssetStatus}
           createdUser={createdUserName}
           updatedUser={updatedUserName}
+          lastUpdatedDate={lastUpdatedDate} // ✅ Pass new prop
         />
       )}
     </div>

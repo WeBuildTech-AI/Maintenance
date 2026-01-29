@@ -1,20 +1,24 @@
 "use client";
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Card, CardContent } from "../ui/card";
-import { Avatar as ShadCNAvatar, AvatarFallback } from "../ui/avatar";
+import { Avatar as ShadCNAvatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 // Antd & Icons
-import { Table, Tooltip as AntTooltip } from "antd";
+import { Table } from "antd";
+// ... (omitting lines to match context, but the replacement block needs to be contiguous or multiple chunks)
+
+// I will use multi_replace to be safe
+
 import type { TableProps, TableColumnType } from "antd";
-import { Trash2, Loader2, Edit, X, User, MapPin, Box, Settings } from "lucide-react"; 
+import { Trash2, Loader2, Edit, X, User, MapPin, Box, Settings } from "lucide-react";
 import toast from "react-hot-toast";
 
 // Imports
 import SettingsModal from "../utils/SettingsModal";
 import { formatDateOnly } from "../utils/Date";
-import { vendorService } from "../../store/vendors"; 
+import { vendorService } from "../../store/vendors";
 // ✅ CHANGED: Import VendorTableModal instead of AssetTableModal
-import VendorTableModal from "./VendorTableModal"; 
+import VendorTableModal from "./VendorTableModal";
 import { Tooltip } from "../ui/tooltip";
 import { VendorForm } from "./VendorsForm/VendorForm";
 
@@ -122,7 +126,7 @@ const columnConfig: {
   },
   Assets: {
     dataIndex: "assetNames",
-    width: 200, 
+    width: 200,
     sorter: (a, b) => (a.assetNames || "").localeCompare(b.assetNames || ""),
   },
   Parts: {
@@ -143,7 +147,17 @@ const columnConfig: {
 };
 
 // --- Internal Wrapper for Edit Modal ---
-function EditVendorModalWrapper({ vendorId, onClose, onRefresh }: { vendorId: string; onClose: () => void; onRefresh: () => void }) {
+function EditVendorModalWrapper({
+  vendorId,
+  onClose,
+  onRefresh,
+  onOptimisticUpdate
+}: {
+  vendorId: string;
+  onClose: () => void;
+  onRefresh: () => void;
+  onOptimisticUpdate?: (v: any) => void;
+}) {
   const [vendor, setVendor] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -177,22 +191,23 @@ function EditVendorModalWrapper({ vendorId, onClose, onRefresh }: { vendorId: st
 
   return (
     <div className="fixed inset-0 z-[9999] bg-white flex flex-col animate-in fade-in zoom-in-95 duration-200">
-       <div className="flex-1 overflow-hidden">
-          <VendorForm 
-            initialData={vendor}
-            onCancel={onClose}
-            onSuccess={() => {
-                onRefresh();
-                onClose();
-            }}
-          />
-       </div>
-       <button 
-          onClick={onClose} 
-          className="absolute top-4 right-4 p-2 bg-white/80 hover:bg-white rounded-full text-gray-500 shadow-sm z-[100000]"
-       >
-          <X size={20} />
-       </button>
+      <div className="flex-1 overflow-hidden">
+        <VendorForm
+          initialData={vendor}
+          onCancel={onClose}
+          onSuccess={(updatedVendor: any) => {
+            if (onOptimisticUpdate) onOptimisticUpdate(updatedVendor);
+            else onRefresh();
+            onClose();
+          }}
+        />
+      </div>
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 p-2 bg-white/80 hover:bg-white rounded-full text-gray-500 shadow-sm z-[100000]"
+      >
+        <X size={20} />
+      </button>
     </div>
   );
 }
@@ -204,6 +219,8 @@ export function VendorTable({
   fetchVendors,
   showDeleted,
   setShowDeleted,
+  onOptimisticUpdate,
+  onOptimisticDelete,
 }: {
   vendors: any[];
   isSettingModalOpen: boolean;
@@ -211,6 +228,8 @@ export function VendorTable({
   fetchVendors: () => void;
   showDeleted: boolean;
   setShowDeleted: (v: boolean) => void;
+  onOptimisticUpdate?: (updatedVendor: any) => void;
+  onOptimisticDelete?: (deletedIds: string[]) => void;
 }) {
   const [visibleColumns, setVisibleColumns] = useState<string[]>(allAvailableColumns);
   const [sortType, setSortType] = useState<string>("name");
@@ -226,20 +245,21 @@ export function VendorTable({
   const isEditing = selectedCount > 0;
   const areAllSelected = allVendorIds.length > 0 && selectedCount === allVendorIds.length;
   const isIndeterminate = selectedCount > 0 && !areAllSelected;
-  
+
   const [isOpenVendorDetailsModal, setIsOpenVendorDetailsModal] = useState(false);
   const [selectedVendorTable, setSelectedVendorTable] = useState<any>(null);
 
   // ✅ FIX: Update the selected vendor in the modal when the main list updates
   // This ensures that if the table refreshes (due to an edit), the open modal gets the new data.
   useEffect(() => {
-    if (selectedVendorTable && vendors.length > 0) {
-      const updatedData = vendors.find((v) => v.id === selectedVendorTable.id);
-      if (updatedData) {
-        setSelectedVendorTable(updatedData);
-      }
+    if (!selectedVendorTable) return;
+    // If we have an optimistic update, checking vendors prop is enough since it will be updated
+    // However, ensure we match by ID
+    const updated = vendors.find(v => v.id === selectedVendorTable.id);
+    if (updated && updated !== selectedVendorTable) {
+      setSelectedVendorTable(updated);
     }
-  }, [vendors]);
+  }, [vendors, selectedVendorTable]);
 
   useEffect(() => {
     if (headerCheckboxRef.current) {
@@ -267,8 +287,13 @@ export function VendorTable({
     try {
       await vendorService.batchDeleteVendor(selectedVendorIds);
       toast.success("Vendors deleted successfully!");
+
+      if (onOptimisticDelete) {
+        onOptimisticDelete(selectedVendorIds);
+      } else {
+        fetchVendors();
+      }
       setSelectedVendorIds([]);
-      fetchVendors();
     } catch (err) {
       console.error("Error bulk deleting vendors:", err);
       toast.error("Failed to delete vendors.");
@@ -333,36 +358,34 @@ export function VendorTable({
             <span className="text-sm font-medium text-gray-900 whitespace-nowrap">
               {selectedCount} Selected
             </span>
-            
+
             <div className="flex items-center gap-1">
-                <Tooltip text="Edit">
-                    <button
-                        onClick={() => {
-                            if (selectedCount === 1) setEditVendorId(selectedVendorIds[0]);
-                        }}
-                        disabled={selectedCount !== 1}
-                        className={`p-1.5 rounded transition ${
-                        selectedCount === 1
-                            ? "text-blue-600 hover:bg-blue-50 cursor-pointer"
-                            : "text-gray-300 cursor-not-allowed"
-                        }`}
-                    >
-                        <Edit size={18} />
-                    </button>
-                </Tooltip>
-                <Tooltip text="Delete">
-                    <button
-                        onClick={handleDelete}
-                        disabled={isDeleting}
-                        className={`p-1.5 rounded transition ${
-                        isDeleting
-                            ? "text-gray-400 cursor-not-allowed"
-                            : "text-red-600 hover:bg-red-50 cursor-pointer"
-                        }`}
-                    >
-                        {isDeleting ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
-                    </button>
-                </Tooltip>
+              <Tooltip text="Edit">
+                <button
+                  onClick={() => {
+                    if (selectedCount === 1) setEditVendorId(selectedVendorIds[0]);
+                  }}
+                  disabled={selectedCount !== 1}
+                  className={`p-1.5 rounded transition ${selectedCount === 1
+                    ? "text-blue-600 hover:bg-blue-50 cursor-pointer"
+                    : "text-gray-300 cursor-not-allowed"
+                    }`}
+                >
+                  <Edit size={18} />
+                </button>
+              </Tooltip>
+              <Tooltip text="Delete">
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className={`p-1.5 rounded transition ${isDeleting
+                    ? "text-gray-400 cursor-not-allowed"
+                    : "text-red-600 hover:bg-red-50 cursor-pointer"
+                    }`}
+                >
+                  {isDeleting ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                </button>
+              </Tooltip>
             </div>
           </div>
         );
@@ -370,13 +393,13 @@ export function VendorTable({
       dataIndex: "name",
       key: "name",
       fixed: "left",
-      width: 250, 
+      width: 250,
       sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
       sortOrder: sortType === "name" ? mapAntSortOrder(sortOrder) : undefined,
       render: (name: string, record: any) => {
         const isSelected = selectedVendorIds.includes(record.id);
         const picture = record.fullVendor?.pictureUrl?.[0];
-        
+
         return (
           <div className="flex items-center gap-3 font-medium text-gray-800 h-full">
             <div
@@ -395,19 +418,19 @@ export function VendorTable({
                 />
               ) : picture ? (
                 <ShadCNAvatar className="h-8 w-8 flex-shrink-0">
-                  <ShadCNAvatar.Image src={`data:${picture.mimetype};base64,${picture.base64}`} alt={name} />
+                  <AvatarImage src={`data:${picture.mimetype};base64,${picture.base64}`} alt={name} />
                   <AvatarFallback>{renderInitials(name)}</AvatarFallback>
                 </ShadCNAvatar>
               ) : (
                 <div
-                    className="flex items-center justify-center rounded-full text-white font-semibold text-xs flex-shrink-0"
-                    style={{
-                        width: "32px",
-                        height: "32px",
-                        backgroundColor: record.fullVendor.color || "#2563eb",
-                    }}
+                  className="flex items-center justify-center rounded-full text-white font-semibold text-xs flex-shrink-0"
+                  style={{
+                    width: "32px",
+                    height: "32px",
+                    backgroundColor: record.fullVendor.color || "#2563eb",
+                  }}
                 >
-                    {renderInitials(name)}
+                  {renderInitials(name)}
                 </div>
               )}
             </div>
@@ -442,55 +465,55 @@ export function VendorTable({
           );
         } else if (colName === "Type") {
           renderFunc = (type: string) => (
-             <span className="capitalize px-2 py-0.5 bg-gray-100 rounded text-gray-600 text-xs font-medium">
-                {type || "Standard"}
-             </span>
+            <span className="capitalize px-2 py-0.5 bg-gray-100 rounded text-gray-600 text-xs font-medium">
+              {type || "Standard"}
+            </span>
           );
         } else if (colName === "Contacts") {
           renderFunc = (contacts: any[]) => {
-             if (!contacts || contacts.length === 0) return <span className="text-muted-foreground">—</span>;
-             return (
-                <div className="flex flex-col gap-1">
-                    {contacts.slice(0, 2).map((c, i) => (
-                        <div key={i} className="flex items-center gap-1.5 text-xs text-gray-600">
-                             <User size={12} className="text-gray-400" />
-                             <span>{c.fullName || c.name}</span>
-                        </div>
-                    ))}
-                    {contacts.length > 2 && <span className="text-xs text-blue-500">+{contacts.length - 2} more</span>}
-                </div>
-             );
+            if (!contacts || contacts.length === 0) return <span className="text-muted-foreground">—</span>;
+            return (
+              <div className="flex flex-col gap-1">
+                {contacts.slice(0, 2).map((c, i) => (
+                  <div key={i} className="flex items-center gap-1.5 text-xs text-gray-600">
+                    <User size={12} className="text-gray-400" />
+                    <span>{c.fullName || c.name}</span>
+                  </div>
+                ))}
+                {contacts.length > 2 && <span className="text-xs text-blue-500">+{contacts.length - 2} more</span>}
+              </div>
+            );
           };
         } else if (colName === "Locations") {
           renderFunc = (loc: string) => {
             if (!loc) return <span className="text-muted-foreground">—</span>;
             return (
-                <div className="flex items-center gap-1.5" title={loc}>
-                    <MapPin size={14} className="text-gray-400" />
-                    <span className="truncate max-w-[180px]">{loc}</span>
-                </div>
+              <div className="flex items-center gap-1.5" title={loc}>
+                <MapPin size={14} className="text-gray-400" />
+                <span className="truncate max-w-[180px]">{loc}</span>
+              </div>
             );
           };
         } else if (colName === "Assets") {
-           renderFunc = (text: string) => {
-               if (!text) return <span className="text-muted-foreground">—</span>;
-               return (
-                   <div className="flex items-center gap-1.5 text-gray-600" title={text}>
-                      <Box size={14} className="text-gray-400 flex-shrink-0" />
-                      <span className="truncate max-w-[180px] text-xs">{text}</span>
-                   </div>
-               );
-           };
+          renderFunc = (text: string) => {
+            if (!text) return <span className="text-muted-foreground">—</span>;
+            return (
+              <div className="flex items-center gap-1.5 text-gray-600" title={text}>
+                <Box size={14} className="text-gray-400 flex-shrink-0" />
+                <span className="truncate max-w-[180px] text-xs">{text}</span>
+              </div>
+            );
+          };
         } else if (colName === "Parts") {
-           renderFunc = (text: string) => {
-               if (!text) return <span className="text-muted-foreground">—</span>;
-               return (
-                   <div className="flex items-center gap-1.5 text-gray-600" title={text}>
-                      <Settings size={14} className="text-gray-400 flex-shrink-0" />
-                      <span className="truncate max-w-[180px] text-xs">{text}</span>
-                   </div>
-               );
-           };
+          renderFunc = (text: string) => {
+            if (!text) return <span className="text-muted-foreground">—</span>;
+            return (
+              <div className="flex items-center gap-1.5 text-gray-600" title={text}>
+                <Settings size={14} className="text-gray-400 flex-shrink-0" />
+                <span className="truncate max-w-[180px] text-xs">{text}</span>
+              </div>
+            );
+          };
         } else if (colName === "Created At") {
           renderFunc = (text: string) => formatDateOnly(text) || "—";
         } else if (colName === "Updated At") {
@@ -515,7 +538,7 @@ export function VendorTable({
   const dataSource = useMemo(() => {
     return vendors.map((vendor) => {
       const locationString = vendor.locations?.map((l: any) => typeof l === 'string' ? l : l.name).join(", ") || "";
-      
+
       const assetNames = vendor.assets?.map((a: any) => a.name).join(", ") || "";
       const partNames = vendor.parts?.map((p: any) => p.name).join(", ") || "";
 
@@ -586,21 +609,24 @@ export function VendorTable({
         componentName="Vendor"
       />
 
-      
+
       {isOpenVendorDetailsModal && selectedVendorTable && (
         <VendorTableModal
           vendor={selectedVendorTable}
           onClose={() => setIsOpenVendorDetailsModal(false)}
-          fetchData={fetchVendors} // ✅ Allows refresh + close
+          fetchData={fetchVendors}
           showDeleted={showDeleted}
+          onOptimisticUpdate={onOptimisticUpdate}
+          onOptimisticDelete={onOptimisticDelete}
         />
       )}
 
       {editVendorId && (
-        <EditVendorModalWrapper 
-            vendorId={editVendorId} 
-            onClose={() => setEditVendorId(null)} 
-            onRefresh={fetchVendors} 
+        <EditVendorModalWrapper
+          vendorId={editVendorId}
+          onClose={() => setEditVendorId(null)}
+          onRefresh={fetchVendors}
+          onOptimisticUpdate={onOptimisticUpdate}
         />
       )}
     </div>

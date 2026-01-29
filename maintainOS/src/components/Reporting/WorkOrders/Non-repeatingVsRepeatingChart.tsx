@@ -53,7 +53,9 @@ export function WorkOrdersRepeatingChart({
   // Notify parent of loading state changes
   useEffect(() => {
     onLoadingChange?.(repeatingStatsLoading);
-  }, [repeatingStatsLoading, onLoadingChange]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [repeatingStatsLoading]); // Only depend on loading state, not onLoadingChange // Only depend on loading state, not onLoadingChange
 
   // 2️⃣ DATE-BREAKDOWN QUERY (createdAt + repeatingType)
   const { data: repeatingByDateData } = useQuery<{
