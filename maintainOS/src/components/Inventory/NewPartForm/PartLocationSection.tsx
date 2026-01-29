@@ -98,14 +98,15 @@ export function PartLocationSection({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "25px" }}>
       <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "2.2fr 1fr 1fr 1fr",
-          gap: "16px",
-          alignItems: "end",
-          width: "100%",
-        }}
-      >
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(250px, 2.2fr) minmax(150px, 1fr) minmax(150px, 1fr) minmax(150px, 1fr)",
+            gap: "16px",
+            alignItems: "end",
+            width: "100%",
+          }}
+        >
+
         {/* Location */}
         <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
           <label
@@ -119,7 +120,8 @@ export function PartLocationSection({
             Locations
           </label>
           <div style={{ height: "40px", display: "flex" }}>
-            <div style={{ flex: 1 }}>
+            <div style={{ width: "100%", minWidth: 0 }}>
+
               <DynamicSelect
                 options={mergedOptions} // 🟢 merged ensures label visible before API
                 value={newItem.locationId ?? ""}
