@@ -188,23 +188,53 @@ export function WorkOrders() {
     }
   }, [loading, workOrders.length, viewingId, isCreateRoute]);
 
+  // Sync URL Params to filterParams on Mount & URL Change
+  useEffect(() => {
+    const params: FetchWorkOrdersParams = {
+      limit: 20,
+      assigneeOneOf: searchParams.get("assigneeOneOf") || undefined,
+      statusOneOf: searchParams.get("statusOneOf") || undefined,
+      priorityOneOf: searchParams.get("priorityOneOf") || undefined,
+      locationOneOf: searchParams.get("locationOneOf") || undefined,
+      assetOneOf: searchParams.get("assetOneOf") || undefined,
+    };
+
+    // Only update if something changed to avoid infinity loops
+    setFilterParams(prev => {
+      const hasChanged =
+        prev.assigneeOneOf !== params.assigneeOneOf ||
+        prev.statusOneOf !== params.statusOneOf ||
+        prev.priorityOneOf !== params.priorityOneOf ||
+        prev.locationOneOf !== params.locationOneOf ||
+        prev.assetOneOf !== params.assetOneOf;
+
+      return hasChanged ? params : prev;
+    });
+  }, [searchParams]);
+
+  const handlePageChange = (newPage: number) => {
+    const params = new URLSearchParams(searchParams);
+    params.set("page", newPage.toString());
+    setSearchParams(params);
+  };
+
   // Stable Callback for Filters & Pagination
   const handleFilterChange = useCallback(
     (newParams: Partial<FetchWorkOrdersParams>) => {
-      setFilterParams((prevParams) => {
-        const merged = { ...prevParams, ...newParams };
-        if (JSON.stringify(prevParams) === JSON.stringify(merged)) {
-          return prevParams;
-        }
-        return merged;
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        Object.entries(newParams).forEach(([key, value]) => {
+          if (value) {
+            next.set(key, String(value));
+          } else {
+            next.delete(key);
+          }
+        });
+        return next;
       });
     },
-    []
+    [setSearchParams]
   );
-
-  const handlePageChange = (newPage: number) => {
-    setSearchParams({ page: newPage.toString() });
-  };
 
   // ✅ 3. Update Handle Refresh Function (Atomic Reset)
   const handleRefreshWorkOrders = useCallback(async () => {

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Search, ChevronDown, Check } from "lucide-react";
-import { ScrollArea } from "../ui/scroll-area";
 
 // --- Types ---
 type FilterCategory =
@@ -149,7 +148,7 @@ export function CalendarFilterDropdown({ onClose, onApply, assets = [], location
                     </div>
 
                     {/* Options Grid */}
-                    <ScrollArea className="flex-1 -mr-3 pr-3">
+                    <div className="flex-1 overflow-y-auto custom-app-scrollbar pr-3">
                         <div className="grid grid-cols-2 gap-y-3 gap-x-4">
                             {filteredOptions.length > 0 ? (
                                 filteredOptions.map((opt) => {
@@ -178,7 +177,7 @@ export function CalendarFilterDropdown({ onClose, onApply, assets = [], location
                                 </div>
                             )}
                         </div>
-                    </ScrollArea>
+                    </div>
                 </div>
             </div>
         </div>

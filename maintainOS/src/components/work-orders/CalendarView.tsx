@@ -9,7 +9,6 @@ import {
   // ✅ Added Icons
   Plus, Wrench
 } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { SearchableDropdown } from "../common/SearchableDropdown";
 import type { SearchOption } from "../common/SearchableDropdown";
 
@@ -554,7 +553,7 @@ export function CalendarView({
 
           {/* Selected People Display (Cards below input) */}
           {(filters?.assigneeOneOf?.split(',').filter(Boolean).length || 0) > 0 && (
-            <div className="people-selected-row flex flex-col gap-1.5 mt-2">
+            <div className="people-selected-container">
               {(filterData?.users || [])
                 .filter(user => (filters?.assigneeOneOf?.split(',') || []).includes(user.id))
                 .map(user => {
@@ -566,22 +565,17 @@ export function CalendarView({
                     .slice(0, 2) || "??";
 
                   return (
-                    <div
-                      key={user.id}
-                      className="people-selected-card flex items-center gap-2 p-1.5 rounded-lg border border-yellow-400 bg-white shadow-sm relative group"
-                    >
-                      <div className="h-8 w-8 rounded-full border border-yellow-400 flex items-center justify-center bg-white shrink-0">
-                        <Avatar className="h-7 w-7">
-                          {user.image && <AvatarImage src={user.image} />}
-                          <AvatarFallback className="bg-transparent text-gray-800 text-[10px] font-bold">{initials}</AvatarFallback>
-                        </Avatar>
+                    <div key={user.id} className="people-selection-chip">
+                      <div className="people-selection-avatar-wrapper">
+                        {user.image ? (
+                          <img src={user.image} alt="" className="people-selection-avatar-img" />
+                        ) : (
+                          <span className="people-selection-initials">{initials}</span>
+                        )}
                       </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-xs font-bold text-gray-900 truncate leading-tight">{user.name}</span>
-                        <span className="text-[10px] text-gray-500 truncate leading-tight">Team Member</span>
-                      </div>
+                      <span className="people-selection-name">{user.name}</span>
                       <button
-                        className="ml-auto p-1 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-red-500"
+                        className="people-selection-remove"
                         onClick={() => {
                           const currentIds = filters?.assigneeOneOf?.split(',').filter(Boolean) || [];
                           const newIds = currentIds.filter((id: string) => id !== user.id);
