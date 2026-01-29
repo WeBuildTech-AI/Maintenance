@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useLocation, useSearchParams, useMatch } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -28,7 +28,7 @@ import {
   updateWorkOrder,
   fetchWorkOrderById,
 } from "../../../store/workOrders/workOrders.thunks";
-import { fetchFilterData } from "../../utils/filterDataFetcher";
+// import { fetchFilterData } from "../../utils/filterDataFetcher"; // REMOVED
 import { procedureService } from "../../../store/procedures/procedures.service";
 import { LinkedProcedurePreviewModal } from "./LinkedProcedurePreviewModal";
 import AddProcedureModal from "../WorkloadView/Modal/AddProcedureModal";
@@ -38,7 +38,8 @@ import GenerateProcedure from "../../Library/GenerateProcedure/GenerateProcedure
 import TimeOverviewPanel from "./../panels/TimeOverviewPanel";
 import OtherCostsPanel from "./../panels/OtherCostsPanel";
 import UpdatePartsPanel from "./../panels/UpdatePartsPanel";
-import { locationService } from "../../../store/locations";
+// import { locationService } from "../../../store/locations"; // REMOVED unused import
+import type { RootState } from "../../../store"; // Added RootState import
 
 
 
@@ -178,7 +179,7 @@ export function NewWorkOrderForm({
   onCancel,
   prefillData,
 }: {
-  onCreate: () => void;
+  onCreate: (wo?: any) => void;
   existingWorkOrder?: any;
   editId?: string;
   isEditMode?: boolean;
@@ -190,6 +191,9 @@ export function NewWorkOrderForm({
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const authUser = useSelector((state: any) => state.auth.user);
+
+  // Gets cached filter data from Redux
+  const filterData = useSelector((state: RootState) => state.workOrders.filterData);
 
   // ✅ LOCAL STATE TO HOLD BASELINE DATA (Fixes issue where 'existingWorkOrder' prop is stale)
   const [originalData, setOriginalData] = useState<any>(existingWorkOrder || {});
@@ -246,10 +250,58 @@ export function NewWorkOrderForm({
   const [isAddProcModalOpen, setIsAddProcModalOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
+
+  // Wait, line 242: const [isAddProcModalOpen, setIsAddProcModalOpen] = useState(false);
+  // So I don't need to re-declare it. I just need to insert timersRef before the effect.
+
+  // Timer Guard Ref
+  const timersRef = useRef<Set<string>>(new Set());
+
+  // Fetch all filter data on mount
+  useEffect(() => {
+    // Optimization: Only fetch if we really don't have data.
+    // However, options might be stale. But per "Zero Redundant API Calls", if we have them, reuse them.
+    // If filterData is null/undefined, fetch.
+    // If filterData exists but arrays are empty? Might be valid empty state.
+
+    // We can assume if 'filterData' object exists, we have fetched it at least once in the session 
+    // (since Redux state persists in session usually, or at least while app is loaded).
+
+    if (!filterData) {
+      const TIMER_LABEL = "FILTER_DATA_FETCH_FORM";
+      if (!timersRef.current.has(TIMER_LABEL)) {
+        try { console.timeEnd(TIMER_LABEL); } catch (e) { }
+        console.time(TIMER_LABEL);
+        timersRef.current.add(TIMER_LABEL);
+      }
+
+      dispatch(fetchFilterData())
+        .unwrap()
+        .finally(() => {
+          if (timersRef.current.has(TIMER_LABEL)) {
+            try { console.timeEnd(TIMER_LABEL); } catch (e) { }
+            timersRef.current.delete(TIMER_LABEL);
+          }
+        });
+    } else {
+      console.log("⚡ [Optimization] Reusing existing filter data");
+    }
+  }, [dispatch, filterData]);
+
+  // Derive options from Redux state
+  const locationOptions = useMemo(() => filterData?.locations || [], [filterData]);
+  const assetOptions = useMemo(() => filterData?.assets || [], [filterData]);
+  const teamOptions = useMemo(() => filterData?.teams || [], [filterData]);
+  const categoryOptions = useMemo(() => filterData?.categories || [], [filterData]);
+  const partOptions = useMemo(() => filterData?.parts || [], [filterData]);
+  const vendorOptions = useMemo(() => filterData?.vendors || [], [filterData]);
+  const assigneeOptions = useMemo(() => filterData?.users || [], [filterData]);
+
+
   // ✅ ADDED: Capture asset from Asset Detail navigation state
   useEffect(() => {
     if (location.state?.prefilledAsset) {
-      const { id, name } = location.state.prefilledAsset;
+      const { id } = location.state.prefilledAsset; // removed name because options come from Redux now
       const assetIdStr = String(id);
 
       // Select the asset
@@ -285,22 +337,13 @@ export function NewWorkOrderForm({
     if (location.state?.prefilledPart) {
       const part = location.state.prefilledPart;
       setPartIds((prev) => prev.includes(part.id) ? prev : [...prev, part.id]);
-      setPartOptions((prev) => prev.some((opt) => opt.id === part.id) ? prev : [...prev, { id: part.id, name: part.name }]);
+      // Removed manual option setting
     }
   }, [location.state]);
 
-  const handleFetch = async (type: string, setOptions: (val: SelectOption[]) => void) => {
-    try {
-      const { data } = await fetchFilterData(type);
-      const normalized = Array.isArray(data) ? data.map((d: any) => ({
-        id: d.id,
-        name: d.name || d.title || d.fullName || "Unknown"
-      })) : [];
-      setOptions(normalized);
-    } catch (e) {
-      console.error(`Failed fetching ${type}`, e);
-    }
-  };
+
+  // Removed handleFetch
+  // const handleFetch = async (type: string, setOptions: (val: SelectOption[]) => void) => { ... }
 
   useEffect(() => {
     if (location.state?.procedureData) {
@@ -413,34 +456,34 @@ export function NewWorkOrderForm({
 
       if (data.location) {
         setLocationId(data.location.id);
-        setLocationOptions([{ id: data.location.id, name: data.location.name || "Unknown Location" }]);
+        // setLocationOptions removed
       } else if (data.locationId) {
         setLocationId(data.locationId);
       }
 
       if (data.assets) {
         setAssetIds(data.assets.map((a: any) => a.id));
-        setAssetOptions(data.assets.map((a: any) => ({ id: a.id, name: a.name || "Unknown Asset" })));
+        // setAssetOptions removed
       } else { setAssetIds(data.assetIds || []); }
 
       if (data.teams) {
         setTeamIds(data.teams.map((t: any) => t.id));
-        setTeamOptions(data.teams.map((t: any) => ({ id: t.id, name: t.name || "Unknown Team" })));
+        // setTeamOptions removed
       } else { setTeamIds(data.assignedTeamIds || []); }
 
       if (data.categories) {
         setCategoryIds(data.categories.map((c: any) => c.id));
-        setCategoryOptions(data.categories.map((c: any) => ({ id: c.id, name: c.name || "Unknown Category" })));
+        // setCategoryOptions removed
       } else { setCategoryIds(data.categoryIds || []); }
 
       if (data.parts) {
         setPartIds(data.parts.map((p: any) => p.id));
-        setPartOptions(data.parts.map((p: any) => ({ id: p.id, name: p.name || "Unknown Part" })));
+        // setPartOptions removed
       } else { setPartIds(data.partIds || []); }
 
       if (data.vendors) {
         setVendorIds(data.vendors.map((v: any) => v.id));
-        setVendorOptions(data.vendors.map((v: any) => ({ id: v.id, name: v.name || "Unknown Vendor" })));
+        // setVendorOptions removed
       } else { setVendorIds(data.vendorIds || []); }
 
       if (data.assignees) {
@@ -536,7 +579,12 @@ export function NewWorkOrderForm({
         title: workOrderName,
         description,
         // ✅ UI Mapping back to Backend strings
-        status: { "Open": "open", "In Progress": "in_progress", "On Hold": "on_hold", "Completed": "completed" }[status] || "open",
+        status: (() => {
+          if (status === "On Hold") return "on_hold";
+          if (status === "In Progress") return "in_progress";
+          if (status === "Completed") return "completed";
+          return "open";
+        })(),
         workType: selectedWorkType ? selectedWorkType.toLowerCase() : "reactive", // Fallback and ensure lowercase
         qrCode: qrCodeValue || undefined,
         priority: { None: "low", Low: "low", Medium: "medium", High: "high", Urgent: "urgent" }[selectedPriority] || "low",
@@ -552,6 +600,9 @@ export function NewWorkOrderForm({
       if (recurrenceRule) {
         const rule = typeof recurrenceRule === 'string' ? JSON.parse(recurrenceRule) : recurrenceRule;
         formState.recurrenceRule = rule;
+      } else {
+        // ✅ Explicitly send null if no recurrence rule (handles "Does not repeat" case)
+        formState.recurrenceRule = null;
       }
 
       setLoading(true);
@@ -568,20 +619,40 @@ export function NewWorkOrderForm({
 
 
 
-        await dispatch(updateWorkOrder({ id: activeId, authorId, data: payload })).unwrap();
+        const result = await dispatch(updateWorkOrder({ id: activeId, authorId, data: payload })).unwrap();
         toast.success("✅ Work order updated successfully");
+        if (onCreate) onCreate(result); else navigate("/work-orders");
       } else {
-        await dispatch(createWorkOrder(formState)).unwrap();
+        const result = await dispatch(createWorkOrder(formState)).unwrap();
         toast.success("✅ Work order created successfully");
+        if (onCreate) onCreate(result); else navigate("/work-orders");
       }
-
-      if (onCreate) onCreate(); else navigate("/work-orders");
 
     } catch (err: any) {
       console.error("❌ Error saving work order:", err);
       toast.error(err?.message || "Failed to save work order");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ✅ REFRESH HANDLER FOR PANELS
+  const handlePanelRefresh = async () => {
+    if (activeId) {
+      try {
+        const resultAction = await dispatch(fetchWorkOrderById(activeId));
+        if (fetchWorkOrderById.fulfilled.match(resultAction)) {
+          setOriginalData(resultAction.payload);
+          // We don't overwrite form fields (title, etc) to preserve any unsaved edits there?
+          // Actually, if I'm in a panel, I replaced the view. 
+          // When I come back, 'form' view re-renders.
+          // State like 'workOrderName' is controlled state.
+          // 'originalData' is background data. 
+          // If I update 'originalData', the classification links (which use originalData.parts) will update.
+        }
+      } catch (e) {
+        console.error("Failed to refresh after panel update", e);
+      }
     }
   };
 
@@ -594,9 +665,10 @@ export function NewWorkOrderForm({
     );
 
   // ✅ FIX: Use 'originalData' (fetched state) instead of 'existingWorkOrder' (prop) to ensure Edit Mode has data
-  if (currentPanel === 'time') return <TimeOverviewPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={originalData} workOrderId={activeId} />;
-  if (currentPanel === 'cost') return <OtherCostsPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={originalData} workOrderId={activeId} />;
-  if (currentPanel === 'parts') return <UpdatePartsPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={originalData} workOrderId={activeId} />;
+  // ✅ ADDED onSaveSuccess to refresh parent data explicitly
+  if (currentPanel === 'time') return <TimeOverviewPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={originalData} workOrderId={activeId} onSaveSuccess={handlePanelRefresh} />;
+  if (currentPanel === 'cost') return <OtherCostsPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={originalData} workOrderId={activeId} onSaveSuccess={handlePanelRefresh} />;
+  if (currentPanel === 'parts') return <UpdatePartsPanel onCancel={() => setCurrentPanel('form')} selectedWorkOrder={originalData} workOrderId={activeId} onSaveSuccess={handlePanelRefresh} />;
 
   return (
     <>

@@ -59,6 +59,7 @@ interface DynamicSelectProps {
   setActiveDropdown: (name: string | null) => void;
   onSearch?: (term: string) => void;
   dropdownStyle?: React.CSSProperties;
+  limitOptions?: number;
 }
 
 export function DynamicSelect({
@@ -75,7 +76,7 @@ export function DynamicSelect({
   setActiveDropdown,
   onSearch,
   dropdownStyle,
-  className, // ✅ ADDED
+  limitOptions,
 }: DynamicSelectProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -124,9 +125,13 @@ export function DynamicSelect({
     isMulti ? (value as string[]).includes(opt.id) : opt.id === value
   );
 
-  const displayedOptions = onSearch
-    ? options
+  //
+  const filteredOptions = onSearch 
+    ? options 
     : options.filter(opt => opt.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  const displayedOptions = filteredOptions;
+
 
   // ✅ NEW: Logic for "+N" display
   const firstOption = selectedOptions[0];
@@ -134,11 +139,11 @@ export function DynamicSelect({
   const hasHidden = hiddenOptions.length > 0;
 
   return (
-    <div className={`relative ${open ? "z-50" : ""}`} ref={dropdownRef}>
+    <div className={`relative w-full ${open ? "z-50" : ""}`} ref={dropdownRef}>
       <style>{checkboxStyles}</style>
 
       <div
-        className={`flex items-center gap-1 rounded-md border border-gray-300 bg-white py-1 px-2 min-h-[36px] cursor-pointer focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 overflow-hidden ${className || ""}`}
+        className="flex items-center gap-1 rounded-md border border-gray-300 bg-white py-1 px-2 min-h-[36px] cursor-pointer focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 w-full"
         onClick={handleToggle}
       >
         <div className="flex flex-wrap items-center gap-1 flex-1 min-w-0">
@@ -148,7 +153,8 @@ export function DynamicSelect({
             <>
               {/* 1. Show First Option */}
               <div className="relative group/tag flex items-center">
-                <Badge key={firstOption.id} variant="secondary" className="flex items-center gap-1 max-w-[120px] min-w-0">
+                <Badge key={firstOption.id} variant="secondary" className="flex items-center gap-1 min-w-0">
+
                   {firstOption.color && (
                     <div
                       style={{
@@ -160,8 +166,8 @@ export function DynamicSelect({
                       }}
                     />
                   )}
-                  <span className="truncate">
-                    {firstOption.name.length > 9 ? firstOption.name.substring(0, 9) + "..." : firstOption.name}
+                  <span className="truncate max-w-[120px]">
+                    {firstOption.name}
                   </span>
                   <button
                     className="ml-auto rounded-full outline-none shrink-0"
@@ -209,7 +215,9 @@ export function DynamicSelect({
             // Standard Rendering for Single Select (or fallback)
             selectedOptions.map((option) => (
               <div key={option.id} className="relative group/tag flex items-center">
-                <Badge variant="secondary" className="flex items-center gap-1 max-w-[120px] min-w-0">
+                <Badge variant="secondary" className="flex items-center gap-1 max-w-full truncate">
+
+
                   {option.color && (
                     <div
                       style={{
@@ -221,8 +229,9 @@ export function DynamicSelect({
                       }}
                     />
                   )}
-                  <span className="truncate">
-                    {option.name.length > 9 ? option.name.substring(0, 9) + "..." : option.name}
+                  <span className="truncate max-w-[120px]">
+
+                    {option.name}
                   </span>
                   <button
                     className="ml-auto rounded-full outline-none shrink-0"
@@ -249,7 +258,8 @@ export function DynamicSelect({
           <input
             ref={inputRef}
             type="text"
-            className="flex-1 bg-transparent outline-none text-sm min-w-[20px] h-6 placeholder:text-gray-500"
+            className="flex-1 bg-transparent outline-none text-sm min-w-0 h-6 placeholder:text-gray-500"
+
             placeholder={selectedOptions.length === 0 ? placeholder : ""}
             value={searchTerm}
             onChange={(e) => {
@@ -274,8 +284,11 @@ export function DynamicSelect({
       {open && (
         <div
           onMouseDown={(e) => e.preventDefault()}
-          className="absolute top-full mt-1 w-full rounded-md border bg-white z-20 max-h-60 overflow-y-auto shadow-lg"
-          style={dropdownStyle}
+          className="absolute top-full mt-1 w-full rounded-md border bg-white z-20 overflow-y-auto shadow-lg"
+          style={{
+            maxHeight: limitOptions ? `${limitOptions * 48}px` : "240px",
+            ...dropdownStyle,
+          }}
         >
           {loading ? (
             <div className="flex justify-center items-center p-4">

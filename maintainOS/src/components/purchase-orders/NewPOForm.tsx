@@ -840,7 +840,7 @@ export function NewPOForm(props: NewPOFormProps) {
                     onChange={(e) => setVendorSearchQuery(e.target.value)}
                   />
                   {isVendorSearchFocused && (
-                    <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                    <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg overflow-y-auto"style={{ maxHeight: `${3 * 36}px` }}>
                       {isLoadingVendors ? (
                         <div className="p-2 text-sm text-muted-foreground">
                           Loading...
@@ -922,7 +922,7 @@ export function NewPOForm(props: NewPOFormProps) {
                             }}
                           />
                           {focusedItemId === it.id && (
-                            <div className="absolute z-50 w-[95%] mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                            <div className="absolute z-50 w-[95%] mt-1 bg-background border rounded-md shadow-lg overflow-y-auto" style={{ maxHeight: `${3 * 48}px` }}>
                               {isLoadingParts ? (
                                 <div className="p-2 text-sm text-muted-foreground">
                                   Loading...

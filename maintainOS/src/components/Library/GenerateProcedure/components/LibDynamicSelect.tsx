@@ -12,7 +12,7 @@ import { Check, ChevronDown, ChevronUp, Loader2, X } from "lucide-react";
  * import { LibDynamicSelect } from "./LibDynamicSelect";
  */
 
-type LibSelectOption = {
+export type LibSelectOption = {
   id: string;
   label: string;
 };
@@ -32,7 +32,7 @@ interface LibDynamicSelectProps {
   onCtaClick?: () => void;
   className?: string;
   // --- 👇 [NEW] Naya prop add karein ---
-  icon?: React.ReactNode; 
+  icon?: React.ReactNode;
 }
 
 const spinner = <Loader2 className="h-5 w-5 animate-spin text-gray-400" />;
@@ -104,9 +104,11 @@ export function LibDynamicSelect({
       const current = Array.isArray(selectedVals) ? selectedVals : [];
       const next = current.includes(id) ? current.filter((v) => v !== id) : [...current, id];
       onChange(next);
+     
+      setActiveDropdown(null);
     } else {
       onChange(id);
-      setActiveDropdown(null);
+      setActiveDropdown(null); // already closing
     }
   };
 
@@ -124,12 +126,12 @@ export function LibDynamicSelect({
       >
         {/* --- 👇 [NEW] Icon ko yahaan render karein --- */}
         {icon && <div className="flex-shrink-0">{icon}</div>}
-        
+
         <div className="flex-1 flex flex-wrap gap-2">
           {selectedOptions.length ? (
             selectedOptions.map((s) => (
-              <div 
-                key={s.id} 
+              <div
+                key={s.id}
                 // --- [FIX] Pill style ko hatayein agar single select hai ---
                 className={`inline-flex items-center gap-1 ${isMulti ? 'bg-gray-100 px-2 py-1 rounded' : 'bg-transparent p-0'} text-sm`}
               >
@@ -156,23 +158,24 @@ export function LibDynamicSelect({
 
         {/* --- [FIX] 'X' button (single select ke liye) --- */}
         {!isMulti && selectedOptions.length > 0 && (
-           <button
-             onClick={(e) => {
-               e.stopPropagation();
-               onChange(""); // Value ko clear karein
-             }}
-             className="text-gray-400 hover:text-gray-600"
-             aria-label="clear selection"
-           >
-             <X className="h-4 w-4" />
-           </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onChange(""); // Value ko clear karein
+            }}
+            className="text-gray-400 hover:text-gray-600"
+            aria-label="clear selection"
+          >
+            <X className="h-4 w-4" />
+          </button>
         )}
 
         <div className="text-gray-400 ml-2">{open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}</div>
       </div>
 
       {open && (
-        <div className="absolute top-full mt-1 w-full bg-white border rounded-md z-40 max-h-56 overflow-auto shadow-lg">
+        <div className="absolute top-full mt-1 w-full bg-white border rounded-md z-40 overflow-y-auto shadow-lg" style={{ maxHeight: "240px" }}  >
+
           {loading ? (
             <div className="p-4 flex justify-center">{spinner}</div>
           ) : (

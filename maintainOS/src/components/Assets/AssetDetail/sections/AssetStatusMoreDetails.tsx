@@ -16,7 +16,10 @@ import type { Asset } from "../../Assets";
 import {
   AssetStatusReadings,
   UpdateAssetStatusModal,
+  OfflinePromptModal, // ✅ Imported
 } from "./AssetStatusReadings";
+import NewWorkOrderModal from "../../../work-orders/NewWorkOrderModal"; // ✅ Imported
+
 import { assetService } from "../../../../store/assets";
 import type { RootState } from "../../../../store";
 import { useSelector } from "react-redux";
@@ -63,6 +66,11 @@ export default function AssetStatusMoreDetails({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showActionMenu, setShowActionMenu] = useState(false);
   const [hideSeeReadingFlag, setHideSeeReadingFlag] = useState(false);
+
+  // ✅ New State for Offline Prompt
+  const [isOfflinePromptOpen, setIsOfflinePromptOpen] = useState(false);
+  const [isNewWorkOrderModalOpen, setIsNewWorkOrderModalOpen] = useState(false);
+  const [woPrefillData, setWoPrefillData] = useState<any>(null);
 
   useEffect(() => {
     setShowActionMenu(false);
@@ -321,6 +329,8 @@ export default function AssetStatusMoreDetails({
 
   const dateLabels = generateDateLabels();
 
+
+
   const handleManualDowntimeSubmit = async (statusData: any) => {
     if (!asset?.id) return;
     setIsSubmitting(true);
@@ -329,6 +339,12 @@ export default function AssetStatusMoreDetails({
       getAssetStatusLog();
       setUpdateAssetModal(false);
       toast.success("Asset Status Successfully updated");
+
+      // ✅ Check if status changed to offline - show work order prompt
+      if (statusData.status?.toLowerCase() === 'offline') {
+        setIsOfflinePromptOpen(true);
+      }
+
     } catch (error: any) {
       toast.error(error.message || "Failed to update Asset Status");
     } finally {
@@ -346,6 +362,31 @@ export default function AssetStatusMoreDetails({
 
   return (
     <>
+      {/* \u2705 Offline Work Order Prompt */}
+      <OfflinePromptModal
+        isOpen={isOfflinePromptOpen}
+        onClose={() => setIsOfflinePromptOpen(false)}
+        onCreateWorkOrder={() => {
+          setIsOfflinePromptOpen(false);
+          setWoPrefillData({
+            assetIds: [asset.id],
+            assetName: asset.name,
+            locationId: asset.location?.id || asset.locationId,
+            locationName: asset.location?.name,
+            assetStatus: "offline",
+            assetStatusSince: new Date().toISOString(),
+          });
+          setIsNewWorkOrderModalOpen(true);
+        }}
+      />
+
+      {/* ✅ Inline New Work Order Modal */}
+      <NewWorkOrderModal
+        isOpen={isNewWorkOrderModalOpen}
+        onClose={() => setIsNewWorkOrderModalOpen(false)}
+        prefillData={woPrefillData}
+      />
+
       {isLoading ? (
         <div className="flex justify-center item-center h-full">
           <Loader />
@@ -415,18 +456,17 @@ export default function AssetStatusMoreDetails({
                               onClick={() =>
                                 setShowCustomDateModal((prev) => !prev)
                               }
-                              className={`px-3 py-1 text-xs cursor-pointer font-medium rounded ${
-                                selectedPeriod === "Custom"
-                                  ? "bg-orange-600 text-white "
-                                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                              }`}
+                              className={`px-3 py-1 text-xs cursor-pointer font-medium rounded ${selectedPeriod === "Custom"
+                                ? "bg-orange-600 text-white "
+                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                }`}
                             >
                               {selectedPeriod === "Custom" && customRange
                                 ? `${formatDateOnly(
-                                    customRange.start.toISOString()
-                                  )} - ${formatDateOnly(
-                                    customRange.end.toISOString()
-                                  )}`
+                                  customRange.start.toISOString()
+                                )} - ${formatDateOnly(
+                                  customRange.end.toISOString()
+                                )}`
                                 : "Custom"}
                             </button>
 
@@ -451,11 +491,10 @@ export default function AssetStatusMoreDetails({
                             setSelectedPeriod(period);
                             setShowCustomDateModal(false);
                           }}
-                          className={`px-3 py-1 text-xs cursor-pointer font-medium rounded ${
-                            selectedPeriod === period
-                              ? "bg-orange-600 text-white "
-                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                          }`}
+                          className={`px-3 py-1 text-xs cursor-pointer font-medium rounded ${selectedPeriod === period
+                            ? "bg-orange-600 text-white "
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                            }`}
                         >
                           {period}
                         </button>
@@ -593,12 +632,12 @@ export default function AssetStatusMoreDetails({
                             {logData.map((entry, index) => {
                               // ✅ EXACT DURATION LOGIC (hh mm ss)
                               let durationStr = entry.duration || "-";
-                                                            
+
                               if (!entry.duration && entry.since && entry.to) {
                                 const since = new Date(entry.since).getTime();
                                 const to = new Date(entry.to).getTime();
                                 const diffMs = Math.abs(to - since);
-  
+
                                 const days = Math.floor(
                                   diffMs / (1000 * 60 * 60 * 24)
                                 );
@@ -611,14 +650,14 @@ export default function AssetStatusMoreDetails({
                                 const seconds = Math.floor(
                                   (diffMs / 1000) % 60
                                 );
-  
+
                                 // Format: 1d 2h 30m 45s (Ensure minutes are always shown if hours > 0 or seconds > 0)
                                 const parts = [];
                                 if (days > 0) parts.push(`${days}d`);
                                 if (hours > 0) parts.push(`${hours}h`);
                                 if (minutes > 0 || hours > 0 || days > 0) parts.push(`${minutes}m`);
                                 parts.push(`${seconds}s`);
-  
+
                                 durationStr = parts.length > 0 ? parts.join(" ") : "0m 0s";
                               }
 
@@ -626,23 +665,21 @@ export default function AssetStatusMoreDetails({
                                 <tr
                                   key={index}
                                   onClick={() => setSelectedEntry(index)}
-                                  className={`border-b border-gray-200 cursor-pointer hover:bg-gray-50 ${
-                                    selectedEntry === index ? "bg-blue-50" : ""
-                                  }`}
+                                  className={`border-b border-gray-200 cursor-pointer hover:bg-gray-50 ${selectedEntry === index ? "bg-blue-50" : ""
+                                    }`}
                                 >
                                   <td className="px-4 py-3">
                                     <div className="flex items-center gap-2">
                                       <span
-                                        className={`w-2 h-2 rounded-full ${
-                                          getNormalizedStatus(entry.status) ===
+                                        className={`w-2 h-2 rounded-full ${getNormalizedStatus(entry.status) ===
                                           "offline"
-                                            ? "bg-red-500"
-                                            : getNormalizedStatus(
-                                                entry.status
-                                              ) === "online"
+                                          ? "bg-red-500"
+                                          : getNormalizedStatus(
+                                            entry.status
+                                          ) === "online"
                                             ? "bg-green-500"
                                             : "bg-orange-600"
-                                        }`}
+                                          }`}
                                       ></span>
                                       <span className="text-sm text-gray-700 capitalize">
                                         {entry.status}
@@ -674,17 +711,16 @@ export default function AssetStatusMoreDetails({
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                           <span
-                            className={`w-2 h-2 rounded-full ${
-                              getNormalizedStatus(
+                            className={`w-2 h-2 rounded-full ${getNormalizedStatus(
+                              logData[selectedEntry].status
+                            ) === "offline"
+                              ? "bg-red-500"
+                              : getNormalizedStatus(
                                 logData[selectedEntry].status
-                              ) === "offline"
-                                ? "bg-red-500"
-                                : getNormalizedStatus(
-                                    logData[selectedEntry].status
-                                  ) === "online"
+                              ) === "online"
                                 ? "bg-green-500"
                                 : "bg-orange-600"
-                            }`}
+                              }`}
                           ></span>
                           <span className="font-semibold text-gray-800 capitalize">
                             {logData[selectedEntry].status}
@@ -784,7 +820,7 @@ export default function AssetStatusMoreDetails({
                           <br />
                           <MeterReadings
                             selectedMeter={meter}
-                            setShowReadingMeter={() => {}}
+                            setShowReadingMeter={() => { }}
                             hideSeeReadingFlag={hideSeeReadingFlag}
                           />
                         </div>

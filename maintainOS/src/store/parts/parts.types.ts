@@ -8,14 +8,14 @@ export interface PartLocation {
   area?: string;
   unitsInStock: number;
   minimumInStock: number;
-  name?: string; 
-  locationName?: string; 
+  name?: string;
+  locationName?: string;
 }
 
 export interface PartVendor {
   vendorId: string;
   orderingPartNumber?: string;
-  name?: string; 
+  name?: string;
 }
 
 // JSON Payload Structure for Creating a Part
@@ -25,22 +25,22 @@ export interface CreatePartPayload {
   description?: string;
   unitCost?: number;
   qrCode?: string;
-  
-  partsType?: string[]; 
+
+  partsType?: string[];
   assetIds?: string[];
   teamsInCharge?: string[];
   vendorIds?: string[];
-  
+
   locations?: PartLocation[];
   vendors?: PartVendor[];
-  
+
   partImages?: BUD[];
   partDocs?: BUD[];
-  
+
   files?: string[];
 }
 
-export interface UpdatePartPayload extends Partial<CreatePartPayload> {}
+export interface UpdatePartPayload extends Partial<CreatePartPayload> { }
 
 export interface PartResponse {
   id: string;
@@ -50,7 +50,7 @@ export interface PartResponse {
   unitCost?: number;
   qrCode?: string;
   photos?: string[];
-  partsType?: string[] | { name: string }[]; 
+  partsType?: string[] | { name: string }[];
   locations?: PartLocation[];
   assetIds?: string[];
   teamsInCharge?: string[];
@@ -59,16 +59,16 @@ export interface PartResponse {
   assets?: { id: string; name: string }[];
   teams?: { id: string; name: string }[];
   files?: string[];
-  
+
   createdAt: string;
   updatedAt: string;
-  
+
   createdBy?: string;
   updatedBy?: string;
 
   partImages?: BUD[];
   partDocs?: BUD[];
-  
+
   totalStock?: number;
   minStock?: number;
 
@@ -94,7 +94,14 @@ export interface FetchPartsParams {
   page?: number | string;
   limit?: number | string;
   name?: string;
-  [key: string]: any; 
+  [key: string]: any;
+}
+
+export interface FilterData {
+  locations: any[];
+  assets: any[];
+  vendors: any[];
+  teams: any[];
 }
 
 export interface PartsState {
@@ -102,11 +109,14 @@ export interface PartsState {
   selectedPart: PartResponse | null;
   loading: boolean;
   error: string | null;
-  restockLogs: PartRestockLog[]; 
+  restockLogs: PartRestockLog[];
   selectedRestockLog: PartRestockLog | null;
-  
+
   // ✅ Added logs to state
-  logs: PartActivityLog[]; 
+  logs: PartActivityLog[];
+
+  // ✅ Added filter data cache
+  filterData?: FilterData;
 }
 
 export interface PartRestockLog {
@@ -133,4 +143,5 @@ export interface RestockThunkArgs {
   addedUnits: number;
   notes?: string;
   restockImages: BUD[];
+  unitCost?: number;
 }

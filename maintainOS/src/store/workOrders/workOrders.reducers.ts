@@ -1,10 +1,10 @@
 // src/store/workOrders/workOrders.reducers.ts
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { 
-  WorkOrderResponse, 
-  WorkOrdersState, 
-  WorkOrderComment, 
-  WorkOrderLog 
+import type {
+  WorkOrderResponse,
+  WorkOrdersState,
+  WorkOrderComment,
+  WorkOrderLog
 } from "./workOrders.types";
 import {
   updateWorkOrderStatus,
@@ -33,7 +33,7 @@ import {
 const initialState: WorkOrdersState = {
   workOrders: [],
   selectedWorkOrder: null,
-  logs: [], 
+  logs: [],
   loading: false,
   error: null,
 };
@@ -58,9 +58,16 @@ const workOrdersSlice = createSlice({
       })
       .addCase(
         fetchWorkOrders.fulfilled,
-        (state, action: PayloadAction<WorkOrderResponse[]>) => {
+        (state, action: PayloadAction<any>) => {
           state.loading = false;
-          state.workOrders = action.payload;
+          // Handle both array and object responses for backward compatibility
+          if (Array.isArray(action.payload)) {
+            state.workOrders = action.payload;
+          } else if (action.payload && Array.isArray(action.payload.data)) {
+            state.workOrders = action.payload.data;
+          } else {
+            state.workOrders = [];
+          }
         }
       )
       .addCase(fetchWorkOrders.rejected, (state, action) => {
@@ -224,7 +231,7 @@ const workOrdersSlice = createSlice({
           ) {
             state.selectedWorkOrder.comments = addSafe(state.selectedWorkOrder.comments);
           }
-          
+
           const idx = state.workOrders.findIndex((w) => w.id === workOrderId);
           if (idx !== -1) {
             state.workOrders[idx].comments = addSafe(state.workOrders[idx].comments);
@@ -474,10 +481,10 @@ const workOrdersSlice = createSlice({
         if (wo) {
           wo.parts = [...(wo.parts || []), ...newParts];
         }
-        
+
         if (state.selectedWorkOrder && state.selectedWorkOrder.id === workOrderId) {
           state.selectedWorkOrder.parts = [
-            ...(state.selectedWorkOrder.parts || []), 
+            ...(state.selectedWorkOrder.parts || []),
             ...newParts
           ];
         }
@@ -494,7 +501,7 @@ const workOrdersSlice = createSlice({
       })
       .addCase(deletePartUsage.fulfilled, (state, action) => {
         state.loading = false;
-        const { id, usageId } = action.payload; 
+        const { id, usageId } = action.payload;
 
         const wo = state.workOrders.find((w) => w.id === id);
         if (wo && wo.parts) {
@@ -512,19 +519,19 @@ const workOrdersSlice = createSlice({
 
       // --- Submit Field Response ---
       .addCase(submitFieldResponse.pending, (state) => {
-         // No global loading state change
+        // No global loading state change
       })
       .addCase(submitFieldResponse.fulfilled, (state, action) => {
-         // Success 
+        // Success 
       })
       .addCase(submitFieldResponse.rejected, (state, action) => {
-         state.error = action.payload as string;
+        state.error = action.payload as string;
       })
-      
+
       // --- Fetch Filter Data ---
       .addCase(fetchFilterData.fulfilled, (state, action) => {
         state.loading = false;
-        state.filterData = action.payload; 
+        state.filterData = action.payload;
       })
       .addCase(fetchFilterData.rejected, (state, action) => {
         // We generally don't want to block the UI if filter fetch fails, 

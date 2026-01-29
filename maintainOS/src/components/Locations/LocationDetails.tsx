@@ -34,6 +34,7 @@ import { format, subDays } from "date-fns";
 import { WorkOrderHistoryChart } from "../utils/WorkOrderHistoryChart";
 // ✅ IMPORT API INSTANCE
 import api from "../../store/auth/auth.service";
+import { formatLabel } from "../utils/asset_formater";
 
 // Props interface
 interface LocationDetailsProps {
@@ -47,6 +48,7 @@ interface LocationDetailsProps {
   onClose: () => void;
   setShowSubLocation: (show: boolean) => void;
   onSubLocationClick: (location: any) => void;
+  loading?: boolean;
 }
 
 type DateRange = { startDate: string; endDate: string };
@@ -60,6 +62,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
   onClose,
   onSubLocationClick,
   onEdit, // ✅ Extract onEdit prop
+  loading,
 }) => {
   const navigate = useNavigate();
   const [openDeleteModal, setOpenDeleteModal] = React.useState(false);
@@ -109,12 +112,19 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
     };
 
     if (selectedLocation?.createdBy) {
+      setCreatedByName(""); // Reset
       fetchUserName(selectedLocation.createdBy, setCreatedByName);
+    } else {
+      setCreatedByName("-");
     }
+
     if (selectedLocation?.updatedBy) {
+      setUpdatedByName(""); // Reset
       fetchUserName(selectedLocation.updatedBy, setUpdatedByName);
+    } else {
+      setUpdatedByName("-");
     }
-  }, [selectedLocation]);
+  }, [selectedLocation?.id]); // ✅ Only re-run when ID strictly changes
 
   // Helper for Status Badge
   const StatusBadge = ({ status }: { status: string }) => {
@@ -131,11 +141,12 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
       <span
         className={`px-2 py-0.5 rounded text-[10px] font-medium border uppercase ${style}`}
       >
-        {status?.replace("_", " ")}
+        {formatLabel(status)}
+
       </span>
     );
   };
- 
+
   const handleDeleteSubLocation = async (id: string) => {
     try {
       await api.delete("/locations/batch-delete", { data: { ids: [id] } });
@@ -171,6 +182,19 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
     }));
   };
 
+  if (loading) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center h-full bg-white">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500"></div>
+          <span className="text-sm font-medium text-muted-foreground">Loading details...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!selectedLocation) return null;
+
   return (
     <div className="mx-auto flex flex-col h-full bg-white relative">
       <div className="flex-none border-b bg-white px-6 py-4 z-10">
@@ -192,7 +216,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
                 <LinkIcon size={18} />
               </button>
             </Tooltip>
-            
+
             {/* ✅ FIXED EDIT BUTTON LOGIC */}
             {!showDeleted && (
               <>
@@ -276,7 +300,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
                 {selectedLocation.teams.map((team: any) => (
                   <span
                     key={team.id}
-                    onClick={() => navigate(`/teams/${team.id}`)}
+                    onClick={() => navigate(`/users/teams/${team.id}`)}
                     className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors"
                   >
                     {team.name}
@@ -317,7 +341,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
               {selectedLocation.assets.map((asset: any) => (
                 <div
                   key={asset.id}
-                  onClick={() => navigate(`/assets/${asset.id}`)}
+                  onClick={() => navigate(`/assets?assetId=${asset.id}`)}
                   className="flex items-center justify-between p-3 border rounded-lg bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
                 >
                   <span className="text-sm font-medium text-gray-700">
@@ -341,14 +365,15 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
               {selectedLocation.meters.map((meter: any) => (
                 <div
                   key={meter.id}
-                  onClick={() => navigate(`/meters/${meter.id}`)} // Assuming /meters/:id route exists
+                  onClick={() => navigate(`/meters?meterId=${meter.id}`)} // Fixed route
                   className="flex items-center justify-between p-3 border rounded-lg bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
                 >
                   <span className="text-sm font-medium text-gray-700">
                     {meter.name}
                   </span>
                   <span className="text-xs text-gray-500 uppercase bg-white border px-2 py-0.5 rounded">
-                    {meter.meterType}
+                    {formatLabel(meter.meterType)}
+
                   </span>
                 </div>
               ))}
@@ -380,13 +405,12 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
                     <div className="mt-1 flex items-center gap-2 text-xs text-gray-500">
                       <span>Priority:</span>
                       <span
-                        className={`capitalize font-medium ${
-                          wo.priority === "high"
-                            ? "text-red-600"
-                            : wo.priority === "medium"
+                        className={`capitalize font-medium ${wo.priority === "high"
+                          ? "text-red-600"
+                          : wo.priority === "medium"
                             ? "text-yellow-600"
                             : "text-blue-600"
-                        }`}
+                          }`}
                       >
                         {wo.priority}
                       </span>
@@ -445,7 +469,7 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
                   key={location?.id || Math.random()}
                   className="w-full flex items-center justify-between py-3 px-3 hover:bg-gray-100 transition-colors group"
                 >
-                  <div 
+                  <div
                     className="flex items-center gap-2 flex-1 cursor-pointer"
                     onClick={() => onSubLocationClick(location)}
                   >
@@ -470,8 +494,8 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                    <ChevronRight 
-                      className="w-4 h-4 text-gray-400 group-hover:text-gray-600 cursor-pointer" 
+                    <ChevronRight
+                      className="w-4 h-4 text-gray-400 group-hover:text-gray-600 cursor-pointer"
                       onClick={() => onSubLocationClick(location)}
                     />
                   </div>
@@ -479,10 +503,10 @@ const LocationDetails: React.FC<LocationDetailsProps> = ({
               ))}
             {(!selectedLocation?.children ||
               selectedLocation.children.length === 0) && (
-              <div className="p-4 text-center text-xs text-gray-500">
-                No sub-locations found.
-              </div>
-            )}
+                <div className="p-4 text-center text-xs text-gray-500">
+                  No sub-locations found.
+                </div>
+              )}
           </div>
         </div>
 

@@ -12,6 +12,7 @@ import toast from "react-hot-toast";
 import { meterService } from "../../store/meters";
 import AssetTableModal from "../utils/AssetTableModal";
 import { useNavigate } from "react-router-dom"; // ✅ Import Navigate
+import { formatLabel } from "../utils/asset_formater";
 
 // --- Constants ---
 const STORAGE_KEY_METER_COLUMNS = "meter_table_visible_columns";
@@ -394,7 +395,16 @@ export function MeterTable({
               <span className="">#{id.substring(0, 8)}...</span>
             </Tooltip>
           );
-        } else if (colName === "Status") {
+        }
+        else if (colName === "Type") {
+          renderFunc = (value: string) => (
+          <span className="capitalize text-gray-700">
+            {formatLabel(value)}
+          </span>
+        );
+        }
+
+        else if (colName === "Status") {
           renderFunc = (status: string, record: any) => (
             <span
               className={`font-medium ${

@@ -29,7 +29,7 @@ export function NewPartForm({
   addVendorRow: () => void;
   removeVendorRow: (idx: number) => void;
   onCancel: () => void;
-  onCreate: () => void;
+  onCreate: (part?: any) => void;
 }) {
   const dispatch = useDispatch<AppDispatch>();
 
@@ -77,14 +77,14 @@ export function NewPartForm({
         partsType: Array.isArray(prev.partsType)
           ? prev.partsType
           : prev.partsType
-          ? [prev.partsType]
-          : [],
+            ? [prev.partsType]
+            : [],
 
         // Map Location Data to Top-Level Fields for Inputs
         locationId:
           prev.locationId || firstLoc?.locationId || firstLoc?.id || "",
         area: prev.area || firstLoc?.area || "",
-        unitInStock: prev.unitInStock ?? firstLoc?.unitsInStock ?? 0,
+        unitsInStock: prev.unitsInStock ?? firstLoc?.unitsInStock ?? 0,
         minInStock: prev.minInStock ?? firstLoc?.minimumInStock ?? 0,
       };
     });
@@ -117,7 +117,7 @@ export function NewPartForm({
       const currentAssetIds = Array.isArray(newItem.assetIds) ? newItem.assetIds : [];
       const currentTeams = Array.isArray(newItem.teamsInCharge) ? newItem.teamsInCharge : [];
       const currentVendorIds = Array.isArray(newItem.vendorIds) ? newItem.vendorIds : [];
-      
+
       // Images/Docs
       const currentImages = Array.isArray(partImages) ? partImages : [];
       const currentDocs = Array.isArray(partDocs) ? partDocs : [];
@@ -129,7 +129,7 @@ export function NewPartForm({
       const primaryLocationUpdate = {
         locationId: newItem.locationId || "",
         area: newItem.area || "",
-        unitsInStock: Number(newItem.unitInStock ?? 0),
+        unitsInStock: Number(newItem.unitsInStock ?? 0),
         minimumInStock: Number(newItem.minInStock ?? 0),
       };
 
@@ -138,46 +138,55 @@ export function NewPartForm({
       if (newItem.locations && newItem.locations.length > 0) {
         // If locations exist, we update the FIRST one with the flat form data
         currentLocations = newItem.locations.map((loc: any, index: number) => {
-            if (index === 0) {
-                // Override first location with active form inputs
-                return {
-                    ...loc,
-                    ...primaryLocationUpdate,
-                    locationId: primaryLocationUpdate.locationId // Explicitly ensure ID is updated
-                };
-            }
-            // Return other locations unchanged (normalized)
+          if (index === 0) {
+            // Override first location with active form inputs
             return {
-                locationId: loc.locationId || loc.id,
-                area: loc.area || "",
-                unitsInStock: Number(loc.unitsInStock ?? 0),
-                minimumInStock: Number(loc.minimumInStock ?? 0),
+              ...loc,
+              ...primaryLocationUpdate,
+              locationId: primaryLocationUpdate.locationId // Explicitly ensure ID is updated
             };
+          }
+          // Return other locations unchanged (normalized)
+          return {
+            locationId: loc.locationId || loc.id,
+            area: loc.area || "",
+            unitsInStock: Number(loc.unitsInStock ?? 0),
+            minimumInStock: Number(loc.minimumInStock ?? 0),
+          };
         });
       } else {
-         // If no locations array, create one from flat fields if locationId is present
-         if (primaryLocationUpdate.locationId) {
-             currentLocations.push(primaryLocationUpdate);
-         }
+        // If no locations array, create one from flat fields if locationId is present
+        if (primaryLocationUpdate.locationId) {
+          currentLocations.push(primaryLocationUpdate);
+        }
       }
 
-      // ---------------------------------------------------------
-      // 🛠️ BUILD PAYLOAD (ONLY CHANGED FIELDS)
-      // ---------------------------------------------------------
       const payload: any = {};
 
       if (isEditing) {
-        // --- Basic Fields ---
-        if (newItem.name !== original.name) payload.name = newItem.name;
-        if (newItem.description !== original.description) payload.description = newItem.description;
-        if (currentUnitCost !== (original.unitCost || 0)) payload.unitCost = currentUnitCost;
-        if (currentQrCode !== (original.qrCode || "")) payload.qrCode = currentQrCode;
+        // --- 1. Basic Fields Checks ---
+        if (newItem.name !== original.name) {
+          payload.name = newItem.name;
+        }
+        if ((newItem.description || "") !== (original.description || "")) {
+          payload.description = newItem.description || "";
+        }
+        // Unit Cost
+        if (currentUnitCost !== (original.unitCost || 0)) {
+          console.log("Unit Cost Changed:", currentUnitCost);
+          payload.unitCost = currentUnitCost;
+        }
+        // QR Code
+        const originalQr = original.qrCode || "";
+        if (currentQrCode !== originalQr) {
+          payload.qrCode = currentQrCode;
+        }
 
         // --- Simple Arrays (Asset, Teams, Types, Vendors) ---
         if (!areArraysEqual(currentPartsType, original.partsType || [])) {
           payload.partsType = currentPartsType;
         }
-        
+
         // Check Asset IDs
         const originalAssetIds = original.assets?.map((a: any) => a.id) || original.assetIds || [];
         if (!areArraysEqual(currentAssetIds, originalAssetIds)) {
@@ -198,23 +207,23 @@ export function NewPartForm({
 
         // --- Complex Objects (Locations) ---
         const originalLocsMapped = (original.locations || []).map((loc: any) => ({
-             locationId: loc.locationId || loc.id,
-             area: loc.area || "",
-             unitsInStock: Number(loc.unitsInStock ?? 0),
-             minimumInStock: Number(loc.minimumInStock ?? 0),
+          locationId: loc.locationId || loc.id,
+          area: loc.area || "",
+          unitsInStock: Number(loc.unitsInStock ?? 0),
+          minimumInStock: Number(loc.minimumInStock ?? 0),
         }));
-        
+
         // Compare constructed currentLocations vs original
         if (JSON.stringify(currentLocations) !== JSON.stringify(originalLocsMapped)) {
-            payload.locations = currentLocations;
+          payload.locations = currentLocations;
         }
 
         // --- Files (Images / Docs) ---
         if (JSON.stringify(currentImages) !== JSON.stringify(original.partImages || [])) {
-           payload.partImages = currentImages;
+          payload.partImages = currentImages;
         }
         if (JSON.stringify(currentDocs) !== JSON.stringify(original.partDocs || [])) {
-           payload.partDocs = currentDocs;
+          payload.partDocs = currentDocs;
         }
 
       } else {
@@ -225,6 +234,7 @@ export function NewPartForm({
         payload.unitCost = currentUnitCost;
         payload.qrCode = currentQrCode;
         payload.partsType = currentPartsType;
+
         payload.assetIds = currentAssetIds;
         payload.teamsInCharge = currentTeams;
         payload.vendorIds = currentVendorIds;
@@ -239,18 +249,19 @@ export function NewPartForm({
         return;
       }
 
+      let res;
       // 🔥 Dispatch (JSON Payload)
       if (isEditing) {
-        await dispatch(
+        res = await dispatch(
           updatePart({ id: String(newItem.id), partData: payload })
         ).unwrap();
         toast.success("Part updated successfully!");
       } else {
-        await dispatch(createPart(payload)).unwrap();
+        res = await dispatch(createPart(payload)).unwrap();
         toast.success("Part created successfully!");
       }
 
-      onCreate();
+      onCreate(res);
     } catch (error: any) {
       console.error("❌ Error saving part:", error);
       toast.error(error?.message || "Failed to save part");
@@ -283,13 +294,13 @@ export function NewPartForm({
             removeVendorRow={removeVendorRow}
           />
         </div>
+        <PartFooter
+          onCancel={onCancel}
+          onCreate={handleSubmitPart}
+          disabled={!newItem.name}
+          isEditing={!!newItem.id}
+        />
       </div>
-      <PartFooter
-        onCancel={onCancel}
-        onCreate={handleSubmitPart}
-        disabled={!newItem.name}
-        isEditing={!!newItem.id}
-      />
     </div>
   );
 }

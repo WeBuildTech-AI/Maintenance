@@ -1,6 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useSearchParams, useLocation } from "react-router-dom";
 import { Button } from "../ui/button";
-import { Calendar, ChevronDown, Lock } from "lucide-react";
+import { Calendar, ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,6 +11,7 @@ import {
 import { Dialog, DialogContent } from "../ui/dialog";
 import { cn } from "../ui/utils";
 import { WorkOrdersTab } from "./WorkOrders";
+import { AssetHealthTab } from "./AssetHealth";
 import ReportingFilterBar from "./ReportingFilterBar";
 import { ReportingDetails } from "./ReportingDetails";
 import { RecentActivity } from "./RecentActivity";
@@ -35,7 +37,7 @@ const getDefaultDateRange = () => {
   const today = new Date();
   const oneMonthAgo = new Date(today);
   oneMonthAgo.setMonth(today.getMonth() - 1);
-  
+
   return {
     startDate: formatDate(oneMonthAgo),
     endDate: formatDate(today),
@@ -46,8 +48,29 @@ const getDefaultDateRange = () => {
 
 export function Reporting() {
   const defaultDates = getDefaultDateRange();
-  
-  const [activeTab, setActiveTab] = useState<TabType>("work-orders");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+
+  // Helper function to validate tab type
+  const isValidTab = (tab: string | null): tab is TabType => {
+    const validTabs: TabType[] = [
+      "work-orders",
+      "asset-health",
+      "reporting-details",
+      "recent-activity",
+      "export-data",
+      "custom-dashboards",
+    ];
+    return tab !== null && validTabs.includes(tab as TabType);
+  };
+
+  // Initialize activeTab from URL or default to 'work-orders'
+  const getInitialTab = (): TabType => {
+    const tabParam = searchParams.get("tab");
+    return isValidTab(tabParam) ? tabParam : "work-orders";
+  };
+
+  const [activeTab, setActiveTab] = useState<TabType>(getInitialTab());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [startDate, setStartDate] = useState(defaultDates.startDate);
   const [endDate, setEndDate] = useState(defaultDates.endDate);
@@ -61,6 +84,27 @@ export function Reporting() {
   );
   const [startDateError, setStartDateError] = useState<string | null>(null);
   const [endDateError, setEndDateError] = useState<string | null>(null);
+
+  // Close date picker dialog when navigating away from reporting page
+  useEffect(() => {
+    if (!location.pathname.startsWith('/reporting')) {
+      setShowDatePicker(false);
+    }
+  }, [location.pathname]);
+
+  // Sync activeTab with URL
+  // useEffect(() => {
+  //   const tabParam = searchParams.get("tab");
+  //   if (isValidTab(tabParam)) {
+  //     setActiveTab(tabParam);
+  //   }
+  // }, [searchParams]);
+
+  // Update URL when activeTab changes
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+    setSearchParams({ tab });
+  };
 
   // Validate date format MM/DD/YYYY
   const isValidDateFormat = (dateStr: string): boolean => {
@@ -85,7 +129,7 @@ export function Reporting() {
     // Remove non-numeric characters except slashes
     const cleaned = value.replace(/[^0-9/]/g, '');
     const numbers = cleaned.replace(/\//g, '');
-    
+
     if (numbers.length <= 2) {
       return numbers;
     } else if (numbers.length <= 4) {
@@ -99,7 +143,7 @@ export function Reporting() {
   const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatDateInput(e.target.value);
     setTempStartDate(formatted);
-    
+
     if (formatted.length === 10) {
       const date = parseDate(formatted);
       if (date) {
@@ -121,7 +165,7 @@ export function Reporting() {
   const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatDateInput(e.target.value);
     setTempEndDate(formatted);
-    
+
     if (formatted.length === 10) {
       const date = parseDate(formatted);
       if (date) {
@@ -146,7 +190,6 @@ export function Reporting() {
     {
       id: "asset-health",
       label: "Asset Health",
-      icon: <Lock className="h-3 w-3 ml-1" />,
     },
     { id: "reporting-details", label: "Reporting Details" },
     { id: "recent-activity", label: "Recent Activity" },
@@ -165,7 +208,7 @@ export function Reporting() {
 
   const handleNavigateToDetails = useCallback((chartType: string) => {
     setSelectedDetailChart(chartType);
-    setActiveTab("reporting-details");
+    handleTabChange("reporting-details");
   }, []);
 
   const monthNames = [
@@ -209,7 +252,7 @@ export function Reporting() {
     // Validate both dates before applying
     const startValid = parseDate(tempStartDate);
     const endValid = parseDate(tempEndDate);
-    
+
     if (!startValid) {
       setStartDateError('Please enter a valid start date');
       return;
@@ -222,7 +265,7 @@ export function Reporting() {
       setEndDateError('End date must be after start date');
       return;
     }
-    
+
     setStartDate(tempStartDate);
     setEndDate(tempEndDate);
     setStartDateError(null);
@@ -297,7 +340,7 @@ export function Reporting() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-full bg-gray-50">
       {/* Header */}
       <header className="border-b border-border bg-white px-6 py-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -361,7 +404,7 @@ export function Reporting() {
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               className={cn(
                 "flex items-center px-4 py-3 text-sm font-medium border-b-2 transition-colors",
                 activeTab === tab.id
@@ -381,7 +424,7 @@ export function Reporting() {
         className="border-b border-border bg-white px-6 py-3"
         style={{ position: "relative", overflow: "visible" }}
       >
-        <ReportingFilterBar onParamsChange={handleFilterChange} />
+        <ReportingFilterBar onParamsChange={handleFilterChange} activeTab={activeTab} />
       </div>
 
       {/* Main Content */}
@@ -394,9 +437,10 @@ export function Reporting() {
           />
         )}
         {activeTab === "asset-health" && (
-          <div className="text-center py-12 text-gray-500">
-            Asset Health tab is locked. Upgrade to access this feature.
-          </div>
+          <AssetHealthTab
+            filters={filterParams}
+            dateRange={{ startDate, endDate }}
+          />
         )}
         {activeTab === "reporting-details" && (
           <ReportingDetails
@@ -426,40 +470,38 @@ export function Reporting() {
 
             {/* Calendar */}
             <div className="p-0">
-            {/* Date Inputs */}
-            <div className="flex items-center gap-2 mb-3">
-              <div className="flex-1">
-                <input
-                  type="text"
-                  value={tempStartDate}
-                  onChange={handleStartDateChange}
-                  maxLength={10}
-                  className={`w-full px-2 py-1 border rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    startDateError ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="MM/DD/YYYY"
-                />
-                {startDateError && (
-                  <p className="text-xs text-red-500 mt-1">{startDateError}</p>
-                )}
+              {/* Date Inputs */}
+              <div className="flex items-center gap-2 mb-3">
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    value={tempStartDate}
+                    onChange={handleStartDateChange}
+                    maxLength={10}
+                    className={`w-full px-2 py-1 border rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${startDateError ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    placeholder="MM/DD/YYYY"
+                  />
+                  {startDateError && (
+                    <p className="text-xs text-red-500 mt-1">{startDateError}</p>
+                  )}
+                </div>
+                <span className="text-gray-400 text-sm">to</span>
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    value={tempEndDate}
+                    onChange={handleEndDateChange}
+                    maxLength={10}
+                    className={`w-full px-2 py-1 border rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${endDateError ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    placeholder="MM/DD/YYYY"
+                  />
+                  {endDateError && (
+                    <p className="text-xs text-red-500 mt-1">{endDateError}</p>
+                  )}
+                </div>
               </div>
-              <span className="text-gray-400 text-sm">to</span>
-              <div className="flex-1">
-                <input
-                  type="text"
-                  value={tempEndDate}
-                  onChange={handleEndDateChange}
-                  maxLength={10}
-                  className={`w-full px-2 py-1 border rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    endDateError ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="MM/DD/YYYY"
-                />
-                {endDateError && (
-                  <p className="text-xs text-red-500 mt-1">{endDateError}</p>
-                )}
-              </div>
-            </div>
               {/* Month/Year Selector */}
               <div className="flex items-center justify-between mb-3">
                 <button

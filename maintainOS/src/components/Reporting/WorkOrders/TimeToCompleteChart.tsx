@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useQuery } from "@apollo/client/react";
 import { GET_CHART_DATA } from "../../../graphql/reporting.queries";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
@@ -21,12 +21,14 @@ interface TimeToCompleteChartProps {
   filters: Record<string, any>;
   dateRange: { startDate: string; endDate: string };
   onNavigateToDetails?: () => void;
+  onLoadingChange?: (isLoading: boolean) => void;
 }
 
 export function TimeToCompleteChart({
   filters,
   dateRange,
   onNavigateToDetails,
+  onLoadingChange,
 }: TimeToCompleteChartProps) {
   const apiFilters = useMemo(() => {
     return mapFilters(filters, dateRange);
@@ -49,6 +51,12 @@ export function TimeToCompleteChart({
     },
     fetchPolicy: "cache-and-network",
   });
+
+  // Notify parent of loading state changes
+  useEffect(() => {
+    onLoadingChange?.(loading);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]); // Only depend on loading state, not onLoadingChange
 
   // Calculate stats
   const stats = useMemo(() => {

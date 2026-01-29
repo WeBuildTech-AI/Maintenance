@@ -49,6 +49,7 @@ import { procedureService } from "../../../../store/procedures/procedures.servic
 import { WorkOrderAssetStatusModal } from "../../NewWorkOrderForm/WorkOrderAssetStatusModal";
 import { assetService } from "../../../../store/assets/assets.service";
 
+
 // --- HELPER FUNCTIONS ---
 
 const getAvatarColor = (name: string) => {
@@ -182,6 +183,12 @@ export default function WorkOrderDetailModal({
           if (fetchedProcedures.length > 0 && fetchedProcedures[0].id === workOrder.procedureIds[0]) return;
           const promises = workOrder.procedureIds.map((id: string) => procedureService.fetchProcedureById(id));
           const results = await Promise.all(promises);
+
+          if (timersRef.current.has(TIMER_LABEL)) {
+            try { console.timeEnd(TIMER_LABEL); } catch (e) { }
+            timersRef.current.delete(TIMER_LABEL);
+          }
+
           setFetchedProcedures(results);
         } catch (err) {
           console.error("Failed to fetch linked procedures", err);

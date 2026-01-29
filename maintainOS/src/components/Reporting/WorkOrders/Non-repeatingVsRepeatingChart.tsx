@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useQuery } from "@apollo/client/react";
 import { GET_CHART_DATA } from "../../../graphql/reporting.queries";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
@@ -21,12 +21,14 @@ interface Props {
   filters: Record<string, any>;
   dateRange: { startDate: string; endDate: string };
   onNavigateToDetails?: () => void;
+  onLoadingChange?: (isLoading: boolean) => void;
 }
 
 export function WorkOrdersRepeatingChart({
   filters,
   dateRange,
   onNavigateToDetails,
+  onLoadingChange,
 }: Props) {
   const apiFilters = useMemo(() => {
     return mapFilters(filters, dateRange);
@@ -47,6 +49,13 @@ export function WorkOrdersRepeatingChart({
       },
       fetchPolicy: "cache-and-network",
     });
+
+  // Notify parent of loading state changes
+  useEffect(() => {
+    onLoadingChange?.(repeatingStatsLoading);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [repeatingStatsLoading]); // Only depend on loading state, not onLoadingChange // Only depend on loading state, not onLoadingChange
 
   // 2️⃣ DATE-BREAKDOWN QUERY (createdAt + repeatingType)
   const { data: repeatingByDateData } = useQuery<{

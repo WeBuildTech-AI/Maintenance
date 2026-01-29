@@ -3,13 +3,10 @@ import React, { useMemo, useState, useRef, useEffect } from "react";
 import { useAppSelector } from "../../store/hooks";
 import { Card, CardContent } from "./../ui/card";
 import {
-  Pencil,
-  Copy,
   MoreVertical,
   ClipboardList,
   Trash2,
   Loader2,
-  Settings,
   Activity,
   PauseCircle,
   CheckCircle2,
@@ -27,6 +24,7 @@ import { deleteWorkOrder, updateWorkOrderStatus } from "../../store/workOrders/w
 import DeleteWorkOrderModal from "./ToDoView/DeleteWorkOrderModal";
 import { type ListViewProps } from "./types";
 import { Tooltip } from "./../ui/tooltip";
+import { formatLabel } from "../utils/asset_formater";
 
 // DETAILS/EDIT MODAL
 import WorkOrderDetailsModal from "./Tableview/modals/WorkOrderDetailModal";
@@ -328,6 +326,8 @@ export function ListView({
   isSettingsModalOpen,
   showDeleted,
   setShowDeleted,
+  loading,
+  hasError,
 }: ListViewProps) {
   const dispatch = useDispatch();
   const [modalWO, setModalWO] = useState<any>(null);
@@ -413,7 +413,7 @@ export function ListView({
     }
   };
 
-  const handleTableChange = (pagination: any, filters: any, sorter: any) => {
+  const handleTableChange = (sorter: any) => {
     const s = Array.isArray(sorter) ? sorter[0] : sorter;
     if (s && s.field && s.order) {
       setSortType(s.field as string);
@@ -628,7 +628,7 @@ export function ListView({
           width: config.width,
           sorter: config.sorter,
           sortOrder:
-            sortType === config.dataIndex.toLowerCase()
+            sortType === (config.dataIndex as string).toLowerCase()
               ? mapAntSortOrder(sortOrder)
               : (undefined as any),
           render: renderFunc,
@@ -712,7 +712,7 @@ export function ListView({
         title: item.title || "—",
         status: getSafeString(item.status),
         priority: getSafeString(item.priority),
-        workType: getSafeString(item.work_type || item.workType),
+        workType: formatLabel(getSafeString(item.work_type || item.workType)),
         assignedTo: assignedToStr === "—" ? "Unassigned" : assignedToStr,
         categories: catStr,
         asset: assetStr,
@@ -728,18 +728,43 @@ export function ListView({
     });
   }, [workOrders]);
 
+  if (loading && workOrders.length === 0) return null; // Let parent handle initial large loader
+
   return (
     // ✅ ADDED: h-full flex flex-col to parent to occupy full height
     <div className="h-full flex flex-col p-4">
       <style>{tableStyles}</style>
 
       {/* ✅ ADDED: flex-1 flex flex-col to Card to stretch it */}
-      <Card className="flex-1 flex flex-col shadow-sm border rounded-lg overflow-hidden">
+      <Card className="flex-1 flex flex-col shadow-sm border rounded-lg overflow-hidden relative">
+        {hasError && workOrders.length === 0 ? (
+          <div className="absolute inset-0 z-50 bg-white flex items-center justify-center">
+            <div className="text-center">
+              <p className="text-muted-foreground mb-4">Failed to load work orders</p>
+              <button
+                onClick={onRefreshWorkOrders}
+                className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         {/* ✅ ADDED: flex-1 overflow-hidden to CardContent to make Table scrollable */}
         <CardContent className="flex-1 p-0 overflow-hidden">
           <Table
             columns={columns}
             dataSource={dataSource}
+            loading={{
+              spinning: loading,
+              indicator: (
+                <div className="flex flex-col items-center gap-3">
+                  <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+                  <span className="text-sm font-medium animate-pulse text-muted-foreground">Work Orders Loading...</span>
+                </div>
+              )
+            }}
             pagination={false}
             // ✅ UPDATED: Scroll calculation adjusted for Full Screen List feel
             scroll={{ x: "max-content", y: "calc(100vh - 280px)" }}

@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 import type { RootState, AppDispatch } from "../../../../store";
 import { formatFriendlyDate } from "../../../utils/Date";
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "../../../ui/button";
 // Make sure this path to your thunk is correct
 import { assetService, updateAssetStatus } from "../../../../store/assets";
@@ -12,20 +13,28 @@ import toast from "react-hot-toast";
 import NewWorkOrderModal from "../../../work-orders/NewWorkOrderModal";
 
 // --- Main Component ---
+// --- Main Component ---
 export function AssetStatusReadings({
   asset,
   fetchAssetsData,
   setSeeMoreAssetStatus,
   seeMoreFlag,
   getAssetStatusLog,
+  updatedUser, // ✅ Prop for correct user
+  lastUpdatedDate, // ✅ Prop for correct date
 }: {
   asset: any;
-  fetchAssetsData?: () => void;
-  setSeeMoreAssetStatus: boolean;
+  fetchAssetsData?: (force?: boolean) => void;
+  setSeeMoreAssetStatus?: (value: boolean) => void;
   seeMoreFlag: boolean;
   getAssetStatusLog?: () => void;
+  updatedUser?: string;
+  lastUpdatedDate?: string | null;
 }) {
   const user = useSelector((state: RootState) => state.auth.user);
+
+  /* ✅ Fetch Latest Log State */
+  const [latestLog, setLatestLog] = useState<any>(null);
 
   const [assetStatus, setAssetStatus] = useState(asset?.status || "online");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -33,10 +42,24 @@ export function AssetStatusReadings({
   const [statusToUpdate, setStatusToUpdate] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const fetchLatestLog = async () => {
+    if (!asset?.id) return;
+    try {
+      const log = await assetService.fetchLatestAssetLog(asset.id);
+      setLatestLog(log);
+    } catch (error) {
+      console.error("Failed to fetch latest log", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchLatestLog();
+  }, [asset?.id]);
+
   useEffect(() => {
     setAssetStatus(asset?.status || "online");
   }, [asset]);
-  
+
   // Offline work order prompt
   const [isOfflinePromptOpen, setIsOfflinePromptOpen] = useState(false);
   const [isNewWorkOrderModalOpen, setIsNewWorkOrderModalOpen] = useState(false);
@@ -92,9 +115,12 @@ export function AssetStatusReadings({
       // IMPORTANT FIX — UPDATE UI IMMEDIATELY
       setAssetStatus(finalStatusData.status);
 
+      // ✅ Refresh Latest Log
+      fetchLatestLog();
+
       // Optional refetch
       if (typeof fetchAssetsData === "function") {
-        fetchAssetsData();
+        fetchAssetsData(true);
       }
       if (typeof getAssetStatusLog === "function") {
         getAssetStatusLog();
@@ -102,10 +128,13 @@ export function AssetStatusReadings({
 
       setIsModalOpen(false);
       toast.success("Asset Status Successfully updated");
-      
+
       // ✅ Check if status changed to offline - show work order prompt
       if (finalStatusData.status?.toLowerCase() === 'offline') {
+        console.log("Status is offline, opening prompt...");
         setIsOfflinePromptOpen(true);
+      } else {
+        console.log("Status is NOT offline:", finalStatusData.status);
       }
     } catch (error: any) {
       console.error("Failed to update asset status:", error);
@@ -116,7 +145,6 @@ export function AssetStatusReadings({
     }
   };
 
-  // ... (Baaki ka JSX code same rahega) ...
   return (
     <div>
       {isModalOpen && statusToUpdate && (
@@ -127,7 +155,7 @@ export function AssetStatusReadings({
           isLoading={isLoading}
         />
       )}
-      
+
       {/* \u2705 Offline Work Order Prompt */}
       <OfflinePromptModal
         isOpen={isOfflinePromptOpen}
@@ -156,7 +184,7 @@ export function AssetStatusReadings({
         <h2 className="text-lg font-medium">Status</h2>
         {seeMoreFlag === false ? null : (
           <Button
-            onClick={() => setSeeMoreAssetStatus?.()}
+            onClick={() => setSeeMoreAssetStatus?.(true)}
             className="gap-1 bg-white p-2 cursor-pointer text-orange-600 hover:text-orange-600 hover:bg-orange-50  h-auto"
           >
             See More
@@ -208,13 +236,13 @@ export function AssetStatusReadings({
           <p className="text-sm text-muted-foreground">
             Last updated :{" "}
             <span className="font-medium text-orange-600 capitalize">
-              {user?.fullName}
+              {latestLog?.user?.fullName || latestLog?.user?.name || updatedUser || "Unknown"}
             </span>{" "}
-            , {formatFriendlyDate(asset?.updatedAt)}
+            , {formatFriendlyDate(latestLog?.createdAt || lastUpdatedDate || asset?.updatedAt)}
           </p>
         )}
       </div>
-    </div>
+    </div >
   );
 }
 
@@ -283,13 +311,12 @@ const OfflineSinceDropdown = ({
         >
           <span>{offlineSince}</span>
           <ChevronDown
-            className={`w-5 h-5 text-gray-500 transition-transform ${
-              offlineSinceDropdown ? "rotate-180" : ""
-            }`}
+            className={`w-5 h-5 text-gray-500 transition-transform ${offlineSinceDropdown ? "rotate-180" : ""
+              }`}
           />
         </button>
         {offlineSinceDropdown && (
-          <div className="absolute w-full z-50 h-32 overflow-x-auto bg-white border border-gray-200 rounded-md shadow-lg mt-1 z-30">
+          <div className="absolute w-full z-50 h-32 overflow-y-auto bg-white border border-gray-200 rounded-md shadow-lg mt-1 z-30">
             {offlineSinceOptions.map((opt) => (
               <button
                 type="button"
@@ -407,6 +434,9 @@ export function UpdateAssetStatusModal({
   const [statusDropdown, setStatusDropdown] = useState(false);
   const [downtimeDropdown, setDowntimeDropdown] = useState(false);
   const [offlineSinceDropdown, setOfflineSinceDropdown] = useState(false);
+  const [offlineReason, setOfflineReason] = useState("");
+  const [reasonDropdown, setReasonDropdown] = useState(false);
+
 
   const statuses = [
     { name: "Online", value: "online", color: "bg-green-500" },
@@ -426,6 +456,15 @@ export function UpdateAssetStatusModal({
     },
   ];
   // --- +++++++ BADLAAV KHATM +++++++ ---
+  //
+  const offlineReasons = [
+    { name: "Electrical Fault", value: "electrical_fault" },
+    { name: "Equipment Failure", value: "equipment_failure" },
+    { name: "Inspection", value: "inspection" },
+    { name: "Operator Error", value: "operator_error" },
+    { name: "Planned Maintenance", value: "planned_maintenance" },
+    { name: "Tool Failure", value: "tool_failure" },
+  ];
 
   const offlineSinceOptions = [
     "Now",
@@ -437,8 +476,9 @@ export function UpdateAssetStatusModal({
 
   const isFormValid = () => {
     if (!selectedStatus) return false;
-    if (selectedStatus === "offline" && !downtimeType) {
-      return false;
+    // Modified: Check both downtimeType AND offlineReason
+    if (selectedStatus === "offline") {
+      if (!downtimeType || !offlineReason) return false;
     }
     if (offlineSince === "Custom date") {
       return fromDate && fromTime && toDate && toTime;
@@ -461,6 +501,8 @@ export function UpdateAssetStatusModal({
     // --- CHANGE 1: Sirf 'downtimeType' ke liye check karein ki status offline hai ya nahi ---
     if (selectedStatus === "offline") {
       submitData.downtimeType = downtimeType;
+      // ✅ ADDED: downtimeReason is required
+      submitData.downtimeReason = offlineReason;
     }
 
     // --- CHANGE 2: Date calculation logic ko bahar nikaal diya ---
@@ -500,7 +542,8 @@ export function UpdateAssetStatusModal({
   };
 
   const isAnyDropdownOpen =
-    statusDropdown || downtimeDropdown || offlineSinceDropdown;
+    statusDropdown || downtimeDropdown || offlineSinceDropdown || reasonDropdown;
+
 
   return (
     <div
@@ -525,9 +568,8 @@ export function UpdateAssetStatusModal({
 
         <form onSubmit={handleFormSubmit}>
           <div
-            className={`p-6 space-y-4 max-h-[70vh] ${
-              isAnyDropdownOpen ? "overflow-visible" : "overflow-y-auto"
-            }`}
+            className={`p-6 space-y-4 max-h-[70vh] ${isAnyDropdownOpen ? "overflow-visible" : "overflow-y-auto"
+              }`}
           >
             {/* Status Dropdown (Unchanged) */}
             <div>
@@ -542,9 +584,8 @@ export function UpdateAssetStatusModal({
                 >
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-2.5 h-2.5 ${
-                        statuses.find((s) => s.value === selectedStatus)?.color
-                      } rounded-full`}
+                      className={`w-2.5 h-2.5 ${statuses.find((s) => s.value === selectedStatus)?.color
+                        } rounded-full`}
                     ></div>
                     <span>
                       {statuses.find((s) => s.value === selectedStatus)?.name ||
@@ -552,9 +593,8 @@ export function UpdateAssetStatusModal({
                     </span>
                   </div>
                   <ChevronDown
-                    className={`w-5 h-5 text-blue-500 transition-transform ${
-                      statusDropdown ? "rotate-180" : ""
-                    }`}
+                    className={`w-5 h-5 text-blue-500 transition-transform ${statusDropdown ? "rotate-180" : ""
+                      }`}
                   />
                 </button>
                 {statusDropdown && (
@@ -589,9 +629,11 @@ export function UpdateAssetStatusModal({
             />
 
             {/* --- Conditional Fields (Unchanged) --- */}
-
             {selectedStatus === "offline" && (
-              <div>
+
+              <div className="space-y-4">
+
+                {/* downtimetype */}
                 <label className="block text-sm font-medium text-gray-900 mb-2">
                   Downtime Type <span className="text-red-500">(required)</span>
                 </label>
@@ -606,9 +648,8 @@ export function UpdateAssetStatusModal({
                         ?.value || "Select downtime type"}
                     </span>
                     <ChevronDown
-                      className={`w-5 h-5 text-gray-500 transition-transform ${
-                        downtimeDropdown ? "rotate-180" : ""
-                      }`}
+                      className={`w-5 h-5 text-gray-500 transition-transform ${downtimeDropdown ? "rotate-180" : ""
+                        }`}
                     />
                   </button>
                   {downtimeDropdown && (
@@ -629,8 +670,58 @@ export function UpdateAssetStatusModal({
                     </div>
                   )}
                 </div>
+
+                {/* ✅ Reason Dropdown (AFTER Downtime Type) */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                    Downtime Reason <span className="text-red-500">(required)</span>
+                  </label>
+
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setReasonDropdown(!reasonDropdown)}
+                      className="w-full capitalize flex cursor-pointer items-center justify-between px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                    >
+                      <span>
+                        {offlineReasons.find((r) => r.value === offlineReason)?.name ||
+                          "Select reason"}
+                      </span>
+                      <ChevronDown
+                        className={`w-5 h-5 text-gray-500 transition-transform ${reasonDropdown ? "rotate-180" : ""
+                          }`}
+                      />
+                    </button>
+
+                    {reasonDropdown && (
+                      <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1" style={{
+                        maxHeight: "120px", // shows ~3 items
+                        overflowY: "auto",
+                      }}
+                      >
+
+                        {offlineReasons.map((reason) => (
+                          <button
+                            type="button"
+                            key={reason.value}
+                            onClick={() => {
+                              setOfflineReason(reason.value);
+                              setReasonDropdown(false);
+                            }}
+                            className="w-full px-3 py-2 text-left hover:bg-gray-50"
+                          >
+                            {reason.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
               </div>
             )}
+
+
 
             <OfflineSinceDropdown
               offlineSince={offlineSince}
@@ -679,21 +770,21 @@ export function UpdateAssetStatusModal({
 }
 
 // \u2705 Offline Asset Work Order Prompt Modal
-interface OfflinePromptModalProps {
+export interface OfflinePromptModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreateWorkOrder: () => void;
 }
 
-function OfflinePromptModal({ isOpen, onClose, onCreateWorkOrder }: OfflinePromptModalProps) {
+export function OfflinePromptModal({ isOpen, onClose, onCreateWorkOrder }: OfflinePromptModalProps) {
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 300,
+        zIndex: 9999,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -732,6 +823,7 @@ function OfflinePromptModal({ isOpen, onClose, onCreateWorkOrder }: OfflinePromp
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

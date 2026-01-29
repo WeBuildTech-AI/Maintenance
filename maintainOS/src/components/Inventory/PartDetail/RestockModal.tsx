@@ -27,6 +27,7 @@ export default function RestockModal({
   const [quantity, setQuantity] = useState(0);
   const [location, setLocation] = useState("General");
   const [note, setNote] = useState("");
+  const [cost, setCost] = useState<number | "">(part?.unitCost || "");
   const [restockImages, setRestockImages] = useState<BUD[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false); // ✅ Added loading state
@@ -72,18 +73,18 @@ export default function RestockModal({
 
   const handleConfirm = async () => {
     if (!part?.id) {
-        toast.error("No part selected");
-        return;
+      toast.error("No part selected");
+      return;
     }
 
     const selectedLoc = part.locations?.find(
-        (loc: any) => loc.name === location || loc.locationName === location
+      (loc: any) => loc.name === location || loc.locationName === location
     );
     const locationId = selectedLoc?.id || selectedLoc?.locationId;
-    
+
     if (!locationId) {
-        toast.error("Location ID not found");
-        return;
+      toast.error("Location ID not found");
+      return;
     }
 
     try {
@@ -97,6 +98,7 @@ export default function RestockModal({
           addedUnits: quantity,
           notes: note,
           restockImages: restockImages,
+          unitCost: cost === "" ? 0 : Number(cost),
         })
       ).unwrap();
 
@@ -110,7 +112,7 @@ export default function RestockModal({
       setNote("");
       setRestockImages([]);
       onClose();
-      
+
     } catch (error: any) {
       console.error("Restock failed:", error);
       toast.error(error?.message || "Failed to restock part");
@@ -239,6 +241,36 @@ export default function RestockModal({
             >
               +
             </button>
+          </div>
+
+          {/* Current Price */}
+          <div>
+            <label
+              style={{
+                display: "block",
+                fontSize: "14px",
+                fontWeight: 500,
+                color: "#111827",
+                marginBottom: "6px",
+              }}
+            >
+              Current Price
+            </label>
+            <input
+              type="number"
+              value={cost}
+              onChange={(e) => setCost(e.target.value === "" ? "" : Number(e.target.value))}
+              placeholder="0.00"
+              disabled={isSubmitting}
+              style={{
+                width: "100%",
+                padding: "8px 12px",
+                border: "1px solid #d1d5db",
+                borderRadius: "6px",
+                fontSize: "14px",
+                backgroundColor: "#fff",
+              }}
+            />
           </div>
 
           {/* Location Dropdown */}

@@ -58,6 +58,7 @@ export interface DynamicSelectProps {
   activeDropdown: string | null;
   setActiveDropdown: (name: string | null) => void;
   onSearch?: (term: string) => void; 
+  limitOptions?: number;
 }
 
 export function DynamicSelect({
@@ -73,6 +74,7 @@ export function DynamicSelect({
   activeDropdown,
   setActiveDropdown,
   onSearch,
+  limitOptions = 3,
 }: DynamicSelectProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null); 
@@ -135,19 +137,26 @@ export function DynamicSelect({
       <style>{checkboxStyles}</style>
 
       <div
-        className="flex items-center gap-1 rounded-md border border-gray-300 bg-white py-1 px-2 min-h-[36px] cursor-pointer focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 overflow-hidden"
-        onClick={handleToggle}
-      >
-        <div className="flex flex-wrap items-center gap-1 flex-1 min-w-0">
+          className="flex items-center gap-1 rounded-md border border-gray-300 bg-white 
+                      py-1 px-2 min-h-[36px] cursor-pointer 
+                      focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500"
+          onClick={handleToggle}
+        >
+        <div className="flex items-center gap-1 flex-1 min-w-0">
+
           
           {/* ✅ RENDER LOGIC: If Multi, show 1 + Count. If Single, show all (which is just 1) */}
           {isMulti && selectedOptions.length > 0 ? (
             <>
               {/* 1. Show First Option */}
               <div className="relative group/tag flex items-center">
-                <Badge key={firstOption.id} variant="secondary" className="flex items-center gap-1 max-w-[120px] min-w-0">
-                  <span className="truncate">
-                    {firstOption.name.length > 9 ? firstOption.name.substring(0, 9) + "..." : firstOption.name}
+                <Badge
+                  key={firstOption.id}
+                  variant="secondary"
+                  className="flex items-center gap-1 px-2 py-1 max-w-[150px]"
+                >
+                  <span className="truncate block">
+                    {firstOption.name}
                   </span>
                   <button
                     className="ml-auto rounded-full outline-none shrink-0"
@@ -195,9 +204,9 @@ export function DynamicSelect({
             // Standard Rendering for Single Select (or fallback)
             selectedOptions.map((option) => (
               <div key={option.id} className="relative group/tag flex items-center">
-                <Badge variant="secondary" className="flex items-center gap-1 max-w-[120px] min-w-0">
-                  <span className="truncate">
-                    {option.name.length > 9 ? option.name.substring(0, 9) + "..." : option.name}
+                <Badge variant="secondary" className="flex items-center gap-1 max-w-[150px] min-w-0">
+                  <span className="truncate block">
+                    {option.name}
                   </span>
                   <button
                     className="ml-auto rounded-full outline-none shrink-0"
@@ -250,7 +259,8 @@ export function DynamicSelect({
       {open && (
         <div 
           onMouseDown={(e) => e.preventDefault()}
-          className="absolute top-full mt-1 w-full rounded-md border bg-white z-20 max-h-60 overflow-y-auto shadow-lg"
+          className="absolute top-full mt-1 w-full rounded-md border bg-white z-20 overflow-y-auto shadow-lg"
+          style={{ maxHeight: `${limitOptions * 48}px` }}
         >
           {loading ? (
             <div className="flex justify-center items-center p-4">

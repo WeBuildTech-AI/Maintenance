@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useQuery } from "@apollo/client/react";
 import { GET_CHART_DATA } from "../../../graphql/reporting.queries";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
@@ -21,12 +21,14 @@ interface InspectionCheckChartProps {
   filters: Record<string, any>;
   dateRange: { startDate: string; endDate: string };
   onNavigateToDetails?: () => void;
+  onLoadingChange?: (isLoading: boolean) => void;
 }
 
 export function InspectionCheckChart({
   filters,
   dateRange,
   onNavigateToDetails,
+  onLoadingChange,
 }: InspectionCheckChartProps) {
   const apiFilters = useMemo(() => {
     const mapped = mapFilters(filters, dateRange);
@@ -47,6 +49,13 @@ export function InspectionCheckChart({
     },
     fetchPolicy: "cache-and-network",
   });
+
+  // Notify parent of loading state changes
+  useEffect(() => {
+    onLoadingChange?.(resultLoading);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resultLoading]); // Only depend on loading state, not onLoadingChange // Only depend on loading state, not onLoadingChange
 
   // Fetch Inspection Check data grouped by date for the chart
   const { data: dateData } = useQuery<{

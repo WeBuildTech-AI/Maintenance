@@ -6,7 +6,7 @@ import { DynamicSelect, type SelectOption } from "../../common/DynamicSelect";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../../store";
 import { fetchLocationsName } from "../../../store/locations/locations.thunks";
-import { LocationFormDialog } from "./LocationFormDialog";
+
 
 export function PartLocationSection({
   newItem,
@@ -98,14 +98,15 @@ export function PartLocationSection({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "25px" }}>
       <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "2.2fr 1fr 1fr 1fr",
-          gap: "16px",
-          alignItems: "end",
-          width: "100%",
-        }}
-      >
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(250px, 2.2fr) minmax(150px, 1fr) minmax(150px, 1fr) minmax(150px, 1fr)",
+            gap: "16px",
+            alignItems: "end",
+            width: "100%",
+          }}
+        >
+
         {/* Location */}
         <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
           <label
@@ -119,7 +120,8 @@ export function PartLocationSection({
             Locations
           </label>
           <div style={{ height: "40px", display: "flex" }}>
-            <div style={{ flex: 1 }}>
+            <div style={{ width: "100%", minWidth: 0 }}>
+
               <DynamicSelect
                 options={mergedOptions} // 🟢 merged ensures label visible before API
                 value={newItem.locationId ?? ""}
@@ -132,6 +134,8 @@ export function PartLocationSection({
                 name="part_location"
                 activeDropdown={activeDropdown}
                 setActiveDropdown={setActiveDropdown}
+                limitOptions={3}
+
               />
             </div>
           </div>
@@ -180,7 +184,7 @@ export function PartLocationSection({
           </label>
           <input
             type="number"
-            value={newItem.unitsInStock || ""}
+            value={newItem.unitsInStock ?? ""}
             onChange={(e) => setNewItem((s) => ({ ...s, unitsInStock: Number(e.target.value) }))}
             style={{
               height: "40px",
@@ -209,7 +213,7 @@ export function PartLocationSection({
           </label>
           <input
             type="number"
-            value={newItem.minInStock || ""}
+            value={newItem.minInStock ?? ""}
             onChange={(e) => setNewItem((s) => ({ ...s, minInStock: Number(e.target.value) }))}
             style={{
               height: "40px",
@@ -223,11 +227,6 @@ export function PartLocationSection({
             }}
           />
         </div>
-      </div>
-
-      {/* Add Location Modal */}
-      <div>
-        <LocationFormDialog newItem={newItem} setNewItem={setNewItem} />
       </div>
     </div>
   );

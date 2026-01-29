@@ -16,6 +16,8 @@ import type { AppDispatch } from "../../store";
 import { locationService } from "../../store/locations";
 import AssetStatusMoreDetails from "./AssetDetail/sections/AssetStatusMoreDetails";
 import { useSearchParams } from "react-router-dom";
+import { DiscardChangesModal } from "../work-orders/ToDoView/DiscardChangesModal";
+//discard popup//
 
 export interface Location {
   id: number | string;
@@ -77,6 +79,9 @@ export const Assets: FC = () => {
   const [shouldSelectFirst, setShouldSelectFirst] = useState(false);
   const [allLocationData, setAllLocationData] = useState<Location[]>([]);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
+  // ✅ Discard Modal State (copied from Work Orders pattern)
+  const [showDiscardModal, setShowDiscardModal] = useState(false);
+  const [pendingAsset, setPendingAsset] = useState<Asset | null>(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
 
@@ -91,11 +96,11 @@ export const Assets: FC = () => {
     if (moreDetailsInUrl !== seeMoreAssetStatus) {
       setSeeMoreAssetStatus(moreDetailsInUrl);
     }
-    
+
     const assetIdInUrl = searchParams.get("assetId");
     if (assetIdInUrl && selectedAsset && String(selectedAsset.id) !== String(assetIdInUrl)) {
-       const found = assetData.find((a: any) => String(a.id) === String(assetIdInUrl));
-       if (found) setSelectedAsset(found);
+      const found = assetData.find((a: any) => String(a.id) === String(assetIdInUrl));
+      if (found) setSelectedAsset(found);
     }
   }, [searchParams, assetData]);
 
@@ -107,7 +112,14 @@ export const Assets: FC = () => {
     const params: any = {};
     if (debouncedSearch) params.search = debouncedSearch;
     if (seeMoreAssetStatus) params.moreDetails = "true";
-    if (selectedAsset?.id) params.assetId = selectedAsset.id;
+    if (seeMoreAssetStatus) params.moreDetails = "true";
+
+    // ✅ Fix: Preserve assetId from URL if loading/refreshing and selectedAsset is not yet set
+    if (selectedAsset?.id) {
+      params.assetId = selectedAsset.id;
+    } else if (seeMoreAssetStatus && searchParams.get("assetId")) {
+      params.assetId = searchParams.get("assetId");
+    }
     if (filterParams.page && filterParams.page > 1)
       params.page = filterParams.page.toString();
 
@@ -124,13 +136,13 @@ export const Assets: FC = () => {
 
     // ✅ CRITICAL FIX: Push to history ONLY if state changed AND doesn't match URL (user action)
     // If state changed but ALREADY matches URL, it's a back/forward sync -> use replace
-    const isNavigationalChange = 
+    const isNavigationalChange =
       (prevSeeMoreRef.current !== seeMoreAssetStatus || prevSelectedAssetIdRef.current !== selectedAsset?.id) &&
-      (String(params.moreDetails || "false") !== String(searchParams.get("moreDetails") || "false") || 
-       String(params.assetId || "") !== String(searchParams.get("assetId") || ""));
+      (String(params.moreDetails || "false") !== String(searchParams.get("moreDetails") || "false") ||
+        String(params.assetId || "") !== String(searchParams.get("assetId") || ""));
 
     setSearchParams(params, { replace: !isNavigationalChange });
-    
+
     prevSeeMoreRef.current = seeMoreAssetStatus;
     prevSelectedAssetIdRef.current = selectedAsset?.id;
   }, [
@@ -149,8 +161,29 @@ export const Assets: FC = () => {
 
   // --- 4. Fetch Assets ---
 
-  const fetchAssetsData = useCallback(async () => {
+  // --- 4. Fetch Assets ---
+  // ✅ PERF: Track last fetched params to prevent duplicates
+  const lastFetchedParamsRef = useRef<string>("");
+
+  const fetchAssetsData = useCallback(async (force = false) => {
+    // Construct current params key
+    const currentParams = {
+      ...filterParams,
+      search: debouncedSearch,
+      showDeleted
+    };
+    const paramsKey = JSON.stringify(currentParams);
+
+    // Skip if params haven't changed (unless forced or new fetch needed)
+    if (!force && paramsKey === lastFetchedParamsRef.current && assetData.length > 0) {
+      // console.log("⚡ Skipping duplicate fetch for:", paramsKey);
+      return;
+    }
+
     setLoading(true);
+    const timerLabel = "⏱️ fetchAssets execution time";
+    // Reset timer just in case (though timeEnd throws if not exists, time overwrites or throws? Chrome throws if exists)
+    try { console.time(timerLabel); } catch (e) { /* ignore */ }
 
     try {
       let assets: any;
@@ -169,6 +202,7 @@ export const Assets: FC = () => {
       // 2. Selection Logic
       if (assets && assets.length > 0) {
         setAssetData(assets);
+        lastFetchedParamsRef.current = paramsKey; // ✅ Update ref on success
 
         const urlAssetId = searchParams.get("assetId");
 
@@ -185,12 +219,13 @@ export const Assets: FC = () => {
         // Case B: URL mein ID nahi hai
         else {
           if (!selectedAsset) {
-             setShouldSelectFirst(true);
+            setShouldSelectFirst(true);
           }
         }
       } else {
         setAssetData([]);
         setSelectedAsset(null);
+        lastFetchedParamsRef.current = paramsKey; // ✅ Update ref even on empty (valid result)
       }
     } catch (err) {
       console.error("Failed to fetch assets:", err);
@@ -199,8 +234,9 @@ export const Assets: FC = () => {
       toast.error("Failed to load assets.");
     } finally {
       setLoading(false);
+      try { console.timeEnd(timerLabel); } catch (e) { /* ignore */ }
     }
-  }, [showDeleted, filterParams, debouncedSearch]);
+  }, [showDeleted, filterParams, debouncedSearch, searchParams, assetData.length, selectedAsset]);
 
   // --- 5. Selection Logic ---
   useEffect(() => {
@@ -214,13 +250,16 @@ export const Assets: FC = () => {
   }, [assetData, paramAssetId]);
 
   const fetchAllLocationData = useCallback(async () => {
+    // ✅ PERF: Reuse existing locations
+    if (allLocationData.length > 0) return;
+
     try {
       const locations: Location[] = await locationService.fetchLocations();
       setAllLocationData(locations);
     } catch (err) {
       console.error("Failed to fetch locations:", err);
     }
-  }, []);
+  }, [allLocationData.length]);
 
   useEffect(() => {
     fetchAssetsData();
@@ -296,15 +335,22 @@ export const Assets: FC = () => {
           serialNumber: asset.serialNumber,
         };
 
-        await dispatch(createAsset(payload)).unwrap();
+        const newAsset = await dispatch(createAsset(payload)).unwrap();
         toast.success("Asset copied successfully", { id: loadingToast });
-        fetchAssetsData();
+
+        // Manual Patching for UI
+        const locationObj = allLocationData.find((l: any) => String(l.id) === String(newAsset.locationId)) || { id: newAsset.locationId || "", name: "Unknown" };
+        const assetWithDetails = { ...newAsset, location: locationObj };
+
+        // ✅ Optimistic Update
+        setAssetData((prev) => [assetWithDetails as Asset, ...prev]);
+        setSelectedAsset(assetWithDetails as Asset);
       } catch (error) {
         console.error(error);
         toast.error("Failed to copy asset", { id: loadingToast });
       }
     },
-    [dispatch, fetchAssetsData]
+    [dispatch, allLocationData]
   );
 
   const handleEditAsset = useCallback((assetToEdit: Asset) => {
@@ -334,8 +380,8 @@ export const Assets: FC = () => {
           ? comparison
           : -comparison
         : sortOrder === "desc"
-        ? comparison
-        : -comparison;
+          ? comparison
+          : -comparison;
     });
     return processedAssets;
   }, [assetData, sortType, sortOrder]);
@@ -354,12 +400,42 @@ export const Assets: FC = () => {
     }
   }, [shouldSelectFirst, sortedAndFilteredAssets]);
 
-  // ✅ New Handler to switch asset and close edit mode
-  const handleSelectAsset = useCallback((asset: Asset) => {
+
+  const proceedWithAssetSelection = useCallback((asset: Asset) => {
     setSelectedAsset(asset);
     setShowNewAssetForm(false);
     setEditingAsset(null);
   }, []);
+
+  const handleSelectAsset = useCallback(
+    (asset: Asset) => {
+      // 🛑 If editing or creating asset and switching asset → show discard modal
+      if (editingAsset || showNewAssetForm) {
+        if (showNewAssetForm || (editingAsset && asset?.id !== editingAsset.id)) {
+          setPendingAsset(asset);
+          setShowDiscardModal(true);
+          return;
+        }
+      }
+
+      proceedWithAssetSelection(asset);
+    },
+    [editingAsset, showNewAssetForm, proceedWithAssetSelection]
+  );
+
+  const handleConfirmDiscard = () => {
+    setShowDiscardModal(false);
+    if (pendingAsset) {
+      proceedWithAssetSelection(pendingAsset);
+      setPendingAsset(null);
+    }
+  };
+
+  const handleCancelDiscard = () => {
+    setShowDiscardModal(false);
+    setPendingAsset(null);
+  };
+
 
   const handleDeleteAsset = useCallback(
     (id: string | number) => {
@@ -430,13 +506,13 @@ export const Assets: FC = () => {
                   loading={loading}
                   sortType={sortType}
                   setSortType={(t) => {
-                     setSortType(t);
-                     setShouldSelectFirst(true);
+                    setSortType(t);
+                    setShouldSelectFirst(true);
                   }}
                   sortOrder={sortOrder}
                   setSortOrder={(o) => {
-                     setSortOrder(o);
-                     setShouldSelectFirst(true);
+                    setSortOrder(o);
+                    setShouldSelectFirst(true);
                   }}
                   allLocationData={allLocationData}
                   currentPage={currentPage}
@@ -513,12 +589,17 @@ export const Assets: FC = () => {
         ) : (
           <div className="flex items-center justify-center h-full">
             <div className="flex flex-col items-center">
-               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mb-4"></div>
-               <p className="text-gray-500">Loading asset details...</p>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mb-4"></div>
+              <p className="text-gray-500">Loading asset details...</p>
             </div>
           </div>
         )}
       </div>
+      <DiscardChangesModal
+        isOpen={showDiscardModal}
+        onDiscard={handleConfirmDiscard}
+        onKeepEditing={handleCancelDiscard}
+      />
     </>
   );
 };

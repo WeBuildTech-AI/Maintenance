@@ -17,6 +17,7 @@ import toast from "react-hot-toast";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { clearSelectedWorkOrder } from "../../store/workOrders/workOrders.reducers";
 import { useNavigate } from "react-router-dom";
+import type { WorkOrder } from "./types";
 
 import {
   startOfMonth,

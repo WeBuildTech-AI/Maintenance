@@ -60,6 +60,7 @@ interface PartDynamicSelectProps {
   activeDropdown: string | null;
   setActiveDropdown: (name: string | null) => void;
   isMulti?: boolean;
+  limitOptions?: number;
 }
 
 // ------------------- Main Component -------------------
@@ -77,6 +78,7 @@ export function PartDynamicSelect({
   activeDropdown,
   setActiveDropdown,
   isMulti = false,
+  limitOptions = 3, 
 }: PartDynamicSelectProps) {
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   const open = activeDropdown === name;
@@ -136,8 +138,15 @@ export function PartDynamicSelect({
         <div className="flex flex-wrap items-center gap-1 flex-1">
           {selectedOptions.length > 0 ? (
             selectedOptions.map((option) => (
-              <Badge key={option.id} variant="secondary" className="flex items-center gap-1 px-2 py-1">
-                {option.name}
+              <Badge
+                key={option.id}
+                variant="secondary"
+                className="flex items-center gap-1 px-2 py-1 w-full"
+              >
+                <span className="whitespace-normal break-all">
+                  {option.name}
+                </span>
+                  
                 <button
                   className="ml-1 rounded-full outline-none hover:text-red-600"
                   onClick={(e) => {
@@ -160,7 +169,7 @@ export function PartDynamicSelect({
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute top-full mt-1 w-full rounded-md border bg-white z-20 max-h-60 overflow-y-auto shadow-lg">
+        <div className="absolute top-full mt-1 w-full rounded-md border bg-white z-20 overflow-y-auto shadow-lg"style={{ maxHeight: `${limitOptions * 48}px` }}>
           {loading ? (
             <div className="flex justify-center items-center p-4">
               <Spinner />

@@ -1457,6 +1457,14 @@
     background-color: var(--color-blue-100);
   }
 
+  .bg-blue-200 {
+    background-color: #bfdbfe;
+  }
+
+  .bg-blue-400 {
+    background-color: #93c5fd;
+  }
+
   .bg-blue-500 {
     background-color: var(--color-blue-500);
   }
@@ -1622,6 +1630,10 @@
 
   .bg-red-50 {
     background-color: var(--color-red-50);
+  }
+
+  .bg-red-400 {
+    background-color: #f87171;
   }
 
   .bg-red-500 {

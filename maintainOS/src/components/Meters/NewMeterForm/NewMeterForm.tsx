@@ -145,8 +145,9 @@ export function NewMeterForm({
       formData.append("meterType", meterType);
 
       if (description.trim()) formData.append("description", description);
-      if (asset) formData.append("assetId", asset);
-      if (location) formData.append("locationId", location);
+      // ✅ Allow clearing by sending empty string if value is missing/cleared
+      formData.append("assetId", asset || "");
+      formData.append("locationId", location || "");
 
       const freqUnit = readingFrequencyUnit;
       const freqValue = String(readingFrequencyValue || "").trim();
@@ -161,15 +162,18 @@ export function NewMeterForm({
         );
       }
 
+      let res;
       if (isEdit && editingMeter?.id) {
-        await meterService.updateMeter(editingMeter.id, formData);
+        // 🔥 Update
+        res = await meterService.updateMeter(editingMeter.id, formData);
         toast.success("Meter updated successfully");
       } else {
-        await dispatch(createMeter(formData)).unwrap();
+        // 🔥 Create
+        res = await dispatch(createMeter(formData)).unwrap();
         toast.success("Successfully added the Meter");
       }
 
-      onCreate(true);
+      onCreate(res);
     } catch (err: any) {
       console.error("❌ Meter save failed:", err);
       toast.error(err.message || "Meter save failed. Please try again.");
@@ -181,8 +185,8 @@ export function NewMeterForm({
   const handleGetAssetData = async () => {
     // ✅ Modified: Allow fetching if initialAssetId is present, even if data exists
     // ensuring we have fresh data or at least confirming the ID exists in the list
-    if (getAssetData.length > 0 && !initialAssetId) return; 
-    
+    if (getAssetData.length > 0 && !initialAssetId) return;
+
     setAssetLoading(true);
     try {
       const assetsRes = await assetService.fetchAssetsName();
@@ -223,7 +227,7 @@ export function NewMeterForm({
     setMeterName("");
     setDescription("");
     // If there is an initialAssetId, reset to that instead of empty
-    setAsset(initialAssetId || ""); 
+    setAsset(initialAssetId || "");
     setLocation("");
     setMeasurementUnit("");
     setReadingFrequencyUnit("none");
@@ -270,11 +274,10 @@ export function NewMeterForm({
             <button
               type="button"
               onClick={() => setMeterType("manual")}
-              className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
-                meterType === "manual"
-                  ? "border-orange-600 bg-white-50 text-orange-600 ring-1 ring-blue-500/20"
-                  : "border-gray-300 text-gray-700 hover:bg-gray-50"
-              }`}
+              className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${meterType === "manual"
+                ? "border-orange-600 bg-white-50 text-orange-600 ring-1 ring-blue-500/20"
+                : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                }`}
             >
               <User className="h-4 w-4" />
               Manual
@@ -282,11 +285,10 @@ export function NewMeterForm({
             <button
               type="button"
               onClick={() => setMeterType("automated")}
-              className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
-                meterType === "automated"
-                  ? "border-orange-600 bg-white-50 text-orange-600 ring-1 ring-blue-500/20"
-                  : "border-gray-300 text-gray-700 hover:bg-gray-50"
-              }`}
+              className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${meterType === "automated"
+                ? "border-orange-600 bg-white-50 text-orange-600 ring-1 ring-blue-500/20"
+                : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                }`}
             >
               <Lock className="h-4 w-4" />
               Automated
@@ -324,41 +326,42 @@ export function NewMeterForm({
         </div>
 
         {/* Asset & Location */}
-        <div className="flex gap-6 px-6 pb-6 pt-6">
+        <div className="grid grid-cols-2 gap-6 px-6 pb-6 pt-6">
           {/* Asset */}
-          <div className="flex-1">
-             <h3 className="mb-2 text-sm font-medium text-gray-700">Asset</h3>
-             <DynamicSelect
-                name="asset"
-                value={asset}
-                onSelect={(val) => setAsset(val as string)}
-                options={getAssetData}
-                onFetch={handleGetAssetData}
-                loading={assetLoading}
-                activeDropdown={activeDropdown}
-                setActiveDropdown={setActiveDropdown}
-                placeholder="Select an Asset"
-                ctaText={undefined} // Or add create if needed
-                onCtaClick={undefined}
-             />
+
+          <div className="min-w-0">
+            <h3 className="mb-2 text-sm font-medium text-gray-700">Asset</h3>
+            <DynamicSelect
+              name="asset"
+              value={asset}
+              onSelect={(val) => setAsset(val as string)}
+              options={getAssetData}
+              onFetch={handleGetAssetData}
+              loading={assetLoading}
+              activeDropdown={activeDropdown}
+              setActiveDropdown={setActiveDropdown}
+              placeholder="Select an Asset"
+              ctaText={undefined} // Or add create if needed
+              onCtaClick={undefined}
+            />
           </div>
 
           {/* Location */}
           <div className="flex-1">
-             <h3 className="mb-2 text-sm font-medium text-gray-700">Location</h3>
-             <DynamicSelect
-                name="location"
-                value={location}
-                onSelect={(val) => setLocation(val as string)}
-                options={getLocationData}
-                onFetch={handleGetLocationData}
-                loading={locationLoading}
-                activeDropdown={activeDropdown}
-                setActiveDropdown={setActiveDropdown}
-                placeholder="Select a Location"
-                ctaText={undefined} 
-                onCtaClick={undefined}
-             />
+            <h3 className="mb-2 text-sm font-medium text-gray-700">Location</h3>
+            <DynamicSelect
+              name="location"
+              value={location}
+              onSelect={(val) => setLocation(val as string)}
+              options={getLocationData}
+              onFetch={handleGetLocationData}
+              loading={locationLoading}
+              activeDropdown={activeDropdown}
+              setActiveDropdown={setActiveDropdown}
+              placeholder="Select a Location"
+              ctaText={undefined}
+              onCtaClick={undefined}
+            />
           </div>
         </div>
 
@@ -402,7 +405,7 @@ export function NewMeterForm({
                 value={readingFrequencyUnit}
                 onChange={setReadingFrequencyUnit}
                 options={readingFrequencyOptions} // Yeh static options use karega
-                onOpen={() => {}} // Kuch fetch nahi karna
+                onOpen={() => { }} // Kuch fetch nahi karna
                 loading={false}
                 placeholder="Select unit"
               />

@@ -4,8 +4,14 @@ import { procedureService } from "./procedures.service";
 import type {
   CreateProcedureData,
   UpdateProcedureData,
-  FetchProceduresParams // ✅ Imported
+  FetchProceduresParams, // ✅ Imported
+  FilterData // ✅ Imported
 } from "./procedures.types";
+import { locationService } from "../locations/locations.service";
+import { assetService } from "../assets/assets.service";
+import { categoryService } from "../categories/categories.service";
+import { teamService } from "../teams/teams.service";
+import type { RootState } from "../index";
 
 // ✅ Updated to accept params
 export const fetchProcedures = createAsyncThunk(
@@ -95,7 +101,7 @@ export const duplicateProcedure = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     try {
       const newProcedure = await procedureService.duplicateProcedure(id);
-      return newProcedure; 
+      return newProcedure;
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to duplicate procedure"
@@ -109,7 +115,7 @@ export const batchDeleteProcedures = createAsyncThunk(
   async (ids: string[], { rejectWithValue }) => {
     try {
       await procedureService.batchDeleteProcedures(ids);
-      return ids; 
+      return ids;
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to delete procedures"
@@ -142,6 +148,68 @@ export const restoreProcedure = createAsyncThunk(
       return rejectWithValue(
         error.response?.data?.message || "Failed to restore procedure"
       );
+    }
+  }
+);
+
+// --- Filter Data ---
+
+export const fetchFilterData = createAsyncThunk(
+  "procedures/fetchFilterData",
+  async (_, { getState, rejectWithValue }) => {
+    const state = getState() as RootState;
+
+    // ✅ Check if data already exists in Redux
+    if (state.procedures.filterData) {
+      console.log("🟡 Filter data already exists in Redux. Skipping API calls.");
+      return state.procedures.filterData;
+    }
+
+    try {
+      console.log("🔵 Fetching procedure filter data in parallel...");
+
+      const [
+        locationsRes,
+        assetsRes,
+        categoriesRes,
+        teamsRes,
+        usersRes,
+        vendorsRes
+      ] = await Promise.all([
+        locationService.fetchLocationsName(),
+        assetService.fetchAssetsName(),
+        categoryService.fetchCategories(),
+        teamService.fetchTeamsName(),
+        // Fetch users/vendors too if likely needed in future, or just empty
+        Promise.resolve([]), // userService if needed
+        Promise.resolve([])  // vendorService if needed
+      ]);
+
+      // Helper to format data uniformly
+      const format = (res: any, type: string) => {
+        const list = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+        return list.map((item: any) => ({
+          id: item.id,
+          name: item.name || item.fullName || item.procedureName || item.title || `Unnamed ${type}`,
+          image: item.image || item.avatarUrl || null
+        }));
+      };
+
+      const data: FilterData = {
+        locations: format(locationsRes, "Location"),
+        assets: format(assetsRes, "Asset"),
+        categories: format(categoriesRes, "Category"),
+        teams: format(teamsRes, "Team"),
+        users: format(usersRes, "User"),
+        vendors: format(vendorsRes, "Vendor"),
+      };
+
+      console.log("🟢 All procedure filter data fetched successfully");
+      return data;
+
+    } catch (error: any) {
+      console.error("❌ Error fetching procedure filter data:", error);
+      return rejectWithValue(error.response?.data?.message || "Failed to fetch filter data");
     }
   }
 );

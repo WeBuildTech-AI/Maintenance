@@ -1,7 +1,11 @@
-// src/store/parts/parts.thunks.ts
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { partService } from "./parts.service";
-import type { CreatePartPayload, UpdatePartPayload, RestockThunkArgs } from "./parts.types";
+import type { CreatePartPayload, UpdatePartPayload, RestockThunkArgs, FilterData } from "./parts.types";
+import { locationService } from "../locations/locations.service";
+import { assetService } from "../assets/assets.service";
+import { vendorService } from "../vendors/vendors.service";
+import { teamService } from "../teams/teams.service";
+import type { RootState } from "../index";
 
 export const fetchParts = createAsyncThunk(
   "parts/fetchParts",
@@ -77,7 +81,7 @@ export const deletePart = createAsyncThunk(
 );
 
 export const fetchPartsName = createAsyncThunk(
-  "parts/fetchPartsName", 
+  "parts/fetchPartsName",
   async (_, { rejectWithValue }) => {
     try {
       const parts = await partService.fetchPartsName();
@@ -185,6 +189,61 @@ export const fetchPartLogs = createAsyncThunk(
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch part logs"
       );
+    }
+  }
+);
+
+// --- Filter Data ---
+
+export const fetchFilterData = createAsyncThunk(
+  "parts/fetchFilterData",
+  async (_, { getState, rejectWithValue }) => {
+    const state = getState() as RootState;
+
+    // ✅ Check if data already exists in Redux
+    if (state.parts?.filterData) {
+      console.log("🟡 Parts filter data already exists in Redux. Skipping API calls.");
+      return state.parts.filterData;
+    }
+
+    try {
+      console.log("🔵 Fetching all parts filter data in parallel...");
+
+      const [
+        locationsRes,
+        assetsRes,
+        vendorsRes,
+        teamsRes
+      ] = await Promise.all([
+        locationService.fetchLocationsName(),
+        assetService.fetchAssetsName(),
+        vendorService.fetchVendorName(),
+        teamService.fetchTeamsName()
+      ]);
+
+      // Helper to format data uniformly
+      const format = (res: any, type: string) => {
+        const list = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+        return list.map((item: any) => ({
+          id: item.id,
+          name: item.name || item.fullName || item.title || `Unnamed ${type}`,
+          image: item.image || item.avatarUrl || null
+        }));
+      };
+
+      const data: FilterData = {
+        locations: format(locationsRes, "Location"),
+        assets: format(assetsRes, "Asset"),
+        vendors: format(vendorsRes, "Vendor"),
+        teams: format(teamsRes, "Team")
+      };
+
+      console.log("🟢 All parts filter data fetched successfully");
+      return data;
+
+    } catch (error: any) {
+      console.error("❌ Error fetching parts filter data:", error);
+      return rejectWithValue(error.response?.data?.message || "Failed to fetch filter data");
     }
   }
 );

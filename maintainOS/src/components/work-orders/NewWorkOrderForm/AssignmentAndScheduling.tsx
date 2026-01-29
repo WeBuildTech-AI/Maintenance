@@ -245,15 +245,16 @@ export function AssignmentAndScheduling({
     }
   }, [startTime, startDate]);
 
-  useEffect(() => {
-    if (initialAssignees.length > 0) {
-      setUsers((prev) => {
-        const existingIds = new Set(prev.map(u => u.id));
-        const newUsers = initialAssignees.filter(u => !existingIds.has(u.id));
-        return [...prev, ...newUsers];
-      });
-    }
-  }, [initialAssignees]);
+  // REMOVED user syncing effect since we use props directly
+  // useEffect(() => {
+  //   if (initialAssignees.length > 0) {
+  //     setUsers((prev) => {
+  //       const existingIds = new Set(prev.map(u => u.id));
+  //       const newUsers = initialAssignees.filter(u => !existingIds.has(u.id));
+  //       return [...prev, ...newUsers];
+  //     });
+  //   }
+  // }, [initialAssignees]);
 
   // Recurrence Logic
   useEffect(() => {
@@ -271,14 +272,19 @@ export function AssignmentAndScheduling({
     }
   }, [recurrenceRule]);
 
+  // ✅ FIX: Recurrence Logic - Update parent only if changed
   useEffect(() => {
-    let rule = null;
+    let rule: any = null;
     if (selectedFreq === "Daily") rule = { type: "daily" };
     else if (selectedFreq === "Weekly") { if (selectedWeekDays.length > 0) rule = { type: "weekly", daysOfWeek: [...selectedWeekDays].sort((a, b) => a - b) }; }
     else if (selectedFreq === "Monthly") { if (monthMode === "date") rule = { type: "monthly_by_date", dayOfMonth }; else rule = { type: "monthly_by_weekday", weekOfMonth, weekdayOfMonth }; }
     else if (selectedFreq === "Yearly") rule = { type: "yearly", intervalYears: yearInterval };
-    setRecurrenceRule(rule);
-  }, [selectedFreq, selectedWeekDays, monthMode, dayOfMonth, weekOfMonth, weekdayOfMonth, yearInterval, setRecurrenceRule]);
+
+    // Prevent infinite loop by checking deep equality
+    if (JSON.stringify(rule) !== JSON.stringify(recurrenceRule)) {
+      setRecurrenceRule(rule);
+    }
+  }, [selectedFreq, selectedWeekDays, monthMode, dayOfMonth, weekOfMonth, weekdayOfMonth, yearInterval, recurrenceRule, setRecurrenceRule]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -289,14 +295,8 @@ export function AssignmentAndScheduling({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const fetchUsers = async () => {
-    try {
-      setIsLoading(true);
-      const { data } = await fetchFilterData("users");
-      const normalized = Array.isArray(data) && data.length ? data.map((u: any) => ({ id: u.id, name: u.fullName || u.name || "Unnamed User" })) : [];
-      setUsers((prev) => { const existingIds = new Set(prev.map(u => u.id)); return [...prev, ...normalized.filter((u: any) => !existingIds.has(u.id))]; });
-    } catch (err) { console.error("Error fetching users", err); } finally { setIsLoading(false); }
-  };
+  // REMOVED fetchUsers function
+  // const fetchUsers = async () => { ... }
 
   const getYearlyDateLabel = () => {
     if (!startDate) return "the start date";
@@ -344,15 +344,16 @@ export function AssignmentAndScheduling({
         <DynamicSelect
           name="assignees"
           placeholder="Select assignees..."
-          options={users}
-          loading={isLoading}
+          options={initialAssignees} // Use prop directly
+          loading={false} // No local loading
           value={selectedUsers}
           onSelect={(val) => setSelectedUsers(val as string[])}
-          onFetch={fetchUsers}
+          onFetch={() => { }} // No local fetch
           ctaText="+ Invite New Member"
           onCtaClick={onOpenInviteModal}
           activeDropdown={activeDropdown}
           setActiveDropdown={setActiveDropdown}
+          limitOptions={3}
           className="w-full"
         />
       </div>
@@ -474,6 +475,7 @@ export function AssignmentAndScheduling({
             onFetch={() => { }}
             activeDropdown={activeDropdown}
             setActiveDropdown={setActiveDropdown}
+            limitOptions={3}
             className="w-full"
           />
 
@@ -487,6 +489,7 @@ export function AssignmentAndScheduling({
             onFetch={() => { }}
             activeDropdown={activeDropdown}
             setActiveDropdown={setActiveDropdown}
+            limitOptions={3}
             className="w-full"
           />
         </div>
