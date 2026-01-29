@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Lock, RefreshCcw, CheckCircle2,
   X, Clock, Calendar as CalendarIcon, ChevronRight as ChevronRightIcon,
   ChevronLeft, ChevronRight,
   // ✅ Added Icons
-  Search, Plus, Wrench
+  Plus, Wrench
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { SearchableDropdown } from "../common/SearchableDropdown";
+import type { SearchOption } from "../common/SearchableDropdown";
 
 import toast from "react-hot-toast";
 
@@ -232,24 +234,18 @@ export function CalendarView({
   const currentDate = propCurrentDate || new Date();
   const viewMode = propViewMode || 'calendar'; // Default to month view if not provided
 
-  // Local state for INTERACTION, not data
-  const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [peopleSearchQuery, setPeopleSearchQuery] = useState("");
-  const [isPeopleDropdownOpen, setIsPeopleDropdownOpen] = useState(false);
-  const peopleSearchRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdown on click outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (peopleSearchRef.current && !peopleSearchRef.current.contains(event.target as Node)) {
-        setIsPeopleDropdownOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   const today = startOfDay(new Date());
+
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+
+  const peopleOptions = useMemo<SearchOption[]>(() => {
+    return (filterData?.users || []).map(u => ({
+      id: u.id,
+      label: u.name || "Unknown",
+      avatar: u.image,
+      subLabel: "Team Member"
+    }));
+  }, [filterData]);
 
   const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
   const [hoveredEventDate, setHoveredEventDate] = useState<Date | undefined>(undefined);
@@ -542,83 +538,19 @@ export function CalendarView({
           </div>
         </div>
 
-        {/* People Search Dropdown */}
-        <div className="calendar-people-search relative flex flex-col z-50" ref={peopleSearchRef}>
-          <div className="people-search-input-wrapper relative w-full mb-1">
-            <Search className="people-search-icon absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <input
-              className="people-search-input w-full pl-8 pr-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Search for people"
-              value={peopleSearchQuery}
-              onChange={(e) => {
-                setPeopleSearchQuery(e.target.value);
-                setIsPeopleDropdownOpen(true);
-              }}
-              onFocus={() => setIsPeopleDropdownOpen(true)}
-              onClick={() => setIsPeopleDropdownOpen(true)}
-            />
-          </div>
-
-          {/* Results Dropdown */}
-          {isPeopleDropdownOpen && (
-            <div
-              className="people-results-dropdown absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-[1000] overflow-hidden"
-              style={{ maxHeight: '180px' }}
-            >
-              <div className="overflow-y-auto custom-scrollbar p-1 flex flex-col gap-1" style={{ maxHeight: '180px' }}>
-                {(filterData?.users || [])
-                  .filter(u => u.name.toLowerCase().includes(peopleSearchQuery.toLowerCase()))
-                  .map(user => {
-                    const isSelected = (filters?.assigneeOneOf?.split(',') || []).includes(user.id);
-
-                    const handleToggleUser = () => {
-                      const currentIds = filters?.assigneeOneOf?.split(',').filter(Boolean) || [];
-                      const newIds = isSelected
-                        ? currentIds.filter((id: string) => id !== user.id)
-                        : [...currentIds, user.id];
-
-                      onFilterChange?.({ assigneeOneOf: newIds.length > 0 ? newIds.join(',') : undefined });
-                      setIsPeopleDropdownOpen(false); // ✅ Auto-close on selection
-                    };
-
-                    const initials = user.name
-                      .split(' ')
-                      .map((n: string) => n[0])
-                      .join('')
-                      .toUpperCase()
-                      .slice(0, 2);
-
-                    return (
-                      <div
-                        key={user.id}
-                        className={`people-dropdown-card flex items-center gap-2 p-1.5 rounded-md border transition-all cursor-pointer ${isSelected ? 'border-yellow-400 bg-yellow-50/50' : 'border-transparent hover:border-yellow-300 hover:bg-yellow-50/30'
-                          }`}
-                        onClick={handleToggleUser}
-                      >
-                        <div className="h-7 w-7 rounded-full border border-yellow-400 flex items-center justify-center bg-white shrink-0">
-                          <Avatar className="h-6 w-6">
-                            {user.image && <AvatarImage src={user.image} />}
-                            <AvatarFallback className="bg-transparent text-gray-800 text-[9px] font-bold">{initials}</AvatarFallback>
-                          </Avatar>
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-xs font-bold text-gray-900 truncate leading-tight">{user.name}</span>
-                          <span className="text-[9px] text-gray-500 truncate leading-tight">Team Member</span>
-                        </div>
-                        {isSelected && (
-                          <div className="ml-auto">
-                            <CheckCircle2 size={12} className="text-yellow-500" />
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                {(filterData?.users || []).filter(u => u.name.toLowerCase().includes(peopleSearchQuery.toLowerCase())).length === 0 && (
-                  <div className="p-2 text-center text-[10px] text-gray-500">No people found</div>
-                )}
-              </div>
-            </div>
-          )}
+        {/* Search / Filter for People */}
+        <div className="mb-6">
+          <SearchableDropdown
+            placeholder="Search for people"
+            options={peopleOptions}
+            onSelect={(opt) => {
+              const currentIds = filters?.assigneeOneOf?.split(',').filter(Boolean) || [];
+              if (!currentIds.includes(opt.id)) {
+                const newIds = [...currentIds, opt.id];
+                onFilterChange?.({ assigneeOneOf: newIds.length > 0 ? newIds.join(',') : undefined });
+              }
+            }}
+          />
 
           {/* Selected People Display (Cards below input) */}
           {(filters?.assigneeOneOf?.split(',').filter(Boolean).length || 0) > 0 && (
@@ -627,11 +559,11 @@ export function CalendarView({
                 .filter(user => (filters?.assigneeOneOf?.split(',') || []).includes(user.id))
                 .map(user => {
                   const initials = user.name
-                    .split(' ')
+                    ?.split(' ')
                     .map((n: string) => n[0])
                     .join('')
                     .toUpperCase()
-                    .slice(0, 2);
+                    .slice(0, 2) || "??";
 
                   return (
                     <div
@@ -663,8 +595,6 @@ export function CalendarView({
                 })}
             </div>
           )}
-
-
         </div>
       </div>
 

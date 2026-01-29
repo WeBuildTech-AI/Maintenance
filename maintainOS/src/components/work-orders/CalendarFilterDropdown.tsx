@@ -102,7 +102,7 @@ export function CalendarFilterDropdown({ onClose, onApply, assets = [], location
     );
 
     return (
-        <div className="calendar-filter-dropdown-menu absolute top-[110%] left-0 flex w-[620px] h-[340px] flex-col rounded-[10px] border border-gray-200 bg-white shadow-xl animate-in fade-in zoom-in-95 duration-100">
+        <div className="calendar-filter-dropdown-menu absolute top-[110%] left-0 flex w-[480px] h-[340px] flex-col rounded-[10px] border border-gray-200 bg-white shadow-xl animate-in fade-in zoom-in-95 duration-100">
             <div className="flex flex-1 overflow-hidden">
                 {/* Sidebar */}
                 <div className="w-[160px] flex-none border-r border-gray-100 bg-white py-4">

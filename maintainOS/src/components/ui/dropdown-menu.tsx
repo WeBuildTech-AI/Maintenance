@@ -286,7 +286,7 @@ const DropdownMenuContent = React.forwardRef<
           position: "absolute",
           top: position.top,
           left: position.left,
-          zIndex: 50,
+          zIndex: 1000,
           ...style,
         }}
         className={cn(

@@ -70,8 +70,8 @@ export function GlobalFilterDropdown({ onClose, onApply, initialFilters, classNa
         }
 
         setSelectedItems(newSelectedItems);
-        // Auto-apply on change to mimic instant feedback
-        onApply(newSelectedItems);
+        // Auto-apply disabled in favor of Submit button
+        // onApply(newSelectedItems);
     };
 
     // Get Options from Redux Data or Hardcoded Lists
@@ -169,7 +169,9 @@ export function GlobalFilterDropdown({ onClose, onApply, initialFilters, classNa
                                 >
                                     {cat.label}
                                     {(selectedItems[cat.id]?.length || 0) > 0 && (
-                                        <div className="filter-indicator-dot" />
+                                        <span className="filter-count-badge">
+                                            {selectedItems[cat.id]?.length}
+                                        </span>
                                     )}
                                 </button>
                             ))}
@@ -229,8 +231,31 @@ export function GlobalFilterDropdown({ onClose, onApply, initialFilters, classNa
                             )}
                         </div>
                     </ScrollArea>
+
+                    {/* Footer Actions */}
+                    <div className="filter-dropdown-footer">
+                        <button
+                            onClick={() => {
+                                setSelectedItems({});
+                                // Optional: Apply immediately on reset? Or wait for Submit?
+                                // Usually Reset clears immediately in UI, Submit confirms.
+                            }}
+                            className="filter-btn-reset"
+                        >
+                            Reset Filters
+                        </button>
+                        <button
+                            onClick={() => {
+                                onApply(selectedItems);
+                                onClose();
+                            }}
+                            className="filter-btn-submit"
+                        >
+                            Submit
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
